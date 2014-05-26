@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<!--html manifest="index.manifest" -->
+<html lang="en">
+   <head>
+      <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=0.5, maximum-scale=0.5">
+      <meta name="apple-mobile-web-app-capable" content="yes">
+      <meta name="apple-mobile-web-app-status-bar-style" content="black">
+      <link rel="apple-touch-icon" href="iphon_tetris_icon.png">
+      <link rel="apple-touch-startup-image" href="startup.png">
+      <meta name="description" content="">
+      <meta name="author" content="">
+
+      <title>DiscoFish Player</title>
+ 
+      <!-- Bootstrap core CSS -->
+      <link href="/static/css/bootstrap-3.1.1.min.css" rel="stylesheet">
+      <link href="/static/css/bootstrap-slider-3.0.0.css" rel="stylesheet">
+
+      <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+      <!--[if lt IE 9]>
+         <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+         <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+      <![endif]-->
+      <style>
+         body {
+            background: black;
+         }
+
+         #header {
+            position: fixed;
+            left: 0px;
+            top: 10px;
+            width: 100%;
+            height: 80px;
+            overflow: hidden;
+            text-align: center;
+            z-index: 10;
+         }
+
+         #monitor {
+            position: fixed;
+            left: 0px;
+            top: 70px;
+            bottom: 200px;
+            width: 100%;
+            overflow: hidden;
+            padding-top: 70px;
+            text-align: center;
+         }
+
+         #volume-controls {
+            display: none;
+         }
+
+         #status-msg {
+            position: fixed;
+            left: 0px;
+            bottom: 100px;
+            width: 100%;
+            height: 100px;
+            padding: 5px;
+            line-height: 100px;
+            overflow: hidden;
+            text-align: center;
+            color: #cccccc;
+            font-size: 25px;
+         }
+
+         #playback-controls {
+            position: fixed;
+            bottom: 0px;
+            width: 100%;
+            height: 100px;
+            overflow: hidden;
+            white-space:nowrap; 
+            text-align: center;
+            background: #222222;
+         }
+
+         #playback-controls button {
+            display: inline-block;
+            width: 120px;
+            height: 60px;
+            color: #cccccc;
+            background: none;
+            border: none;
+            line-height: 60px;
+            font-size: 60px;
+            margin: 10px;
+            padding: 0px;
+         }
+
+
+
+         #main {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 640px;
+            height: 640px;
+            margin-left: -320px;
+            margin-top: -320px;
+            background: black;
+         }
+
+      </style>
+   </head>
+
+   <body>
+
+      <div id="header">
+         <img src="/static/images/dfplayer-logo.png" width="350">
+      </div> 
+
+      <div id="monitor">
+            <img src="/static/images/dfleds.png" width="600">
+      </div>
+
+      <div id="volume-controls">
+         <span class="glyphicon glyphicon-volume-down"></span>
+         <input id="volume-slider" class="slider" type="text" data-slider-min="0" data-slider-max="100" data-slider-step="1" data-slider-value="50"/>
+         <span class="glyphicon glyphicon-volume-up"></span>
+      </div>
+
+      <div id="status-msg">No status</div>
+ 
+      <div id="playback-controls">
+         <button onclick="request('prev');"><span class="glyphicon glyphicon-step-backward"></span></button>
+         <button onclick="request('toggle-play');" id="play-btn"><span class="glyphicon glyphicon-play"></span></button>
+         <button onclick="request('next');"><span class="glyphicon glyphicon-step-forward"></span></button>
+      </div>
+
+      <script src="/static/js/jquery-1.11.0.min.js"></script>
+      <script src="/static/js/bootstrap-3.1.1.min.js"></script>
+      <script src="/static/js/bootstrap-slider-3.0.0.js"></script>
+      <script>
+         $("input.slider").slider();
+         update({status:null, message: 'Not connected'});
+         request('status');
+
+         function update(state) {
+            console.log( state );
+            if (state.status == null) {
+               $('button').prop('disabled', true);
+               $('#status-msg').text( state.message );
+            } 
+            else if (state.status == 'idle' || state.status == 'paused') {
+               $('#play-btn').html( '<span class="glyphicon glyphicon-play"></span>');
+               $('button').prop('disabled', false ); 
+               if (state.status == 'idle') {
+                  $('#status-msg').text( 'Not playing' );
+               } 
+               else {
+                  $('#status-msg').text( 'Paused ' + state.playList[state.playingIdx] );
+               }             
+            }
+            else if (state.status == 'playing') {
+               $('#play-btn').html( '<span class="glyphicon glyphicon-pause"></span>');
+               $('button').prop('disabled', false );
+               $('#status-msg').text( 'Playing ' + state.playList[state.playingIdx] );
+            }
+         }
+
+         function request(command) {
+            if (command == 'status') {
+               method = 'get';
+               url = '/player';
+               update({status:null, message:'Getting status...'});
+            } else {
+               method = 'post';
+               url = "/player/" + command + "/";
+               update({status:null, message:'Sending command...'});
+            }
+            $.ajax({
+               url: url,
+               //data: JSON.stringify( {} ),
+               type: method,
+               contentType: "application/json; charset=utf-8",
+               dataType: "json",
+               success: function(json) {
+                  update(json);
+               },
+               error: function( xhr, status ) {
+                  console.log( xhr.responseText );
+                  update( { status: null, message: "Can't " + method + ' ' + 
+                     command + ": " + status + '/' + xhr.statusText });
+               }
+           });
+         }
+         
+      </script>
+   </body>
+</html>
