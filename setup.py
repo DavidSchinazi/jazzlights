@@ -5,6 +5,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 
 requires = [
     'flask',
+    'flask-socketio',
   ]
 
 setup(name='dfplayer',

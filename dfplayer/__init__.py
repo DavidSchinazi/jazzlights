@@ -1,24 +1,27 @@
 import os
 import sys
 import json
+import gevent
 import logging
 
 from flask import Flask,request,render_template,make_response,abort
-from threading import Lock
+from flask.ext.socketio import SocketIO, emit
 from pprint import pprint
 
 app = Flask(__name__)
+socketio = SocketIO(app)
 appdir = os.path.abspath(os.path.dirname(__file__))
 
-def render_json(json_dict):
-    resp = make_response(json.dumps(json_dict)) 
-    resp.headers['Content-Type'] = 'application/json'
-    return resp
+playlist = ['Clip #%d' % i for i in xrange(1,5)]
+player = { 'status': 'paused', 'clipIdx': 0, 'clipName': playlist[0], 
+    'volume': 0.5, 'elapsed': 0 }
 
-
-mutex = Lock()
-player = { 'status': 'idle', 'playingIdx': 0, 
-    'playList': ['Song #1', 'Song #2', 'Song #3'], 'volume': 0.5 }
+def workthread():
+    while True:
+        socketio.emit('player_state', player, namespace="/player" )
+        gevent.sleep(0.5)
+        if player['status'] == 'playing':
+            player['elapsed'] += 0.5
 
 
 @app.route('/')
@@ -26,42 +29,51 @@ def index():
     return render_template('index.html')
 
 
-@app.route('/player/', methods=['GET'])
-def status():
-    return render_json(player)
+@socketio.on('connect', namespace="/player")
+def connect():
+    emit('playlist', playlist )
+    emit('player_state', player )
+
+@socketio.on('disconnect', namespace="/player")
+def disconnect():
+    pass
+
+@socketio.on('play', namespace="/player")
+def play(msg):
+    idx = msg['clipIdx'] % len(playlist)
+    player['clipIdx'] = idx
+    player['clipName'] = playlist[idx]
+    player['elapsed'] = 0
+    player['status'] = 'playing'     
+    emit('player_state', player, broadcast=True )
 
 
-@app.route('/player/toggle-play/', methods=['POST'])
-def toggle_play():
-    if player['status'] == 'idle':
-        print "Playing..."
-        player['status'] = 'playing'
-    elif player['status'] == 'playing':
-        print "Pausing..."
-        player['status'] = 'paused'
-    elif player['status'] == 'paused':
-        print "Resuming..."
-        player['status'] = 'playing'
-    return render_json(player)
+@socketio.on('pause', namespace="/player")
+def pause():
+    player['status'] = 'paused'     
+    emit('player_state', player, broadcast=True )
 
 
-@app.route('/player/next/', methods=['POST'])
+@socketio.on('resume', namespace="/player")
+def resume():
+    player['status'] = 'playing'     
+    emit('player_state', player, broadcast=True )
+
+
+@socketio.on('next', namespace="/player")
 def next():
-    player['playingIdx'] = (player['playingIdx'] + 1) % len(player['playList'])
-    player['status'] = 'playing'
-    return render_json(player)
+    play({'clipIdx': (player['clipIdx'] + 1) % len(playlist)})
 
 
-@app.route('/player/prev/', methods=['POST'])
+@socketio.on('prev', namespace="/player")
 def prev():
-    player['playingIdx'] = (player['playingIdx'] - 1) % len(player['playList'])
-    player['status'] = 'playing'
-    return render_json(player)
+    play({'clipIdx': (player['clipIdx'] - 1) % len(playlist)})
 
 
-@app.route('/player/volume/', methods=['GET', 'POST'])
-def volume():
-    return render_json( {'volume':player['volume']} )
+@socketio.on('volume', namespace="/player")
+def volume(msg):
+    player['volume'] = msg['volume']     
+    emit('player_state', player, broadcast=True )
 
 
 def main():
@@ -73,4 +85,6 @@ def main():
         host = '127.0.0.1'
         port = 8080
 
-    app.run(host=host, port=port, threaded=True)
+    gevent.spawn(workthread)
+    print "Starting app on %s:%d" % (host,port)    
+    socketio.run(app,host=host, port=port)    

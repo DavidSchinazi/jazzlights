@@ -92,6 +92,9 @@
             padding: 0px;
          }
 
+         #playback-controls button:focus {
+            outline: none;
+         }
 
 
          #main {
@@ -127,68 +130,58 @@
       <div id="status-msg">No status</div>
  
       <div id="playback-controls">
-         <button onclick="request('prev');"><span class="glyphicon glyphicon-step-backward"></span></button>
-         <button onclick="request('toggle-play');" id="play-btn"><span class="glyphicon glyphicon-play"></span></button>
-         <button onclick="request('next');"><span class="glyphicon glyphicon-step-forward"></span></button>
+         <button id="prev-btn"><span class="glyphicon glyphicon-step-backward"></span></button>
+         <button id="play-btn"><span class="glyphicon glyphicon-play"></span></button>
+         <button id="next-btn"><span class="glyphicon glyphicon-step-forward"></span></button>
       </div>
 
       <script src="/static/js/jquery-1.11.0.min.js"></script>
       <script src="/static/js/bootstrap-3.1.1.min.js"></script>
       <script src="/static/js/bootstrap-slider-3.0.0.js"></script>
+      <script src="/static/js/socketio-0.9.16.min.js"></script>
       <script>
-         $("input.slider").slider();
-         update({status:null, message: 'Not connected'});
-         request('status');
+         function renderStatus( clipName, elapsed ) {
+               min = Math.round(elapsed/60);
+               if (min<10) {
+                  min = '0' + min
+               }
+               sec = Math.round(elapsed % 60);
+               if (sec<10) {
+                  sec = '0' + sec
+               }
+               $('#status-msg').text( min + ':' + sec + ' ' + clipName );
+         }
 
-         function update(state) {
-            console.log( state );
-            if (state.status == null) {
-               $('button').prop('disabled', true);
-               $('#status-msg').text( state.message );
-            } 
-            else if (state.status == 'idle' || state.status == 'paused') {
+         //$("input.slider").slider();
+         var socket = io.connect('http://' + document.domain + ':' + location.port + '/player' );
+         socket.on('connect', function() {
+               $('#prev-btn').on('click', function() { socket.emit('prev') });
+               $('#next-btn').on('click', function() { socket.emit('next') });
+               $('#status-msg').text( 'Connected' );
+         });
+         socket.on('disconnect', function() {
+               $('#play-btn').off();
+               $('#prev-btn').off();
+               $('#next-btn').off();
                $('#play-btn').html( '<span class="glyphicon glyphicon-play"></span>');
-               $('button').prop('disabled', false ); 
-               if (state.status == 'idle') {
-                  $('#status-msg').text( 'Not playing' );
-               } 
-               else {
-                  $('#status-msg').text( 'Paused ' + state.playList[state.playingIdx] );
-               }             
+               $('#status-msg').text( 'Disconnected' );
+         });
+         socket.on('player_state', function(state) {
+            console.log( state );
+            if (state.status == 'paused') {
+               $('#play-btn').off();
+               $('#play-btn').on('click', function() { socket.emit('resume') });
+               $('#play-btn').html( '<span class="glyphicon glyphicon-play"></span>');
+               renderStatus( state.clipName, state.elapsed);
             }
             else if (state.status == 'playing') {
+               $('#play-btn').off();
+               $('#play-btn').on('click', function() { socket.emit('pause') });
                $('#play-btn').html( '<span class="glyphicon glyphicon-pause"></span>');
-               $('button').prop('disabled', false );
-               $('#status-msg').text( 'Playing ' + state.playList[state.playingIdx] );
+               renderStatus( state.clipName, state.elapsed);
             }
-         }
+         });
 
-         function request(command) {
-            if (command == 'status') {
-               method = 'get';
-               url = '/player';
-               update({status:null, message:'Getting status...'});
-            } else {
-               method = 'post';
-               url = "/player/" + command + "/";
-               update({status:null, message:'Sending command...'});
-            }
-            $.ajax({
-               url: url,
-               //data: JSON.stringify( {} ),
-               type: method,
-               contentType: "application/json; charset=utf-8",
-               dataType: "json",
-               success: function(json) {
-                  update(json);
-               },
-               error: function( xhr, status ) {
-                  console.log( xhr.responseText );
-                  update( { status: null, message: "Can't " + method + ' ' + 
-                     command + ": " + status + '/' + xhr.statusText });
-               }
-           });
-         }
          
       </script>
    </body>
