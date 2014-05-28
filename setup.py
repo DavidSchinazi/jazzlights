@@ -6,6 +6,8 @@ here = os.path.abspath(os.path.dirname(__file__))
 requires = [
     'flask',
     'flask-socketio',
+    'Pillow',
+    'python-mpd',
   ]
 
 setup(name='dfplayer',
@@ -24,5 +26,6 @@ setup(name='dfplayer',
       entry_points="""\
       [console_scripts]
       dfplayer = dfplayer:main
+      dfprepr = dfplayer.preprocess:main
       """,
       )
