@@ -10,9 +10,10 @@ def main():
     monkey.patch_all()
 
     # have to do those imports after monkey patch
-    from player import Player
-    from ui_browser import run as run_browser_ui
-    from ui_desktop import run as run_desktop_ui
+    from .player import Player
+    from .effects import register_all as register_all_effects
+    from .ui_browser import run as run_browser_ui
+    from .ui_desktop import run as run_desktop_ui
 
     logging.basicConfig(level=logging.INFO, format='%(message)s')
     if len(sys.argv) > 1 and (sys.argv[1])[:9] == '--listen=':
@@ -26,6 +27,8 @@ def main():
     player.load_playlist('playlist')
     player.play(0)
     print player
+
+    register_all_effects()
 
     tasks = [lambda : player.run()]
     tasks.append(lambda : run_browser_ui(player, host, port))

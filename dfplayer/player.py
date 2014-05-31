@@ -15,7 +15,8 @@ from mpd import MPDClient
 from gevent import sleep
 from gevent.coros import RLock
 
-from util import catch_and_log, PROJECT_DIR, PACKAGE_DIR, VENV_DIR
+from .util import catch_and_log, PROJECT_DIR, PACKAGE_DIR, VENV_DIR
+from .effect import load as load_effect
 
 FPS = 16
 FRAME_WIDTH = 500
@@ -53,8 +54,8 @@ class Player(object):
         self._fetch_playlist()
         self._fetch_state()
 
+        self._effect = None
         self._frame = None
-        self.led_mask = Image.open(PROJECT_DIR + '/dfplayer/ledmask.png')
 
     def __str__(self):
         elapsed = int(self.elapsed)
@@ -181,9 +182,18 @@ class Player(object):
                 with open(frame_file, 'rb') as imgfile:
                     img = Image.open(imgfile)
                     img.load()
-                    img = ImageChops.multiply(img, self.led_mask)
+                    if self._effect is not None:
+                        if not self._effect(img,self.elapsed):
+                            self._effect = None
                     self._frame = img
             return self._frame
+
+    def play_effect(self, name, **kwargs):
+        logging.info( "Playing %s: %s", name, kwargs )
+        self._effect = load_effect( name, **kwargs )
+    
+    def stop_effect(self):
+        self._effect = None    
 
     def run(self):
         while True:
