@@ -7,7 +7,7 @@ import subprocess
 
 from util import catch_and_log
 from player import FPS, FRAME_WIDTH, FRAME_HEIGHT
-from mpdctl import CLIPS_DIR, PLAYLISTS_DIR
+from player import CLIPS_DIR, PLAYLISTS_DIR
 
 
 def main():
@@ -32,7 +32,7 @@ def main():
             start_t = 0
             duration = 60
 
-            subprocess.check_call(['ffmpeg', '-y',
+            subprocess.check_call(['avconv', '-y',
                 '-ss', str(start_t),
                 '-i', infile,
                 '-t', str(duration),
@@ -42,7 +42,7 @@ def main():
                      % globals(),
                 outpath + '/frame%5d.jpg',
                 ])
-            subprocess.check_call(['ffmpeg', '-y',
+            subprocess.check_call(['avconv', '-y',
                 '-ss', str(start_t),
                 '-i', infile,
                 '-t', str(duration),
