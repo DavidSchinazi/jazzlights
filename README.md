@@ -45,6 +45,7 @@ dependency checking screwed up??) The whole process will take a while.
 8. Some useful commands:
 
         git config --global core.editor "vim"
+        git push origin mybranch:master
 
 You can also type `make run` instead of steps 5-7 if you're feeling lazy.
 

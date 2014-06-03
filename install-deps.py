@@ -6,33 +6,40 @@ import os
 import subprocess
 import sys
 
-_REQUIRED_PACKAGES = [
-    'gimp',
-    'git',
-    'libav-tools',
+_PILLOW_DEPS = [
     'libfreetype6-dev',
     'libjpeg8-dev',
     'liblcms2-dev',
     'libtiff4-dev',
     'libwebp-dev',
+    'tcl-dev',
+    'tk-dev',
+    'zlib1g-dev',
+    ]
+
+_PLAYER_DEPS = [
+    'libav-tools',
     'mpd',
     'python-dev',
     'python-mpd',
     'python-setuptools',
     'python-tk',
+    ]
+
+_USEFUL_PACKAGES = [
+    'gimp',
+    'git',
     'synaptic',
-    'tcl-dev',
-    'tk-dev',
     'vim',
-    'zlib1g-dev',
     ]
 
 if os.geteuid() != 0:
   print 'ERROR: Please run as root'
   sys.exit(1)
 
-subprocess.check_call([
-    'apt-get', 'install', '-y'] + _REQUIRED_PACKAGES)
+subprocess.check_call(['apt-get', 'install', '-y'] + _PILLOW_DEPS)
+subprocess.check_call(['apt-get', 'install', '-y'] + _PLAYER_DEPS)
+subprocess.check_call(['apt-get', 'install', '-y'] + _USEFUL_PACKAGES)
 
 subprocess.check_call(['easy_install', 'pip'])
 
