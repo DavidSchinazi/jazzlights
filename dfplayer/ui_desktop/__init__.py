@@ -34,6 +34,8 @@ class PlayerApp(Frame):
 
         self.player = player
         
+        self.root.bind('q', lambda e: player.volume_up())
+        self.root.bind('a', lambda e: player.volume_down())
         self.root.bind('0', lambda e: player.stop_effect())
         self.root.bind('1', lambda e: player.play_effect('textticker'))
         self.root.bind('2', lambda e: player.play_effect('solidcolor'))

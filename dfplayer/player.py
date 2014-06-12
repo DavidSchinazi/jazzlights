@@ -30,6 +30,7 @@ MPD_CONFIG_FILE = MPD_DIR + '/mpd.conf'
 MPD_DB_FILE = MPD_DIR + '/tag_cache'
 MPD_PID_FILE = MPD_DIR + '/mpd.pid'
 MPD_LOG_FILE = MPD_DIR + '/mpd.log'
+MPD_CARD_ID = 2  # From 'aplay -l'
 
 CLIPS_DIR = VENV_DIR + '/clips/'
 PLAYLISTS_DIR = VENV_DIR + '/playlists/'
@@ -41,6 +42,15 @@ db_file             "%(MPD_DB_FILE)s"
 pid_file            "%(MPD_PID_FILE)s"
 log_file            "%(MPD_LOG_FILE)s"
 port                "%(MPD_PORT)d"
+audio_output {
+    type            "alsa"
+    name            "USB DAC"
+    device          "hw:%(MPD_CARD_ID)s,0"
+    auto_resample   "no"
+    mixer_control   "PCM"
+    mixer_type      "hardware"
+    mixer_device    "hw:%(MPD_CARD_ID)s"
+}
 '''
 
 
@@ -142,8 +152,20 @@ class Player(object):
 
     @volume.setter
     def volume(self, value):
+        if value < 0:
+            value = 0
+        elif value > 1:
+            value = 1
+        logging.info('Setting volume to %s', value)
         with self.lock:
-            self.mpd.setvol(float(value) * 100)
+            self.mpd.setvol(int(float(value) * 100))
+            self._volume = value  # Till next status sync.
+
+    def volume_up(self):
+        self.volume = self.volume + 0.05
+
+    def volume_down(self):
+        self.volume = self.volume - 0.05
 
     def load_playlist(self, name):
         with self.lock:

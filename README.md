@@ -38,11 +38,22 @@ dependency checking screwed up??) The whole process will take a while.
 
         make clips
 
-7. Run the player:
+7. Disable PulseAudio:
+
+        sudo vi /etc/pulse/client.conf
+            autospawn = no
+            daemon-binary = /bin/true
+        pulseaudio --kill
+        rm ~/.config/pulse/client.conf
+
+8. If there is no audio, run 'aplay -l' and update
+   MPD_CARD_ID in dfplayer/player.py.
+
+9. Run the player:
 
         env/bin/dfplayer --listen=0.0.0.0:8080
 
-8. Some useful commands:
+10. Some useful commands:
 
         git config --global core.editor "vim"
         git push origin mybranch:master
