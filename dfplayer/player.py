@@ -17,10 +17,12 @@ from gevent.coros import RLock
 
 from .util import catch_and_log, PROJECT_DIR, PACKAGE_DIR, VENV_DIR
 from .effect import load as load_effect
+from .tcl_renderer import TclRenderer
 
 FPS = 16
 FRAME_WIDTH = 500
 FRAME_HEIGHT = 50
+TCL_CONTROLLER = 1
 
 MPD_PORT = 6601
 MPD_DIR = VENV_DIR + '/mpd/'
@@ -56,9 +58,13 @@ class Player(object):
 
         self._effect = None
         self._frame = None
+        self._prev_frame_file = ''
+
+        self._tcl = TclRenderer(TCL_CONTROLLER)
+        self._tcl.set_dimensions(FRAME_WIDTH, FRAME_HEIGHT)
 
     def __str__(self):
-        elapsed = int(self.elapsed)
+        elapsed = int(self.elapsed_time)
         return 'Player [%s %s %02d:%02d]' % (self.status,
                 self.clip_name, elapsed / 60, elapsed % 60)
 
@@ -67,15 +73,18 @@ class Player(object):
         self.songid_to_idx = {}
         with self.lock:
             listinfo = self.mpd.playlistinfo()
+        # TODO(azov): Can we check for completion in a loop with shorter sleep?
         sleep(0.5)  # let it actually load the playlist
         for song in listinfo:
             self.songid_to_idx[song['id']] = len(self.playlist)
             self.playlist.append((song['file'])[0:-4])
 
     def _fetch_state(self):
+        # TODO(igorc): Why do we lock access to mpd, but not the rest of vars?
+        # TODO(igorc): Add "mpd" prefix to all mpd-related state vars.
         with self.lock:
             s = self.mpd.status()
-        self._state_ts = time.time()
+        self._mpd_state_ts = time.time()
         self._volume = 0.01 * float(s['volume'])
         if s['state'] == 'play':
             self.status = 'playing'
@@ -84,11 +93,17 @@ class Player(object):
         else:
             self.status = 'idle'
             self.clip_name = None
-            self._elapsed = 0
+            self._mpd_elapsed_time = 0
+
+        if 'error' in s:
+            # TODO(azov): Report error on the UI.
+            logging.info('MPD Error = \'%s\'', s['error'])
 
         if self.status != 'idle':
             self.clip_name = self.playlist[self.songid_to_idx[s['songid']]]
-            self._elapsed = float(s['elapsed'])
+            self._mpd_elapsed_time = float(s['elapsed'])
+
+        # print 'MPD status', s
 
     def _config_mpd(self):
         for d in (MPD_DIR, CLIPS_DIR, PLAYLISTS_DIR):
@@ -115,11 +130,11 @@ class Player(object):
         atexit.register(lambda : self._stop_mpd())
 
     @property
-    def elapsed(self):
+    def elapsed_time(self):
         if self.status == 'playing':
-            return time.time() - self._state_ts + self._elapsed
+            return time.time() - self._mpd_state_ts + self._mpd_elapsed_time
         else:
-            return self._elapsed
+            return self._mpd_elapsed_time
 
     @property
     def volume(self):
@@ -171,26 +186,37 @@ class Player(object):
         with self.lock:
             self.mpd.previous()
 
-    def frame(self):
+    def get_frame_image(self):
         if self.status == 'idle':
+            # TODO(igorc): Keep drawing some neutral pattern for fun.
             return None
         else:
-            frame_num = 1 + int(self.elapsed * FPS)
+            # TODO(igorc): Clarify frame sync. The caller calls this function
+            # at 30 FPS, while we generate at 16 FPS max. This may cause some
+            # uneven frame rate. Basically, there is no guarantee that the
+            # caller's timing  will be well-aligned with elapsed frame counter.
+            frame_num = 1 + int(self.elapsed_time * FPS)
             frame_file = CLIPS_DIR + '%s/frame%05d.jpg' \
                 % (self.clip_name, frame_num)
-            if os.path.exists(frame_file):
-                with open(frame_file, 'rb') as imgfile:
-                    img = Image.open(imgfile)
-                    img.load()
-                    if self._effect is not None:
-                        if not self._effect(img,self.elapsed):
-                            self._effect = None
-                    self._frame = img
+            if frame_file == self._prev_frame_file:
+                return self._frame
+            if not os.path.exists(frame_file):
+                # TODO(igorc): Handle the case where '_frame' was neevr loaded.
+                return self._frame
+            with open(frame_file, 'rb') as imgfile:
+                img = Image.open(imgfile)
+                img.load()
+                if self._effect is not None:
+                    if not self._effect(img, self.elapsed_time):
+                        self._effect = None
+                self._frame = img
+            self._prev_frame_file = frame_file
+            self._tcl.send_frame(list(self._frame.getdata()))
             return self._frame
 
     def play_effect(self, name, **kwargs):
-        logging.info( "Playing %s: %s", name, kwargs )
-        self._effect = load_effect( name, **kwargs )
+        logging.info("Playing %s: %s", name, kwargs)
+        self._effect = load_effect(name, **kwargs)
     
     def stop_effect(self):
         self._effect = None    

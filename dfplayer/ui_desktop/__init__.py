@@ -56,7 +56,7 @@ class PlayerApp(Frame):
 
     def update(self):
         try:
-            img = self.player.frame()
+            img = self.player.get_frame_image()
             if img:
                 img = img.resize(self.led_mask.size)
                 img.paste("#000000", (0,0,self.led_mask.size[0], 

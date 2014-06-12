@@ -27,12 +27,12 @@ def workthread():
             socketio.emit('player_state', {
                 'status': player.status,
                 'volume': player.volume,
-                'elapsed': player.elapsed,
+                'elapsed': player.elapsed_time,
                 'clipName': player.clip_name,
                 }, namespace='/player')
 
             if STREAM_FRAMES and player.status == 'playing':
-                img = player.frame()
+                img = player.get_frame_image()
                 outbuf = StringIO.StringIO()
                 img.save(outbuf, 'JPEG')
                 imgdata = base64.b64encode(outbuf.getvalue())
