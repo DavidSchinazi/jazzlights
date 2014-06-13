@@ -1,6 +1,7 @@
 #!/usr/bin/python
 #
 
+import array
 import sys
 import time
 
@@ -10,9 +11,15 @@ def create_normal_array(size):
     arr.append(i)
   return arr
 
+def create_byte_array(size):
+  arr = array.array('B')
+  for i in range(0, size):
+    arr.append(i & 0xFF)
+  return arr
+
 def write_array(arr):
   for i in range(0, len(arr)):
-    arr[i] = i
+    arr[i] = i & 0xFF
 
 def read_array(arr):
   sum = 0
@@ -48,4 +55,5 @@ def test_arr(name, create_func, size):
 
 
 test_arr('Regular', create_normal_array, 10 * 1000 * 1000)
+test_arr('ByteArray', create_byte_array, 10 * 1000 * 1000)
 
