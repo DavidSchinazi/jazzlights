@@ -10,7 +10,7 @@ _MSG_START_FRAME = bytearray([0xC5, 0x77, 0x88, 0x00, 0x00])
 _MSG_START_FRAME_DELAY = 0.0005
 _MSG_END_FRAME = bytearray([0xAA, 0x01, 0x8C, 0x01, 0x55])
 _MSG_RESET = bytearray([0xC2, 0x77, 0x88, 0x00, 0x00])
-_MSG_RESET_DELAY = 0.1
+_MSG_RESET_DELAY = 5
 _MSG_REPLY = bytearray([0x55, 0x00, 0x00, 0x00, 0x00])
 
 _FRAME_MSG_PREFIX = bytearray([0x88, 0x00, 0x68, 0x3F, 0x2B, 0xFD,
@@ -53,8 +53,9 @@ class TclRenderer(object):
     if self._init_sent:
       return
     self._init_sent = True
-    # self._sock.send(_MSG_RESET)
-    # time.sleep(_MSG_RESET_DELAY)
+    # TODO(igorc): Look for a better place for reset.
+    self._sock.send(_MSG_RESET)
+    time.sleep(_MSG_RESET_DELAY)
     self._sock.send(_MSG_INIT)
     time.sleep(_MSG_INIT_DELAY)
 

@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
-import os
-import sys
-import PIL
-import time
-import gevent
+
 import atexit
+import gevent
 import logging
+import os
+import PIL
+import re
 import StringIO
 import subprocess
+import sys
+import time
 
 from PIL import Image
 from PIL import ImageChops
@@ -30,7 +32,7 @@ MPD_CONFIG_FILE = MPD_DIR + '/mpd.conf'
 MPD_DB_FILE = MPD_DIR + '/tag_cache'
 MPD_PID_FILE = MPD_DIR + '/mpd.pid'
 MPD_LOG_FILE = MPD_DIR + '/mpd.log'
-MPD_CARD_ID = 2  # From 'aplay -l'
+MPD_CARD_ID = -1  # From 'aplay -l'
 
 CLIPS_DIR = VENV_DIR + '/clips/'
 PLAYLISTS_DIR = VENV_DIR + '/playlists/'
@@ -120,8 +122,27 @@ class Player(object):
             if not os.path.exists(d):
                 os.makedirs(d)
 
+        self._update_card_id()
+
         with open(MPD_CONFIG_FILE, 'w') as out:
             out.write(MPD_CONFIG_TPL % globals())
+
+    def _update_card_id(self):
+        global MPD_CARD_ID
+        if MPD_CARD_ID == -1:
+            with open('/proc/asound/modules') as f:
+                alsa_modules = f.readlines()
+            re_term = re.compile("\s*(\d*)\s*snd_usb_audio\s*")
+            for line in alsa_modules:
+                m = re_term.match(line)
+                if m:
+                    MPD_CARD_ID = int(m.group(1))
+                    logging.info('Located USB card #%s' % MPD_CARD_ID)
+                    break
+            if MPD_CARD_ID == -1:
+                logging.info('Unable to find USB card id')
+                MPD_CARD_ID = 1  # Maybe better than nothing
+
 
     def _stop_mpd(self):
         self._config_mpd()
