@@ -129,20 +129,21 @@ class Player(object):
 
     def _update_card_id(self):
         global MPD_CARD_ID
-        if MPD_CARD_ID == -1:
-            with open('/proc/asound/modules') as f:
-                alsa_modules = f.readlines()
-            re_term = re.compile("\s*(\d*)\s*snd_usb_audio\s*")
-            for line in alsa_modules:
-                m = re_term.match(line)
-                if m:
-                    MPD_CARD_ID = int(m.group(1))
-                    logging.info('Located USB card #%s' % MPD_CARD_ID)
-                    break
-            if MPD_CARD_ID == -1:
-                logging.info('Unable to find USB card id')
-                MPD_CARD_ID = 1  # Maybe better than nothing
+        if MPD_CARD_ID != -1:
+            return
 
+        with open('/proc/asound/modules') as f:
+            alsa_modules = f.readlines()
+        re_term = re.compile("\s*(\d*)\s*snd_usb_audio\s*")
+        for line in alsa_modules:
+            m = re_term.match(line)
+            if m:
+                MPD_CARD_ID = int(m.group(1))
+                logging.info('Located USB card #%s' % MPD_CARD_ID)
+                break
+        if MPD_CARD_ID == -1:
+            logging.info('Unable to find USB card id')
+            MPD_CARD_ID = 1  # Maybe better than nothing
 
     def _stop_mpd(self):
         self._config_mpd()
