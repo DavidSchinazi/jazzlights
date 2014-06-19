@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
+#
+# Controls TCL controller.
 
 import binascii
 import socket
 import time
+
+from .tcl_layout import TclLayout
 
 _MSG_INIT = bytearray([0xC5, 0x77, 0x88, 0x00, 0x00])
 _MSG_INIT_DELAY = 0.1
@@ -35,9 +39,10 @@ class TclRenderer(object):
        renderer.send_frame(image_color)
   """
 
-  def __init__(self, controller_id):
+  def __init__(self, controller_id, layout_file):
     self._controller_id = controller_id
     self._init_sent = False
+    self._layout = TclLayout(layout_file)
     self._connect()
 
   def _connect(self):

@@ -72,7 +72,7 @@ class Player(object):
         self._frame = None
         self._prev_frame_file = ''
 
-        self._tcl = TclRenderer(TCL_CONTROLLER)
+        self._tcl = TclRenderer(TCL_CONTROLLER, 'dfplayer/layout.dxf')
         self._tcl.set_dimensions(FRAME_WIDTH, FRAME_HEIGHT)
 
     def __str__(self):
