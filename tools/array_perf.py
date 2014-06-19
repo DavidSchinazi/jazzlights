@@ -7,23 +7,23 @@ import time
 
 def create_normal_array(size):
   arr = []
-  for i in range(0, size):
+  for i in xrange(0, size):
     arr.append(i)
   return arr
 
 def create_byte_array(size):
   arr = array.array('B')
-  for i in range(0, size):
+  for i in xrange(0, size):
     arr.append(i & 0xFF)
   return arr
 
 def write_array(arr):
-  for i in range(0, len(arr)):
+  for i in xrange(0, len(arr)):
     arr[i] = i & 0xFF
 
 def read_array(arr):
   sum = 0
-  for i in range(0, len(arr)):
+  for i in xrange(0, len(arr)):
     sum += arr[i]
   if sum == -1:
     print 'Sum is -1, please ignore this fact'

@@ -46,6 +46,8 @@ subprocess.check_call(['easy_install', 'pip'])
 # PIL and Pillow cannot coexist.
 # subprocess.check_call(['pip', 'uninstall', 'PIL'])
 
+subprocess.check_call(['pip', 'install', 'dxfgrabber'])
+subprocess.check_call(['pip', 'install', 'flask'])
 subprocess.check_call(['pip', 'install', 'pillow'])
 subprocess.check_call(['pip', 'install', 'virtualenv'])
 
