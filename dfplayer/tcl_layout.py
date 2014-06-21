@@ -19,11 +19,17 @@ class _Line(object):
     raise Exception('Unknown end of line')
 
 
-class _Strand(object):
+class Strand(object):
 
   def __init__(self, id):
     self._id = id
     self._coords = []
+
+  def get_id(self):
+    return self._id
+
+  def get_coords(self):
+    return list(self._coords)
 
 
 class TclLayout(object):
@@ -35,7 +41,7 @@ class TclLayout(object):
     self._parse(dxf)
 
   def get_strands(self):
-    return self._strands
+    return list(self._strands)
 
   def _parse(self, dxf):
     anchors = {}
@@ -68,7 +74,7 @@ class TclLayout(object):
         raise Exception('Unsupported DXF entity type %s', e.dxftype)
 
     for id, id_coord in anchors.items():
-      strand = _Strand(id)
+      strand = Strand(id)
       self._strands.append(strand)
       prev_coord = id_coord
       while True:

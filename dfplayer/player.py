@@ -3,6 +3,7 @@
 import atexit
 import gevent
 import logging
+import math
 import os
 import PIL
 import re
@@ -56,6 +57,41 @@ audio_output {
 '''
 
 
+def _get_time_millis():
+    return int(round(time.time() * 1000))
+
+
+# TODO(igorc): Move this into a different file
+class Stats(object):
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self._values = []
+        self._sum = 0
+
+    def add(self, v):
+        v = float(v)
+        self._values.append(v)
+        self._sum += v
+
+    def get_average(self):
+        if len(self._values) == 0:
+            return 0
+        return self._sum / len(self._values)
+
+    def get_stddev(self):
+        if len(self._values) == 0:
+            return 0
+        squares = 0
+        avg = self.get_average()
+        for v in self._values:
+            d = v - avg
+            squares += d * d
+        return math.sqrt(squares / len(self._values))
+
+
 class Player(object):
 
     def __init__(self):
@@ -71,14 +107,26 @@ class Player(object):
         self._effect = None
         self._frame = None
         self._prev_frame_file = ''
+        self._reset_stats()
 
         self._tcl = TclRenderer(TCL_CONTROLLER, 'dfplayer/layout.dxf')
         self._tcl.set_dimensions(FRAME_WIDTH, FRAME_HEIGHT)
 
     def __str__(self):
-        elapsed = int(self.elapsed_time)
-        return 'Player [%s %s %02d:%02d]' % (self.status,
-                self.clip_name, elapsed / 60, elapsed % 60)
+        elapsed_time = self.elapsed_time
+        elapsed_sec = int(elapsed_time)
+        if elapsed_time:
+            fps = int(float(self._frame_render_count) / elapsed_time)
+        else:
+            fps = FPS
+        return ('Player [%s %s %02d:%02d] (fps=%s, skip=%s, delay=%s/%s, '
+                'render=%d)') % (
+                   self.status, self.clip_name,
+                   elapsed_sec / 60, elapsed_sec % 60,
+                   fps, self._skipped_frame_count,
+                   int(self._frame_delay_stats.get_average()),
+                   int(self._frame_delay_stats.get_stddev()),
+                   int(self._render_durations.get_average()))
 
     def _fetch_playlist(self):
         self.playlist = []
@@ -112,7 +160,10 @@ class Player(object):
             logging.info('MPD Error = \'%s\'', s['error'])
 
         if self.status != 'idle':
-            self.clip_name = self.playlist[self.songid_to_idx[s['songid']]]
+            new_clip = self.playlist[self.songid_to_idx[s['songid']]]
+            if new_clip != self.clip_name:
+                self._reset_stats()
+            self.clip_name = new_clip
             self._mpd_elapsed_time = float(s['elapsed'])
 
         # print 'MPD status', s
@@ -239,14 +290,18 @@ class Player(object):
             # at 30 FPS, while we generate at 16 FPS max. This may cause some
             # uneven frame rate. Basically, there is no guarantee that the
             # caller's timing  will be well-aligned with elapsed frame counter.
-            frame_num = 1 + int(self.elapsed_time * FPS)
+            elapsed_time = self.elapsed_time
+            frame_num = int(elapsed_time * FPS)
             frame_file = CLIPS_DIR + '%s/frame%05d.jpg' \
-                % (self.clip_name, frame_num)
+                % (self.clip_name, frame_num + 1)
             if frame_file == self._prev_frame_file:
                 return self._frame
+
             if not os.path.exists(frame_file):
                 # TODO(igorc): Handle the case where '_frame' was neevr loaded.
                 return self._frame
+
+            start_time = time.time()
             with open(frame_file, 'rb') as imgfile:
                 img = Image.open(imgfile)
                 img.load()
@@ -256,7 +311,27 @@ class Player(object):
                 self._frame = img
             self._prev_frame_file = frame_file
             self._tcl.send_frame(list(self._frame.getdata()))
+            duration_ms = int(round((time.time() - start_time) * 1000))
+
+            if frame_num >= self._prev_frame_num:
+                self._skipped_frame_count += (
+                    frame_num - self._prev_frame_num - 1)
+            else:
+                self._reset_stats()
+            self._frame_render_count += 1
+            self._prev_frame_num = frame_num
+            frame_delay = elapsed_time - float(frame_num) / FPS
+            self._frame_delay_stats.add(frame_delay * 1000)
+            self._render_durations.add(duration_ms)
+
             return self._frame
+
+    def _reset_stats(self):
+        self._prev_frame_num = -1
+        self._frame_render_count = 0
+        self._skipped_frame_count = 0
+        self._frame_delay_stats = Stats()
+        self._render_durations = Stats()
 
     def play_effect(self, name, **kwargs):
         logging.info("Playing %s: %s", name, kwargs)
