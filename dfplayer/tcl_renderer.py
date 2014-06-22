@@ -49,6 +49,9 @@ class TclRenderer(object):
     self._height = height
     self._layout = TclLayout(layout_file, width - 1, height - 1)
 
+  def get_layout_coords(self):
+    return self._layout.get_all_coords()
+
   def _connect(self):
     self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     self._sock.setblocking(0)

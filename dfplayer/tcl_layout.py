@@ -57,6 +57,12 @@ class TclLayout(object):
       return None
     return self._strands[id].get_coords()
 
+  def get_all_coords(self):
+    result = []
+    for s in self._strands:
+      result += s._coords
+    return result
+
   def _parse(self, dxf):
     anchors = {}
     circles = set()
@@ -153,6 +159,7 @@ class TclLayout(object):
       for c in s._coords:
         x = (c[0] - min_x) / width * self._max_x
         y = (c[1] - min_y) / height * self._max_y
+        y = self._max_y - y
         new_coords.append((int(round(x)), int(round(y))))
       s._coords = new_coords
 

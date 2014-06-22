@@ -128,6 +128,12 @@ class Player(object):
                    int(self._frame_delay_stats.get_stddev()),
                    int(self._render_durations.get_average()))
 
+    def get_frame_size(self):
+        return (FRAME_WIDTH, FRAME_HEIGHT)
+
+    def get_tcl_coords(self):
+        return self._tcl.get_layout_coords()
+
     def _fetch_playlist(self):
         self.playlist = []
         self.songid_to_idx = {}
