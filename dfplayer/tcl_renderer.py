@@ -32,18 +32,22 @@ _STRAND_BIT_MASK = bytearray([0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80])
 class TclRenderer(object):
   """To use this class:
        renderer = TclRenderer(controller_id)
-       renderer.set_dimensions(width, height)
+       renderer.set_layout('layout.dxf', width, height)
        # 'image_colors' has tuples with 3 RGB bytes for each pixel,
        # with 'height' number of sequential rows, each row having
        # length of 'width' pixels.
        renderer.send_frame(image_color)
   """
 
-  def __init__(self, controller_id, layout_file):
+  def __init__(self, controller_id):
     self._controller_id = controller_id
     self._init_sent = False
-    self._layout = TclLayout(layout_file)
     self._connect()
+
+  def set_layout(self, layout_file, width, height):
+    self._width = width
+    self._height = height
+    self._layout = TclLayout(layout_file, width - 1, height - 1)
 
   def _connect(self):
     self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -63,10 +67,6 @@ class TclRenderer(object):
     time.sleep(_MSG_RESET_DELAY)
     self._sock.send(_MSG_INIT)
     time.sleep(_MSG_INIT_DELAY)
-
-  def set_dimensions(self, width, height):
-    self._width = width
-    self._height = height
 
   def send_frame(self, image_colors):
     self._init_controller()
@@ -118,12 +118,15 @@ class TclRenderer(object):
     if len(image_colors) != expected_pixels:
       raise Exception('Unexpected image size of %d', len(image_colors))
     strands_colors = []
-    for strand_id in range(0, 8):
+    for strand_id in xrange(0, 8):
       current_colors = []
-      for pos in range(0, _STRAND_LENGTH):
-        # For now pick a pixel at semi-random
-        # TODO(igorc): Implement correct strand mapping
-        color_idx = (strand_id * _STRAND_LENGTH + pos) % expected_pixels
+      strand_coords = self._layout.get_strand_coords(strand_id)
+      if not strand_coords:
+        continue
+      for pos in xrange(0, min(len(strand_coords), _STRAND_LENGTH)):
+        # color_idx = (strand_id * _STRAND_LENGTH + pos) % expected_pixels
+        coord = strand_coords[pos]
+        color_idx = coord[1] * self._width + coord[0]
         current_colors.append([
             image_colors[color_idx][0],
             image_colors[color_idx][1],
@@ -133,11 +136,11 @@ class TclRenderer(object):
 
   def _convert_strands_to_frame_data(self, strands_colors):
     result = bytearray()
-    for led_id in range(0, _STRAND_LENGTH):
+    for led_id in xrange(0, _STRAND_LENGTH):
       result.extend(self._build_frame_color_seq(strands_colors, led_id, 2))
       result.extend(self._build_frame_color_seq(strands_colors, led_id, 1))
       result.extend(self._build_frame_color_seq(strands_colors, led_id, 0))
-    for i in range(0, len(result)):
+    for i in xrange(0, len(result)):
       result[i] = (result[i] + _FRAME_BLACK_COLOR) & 0xFF
     return result
 
@@ -146,7 +149,7 @@ class TclRenderer(object):
     color_bit_mask = 0x80
     while color_bit_mask > 0:
       current_byte = 0
-      for strand_id in range(0, len(strands_colors)):
+      for strand_id in xrange(0, len(strands_colors)):
         strand_colors = strands_colors[strand_id]
         if led_id < len(strand_colors):
           color = strand_colors[led_id][color_component]

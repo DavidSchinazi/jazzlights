@@ -3,6 +3,7 @@
 # Parses layour DXF file format.
 
 import dxfgrabber
+import sys
 
 
 class _Line(object):
@@ -34,14 +35,27 @@ class Strand(object):
 
 class TclLayout(object):
 
-  def __init__(self, file_path):
+  def __init__(self, file_path, max_x, max_y):
     self._strands = []
+    self._max_x = max_x
+    self._max_y = max_y
 
     dxf = dxfgrabber.readfile(file_path)
     self._parse(dxf)
 
+    self._normalize()
+
+    #for strand in self._strands:
+    #  print 'Strand #%s, %s leds = %s' % (
+    #      strand._id, len(strand._coords), strand._coords)
+
   def get_strands(self):
     return list(self._strands)
+
+  def get_strand_coords(self, id):
+    if id >= len(self._strands):
+      return None
+    return self._strands[id].get_coords()
 
   def _parse(self, dxf):
     anchors = {}
@@ -66,7 +80,7 @@ class TclLayout(object):
         start = self._get_coord(e.start)
         end = self._get_coord(e.end)
         if start == end:
-          raise Exception('Line of zero length')
+          raise Exception('Line of zero length: %s' % [start])
         line = _Line(start, end)
         self._add_dot(dots, start, line)
         self._add_dot(dots, end, line)
@@ -103,14 +117,10 @@ class TclLayout(object):
       if len(lines) != 0:
         raise Exception('Some dots remain unconsumed: %s', [coord])
 
-    # for strand in self._strands:
-    #   print 'Strand #%s, %s leds = %s' % (
-    #       strand._id, len(strand._coords), strand._coords)
-
   def _get_coord(self, c):
     if len(c) == 3 and c[2] != 0:
-      raise Exception('Non-zero Z coordinate')
-    return (c[0], c[1])
+      raise Exception('Non-zero Z coordinate in %s' % [c])
+    return (float(c[0]), float(c[1]))
 
   def _add_dot(self, dots, coord, line):
     if coord not in dots:
@@ -118,4 +128,31 @@ class TclLayout(object):
     dots[coord].append(line)
     if len(dots[coord]) > 2:
       raise Exception('More than one line connected at one dot %s', [coord])
+
+  def _normalize(self):
+    # Make all coordinates be in range of [0-max_xy].
+    min_x = sys.float_info.max
+    min_y = sys.float_info.max
+    max_x = sys.float_info.min
+    max_y = sys.float_info.min
+    for s in self._strands:
+      for c in s._coords:
+        x, y = c[0], c[1]
+        if x < min_x:
+          min_x = x
+        if x > max_x:
+          max_x = x
+        if y < min_y:
+          min_y = y
+        if y > max_y:
+          max_y = y
+    width = max_x - min_x
+    height = max_y - min_y
+    for s in self._strands:
+      new_coords = []
+      for c in s._coords:
+        x = (c[0] - min_x) / width * self._max_x
+        y = (c[1] - min_y) / height * self._max_y
+        new_coords.append((int(round(x)), int(round(y))))
+      s._coords = new_coords
 
