@@ -3,6 +3,7 @@
 # Controls TCL controller.
 
 import binascii
+import math
 import socket
 import time
 
@@ -42,6 +43,7 @@ class TclRenderer(object):
   def __init__(self, controller_id):
     self._controller_id = controller_id
     self._init_sent = False
+    self.set_gamma(2.4)
     self._connect()
 
   def set_layout(self, layout_file, width, height):
@@ -51,6 +53,30 @@ class TclRenderer(object):
 
   def get_layout_coords(self):
     return self._layout.get_all_coords()
+
+  def set_gamma(self, gamma):
+    # 1.0 is uncorrected gamma, which is perceived as "too bright"
+    # in the middle. 2.4 is a good starting point. Changing this value
+    # affects mid-range pixels - higher values produce dimmer pixels.
+    self.set_gamma_ranges((0, 255, gamma), (0, 255, gamma), (0, 255, gamma))
+
+  def set_gamma_ranges(self, r, g, b):
+    if (r[0] < 0 or r[1] > 255 or r[2] <= 0 or
+        g[0] < 0 or g[1] > 255 or g[2] <= 0 or
+        b[0] < 0 or b[1] > 255 or b[2] <= 0):
+      print 'Incorrect gamma values %s, %s, %s' % (r, g, b)
+      return
+    self._gamma_r = []
+    self._gamma_g = []
+    self._gamma_b = []
+    for c in xrange(0, 256):
+      d = float(c) / 255.0
+      self._gamma_r.append(
+          int(r[0] + math.floor((r[1] - r[0]) * math.pow(d, r[2]) + 0.5)))
+      self._gamma_g.append(
+          int(g[0] + math.floor((g[1] - g[0]) * math.pow(d, g[2]) + 0.5)))
+      self._gamma_b.append(
+          int(b[0] + math.floor((b[1] - b[0]) * math.pow(d, b[2]) + 0.5)))
 
   def _connect(self):
     self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -131,9 +157,9 @@ class TclRenderer(object):
         coord = strand_coords[pos]
         color_idx = coord[1] * self._width + coord[0]
         current_colors.append([
-            image_colors[color_idx][0],
-            image_colors[color_idx][1],
-            image_colors[color_idx][2]])
+            self._gamma_r[image_colors[color_idx][0]],
+            self._gamma_g[image_colors[color_idx][1]],
+            self._gamma_b[image_colors[color_idx][2]]])
       strands_colors.append(current_colors)
     return strands_colors
 

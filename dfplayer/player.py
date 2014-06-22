@@ -104,6 +104,7 @@ class Player(object):
         self._fetch_playlist()
         self._fetch_state()
 
+        self._target_gamma = 2.4
         self._split_sides = False
         self._effect = None
         self._frame = None
@@ -112,6 +113,7 @@ class Player(object):
 
         self._tcl = TclRenderer(TCL_CONTROLLER)
         self._tcl.set_layout('dfplayer/layout.dxf', FRAME_WIDTH, FRAME_HEIGHT)
+        self._tcl.set_gamma(self._target_gamma)
 
     def __str__(self):
         elapsed_time = self.elapsed_time
@@ -137,6 +139,18 @@ class Player(object):
 
     def toggle_split_sides(self):
         self._split_sides = not self._split_sides
+
+    def gamma_up(self):
+        self._target_gamma += 0.1
+        print 'Setting gamma to %s' % self._target_gamma
+        self._tcl.set_gamma(self._target_gamma)
+
+    def gamma_down(self):
+        self._target_gamma -= 0.1
+        if self._target_gamma <= 0:
+            self._target_gamma = 0.1
+        print 'Setting gamma to %s' % self._target_gamma
+        self._tcl.set_gamma(self._target_gamma)
 
     def _fetch_playlist(self):
         self.playlist = []
@@ -322,6 +336,8 @@ class Player(object):
             # Otherwise they can crash TCL renderer.
             if self._split_sides:
                 sub_img = img.resize((img.size[0] / 2, img.size[1]))
+                #sub_img = img.crop((
+                #    img.size[0] / 4, 0, img.size[0] * 3 / 4, img.size[1]))
                 self._frame = Image.new('RGB', img.size)
                 self._frame.paste(sub_img, (0, 0))
                 self._frame.paste(sub_img, (sub_img.size[0], 0))
