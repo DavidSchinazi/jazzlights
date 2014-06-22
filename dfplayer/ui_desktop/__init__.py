@@ -62,6 +62,7 @@ class PlayerApp(Frame):
         self.root.bind('q', lambda e: player.volume_up())
         self.root.bind('a', lambda e: player.volume_down())
         self.root.bind('m', lambda e: self.switch_mask())
+        self.root.bind('s', lambda e: player.toggle_split_sides())
         self.root.bind('0', lambda e: player.stop_effect())
         self.root.bind('1', lambda e: player.play_effect('textticker'))
         self.root.bind('2', lambda e: player.play_effect('solidcolor'))

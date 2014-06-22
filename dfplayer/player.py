@@ -104,6 +104,7 @@ class Player(object):
         self._fetch_playlist()
         self._fetch_state()
 
+        self._split_sides = False
         self._effect = None
         self._frame = None
         self._prev_frame_file = ''
@@ -133,6 +134,9 @@ class Player(object):
 
     def get_tcl_coords(self):
         return self._tcl.get_layout_coords()
+
+    def toggle_split_sides(self):
+        self._split_sides = not self._split_sides
 
     def _fetch_playlist(self):
         self.playlist = []
@@ -311,9 +315,17 @@ class Player(object):
             with open(frame_file, 'rb') as imgfile:
                 img = Image.open(imgfile)
                 img.load()
-                if self._effect is not None:
-                    if not self._effect(img, self.elapsed_time):
-                        self._effect = None
+            if self._effect is not None:
+                if not self._effect(img, self.elapsed_time):
+                    self._effect = None
+            # TODO(igorc): Check that images are of proper size.
+            # Otherwise they can crash TCL renderer.
+            if self._split_sides:
+                sub_img = img.resize((img.size[0] / 2, img.size[1]))
+                self._frame = Image.new('RGB', img.size)
+                self._frame.paste(sub_img, (0, 0))
+                self._frame.paste(sub_img, (sub_img.size[0], 0))
+            else:
                 self._frame = img
             self._prev_frame_file = frame_file
             self._tcl.send_frame(list(self._frame.getdata()))
