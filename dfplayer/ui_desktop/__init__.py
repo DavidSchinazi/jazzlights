@@ -73,8 +73,10 @@ class PlayerApp(Frame):
         self.root.bind('5', lambda e: player.play_effect('blink'))
         self.root.bind('6', lambda e: player.play_effect('chameleon'))
         self.root.bind('<space>', lambda e: player.toggle())
-        self.root.bind('<Left>', lambda e: player.prev())
-        self.root.bind('<Right>', lambda e: player.next())
+        self.root.bind('<Up>', lambda e: player.prev())
+        self.root.bind('<Down>', lambda e: player.next())
+        self.root.bind('<Left>', lambda e: player.skip_backward())
+        self.root.bind('<Right>', lambda e: player.skip_forward())
         self.root.protocol('WM_DELETE_WINDOW', lambda : self.quit())
         self.root.after(1000 / FPS, lambda : self.update())
         self.running = True

@@ -118,18 +118,19 @@ class Player(object):
     def __str__(self):
         elapsed_time = self.elapsed_time
         elapsed_sec = int(elapsed_time)
-        if elapsed_time:
+        if elapsed_time > 2:
             fps = int(float(self._frame_render_count) / elapsed_time)
         else:
             fps = FPS
         return ('Player [%s %s %02d:%02d] (fps=%s, skip=%s, delay=%s/%s, '
-                'render=%d)') % (
+                'render=%d/%d)') % (
                    self.status, self.clip_name,
                    elapsed_sec / 60, elapsed_sec % 60,
                    fps, self._skipped_frame_count,
                    int(self._frame_delay_stats.get_average()),
                    int(self._frame_delay_stats.get_stddev()),
-                   int(self._render_durations.get_average()))
+                   int(self._render_durations.get_average()),
+                   int(self._render_durations.get_stddev()))
 
     def get_frame_size(self):
         return (FRAME_WIDTH, FRAME_HEIGHT)
@@ -184,7 +185,8 @@ class Player(object):
             logging.info('MPD Error = \'%s\'', s['error'])
 
         if self.status != 'idle':
-            new_clip = self.playlist[self.songid_to_idx[s['songid']]]
+            self._songid = s['songid']
+            new_clip = self.playlist[self.songid_to_idx[self._songid]]
             if new_clip != self.clip_name:
                 self._reset_stats()
             self.clip_name = new_clip
@@ -304,6 +306,19 @@ class Player(object):
     def prev(self):
         with self.lock:
             self.mpd.previous()
+
+    def skip_forward(self):
+        self.skip(20)
+
+    def skip_backward(self):
+        self.skip(-20)
+
+    def skip(self, seconds):
+        if self.status == 'idle':
+            return
+        dst = int(self._mpd_elapsed_time + seconds)
+        with self.lock:
+            self.mpd.seekid(self._songid, '%s' % dst)
 
     def get_frame_image(self):
         if self.status == 'idle':
