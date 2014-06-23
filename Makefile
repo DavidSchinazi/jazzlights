@@ -9,7 +9,6 @@ run: develop
 	env/bin/dfplayer --listen 127.0.0.1:8080
 
 clips: develop
-	-rm -rf env/clips
 	-rm -rf env/playlists
 	env/bin/dfprepr clips
 

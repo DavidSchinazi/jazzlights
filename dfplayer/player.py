@@ -329,9 +329,11 @@ class Player(object):
             # at 30 FPS, while we generate at 16 FPS max. This may cause some
             # uneven frame rate. Basically, there is no guarantee that the
             # caller's timing  will be well-aligned with elapsed frame counter.
+            # TODO(igorc): Preload first 5 frames of every clip, and
+            # keep the next 5 frames always preloaded too.
             elapsed_time = self.elapsed_time
             frame_num = int(elapsed_time * FPS)
-            frame_file = CLIPS_DIR + '%s/frame%05d.jpg' \
+            frame_file = CLIPS_DIR + '%s/frame%06d.jpg' \
                 % (self.clip_name, frame_num + 1)
             if frame_file == self._prev_frame_file:
                 return self._frame
