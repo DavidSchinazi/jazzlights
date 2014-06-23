@@ -6,7 +6,7 @@ import logging
 from PIL import Image, ImageFont, ImageDraw, ImageChops
 
 from ..util import PROJECT_DIR
-from ..player import FRAME_WIDTH,FRAME_HEIGHT
+from ..player import FRAME_HEIGHT
 from ..effect import FixedDurationEffect, register
 
 class TextTicker(FixedDurationEffect):

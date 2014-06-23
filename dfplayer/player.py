@@ -23,7 +23,8 @@ from .effect import load as load_effect
 from .tcl_renderer import TclRenderer
 
 FPS = 16
-FRAME_WIDTH = 500
+_SCREEN_FRAME_WIDTH = 500
+IMAGE_FRAME_WIDTH = _SCREEN_FRAME_WIDTH / 2
 FRAME_HEIGHT = 50
 TCL_CONTROLLER = 1
 
@@ -113,7 +114,8 @@ class Player(object):
         self._reset_stats()
 
         self._tcl = TclRenderer(TCL_CONTROLLER)
-        self._tcl.set_layout('dfplayer/layout.dxf', FRAME_WIDTH, FRAME_HEIGHT)
+        self._tcl.set_layout(
+            'dfplayer/layout.dxf', _SCREEN_FRAME_WIDTH, FRAME_HEIGHT)
         self._tcl.set_gamma(self._target_gamma)
 
     def __str__(self):
@@ -134,14 +136,17 @@ class Player(object):
                    int(self._render_durations.get_stddev()))
 
     def get_status_str(self):
-        elapsed_time = self.elapsed_time
+        if self._seek_time:
+            elapsed_time = self._seek_time
+        else:
+            elapsed_time = self.elapsed_time
         elapsed_sec = int(elapsed_time)
         return ('%s / %s / %02d:%02d') % (
             self.status.upper(), self.clip_name,
             elapsed_sec / 60, elapsed_sec % 60)
 
     def get_frame_size(self):
-        return (FRAME_WIDTH, FRAME_HEIGHT)
+        return (_SCREEN_FRAME_WIDTH, FRAME_HEIGHT)
 
     def get_tcl_coords(self):
         return self._tcl.get_layout_coords()
@@ -358,12 +363,22 @@ class Player(object):
             with open(frame_file, 'rb') as imgfile:
                 img = Image.open(imgfile)
                 img.load()
+            if img.size[0] != IMAGE_FRAME_WIDTH or img.size[1] != FRAME_HEIGHT:
+                print 'Unexpected image size for %s = %s' % (
+                    frame_file, [img.size])
+                return self._frame
+
             if self._effect is not None:
                 if not self._effect(img, self.elapsed_time):
                     self._effect = None
-            # TODO(igorc): Check that images are of proper size.
-            # Otherwise they can crash TCL renderer.
-            if self._split_sides:
+
+            if _SCREEN_FRAME_WIDTH / IMAGE_FRAME_WIDTH == 2:
+                # Pre-split images, just copy them twice.
+                self._frame = Image.new(
+                    'RGB', (_SCREEN_FRAME_WIDTH, FRAME_HEIGHT))
+                self._frame.paste(img, (0, 0))
+                self._frame.paste(img, (IMAGE_FRAME_WIDTH, 0))
+            elif self._split_sides:
                 sub_img = img.resize((img.size[0] / 2, img.size[1]))
                 #sub_img = img.crop((
                 #    img.size[0] / 4, 0, img.size[0] * 3 / 4, img.size[1]))
@@ -372,6 +387,7 @@ class Player(object):
                 self._frame.paste(sub_img, (sub_img.size[0], 0))
             else:
                 self._frame = img
+
             self._prev_frame_file = frame_file
             self._tcl.send_frame(list(self._frame.getdata()))
             duration_ms = int(round((time.time() - start_time) * 1000))
