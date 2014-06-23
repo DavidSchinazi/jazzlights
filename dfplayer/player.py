@@ -106,6 +106,7 @@ class Player(object):
 
         self._target_gamma = 2.4
         self._split_sides = False
+        self._seek_time = None
         self._effect = None
         self._frame = None
         self._prev_frame_file = ''
@@ -131,6 +132,13 @@ class Player(object):
                    int(self._frame_delay_stats.get_stddev()),
                    int(self._render_durations.get_average()),
                    int(self._render_durations.get_stddev()))
+
+    def get_status_str(self):
+        elapsed_time = self.elapsed_time
+        elapsed_sec = int(elapsed_time)
+        return ('%s / %s / %02d:%02d') % (
+            self.status.upper(), self.clip_name,
+            elapsed_sec / 60, elapsed_sec % 60)
 
     def get_frame_size(self):
         return (FRAME_WIDTH, FRAME_HEIGHT)
@@ -171,6 +179,7 @@ class Player(object):
             s = self.mpd.status()
         self._mpd_state_ts = time.time()
         self._volume = 0.01 * float(s['volume'])
+        self._seek_time = None
         if s['state'] == 'play':
             self.status = 'playing'
         elif s['state'] == 'pause':
@@ -316,9 +325,12 @@ class Player(object):
     def skip(self, seconds):
         if self.status == 'idle':
             return
-        dst = int(self._mpd_elapsed_time + seconds)
+        if self._seek_time:
+            self._seek_time = int(self._seek_time + seconds)
+        else:
+            self._seek_time = int(self._mpd_elapsed_time + seconds)
         with self.lock:
-            self.mpd.seekid(self._songid, '%s' % dst)
+            self.mpd.seekid(self._songid, '%s' % self._seek_time)
 
     def get_frame_image(self):
         if self.status == 'idle':

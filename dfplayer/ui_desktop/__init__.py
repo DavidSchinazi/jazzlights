@@ -37,10 +37,14 @@ class PlayerApp(Frame):
         Frame.__init__(self, root)
         self.root = root
         self.pack()
-        canvas = Canvas(
+        self._canvas = Canvas(
             root, width=WIN_WIDTH, height=WIN_HEIGHT,
             borderwidth=0, background='black')
-        canvas.pack()
+        self._canvas.pack()
+
+        self._main_label = self._canvas.create_text(
+            WIN_WIDTH / 2, WIN_HEIGHT / 20, fill='#fff')
+        self._canvas.itemconfig(self._main_label, text="this is the text")
 
         self.player = player
 
@@ -57,7 +61,8 @@ class PlayerApp(Frame):
         self._led_mask = self._led_mask1
 
         self._img = ImageTk.PhotoImage('RGB', img_size)
-        canvas.create_image(WIN_WIDTH / 2, WIN_HEIGHT / 2, image=self._img)
+        self._canvas.create_image(
+            WIN_WIDTH / 2, WIN_HEIGHT / 2, image=self._img)
 
         self.root.bind('q', lambda e: player.volume_up())
         self.root.bind('a', lambda e: player.volume_down())
@@ -113,6 +118,8 @@ class PlayerApp(Frame):
                     (0, 0, self._led_mask.size[0], self._led_mask.size[1]),
                     self._led_mask)
                 self._img.paste(frame)
+            self._canvas.itemconfig(
+                self._main_label, text=self.player.get_status_str())
             self.root.after(1000 / FPS, lambda : self.update())
         except KeyboardInterrupt:
             self.quit()
