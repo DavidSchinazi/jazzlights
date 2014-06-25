@@ -335,6 +335,7 @@ class Player(object):
         else:
             self._seek_time = int(self._mpd_elapsed_time + seconds)
         with self.lock:
+            # TODO(igorc): Passed None here! (around start/end of track?)
             self.mpd.seekid(self._songid, '%s' % self._seek_time)
 
     def get_frame_image(self):
