@@ -1,6 +1,14 @@
 // Controls TCL controller.
 
+#include <arpa/inet.h>
+#include <fcntl.h>
+#include <netinet/in.h>
 #include <stdio.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <time.h>
+#include <unistd.h>
 
 #define uint8_t  unsigned char
 
@@ -77,6 +85,7 @@ class TclRenderer {
   bool Connect();
   bool InitController();
   void SendFrame(uint8_t* frame_data);
+  bool SendPacket(const void* data, int size);
   void ConsumeReplyData();
 
   static uint8_t* ConvertStrandsToFrame(Strands* strands);
@@ -93,31 +102,23 @@ class TclRenderer {
   double gamma_b_[256];
   Layout layout_;
   int socket_;
+  bool require_reset_;
 };
 
 
-static const uint8_t MSG_INIT[] = {0xC5, 0x77, 0x88, 0x00, 0x00};
-static const double MSG_INIT_DELAY = 0.1;
-static const uint8_t MSG_START_FRAME[] = {0xC5, 0x77, 0x88, 0x00, 0x00};
-static const double MSG_START_FRAME_DELAY = 0.0005;
-static const uint8_t MSG_END_FRAME[] = {0xAA, 0x01, 0x8C, 0x01, 0x55};
-static const uint8_t MSG_RESET[] = {0xC2, 0x77, 0x88, 0x00, 0x00};
-static const double _MSG_RESET_DELAY = 5;
-static const uint8_t MSG_REPLY[] = {0x55, 0x00, 0x00, 0x00, 0x00};
+#define FRAME_DATA_LEN  (STRAND_LENGTH * 8 * 3)
 
-static const uint8_t FRAME_MSG_PREFIX[] = {
-    0x88, 0x00, 0x68, 0x3F, 0x2B, 0xFD,
-    0x60, 0x8B, 0x95, 0xEF, 0x04, 0x69};
-static const uint8_t FRAME_MSG_SUFFIX[] = {0x00, 0x00, 0x00, 0x00};
-static const int FRAME_MSG_SIZE = 1024;
-static const double FRAME_MSG_DELAY = 0.0015;
-static const int FRAME_DATA_LEN = STRAND_LENGTH * 8 * 3;
+
+#define REPORT_ERRNO(name)                           \
+  fprintf(stderr, "Failure in '%s' call: %d, %s",    \
+          name, errno, strerror(errno));
 
 
 TclRenderer::TclRenderer(
     int controller_id, int width, int height, double gamma)
     : controller_id_(controller_id), width_(width), height_(height),
-      init_sent_(false), is_shutting_down_(false), socket_(-1) {
+      init_sent_(false), is_shutting_down_(false), socket_(-1),
+      require_reset_(true) {
   set_gamma(gamma);
   memset(layout, 0, sizeof(layout));
 }
@@ -251,7 +252,19 @@ int TclRenderer::BuildFrameColorSeq(
 }
 
 static void Sleep(double seconds) {
-  // TODO(igorc): Implement sleep.
+  struct timespec req;
+  struct timespec rem;
+  req.tv_sec = (int) seconds;
+  req.tv_nsec = (long) ((seconds - req.tv_sec) * 1000000.0);
+  rem.tv_sec = 0;
+  rem.tv_nsec = 0;
+  while (nanosleep(&req, &rem) == -1) {
+    if (errno != EINTR) {
+      REPORT_ERRNO("nanosleep");
+      break;
+    }
+    req = rem;
+  }
 }
 
 // static
@@ -275,71 +288,160 @@ void TclRenderer::Run() {
 
   }
 
-  if (socket_ != -1)
+  CloseSocket();
+}
+
+void TclRenderer::CloseSocket() {
+  if (socket_ != -1) {
     close(socket_);
+    socket_ = -1;
+  }
 }
 
 bool TclRenderer::Connect() {
-  // TODO(igorc): Add interrupt-safe calls and error handling.
-
-  if (socket_ >= 0)
+  if (socket_ != -1)
     return true;
 
-  socket_ = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-  setblocking(socket_, 0)
-  bind(socket_, ('', 0))
+  socket_ = socket.socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+  if (socket_ == -1) {
+    REPORT_ERRNO("socket");
+    return false;
+  }
 
-  target_ip = ('192.168.60.%s' % (49 + self._controller_id))
-  connect(socket_, (target_ip, 5000))
+  /*if (fcntl(socket_, F_SETFL, O_NONBLOCK, 1) == -1) {
+    REPORT_ERRNO("fcntl");
+    CloseSocket();
+    return false;
+  }*/
+
+  struct sockaddr_in si_local;
+  memset(&si_local, 0, sizeof(si_local));
+  si_local.sin_family = AF_INET;
+  si_local.sin_port = htons(PORT);
+  si_local.sin_addr.s_addr = htonl(INADDR_ANY);
+  if (bind(socket_, &si_local, sizeof(si_local)) == -1) {
+    REPORT_ERRNO("bind");
+    CloseSocket();
+    return false;
+  }
+
+  char addr_str[65];
+  snprintf(addr_str, sizeof(addr_str),
+           "192.168.60.%d", (49 + controller_id_));
+
+  struct sockaddr_in si_remote;
+  memset(&si_remote, 0, sizeof(si_remote));
+  si_remote.sin_family = AF_INET;
+  si_remote.sin_port = htons(5000);
+  if (inet_aton(addr_str, &si_remote.sin_addr) == 0) {
+    fprintf(stderr, "inet_aton() failed\n");
+    CloseSocket();
+    return false;
+  }
+
+  if (TEMP_FAILURE_RETRY(connect(
+          socket_, &si_remote, sizeof(si_remote))) == -1) {
+    REPORT_ERRNO("connect");
+    CloseSocket();
+    return false;
+  }
+
+  return true;
+}
+
+bool TclRenderer::SendPacket(const void* data, int size) {
+  int sent = TEMP_FAILURE_RETRY(send(socket_, data, size, 0));
+  if (sent == -1) {
+    REPORT_ERRNO("send");
+    return false;
+  }
+  if (sent != size) {
+    fprintf(stderr, "Not all data was sent in UDP packet\n");
+    require_reset_ = true;
+    return false;
+  }
   return true;
 }
 
 bool TclRenderer::InitController() {
+  static const uint8_t MSG_INIT[] = {0xC5, 0x77, 0x88, 0x00, 0x00};
+  static const double MSG_INIT_DELAY = 0.1;
+  static const uint8_t MSG_RESET[] = {0xC2, 0x77, 0x88, 0x00, 0x00};
+  static const double MSG_RESET_DELAY = 5;
+
   // TODO(igorc): Re-init if there's still no reply data in several seconds.
   if (!Connect())
     return false;
-  if (init_sent_)
+  if (init_sent_ && !require_reset_)
     return true;
+
+  if (require_reset_) {
+    if (!SendPacket(MSG_RESET, sizeof(MSG_RESET)))
+      return false;
+    require_reset_ = false;
+    Sleep(MSG_RESET_DELAY);
+  }
+
+  if (!SendPacket(MSG_INIT, sizeof(MSG_INIT)))
+    return false;
+  Sleep(MSG_INIT_DELAY);
+
   init_sent_ = true;
-  // TODO(igorc): Look for a better place for reset.
-  send(socket_, MSG_RESET, sizeof(MSG_RESET));
-  sleep(MSG_RESET_DELAY);
-  send(socket_, MSG_INIT, sizeof(MSG_INIT));
-  sleep(MSG_INIT_DELAY);
   return true;
 }
 
-void TclRenderer::SendFrame(uint8_t* frame_data) {
+bool TclRenderer::SendFrame(uint8_t* frame_data) {
+  static const uint8_t MSG_START_FRAME[] = {0xC5, 0x77, 0x88, 0x00, 0x00};
+  static const double MSG_START_FRAME_DELAY = 0.0005;
+  static const uint8_t MSG_END_FRAME[] = {0xAA, 0x01, 0x8C, 0x01, 0x55};
+  static const uint8_t MSG_REPLY[] = {0x55, 0x00, 0x00, 0x00, 0x00};
+  static const uint8_t FRAME_MSG_PREFIX[] = {
+      0x88, 0x00, 0x68, 0x3F, 0x2B, 0xFD,
+      0x60, 0x8B, 0x95, 0xEF, 0x04, 0x69};
+  static const uint8_t FRAME_MSG_SUFFIX[] = {0x00, 0x00, 0x00, 0x00};
+  static const double FRAME_MSG_DELAY = 0.0015;
+  static const int FRAME_DATA_SIZE_IM_MSG = 1024;
+
   ConsumeReplyData();
-  send(socket_, MSG_START_FRAME, sizeof(MSG_START_FRAME));
+  if (!SendPacket(MSG_START_FRAME, sizeof(MSG_START_FRAME)))
+    return false;
   Sleep(MSG_START_FRAME_DELAY);
+
+  uint8_t packet[sizeof(FRAME_MSG_PREFIX) + 1024 + sizeof(FRAME_MSG_SUFFIX)];
+  memcpy(packet, FRAME_MSG_PREFIX, sizeof(FRAME_MSG_PREFIX));
+  memcpy(packet + sizeof(FRAME_MSG_PREFIX) + 1024,
+         FRAME_MSG_SUFFIX, sizeof(FRAME_MSG_SUFFIX));
 
   int message_idx = 0;
   int frame_data_pos = 0;
   while (frame_data_pos < FRAME_DATA_LEN) {
-    frame_data_segment = frame_data[frame_data_pos :
-                                    frame_data_pos + _FRAME_MSG_SIZE]
-    frame_msg = bytearray(_FRAME_MSG_PREFIX)
-    frame_msg.extend(frame_data_segment)
-    frame_msg.extend(_FRAME_MSG_SUFFIX)
-    frame_msg[1] = message_idx
-    frame_data_pos += _FRAME_MSG_SIZE
-    message_idx += 1
-    send(socket_, frame_msg)
-    Sleep(FRAME_MSG_DELAY);
+    packet[1] = message_idx++;
+    memcpy(packet + sizeof(FRAME_MSG_PREFIX),
+           frame_data + frame_data_pos, 1024);
+    frame_data_pos += 1024;
 
-    send(socket_, MSG_END_FRAME, sizeof(MSG_END_FRAME));
-    ConsumeReplyData();
+    if (!SendPacket(packet, sizeof(packet)))
+      return false;
+    Sleep(FRAME_MSG_DELAY);
   }
+  CHECK(frame_data_pos == FRAME_DATA_LEN);
+  CHECK(message_idx == 12);
+
+  if (!SendPacket(MSG_END_FRAME, sizeof(MSG_END_FRAME)))
+    return false;
+  ConsumeReplyData();
 }
 
 void TclRenderer::ConsumeReplyData() {
   uint8_t buf[65536];
-  bool has_reply_data = true;
-  while (has_reply_data) {
-    recv(socket, buf, sizeof(buf));
-    // TODO(igorc): Check error code to set this
-    has_reply_data = false;
+  while (true) {
+    ssize_t size = TEMP_FAILURE_RETRY(
+        recv(socket_, buf, sizeof(buf), MSG_DONTWAIT));
+    if (size != -1)
+      continue;
+    if (errno != EAGAIN && errno != EWOULDBLOCK)
+      REPORT_ERRNO("recv");
+    break;
   }
 }
 
