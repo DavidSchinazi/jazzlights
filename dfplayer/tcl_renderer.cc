@@ -3,6 +3,7 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <netinet/in.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
@@ -10,31 +11,12 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <deque>
+
 #define uint8_t  unsigned char
 
 #define STRAND_COUNT    8
 #define STRAND_LENGTH   512
-
-struct Strands {
-  Strands() {
-    for (int i = 0; i < STRAND_COUNT; i++) {
-      colors[i] = new uint8_t[STRAND_LENGTH * 3];
-      lengths[i] = 0;
-    }
-  }
-
-  ~Strands() {
-    for (int i = 0; i < STRAND_COUNT; i++) {
-      delete[] colors[i];
-    }
-  }
-
-  uint8_t* colors[STRAND_COUNT];
-  int lengths[STRAND_COUNT];
-
-private:
-  Strands(const Strands& src);
-};
 
 struct Layout {
   Layout() {
@@ -70,23 +52,56 @@ class TclRenderer {
   void ApplyGamma(Strands* strands);
 
   void ScheduleImage(uint8_t* image_data, uint64_t time);
-  void ScheduleStrands(Strands* strands, uint64_t time);
-
-  Strands* ConvertImageToStrands(uint8_t* image_data);
 
  private:
   TclRenderer();
   TclRenderer(const TclRenderer& src);
   ~TclRenderer();
+  TclRenderer& operator=(const TclRenderer& rhs);
+
+  struct Strands {
+    Strands() {
+      for (int i = 0; i < STRAND_COUNT; i++) {
+        colors[i] = new uint8_t[STRAND_LENGTH * 3];
+        lengths[i] = 0;
+      }
+    }
+
+    ~Strands() {
+      for (int i = 0; i < STRAND_COUNT; i++) {
+        delete[] colors[i];
+      }
+    }
+
+    uint8_t* colors[STRAND_COUNT];
+    int lengths[STRAND_COUNT];
+
+  private:
+    Strands(const Strands& src);
+    Strands& operator=(const Strands& rhs);
+  };
+
+  struct WorkItem {
+    WorkItem(bool needs_reset, uint8_t* frame_data, uint64_t time)
+        : needs_reset_(needs_reset), frame_data_(frame_data), time_(time) {}
+
+    bool needs_reset_;
+    uint8_t* frame_data_;
+    uint64_t* time_;
+  };
 
   void Run();
   static void* ThreadEntry(void* arg);
 
+  // Socket communication funtions are invoked from worker thread only.
   bool Connect();
   bool InitController();
   void SendFrame(uint8_t* frame_data);
   bool SendPacket(const void* data, int size);
   void ConsumeReplyData();
+
+  Strands* ConvertImageToStrands(uint8_t* image_data);
+  void ScheduleStrands(Strands* strands, uint64_t time);
 
   static uint8_t* ConvertStrandsToFrame(Strands* strands);
   static int BuildFrameColorSeq(
@@ -103,6 +118,9 @@ class TclRenderer {
   Layout layout_;
   int socket_;
   bool require_reset_;
+  std::deque<WorkItem> queue_;
+  pthread_mutex_t lock_;
+  pthread_cond_t cond_;
 };
 
 
@@ -113,20 +131,58 @@ class TclRenderer {
   fprintf(stderr, "Failure in '%s' call: %d, %s",    \
           name, errno, strerror(errno));
 
+class Autolock {
+ public:
+  Autolock(pthread_mutex_t& lock) : lock_(&lock) {
+    int err = pthread_mutex_lock(lock_);
+    if (err != 0) {
+      fprintf(stderr, "Unable to aquire mutex: %d\n", err);
+      CHECK(false);
+    }
+  }
+
+  ~Autolock() {
+    int err = pthread_mutex_unlock(lock_);
+    if (err != 0) {
+      fprintf(stderr, "Unable to release mutex: %d\n", err);
+      CHECK(false);
+    }
+  }
+
+ private:
+  Autolock(const TclRenderer& src);
+  Autolock& operator=(const Autolock& rhs);
+
+  pthread_mutex_t* lock_;
+};
 
 TclRenderer::TclRenderer(
     int controller_id, int width, int height, double gamma)
     : controller_id_(controller_id), width_(width), height_(height),
       init_sent_(false), is_shutting_down_(false), socket_(-1),
-      require_reset_(true) {
-  set_gamma(gamma);
+      require_reset_(true), lock_(PTHREAD_MUTEX_INITIALIZER),
+      cond_(PTHREAD_COND_INITIALIZER) {
   memset(layout, 0, sizeof(layout));
+  SetGamma(gamma);
 }
 
 TclRenderer::~TclRenderer() {
+  for (std::deque<WorkItem>::iterator it = queue_.begin();
+       it != queue.end(); it++) {
+    if ((*it).frame_data_)
+      delete[] (*it).frame_data_;
+  }
+  pthread_cond_destroy(&cond_);
+  pthread_mutex_destroy(&lock_);
 }
 
 void TclRenderer::Shutdown() {
+  {
+    Autolock(lock_);
+    is_shutting_down_ = true;
+    pthread_cond_broadcast(&cond_);
+  }
+
   // TODO(igorc): Join the thread.
 }
 
@@ -176,7 +232,19 @@ void TclRenderer::ScheduleStrands(Strands* strands, uint64_t time) {
   uint8_t* frame_data = ConvertStrandsToFrame(strands);
 
   Autolock(lock_);
-  // TODO(igorc): Implement me.
+  if (is_shutting_down_) {
+    delete[] frame_data;
+    return;
+  }
+  // TODO(igorc): Recalculate time from relative to absolute.
+  uint64_t abs_time = time;
+  queue_.push_back(WorkItem(false, frame_data, abs_time));
+  delete strands;
+  int err = pthread_cond_broadcast(&cond_);
+  if (err != 0) {
+    fprintf(stderr, "Unable to signal condition: %d\n", err);
+    CHECK(false);
+  }
 }
 
 Strands* TclRenderer::ConvertImageToStrands(uint8_t* image_data) {
@@ -286,6 +354,38 @@ void TclRenderer::Run() {
       continue;
     }
 
+    WorkItem item;
+    {
+      Autolock(lock_);
+      while (!is_shutting_down_ && items_.empty()) {
+        int err = pthread_cond_wait(&cond_, &lock_);
+        if (err != 0) {
+          fprintf(stderr, "Unable to wait on condition: %d\n", err);
+          CHECK(false);
+        }
+      }
+      if (is_shutting_down_)
+        break;
+
+      item = queue_.front();
+      // TODO(igorc): Delay processing until requested time.
+      queue_.pop_front();
+
+      if (item.needs_reset_) {
+        require_reset_ = true;
+        if (item.frame_data_) {
+          delete[] item.frame_data_;
+        continue;
+      }
+    }
+
+    if (item.frame_data_) {
+      if (!SendFrame(item.frame_data_)) {
+        fprintf(stderr, "Scheduling reset after failed frame\n");
+        require_reset_ = true;
+      }
+      delete[] item.frame_data_;
+    }
   }
 
   CloseSocket();
@@ -376,6 +476,8 @@ bool TclRenderer::InitController() {
     return true;
 
   if (require_reset_) {
+    if (init_sent_)
+      fprintf(stderr, "Performing a requested reset\n");
     if (!SendPacket(MSG_RESET, sizeof(MSG_RESET)))
       return false;
     require_reset_ = false;
