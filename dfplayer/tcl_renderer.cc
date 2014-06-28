@@ -5,6 +5,7 @@
 #include <netinet/in.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -118,9 +119,11 @@ class TclRenderer {
   Layout layout_;
   int socket_;
   bool require_reset_;
+  uint64_t last_reply_time_;
   std::deque<WorkItem> queue_;
   pthread_mutex_t lock_;
   pthread_cond_t cond_;
+  pthread_t thread_;
 };
 
 
@@ -130,6 +133,16 @@ class TclRenderer {
 #define REPORT_ERRNO(name)                           \
   fprintf(stderr, "Failure in '%s' call: %d, %s",    \
           name, errno, strerror(errno));
+
+
+#define CHECK(cond)                                             \
+  if (!(cond)) {                                                \
+    fprintf(stderr, "EXITING with check-fail at "               \
+            __FILE__ " (" __FUNCTION__ ") : " __LINE__          \
+            " . Condition = ##cond\n");                         \
+    exit(-1);                                                   \
+  }
+
 
 class Autolock {
  public:
@@ -156,14 +169,29 @@ class Autolock {
   pthread_mutex_t* lock_;
 };
 
+static uint64_t GetCurrentMillis() {
+  struct timespec time;
+  if (clock_gettime(CLOCK_MONOTONIC, &time) == -1) {
+    REPORT_ERRNO("clock_gettime");
+    CHECK(false);
+  }
+  return 1000L * time.tv_sec + time.tv_nsec / 1000;
+}
+
 TclRenderer::TclRenderer(
     int controller_id, int width, int height, double gamma)
     : controller_id_(controller_id), width_(width), height_(height),
       init_sent_(false), is_shutting_down_(false), socket_(-1),
-      require_reset_(true), lock_(PTHREAD_MUTEX_INITIALIZER),
+      require_reset_(true), last_reply_time_(0),
+      lock_(PTHREAD_MUTEX_INITIALIZER),
       cond_(PTHREAD_COND_INITIALIZER) {
   memset(layout, 0, sizeof(layout));
   SetGamma(gamma);
+  int err = pthread_create(&thread_, NULL, &ThreadEntry, this);
+  if (err != 0) {
+    fprintf(stderr, "pthread_create failed with %d\n", err);
+    CHECK(false);
+  }
 }
 
 TclRenderer::~TclRenderer() {
@@ -183,7 +211,7 @@ void TclRenderer::Shutdown() {
     pthread_cond_broadcast(&cond_);
   }
 
-  // TODO(igorc): Join the thread.
+  pthread_join(thread_, NULL);
 }
 
 void TclRenderer::SetLayout(const Layout& layout) {
@@ -239,7 +267,6 @@ void TclRenderer::ScheduleStrands(Strands* strands, uint64_t time) {
   // TODO(igorc): Recalculate time from relative to absolute.
   uint64_t abs_time = time;
   queue_.push_back(WorkItem(false, frame_data, abs_time));
-  delete strands;
   int err = pthread_cond_broadcast(&cond_);
   if (err != 0) {
     fprintf(stderr, "Unable to signal condition: %d\n", err);
@@ -339,6 +366,7 @@ static void Sleep(double seconds) {
 void* TclRenderer::ThreadEntry(void* arg) {
   TclRenderer* self = reinterpret_cast<TclRenderer*>(arg);
   self->Run();
+  return NULL;
 }
 
 void TclRenderer::Run() {
@@ -347,6 +375,14 @@ void TclRenderer::Run() {
       Autolock(lock_);
       if (is_shutting_down_)
         break;
+    }
+
+    if (!require_reset_) {
+      uint64_t reply_delay = GetCurrentMillis() - last_reply_time_;
+      if (reply_delay > 5000) {
+        fprintf(stderr, "No reply in %lld ms, RESETTING !!!\n", reply_delay);
+        require_reset_ = true;
+      }
     }
 
     if (!InitController()) {
@@ -469,7 +505,6 @@ bool TclRenderer::InitController() {
   static const uint8_t MSG_RESET[] = {0xC2, 0x77, 0x88, 0x00, 0x00};
   static const double MSG_RESET_DELAY = 5;
 
-  // TODO(igorc): Re-init if there's still no reply data in several seconds.
   if (!Connect())
     return false;
   if (init_sent_ && !require_reset_)
@@ -489,6 +524,7 @@ bool TclRenderer::InitController() {
   Sleep(MSG_INIT_DELAY);
 
   init_sent_ = true;
+  last_reply_time_ = GetCurrentMillis();
   return true;
 }
 
@@ -539,8 +575,10 @@ void TclRenderer::ConsumeReplyData() {
   while (true) {
     ssize_t size = TEMP_FAILURE_RETRY(
         recv(socket_, buf, sizeof(buf), MSG_DONTWAIT));
-    if (size != -1)
+    if (size != -1) {
+      last_reply_time_ = GetCurrentMillis();
       continue;
+    }
     if (errno != EAGAIN && errno != EWOULDBLOCK)
       REPORT_ERRNO("recv");
     break;
