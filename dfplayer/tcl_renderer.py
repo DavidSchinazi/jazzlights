@@ -9,7 +9,7 @@ from .tcl_renderer_cc import Layout as TclCcLayout
 from .tcl_renderer_cc import TclRenderer as TclCcImpl
 from .tcl_renderer_cc import Time as TclCcTime
 
-_USE_CC_IMPL = True
+_USE_CC_IMPL = False
 
 class TclRenderer(object):
   """To use this class:
@@ -51,8 +51,7 @@ class TclRenderer(object):
   def send_frame(self, image_data):
     if _USE_CC_IMPL:
       time = TclCcTime()
-      bytes = TclCcBytes(image_data)
-      self._renderer.ScheduleImageAt(bytes, time)
+      self._renderer.ScheduleImageAt(image_data, time)
     else:
       self._renderer.send_frame(list(image_data))
 
