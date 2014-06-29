@@ -1,7 +1,9 @@
 // Controls TCL controller.
 
 #include <arpa/inet.h>
+#include <errno.h>
 #include <fcntl.h>
+#include <math.h>
 #include <netinet/in.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -12,7 +14,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <deque>
+#include <queue>
 
 #define uint8_t  unsigned char
 
@@ -50,7 +52,6 @@ class TclRenderer {
       int r_min, int r_max, double r_gamma,
       int g_min, int g_max, double g_gamma,
       int b_min, int b_max, double b_gamma);
-  void ApplyGamma(Strands* strands);
 
   void ScheduleImage(uint8_t* image_data, uint64_t time);
 
@@ -86,9 +87,17 @@ class TclRenderer {
     WorkItem(bool needs_reset, uint8_t* frame_data, uint64_t time)
         : needs_reset_(needs_reset), frame_data_(frame_data), time_(time) {}
 
+    bool operator<(const WorkItem& lhs, const WorkItem& rhs) {
+      if (lhs.needs_reset_)
+        return false;
+      if (rhs.needs_reset_)
+        return true;
+      return (lhs.time_ >= rhs.time_);
+    }
+
     bool needs_reset_;
     uint8_t* frame_data_;
-    uint64_t* time_;
+    uint64_t time_;
   };
 
   void Run();
@@ -96,13 +105,18 @@ class TclRenderer {
 
   // Socket communication funtions are invoked from worker thread only.
   bool Connect();
+  void CloseSocket();
   bool InitController();
-  void SendFrame(uint8_t* frame_data);
+  bool SendFrame(uint8_t* frame_data);
   bool SendPacket(const void* data, int size);
   void ConsumeReplyData();
 
+  bool PopNextWorkItemLocked(WorkItem* item, int64_t* next_time);
+  void WaitForQueueLocked(int64_t next_time);
+
   Strands* ConvertImageToStrands(uint8_t* image_data);
   void ScheduleStrands(Strands* strands, uint64_t time);
+  void ApplyGamma(Strands* strands);
 
   static uint8_t* ConvertStrandsToFrame(Strands* strands);
   static int BuildFrameColorSeq(
@@ -113,14 +127,14 @@ class TclRenderer {
   int height_;
   bool init_sent_;
   bool is_shutting_down_;
-  StrandLayout layout_[STRAND_COUNT];
+  double gamma_r_[256];
   double gamma_g_[256];
   double gamma_b_[256];
   Layout layout_;
   int socket_;
   bool require_reset_;
   uint64_t last_reply_time_;
-  std::deque<WorkItem> queue_;
+  std::priority_queue<WorkItem> queue_;
   pthread_mutex_t lock_;
   pthread_cond_t cond_;
   pthread_t thread_;
@@ -137,9 +151,9 @@ class TclRenderer {
 
 #define CHECK(cond)                                             \
   if (!(cond)) {                                                \
-    fprintf(stderr, "EXITING with check-fail at "               \
-            __FILE__ " (" __FUNCTION__ ") : " __LINE__          \
-            " . Condition = ##cond\n");                         \
+    fprintf(stderr, "EXITING with check-fail at %s (%s:%d)"     \
+            ". Condition = ##cond\n", __FILE__, __FUNCTION__,   \
+            __LINE__);                                         \
     exit(-1);                                                   \
   }
 
@@ -163,7 +177,7 @@ class Autolock {
   }
 
  private:
-  Autolock(const TclRenderer& src);
+  Autolock(const Autolock& src);
   Autolock& operator=(const Autolock& rhs);
 
   pthread_mutex_t* lock_;
@@ -172,7 +186,7 @@ class Autolock {
 static uint64_t GetCurrentMillis() {
   struct timespec time;
   if (clock_gettime(CLOCK_MONOTONIC, &time) == -1) {
-    REPORT_ERRNO("clock_gettime");
+    REPORT_ERRNO("clock_gettime(monotonic)");
     CHECK(false);
   }
   return 1000L * time.tv_sec + time.tv_nsec / 1000;
@@ -185,7 +199,7 @@ TclRenderer::TclRenderer(
       require_reset_(true), last_reply_time_(0),
       lock_(PTHREAD_MUTEX_INITIALIZER),
       cond_(PTHREAD_COND_INITIALIZER) {
-  memset(layout, 0, sizeof(layout));
+  memset(&layout_, 0, sizeof(layout_));
   SetGamma(gamma);
   int err = pthread_create(&thread_, NULL, &ThreadEntry, this);
   if (err != 0) {
@@ -195,10 +209,11 @@ TclRenderer::TclRenderer(
 }
 
 TclRenderer::~TclRenderer() {
-  for (std::deque<WorkItem>::iterator it = queue_.begin();
-       it != queue.end(); it++) {
-    if ((*it).frame_data_)
-      delete[] (*it).frame_data_;
+  while (!queue_.empty()) {
+    WorkItem item = queue_.top();
+    queue_.pop();
+    if (item.frame_data_)
+      delete[] item.frame_data_;
   }
   pthread_cond_destroy(&cond_);
   pthread_mutex_destroy(&lock_);
@@ -206,7 +221,7 @@ TclRenderer::~TclRenderer() {
 
 void TclRenderer::Shutdown() {
   {
-    Autolock(lock_);
+    Autolock l(lock_);
     is_shutting_down_ = true;
     pthread_cond_broadcast(&cond_);
   }
@@ -215,7 +230,7 @@ void TclRenderer::Shutdown() {
 }
 
 void TclRenderer::SetLayout(const Layout& layout) {
-  Autolock(lock_);
+  Autolock l(lock_);
   layout_ = layout;
 }
 
@@ -237,7 +252,7 @@ void TclRenderer::SetGammaRanges(
     return;
   }
 
-  Autolock(lock_);
+  Autolock l(lock_);
   for (int i = 0; i < 256; i++) {
     double d = ((double) i) / 255.0;
     gamma_r_[i] =
@@ -259,14 +274,14 @@ void TclRenderer::ScheduleImage(uint8_t* image_data, uint64_t time) {
 void TclRenderer::ScheduleStrands(Strands* strands, uint64_t time) {
   uint8_t* frame_data = ConvertStrandsToFrame(strands);
 
-  Autolock(lock_);
+  Autolock l(lock_);
   if (is_shutting_down_) {
     delete[] frame_data;
     return;
   }
   // TODO(igorc): Recalculate time from relative to absolute.
   uint64_t abs_time = time;
-  queue_.push_back(WorkItem(false, frame_data, abs_time));
+  queue_.push(WorkItem(false, frame_data, abs_time));
   int err = pthread_cond_broadcast(&cond_);
   if (err != 0) {
     fprintf(stderr, "Unable to signal condition: %d\n", err);
@@ -274,8 +289,8 @@ void TclRenderer::ScheduleStrands(Strands* strands, uint64_t time) {
   }
 }
 
-Strands* TclRenderer::ConvertImageToStrands(uint8_t* image_data) {
-  Autolock(lock_);
+TclRenderer::Strands* TclRenderer::ConvertImageToStrands(uint8_t* image_data) {
+  Autolock l(lock_);
   Strands* strands = new Strands();
   for (int strand_id  = 0; strand_id < STRAND_COUNT; strand_id++) {
     int* x = layout_.x[strand_id];
@@ -294,11 +309,11 @@ Strands* TclRenderer::ConvertImageToStrands(uint8_t* image_data) {
   return strands;
 }
 
-void TclRenderer::ApplyGamma(Strands* strands) {
-  Autolock(lock_);
+void TclRenderer::ApplyGamma(TclRenderer::Strands* strands) {
+  Autolock l(lock_);
   for (int strand_id  = 0; strand_id < STRAND_COUNT; strand_id++) {
     int len = strands->lengths[strand_id] * 3;
-    int8_t* colors = strands->colors[strand_id];
+    uint8_t* colors = strands->colors[strand_id];
     for (int i = 0; i < len; i += 3) {
       colors[i] = gamma_r_[colors[i]];
       colors[i + 1] = gamma_g_[colors[i + 1]];
@@ -308,7 +323,7 @@ void TclRenderer::ApplyGamma(Strands* strands) {
 }
 
 // static
-uint8_t* TclRenderer::ConvertStrandsToFrame(Strands* strands) {
+uint8_t* TclRenderer::ConvertStrandsToFrame(TclRenderer::Strands* strands) {
   uint8_t* result = new uint8_t[FRAME_DATA_LEN];
   int pos = 0;
   for (int led_id = 0; led_id < STRAND_LENGTH; led_id++) {
@@ -326,13 +341,14 @@ uint8_t* TclRenderer::ConvertStrandsToFrame(Strands* strands) {
 
 // static
 int TclRenderer::BuildFrameColorSeq(
-    Strands* strands, int led_id, int color_component, uint8_t* dst) {
+    TclRenderer::Strands* strands, int led_id,
+    int color_component, uint8_t* dst) {
   int pos = 0;
   int color_bit_mask = 0x80;
   while (color_bit_mask > 0) {
     uint8_t dst_byte = 0;
     for (int strand_id  = 0; strand_id < STRAND_COUNT; strand_id++) {
-      if (led_id >= strands.lengths[strand_id])
+      if (led_id >= strands->lengths[strand_id])
         continue;
       uint8_t* colors = strands->colors[strand_id];
       uint8_t color = colors[led_id * 3 + color_component];
@@ -372,7 +388,7 @@ void* TclRenderer::ThreadEntry(void* arg) {
 void TclRenderer::Run() {
   while (true) {
     {
-      Autolock(lock_);
+      Autolock l(lock_);
       if (is_shutting_down_)
         break;
     }
@@ -380,7 +396,7 @@ void TclRenderer::Run() {
     if (!require_reset_) {
       uint64_t reply_delay = GetCurrentMillis() - last_reply_time_;
       if (reply_delay > 5000) {
-        fprintf(stderr, "No reply in %lld ms, RESETTING !!!\n", reply_delay);
+        fprintf(stderr, "No reply in %ld ms, RESETTING !!!\n", reply_delay);
         require_reset_ = true;
       }
     }
@@ -390,26 +406,21 @@ void TclRenderer::Run() {
       continue;
     }
 
-    WorkItem item;
+    WorkItem item(false, NULL, 0);
     {
-      Autolock(lock_);
-      while (!is_shutting_down_ && items_.empty()) {
-        int err = pthread_cond_wait(&cond_, &lock_);
-        if (err != 0) {
-          fprintf(stderr, "Unable to wait on condition: %d\n", err);
-          CHECK(false);
-        }
+      Autolock l(lock_);
+      while (!is_shutting_down_) {
+        int64_t next_time;
+        if (PopNextWorkItemLocked(&item, &next_time))
+          break;
+        WaitForQueueLocked(next_time);
       }
       if (is_shutting_down_)
         break;
 
-      item = queue_.front();
-      // TODO(igorc): Delay processing until requested time.
-      queue_.pop_front();
-
       if (item.needs_reset_) {
         require_reset_ = true;
-        if (item.frame_data_) {
+        if (item.frame_data_)
           delete[] item.frame_data_;
         continue;
       }
@@ -425,6 +436,67 @@ void TclRenderer::Run() {
   }
 
   CloseSocket();
+}
+
+bool TclRenderer::PopNextWorkItemLocked(
+    TclRenderer::WorkItem* item, int64_t* next_time) {
+  if (queue_.empty()) {
+    *next_time = 0;
+    return false;
+  }
+  uint64_t cur_time = GetCurrentMillis();
+  while (true) {
+    *item = queue_.top();
+    if (item->needs_reset_) {
+      // Ready to reset and no future item time is known.
+      *next_time = 0;
+      queue_.clear();
+      return true;
+    }
+    if (item->time_ > cur_time) {
+      // No current item, report the time of the future item.
+      *next_time = item->time_;
+      return false;
+    }
+    queue_.pop();
+    if (queue_.empty()) {
+      // Return current item, and report no future time.
+      *next_time = 0;
+      return true;
+    }
+    if (queue_.top().time_ > cur_time) {
+      // Return current item, and report future item's time.
+      *next_time = queue_.top().time_;
+      return true;
+    }
+    // The queue contains another item that is closer to current time.
+    // Skip to that item.
+  }
+}
+
+static void AddTimeMillis(struct timespec& time, uint64_t increment) {
+  uint64_t nsec = (increment % 1000) * 1000 + time->tv_nsec;
+  time->tv_sec += increment / 1000 + nsec / 1000000;
+  time->tv_nsec = nsec % 1000000;
+}
+
+void TclRenderer::WaitForQueueLocked(int64_t next_time) {
+  int err;
+  if (next_time) {
+    struct timespec timeout;
+    if (clock_gettime(CLOCK_REALTIME, &timeout) == -1) {
+      REPORT_ERRNO("clock_gettime(realtime)");
+      CHECK(false);
+    }
+    AddTimeMillis(&timeout, next_time - GetCurrentMillis());
+    err = pthread_cond_timedwait(&cond_, &lock_, &timeout);
+  } else {
+    err = pthread_cond_wait(&cond_, &lock_);
+  }
+  if (err != 0 && err != ETIMEDOUT) {
+    fprintf(stderr, "Unable to wait on condition: %d\n", err);
+    CHECK(false);
+  }
 }
 
 void TclRenderer::CloseSocket() {
