@@ -113,10 +113,9 @@ class Player(object):
         self._prev_frame_file = ''
         self._reset_stats()
 
-        self._tcl = TclRenderer(TCL_CONTROLLER)
-        self._tcl.set_layout(
-            'dfplayer/layout.dxf', _SCREEN_FRAME_WIDTH, FRAME_HEIGHT)
-        self._tcl.set_gamma(self._target_gamma)
+        self._tcl = TclRenderer(
+            TCL_CONTROLLER, _SCREEN_FRAME_WIDTH, FRAME_HEIGHT,
+            'dfplayer/layout.dxf', self._target_gamma)
 
     def __str__(self):
         elapsed_time = self.elapsed_time

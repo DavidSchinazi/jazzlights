@@ -28,6 +28,7 @@ _PLAYER_DEPS = [
     ]
 
 _USEFUL_PACKAGES = [
+    'gdb',
     'gimp',
     'git',
     'synaptic',
