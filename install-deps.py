@@ -24,6 +24,7 @@ _PLAYER_DEPS = [
     'python-mpd',
     'python-setuptools',
     'python-tk',
+    'swig',
     ]
 
 _USEFUL_PACKAGES = [

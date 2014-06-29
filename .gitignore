@@ -1,4 +1,8 @@
 *.pyc
+*~
 env/
 clips/
 dfplayer.egg-info/
+dfplayer/tcl_renderer.so
+dfplayer/tcl_renderer_cc.py
+dfplayer/tcl_renderer_wrap.cxx

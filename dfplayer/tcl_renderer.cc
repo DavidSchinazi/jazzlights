@@ -1,11 +1,15 @@
-// Controls TCL controller.
+// Copyright 2014, Igor Chernyshev.
+// Licensed under Apache 2.0 ASF license.
+//
+// TCL controller access module.
+
+#include "tcl_renderer.h"
 
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <math.h>
 #include <netinet/in.h>
-#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,134 +18,9 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <queue>
-
-#define uint8_t  unsigned char
-
-#define STRAND_COUNT    8
-#define STRAND_LENGTH   512
-
-struct Layout {
-  Layout() {
-    memset(lengths, 0, sizeof(lengths));
-  }
-
-  int x[STRAND_COUNT][STRAND_LENGTH];
-  int y[STRAND_COUNT][STRAND_LENGTH];
-  int lengths[STRAND_COUNT];
-};
-
-// To use this class:
-//   renderer = TclRenderer(controller_id)
-//   renderer.set_layout('layout.dxf', width, height)
-//   // 'image_colors' has tuples with 3 RGB bytes for each pixel,
-//   //  with 'height' number of sequential rows, each row having
-//   // length of 'width' pixels.
-//   renderer.send_frame(image_color)
-class TclRenderer {
- public:
-  TclRenderer(
-      int controller_id, int width, int height, double gamma);
-
-  void Shutdown();
-
-  void SetLayout(const Layout& layout);
-
-  void SetGamma(double gamma);
-  void SetGammaRanges(
-      int r_min, int r_max, double r_gamma,
-      int g_min, int g_max, double g_gamma,
-      int b_min, int b_max, double b_gamma);
-
-  void ScheduleImage(uint8_t* image_data, uint64_t time);
-
- private:
-  TclRenderer();
-  TclRenderer(const TclRenderer& src);
-  ~TclRenderer();
-  TclRenderer& operator=(const TclRenderer& rhs);
-
-  struct Strands {
-    Strands() {
-      for (int i = 0; i < STRAND_COUNT; i++) {
-        colors[i] = new uint8_t[STRAND_LENGTH * 3];
-        lengths[i] = 0;
-      }
-    }
-
-    ~Strands() {
-      for (int i = 0; i < STRAND_COUNT; i++) {
-        delete[] colors[i];
-      }
-    }
-
-    uint8_t* colors[STRAND_COUNT];
-    int lengths[STRAND_COUNT];
-
-  private:
-    Strands(const Strands& src);
-    Strands& operator=(const Strands& rhs);
-  };
-
-  struct WorkItem {
-    WorkItem(bool needs_reset, uint8_t* frame_data, uint64_t time)
-        : needs_reset_(needs_reset), frame_data_(frame_data), time_(time) {}
-
-    bool operator<(const WorkItem& lhs, const WorkItem& rhs) {
-      if (lhs.needs_reset_)
-        return false;
-      if (rhs.needs_reset_)
-        return true;
-      return (lhs.time_ >= rhs.time_);
-    }
-
-    bool needs_reset_;
-    uint8_t* frame_data_;
-    uint64_t time_;
-  };
-
-  void Run();
-  static void* ThreadEntry(void* arg);
-
-  // Socket communication funtions are invoked from worker thread only.
-  bool Connect();
-  void CloseSocket();
-  bool InitController();
-  bool SendFrame(uint8_t* frame_data);
-  bool SendPacket(const void* data, int size);
-  void ConsumeReplyData();
-
-  bool PopNextWorkItemLocked(WorkItem* item, int64_t* next_time);
-  void WaitForQueueLocked(int64_t next_time);
-
-  Strands* ConvertImageToStrands(uint8_t* image_data);
-  void ScheduleStrands(Strands* strands, uint64_t time);
-  void ApplyGamma(Strands* strands);
-
-  static uint8_t* ConvertStrandsToFrame(Strands* strands);
-  static int BuildFrameColorSeq(
-    Strands* strands, int led_id, int color_component, uint8_t* dst);
-
-  int controller_id_;
-  int width_;
-  int height_;
-  bool init_sent_;
-  bool is_shutting_down_;
-  double gamma_r_[256];
-  double gamma_g_[256];
-  double gamma_b_[256];
-  Layout layout_;
-  int socket_;
-  bool require_reset_;
-  uint64_t last_reply_time_;
-  std::priority_queue<WorkItem> queue_;
-  pthread_mutex_t lock_;
-  pthread_cond_t cond_;
-  pthread_t thread_;
-};
-
-
 #define FRAME_DATA_LEN  (STRAND_LENGTH * 8 * 3)
+
+static const int kAutoResetAfterNoDataMs = 5000;
 
 
 #define REPORT_ERRNO(name)                           \
@@ -192,13 +71,44 @@ static uint64_t GetCurrentMillis() {
   return 1000L * time.tv_sec + time.tv_nsec / 1000;
 }
 
+Time::Time() : time_(GetCurrentMillis()) {}
+
+void Time::AddMillis(int ms) {
+  time_ += ms;
+}
+
+Layout::Layout() {
+  memset(lengths_, 0, sizeof(lengths_));
+}
+
+void Layout::AddCoord(int strand_id, int x, int y) {
+  CHECK(strand_id >= 0 && strand_id < STRAND_COUNT);
+  if (lengths_[strand_id] == STRAND_LENGTH) {
+    fprintf(stderr, "Cannot add more coords to strand %d\n", strand_id);
+    return;
+  }
+  int pos = lengths_[strand_id];
+  lengths_[strand_id] = pos + 1;
+  x_[strand_id][pos] = x;
+  y_[strand_id][pos] = y;
+}
+
+Bytes::Bytes(void* data, int len)
+    : data_(reinterpret_cast<uint8_t*>(data)), len_(len) {}
+
+Bytes::~Bytes() {
+  if (data_)
+    delete[] data_;
+}
+
 TclRenderer::TclRenderer(
     int controller_id, int width, int height, double gamma)
     : controller_id_(controller_id), width_(width), height_(height),
       init_sent_(false), is_shutting_down_(false), socket_(-1),
       require_reset_(true), last_reply_time_(0),
       lock_(PTHREAD_MUTEX_INITIALIZER),
-      cond_(PTHREAD_COND_INITIALIZER) {
+      cond_(PTHREAD_COND_INITIALIZER),
+      frames_sent_after_reply_(0) {
   memset(&layout_, 0, sizeof(layout_));
   SetGamma(gamma);
   int err = pthread_create(&thread_, NULL, &ThreadEntry, this);
@@ -264,14 +174,16 @@ void TclRenderer::SetGammaRanges(
   }
 }
 
-void TclRenderer::ScheduleImage(uint8_t* image_data, uint64_t time) {
-  Strands* strands = ConvertImageToStrands(image_data);
+void TclRenderer::ScheduleImageAt(Bytes* bytes, const Time& time) {
+  Strands* strands = ConvertImageToStrands(bytes->data_, bytes->len_);
+  if (!strands)
+    return;
   ApplyGamma(strands);
-  ScheduleStrands(strands, time);
+  ScheduleStrandsAt(strands, time.time_);
   delete strands;
 }
 
-void TclRenderer::ScheduleStrands(Strands* strands, uint64_t time) {
+void TclRenderer::ScheduleStrandsAt(Strands* strands, uint64_t time) {
   uint8_t* frame_data = ConvertStrandsToFrame(strands);
 
   Autolock l(lock_);
@@ -289,22 +201,31 @@ void TclRenderer::ScheduleStrands(Strands* strands, uint64_t time) {
   }
 }
 
-TclRenderer::Strands* TclRenderer::ConvertImageToStrands(uint8_t* image_data) {
+TclRenderer::Strands* TclRenderer::ConvertImageToStrands(
+    uint8_t* image_data, int len) {
   Autolock l(lock_);
   Strands* strands = new Strands();
   for (int strand_id  = 0; strand_id < STRAND_COUNT; strand_id++) {
-    int* x = layout_.x[strand_id];
-    int* y = layout_.y[strand_id];
-    int len = std::min(layout_.lengths[strand_id], STRAND_LENGTH);
+    int* x = layout_.x_[strand_id];
+    int* y = layout_.y_[strand_id];
+    int strand_len = layout_.lengths_[strand_id];
     uint8_t* dst_colors = strands->colors[strand_id];
-    for (int i = 0; i < len; i++) {
+    for (int i = 0; i < strand_len; i++) {
       int color_idx = y[i] * width_ + x[i];
+      if ((color_idx + 3) > len) {
+        fprintf(stderr,
+                "Not enough data in image. Accessing %d, len=%d, strand=%d, "
+                "led=%d, x=%d, y=%d\n",
+                color_idx, len, strand_id, i, x[i], y[i]);
+        delete strands;
+        return NULL;
+      }
       int dst_idx = i * 3;
       dst_colors[dst_idx] = image_data[color_idx];
       dst_colors[dst_idx + 1] = image_data[color_idx + 1];
       dst_colors[dst_idx + 2] = image_data[color_idx + 2];
     }
-    strands->lengths[strand_id] = len;
+    strands->lengths[strand_id] = strand_len;
   }
   return strands;
 }
@@ -393,9 +314,9 @@ void TclRenderer::Run() {
         break;
     }
 
-    if (!require_reset_) {
+    if (!require_reset_ && frames_sent_after_reply_ > 2) {
       uint64_t reply_delay = GetCurrentMillis() - last_reply_time_;
-      if (reply_delay > 5000) {
+      if (reply_delay > kAutoResetAfterNoDataMs) {
         fprintf(stderr, "No reply in %ld ms, RESETTING !!!\n", reply_delay);
         require_reset_ = true;
       }
@@ -448,9 +369,10 @@ bool TclRenderer::PopNextWorkItemLocked(
   while (true) {
     *item = queue_.top();
     if (item->needs_reset_) {
-      // Ready to reset and no future item time is known.
+      // Ready to reset, and no future item time is known.
       *next_time = 0;
-      queue_.clear();
+      while (!queue_.empty())
+        queue_.pop();
       return true;
     }
     if (item->time_ > cur_time) {
@@ -474,7 +396,7 @@ bool TclRenderer::PopNextWorkItemLocked(
   }
 }
 
-static void AddTimeMillis(struct timespec& time, uint64_t increment) {
+static void AddTimeMillis(struct timespec* time, uint64_t increment) {
   uint64_t nsec = (increment % 1000) * 1000 + time->tv_nsec;
   time->tv_sec += increment / 1000 + nsec / 1000000;
   time->tv_nsec = nsec % 1000000;
@@ -510,7 +432,7 @@ bool TclRenderer::Connect() {
   if (socket_ != -1)
     return true;
 
-  socket_ = socket.socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+  socket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
   if (socket_ == -1) {
     REPORT_ERRNO("socket");
     return false;
@@ -525,9 +447,9 @@ bool TclRenderer::Connect() {
   struct sockaddr_in si_local;
   memset(&si_local, 0, sizeof(si_local));
   si_local.sin_family = AF_INET;
-  si_local.sin_port = htons(PORT);
+  si_local.sin_port = htons(0);
   si_local.sin_addr.s_addr = htonl(INADDR_ANY);
-  if (bind(socket_, &si_local, sizeof(si_local)) == -1) {
+  if (bind(socket_, (struct sockaddr*) &si_local, sizeof(si_local)) == -1) {
     REPORT_ERRNO("bind");
     CloseSocket();
     return false;
@@ -548,7 +470,7 @@ bool TclRenderer::Connect() {
   }
 
   if (TEMP_FAILURE_RETRY(connect(
-          socket_, &si_remote, sizeof(si_remote))) == -1) {
+          socket_, (struct sockaddr*) &si_remote, sizeof(si_remote))) == -1) {
     REPORT_ERRNO("connect");
     CloseSocket();
     return false;
@@ -596,7 +518,7 @@ bool TclRenderer::InitController() {
   Sleep(MSG_INIT_DELAY);
 
   init_sent_ = true;
-  last_reply_time_ = GetCurrentMillis();
+  SetLastReplyTime();
   return true;
 }
 
@@ -604,13 +526,11 @@ bool TclRenderer::SendFrame(uint8_t* frame_data) {
   static const uint8_t MSG_START_FRAME[] = {0xC5, 0x77, 0x88, 0x00, 0x00};
   static const double MSG_START_FRAME_DELAY = 0.0005;
   static const uint8_t MSG_END_FRAME[] = {0xAA, 0x01, 0x8C, 0x01, 0x55};
-  static const uint8_t MSG_REPLY[] = {0x55, 0x00, 0x00, 0x00, 0x00};
   static const uint8_t FRAME_MSG_PREFIX[] = {
       0x88, 0x00, 0x68, 0x3F, 0x2B, 0xFD,
       0x60, 0x8B, 0x95, 0xEF, 0x04, 0x69};
   static const uint8_t FRAME_MSG_SUFFIX[] = {0x00, 0x00, 0x00, 0x00};
   static const double FRAME_MSG_DELAY = 0.0015;
-  static const int FRAME_DATA_SIZE_IM_MSG = 1024;
 
   ConsumeReplyData();
   if (!SendPacket(MSG_START_FRAME, sizeof(MSG_START_FRAME)))
@@ -640,20 +560,28 @@ bool TclRenderer::SendFrame(uint8_t* frame_data) {
   if (!SendPacket(MSG_END_FRAME, sizeof(MSG_END_FRAME)))
     return false;
   ConsumeReplyData();
+  frames_sent_after_reply_++;
+  return true;
 }
 
 void TclRenderer::ConsumeReplyData() {
+  // static const uint8_t MSG_REPLY[] = {0x55, 0x00, 0x00, 0x00, 0x00};
   uint8_t buf[65536];
   while (true) {
     ssize_t size = TEMP_FAILURE_RETRY(
         recv(socket_, buf, sizeof(buf), MSG_DONTWAIT));
     if (size != -1) {
-      last_reply_time_ = GetCurrentMillis();
+      SetLastReplyTime();
       continue;
     }
     if (errno != EAGAIN && errno != EWOULDBLOCK)
       REPORT_ERRNO("recv");
     break;
   }
+}
+
+void TclRenderer::SetLastReplyTime() {
+  last_reply_time_ = GetCurrentMillis();
+  frames_sent_after_reply_ = 0;
 }
 
