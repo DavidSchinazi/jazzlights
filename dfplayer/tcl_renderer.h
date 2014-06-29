@@ -64,11 +64,10 @@ struct Bytes {
 class TclRenderer {
  public:
   TclRenderer(
-      int controller_id, int width, int height, double gamma);
+      int controller_id, int width, int height,
+      const Layout& layout, double gamma);
 
   void Shutdown();
-
-  void SetLayout(const Layout& layout);
 
   void SetGamma(double gamma);
   void SetGammaRanges(

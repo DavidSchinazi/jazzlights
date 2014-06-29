@@ -102,14 +102,14 @@ Bytes::~Bytes() {
 }
 
 TclRenderer::TclRenderer(
-    int controller_id, int width, int height, double gamma)
+    int controller_id, int width, int height,
+    const Layout& layout, double gamma)
     : controller_id_(controller_id), width_(width), height_(height),
-      init_sent_(false), is_shutting_down_(false), socket_(-1),
-      require_reset_(true), last_reply_time_(0),
+      init_sent_(false), is_shutting_down_(false), layout_(layout),
+      socket_(-1), require_reset_(true), last_reply_time_(0),
       lock_(PTHREAD_MUTEX_INITIALIZER),
       cond_(PTHREAD_COND_INITIALIZER),
       frames_sent_after_reply_(0) {
-  memset(&layout_, 0, sizeof(layout_));
   SetGamma(gamma);
   int err = pthread_create(&thread_, NULL, &ThreadEntry, this);
   if (err != 0) {
@@ -137,11 +137,6 @@ void TclRenderer::Shutdown() {
   }
 
   pthread_join(thread_, NULL);
-}
-
-void TclRenderer::SetLayout(const Layout& layout) {
-  Autolock l(lock_);
-  layout_ = layout;
 }
 
 void TclRenderer::SetGamma(double gamma) {

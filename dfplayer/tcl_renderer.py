@@ -4,6 +4,12 @@
 
 from .tcl_layout import TclLayout
 from .tcl_renderer_py import TclRenderer as TclPyImpl
+from .tcl_renderer_cc import Bytes as TclCcBytes
+from .tcl_renderer_cc import Layout as TclCcLayout
+from .tcl_renderer_cc import TclRenderer as TclCcImpl
+from .tcl_renderer_cc import Time as TclCcTime
+
+_USE_CC_IMPL = True
 
 class TclRenderer(object):
   """To use this class:
@@ -16,7 +22,14 @@ class TclRenderer(object):
 
   def __init__(self, controller_id, width, height, layout_file, gamma):
     self._layout = TclLayout(layout_file, width - 1, height - 1)
-    self._renderer = TclPyImpl(controller_id, width, height, self._layout)
+    if _USE_CC_IMPL:
+      layout = TclCcLayout()
+      for s in self._layout.get_strands():
+        for c in s.get_coords():
+          layout.AddCoord(s.get_id(), c[0], c[1])
+      self._renderer = TclCcImpl(controller_id, width, height, layout, gamma)
+    else:
+      self._renderer = TclPyImpl(controller_id, width, height, self._layout)
     self.set_gamma(gamma)
 
   def get_layout_coords(self):
@@ -29,8 +42,17 @@ class TclRenderer(object):
     self.set_gamma_ranges((0, 255, gamma), (0, 255, gamma), (0, 255, gamma))
 
   def set_gamma_ranges(self, r, g, b):
-    self._renderer.set_gamma_ranges(r, g, b)
+    if _USE_CC_IMPL:
+      self._renderer.SetGammaRanges(
+          r[0], r[1], r[2], g[0], g[1], g[2], b[0], b[1], b[2])
+    else:
+      self._renderer.set_gamma_ranges(r, g, b)
 
   def send_frame(self, image_data):
-    self._renderer.send_frame(list(image_data))
+    if _USE_CC_IMPL:
+      time = TclCcTime()
+      bytes = TclCcBytes(image_data)
+      self._renderer.ScheduleImageAt(bytes, time)
+    else:
+      self._renderer.send_frame(list(image_data))
 
