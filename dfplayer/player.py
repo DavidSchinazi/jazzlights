@@ -389,7 +389,7 @@ class Player(object):
                 self._frame = img
 
             self._prev_frame_file = frame_file
-            self._tcl.send_frame(self._frame.getdata(), 0)
+            self._tcl.send_frame(self._frame, 0)
             duration_ms = int(round((time.time() - start_time) * 1000))
 
             if frame_num >= self._prev_frame_num:

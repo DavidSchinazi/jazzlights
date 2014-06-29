@@ -51,11 +51,11 @@ class TclRenderer(object):
   def has_scheduling_support(self):
     return self._use_cc_impl
 
-  def send_frame(self, image_data, delay_ms):
+  def send_frame(self, image, delay_ms):
     if self._use_cc_impl:
       time = TclCcTime()
       time.AddMillis(delay_ms)
-      self._renderer.ScheduleImageAt(image_data, time)
+      self._renderer.ScheduleImageAt(image.tostring(), time)
     else:
-      self._renderer.send_frame(list(image_data))
+      self._renderer.send_frame(list(image.getdata()))
 
