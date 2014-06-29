@@ -68,7 +68,7 @@ static uint64_t GetCurrentMillis() {
     REPORT_ERRNO("clock_gettime(monotonic)");
     CHECK(false);
   }
-  return 1000L * time.tv_sec + time.tv_nsec / 1000;
+  return ((uint64_t) time.tv_sec) * 1000 + time.tv_nsec / 1000000;
 }
 
 Time::Time() : time_(GetCurrentMillis()) {}
@@ -312,7 +312,8 @@ void TclRenderer::Run() {
     if (!require_reset_ && frames_sent_after_reply_ > 2) {
       uint64_t reply_delay = GetCurrentMillis() - last_reply_time_;
       if (reply_delay > kAutoResetAfterNoDataMs) {
-        fprintf(stderr, "No reply in %ld ms, RESETTING !!!\n", reply_delay);
+        fprintf(stderr, "No reply in %ld ms and %d frames, RESETTING !!!\n",
+                reply_delay, frames_sent_after_reply_);
         require_reset_ = true;
       }
     }
@@ -392,9 +393,9 @@ bool TclRenderer::PopNextWorkItemLocked(
 }
 
 static void AddTimeMillis(struct timespec* time, uint64_t increment) {
-  uint64_t nsec = (increment % 1000) * 1000 + time->tv_nsec;
-  time->tv_sec += increment / 1000 + nsec / 1000000;
-  time->tv_nsec = nsec % 1000000;
+  uint64_t nsec = (increment % 1000000) * 1000000 + time->tv_nsec;
+  time->tv_sec += increment / 1000 + nsec / 1000000000;
+  time->tv_nsec = nsec % 1000000000;
 }
 
 void TclRenderer::WaitForQueueLocked(int64_t next_time) {

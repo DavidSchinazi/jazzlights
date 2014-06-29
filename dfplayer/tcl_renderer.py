@@ -4,12 +4,11 @@
 
 from .tcl_layout import TclLayout
 from .tcl_renderer_py import TclRenderer as TclPyImpl
-from .tcl_renderer_cc import Bytes as TclCcBytes
 from .tcl_renderer_cc import Layout as TclCcLayout
 from .tcl_renderer_cc import TclRenderer as TclCcImpl
 from .tcl_renderer_cc import Time as TclCcTime
 
-_USE_CC_IMPL = False
+_USE_CC_IMPL = True
 
 class TclRenderer(object):
   """To use this class:
@@ -22,7 +21,8 @@ class TclRenderer(object):
 
   def __init__(self, controller_id, width, height, layout_file, gamma):
     self._layout = TclLayout(layout_file, width - 1, height - 1)
-    if _USE_CC_IMPL:
+    self._use_cc_impl = _USE_CC_IMPL
+    if self._use_cc_impl:
       layout = TclCcLayout()
       for s in self._layout.get_strands():
         for c in s.get_coords():
@@ -42,15 +42,19 @@ class TclRenderer(object):
     self.set_gamma_ranges((0, 255, gamma), (0, 255, gamma), (0, 255, gamma))
 
   def set_gamma_ranges(self, r, g, b):
-    if _USE_CC_IMPL:
+    if self._use_cc_impl:
       self._renderer.SetGammaRanges(
           r[0], r[1], r[2], g[0], g[1], g[2], b[0], b[1], b[2])
     else:
       self._renderer.set_gamma_ranges(r, g, b)
 
-  def send_frame(self, image_data):
-    if _USE_CC_IMPL:
+  def has_scheduling_support(self):
+    return self._use_cc_impl
+
+  def send_frame(self, image_data, delay_ms):
+    if self._use_cc_impl:
       time = TclCcTime()
+      time.AddMillis(delay_ms)
       self._renderer.ScheduleImageAt(image_data, time)
     else:
       self._renderer.send_frame(list(image_data))
