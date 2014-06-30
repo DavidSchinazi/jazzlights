@@ -1,14 +1,20 @@
 # -*- coding: utf-8 -*-
+
+import contextlib
+import functools
+import logging
 import os
 import pdb
-import logging
-import functools
+import time
 import traceback
-import contextlib
 
 PACKAGE_DIR = os.path.abspath(os.path.dirname(__file__))
 PROJECT_DIR = os.path.dirname(PACKAGE_DIR)
 VENV_DIR = os.path.join(PROJECT_DIR, 'env')
+
+
+def get_time_millis():
+    return int(round(time.time() * 1000))
 
 
 def hsl2rgb(H, S, L):

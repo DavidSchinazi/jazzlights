@@ -1,5 +1,8 @@
 %module tcl_renderer_cc
 
+%include "typemaps.i"
+%include "std_vector.i"
+
 %typemap(in) Bytes* bytes {
   // $1 = FlattenImageData($input);
   char* buffer;
@@ -18,6 +21,8 @@
 %{
 #include "tcl_renderer.h"
 %}
+
+%template(IntVector) std::vector<int>;
 
 %inline %{
 static Bytes* FlattenImageData(PyObject* input) {

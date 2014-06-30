@@ -8,6 +8,7 @@ import socket
 import time
 
 from .tcl_layout import TclLayout
+from .util import get_time_millis
 
 _MSG_INIT = bytearray([0xC5, 0x77, 0x88, 0x00, 0x00])
 _MSG_INIT_DELAY = 0.1
@@ -46,6 +47,7 @@ class TclRenderer(object):
     self._height = height
     self._layout = layout
     self._init_sent = False
+    self._frame_delays = []
     self.set_gamma_ranges((0, 255, 2.4), (0, 255, 2.4), (0, 255, 2.4))
     self._connect()
 
@@ -86,7 +88,15 @@ class TclRenderer(object):
     self._sock.send(_MSG_INIT)
     time.sleep(_MSG_INIT_DELAY)
 
-  def send_frame(self, image_colors):
+  def get_and_clear_frame_delays(self):
+    result = list(self._frame_delays)
+    self._frame_delays = []
+    return result
+
+  def get_send_duration_ms(self):
+    return int((_MSG_START_FRAME_DELAY + _FRAME_MSG_DELAY * 12) * 1000.0)
+
+  def send_frame(self, image_colors, dst_time):
     self._init_controller()
 
     frame_data = self._convert_image_to_frame_data(image_colors)
@@ -113,6 +123,7 @@ class TclRenderer(object):
       time.sleep(_FRAME_MSG_DELAY)
 
     self._sock.send(_MSG_END_FRAME)
+    self._frame_delays.append(get_time_millis() - dst_time)
     self._consume_reply_data()
 
   def _consume_reply_data(self):

@@ -10,6 +10,7 @@
 #include <stdint.h>
 
 #include <queue>
+#include <vector>
 
 #define STRAND_COUNT    8
 #define STRAND_LENGTH   512
@@ -76,6 +77,15 @@ class TclRenderer {
       int b_min, int b_max, double b_gamma);
 
   void ScheduleImageAt(Bytes* bytes, const Time& time);
+
+  // Returns the total of all artificial delays
+  // added during sending of data.
+  int GetFrameSendDuration();
+
+  std::vector<int> GetAndClearFrameDelays();
+
+  // Reset controller if no reply data in ms. Default is 5000.
+  void SetAutoResetAfterNoDataMs(int value);
 
  private:
   TclRenderer();
@@ -144,6 +154,9 @@ class TclRenderer {
   int controller_id_;
   int width_;
   int height_;
+  int mgs_start_delay_us_;
+  int mgs_data_delay_us_;
+  int auto_reset_after_no_data_ms_;
   bool init_sent_;
   bool is_shutting_down_;
   double gamma_r_[256];
@@ -158,6 +171,7 @@ class TclRenderer {
   pthread_cond_t cond_;
   pthread_t thread_;
   int frames_sent_after_reply_;
+  std::vector<int> frame_delays_;
 };
 
 #endif  // __DFPLAYER_TCL_RENDERER_H

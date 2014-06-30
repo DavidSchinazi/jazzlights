@@ -20,19 +20,18 @@
 
 #define FRAME_DATA_LEN  (STRAND_LENGTH * 8 * 3)
 
-static const int kAutoResetAfterNoDataMs = 5000;
-
-
 #define REPORT_ERRNO(name)                           \
-  fprintf(stderr, "Failure in '%s' call: %d, %s",    \
+  fprintf(stderr, "Failure in '%s' call: %d, %s\n",  \
           name, errno, strerror(errno));
 
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
 
 #define CHECK(cond)                                             \
   if (!(cond)) {                                                \
     fprintf(stderr, "EXITING with check-fail at %s (%s:%d)"     \
-            ". Condition = ##cond\n", __FILE__, __FUNCTION__,   \
-            __LINE__);                                         \
+            ". Condition = '" TOSTRING(cond) "'\n",             \
+            __FILE__, __FUNCTION__, __LINE__);                  \
     exit(-1);                                                   \
   }
 
@@ -105,6 +104,8 @@ TclRenderer::TclRenderer(
     int controller_id, int width, int height,
     const Layout& layout, double gamma)
     : controller_id_(controller_id), width_(width), height_(height),
+      mgs_start_delay_us_(500), mgs_data_delay_us_(1500),
+      auto_reset_after_no_data_ms_(5000),
       init_sent_(false), is_shutting_down_(false), layout_(layout),
       socket_(-1), require_reset_(true), last_reply_time_(0),
       lock_(PTHREAD_MUTEX_INITIALIZER),
@@ -167,6 +168,24 @@ void TclRenderer::SetGammaRanges(
     gamma_b_[i] =
         (int) (b_min + floor((b_max - b_min) * pow(d, b_gamma) + 0.5));
   }
+}
+
+void TclRenderer::SetAutoResetAfterNoDataMs(int value) {
+  Autolock l(lock_);
+  auto_reset_after_no_data_ms_ = value;
+}
+
+std::vector<int> TclRenderer::GetAndClearFrameDelays() {
+  Autolock l(lock_);
+  std::vector<int> result = frame_delays_;
+  frame_delays_.clear();
+  return result;
+}
+
+int TclRenderer::GetFrameSendDuration() {
+  Autolock l(lock_);
+  int usec = mgs_start_delay_us_ + mgs_data_delay_us_ * (FRAME_DATA_LEN / 1024);
+  return usec / 1000;
 }
 
 void TclRenderer::ScheduleImageAt(Bytes* bytes, const Time& time) {
@@ -303,15 +322,18 @@ void* TclRenderer::ThreadEntry(void* arg) {
 
 void TclRenderer::Run() {
   while (true) {
+    uint64_t auto_reset_after_no_data_ms;
     {
       Autolock l(lock_);
       if (is_shutting_down_)
         break;
+      auto_reset_after_no_data_ms = auto_reset_after_no_data_ms_;
     }
 
-    if (!require_reset_ && frames_sent_after_reply_ > 2) {
+    if (!require_reset_ && frames_sent_after_reply_ > 2 &&
+        auto_reset_after_no_data_ms > 0) {
       uint64_t reply_delay = GetCurrentMillis() - last_reply_time_;
-      if (reply_delay > kAutoResetAfterNoDataMs) {
+      if (reply_delay > auto_reset_after_no_data_ms) {
         fprintf(stderr, "No reply in %ld ms and %d frames, RESETTING !!!\n",
                 reply_delay, frames_sent_after_reply_);
         require_reset_ = true;
@@ -344,7 +366,10 @@ void TclRenderer::Run() {
     }
 
     if (item.frame_data_) {
-      if (!SendFrame(item.frame_data_)) {
+      if (SendFrame(item.frame_data_)) {
+        Autolock l(lock_);
+        frame_delays_.push_back(GetCurrentMillis() - item.time_);
+      } else {
         fprintf(stderr, "Scheduling reset after failed frame\n");
         require_reset_ = true;
       }
@@ -520,18 +545,24 @@ bool TclRenderer::InitController() {
 
 bool TclRenderer::SendFrame(uint8_t* frame_data) {
   static const uint8_t MSG_START_FRAME[] = {0xC5, 0x77, 0x88, 0x00, 0x00};
-  static const double MSG_START_FRAME_DELAY = 0.0005;
   static const uint8_t MSG_END_FRAME[] = {0xAA, 0x01, 0x8C, 0x01, 0x55};
   static const uint8_t FRAME_MSG_PREFIX[] = {
       0x88, 0x00, 0x68, 0x3F, 0x2B, 0xFD,
       0x60, 0x8B, 0x95, 0xEF, 0x04, 0x69};
   static const uint8_t FRAME_MSG_SUFFIX[] = {0x00, 0x00, 0x00, 0x00};
-  static const double FRAME_MSG_DELAY = 0.0015;
+
+  int mgs_start_delay_us;
+  int mgs_data_delay_us;
+  {
+    Autolock l(lock_);
+    mgs_start_delay_us = mgs_start_delay_us_;
+    mgs_data_delay_us = mgs_data_delay_us_;
+  }
 
   ConsumeReplyData();
   if (!SendPacket(MSG_START_FRAME, sizeof(MSG_START_FRAME)))
     return false;
-  Sleep(MSG_START_FRAME_DELAY);
+  Sleep(((double) mgs_start_delay_us) / 1000000.0);
 
   uint8_t packet[sizeof(FRAME_MSG_PREFIX) + 1024 + sizeof(FRAME_MSG_SUFFIX)];
   memcpy(packet, FRAME_MSG_PREFIX, sizeof(FRAME_MSG_PREFIX));
@@ -548,7 +579,7 @@ bool TclRenderer::SendFrame(uint8_t* frame_data) {
 
     if (!SendPacket(packet, sizeof(packet)))
       return false;
-    Sleep(FRAME_MSG_DELAY);
+    Sleep(((double) mgs_data_delay_us) / 1000000.0);
   }
   CHECK(frame_data_pos == FRAME_DATA_LEN);
   CHECK(message_idx == 12);
