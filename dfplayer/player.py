@@ -18,10 +18,10 @@ from mpd import MPDClient
 from gevent import sleep
 from gevent.coros import RLock
 
+from .frame_source import FrameSource
 from .stats import Stats
 from .util import catch_and_log, PROJECT_DIR, PACKAGE_DIR, VENV_DIR
 from .util import get_time_millis
-from .effect import load as load_effect
 from .tcl_renderer import TclRenderer
 
 FPS = 16
@@ -73,13 +73,14 @@ class Player(object):
         self._fetch_state()
 
         self._target_gamma = 2.4
-        self._split_sides = False
         self._seek_time = None
-        self._effect = None
         self._frame = None
         self._last_frame_file = ''
         self._frame_delay_stats = Stats(100)
         self._render_durations = Stats(100)
+
+        self._frame_source = FrameSource(
+            FPS, _SCREEN_FRAME_WIDTH, IMAGE_FRAME_WIDTH, FRAME_HEIGHT)
 
         self._tcl = TclRenderer(
             TCL_CONTROLLER, _SCREEN_FRAME_WIDTH, FRAME_HEIGHT,
@@ -94,7 +95,7 @@ class Player(object):
         # timestamp. OK while we call it once per second though.
         fps = 0
         if duration > 0:
-          fps = len(delays) * 1000 / duration
+          fps = float(int(10000.0 * len(delays) / duration)) / 10.0
         frame_avg = self._frame_delay_stats.get_average_and_stddev()
         render_avg = self._render_durations.get_average_and_stddev()
         return ('Player [%s %s %02d:%02d] (fps=%s, delay=%s/%s, '
@@ -121,7 +122,7 @@ class Player(object):
         return self._tcl.get_layout_coords()
 
     def toggle_split_sides(self):
-        self._split_sides = not self._split_sides
+        self._frame_source.toggle_split_sides()
 
     def gamma_up(self):
         self._target_gamma += 0.1
@@ -323,42 +324,16 @@ class Player(object):
             if frame_file == self._last_frame_file:
                 return self._frame
 
-            if not os.path.exists(frame_file):
-                # TODO(igorc): Handle the case where '_frame' was neevr loaded.
-                return self._frame
-
             start_time = time.time()
-            with open(frame_file, 'rb') as imgfile:
-                img = Image.open(imgfile)
-                img.load()
-            if img.size[0] != IMAGE_FRAME_WIDTH or img.size[1] != FRAME_HEIGHT:
-                print 'Unexpected image size for %s = %s' % (
-                    frame_file, [img.size])
+            new_frame = self._frame_source.load_frame_file(frame_file)
+            if not new_frame:
                 return self._frame
+            self._frame = new_frame
             self._last_frame_file = frame_file
 
-            if self._effect is not None:
-                if not self._effect(img, self.elapsed_time):
-                    self._effect = None
-
-            if _SCREEN_FRAME_WIDTH / IMAGE_FRAME_WIDTH == 2:
-                # Pre-split images, just copy them twice.
-                self._frame = Image.new(
-                    'RGB', (_SCREEN_FRAME_WIDTH, FRAME_HEIGHT))
-                self._frame.paste(img, (0, 0))
-                self._frame.paste(img, (IMAGE_FRAME_WIDTH, 0))
-            elif self._split_sides:
-                sub_img = img.resize((img.size[0] / 2, img.size[1]))
-                #sub_img = img.crop((
-                #    img.size[0] / 4, 0, img.size[0] * 3 / 4, img.size[1]))
-                self._frame = Image.new('RGB', img.size)
-                self._frame.paste(sub_img, (0, 0))
-                self._frame.paste(sub_img, (sub_img.size[0], 0))
-            else:
-                self._frame = img
-
-            # TODO(igorc): Schedule ahead to compensate for the last 20ms.
-            self._tcl.send_frame(self._frame, 0)
+            # TODO(igorc): Schedule ahead of time.
+            delay_ms = int((float(frame_num) / FPS - elapsed_time) * 1000.0)
+            self._tcl.send_frame(self._frame, delay_ms)
 
             duration_ms = int(round((time.time() - start_time) * 1000))
             self._render_durations.add(duration_ms)
@@ -367,10 +342,10 @@ class Player(object):
 
     def play_effect(self, name, **kwargs):
         logging.info("Playing %s: %s", name, kwargs)
-        self._effect = load_effect(name, **kwargs)
-    
+        self._frame_source.play_effect(name, **kwargs)
+
     def stop_effect(self):
-        self._effect = None    
+        self._frame_source.stop_effect()
 
     def run(self):
         while True:
@@ -380,5 +355,4 @@ class Player(object):
                 # with self.lock:
                 #    self.mpd.idle()
                 sleep(1)
-
 

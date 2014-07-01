@@ -1,20 +1,15 @@
 # -*- coding: utf-8 -*-
-import PIL
-import time
-import logging
-
-from PIL import Image, ImageFont, ImageDraw, ImageChops
 
 from ..effect import FixedDurationEffect, register
 
 class SolidColor(FixedDurationEffect):
 
-    def __init__(self,duration=2,color="green"):
-        FixedDurationEffect.__init__(self,duration)
-        self.color = color
+  def __init__(self, duration=2, color='green'):
+    FixedDurationEffect.__init__(self, duration=duration)
+    self._color = color
 
-    def _apply(self,frame,elapsed):
-        frame.paste(self.color,(0, 0, frame.size[0], frame.size[1]))
+  def _apply(self, frame, elapsed):
+    frame.paste(self._color, (0, 0, frame.size[0], frame.size[1]))
 
 
 register('solidcolor', SolidColor)
