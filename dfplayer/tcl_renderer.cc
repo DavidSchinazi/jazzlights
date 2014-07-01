@@ -215,6 +215,11 @@ void TclRenderer::ScheduleStrandsAt(Strands* strands, uint64_t time) {
   }
 }
 
+int TclRenderer::GetQueueSize() {
+  Autolock l(lock_);
+  return queue_.size();
+}
+
 TclRenderer::Strands* TclRenderer::ConvertImageToStrands(
     uint8_t* image_data, int len) {
   Autolock l(lock_);

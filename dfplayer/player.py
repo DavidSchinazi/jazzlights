@@ -80,7 +80,8 @@ class Player(object):
         self._render_durations = Stats(100)
 
         self._frame_source = FrameSource(
-            FPS, _SCREEN_FRAME_WIDTH, IMAGE_FRAME_WIDTH, FRAME_HEIGHT)
+            FPS, _SCREEN_FRAME_WIDTH, IMAGE_FRAME_WIDTH,
+            FRAME_HEIGHT, CLIPS_DIR)
 
         self._tcl = TclRenderer(
             TCL_CONTROLLER, _SCREEN_FRAME_WIDTH, FRAME_HEIGHT,
@@ -99,11 +100,13 @@ class Player(object):
         frame_avg = self._frame_delay_stats.get_average_and_stddev()
         render_avg = self._render_durations.get_average_and_stddev()
         return ('Player [%s %s %02d:%02d] (fps=%s, delay=%s/%s, '
-                'render=%d/%d)') % (
+                'render=%d/%d, cached=%s, queued=%s)') % (
                    self.status, self.clip_name,
                    elapsed_sec / 60, elapsed_sec % 60, fps,
                    int(frame_avg[0]), int(frame_avg[1]),
-                   int(render_avg[0]), int(render_avg[1]))
+                   int(render_avg[0]), int(render_avg[1]),
+                   self._frame_source.get_cache_size(),
+                   self._tcl.get_queue_size())
 
     def get_status_str(self):
         if self._seek_time:
@@ -302,6 +305,8 @@ class Player(object):
             self._seek_time = int(self._seek_time + seconds)
         else:
             self._seek_time = int(self._mpd_elapsed_time + seconds)
+        if self._seek_time < 0:
+            self._seek_time = 0
         with self.lock:
             # TODO(igorc): Passed None here! (around start/end of track?)
             self.mpd.seekid(self._songid, '%s' % self._seek_time)
@@ -311,13 +316,22 @@ class Player(object):
             # TODO(igorc): Keep drawing some neutral pattern for fun.
             return None
         else:
-            # TODO(igorc): Clarify frame sync. The caller calls this function
-            # at 30 FPS, while we generate at 16 FPS max. This may cause some
-            # uneven frame rate. Basically, there is no guarantee that the
-            # caller's timing  will be well-aligned with elapsed frame counter.
-            # TODO(igorc): Preload first 5 frames of every clip, and
-            # keep the next 5 frames always preloaded too.
             elapsed_time = self.elapsed_time
+            if self._tcl.has_scheduling_support():
+                start_time = time.time()
+                self._frame_source.prefetch(self.clip_name, elapsed_time)
+                baseline_ms = get_time_millis()
+                for f in self._frame_source.get_cached_frames():
+                    if not f.rendered:
+                        f.rendered = True
+                        self._tcl.send_frame(f.image, f.current_ms - baseline_ms)
+                new_frame = self._frame_source.get_frame_at(elapsed_time)
+                if new_frame:
+                    self._frame = new_frame.image
+                duration_ms = int(round((time.time() - start_time) * 1000))
+                self._render_durations.add(duration_ms)
+                return self._frame
+
             frame_num = int(elapsed_time * FPS)
             frame_file = CLIPS_DIR + '%s/frame%06d.jpg' \
                 % (self.clip_name, frame_num + 1)
@@ -325,13 +339,13 @@ class Player(object):
                 return self._frame
 
             start_time = time.time()
-            new_frame = self._frame_source.load_frame_file(frame_file)
+            new_frame = self._frame_source.load_frame_file(
+                self.clip_name, frame_num)
             if not new_frame:
                 return self._frame
             self._frame = new_frame
             self._last_frame_file = frame_file
 
-            # TODO(igorc): Schedule ahead of time.
             delay_ms = int((float(frame_num) / FPS - elapsed_time) * 1000.0)
             self._tcl.send_frame(self._frame, delay_ms)
 

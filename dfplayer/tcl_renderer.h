@@ -87,6 +87,9 @@ class TclRenderer {
   // Reset controller if no reply data in ms. Default is 5000.
   void SetAutoResetAfterNoDataMs(int value);
 
+  // Returns the number of currently queued frames.
+  int GetQueueSize();
+
  private:
   TclRenderer();
   TclRenderer(const TclRenderer& src);

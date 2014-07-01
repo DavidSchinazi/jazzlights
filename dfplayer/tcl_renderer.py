@@ -61,6 +61,12 @@ class TclRenderer(object):
   def get_send_duration_ms(self):
     return self._frame_send_duration
 
+  def get_queue_size(self):
+    if self._use_cc_impl:
+      return self._renderer.GetQueueSize()
+    else:
+      return -1
+
   def send_frame(self, image, delay_ms):
     if self._use_cc_impl:
       time = TclCcTime()
