@@ -27,5 +27,6 @@ setup(name='dfplayer',
       [console_scripts]
       dfplayer = dfplayer:main
       dfprepr = dfplayer.preprocess:main
+      test = dfplayer.test:main
       """,
       )

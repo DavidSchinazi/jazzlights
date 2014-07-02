@@ -10,8 +10,6 @@ from .tcl_renderer_cc import TclRenderer as TclCcImpl
 from .tcl_renderer_cc import Time as TclCcTime
 from .util import get_time_millis
 
-_USE_CC_IMPL = True
-
 class TclRenderer(object):
   """To use this class:
        renderer = TclRenderer(controller_id, width, height, 'layout.dxf', 2.4)
@@ -21,9 +19,10 @@ class TclRenderer(object):
        renderer.send_frame(image_data)
   """
 
-  def __init__(self, controller_id, width, height, layout_file, gamma):
+  def __init__(self, controller_id, width, height, layout_file,
+               gamma, use_cc_impl, test_mode=False):
     self._layout = TclLayout(layout_file, width - 1, height - 1)
-    self._use_cc_impl = _USE_CC_IMPL
+    self._use_cc_impl = use_cc_impl
     if self._use_cc_impl:
       layout = TclCcLayout()
       for s in self._layout.get_strands():
@@ -32,8 +31,12 @@ class TclRenderer(object):
       self._renderer = TclCcImpl(controller_id, width, height, layout, gamma)
       self._frame_send_duration = self._renderer.GetFrameSendDuration()
       # self._renderer.SetAutoResetAfterNoDataMs(0)
+      if not test_mode:
+        self._renderer.StartMessageLoop()
     else:
       self._renderer = TclPyImpl(controller_id, width, height, self._layout)
+      if not test_mode:
+        self._renderer.connect()
       self._frame_send_duration = self._renderer.get_send_duration_ms()
     self.set_gamma(gamma)
     self._frame_delays = []
@@ -74,6 +77,12 @@ class TclRenderer(object):
       self._renderer.ScheduleImageAt(image.tostring(), time)
     else:
       self._renderer.send_frame(list(image.getdata()), get_time_millis())
+
+  def get_frame_data_for_test(self, image):
+    if self._use_cc_impl:
+      return self._renderer.GetFrameDataForTest(image.tostring())
+    else:
+      return self._renderer.get_frame_data_for_test(list(image.getdata()))
 
   def get_and_clear_frame_delays(self):
     self._populate_frame_delays()

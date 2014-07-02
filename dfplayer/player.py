@@ -29,6 +29,7 @@ _SCREEN_FRAME_WIDTH = 500
 IMAGE_FRAME_WIDTH = _SCREEN_FRAME_WIDTH / 2
 FRAME_HEIGHT = 50
 TCL_CONTROLLER = 1
+_USE_CC_TCL = True
 
 MPD_PORT = 6601
 MPD_DIR = VENV_DIR + '/mpd/'
@@ -85,7 +86,7 @@ class Player(object):
 
         self._tcl = TclRenderer(
             TCL_CONTROLLER, _SCREEN_FRAME_WIDTH, FRAME_HEIGHT,
-            'dfplayer/layout.dxf', self._target_gamma)
+            'dfplayer/layout.dxf', self._target_gamma, _USE_CC_TCL)
 
     def __str__(self):
         elapsed_sec = int(self.elapsed_time)

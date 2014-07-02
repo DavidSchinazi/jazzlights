@@ -34,7 +34,7 @@ _STRAND_BIT_MASK = bytearray([0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80])
 class TclRenderer(object):
   """To use this class:
        renderer = TclRenderer(controller_id, width, height, layout)
-       renderer.set
+       renderer.connect()
        # 'image_colors' has tuples with 3 RGB bytes for each pixel,
        # with 'height' number of sequential rows, each row having
        # length of 'width' pixels.
@@ -47,9 +47,9 @@ class TclRenderer(object):
     self._height = height
     self._layout = layout
     self._init_sent = False
+    self._sock = None
     self._frame_delays = []
     self.set_gamma_ranges((0, 255, 2.4), (0, 255, 2.4), (0, 255, 2.4))
-    self._connect()
 
   def set_gamma_ranges(self, r, g, b):
     if (r[0] < 0 or r[1] > 255 or r[2] <= 0 or
@@ -69,11 +69,12 @@ class TclRenderer(object):
       self._gamma_b.append(
           int(b[0] + math.floor((b[1] - b[0]) * math.pow(d, b[2]) + 0.5)))
 
-  def _connect(self):
+  def connect(self):
+    if self._sock:
+      return
     self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     self._sock.setblocking(0)
     self._sock.bind(('', 0))
-
     target_ip = ('192.168.60.%s' % (49 + self._controller_id))
     self._sock.connect((target_ip, 5000))
 
@@ -81,6 +82,8 @@ class TclRenderer(object):
     # TODO(igorc): Re-init if there's still no reply data in several seconds.
     if self._init_sent:
       return
+    if not self._sock:
+      raise Exception('Not connected')
     self._init_sent = True
     # TODO(igorc): Look for a better place for reset.
     self._sock.send(_MSG_RESET)
@@ -95,6 +98,9 @@ class TclRenderer(object):
 
   def get_send_duration_ms(self):
     return int((_MSG_START_FRAME_DELAY + _FRAME_MSG_DELAY * 12) * 1000.0)
+
+  def get_frame_data_for_test(self, image_colors):
+    return self._convert_image_to_frame_data(image_colors)
 
   def send_frame(self, image_colors, dst_time):
     self._init_controller()

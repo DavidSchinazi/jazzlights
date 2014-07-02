@@ -105,21 +105,26 @@ TclRenderer::TclRenderer(
     const Layout& layout, double gamma)
     : controller_id_(controller_id), width_(width), height_(height),
       mgs_start_delay_us_(500), mgs_data_delay_us_(1500),
-      auto_reset_after_no_data_ms_(5000),
-      init_sent_(false), is_shutting_down_(false), layout_(layout),
+      auto_reset_after_no_data_ms_(5000), init_sent_(false),
+      is_shutting_down_(false), has_started_thread_(false), layout_(layout),
       socket_(-1), require_reset_(true), last_reply_time_(0),
       lock_(PTHREAD_MUTEX_INITIALIZER),
       cond_(PTHREAD_COND_INITIALIZER),
       frames_sent_after_reply_(0) {
   SetGamma(gamma);
-  int err = pthread_create(&thread_, NULL, &ThreadEntry, this);
-  if (err != 0) {
-    fprintf(stderr, "pthread_create failed with %d\n", err);
-    CHECK(false);
-  }
 }
 
 TclRenderer::~TclRenderer() {
+  if (has_started_thread_) {
+    {
+      Autolock l(lock_);
+      is_shutting_down_ = true;
+      pthread_cond_broadcast(&cond_);
+    }
+
+    pthread_join(thread_, NULL);
+  }
+
   while (!queue_.empty()) {
     WorkItem item = queue_.top();
     queue_.pop();
@@ -130,14 +135,16 @@ TclRenderer::~TclRenderer() {
   pthread_mutex_destroy(&lock_);
 }
 
-void TclRenderer::Shutdown() {
-  {
-    Autolock l(lock_);
-    is_shutting_down_ = true;
-    pthread_cond_broadcast(&cond_);
+void TclRenderer::StartMessageLoop() {
+  Autolock l(lock_);
+  if (has_started_thread_)
+    return;
+  has_started_thread_ = true;
+  int err = pthread_create(&thread_, NULL, &ThreadEntry, this);
+  if (err != 0) {
+    fprintf(stderr, "pthread_create failed with %d\n", err);
+    CHECK(false);
   }
-
-  pthread_join(thread_, NULL);
 }
 
 void TclRenderer::SetGamma(double gamma) {
@@ -201,6 +208,7 @@ void TclRenderer::ScheduleStrandsAt(Strands* strands, uint64_t time) {
   uint8_t* frame_data = ConvertStrandsToFrame(strands);
 
   Autolock l(lock_);
+  CHECK(has_started_thread_);
   if (is_shutting_down_) {
     delete[] frame_data;
     return;
@@ -213,6 +221,21 @@ void TclRenderer::ScheduleStrandsAt(Strands* strands, uint64_t time) {
     fprintf(stderr, "Unable to signal condition: %d\n", err);
     CHECK(false);
   }
+}
+
+std::vector<int> TclRenderer::GetFrameDataForTest(Bytes* bytes) {
+  std::vector<int> result;
+  Strands* strands = ConvertImageToStrands(bytes->data_, bytes->len_);
+  if (!strands)
+    return result;
+  ApplyGamma(strands);
+  uint8_t* frame_data = ConvertStrandsToFrame(strands);
+  for (int i = 0; i < FRAME_DATA_LEN; i++) {
+    result.push_back(frame_data[i]);
+  }
+  delete[] frame_data;
+  delete strands;
+  return result;
 }
 
 int TclRenderer::GetQueueSize() {
@@ -230,7 +253,7 @@ TclRenderer::Strands* TclRenderer::ConvertImageToStrands(
     int strand_len = layout_.lengths_[strand_id];
     uint8_t* dst_colors = strands->colors[strand_id];
     for (int i = 0; i < strand_len; i++) {
-      int color_idx = y[i] * width_ + x[i];
+      int color_idx = (y[i] * width_ + x[i]) * 3;
       if ((color_idx + 3) > len) {
         fprintf(stderr,
                 "Not enough data in image. Accessing %d, len=%d, strand=%d, "
@@ -306,7 +329,7 @@ static void Sleep(double seconds) {
   struct timespec req;
   struct timespec rem;
   req.tv_sec = (int) seconds;
-  req.tv_nsec = (long) ((seconds - req.tv_sec) * 1000000.0);
+  req.tv_nsec = (long) ((seconds - req.tv_sec) * 1000000000.0);
   rem.tv_sec = 0;
   rem.tv_nsec = 0;
   while (nanosleep(&req, &rem) == -1) {
@@ -374,6 +397,7 @@ void TclRenderer::Run() {
       if (SendFrame(item.frame_data_)) {
         Autolock l(lock_);
         frame_delays_.push_back(GetCurrentMillis() - item.time_);
+        // fprintf(stderr, "Sent frame for %ld at %ld\n", item.time_, GetCurrentMillis());
       } else {
         fprintf(stderr, "Scheduling reset after failed frame\n");
         require_reset_ = true;

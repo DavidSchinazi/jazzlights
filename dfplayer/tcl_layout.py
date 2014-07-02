@@ -36,7 +36,7 @@ class Strand(object):
 class TclLayout(object):
 
   def __init__(self, file_path, max_x, max_y):
-    self._strands = []
+    self._strands = {}
     self._max_x = max_x
     self._max_y = max_y
 
@@ -45,12 +45,12 @@ class TclLayout(object):
 
     self._normalize()
 
-    #for strand in self._strands:
+    #for strand in self._strands.values():
     #  print 'Strand #%s, %s leds = %s' % (
     #      strand._id, len(strand._coords), strand._coords)
 
   def get_strands(self):
-    return list(self._strands)
+    return list(self._strands.values())
 
   def get_strand_coords(self, id):
     if id >= len(self._strands):
@@ -59,7 +59,7 @@ class TclLayout(object):
 
   def get_all_coords(self):
     result = []
-    for s in self._strands:
+    for s in self._strands.values():
       result += s._coords
     return result
 
@@ -95,7 +95,7 @@ class TclLayout(object):
 
     for id, id_coord in anchors.items():
       strand = Strand(id)
-      self._strands.append(strand)
+      self._strands[id] = strand
       prev_coord = id_coord
       while True:
         if prev_coord not in dots:
@@ -141,7 +141,7 @@ class TclLayout(object):
     min_y = sys.float_info.max
     max_x = sys.float_info.min
     max_y = sys.float_info.min
-    for s in self._strands:
+    for s in self._strands.values():
       for c in s._coords:
         x, y = c[0], c[1]
         if x < min_x:
@@ -154,7 +154,7 @@ class TclLayout(object):
           max_y = y
     width = max_x - min_x
     height = max_y - min_y
-    for s in self._strands:
+    for s in self._strands.values():
       new_coords = []
       for c in s._coords:
         x = (c[0] - min_x) / width * self._max_x

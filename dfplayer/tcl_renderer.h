@@ -67,8 +67,9 @@ class TclRenderer {
   TclRenderer(
       int controller_id, int width, int height,
       const Layout& layout, double gamma);
+  ~TclRenderer();
 
-  void Shutdown();
+  void StartMessageLoop();
 
   void SetGamma(double gamma);
   void SetGammaRanges(
@@ -77,6 +78,8 @@ class TclRenderer {
       int b_min, int b_max, double b_gamma);
 
   void ScheduleImageAt(Bytes* bytes, const Time& time);
+
+  std::vector<int> GetFrameDataForTest(Bytes* bytes);
 
   // Returns the total of all artificial delays
   // added during sending of data.
@@ -91,9 +94,7 @@ class TclRenderer {
   int GetQueueSize();
 
  private:
-  TclRenderer();
   TclRenderer(const TclRenderer& src);
-  ~TclRenderer();
   TclRenderer& operator=(const TclRenderer& rhs);
 
   struct Strands {
@@ -162,6 +163,7 @@ class TclRenderer {
   int auto_reset_after_no_data_ms_;
   bool init_sent_;
   bool is_shutting_down_;
+  bool has_started_thread_;
   double gamma_r_[256];
   double gamma_g_[256];
   double gamma_b_[256];
