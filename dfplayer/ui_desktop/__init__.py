@@ -83,7 +83,7 @@ class PlayerApp(Frame):
         self.root.bind('<Left>', lambda e: player.skip_backward())
         self.root.bind('<Right>', lambda e: player.skip_forward())
         self.root.protocol('WM_DELETE_WINDOW', lambda : self.quit())
-        self.root.after(1000 / FPS, lambda : self.update())
+        self.root.after(1000 / FPS / 4, lambda : self.update())
         self.running = True
 
     def run_effect(self, effect):
@@ -120,7 +120,7 @@ class PlayerApp(Frame):
                 self._img.paste(frame)
             self._canvas.itemconfig(
                 self._main_label, text=self.player.get_status_str())
-            self.root.after(1000 / FPS, lambda : self.update())
+            self.root.after(1000 / FPS / 4, lambda : self.update())
         except KeyboardInterrupt:
             self.quit()
 

@@ -133,6 +133,7 @@ class FrameSource(object):
       return None
 
     if self._effect is not None:
+      # TODO(igorc): Do not transpose text effect.
       if not self._effect(src_img, current_ms):
         self._effect = None
 
@@ -140,8 +141,9 @@ class FrameSource(object):
       # Pre-split images, just copy them twice.
       frame_img = Image.new(
           'RGB', (self._screen_width, self._frame_height))
-      frame_img.paste(src_img, (0, 0))
       frame_img.paste(src_img, (self._frame_width, 0))
+      flip_img = src_img.transpose(Image.FLIP_LEFT_RIGHT)
+      frame_img.paste(flip_img, (0, 0))
     elif self._split_sides:
       sub_img = src_img.resize((src_img.size[0] / 2, src_img.size[1]))
       #sub_img = src_img.crop((

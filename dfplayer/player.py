@@ -24,7 +24,7 @@ from .util import catch_and_log, PROJECT_DIR, PACKAGE_DIR, VENV_DIR
 from .util import get_time_millis
 from .tcl_renderer import TclRenderer
 
-FPS = 16
+FPS = 30
 _SCREEN_FRAME_WIDTH = 500
 IMAGE_FRAME_WIDTH = _SCREEN_FRAME_WIDTH / 2
 FRAME_HEIGHT = 50
