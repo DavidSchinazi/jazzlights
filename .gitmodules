@@ -1,0 +1,9 @@
+[submodule "projectm"]
+	path = projectm
+	url = https://bitbucket.org/discofish/projectm.git
+[submodule "mixramp2"]
+	path = mixramp2
+	url = https://bitbucket.org/discofish/mixramp2.git
+[submodule "mpd"]
+	path = mpd
+	url = https://bitbucket.org/discofish/mpd.git
