@@ -6,3 +6,4 @@ dfplayer.egg-info/
 dfplayer/_tcl_renderer_cc.so
 dfplayer/tcl_renderer_cc.py
 dfplayer/tcl_renderer_wrap.cxx
+dfplayer/libprojectM.so

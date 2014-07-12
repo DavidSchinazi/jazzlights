@@ -16,6 +16,10 @@ clips: develop
 	-rm -rf env/playlists
 	env/bin/dfprepr clips
 
+dfplayer/libprojectM.so:
+	./build_projectm.py
+	cp projectm/src/libprojectM/libprojectM.so dfplayer/libprojectM.so
+
 clean:
 	find . -name '*.pyc' -exec rm -f {} +
 	find . -name '*.pyo' -exec rm -f {} +
