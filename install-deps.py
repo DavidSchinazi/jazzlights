@@ -18,11 +18,13 @@ _PILLOW_DEPS = [
     ]
 
 _PLAYER_DEPS = [
+    'libaudiofile-dev',
     'libav-tools',
     'mpd',
     #'nvidia-current',
     'python-dev',
     'python-mpd',
+    'python-mutagen',
     'python-setuptools',
     'python-tk',
     'swig',
