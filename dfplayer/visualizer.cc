@@ -18,76 +18,6 @@
 
 //#include <csignal>
 
-#define REPORT_ERRNO(name)                           \
-  fprintf(stderr, "Failure in '%s' call: %d, %s\n",  \
-          name, errno, strerror(errno));
-
-#define STRINGIFY(x) #x
-#define TOSTRING(x) STRINGIFY(x)
-
-#define CHECK(cond)                                             \
-  if (!(cond)) {                                                \
-    fprintf(stderr, "EXITING with check-fail at %s (%s:%d)"     \
-            ". Condition = '" TOSTRING(cond) "'\n",             \
-            __FILE__, __FUNCTION__, __LINE__);                  \
-    exit(-1);                                                   \
-  }
-
-
-class Autolock {
- public:
-  Autolock(pthread_mutex_t& lock) : lock_(&lock) {
-    int err = pthread_mutex_lock(lock_);
-    if (err != 0) {
-      fprintf(stderr, "Unable to aquire mutex: %d\n", err);
-      CHECK(false);
-    }
-  }
-
-  ~Autolock() {
-    int err = pthread_mutex_unlock(lock_);
-    if (err != 0) {
-      fprintf(stderr, "Unable to release mutex: %d\n", err);
-      CHECK(false);
-    }
-  }
-
- private:
-  Autolock(const Autolock& src);
-  Autolock& operator=(const Autolock& rhs);
-
-  pthread_mutex_t* lock_;
-};
-
-static uint64_t GetCurrentMillis() {
-  struct timespec time;
-  if (clock_gettime(CLOCK_MONOTONIC, &time) == -1) {
-    REPORT_ERRNO("clock_gettime(monotonic)");
-    CHECK(false);
-  }
-  return ((uint64_t) time.tv_sec) * 1000 + time.tv_nsec / 1000000;
-}
-
-Bytes::Bytes(void* data, int len)
-    : data_(reinterpret_cast<uint8_t*>(data)), len_(len) {}
-
-Bytes::~Bytes() {
-  Clear();
-}
-
-void Bytes::Clear() {
-  if (data_)
-    delete[] data_;
-  data_ = NULL;
-  len_ = 0;
-}
-
-void Bytes::SetData(void* data, int len) {
-  Clear();
-  data_ = reinterpret_cast<uint8_t*>(data);
-  len_ = len;
-}
-
 Visualizer::Visualizer(int width, int height, int fps)
     : width_(width), height_(height), fps_(fps), alsa_handle_(NULL),
       total_overrun_count_(0), has_image_(false), dropped_image_count_(0),
@@ -98,7 +28,7 @@ Visualizer::Visualizer(int width, int height, int fps)
 
   pcm_buffer_ = new int16_t[PCM::maxsamples * 2];
 
-  image_buffer_size_ = width_ * height_ * 3;
+  image_buffer_size_ = width_ * height_ * 4;
   image_buffer_ = new uint8_t[image_buffer_size_];
 }
 
@@ -203,7 +133,7 @@ bool Visualizer::TransferPcmDataLocked() {
     sample_count += samples;
   }
 
-  fprintf(stderr, "Adding %d samples", sample_count);
+  fprintf(stderr, "Adding %d samples\n", sample_count);
   pcm->addPCM16Data(pcm_buffer_, sample_count);
 
   return true;
@@ -310,11 +240,14 @@ void Visualizer::RenderFrameLocked() {
   projectm_->renderFrame();
 
   glFlush();
-  glReadPixels(0, 0, width_, height_, GL_RGB, GL_UNSIGNED_BYTE, image_buffer_);
+  glReadPixels(0, 0, width_, height_, GL_RGBA, GL_UNSIGNED_BYTE, image_buffer_);
   GLenum err = glGetError();
   if (err != GL_NO_ERROR) {
     GLenum status = 0; //glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    fprintf(stderr, "Unable to read pixels, err=%x, fb_status=%x\n", err, status);
+    fprintf(stderr, "Unable to read pixels, err=0x%x, fb_status=0x%x\n",
+            err, status);
+  } else {
+    has_image_ = true;
   }
 }
 
@@ -385,7 +318,7 @@ void Visualizer::Run() {
       }
 
       RenderFrameLocked();
-      fprintf(stderr, "Rendered frame\n");
+      //fprintf(stderr, "Rendered frame\n");
       next_render_time += ms_per_frame_;
     }
   }

@@ -20,59 +20,9 @@
 
 #define FRAME_DATA_LEN  (STRAND_LENGTH * 8 * 3)
 
-#define REPORT_ERRNO(name)                           \
-  fprintf(stderr, "Failure in '%s' call: %d, %s\n",  \
-          name, errno, strerror(errno));
+AdjustableTime::AdjustableTime() : time_(GetCurrentMillis()) {}
 
-#define STRINGIFY(x) #x
-#define TOSTRING(x) STRINGIFY(x)
-
-#define CHECK(cond)                                             \
-  if (!(cond)) {                                                \
-    fprintf(stderr, "EXITING with check-fail at %s (%s:%d)"     \
-            ". Condition = '" TOSTRING(cond) "'\n",             \
-            __FILE__, __FUNCTION__, __LINE__);                  \
-    exit(-1);                                                   \
-  }
-
-
-class Autolock {
- public:
-  Autolock(pthread_mutex_t& lock) : lock_(&lock) {
-    int err = pthread_mutex_lock(lock_);
-    if (err != 0) {
-      fprintf(stderr, "Unable to aquire mutex: %d\n", err);
-      CHECK(false);
-    }
-  }
-
-  ~Autolock() {
-    int err = pthread_mutex_unlock(lock_);
-    if (err != 0) {
-      fprintf(stderr, "Unable to release mutex: %d\n", err);
-      CHECK(false);
-    }
-  }
-
- private:
-  Autolock(const Autolock& src);
-  Autolock& operator=(const Autolock& rhs);
-
-  pthread_mutex_t* lock_;
-};
-
-static uint64_t GetCurrentMillis() {
-  struct timespec time;
-  if (clock_gettime(CLOCK_MONOTONIC, &time) == -1) {
-    REPORT_ERRNO("clock_gettime(monotonic)");
-    CHECK(false);
-  }
-  return ((uint64_t) time.tv_sec) * 1000 + time.tv_nsec / 1000000;
-}
-
-Time::Time() : time_(GetCurrentMillis()) {}
-
-void Time::AddMillis(int ms) {
+void AdjustableTime::AddMillis(int ms) {
   time_ += ms;
 }
 
@@ -90,14 +40,6 @@ void Layout::AddCoord(int strand_id, int x, int y) {
   lengths_[strand_id] = pos + 1;
   x_[strand_id][pos] = x;
   y_[strand_id][pos] = y;
-}
-
-Bytes::Bytes(void* data, int len)
-    : data_(reinterpret_cast<uint8_t*>(data)), len_(len) {}
-
-Bytes::~Bytes() {
-  if (data_)
-    delete[] data_;
 }
 
 TclRenderer::TclRenderer(
@@ -195,8 +137,8 @@ int TclRenderer::GetFrameSendDuration() {
   return usec / 1000;
 }
 
-void TclRenderer::ScheduleImageAt(Bytes* bytes, const Time& time) {
-  Strands* strands = ConvertImageToStrands(bytes->data_, bytes->len_);
+void TclRenderer::ScheduleImageAt(Bytes* bytes, const AdjustableTime& time) {
+  Strands* strands = ConvertImageToStrands(bytes->GetData(), bytes->GetLen());
   if (!strands)
     return;
   ApplyGamma(strands);
@@ -225,7 +167,7 @@ void TclRenderer::ScheduleStrandsAt(Strands* strands, uint64_t time) {
 
 std::vector<int> TclRenderer::GetFrameDataForTest(Bytes* bytes) {
   std::vector<int> result;
-  Strands* strands = ConvertImageToStrands(bytes->data_, bytes->len_);
+  Strands* strands = ConvertImageToStrands(bytes->GetData(), bytes->GetLen());
   if (!strands)
     return result;
   ApplyGamma(strands);

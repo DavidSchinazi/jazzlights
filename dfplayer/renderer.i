@@ -1,7 +1,17 @@
-%module tcl_renderer_cc
+%module renderer_cc
 
-%include "typemaps.i"
+%include "std_string.i"
 %include "std_vector.i"
+%include "typemaps.i"
+
+%typemap(out) Bytes* {
+  if ($1) {
+    $result = PyString_FromStringAndSize((const char*) $1->GetData(), $1->GetLen());
+    delete $1;
+  } else {
+    $result = Py_None;
+  }
+}
 
 %typemap(in) Bytes* bytes {
   // $1 = FlattenImageData($input);
@@ -20,6 +30,7 @@
 
 %{
 #include "tcl_renderer.h"
+#include "visualizer.h"
 %}
 
 %template(IntVector) std::vector<int>;
@@ -72,4 +83,5 @@ err:
 %}
 
 %include "tcl_renderer.h"
+%include "visualizer.h"
 

@@ -12,14 +12,16 @@
 #include <queue>
 #include <vector>
 
+#include "utils.h"
+
 #define STRAND_COUNT    8
 #define STRAND_LENGTH   512
 
 class TclRenderer;
 
 // Represents time that can be used for scheduling purposes.
-struct Time {
-  Time();
+struct AdjustableTime {
+  AdjustableTime();
 
   void AddMillis(int ms);
 
@@ -38,19 +40,6 @@ struct Layout {
   int x_[STRAND_COUNT][STRAND_LENGTH];
   int y_[STRAND_COUNT][STRAND_LENGTH];
   int lengths_[STRAND_COUNT];
-  friend class TclRenderer;
-};
-
-// Contains array of bytes and deallocates in destructor.
-struct Bytes {
-  Bytes(void* data, int len);
-  ~Bytes();
-
- private:
-  Bytes(const Bytes& src);
-  Bytes& operator=(const Bytes& rhs);
-  uint8_t* data_;
-  int len_;
   friend class TclRenderer;
 };
 
@@ -77,7 +66,7 @@ class TclRenderer {
       int g_min, int g_max, double g_gamma,
       int b_min, int b_max, double b_gamma);
 
-  void ScheduleImageAt(Bytes* bytes, const Time& time);
+  void ScheduleImageAt(Bytes* bytes, const AdjustableTime& time);
 
   std::vector<int> GetFrameDataForTest(Bytes* bytes);
 

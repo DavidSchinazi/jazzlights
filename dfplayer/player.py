@@ -23,7 +23,7 @@ from .stats import Stats
 from .util import catch_and_log, PROJECT_DIR, PACKAGE_DIR, VENV_DIR
 from .util import get_time_millis
 from .tcl_renderer import TclRenderer
-from .visualizer_cc import Visualizer
+from .renderer_cc import Visualizer
 
 FPS = 30
 _SCREEN_FRAME_WIDTH = 500

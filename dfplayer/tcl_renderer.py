@@ -5,9 +5,9 @@
 from .stats import Stats
 from .tcl_layout import TclLayout
 from .tcl_renderer_py import TclRenderer as TclPyImpl
-from .tcl_renderer_cc import Layout as TclCcLayout
-from .tcl_renderer_cc import TclRenderer as TclCcImpl
-from .tcl_renderer_cc import Time as TclCcTime
+from .renderer_cc import Layout as TclCcLayout
+from .renderer_cc import TclRenderer as TclCcImpl
+from .renderer_cc import AdjustableTime as TclCcTime
 from .util import get_time_millis
 
 class TclRenderer(object):

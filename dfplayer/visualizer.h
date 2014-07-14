@@ -16,25 +16,9 @@
 #include <deque>
 #include <vector>
 
+#include "utils.h"
 #include "input_alsa.h"
 #include "../projectm/src/libprojectM/projectM.hpp"
-
-// Contains array of bytes and deallocates in destructor.
-struct Bytes {
-  Bytes(void* data, int len);
-  ~Bytes();
-
-  void SetData(void* data, int len);
-  uint8_t* GetData() const { return data_; }
-  int GetLen() const { return len_; }
-
- private:
-  Bytes(const Bytes& src);
-  Bytes& operator=(const Bytes& rhs);
-  void Clear();
-  uint8_t* data_;
-  int len_;
-};
 
 class Visualizer {
  public:

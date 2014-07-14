@@ -3,10 +3,7 @@
 env/
 clips/
 dfplayer.egg-info/
-dfplayer/_tcl_renderer_cc.so
-dfplayer/_visualizer_cc.so
-dfplayer/tcl_renderer_cc.py
-dfplayer/visualizer_cc.py
-dfplayer/tcl_renderer_wrap.cxx
-dfplayer/visualizer_wrap.cxx
+dfplayer/_renderer_cc.so
+dfplayer/renderer_cc.py
+dfplayer/renderer_wrap.cxx
 dfplayer/libprojectM.so.2
