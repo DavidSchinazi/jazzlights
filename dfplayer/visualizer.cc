@@ -16,6 +16,8 @@
 #include <time.h>
 #include <unistd.h>
 
+//#include <csignal>
+
 #define REPORT_ERRNO(name)                           \
   fprintf(stderr, "Failure in '%s' call: %d, %s\n",  \
           name, errno, strerror(errno));
@@ -87,33 +89,10 @@ void Bytes::SetData(void* data, int len) {
 }
 
 Visualizer::Visualizer(int width, int height, int fps)
-    : width_(width), height_(height), alsa_handle_(NULL),
+    : width_(width), height_(height), fps_(fps), alsa_handle_(NULL),
       total_overrun_count_(0), has_image_(false), dropped_image_count_(0),
       is_shutting_down_(false), has_started_thread_(false),
       lock_(PTHREAD_MUTEX_INITIALIZER) {
-  // TODO(igorc): Tune the settings.
-  // TODO(igorc): Consider disabling threads in CMakeCache.txt.
-  //              Threads are used for evaluating the second preset.
-  projectM::Settings settings;
-  memset(&settings, 0, sizeof(settings));
-  settings.windowWidth = width;
-  settings.windowHeight = height;
-  settings.fps = fps;
-  settings.textureSize = 1024;
-  settings.meshX = 32;
-  settings.meshY = 24;
-  settings.presetURL = "projectm/presets";  // ???
-  //settings.beatSensitivity;  // ???
-  settings.aspectCorrection = 1;
-  // Preset duration is based on gaussian distribution
-  // with mean of |presetDuration| and sigma of |easterEgg|.
-  settings.presetDuration = 30;
-  settings.easterEgg = 1;
-  // Transition period for switching between presets.
-  settings.smoothPresetDuration = 5;
-  settings.shuffleEnabled = 1;
-  projectm_ = new projectM(settings);
-
   last_render_time_ = GetCurrentMillis();
   ms_per_frame_ = (uint32_t) (1000.0 / (double) fps);
 
@@ -145,8 +124,6 @@ Visualizer::~Visualizer() {
 
   delete[] pcm_buffer_;
   delete[] image_buffer_;
-
-  delete projectm_;
 }
 
 void Visualizer::StartMessageLoop() {
@@ -188,17 +165,15 @@ int Visualizer::GetAndClearDroppedImageCount() {
   return result;
 }
 
-bool Visualizer::GetAndClearImage(Bytes* bytes) {
+Bytes* Visualizer::GetAndClearImage() {
   Autolock l(lock_);
   if (!has_image_)
-    return false;
+    return NULL;
   has_image_ = false;
-  bytes->SetData(image_buffer_, image_buffer_size_);
-  return true;
+  return new Bytes(image_buffer_, image_buffer_size_);
 }
 
 void Visualizer::CloseInputLocked() {
-  Autolock l(lock_);
   if (alsa_handle_) {
     inp_alsa_cleanup(alsa_handle_);
     alsa_handle_ = NULL;
@@ -209,7 +184,7 @@ bool Visualizer::TransferPcmDataLocked() {
   if (!alsa_handle_) {
     if (alsa_device_.empty())
       return false;
-    fprintf(stderr, "Connecting to ALSA input %s", alsa_device_.c_str());
+    fprintf(stderr, "Connecting to ALSA input %s\n", alsa_device_.c_str());
     alsa_handle_ = inp_alsa_init(alsa_device_.c_str());
     if (!alsa_handle_)
       return false;
@@ -293,6 +268,39 @@ void Visualizer::DestroyRenderContext() {
   XCloseDisplay(display_);
 }
 
+void Visualizer::CreateProjectM() {
+  /*raise(SIGINT);
+  if (!glGetString(GL_EXTENSIONS)) {
+    fprintf(stderr, "GL does not seem to work, err=%x\n", glGetError());
+    CHECK(false);
+  }*/
+
+  // TODO(igorc): Tune the settings.
+  // TODO(igorc): Consider disabling threads in CMakeCache.txt.
+  //              Threads are used for evaluating the second preset.
+  projectM::Settings settings;
+  settings.windowWidth = width_;
+  settings.windowHeight = height_;
+  settings.fps = fps_;
+  settings.textureSize = 1024;
+  settings.meshX = 32;
+  settings.meshY = 24;
+  settings.presetURL = "projectm/presets";  // ???
+  settings.titleFontURL = "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf";
+  settings.menuFontURL = "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSansMono.ttf";
+  settings.beatSensitivity = 10;
+  settings.aspectCorrection = 1;
+  // Preset duration is based on gaussian distribution
+  // with mean of |presetDuration| and sigma of |easterEgg|.
+  settings.presetDuration = 30;
+  settings.easterEgg = 1;
+  // Transition period for switching between presets.
+  settings.smoothPresetDuration = 5;
+  settings.shuffleEnabled = 1;
+  settings.softCutRatingsEnabled = 0;
+  projectm_ = new projectM(settings);
+}
+
 void Visualizer::RenderFrameLocked() {
   if (has_image_) {
     dropped_image_count_++;
@@ -335,6 +343,7 @@ void* Visualizer::ThreadEntry(void* arg) {
 
 void Visualizer::Run() {
   CreateRenderContext();
+  CreateProjectM();
 
   bool should_sleep = false;
   uint64_t next_render_time = GetCurrentMillis() + ms_per_frame_;
@@ -371,14 +380,17 @@ void Visualizer::Run() {
 
       if (!TransferPcmDataLocked()) {
         should_sleep = true;
+        fprintf(stderr, "No sound data\n");
         continue;
       }
 
       RenderFrameLocked();
+      fprintf(stderr, "Rendered frame\n");
       next_render_time += ms_per_frame_;
     }
   }
 
+  delete projectm_;
   DestroyRenderContext();
 }
 

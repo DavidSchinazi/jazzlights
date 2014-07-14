@@ -17,7 +17,7 @@ WIN_HEIGHT = 768
 FPS = 30
 
 
-# TODO(igorc): It would be nice to self-resize, buyt the window keeps growing.
+# TODO(igorc): It would be nice to self-resize, but the window keeps growing.
 # http://stackoverflow.com/questions/22838255
 class ResizingCanvas(Canvas):
 
@@ -70,6 +70,7 @@ class PlayerApp(Frame):
         self.root.bind('s', lambda e: player.toggle_split_sides())
         self.root.bind('g', lambda e: player.gamma_up())
         self.root.bind('b', lambda e: player.gamma_down())
+        self.root.bind('v', lambda e: player.toggle_visualization())
         self.root.bind('0', lambda e: player.stop_effect())
         self.root.bind('1', lambda e: player.play_effect('textticker'))
         self.root.bind('2', lambda e: player.play_effect('solidcolor'))

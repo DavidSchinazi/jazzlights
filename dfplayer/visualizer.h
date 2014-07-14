@@ -7,6 +7,7 @@
 #define __DFPLAYER_VISUALIZER_H
 
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 
 #include <GL/glx.h>
 #include <pthread.h>
@@ -47,7 +48,7 @@ class Visualizer {
   std::vector<std::string> GetPresetNames();
   void UsePreset(const std::string& spec);
 
-  bool GetAndClearImage(Bytes* bytes);
+  Bytes* GetAndClearImage();
 
   int GetAndClearOverrunCount();
   int GetAndClearDroppedImageCount();
@@ -73,9 +74,11 @@ class Visualizer {
 
   void CreateRenderContext();
   void DestroyRenderContext();
+  void CreateProjectM();
 
   int width_;
   int height_;
+  int fps_;
   std::string alsa_device_;
   AlsaInputHandle* alsa_handle_;
   projectM* projectm_;

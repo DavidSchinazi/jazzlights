@@ -23,6 +23,7 @@ from .stats import Stats
 from .util import catch_and_log, PROJECT_DIR, PACKAGE_DIR, VENV_DIR
 from .util import get_time_millis
 from .tcl_renderer import TclRenderer
+from .visualizer_cc import Visualizer
 
 FPS = 30
 _SCREEN_FRAME_WIDTH = 500
@@ -31,8 +32,8 @@ FRAME_HEIGHT = 50
 TCL_CONTROLLER = 1
 _USE_CC_TCL = True
 
-MPD_PORT = 6601
-MPD_DIR = VENV_DIR + '/mpd/'
+MPD_PORT = 6605
+MPD_DIR = VENV_DIR + '/mpd'
 MPD_CONFIG_FILE = MPD_DIR + '/mpd.conf'
 MPD_DB_FILE = MPD_DIR + '/tag_cache'
 MPD_PID_FILE = MPD_DIR + '/mpd.pid'
@@ -42,6 +43,7 @@ MPD_CARD_ID = -1  # From 'aplay -l'
 CLIPS_DIR = VENV_DIR + '/clips/'
 PLAYLISTS_DIR = VENV_DIR + '/playlists/'
 
+# See http://manpages.ubuntu.com/manpages/lucid/man5/mpd.conf.5.html
 MPD_CONFIG_TPL = '''
 music_directory     "%(CLIPS_DIR)s"
 playlist_directory  "%(PLAYLISTS_DIR)s"
@@ -51,19 +53,23 @@ log_file            "%(MPD_LOG_FILE)s"
 port                "%(MPD_PORT)d"
 audio_output {
     type            "alsa"
-    name            "USB DAC"
+    name            "DF audio loop"
     device          "hw:%(MPD_CARD_ID)s,0"
-    auto_resample   "no"
-    mixer_control   "PCM"
-    mixer_type      "hardware"
-    mixer_device    "hw:%(MPD_CARD_ID)s"
 }
 '''
+#    device          "df_output_mdev"
+#    device          "df_real_device"
+#    device          "hw:%(MPD_CARD_ID)s,0"
+#    auto_resample   "no"
+#    mixer_type      "hardware"
+#    mixer_device    "hw:%(MPD_CARD_ID)s"
 
 
 class Player(object):
 
     def __init__(self):
+        self._update_card_id()
+
         self._start_mpd()
         self.lock = RLock()
         with self.lock:
@@ -87,6 +93,11 @@ class Player(object):
         self._tcl = TclRenderer(
             TCL_CONTROLLER, _SCREEN_FRAME_WIDTH, FRAME_HEIGHT,
             'dfplayer/layout.dxf', self._target_gamma, _USE_CC_TCL)
+
+        self._use_visualization = False
+        self._visualizer = Visualizer(IMAGE_FRAME_WIDTH, FRAME_HEIGHT, FPS)
+        #self._visualizer.StartMessageLoop()
+        #self._visualizer.UseAlsa('df_audio')
 
     def __str__(self):
         elapsed_sec = int(self.elapsed_time)
@@ -184,8 +195,6 @@ class Player(object):
         for d in (MPD_DIR, CLIPS_DIR, PLAYLISTS_DIR):
             if not os.path.exists(d):
                 os.makedirs(d)
-
-        self._update_card_id()
 
         with open(MPD_CONFIG_FILE, 'w') as out:
             out.write(MPD_CONFIG_TPL % globals())
@@ -311,6 +320,9 @@ class Player(object):
         with self.lock:
             # TODO(igorc): Passed None here! (around start/end of track?)
             self.mpd.seekid(self._songid, '%s' % self._seek_time)
+
+    def toggle_visualization(self):
+        self._use_visualization = not self._use_visualization
 
     def get_frame_image(self):
         if self.status == 'idle':

@@ -14,6 +14,7 @@ def main():
   if args.gdb:
     subprocess.check_call(
         ['gdb', '-ex', 'run', '--args', 'env/bin/python'] + params)
+        #['gdb', '--args', 'env/bin/python'] + params)
   else:
     subprocess.check_call(params)
 

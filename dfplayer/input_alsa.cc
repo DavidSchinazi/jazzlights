@@ -52,7 +52,7 @@ typedef struct {
 #define FALSE   false
 
 #define visual_log(level, fmt, ...)                                      \
-  fprintf(stderr, "input_alsa: " fmt, ##__VA_ARGS__);
+  fprintf(stderr, "input_alsa: " fmt "\n", ##__VA_ARGS__);
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)

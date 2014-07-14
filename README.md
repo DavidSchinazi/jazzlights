@@ -72,6 +72,18 @@ dependency checking screwed up??) The whole process will take a while.
         git push origin mybranch:master
         git submodule update --init
 
+12. Setting up sound loopback:
+
+	TODO(igorc): Automate sound loopback setup.
+	See https://bbs.archlinux.org/viewtopic.php?pid=765075#p765075
+	    https://bbs.archlinux.org/viewtopic.php?pid=1153194#p1153194
+	sudo modprobe snd-aloop
+	sudo vi /etc/modprobe.d/sound.conf
+	  Add lines:
+	    options snd_usb_audio index=1
+	    options snd_aloop index=2
+	
+
 You can also type `make run` instead of steps 5-7 if you're feeling lazy.
 
 After the player is running you can control it via browser UI. Navigate to 

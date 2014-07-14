@@ -20,6 +20,7 @@ _PILLOW_DEPS = [
 _PLAYER_DEPS = [
     'libav-tools',
     'mpd',
+    #'nvidia-current',
     'python-dev',
     'python-mpd',
     'python-setuptools',
@@ -31,6 +32,7 @@ _USEFUL_PACKAGES = [
     'gdb',
     'gimp',
     'git',
+    'mesa-utils',
     'synaptic',
     'vim',
     ]
@@ -52,6 +54,9 @@ subprocess.check_call(['pip', 'install', 'dxfgrabber'])
 subprocess.check_call(['pip', 'install', 'flask'])
 subprocess.check_call(['pip', 'install', 'pillow'])
 subprocess.check_call(['pip', 'install', 'virtualenv'])
+
+with open('/etc/modules-load.d/df_sound_loop.conf', 'w') as f:
+  f.write('snd-aloop')
 
 print '=== SUCCESS ==='
 
