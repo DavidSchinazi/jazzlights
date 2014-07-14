@@ -65,8 +65,5 @@ subprocess.check_call(['pip', 'install', 'flask'])
 subprocess.check_call(['pip', 'install', 'pillow'])
 subprocess.check_call(['pip', 'install', 'virtualenv'])
 
-with open('/etc/modules-load.d/df_sound_loop.conf', 'w') as f:
-  f.write('snd-aloop')
-
 print '=== SUCCESS ==='
 
