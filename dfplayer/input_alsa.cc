@@ -171,17 +171,17 @@ static int inp_alsa_init_internal (const char *alsa_device, alsaPrivate *priv)
 	return TRUE;
 }
 
-InputHandle *inp_alsa_init (const char* alsa_device)
+AlsaInputHandle *inp_alsa_init (const char* alsa_device)
 {
 	alsaPrivate *priv = new alsaPrivate();
 	if (!inp_alsa_init_internal (alsa_device, priv)) {
 		delete priv;
 		return NULL;
 	}
-	return (InputHandle*) priv;
+	return (AlsaInputHandle*) priv;
 }
 
-void inp_alsa_cleanup (InputHandle* handle)
+void inp_alsa_cleanup (AlsaInputHandle* handle)
 {
 	alsaPrivate *priv =  (alsaPrivate*) handle;
 
@@ -193,14 +193,15 @@ void inp_alsa_cleanup (InputHandle* handle)
 }
 
 int inp_alsa_read (
-	InputHandle* handle, int16_t *data, int sampleCount, int *overrunCount)
+	AlsaInputHandle* handle, int16_t *data,
+	int sampleCount, int *overrunCount)
 {
 	alsaPrivate *priv =  (alsaPrivate*) handle;
 
 	*overrunCount = 0;
 	int rcnt;
 	while (true) {
-		rcnt = snd_pcm_readi(priv->chandle, data, sampleCount / 2);
+		rcnt = snd_pcm_readi(priv->chandle, data, sampleCount);
 		if (rcnt >= 0) {
 			return rcnt;
 		}
