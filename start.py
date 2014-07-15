@@ -3,12 +3,17 @@
 # Start dfplayer.
 
 import argparse
+import os
+import shutil
 import subprocess
 
 def main():
   arg_parser = argparse.ArgumentParser(description='Start player')
   arg_parser.add_argument('--gdb', action='store_true')
   args = arg_parser.parse_args()
+
+  shutil.copyfile(
+      'dfplayer/asoundrc', '/home/' + os.getlogin() + '/.asoundrc')
 
   params = ['env/bin/dfplayer', '--listen=0.0.0.0:8080']
   if args.gdb:
