@@ -16,12 +16,15 @@ def main():
       'dfplayer/asoundrc', '/home/' + os.getlogin() + '/.asoundrc')
 
   params = ['env/bin/dfplayer', '--listen=0.0.0.0:8080']
-  if args.gdb:
-    subprocess.check_call(
-        ['gdb', '-ex', 'run', '--args', 'env/bin/python'] + params)
-        #['gdb', '--args', 'env/bin/python'] + params)
-  else:
-    subprocess.check_call(params)
+  try:
+    if args.gdb:
+      subprocess.check_call(
+          ['gdb', '-ex', 'run', '--args', 'env/bin/python'] + params)
+          #['gdb', '--args', 'env/bin/python'] + params)
+    else:
+      subprocess.check_call(params)
+  except KeyboardInterrupt:
+    print 'Player is exiting via KeyboardInterrupt'
 
 main()
 

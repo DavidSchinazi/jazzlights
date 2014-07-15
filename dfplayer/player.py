@@ -219,12 +219,18 @@ class Player(object):
 
     def _stop_mpd(self):
         self._config_mpd()
-        if os.path.exists(MPD_PID_FILE):
-            logging.info('Stopping mpd')
+        if not os.path.exists(MPD_PID_FILE):
+            return
+        logging.info('Stopping mpd')
+        try:
             subprocess.call(['mpd', '--kill', MPD_CONFIG_FILE])
+        except:
+            logging.info('Error stopping MPD: %s (%s)' % (
+                sys.exc_info()[0], sys.exc_info()[1]))
 
     def _start_mpd(self):
         self._config_mpd()
+        self._stop_mpd()
         logging.info('Starting mpd')
 
         if os.path.exists(MPD_DB_FILE):
