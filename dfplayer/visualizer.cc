@@ -229,8 +229,8 @@ void Visualizer::CreateProjectM() {
   settings.meshX = width_;
   settings.meshY = height_;
   settings.presetURL = "dfplayer/presets";
-  settings.titleFontURL = "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf";
-  settings.menuFontURL = "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSansMono.ttf";
+  settings.titleFontURL = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf";
+  settings.menuFontURL = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf";
   settings.beatSensitivity = 10;
   settings.aspectCorrection = 1;
   // Preset duration is based on gaussian distribution

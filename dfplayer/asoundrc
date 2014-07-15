@@ -70,6 +70,11 @@ pcm.df_real_device {
 }
 
 pcm.df_loopback {
+  type plug
+  slave.pcm "df_real_loopback"
+}
+
+pcm.df_real_loopback {
   type dmix
   ipc_key 1025
   slave {
