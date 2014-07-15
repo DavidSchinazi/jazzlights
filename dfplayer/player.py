@@ -357,8 +357,14 @@ class Player(object):
                 if newimg_data:
                     new_image = Image.fromstring(
                         'RGB', self._visualizer_size, newimg_data)
-                    self._frame = new_image.resize(
+                    src_image = new_image.resize(
                         (IMAGE_FRAME_WIDTH, FRAME_HEIGHT))
+                    frame_img = Image.new(
+                        'RGB', (self._screen_width, FRAME_HEIGHT))
+                    frame_img.paste(src_img, (IMAGE_FRAME_WIDTH, 0))
+                    flip_img = src_img.transpose(Image.FLIP_LEFT_RIGHT)
+                    frame_img.paste(flip_img, (0, 0))
+                    self._frame = frame_img
                     print 'Got new image data'
                 duration_ms = int(round((time.time() - start_time) * 1000))
                 self._render_durations.add(duration_ms)

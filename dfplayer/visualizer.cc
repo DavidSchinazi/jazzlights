@@ -252,7 +252,7 @@ bool Visualizer::RenderFrameLocked() {
   //glReadBuffer(GL_BACK);
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glPixelStorei(GL_PACK_ALIGNMENT, 1);
-  //glReadPixels(0, 0, width_, height_, GL_RGB, GL_UNSIGNED_BYTE, image_buffer_);
+  glReadPixels(0, 0, width_, height_, GL_RGB, GL_UNSIGNED_BYTE, image_buffer_);
   // http://stackoverflow.com/questions/12157646/how-to-render-offscreen-on-opengl
   // Thanks to all, it works now, the good way was to render into a Pixmap with
   // eglCreatePixmapSurface method and then read easily its pixels.
