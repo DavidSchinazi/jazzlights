@@ -28,7 +28,7 @@ Visualizer::Visualizer(int width, int height, int fps)
 
   pcm_buffer_ = new int16_t[PCM::maxsamples * 2];
 
-  image_buffer_size_ = width_ * height_ * 4;
+  image_buffer_size_ = width_ * height_ * 3;
   image_buffer_ = new uint8_t[image_buffer_size_];
 }
 
@@ -88,10 +88,24 @@ int Visualizer::GetAndClearOverrunCount() {
   return result;
 }
 
+int Visualizer::GetAndClearTotalPcmSampleCount() {
+  Autolock l(lock_);
+  int result = total_pcm_sample_count_;
+  total_pcm_sample_count_ = 0;
+  return result;
+}
+
 int Visualizer::GetAndClearDroppedImageCount() {
   Autolock l(lock_);
   int result = dropped_image_count_;
   dropped_image_count_ = 0;
+  return result;
+}
+
+std::vector<int> Visualizer::GetAndClearFramePeriods() {
+  Autolock l(lock_);
+  std::vector<int> result = frame_periods_;
+  frame_periods_.clear();
   return result;
 }
 
@@ -100,7 +114,9 @@ Bytes* Visualizer::GetAndClearImage() {
   if (!has_image_)
     return NULL;
   has_image_ = false;
-  return new Bytes(image_buffer_, image_buffer_size_);
+  uint8_t* buf = new uint8_t[image_buffer_size_];
+  memcpy(buf, image_buffer_, image_buffer_size_);
+  return new Bytes(buf, image_buffer_size_);
 }
 
 void Visualizer::CloseInputLocked() {
@@ -133,7 +149,8 @@ bool Visualizer::TransferPcmDataLocked() {
     sample_count += samples;
   }
 
-  fprintf(stderr, "Adding %d samples\n", sample_count);
+  //fprintf(stderr, "Adding %d samples\n", sample_count);
+  total_pcm_sample_count_ += sample_count;
   pcm->addPCM16Data(pcm_buffer_, sample_count);
 
   return true;
@@ -199,11 +216,7 @@ void Visualizer::DestroyRenderContext() {
 }
 
 void Visualizer::CreateProjectM() {
-  /*raise(SIGINT);
-  if (!glGetString(GL_EXTENSIONS)) {
-    fprintf(stderr, "GL does not seem to work, err=%x\n", glGetError());
-    CHECK(false);
-  }*/
+  //raise(SIGINT);
 
   // TODO(igorc): Tune the settings.
   // TODO(igorc): Consider disabling threads in CMakeCache.txt.
@@ -212,10 +225,10 @@ void Visualizer::CreateProjectM() {
   settings.windowWidth = width_;
   settings.windowHeight = height_;
   settings.fps = fps_;
-  settings.textureSize = 1024;
-  settings.meshX = 32;
-  settings.meshY = 24;
-  settings.presetURL = "projectm/presets";  // ???
+  settings.textureSize = 256;
+  settings.meshX = width_;
+  settings.meshY = height_;
+  settings.presetURL = "dfplayer/presets";
   settings.titleFontURL = "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf";
   settings.menuFontURL = "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSansMono.ttf";
   settings.beatSensitivity = 10;
@@ -231,24 +244,28 @@ void Visualizer::CreateProjectM() {
   projectm_ = new projectM(settings);
 }
 
-void Visualizer::RenderFrameLocked() {
-  if (has_image_) {
-    dropped_image_count_++;
-    has_image_ = false;
-  }
-
+bool Visualizer::RenderFrameLocked() {
   projectm_->renderFrame();
 
-  glFlush();
-  glReadPixels(0, 0, width_, height_, GL_RGBA, GL_UNSIGNED_BYTE, image_buffer_);
+  //glFlush();
+  glXSwapBuffers(display_, pbuffer_);
+  //glReadBuffer(GL_BACK);
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+  glPixelStorei(GL_PACK_ALIGNMENT, 1);
+  //glReadPixels(0, 0, width_, height_, GL_RGB, GL_UNSIGNED_BYTE, image_buffer_);
+  // http://stackoverflow.com/questions/12157646/how-to-render-offscreen-on-opengl
+  // Thanks to all, it works now, the good way was to render into a Pixmap with
+  // eglCreatePixmapSurface method and then read easily its pixels.
+  // Now it runs @ 45FPS and not @ 17FPS with glReadPixels... exactly as I wanted...
   GLenum err = glGetError();
-  if (err != GL_NO_ERROR) {
-    GLenum status = 0; //glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    fprintf(stderr, "Unable to read pixels, err=0x%x, fb_status=0x%x\n",
-            err, status);
-  } else {
-    has_image_ = true;
+  if (err == GL_NO_ERROR) {
+    return true;
   }
+
+  GLenum status = 0; //glCheckFramebufferStatus(GL_FRAMEBUFFER);
+  fprintf(stderr, "Unable to read pixels, err=0x%x, fb_status=0x%x\n",
+          err, status);
+  return false;
 }
 
 static void Sleep(double seconds) {
@@ -280,6 +297,7 @@ void Visualizer::Run() {
 
   bool should_sleep = false;
   uint64_t next_render_time = GetCurrentMillis() + ms_per_frame_;
+  uint64_t prev_frame_time = 0;
   while (true) {
     if (should_sleep) {
       should_sleep = false;
@@ -312,13 +330,30 @@ void Visualizer::Run() {
       }
 
       if (!TransferPcmDataLocked()) {
+        fprintf(stderr, "No ALSA data\n");
         should_sleep = true;
-        fprintf(stderr, "No sound data\n");
         continue;
       }
 
-      RenderFrameLocked();
-      //fprintf(stderr, "Rendered frame\n");
+      if (has_image_) {
+        dropped_image_count_++;
+        has_image_ = false;
+      }
+    }
+
+    bool has_new_image = RenderFrameLocked();
+    //fprintf(stderr, "Rendered frame\n");
+
+    {
+      Autolock l(lock_);
+      if (is_shutting_down_)
+        break;
+
+      has_image_ = has_new_image;
+      uint64_t now = GetCurrentMillis();
+      if (prev_frame_time)
+        frame_periods_.push_back(now - prev_frame_time);
+      prev_frame_time = now;
       next_render_time += ms_per_frame_;
     }
   }

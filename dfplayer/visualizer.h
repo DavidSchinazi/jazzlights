@@ -32,10 +32,15 @@ class Visualizer {
   std::vector<std::string> GetPresetNames();
   void UsePreset(const std::string& spec);
 
+  int GetWidth() const { return width_; }
+  int GetHeight() const { return height_; }
+
   Bytes* GetAndClearImage();
 
   int GetAndClearOverrunCount();
   int GetAndClearDroppedImageCount();
+  int GetAndClearTotalPcmSampleCount();
+  std::vector<int> GetAndClearFramePeriods();
 
  private:
   Visualizer(const Visualizer& src);
@@ -54,7 +59,7 @@ class Visualizer {
 
   void CloseInputLocked();
   bool TransferPcmDataLocked();
-  void RenderFrameLocked();
+  bool RenderFrameLocked();
 
   void CreateRenderContext();
   void DestroyRenderContext();
@@ -68,6 +73,7 @@ class Visualizer {
   projectM* projectm_;
   int16_t* pcm_buffer_;
   int total_overrun_count_;
+  int total_pcm_sample_count_;
   uint8_t* image_buffer_;
   uint32_t image_buffer_size_;
   bool has_image_;
@@ -77,6 +83,7 @@ class Visualizer {
   bool is_shutting_down_;
   bool has_started_thread_;
   std::deque<WorkItem*> work_items_;
+  std::vector<int> frame_periods_;
   pthread_mutex_t lock_;
   pthread_t thread_;
 

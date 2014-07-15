@@ -217,8 +217,9 @@ int inp_alsa_read (
 			continue;
 		}
 
-		visual_log(VISUAL_LOG_ERROR,
-			    "snd_pcm_readi: %s", snd_strerror(rcnt));
+		// TODO(igorc): Report sound input errors.
+		//visual_log(VISUAL_LOG_ERROR,
+		//	    "snd_pcm_readi: %s", snd_strerror(rcnt));
 		return -1;
 	}
 

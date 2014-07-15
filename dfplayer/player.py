@@ -29,6 +29,7 @@ FPS = 30
 _SCREEN_FRAME_WIDTH = 500
 IMAGE_FRAME_WIDTH = _SCREEN_FRAME_WIDTH / 2
 FRAME_HEIGHT = 50
+MESH_RATIO = 5  # Make it 50x10
 TCL_CONTROLLER = 1
 _USE_CC_TCL = True
 
@@ -54,13 +55,13 @@ port                "%(MPD_PORT)d"
 audio_output {
     type            "alsa"
     name            "DF audio loop"
-    device          "hw:%(MPD_CARD_ID)s,0"
+    device          "df_dup_output"
+    auto_resample   "no"
 }
 '''
 #    device          "df_output_mdev"
 #    device          "df_real_device"
 #    device          "hw:%(MPD_CARD_ID)s,0"
-#    auto_resample   "no"
 #    mixer_type      "hardware"
 #    mixer_device    "hw:%(MPD_CARD_ID)s"
 
@@ -85,6 +86,7 @@ class Player(object):
         self._last_frame_file = ''
         self._frame_delay_stats = Stats(100)
         self._render_durations = Stats(100)
+        self._visualization_period_stats = Stats(100)
 
         self._frame_source = FrameSource(
             FPS, _SCREEN_FRAME_WIDTH, IMAGE_FRAME_WIDTH,
@@ -95,28 +97,32 @@ class Player(object):
             'dfplayer/layout.dxf', self._target_gamma, _USE_CC_TCL)
 
         self._use_visualization = False
-        self._visualizer = Visualizer(IMAGE_FRAME_WIDTH, FRAME_HEIGHT, FPS)
-        #self._visualizer.StartMessageLoop()
-        #self._visualizer.UseAlsa('df_audio')
+        self._visualizer = None
 
     def __str__(self):
         elapsed_sec = int(self.elapsed_time)
         duration, delays = self._tcl.get_and_clear_frame_delays()
         for d in delays:
-          self._frame_delay_stats.add(d)
+            self._frame_delay_stats.add(d)
+        if self._visualizer:
+            for d in self._visualizer.GetAndClearFramePeriods():
+                self._visualization_period_stats.add(d)
         # A rather hacky way to calculate FPS. Depends on get/clear
         # timestamp. OK while we call it once per second though.
         fps = 0
         if duration > 0:
           fps = float(int(10000.0 * len(delays) / duration)) / 10.0
         frame_avg = self._frame_delay_stats.get_average_and_stddev()
+        visual_period_avg = \
+            self._visualization_period_stats.get_average_and_stddev()
         render_avg = self._render_durations.get_average_and_stddev()
         return ('Player [%s %s %02d:%02d] (fps=%s, delay=%s/%s, '
-                'render=%d/%d, cached=%s, queued=%s)') % (
+                'render=%d/%d, vis=%d/%d, cached=%s, queued=%s)') % (
                    self.status, self.clip_name,
                    elapsed_sec / 60, elapsed_sec % 60, fps,
                    int(frame_avg[0]), int(frame_avg[1]),
                    int(render_avg[0]), int(render_avg[1]),
+                   int(visual_period_avg[0]), int(visual_period_avg[1]),
                    self._frame_source.get_cache_size(),
                    self._tcl.get_queue_size())
 
@@ -328,7 +334,16 @@ class Player(object):
             self.mpd.seekid(self._songid, '%s' % self._seek_time)
 
     def toggle_visualization(self):
+        if not _USE_CC_TCL:
+            return
         self._use_visualization = not self._use_visualization
+        if not self._visualizer:
+            self._visualizer_size = (
+                IMAGE_FRAME_WIDTH / MESH_RATIO, FRAME_HEIGHT / MESH_RATIO)
+            self._visualizer = Visualizer(
+                self._visualizer_size[0], self._visualizer_size[1], FPS)
+            self._visualizer.StartMessageLoop()
+            self._visualizer.UseAlsa('df_dup_input')
 
     def get_frame_image(self):
         if self.status == 'idle':
@@ -336,6 +351,19 @@ class Player(object):
             return None
         else:
             elapsed_time = self.elapsed_time
+            if self._use_visualization:
+                start_time = time.time()
+                newimg_data = self._visualizer.GetAndClearImage()
+                if newimg_data:
+                    new_image = Image.fromstring(
+                        'RGB', self._visualizer_size, newimg_data)
+                    self._frame = new_image.resize(
+                        (IMAGE_FRAME_WIDTH, FRAME_HEIGHT))
+                    print 'Got new image data'
+                duration_ms = int(round((time.time() - start_time) * 1000))
+                self._render_durations.add(duration_ms)
+                return self._frame
+
             if self._tcl.has_scheduling_support():
                 start_time = time.time()
                 self._frame_source.prefetch(self.clip_name, elapsed_time)
