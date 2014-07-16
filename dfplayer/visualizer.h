@@ -22,7 +22,7 @@
 
 class Visualizer {
  public:
-  Visualizer(int width, int height, int fps);
+  Visualizer(int width, int height, int texsize, int fps);
   ~Visualizer();
 
   void StartMessageLoop();
@@ -67,10 +67,12 @@ class Visualizer {
 
   int width_;
   int height_;
+  int texsize_;
   int fps_;
   std::string alsa_device_;
   AlsaInputHandle* alsa_handle_;
   projectM* projectm_;
+  int projectm_tex_;
   int16_t* pcm_buffer_;
   int total_overrun_count_;
   int total_pcm_sample_count_;

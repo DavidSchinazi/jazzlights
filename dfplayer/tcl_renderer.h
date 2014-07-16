@@ -58,6 +58,9 @@ class TclRenderer {
       const Layout& layout, double gamma);
   ~TclRenderer();
 
+  // TODO(igorc): Refactor TclRenderer collection.
+  static TclRenderer* GetByControllerId(int id);
+
   void StartMessageLoop();
 
   void SetGamma(double gamma);
@@ -166,6 +169,8 @@ class TclRenderer {
   pthread_t thread_;
   int frames_sent_after_reply_;
   std::vector<int> frame_delays_;
+
+  static std::vector<TclRenderer*> all_renderers_;
 };
 
 #endif  // __DFPLAYER_TCL_RENDERER_H

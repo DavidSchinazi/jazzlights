@@ -20,6 +20,8 @@
 
 #define FRAME_DATA_LEN  (STRAND_LENGTH * 8 * 3)
 
+std::vector<TclRenderer*> TclRenderer::all_renderers_;
+
 AdjustableTime::AdjustableTime() : time_(GetCurrentMillis()) {}
 
 void AdjustableTime::AddMillis(int ms) {
@@ -54,6 +56,7 @@ TclRenderer::TclRenderer(
       cond_(PTHREAD_COND_INITIALIZER),
       frames_sent_after_reply_(0) {
   SetGamma(gamma);
+  all_renderers_.push_back(this);
 }
 
 TclRenderer::~TclRenderer() {
@@ -75,6 +78,15 @@ TclRenderer::~TclRenderer() {
   }
   pthread_cond_destroy(&cond_);
   pthread_mutex_destroy(&lock_);
+}
+
+// static
+TclRenderer* TclRenderer::GetByControllerId(int id) {
+  for (size_t i = 0; i < all_renderers_.size(); i++) {
+    if (all_renderers_[i]->controller_id_ == id)
+      return all_renderers_[i];
+  }
+  return NULL;
 }
 
 void TclRenderer::StartMessageLoop() {

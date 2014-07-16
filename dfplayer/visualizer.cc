@@ -18,8 +18,9 @@
 
 //#include <csignal>
 
-Visualizer::Visualizer(int width, int height, int fps)
-    : width_(width), height_(height), fps_(fps), alsa_handle_(NULL),
+Visualizer::Visualizer(int width, int height, int texsize, int fps)
+    : width_(width), height_(height), texsize_(texsize), fps_(fps),
+      alsa_handle_(NULL), projectm_(NULL), projectm_tex_(0),
       total_overrun_count_(0), has_image_(false), dropped_image_count_(0),
       is_shutting_down_(false), has_started_thread_(false),
       lock_(PTHREAD_MUTEX_INITIALIZER) {
@@ -28,7 +29,7 @@ Visualizer::Visualizer(int width, int height, int fps)
 
   pcm_buffer_ = new int16_t[PCM::maxsamples * 2];
 
-  image_buffer_size_ = width_ * height_ * 3;
+  image_buffer_size_ = texsize_ * texsize_ * 3;
   image_buffer_ = new uint8_t[image_buffer_size_];
 }
 
@@ -225,7 +226,7 @@ void Visualizer::CreateProjectM() {
   settings.windowWidth = width_;
   settings.windowHeight = height_;
   settings.fps = fps_;
-  settings.textureSize = 256;
+  settings.textureSize = texsize_;
   settings.meshX = width_;
   settings.meshY = height_;
   settings.presetURL = "dfplayer/presets";
@@ -242,6 +243,12 @@ void Visualizer::CreateProjectM() {
   settings.shuffleEnabled = 1;
   settings.softCutRatingsEnabled = 0;
   projectm_ = new projectM(settings);
+
+  projectm_tex_ = projectm_->initRenderToTexture();
+  if (projectm_tex_ == -1 || projectm_tex_ == 0) {
+    fprintf(stderr, "Unable to init ProjectM texture rendering");
+    CHECK(false);
+  }
 }
 
 bool Visualizer::RenderFrameLocked() {
@@ -249,18 +256,51 @@ bool Visualizer::RenderFrameLocked() {
 
   //glFlush();
   glXSwapBuffers(display_, pbuffer_);
+
   //glReadBuffer(GL_BACK);
+  glBindTexture(GL_TEXTURE_2D, projectm_tex_);
+
+  int w = 0;
+  int h = 0;
+  glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
+  glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
+  if (w != texsize_ || h != texsize_) {
+    fprintf(stderr, "Unexpected texture size of %d x %d, instead of %d",
+            w, h, texsize_);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    return false;
+  }
+
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glPixelStorei(GL_PACK_ALIGNMENT, 1);
-  glReadPixels(0, 0, width_, height_, GL_RGB, GL_UNSIGNED_BYTE, image_buffer_);
+  glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, image_buffer_);
+
+  //glReadPixels(0, 0, width_, height_, GL_RGB, GL_UNSIGNED_BYTE, image_buffer_);
   // http://stackoverflow.com/questions/12157646/how-to-render-offscreen-on-opengl
   // Thanks to all, it works now, the good way was to render into a Pixmap with
   // eglCreatePixmapSurface method and then read easily its pixels.
   // Now it runs @ 45FPS and not @ 17FPS with glReadPixels... exactly as I wanted...
+
   GLenum err = glGetError();
+  glBindTexture(GL_TEXTURE_2D, 0);
   if (err == GL_NO_ERROR) {
     return true;
   }
+
+  // RenderTarget constructor stores:
+  //  - FB in fbuffer[0]
+  //  - Depth RB in depthb[0]
+  //  - FB-bound texture in textureID[0] square size of texsize, RGB
+  //  - Another texture in textureID[1] square size of texsize, RGB
+  //
+  // RenderTarget::lock() binds fbuffer[0]
+  // RenderTarget::lock() copies FB into textureID[1] and unbinds FB, tex remains bound
+  //
+  // initRenderToTexture() stores:
+  //  - FB in fbuffer[1]
+  //  - Depth RB in depthb[1]
+  //  - FB-bound texture in textureID[2], RGB
+  //  - renderToTexture is set to 1
 
   GLenum status = 0; //glCheckFramebufferStatus(GL_FRAMEBUFFER);
   fprintf(stderr, "Unable to read pixels, err=0x%x, fb_status=0x%x\n",
