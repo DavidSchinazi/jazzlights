@@ -16,6 +16,10 @@ clips: develop
 	-rm -rf env/playlists
 	env/bin/dfprepr clips
 
+projectm/src/libprojectM/libprojectM.so.2:
+	./build_cmake.py projectm/src/libprojectM
+	cp projectm/src/libprojectM/libprojectM.so projectm/src/libprojectM/libprojectM.so.2
+
 dfplayer/libprojectM.so.2:
 	./build_cmake.py projectm/src/libprojectM
 	cp projectm/src/libprojectM/libprojectM.so dfplayer/libprojectM.so.2

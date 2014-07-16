@@ -63,6 +63,9 @@ class TclRenderer {
 
   void StartMessageLoop();
 
+  int GetWidth() const { return width_; }
+  int GetHeight() const { return height_; }
+
   void SetGamma(double gamma);
   void SetGammaRanges(
       int r_min, int r_max, double r_gamma,

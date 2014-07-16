@@ -341,7 +341,7 @@ class Player(object):
             self._visualizer_size = (
                 IMAGE_FRAME_WIDTH / MESH_RATIO, FRAME_HEIGHT / MESH_RATIO)
             self._visualizer = Visualizer(
-                self._visualizer_size[0], self._visualizer_size[1], FPS)
+                self._visualizer_size[0], self._visualizer_size[1], 256, FPS)
             self._visualizer.StartMessageLoop()
             self._visualizer.UseAlsa('df_dup_input')
 
@@ -355,17 +355,17 @@ class Player(object):
                 start_time = time.time()
                 newimg_data = self._visualizer.GetAndClearImage()
                 if newimg_data:
+                    texsize = self._visualizer.GetTexSize()
                     new_image = Image.fromstring(
-                        'RGB', self._visualizer_size, newimg_data)
-                    src_image = new_image.resize(
+                        'RGB', (texsize, texsize), newimg_data)
+                    src_img = new_image.resize(
                         (IMAGE_FRAME_WIDTH, FRAME_HEIGHT))
                     frame_img = Image.new(
-                        'RGB', (self._screen_width, FRAME_HEIGHT))
+                        'RGB', (_SCREEN_FRAME_WIDTH, FRAME_HEIGHT))
                     frame_img.paste(src_img, (IMAGE_FRAME_WIDTH, 0))
                     flip_img = src_img.transpose(Image.FLIP_LEFT_RIGHT)
                     frame_img.paste(flip_img, (0, 0))
                     self._frame = frame_img
-                    print 'Got new image data'
                 duration_ms = int(round((time.time() - start_time) * 1000))
                 self._render_durations.add(duration_ms)
                 return self._frame

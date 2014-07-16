@@ -16,7 +16,11 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <algorithm>
+
 //#include <csignal>
+
+#include "tcl_renderer.h"
 
 Visualizer::Visualizer(int width, int height, int texsize, int fps)
     : width_(width), height_(height), texsize_(texsize), fps_(fps),
@@ -164,11 +168,18 @@ void Visualizer::CreateRenderContext() {
     CHECK(false);
   }
 
-  static int kVisualAttribs[] = { None };
+  static int kVisualAttribs[] = {
+      GLX_RENDER_TYPE, GLX_RGBA_BIT,
+      GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
+      GLX_RED_SIZE, 8,
+      GLX_GREEN_SIZE, 8,
+      GLX_BLUE_SIZE, 8,
+      None
+  };
   int fb_config_count = 0;
   GLXFBConfig* fb_configs = glXChooseFBConfig(
       display_, DefaultScreen(display_), kVisualAttribs, &fb_config_count);
-  if (!fb_configs) {
+  if (!fb_configs || fb_config_count == 0) {
     fprintf(stderr, "Unable to find FB config\n");
     CHECK(false);
   }
@@ -236,10 +247,10 @@ void Visualizer::CreateProjectM() {
   settings.aspectCorrection = 1;
   // Preset duration is based on gaussian distribution
   // with mean of |presetDuration| and sigma of |easterEgg|.
-  settings.presetDuration = 30;
+  settings.presetDuration = 5;
   settings.easterEgg = 1;
   // Transition period for switching between presets.
-  settings.smoothPresetDuration = 5;
+  settings.smoothPresetDuration = 2;
   settings.shuffleEnabled = 1;
   settings.softCutRatingsEnabled = 0;
   projectm_ = new projectM(settings);
@@ -251,22 +262,54 @@ void Visualizer::CreateProjectM() {
   }
 }
 
+// dfplayer/presets/Geiss and Rovastar - The Chaos Of Colours (sprouting dimentia mix).milk
+// dfplayer/presets/Unchained - Morat's Final Voyage.milk
+// dfplayer/presets/Fvese - Lifesavor Anyone.milk
+// dfplayer/presets/Unchained - Beat Demo 2.0.milk
+// dfplayer/presets/Rovastar - The Chaos Of Colours.milk
+// dfplayer/presets/nil - Can't Stop the Blithering.milk
+
+
 bool Visualizer::RenderFrameLocked() {
   projectm_->renderFrame();
+
+  GLenum err = glGetError();
+  if (err != GL_NO_ERROR) {
+    fprintf(stderr, "ProjectM rendering ended with err=0x%x\n", err);
+    return true;
+  }
 
   //glFlush();
   glXSwapBuffers(display_, pbuffer_);
 
   //glReadBuffer(GL_BACK);
+  glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, projectm_tex_);
 
   int w = 0;
   int h = 0;
+  int red_size = -1;
+  int green_size = -1;
+  int blue_size = -1;
+  int alpha_size = -1;
+  int internal_format = 0;
   glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
   glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
+  glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_RED_SIZE, &red_size);
+  glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_GREEN_SIZE, &green_size);
+  glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_BLUE_SIZE, &blue_size);
+  glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_ALPHA_SIZE, &alpha_size);
+  glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_COMPONENTS, &internal_format);
   if (w != texsize_ || h != texsize_) {
     fprintf(stderr, "Unexpected texture size of %d x %d, instead of %d",
             w, h, texsize_);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    return false;
+  }
+  if (red_size != 8 || green_size != 8 || blue_size != 8 ||
+      alpha_size != 0 || internal_format != GL_RGB) {
+    fprintf(stderr, "Unexpected color sizes of %d %d %d %d fmt=0x%x",
+            red_size, green_size, blue_size, alpha_size, internal_format);
     glBindTexture(GL_TEXTURE_2D, 0);
     return false;
   }
@@ -275,14 +318,9 @@ bool Visualizer::RenderFrameLocked() {
   glPixelStorei(GL_PACK_ALIGNMENT, 1);
   glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, image_buffer_);
 
-  //glReadPixels(0, 0, width_, height_, GL_RGB, GL_UNSIGNED_BYTE, image_buffer_);
-  // http://stackoverflow.com/questions/12157646/how-to-render-offscreen-on-opengl
-  // Thanks to all, it works now, the good way was to render into a Pixmap with
-  // eglCreatePixmapSurface method and then read easily its pixels.
-  // Now it runs @ 45FPS and not @ 17FPS with glReadPixels... exactly as I wanted...
-
-  GLenum err = glGetError();
+  err = glGetError();
   glBindTexture(GL_TEXTURE_2D, 0);
+  glDisable(GL_TEXTURE_2D);
   if (err == GL_NO_ERROR) {
     return true;
   }
@@ -294,7 +332,8 @@ bool Visualizer::RenderFrameLocked() {
   //  - Another texture in textureID[1] square size of texsize, RGB
   //
   // RenderTarget::lock() binds fbuffer[0]
-  // RenderTarget::lock() copies FB into textureID[1] and unbinds FB, tex remains bound
+  // RenderTarget::lock() copies FB into textureID[1] and unbinds FB,
+  //   tex remains bound
   //
   // initRenderToTexture() stores:
   //  - FB in fbuffer[1]
@@ -306,6 +345,40 @@ bool Visualizer::RenderFrameLocked() {
   fprintf(stderr, "Unable to read pixels, err=0x%x, fb_status=0x%x\n",
           err, status);
   return false;
+}
+
+void Visualizer::PostTclFrameLocked() {
+  if (!has_image_)
+    return;
+
+  TclRenderer* tcl = TclRenderer::GetByControllerId(1);
+  if (!tcl) {
+    fprintf(stderr, "TCL controller not found\n");
+    return;
+  }
+
+  // TODO(igorc): Do better color blending.
+  int w = tcl->GetWidth();
+  int h = tcl->GetHeight();
+  double w_scale = ((double) w) / texsize_;
+  double h_scale = ((double) h) / texsize_;
+  int len = w * h * 3;
+  uint8_t* data = new uint8_t[len];
+  for (int x = 0; x < w; x++) {
+    for (int y = 0; y < h; y++) {
+      int x2 = std::min((int) (((double) x) / w_scale), texsize_ - 1);
+      int y2 = std::min((int) (((double) y) / h_scale), texsize_ - 1);
+      int dst_idx = (y * w + x) * 3;
+      int src_idx = (y2 * texsize_ + x2) * 3;
+      data[dst_idx] = image_buffer_[src_idx];
+      data[dst_idx+1] = image_buffer_[src_idx+1];
+      data[dst_idx+2] = image_buffer_[src_idx+2];
+    }
+  }
+
+  AdjustableTime now;
+  Bytes* bytes = new Bytes(data, len);
+  tcl->ScheduleImageAt(bytes, now);
 }
 
 static void Sleep(double seconds) {
@@ -377,12 +450,13 @@ void Visualizer::Run() {
 
       if (has_image_) {
         dropped_image_count_++;
-        has_image_ = false;
+        //has_image_ = false;
+        // TODO(igorc): Figure this out!
       }
     }
 
     bool has_new_image = RenderFrameLocked();
-    //fprintf(stderr, "Rendered frame\n");
+    //fprintf(stderr, "Rendered frame = %d\n", (int)has_new_image);
 
     {
       Autolock l(lock_);
@@ -390,6 +464,7 @@ void Visualizer::Run() {
         break;
 
       has_image_ = has_new_image;
+      PostTclFrameLocked();
       uint64_t now = GetCurrentMillis();
       if (prev_frame_time)
         frame_periods_.push_back(now - prev_frame_time);

@@ -34,6 +34,7 @@ class Visualizer {
 
   int GetWidth() const { return width_; }
   int GetHeight() const { return height_; }
+  int GetTexSize() const { return texsize_; }
 
   Bytes* GetAndClearImage();
 
@@ -60,6 +61,7 @@ class Visualizer {
   void CloseInputLocked();
   bool TransferPcmDataLocked();
   bool RenderFrameLocked();
+  void PostTclFrameLocked();
 
   void CreateRenderContext();
   void DestroyRenderContext();
