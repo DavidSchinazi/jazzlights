@@ -4,9 +4,11 @@ import atexit
 import gevent
 import logging
 import math
+import mpd
 import os
 import PIL
 import re
+import signal
 import StringIO
 import subprocess
 import sys
@@ -14,7 +16,6 @@ import time
 
 from PIL import Image
 from PIL import ImageChops
-from mpd import MPDClient
 from gevent import sleep
 from gevent.coros import RLock
 
@@ -74,7 +75,7 @@ class Player(object):
         self._start_mpd()
         self.lock = RLock()
         with self.lock:
-            self.mpd = MPDClient()
+            self.mpd = mpd.MPDClient()
             self.mpd.connect('localhost', MPD_PORT)
 
         self._fetch_playlist()
@@ -172,7 +173,14 @@ class Player(object):
         # TODO(igorc): Why do we lock access to mpd, but not the rest of vars?
         # TODO(igorc): Add "mpd" prefix to all mpd-related state vars.
         with self.lock:
-            s = self.mpd.status()
+            try:
+                s = self.mpd.status()
+            except IOError:
+                print 'IOErrror accessing MPD status'
+                return
+            except mpd.ConnectionError:
+                print 'ConnectionError accessing MPD status'
+                return
         self._mpd_state_ts = time.time()
         self._volume = 0.01 * float(s['volume'])
         self._seek_time = None
@@ -226,6 +234,7 @@ class Player(object):
     def _stop_mpd(self):
         self._config_mpd()
         if not os.path.exists(MPD_PID_FILE):
+            self._kill_mpd()
             return
         logging.info('Stopping mpd')
         try:
@@ -233,6 +242,44 @@ class Player(object):
         except:
             logging.info('Error stopping MPD: %s (%s)' % (
                 sys.exc_info()[0], sys.exc_info()[1]))
+        sleep(1)
+        self._kill_mpd()
+
+    def _try_kill_mpd(self, signal_num):
+        mpd_pid = None
+        pids = [pid for pid in os.listdir('/proc') if pid.isdigit()]
+        for pid in pids:
+            pid_dir = os.path.join('/proc', pid)
+            try:
+                exe_link = os.path.join(pid_dir, 'exe')
+                #if not bool(os.stat(exe_link).st_mode & stat.S_IRGRP):
+                #    continue
+                exe = os.readlink(exe_link)
+                if os.path.basename(exe) != 'mpd':
+                    continue
+                with open(os.path.join(pid_dir, 'cmdline'), 'rb') as f:
+                    cmdline = f.read().split('\0')
+                if len(cmdline) == 3 and cmdline[1] == MPD_CONFIG_FILE:
+                    mpd_pid = pid
+                    break
+                print 'skipped %s / %s' % (exe, len(cmdline))
+            except IOError:  # proc has already terminated
+                continue
+            except OSError:  # no access to that pid
+                continue
+        if mpd_pid is None:
+            return False
+        print 'Found live MPD %s, sending signal %s' % (mpd_pid, signal_num)
+        os.kill(int(mpd_pid), signal_num)
+        return True
+
+    def _kill_mpd(self):
+        if self._try_kill_mpd(signal.SIGTERM):
+            sleep(1)
+        if self._try_kill_mpd(signal.SIGKILL):
+            sleep(1)
+        if os.path.exists(MPD_PID_FILE):
+            os.unlink(MPD_PID_FILE)
 
     def _start_mpd(self):
         self._config_mpd()
