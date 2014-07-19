@@ -41,8 +41,8 @@ MPD_PID_FILE = MPD_DIR + '/mpd.pid'
 MPD_LOG_FILE = MPD_DIR + '/mpd.log'
 MPD_CARD_ID = -1  # From 'aplay -l'
 
-CLIPS_DIR = VENV_DIR + '/clips/'
-PLAYLISTS_DIR = VENV_DIR + '/playlists/'
+CLIPS_DIR = VENV_DIR + '/clips'
+PLAYLISTS_DIR = VENV_DIR + '/playlists'
 
 # See http://manpages.ubuntu.com/manpages/lucid/man5/mpd.conf.5.html
 MPD_CONFIG_TPL = '''
@@ -386,7 +386,7 @@ class Player(object):
                 return self._frame
 
             frame_num = int(elapsed_time * FPS)
-            frame_file = CLIPS_DIR + '%s/frame%06d.jpg' \
+            frame_file = CLIPS_DIR + '/%s/frame%06d.jpg' \
                 % (self.clip_name, frame_num + 1)
             if frame_file == self._last_frame_file:
                 return self._frame

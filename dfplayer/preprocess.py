@@ -16,33 +16,25 @@ from player import CLIPS_DIR, PLAYLISTS_DIR
 from util import catch_and_log
 
 
-def _preprocess(src_path, basename, audio_files):
+def _preprocess_video(src_path, name, audio_files):
   print ''
-  print 'Processing:', basename
+  print 'Processing:', name
 
-  outpath = CLIPS_DIR + basename
+  outpath = os.path.join(CLIPS_DIR, name)
 
   audio_codec = _get_audio_codec(src_path)
   need_m4a = audio_codec == 'aac'
   if need_m4a:
-    audio_files.append(basename + '.m4a')
+    audio_files.append(name + '.m4a')
   else:
-    audio_files.append(basename + '.' + audio_codec)
+    audio_files.append(name + '.' + audio_codec)
 
-  src_time = os.path.getmtime(src_path)
-  stamp_file = outpath + '.stamp'
-  if os.path.exists(stamp_file):
-    src_time_str = time.ctime(src_time)
-    stamp_time_str = time.ctime(os.path.getmtime(stamp_file))
-    if src_time_str == stamp_time_str:
-      print 'Already have processed output %s' % (stamp_time_str)
-      return
-    print 'Stale stamp file, will re-process (stamp=%s file=%s)' % (
-        stamp_time_str, src_time_str)
+  if not _needs_processing(src_path, name):
+    return
 
   print ''
 
-  _remove_output(basename)
+  _remove_output(name)
 
   if not os.path.exists(outpath):
     os.makedirs(outpath)
@@ -82,6 +74,41 @@ def _preprocess(src_path, basename, audio_files):
         ])
     # os.unlink(audio_stream_file)
 
+  _create_stamp_file(src_path, name);
+
+
+def _preprocess_audio(src_path, name, audio_files):
+  print ''
+  print 'Processing:', name
+
+  basename = os.path.basename(src_path)
+  audio_files.append(basename)
+
+  if not _needs_processing(src_path, name):
+    return
+
+  _remove_output(name)
+  shutil.copyfile(src_path, os.path.join(CLIPS_DIR, basename))
+  _create_stamp_file(src_path, name);
+
+
+def _needs_processing(src_path, name):
+  src_time = os.path.getmtime(src_path)
+  stamp_file = os.path.join(CLIPS_DIR, name + '.stamp')
+  if os.path.exists(stamp_file):
+    src_time_str = time.ctime(src_time)
+    stamp_time_str = time.ctime(os.path.getmtime(stamp_file))
+    if src_time_str == stamp_time_str:
+      print 'Already have processed output %s' % (stamp_time_str)
+      return False
+    print 'Stale stamp file, will re-process (stamp=%s file=%s)' % (
+        stamp_time_str, src_time_str)
+  return True
+
+
+def _create_stamp_file(src_path, name):
+  src_time = os.path.getmtime(src_path)
+  stamp_file = os.path.join(CLIPS_DIR, name + '.stamp')
   with open(stamp_file, 'w') as f:
     f.write('')
   os.utime(stamp_file, (src_time, src_time))
@@ -97,8 +124,8 @@ def _get_audio_codec(src_path):
   return m.group(1)
 
 
-def _remove_one_output(basename, ext):
-  path = CLIPS_DIR + basename + ext
+def _remove_one_output(name, ext):
+  path = os.path.join(CLIPS_DIR, name + ext)
   if not os.path.exists(path):
     return False
   if os.path.isdir(path):
@@ -108,14 +135,18 @@ def _remove_one_output(basename, ext):
   return True
 
 
-def _remove_output(basename):
-  has_removed = _remove_one_output(basename, '.stamp')
-  has_removed |= _remove_one_output(basename, '.mp3')
-  has_removed |= _remove_one_output(basename, '.aac')
-  has_removed |= _remove_one_output(basename, '.m4a')
-  has_removed |= _remove_one_output(basename, '')
+def _remove_output(name):
+  has_removed = _remove_one_output(name, '.stamp')
+  has_removed |= _remove_one_output(name, '.mp3')
+  has_removed |= _remove_one_output(name, '.aac')
+  has_removed |= _remove_one_output(name, '.m4a')
+  has_removed |= _remove_one_output(name, '')
   if has_removed:
-    print 'Removed parts of "%s"' % basename
+    print 'Removed parts of "%s"' % name
+
+
+def _is_audio_file(path):
+  return path.endswith('.m4a')
 
 
 def main():
@@ -129,19 +160,25 @@ def main():
     if not os.path.exists(d):
       os.makedirs(d)
 
+  src_paths = glob.glob(indir + '/*.mp4')
+  src_paths += glob.glob(indir + '/*.m4a')
+
   names = []
   audio_files = []
-  for src_path in glob.glob(indir + '/*.mp4'):
-    basename = os.path.splitext(os.path.basename(src_path))[0]
-    names.append(basename)
-    _preprocess(src_path, basename, audio_files)
+  for src_path in src_paths:
+    name = os.path.splitext(os.path.basename(src_path))[0]
+    names.append(name)
+    if _is_audio_file(src_path):
+      _preprocess_audio(src_path, name, audio_files)
+    else:
+      _preprocess_video(src_path, name, audio_files)
 
-  with open(PLAYLISTS_DIR + 'playlist.m3u', 'w') as playlist:
+  with open(os.path.join(PLAYLISTS_DIR, 'playlist.m3u'), 'w') as playlist:
     for audio_file in audio_files:
       playlist.write(audio_file + '\n')
 
   print 'Removing outdated output'
-  for d in os.listdir(CLIPS_DIR[:-1]):
+  for d in os.listdir(CLIPS_DIR):
     basename = os.path.splitext(d)[0]
     if basename not in names:
       _remove_output(basename)

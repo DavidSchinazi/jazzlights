@@ -447,12 +447,6 @@ void Visualizer::Run() {
         should_sleep = true;
         continue;
       }
-
-      if (has_image_) {
-        dropped_image_count_++;
-        //has_image_ = false;
-        // TODO(igorc): Figure this out!
-      }
     }
 
     bool has_new_image = RenderFrameLocked();
@@ -463,6 +457,8 @@ void Visualizer::Run() {
       if (is_shutting_down_)
         break;
 
+      if (has_image_)
+        dropped_image_count_++;
       has_image_ = has_new_image;
       PostTclFrameLocked();
       uint64_t now = GetCurrentMillis();

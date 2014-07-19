@@ -118,7 +118,7 @@ class FrameSource(object):
     return None
 
   def _load_frame(self, frame_num, timestamp, current_ms):
-    path = self._clips_dir + '%s/frame%06d.jpg' % (
+    path = self._clips_dir + '/%s/frame%06d.jpg' % (
         self._clip_name, frame_num + 1)
     if not os.path.exists(path):
       print 'No file', path
