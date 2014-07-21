@@ -316,7 +316,7 @@ void TclRenderer::Run() {
         auto_reset_after_no_data_ms > 0) {
       uint64_t reply_delay = GetCurrentMillis() - last_reply_time_;
       if (reply_delay > auto_reset_after_no_data_ms) {
-        fprintf(stderr, "No reply in %ld ms and %d frames, RESETTING !!!\n",
+        fprintf(stderr, "No reply in %lld ms and %d frames, RESETTING !!!\n",
                 reply_delay, frames_sent_after_reply_);
         require_reset_ = true;
       }
