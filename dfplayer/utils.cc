@@ -27,7 +27,9 @@ uint64_t GetCurrentMillis() {
 }
 
 Bytes::Bytes(void* data, int len)
-    : data_(reinterpret_cast<uint8_t*>(data)), len_(len) {}
+    : data_(NULL), len_(0) {
+  SetData(data, len);
+}
 
 Bytes::~Bytes() {
   Clear();
@@ -42,7 +44,8 @@ void Bytes::Clear() {
 
 void Bytes::SetData(void* data, int len) {
   Clear();
-  data_ = reinterpret_cast<uint8_t*>(data);
+  data_ = new uint8_t[len];
+  memcpy(data_, data, len);
   len_ = len;
 }
 

@@ -119,9 +119,7 @@ Bytes* Visualizer::GetAndClearImage() {
   if (!has_image_)
     return NULL;
   has_image_ = false;
-  uint8_t* buf = new uint8_t[image_buffer_size_];
-  memcpy(buf, image_buffer_, image_buffer_size_);
-  return new Bytes(buf, image_buffer_size_);
+  return new Bytes(image_buffer_, image_buffer_size_);
 }
 
 void Visualizer::CloseInputLocked() {
@@ -379,6 +377,8 @@ void Visualizer::PostTclFrameLocked() {
   AdjustableTime now;
   Bytes* bytes = new Bytes(data, len);
   tcl->ScheduleImageAt(bytes, now);
+  delete[] data;
+  delete bytes;
 }
 
 static void Sleep(double seconds) {
