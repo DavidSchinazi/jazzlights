@@ -23,8 +23,7 @@ def main():
         host = '127.0.0.1'
         port = 8080
 
-    player = Player()
-    player.load_playlist('playlist')
+    player = Player('playlist')
     player.play(0)
     print player
 

@@ -72,7 +72,7 @@ def _preprocess_video(src_path, name, audio_files):
          '-acodec', 'copy',
           outpath + '.m4a',
         ])
-    # os.unlink(audio_stream_file)
+    os.unlink(audio_stream_file)
 
   _create_stamp_file(src_path, name);
 

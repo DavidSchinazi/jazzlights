@@ -69,7 +69,7 @@ audio_output {
 
 class Player(object):
 
-    def __init__(self):
+    def __init__(self, playlist):
         self._update_card_id()
 
         self._start_mpd()
@@ -78,8 +78,8 @@ class Player(object):
             self.mpd = mpd.MPDClient()
             self.mpd.connect('localhost', MPD_PORT)
 
-        self._fetch_playlist()
-        self._fetch_state()
+        self._playlist_name = playlist
+        self.playlist = []
 
         self._target_gamma = 2.4
         self._seek_time = None
@@ -99,6 +99,9 @@ class Player(object):
 
         self._use_visualization = False
         self._visualizer = None
+
+        self._load_playlist()
+        self._fetch_state()
 
     def __str__(self):
         elapsed_sec = int(self.elapsed_time)
@@ -158,29 +161,74 @@ class Player(object):
         print 'Setting gamma to %s' % self._target_gamma
         self._tcl.set_gamma(self._target_gamma)
 
-    def _fetch_playlist(self):
+    def _fetch_playlist(self, is_startup):
+        if len(self.playlist) == self._target_playlist_len:
+            return
+
+        # Ideally, we could keep loading more songs over time, but load()
+        # seems to duplicate song names in the list, while clear() aborts
+        # the current playback.
+        # TODO(igorc): See if we can load() ver time without duplicating.
+        # Otherwise, adding just 6 (although large) songs takes ~5 seconds.
+        while True:
+            # The playlist gets loaded over some period of time.
+            logging.info('Fetching MPD playlist')
+            with self.lock:
+                self.mpd.clear()
+                self.mpd.load(self._playlist_name)
+                listinfo = self.mpd.playlistinfo()
+                if len(listinfo) >= self._target_playlist_len:
+                    break
+            if is_startup:
+                sleep(1)
+            else:
+                break
+
+        if len(self.playlist) == len(listinfo):
+            return
+
         self.playlist = []
         self.songid_to_idx = {}
-        with self.lock:
-            listinfo = self.mpd.playlistinfo()
-        # TODO(azov): Can we check for completion in a loop with shorter sleep?
-        sleep(0.5)  # let it actually load the playlist
         for song in listinfo:
             self.songid_to_idx[song['id']] = len(self.playlist)
             self.playlist.append((song['file'])[0:-4])
 
+        logging.info('MPD playlist loaded %s songs, we need %s' % (
+            len(listinfo), self._target_playlist_len))
+        logging.info('Loaded playlist: %s' % (self.playlist))
+
+    def _load_playlist(self):
+        with self.lock:
+            self._target_playlist_len = len(
+                self.mpd.listplaylist(self._playlist_name))
+            self.mpd.repeat(1)
+            self.mpd.single(1)
+            self.mpd.update()
+        # Give MPD some time to find music files before loading the playlist.
+        # This helps playlist to be more complete on the first load.
+        sleep(1)
+        with self.lock:
+            self.mpd.load(self._playlist_name)
+        self._fetch_playlist(True)
+
+    def _read_state(self):
+        with self.lock:
+            try:
+                return self.mpd.status()
+            except IOError:
+                print 'IOErrror accessing MPD status'
+                return None
+            except mpd.ConnectionError:
+                print 'ConnectionError accessing MPD status'
+                return None
+
     def _fetch_state(self):
         # TODO(igorc): Why do we lock access to mpd, but not the rest of vars?
         # TODO(igorc): Add "mpd" prefix to all mpd-related state vars.
-        with self.lock:
-            try:
-                s = self.mpd.status()
-            except IOError:
-                print 'IOErrror accessing MPD status'
-                return
-            except mpd.ConnectionError:
-                print 'ConnectionError accessing MPD status'
-                return
+        s = self._read_state()
+        if not s:
+            return
+
         self._mpd_state_ts = time.time()
         self._volume = 0.01 * float(s['volume'])
         self._seek_time = None
@@ -204,6 +252,8 @@ class Player(object):
             self._mpd_elapsed_time = float(s['elapsed'])
 
         # print 'MPD status', s
+
+        # self._fetch_playlist(False)
 
     def _config_mpd(self):
         for d in (MPD_DIR, CLIPS_DIR, PLAYLISTS_DIR):
@@ -319,16 +369,6 @@ class Player(object):
 
     def volume_down(self):
         self.volume = self.volume - 0.05
-
-    def load_playlist(self, name):
-        with self.lock:
-            self.mpd.clear()
-            self.mpd.load(name)
-            self.mpd.repeat(1)
-            self.mpd.single(1)
-        self._fetch_playlist()
-        self._fetch_state()
-        logging.info("Loaded playlist '%s': %s" % (name, self.playlist))
 
     def play(self, clip_idx):
         with self.lock:
