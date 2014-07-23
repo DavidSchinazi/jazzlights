@@ -22,11 +22,15 @@
 
 #include "tcl_renderer.h"
 
-Visualizer::Visualizer(int width, int height, int texsize, int fps)
+Visualizer::Visualizer(
+    int width, int height, int texsize, int fps,
+    std::string preset_dir, int preset_duration)
     : width_(width), height_(height), texsize_(texsize), fps_(fps),
       alsa_handle_(NULL), projectm_(NULL), projectm_tex_(0),
       total_overrun_count_(0), has_image_(false), dropped_image_count_(0),
       is_shutting_down_(false), has_started_thread_(false),
+      preset_dir_(preset_dir), preset_duration_(preset_duration),
+      current_preset_index_(-1),
       lock_(PTHREAD_MUTEX_INITIALIZER) {
   last_render_time_ = GetCurrentMillis();
   ms_per_frame_ = (uint32_t) (1000.0 / (double) fps);
@@ -79,16 +83,41 @@ void Visualizer::UseAlsa(const std::string& spec) {
   alsa_device_ = spec;
 }
 
-std::string Visualizer::GetCurrentPreset() {
+std::string Visualizer::GetCurrentPresetName() {
   Autolock l(lock_);
   return current_preset_;
 }
 
-std::vector<std::string> Visualizer::GetPresetNames() {
-  return std::vector<std::string>();
+std::string Visualizer::GetCurrentPresetNameProgress() {
+  Autolock l(lock_);
+  if (current_preset_.empty())
+    return "";
+  char buf[1024];
+  snprintf(buf, sizeof(buf), "(%d/%d) '%s'",
+           current_preset_index_, (int) all_presets_.size(),
+           current_preset_.c_str());
+  return buf;
 }
 
-void Visualizer::UsePreset(const std::string& spec) {
+std::vector<std::string> Visualizer::GetPresetNames() {
+  Autolock l(lock_);
+  return all_presets_;
+}
+
+void Visualizer::SelectNextPreset() {
+  Autolock l(lock_);
+  ScheduleWorkItemLocked(new NextPresetWorkItem(true));
+}
+
+void Visualizer::SelectPreviousPreset() {
+  Autolock l(lock_);
+  ScheduleWorkItemLocked(new NextPresetWorkItem(false));
+}
+
+void Visualizer::ScheduleWorkItemLocked(WorkItem* item) {
+  if (is_shutting_down_)
+    return;
+  work_items_.push_back(item);
 }
 
 int Visualizer::GetAndClearOverrunCount() {
@@ -243,18 +272,18 @@ void Visualizer::CreateProjectM() {
   settings.textureSize = texsize_;
   settings.meshX = width_;
   settings.meshY = height_;
-  settings.presetURL = "dfplayer/presets";
+  settings.presetURL = preset_dir_;
   settings.titleFontURL = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf";
   settings.menuFontURL = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf";
   settings.beatSensitivity = 10;
   settings.aspectCorrection = 1;
   // Preset duration is based on gaussian distribution
   // with mean of |presetDuration| and sigma of |easterEgg|.
-  settings.presetDuration = 10;
+  settings.presetDuration = preset_duration_;
   settings.easterEgg = 1;
   // Transition period for switching between presets.
   settings.smoothPresetDuration = 3;
-  settings.shuffleEnabled = 1;
+  settings.shuffleEnabled = 0;
   settings.softCutRatingsEnabled = 0;
   projectm_ = new projectM(settings);
 
@@ -263,6 +292,15 @@ void Visualizer::CreateProjectM() {
     fprintf(stderr, "Unable to init ProjectM texture rendering");
     CHECK(false);
   }
+
+  {
+    Autolock l(lock_);
+    for (unsigned int i = 0; i < projectm_->getPlaylistSize(); i++) {
+      all_presets_.push_back(projectm_->getPresetName(i));
+    }
+  }
+
+  projectm_->selectPreset(0);
 }
 
 // dfplayer/presets/Geiss and Rovastar - The Chaos Of Colours (sprouting dimentia mix).milk
@@ -402,6 +440,14 @@ static void Sleep(double seconds) {
   }
 }
 
+void Visualizer::NextPresetWorkItem::Run(Visualizer* self) {
+  if (is_next_) {
+    self->projectm_->selectNext(true);
+  } else {
+    self->projectm_->selectPrevious(true);
+  }
+}
+
 // static
 void* Visualizer::ThreadEntry(void* arg) {
   Visualizer* self = reinterpret_cast<Visualizer*>(arg);
@@ -443,7 +489,7 @@ void Visualizer::Run() {
       while (!work_items_.empty()) {
         WorkItem* item = work_items_.front();
         work_items_.pop_front();
-        item->Run();
+        item->Run(this);
         delete item;
       }
 
@@ -462,7 +508,12 @@ void Visualizer::Run() {
       if (is_shutting_down_)
         break;
 
-      current_preset_ = projectm_->getCurrentPresetName();
+      if (projectm_->selectedPresetIndex(current_preset_index_)) {
+        current_preset_ = projectm_->getPresetName(current_preset_index_);
+      } else {
+        current_preset_index_ = -1;
+        current_preset_ = "";
+      }
 
       if (has_image_)
         dropped_image_count_++;

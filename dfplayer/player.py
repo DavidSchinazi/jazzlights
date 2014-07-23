@@ -45,6 +45,9 @@ MPD_CARD_ID = -1  # From 'aplay -l'
 CLIPS_DIR = VENV_DIR + '/clips'
 PLAYLISTS_DIR = VENV_DIR + '/playlists'
 
+_PRESET_DIR = 'projectm/presets'
+_PRESET_DURATION = 10000
+
 # See http://manpages.ubuntu.com/manpages/lucid/man5/mpd.conf.5.html
 MPD_CONFIG_TPL = '''
 music_directory     "%(CLIPS_DIR)s"
@@ -143,8 +146,7 @@ class Player(object):
         lines.append('volume = %s, gamma = %s' % (
             self._volume, self._target_gamma))
         if self._use_visualization:
-            lines.append('Preset = "%s"' % (
-                self._visualizer.GetCurrentPreset()))
+            lines.append(self._visualizer.GetCurrentPresetNameProgress())
         else:
             lines.append('Playing video')
         return lines
@@ -182,7 +184,7 @@ class Player(object):
         listinfo = []
         while True:
             # The playlist gets loaded over some period of time.
-            logging.info('Fetching MPD playlist %s out of %s' % (
+            logging.info('Fetching MPD playlist (%s out of %s done)' % (
                 len(listinfo), self._target_playlist_len))
             with self.lock:
                 self.mpd.clear()
@@ -439,9 +441,18 @@ class Player(object):
             self._visualizer_size = (
                 IMAGE_FRAME_WIDTH / MESH_RATIO, FRAME_HEIGHT / MESH_RATIO)
             self._visualizer = Visualizer(
-                self._visualizer_size[0], self._visualizer_size[1], 256, FPS)
+                self._visualizer_size[0], self._visualizer_size[1], 256, FPS,
+                _PRESET_DIR, _PRESET_DURATION)
             self._visualizer.StartMessageLoop()
             self._visualizer.UseAlsa('df_dup_input')
+
+    def select_next_preset(self, is_forward):
+        if not self._use_visualization:
+            return
+        if is_forward:
+            self._visualizer.SelectNextPreset()
+        else:
+            self._visualizer.SelectPreviousPreset()
 
     def get_frame_image(self):
         if self.status == 'idle':

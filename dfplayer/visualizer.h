@@ -22,17 +22,22 @@
 
 class Visualizer {
  public:
-  Visualizer(int width, int height, int texsize, int fps);
+  Visualizer(
+      int width, int height, int texsize, int fps,
+      std::string preset_dir, int preset_duration);
   ~Visualizer();
 
   void StartMessageLoop();
 
   void UseAlsa(const std::string& spec);
 
-  std::string GetCurrentPreset();
+  std::string GetCurrentPresetName();
+  std::string GetCurrentPresetNameProgress();
+
+  void SelectNextPreset();
+  void SelectPreviousPreset();
 
   std::vector<std::string> GetPresetNames();
-  void UsePreset(const std::string& spec);
 
   int GetWidth() const { return width_; }
   int GetHeight() const { return height_; }
@@ -54,7 +59,15 @@ class Visualizer {
     WorkItem() {}
     virtual ~WorkItem() {}
 
-    virtual void Run() = 0;
+    virtual void Run(Visualizer* self) = 0;
+  };
+
+  class NextPresetWorkItem : public WorkItem {
+   public:
+    NextPresetWorkItem(bool is_next) : is_next_(is_next) {}
+    virtual void Run(Visualizer* self);
+   private:
+    bool is_next_;
   };
 
   void Run();
@@ -68,6 +81,8 @@ class Visualizer {
   void CreateRenderContext();
   void DestroyRenderContext();
   void CreateProjectM();
+
+  void ScheduleWorkItemLocked(WorkItem* item);
 
   int width_;
   int height_;
@@ -90,7 +105,11 @@ class Visualizer {
   bool has_started_thread_;
   std::deque<WorkItem*> work_items_;
   std::vector<int> frame_periods_;
+  std::string preset_dir_;
+  int preset_duration_;
   std::string current_preset_;
+  unsigned int current_preset_index_;
+  std::vector<std::string> all_presets_;
   pthread_mutex_t lock_;
   pthread_t thread_;
 
@@ -98,6 +117,8 @@ class Visualizer {
   Display* display_;
   GLXContext gl_context_;
   GLXPbuffer pbuffer_;
+
+  friend class NextPresetWorkItem;
 };
 
 #endif  // __DFPLAYER_VISUALIZER_H

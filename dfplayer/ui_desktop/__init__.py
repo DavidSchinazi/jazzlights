@@ -72,6 +72,8 @@ class PlayerApp(Frame):
         self.root.bind('g', lambda e: player.gamma_up())
         self.root.bind('b', lambda e: player.gamma_down())
         self.root.bind('v', lambda e: player.toggle_visualization())
+        self.root.bind('o', lambda e: player.select_next_preset(False))
+        self.root.bind('p', lambda e: player.select_next_preset(True))
         self.root.bind('0', lambda e: player.stop_effect())
         self.root.bind('1', lambda e: player.play_effect('textticker'))
         self.root.bind('2', lambda e: player.play_effect('solidcolor'))
