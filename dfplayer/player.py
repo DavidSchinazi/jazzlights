@@ -130,15 +130,24 @@ class Player(object):
                    self._frame_source.get_cache_size(),
                    self._tcl.get_queue_size())
 
-    def get_status_str(self):
+    def get_status_lines(self):
         if self._seek_time:
             elapsed_time = self._seek_time
         else:
             elapsed_time = self.elapsed_time
         elapsed_sec = int(elapsed_time)
-        return ('%s / %s / %02d:%02d') % (
+        lines = []
+        lines.append('%s / %s / %02d:%02d' % (
             self.status.upper(), self.clip_name,
-            elapsed_sec / 60, elapsed_sec % 60)
+            elapsed_sec / 60, elapsed_sec % 60))
+        lines.append('volume = %s, gamma = %s' % (
+            self._volume, self._target_gamma))
+        if self._use_visualization:
+            lines.append('Preset = "%s"' % (
+                self._visualizer.GetCurrentPreset()))
+        else:
+            lines.append('Playing video')
+        return lines
 
     def get_frame_size(self):
         return (_SCREEN_FRAME_WIDTH, FRAME_HEIGHT)
@@ -170,9 +179,11 @@ class Player(object):
         # the current playback.
         # TODO(igorc): See if we can load() ver time without duplicating.
         # Otherwise, adding just 6 (although large) songs takes ~5 seconds.
+        listinfo = []
         while True:
             # The playlist gets loaded over some period of time.
-            logging.info('Fetching MPD playlist')
+            logging.info('Fetching MPD playlist %s out of %s' % (
+                len(listinfo), self._target_playlist_len))
             with self.lock:
                 self.mpd.clear()
                 self.mpd.load(self._playlist_name)

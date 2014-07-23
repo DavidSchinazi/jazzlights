@@ -43,7 +43,8 @@ class PlayerApp(Frame):
         self._canvas.pack()
 
         self._main_label = self._canvas.create_text(
-            WIN_WIDTH / 2, WIN_HEIGHT / 20, fill='#fff')
+            (WIN_WIDTH / 2, WIN_HEIGHT / 10), fill='#fff', justify='center',
+            font=("Sans Serif", 16))
         self._canvas.itemconfig(self._main_label, text="this is the text")
 
         self.player = player
@@ -119,8 +120,9 @@ class PlayerApp(Frame):
                     (0, 0, self._led_mask.size[0], self._led_mask.size[1]),
                     self._led_mask)
                 self._img.paste(frame)
+            status_lines = self.player.get_status_lines()
             self._canvas.itemconfig(
-                self._main_label, text=self.player.get_status_str())
+                self._main_label, text='\n'.join(status_lines))
             self.root.after(1000 / FPS / 4, lambda : self.update())
         except KeyboardInterrupt:
             self.quit()

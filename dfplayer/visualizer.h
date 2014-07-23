@@ -29,6 +29,8 @@ class Visualizer {
 
   void UseAlsa(const std::string& spec);
 
+  std::string GetCurrentPreset();
+
   std::vector<std::string> GetPresetNames();
   void UsePreset(const std::string& spec);
 
@@ -88,6 +90,7 @@ class Visualizer {
   bool has_started_thread_;
   std::deque<WorkItem*> work_items_;
   std::vector<int> frame_periods_;
+  std::string current_preset_;
   pthread_mutex_t lock_;
   pthread_t thread_;
 

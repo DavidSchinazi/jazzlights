@@ -79,6 +79,11 @@ void Visualizer::UseAlsa(const std::string& spec) {
   alsa_device_ = spec;
 }
 
+std::string Visualizer::GetCurrentPreset() {
+  Autolock l(lock_);
+  return current_preset_;
+}
+
 std::vector<std::string> Visualizer::GetPresetNames() {
   return std::vector<std::string>();
 }
@@ -245,10 +250,10 @@ void Visualizer::CreateProjectM() {
   settings.aspectCorrection = 1;
   // Preset duration is based on gaussian distribution
   // with mean of |presetDuration| and sigma of |easterEgg|.
-  settings.presetDuration = 5;
+  settings.presetDuration = 10;
   settings.easterEgg = 1;
   // Transition period for switching between presets.
-  settings.smoothPresetDuration = 2;
+  settings.smoothPresetDuration = 3;
   settings.shuffleEnabled = 1;
   settings.softCutRatingsEnabled = 0;
   projectm_ = new projectM(settings);
@@ -456,6 +461,8 @@ void Visualizer::Run() {
       Autolock l(lock_);
       if (is_shutting_down_)
         break;
+
+      current_preset_ = projectm_->getCurrentPresetName();
 
       if (has_image_)
         dropped_image_count_++;
