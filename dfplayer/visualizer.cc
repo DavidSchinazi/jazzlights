@@ -94,7 +94,7 @@ std::string Visualizer::GetCurrentPresetNameProgress() {
     return "";
   char buf[1024];
   snprintf(buf, sizeof(buf), "(%d/%d) '%s'",
-           current_preset_index_, (int) all_presets_.size(),
+           current_preset_index_ + 1, (int) all_presets_.size(),
            current_preset_.c_str());
   return buf;
 }
@@ -388,6 +388,25 @@ bool Visualizer::RenderFrameLocked() {
   return false;
 }
 
+uint8_t* ScaleImage(uint8_t* src, int src_w, int src_h, int dst_w, int dst_h) {
+  double w_scale = ((double) dst_w) / src_w;
+  double h_scale = ((double) dst_h) / src_h;
+  int len = dst_w * dst_h * 3;
+  uint8_t* data = new uint8_t[len];
+  for (int x = 0; x < dst_w; x++) {
+    for (int y = 0; y < dst_h; y++) {
+      int x2 = std::min((int) (((double) x) / w_scale), src_w - 1);
+      int y2 = std::min((int) (((double) y) / h_scale), src_h - 1);
+      int dst_idx = (y * dst_w + x) * 3;
+      int src_idx = (y2 * src_w + x2) * 3;
+      data[dst_idx] = src[src_idx];
+      data[dst_idx+1] = src[src_idx+1];
+      data[dst_idx+2] = src[src_idx+2];
+    }
+  }
+  return data;
+}
+
 void Visualizer::PostTclFrameLocked() {
   if (!has_image_)
     return;
@@ -401,21 +420,25 @@ void Visualizer::PostTclFrameLocked() {
   // TODO(igorc): Do better color blending.
   int w = tcl->GetWidth();
   int h = tcl->GetHeight();
-  double w_scale = ((double) w) / texsize_;
-  double h_scale = ((double) h) / texsize_;
+  int src_w = w / 2;
+  uint8_t* scaled_img = ScaleImage(
+      image_buffer_, src_w, h, texsize_, texsize_);
   int len = w * h * 3;
   uint8_t* data = new uint8_t[len];
-  for (int x = 0; x < w; x++) {
-    for (int y = 0; y < h; y++) {
-      int x2 = std::min((int) (((double) x) / w_scale), texsize_ - 1);
-      int y2 = std::min((int) (((double) y) / h_scale), texsize_ - 1);
+  for (int y = 0; y < h; y++) {
+    for (int x = 0; x < src_w; x++) {
+      int src_idx = (y * src_w + x) * 3;
       int dst_idx = (y * w + x) * 3;
-      int src_idx = (y2 * texsize_ + x2) * 3;
-      data[dst_idx] = image_buffer_[src_idx];
-      data[dst_idx+1] = image_buffer_[src_idx+1];
-      data[dst_idx+2] = image_buffer_[src_idx+2];
+      data[dst_idx] = scaled_img[src_idx];
+      data[dst_idx+1] = scaled_img[src_idx+1];
+      data[dst_idx+2] = scaled_img[src_idx+2];
+      dst_idx = (y * w + (w - x - 1)) * 3;
+      data[dst_idx] = scaled_img[src_idx];
+      data[dst_idx+1] = scaled_img[src_idx+1];
+      data[dst_idx+2] = scaled_img[src_idx+2];
     }
   }
+  delete[] scaled_img;
 
   AdjustableTime now;
   Bytes* bytes = new Bytes(data, len);
@@ -441,11 +464,18 @@ static void Sleep(double seconds) {
 }
 
 void Visualizer::NextPresetWorkItem::Run(Visualizer* self) {
-  if (is_next_) {
-    self->projectm_->selectNext(true);
-  } else {
-    self->projectm_->selectPrevious(true);
+  unsigned int idx = -1;
+  if (!self->projectm_->selectedPresetIndex(idx)) {
+    self->projectm_->selectPreset(0);
+    return;
   }
+  unsigned int size = self->projectm_->getPlaylistSize();
+  if (is_next_) {
+    idx = (idx < size - 1 ? idx + 1 : 0);
+  } else {
+    idx = (idx > 0 ? idx - 1 : size - 1);
+  }
+  self->projectm_->selectPreset(idx);
 }
 
 // static

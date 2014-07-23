@@ -46,6 +46,7 @@ CLIPS_DIR = VENV_DIR + '/clips'
 PLAYLISTS_DIR = VENV_DIR + '/playlists'
 
 _PRESET_DIR = 'projectm/presets'
+#_PRESET_DIR = 'projectm/presets_yin'
 _PRESET_DURATION = 10000
 
 # See http://manpages.ubuntu.com/manpages/lucid/man5/mpd.conf.5.html
