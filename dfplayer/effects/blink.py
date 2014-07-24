@@ -4,7 +4,7 @@ from ..effect import FixedDurationEffect, register
 
 class Blink(FixedDurationEffect):
 
-  def __init__(self, duration=2, fgcolor='orange', bgcolor='black', freq=8):
+  def __init__(self, duration=60, fgcolor='orange', bgcolor='grey', freq=8):
     FixedDurationEffect.__init__(self, duration=duration)
     self._fgcolor = fgcolor
     self._bgcolor = bgcolor

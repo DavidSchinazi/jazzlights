@@ -26,7 +26,7 @@ from .util import get_time_millis
 from .tcl_renderer import TclRenderer
 from .renderer_cc import Visualizer
 
-FPS = 30
+FPS = 15
 _SCREEN_FRAME_WIDTH = 500
 IMAGE_FRAME_WIDTH = _SCREEN_FRAME_WIDTH / 2
 FRAME_HEIGHT = 50

@@ -6,7 +6,7 @@ from ..util import hsl2rgb
 
 class Chameleon(FixedDurationEffect):
 
-  def __init__(self, duration=5):
+  def __init__(self, duration=60):
     FixedDurationEffect.__init__(self, duration=duration)
 
   def _apply(self, frame, elapsed):

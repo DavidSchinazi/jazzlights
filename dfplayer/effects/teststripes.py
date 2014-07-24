@@ -6,7 +6,7 @@ from ..effect import FixedDurationEffect, register
 class TestStripes(FixedDurationEffect):
 
   def __init__(
-      self, duration=15, fgcolor='white', bgcolor='black', thickness=4):
+      self, duration=60, fgcolor='grey', bgcolor='black', thickness=4):
     FixedDurationEffect.__init__(self, duration=duration)
     self._fgcolor = fgcolor
     self._bgcolor = bgcolor
