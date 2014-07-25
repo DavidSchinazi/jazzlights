@@ -12,7 +12,7 @@ typedef struct {
 } AlsaInputHandle;
 
 // Opens ALSA device for reading by name (e.g. "hw:0,0").
-AlsaInputHandle *inp_alsa_init (const char* alsa_device);
+AlsaInputHandle *inp_alsa_init (const char* alsa_device, int rate);
 
 void inp_alsa_cleanup (AlsaInputHandle* handle);
 

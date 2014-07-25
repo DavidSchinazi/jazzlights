@@ -163,14 +163,31 @@ void Visualizer::CloseInputLocked() {
   }
 }
 
+/*static std::string GetPcmDump(int16_t* pcm_buffer, int sample_count) {
+  char buf[100 * 1024];
+  char* pos = buf;
+  for (int i = 0; i < sample_count; i++) {
+    pos += sprintf(pos, "%X/%X ", pcm_buffer[i * 2], pcm_buffer[i * 2 + 1]);
+  }
+  pos[0] = 0;
+  return buf;
+}*/
+
 bool Visualizer::TransferPcmDataLocked() {
   if (!alsa_handle_) {
-    if (alsa_device_.empty())
+    if (alsa_device_.empty()) {
+      fprintf(stderr, "ALSA input is disabled\n");
       return false;
+    }
     fprintf(stderr, "Connecting to ALSA input %s\n", alsa_device_.c_str());
-    alsa_handle_ = inp_alsa_init(alsa_device_.c_str());
-    if (!alsa_handle_)
+    // ProjectM can handle 2048 frames per frame. For 15 FPS this translates to
+    // 30720. Use the next lower standard sampling rate. We request ALSA
+    // to produce S16_LE, which matches "signed short" used by ProjectM.
+    alsa_handle_ = inp_alsa_init(alsa_device_.c_str(), 22050);
+    if (!alsa_handle_) {
+      fprintf(stderr, "Failed to open ALSA input\n");
       return false;
+    }
   }
 
   int sample_count = 0;
@@ -187,6 +204,20 @@ bool Visualizer::TransferPcmDataLocked() {
   }
 
   //fprintf(stderr, "Adding %d samples\n", sample_count);
+  //fprintf(stderr, "Adding %d samples %s\n",
+  //        sample_count, GetPcmDump(pcm_buffer_, sample_count).c_str());
+
+  bool has_real_data = false;
+  for (int i = 0; i < sample_count * 2; i++) {
+    if (pcm_buffer_[i]) {
+      has_real_data = true;
+      break;
+    }
+  }
+  if (sample_count && !has_real_data) {
+    fprintf(stderr, "ALSA produced %d samples with empy data\n", sample_count);
+  }
+
   total_pcm_sample_count_ += sample_count;
   pcm->addPCM16Data(pcm_buffer_, sample_count);
 
@@ -495,7 +526,7 @@ void Visualizer::Run() {
   while (true) {
     if (should_sleep) {
       should_sleep = false;
-      Sleep(0.1);
+      Sleep(0.2);
     }
 
     uint32_t remaining_time = 0;
@@ -524,7 +555,7 @@ void Visualizer::Run() {
       }
 
       if (!TransferPcmDataLocked()) {
-        fprintf(stderr, "No ALSA data\n");
+        //fprintf(stderr, "No ALSA data\n");
         should_sleep = true;
         continue;
       }

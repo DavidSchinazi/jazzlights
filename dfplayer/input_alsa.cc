@@ -65,13 +65,12 @@ typedef struct {
     exit(-1);                                                            \
   }
 
-static const int   inp_alsa_var_samplerate = 44100;
 static const int   inp_alsa_var_channels   = 2;
 
-static int inp_alsa_init_internal (const char *alsa_device, alsaPrivate *priv)
+static int inp_alsa_init_internal (
+    const char *alsa_device, alsaPrivate *priv, unsigned int rate)
 {
 	snd_pcm_hw_params_t *hwparams = NULL;
-	unsigned int rate = inp_alsa_var_samplerate;
 	unsigned int exact_rate;
 	unsigned int tmp;
 	int dir = 0;
@@ -171,10 +170,10 @@ static int inp_alsa_init_internal (const char *alsa_device, alsaPrivate *priv)
 	return TRUE;
 }
 
-AlsaInputHandle *inp_alsa_init (const char* alsa_device)
+AlsaInputHandle *inp_alsa_init (const char* alsa_device, int rate)
 {
 	alsaPrivate *priv = new alsaPrivate();
-	if (!inp_alsa_init_internal (alsa_device, priv)) {
+	if (!inp_alsa_init_internal (alsa_device, priv, rate)) {
 		delete priv;
 		return NULL;
 	}

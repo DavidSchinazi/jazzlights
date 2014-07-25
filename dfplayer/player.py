@@ -60,7 +60,7 @@ port                "%(MPD_PORT)d"
 audio_output {
     type            "alsa"
     name            "DF audio loop"
-    device          "df_dup_output"
+    device          "df_audio"
     auto_resample   "no"
 }
 '''
@@ -445,7 +445,10 @@ class Player(object):
                 self._visualizer_size[0], self._visualizer_size[1], 256, FPS,
                 _PRESET_DIR, _PRESET_DURATION)
             self._visualizer.StartMessageLoop()
-            self._visualizer.UseAlsa('df_dup_input')
+        if self._use_visualization:
+            self._visualizer.UseAlsa('df_audio')
+        else:
+            self._visualizer.UseAlsa('')
 
     def select_next_preset(self, is_forward):
         if not self._use_visualization:

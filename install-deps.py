@@ -41,6 +41,7 @@ _USEFUL_PACKAGES = [
     'gdb',
     'gimp',
     'git',
+    'libasound2-doc',
     'mesa-utils',
     'synaptic',
     'vim',
