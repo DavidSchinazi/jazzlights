@@ -156,9 +156,6 @@ class Player(object):
     def get_tcl_coords(self):
         return self._tcl.get_layout_coords()
 
-    def toggle_split_sides(self):
-        self._frame_source.toggle_split_sides()
-
     def gamma_up(self):
         self._target_gamma += 0.1
         print 'Setting gamma to %s' % self._target_gamma

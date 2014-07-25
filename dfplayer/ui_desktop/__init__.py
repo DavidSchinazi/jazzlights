@@ -68,7 +68,6 @@ class PlayerApp(Frame):
         self.root.bind('q', lambda e: player.volume_up())
         self.root.bind('a', lambda e: player.volume_down())
         self.root.bind('m', lambda e: self.switch_mask())
-        self.root.bind('s', lambda e: player.toggle_split_sides())
         self.root.bind('g', lambda e: player.gamma_up())
         self.root.bind('b', lambda e: player.gamma_down())
         self.root.bind('v', lambda e: player.toggle_visualization())

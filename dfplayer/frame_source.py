@@ -31,7 +31,6 @@ class FrameSource(object):
     self._frame_height = frame_height
     self._clips_dir = clips_dir
     self._effect = None
-    self._split_sides = True
 
     self._prefetch_size = fps / 2
     self._clear_cache('')
@@ -41,9 +40,6 @@ class FrameSource(object):
 
   def stop_effect(self):
     self._effect = None
-
-  def toggle_split_sides(self):
-    self._split_sides = not self._split_sides
 
   def prefetch(self, clip_name, elapsed_sec):
     baseline_ms = get_time_millis()
@@ -144,15 +140,13 @@ class FrameSource(object):
       frame_img.paste(src_img, (self._frame_width, 0))
       flip_img = src_img.transpose(Image.FLIP_LEFT_RIGHT)
       frame_img.paste(flip_img, (0, 0))
-    elif self._split_sides:
+    else:
       sub_img = src_img.resize((src_img.size[0] / 2, src_img.size[1]))
       #sub_img = src_img.crop((
       #    src_img.size[0] / 4, 0, src_img.size[0] * 3 / 4, src_img.size[1]))
       frame_img = Image.new('RGB', src_img.size)
       frame_img.paste(sub_img, (0, 0))
       frame_img.paste(sub_img, (sub_img.size[0], 0))
-    else:
-      frame_img = src_img
 
     return Frame(timestamp, frame_num, current_ms, frame_img)
 
