@@ -20,8 +20,10 @@ _PILLOW_DEPS = [
 _PLAYER_DEPS = [
     'libaudiofile-dev',
     'libav-tools',
+    'libopencv-dev',
     'mpd',
     #'nvidia-current',
+    'opencv-doc',
     'python-dev',
     'python-mpd',
     'python-mutagen',

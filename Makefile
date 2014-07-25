@@ -7,7 +7,7 @@ develop: env
 
 cpp: dfplayer/libprojectM.so.2
 	swig -python -c++ `python-config --includes` dfplayer/renderer.i
-	g++ -std=c++0x -Wall -Wextra -g -ggdb3 -fPIC -shared `python-config --includes` -Wl,-rpath,./dfplayer -o dfplayer/_renderer_cc.so dfplayer/tcl_renderer.cc dfplayer/visualizer.cc dfplayer/input_alsa.cc dfplayer/utils.cc dfplayer/renderer_wrap.cxx -lpthread -lm -ldl -lasound -lGL dfplayer/libprojectM.so.2
+	g++ -std=c++0x -Wall -Wextra -g -ggdb3 -fPIC -shared `python-config --includes` -Wl,-rpath,./dfplayer -o dfplayer/_renderer_cc.so dfplayer/tcl_renderer.cc dfplayer/visualizer.cc dfplayer/input_alsa.cc dfplayer/utils.cc dfplayer/renderer_wrap.cxx -lpthread -lm -ldl -lasound -lGL -lopencv_core -lopencv_imgproc dfplayer/libprojectM.so.2
 
 run: develop cpp
 	env/bin/dfplayer --listen 127.0.0.1:8080

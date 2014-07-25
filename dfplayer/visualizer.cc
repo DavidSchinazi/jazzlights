@@ -176,7 +176,7 @@ void Visualizer::CloseInputLocked() {
 bool Visualizer::TransferPcmDataLocked() {
   if (!alsa_handle_) {
     if (alsa_device_.empty()) {
-      fprintf(stderr, "ALSA input is disabled\n");
+      //fprintf(stderr, "ALSA input is disabled\n");
       return false;
     }
     fprintf(stderr, "Connecting to ALSA input %s\n", alsa_device_.c_str());
@@ -306,7 +306,7 @@ void Visualizer::CreateProjectM() {
   settings.presetURL = preset_dir_;
   settings.titleFontURL = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf";
   settings.menuFontURL = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf";
-  settings.beatSensitivity = 10;
+  settings.beatSensitivity = 50;
   settings.aspectCorrection = 1;
   // Preset duration is based on gaussian distribution
   // with mean of |presetDuration| and sigma of |easterEgg|.
@@ -419,7 +419,7 @@ bool Visualizer::RenderFrameLocked() {
   return false;
 }
 
-uint8_t* ScaleImage(uint8_t* src, int src_w, int src_h, int dst_w, int dst_h) {
+/*uint8_t* ScaleImage(uint8_t* src, int src_w, int src_h, int dst_w, int dst_h) {
   double w_scale = ((double) dst_w) / src_w;
   double h_scale = ((double) dst_h) / src_h;
   int len = dst_w * dst_h * 3;
@@ -436,7 +436,7 @@ uint8_t* ScaleImage(uint8_t* src, int src_w, int src_h, int dst_w, int dst_h) {
     }
   }
   return data;
-}
+}*/
 
 void Visualizer::PostTclFrameLocked() {
   if (!has_image_)
@@ -448,33 +448,33 @@ void Visualizer::PostTclFrameLocked() {
     return;
   }
 
-  // TODO(igorc): Do better color blending.
-  int w = tcl->GetWidth();
-  int h = tcl->GetHeight();
-  int src_w = w / 2;
-  uint8_t* scaled_img = ScaleImage(
-      image_buffer_, src_w, h, texsize_, texsize_);
-  int len = w * h * 3;
-  uint8_t* data = new uint8_t[len];
-  for (int y = 0; y < h; y++) {
+  int dst_w = tcl->GetWidth();
+  int dst_h = tcl->GetHeight();
+  int src_w = dst_w / 2;
+  uint8_t* src_img = ResizeImage(
+      image_buffer_, texsize_, texsize_, src_w, dst_h);
+  // TODO(igorc): Use cv::flip(src, dst, 1)
+  int len = dst_w * dst_h * 3;
+  uint8_t* dst = new uint8_t[len];
+  for (int y = 0; y < dst_h; y++) {
     for (int x = 0; x < src_w; x++) {
       int src_idx = (y * src_w + x) * 3;
-      int dst_idx = (y * w + x) * 3;
-      data[dst_idx] = scaled_img[src_idx];
-      data[dst_idx+1] = scaled_img[src_idx+1];
-      data[dst_idx+2] = scaled_img[src_idx+2];
-      dst_idx = (y * w + (w - x - 1)) * 3;
-      data[dst_idx] = scaled_img[src_idx];
-      data[dst_idx+1] = scaled_img[src_idx+1];
-      data[dst_idx+2] = scaled_img[src_idx+2];
+      int dst_idx = (y * dst_w + x) * 3;
+      dst[dst_idx] = src_img[src_idx];
+      dst[dst_idx + 1] = src_img[src_idx + 1];
+      dst[dst_idx + 2] = src_img[src_idx + 2];
+      dst_idx = (y * dst_w + (dst_w - x - 1)) * 3;
+      dst[dst_idx] = src_img[src_idx];
+      dst[dst_idx + 1] = src_img[src_idx + 1];
+      dst[dst_idx + 2] = src_img[src_idx + 2];
     }
   }
-  delete[] scaled_img;
+  delete[] src_img;
 
   AdjustableTime now;
-  Bytes* bytes = new Bytes(data, len);
+  Bytes* bytes = new Bytes(dst, len);
   tcl->ScheduleImageAt(bytes, now);
-  delete[] data;
+  delete[] dst;
   delete bytes;
 }
 

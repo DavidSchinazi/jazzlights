@@ -46,6 +46,7 @@ CLIPS_DIR = VENV_DIR + '/clips'
 PLAYLISTS_DIR = VENV_DIR + '/playlists'
 
 _PRESET_DIR = 'projectm/presets'
+#_PRESET_DIR = 'dfplayer/presets'
 #_PRESET_DIR = 'projectm/presets_yin'
 _PRESET_DURATION = 10000
 
@@ -64,9 +65,6 @@ audio_output {
     auto_resample   "no"
 }
 '''
-#    device          "df_output_mdev"
-#    device          "df_real_device"
-#    device          "hw:%(MPD_CARD_ID)s,0"
 #    mixer_type      "hardware"
 #    mixer_device    "hw:%(MPD_CARD_ID)s"
 

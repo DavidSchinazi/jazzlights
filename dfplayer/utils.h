@@ -70,5 +70,9 @@ struct Bytes {
 
 uint64_t GetCurrentMillis();
 
+// Resizes image using bilinear interpolation.
+uint8_t* ResizeImage(
+    uint8_t* src, int src_w, int src_h, int dst_w, int dst_h);
+
 #endif  // __DFPLAYER_UTILS_H
 
