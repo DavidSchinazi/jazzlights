@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<!-- saved from url=(0051)http://www.alsa-project.org/main/index.php/Asoundrc -->
+<html lang="en" dir="ltr" class="client-js"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Asoundrc - AlsaProject</title>
+<meta charset="UTF-8">
+<meta name="generator" content="MediaWiki 1.20alpha">
+<link rel="shortcut icon" href="http://www.alsa-project.org/favicon.ico">
+<link rel="search" type="application/opensearchdescription+xml" href="http://www.alsa-project.org/main/opensearch_desc.php" title="AlsaProject (en)">
+<link rel="EditURI" type="application/rsd+xml" href="http://www.alsa-project.org/main/api.php?action=rsd">
+<link rel="copyright" href="http://www.gnu.org/copyleft/fdl.html">
+<link rel="alternate" type="application/atom+xml" title="AlsaProject Atom feed" href="http://www.alsa-project.org/main/index.php?title=Special:RecentChanges&feed=atom">
+<link rel="stylesheet" href="http://www.alsa-project.org/main/load.php?debug=false&lang=en&modules=mediawiki.legacy.commonPrint%2Cshared%7Cskins.vector&only=styles&skin=vector&*">
+<style type="text/css">.js-messagebox{margin:1em 5%;padding:0.5em 2.5%;border:1px solid #ccc;background-color:#fcfcfc;font-size:0.8em}.js-messagebox .js-messagebox-group{margin:1px;padding:0.5em 2.5%;border-bottom:1px solid #ddd}.js-messagebox .js-messagebox-group:last-child{border-bottom:thin none transparent}
+
+/* cache key: wikidb-alsa:resourceloader:filter:minify-css:7:8b08bdc91c52a9ffba396dccfb5b473c */
+
+</style><style type="text/css">.mw-collapsible-toggle{float:right} li .mw-collapsible-toggle{float:none} .mw-collapsible-toggle-li{list-style:none}
+
+/* cache key: wikidb-alsa:resourceloader:filter:minify-css:7:4250852ed2349a0d4d0fc6509a3e7d4c */
+
+</style><meta name="ResourceLoaderDynamicStyles" content="">
+<link rel="stylesheet" href="http://www.alsa-project.org/main/load.php?debug=false&lang=en&modules=site&only=styles&skin=vector&*">
+<style>a:lang(ar),a:lang(ckb),a:lang(fa),a:lang(kk-arab),a:lang(mzn),a:lang(ps),a:lang(ur){text-decoration:none}
+
+/* cache key: wikidb-alsa:resourceloader:filter:minify-css:7:177f348de400d64b6ab5d98b9237937d */
+</style>
+
+<script src="./Asoundrc - AlsaProject_files/cb=gapi.loaded_1" async=""></script><script src="./Asoundrc - AlsaProject_files/cb=gapi.loaded_0" async=""></script><script async="" type="text/javascript" src="./Asoundrc - AlsaProject_files/ca-pub-3796951087194496.js"></script><script src="./Asoundrc - AlsaProject_files/load.php"></script><script src="./Asoundrc - AlsaProject_files/load(1).php"></script>
+<script>if(window.mw){
+mw.config.set({"wgCanonicalNamespace":"","wgCanonicalSpecialPageName":false,"wgNamespaceNumber":0,"wgPageName":"Asoundrc","wgTitle":"Asoundrc","wgCurRevisionId":6699,"wgArticleId":390,"wgIsArticle":true,"wgAction":"view","wgUserName":null,"wgUserGroups":["*"],"wgCategories":[],"wgBreakFrames":false,"wgPageContentLanguage":"en","wgSeparatorTransformTable":["",""],"wgDigitTransformTable":["",""],"wgRelevantPageName":"Asoundrc","wgRestrictionEdit":[],"wgRestrictionMove":[]});
+}</script><script>if(window.mw){
+mw.loader.implement("user.options",function(){mw.user.options.set({"ccmeonemails":0,"cols":80,"date":"default","diffonly":0,"disablemail":0,"disablesuggest":0,"editfont":"default","editondblclick":0,"editsection":1,"editsectiononrightclick":0,"enotifminoredits":0,"enotifrevealaddr":0,"enotifusertalkpages":1,"enotifwatchlistpages":0,"extendwatchlist":0,"externaldiff":0,"externaleditor":0,"fancysig":0,"forceeditsummary":0,"gender":"unknown","hideminor":0,"hidepatrolled":0,"imagesize":2,"justify":0,"math":1,"minordefault":0,"newpageshidepatrolled":0,"nocache":0,"noconvertlink":0,"norollbackdiff":0,"numberheadings":0,"previewonfirst":0,"previewontop":1,"quickbar":5,"rcdays":7,"rclimit":50,"rememberpassword":0,"rows":25,"searchlimit":20,"showhiddencats":0,"showjumplinks":1,"shownumberswatching":1,"showtoc":1,"showtoolbar":1,"skin":"vector","stubthreshold":0,"thumbsize":2,"underline":2,"uselivepreview":0,"usenewrc":0,"watchcreations":0,"watchdefault":0,"watchdeletion":0,"watchlistdays":3,
+"watchlisthideanons":0,"watchlisthidebots":0,"watchlisthideliu":0,"watchlisthideminor":0,"watchlisthideown":0,"watchlisthidepatrolled":0,"watchmoves":0,"wllimit":250,"variant":"en","language":"en","searchNs0":true,"searchNs1":false,"searchNs2":false,"searchNs3":false,"searchNs4":false,"searchNs5":false,"searchNs6":false,"searchNs7":false,"searchNs8":false,"searchNs9":false,"searchNs10":false,"searchNs11":false,"searchNs12":false,"searchNs13":false,"searchNs14":false,"searchNs15":false,"searchNs100":true,"searchNs101":true});;},{},{});mw.loader.implement("user.tokens",function(){mw.user.tokens.set({"editToken":"+\\","watchToken":false});;},{},{});
+
+/* cache key: wikidb-alsa:resourceloader:filter:minify-js:7:212ec8102519a19de2a202bdd85b08b9 */
+}</script>
+<script>if(window.mw){
+mw.loader.load(["mediawiki.page.startup","mediawiki.legacy.wikibits","mediawiki.legacy.ajax"]);
+}</script><script type="text/javascript" src="./Asoundrc - AlsaProject_files/load(2).php"></script>
+<!--[if lt IE 7]><style type="text/css">body{behavior:url("/main/skins/vector/csshover.min.htc")}</style><![endif]--></head>
+<body class="mediawiki ltr sitedir-ltr ns-0 ns-subject page-Asoundrc skin-vector action-view vector-animateLayout">
+		<div id="mw-page-base" class="noprint"></div>
+		<div id="mw-head-base" class="noprint"></div>
+		<!-- content -->
+		<div id="content" class="mw-body">
+			<a id="top"></a>
+			<div id="mw-js-message" style="display:none;" class="js-messagebox"></div>
+						<!-- firstHeading -->
+			<h1 id="firstHeading" class="firstHeading"><span dir="auto">Asoundrc</span></h1>
+			<!-- /firstHeading -->
+			<!-- bodyContent -->
+			<div id="bodyContent">
+								<!-- tagline -->
+				<div id="siteSub">From AlsaProject</div>
+				<!-- /tagline -->
+								<!-- subtitle -->
+				<div id="contentSub"></div>
+				<!-- /subtitle -->
+																<!-- jumpto -->
+				<div id="jump-to-nav" class="mw-jump">
+					Jump to: <a href="http://www.alsa-project.org/main/index.php/Asoundrc#mw-head">navigation</a>,
+					<a href="http://www.alsa-project.org/main/index.php/Asoundrc#p-search">search</a>
+				</div>
+				<!-- /jumpto -->
+								<!-- bodycontent -->
+				<div id="mw-content-text" lang="en" dir="ltr" class="mw-content-ltr"><table style="float: right;">
+<tbody><tr>
+<td> <table id="toc" class="toc"><tbody><tr><td><div id="toctitle"><h2>Contents</h2><span class="toctoggle">&nbsp;[<a href="http://www.alsa-project.org/main/index.php/Asoundrc#" class="internal" id="togglelink">hide</a>]&nbsp;</span></div>
+<ul>
+<li class="toclevel-1 tocsection-1"><a href="http://www.alsa-project.org/main/index.php/Asoundrc#Why_asoundrc.3F"><span class="tocnumber">1</span> <span class="toctext">Why asoundrc?</span></a></li>
+<li class="toclevel-1 tocsection-2"><a href="http://www.alsa-project.org/main/index.php/Asoundrc#Global_view_of_ALSA_config_file_framework.2C_executive_summary"><span class="tocnumber">2</span> <span class="toctext">Global view of ALSA config file framework, executive summary</span></a></li>
+<li class="toclevel-1 tocsection-3"><a href="http://www.alsa-project.org/main/index.php/Asoundrc#The_.asoundrc_file_format"><span class="tocnumber">3</span> <span class="toctext">The .asoundrc file format</span></a></li>
+<li class="toclevel-1 tocsection-4"><a href="http://www.alsa-project.org/main/index.php/Asoundrc#Where_does_asoundrc_live.3F"><span class="tocnumber">4</span> <span class="toctext">Where does asoundrc live?</span></a></li>
+<li class="toclevel-1 tocsection-5"><a href="http://www.alsa-project.org/main/index.php/Asoundrc#The_default_plugin"><span class="tocnumber">5</span> <span class="toctext">The default plugin</span></a></li>
+<li class="toclevel-1 tocsection-6"><a href="http://www.alsa-project.org/main/index.php/Asoundrc#The_naming_of_PCM_devices"><span class="tocnumber">6</span> <span class="toctext">The naming of PCM devices</span></a>
+<ul>
+<li class="toclevel-2 tocsection-7"><a href="http://www.alsa-project.org/main/index.php/Asoundrc#The_Control_device"><span class="tocnumber">6.1</span> <span class="toctext">The Control device</span></a></li>
+</ul>
+</li>
+<li class="toclevel-1 tocsection-8"><a href="http://www.alsa-project.org/main/index.php/Asoundrc#Aliases"><span class="tocnumber">7</span> <span class="toctext">Aliases</span></a></li>
+<li class="toclevel-1 tocsection-9"><a href="http://www.alsa-project.org/main/index.php/Asoundrc#Plugins"><span class="tocnumber">8</span> <span class="toctext">Plugins</span></a></li>
+<li class="toclevel-1 tocsection-10"><a href="http://www.alsa-project.org/main/index.php/Asoundrc#Software_mixing"><span class="tocnumber">9</span> <span class="toctext">Software mixing</span></a>
+<ul>
+<li class="toclevel-2 tocsection-11"><a href="http://www.alsa-project.org/main/index.php/Asoundrc#dmix"><span class="tocnumber">9.1</span> <span class="toctext">dmix</span></a></li>
+<li class="toclevel-2 tocsection-12"><a href="http://www.alsa-project.org/main/index.php/Asoundrc#dsnoop"><span class="tocnumber">9.2</span> <span class="toctext">dsnoop</span></a></li>
+<li class="toclevel-2 tocsection-13"><a href="http://www.alsa-project.org/main/index.php/Asoundrc#JACK_plugin"><span class="tocnumber">9.3</span> <span class="toctext">JACK plugin</span></a></li>
+<li class="toclevel-2 tocsection-14"><a href="http://www.alsa-project.org/main/index.php/Asoundrc#Virtual_multi_channel_devices"><span class="tocnumber">9.4</span> <span class="toctext">Virtual multi channel devices</span></a>
+<ul>
+<li class="toclevel-3 tocsection-15"><a href="http://www.alsa-project.org/main/index.php/Asoundrc#Bindings_explained"><span class="tocnumber">9.4.1</span> <span class="toctext">Bindings explained</span></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toclevel-1 tocsection-16"><a href="http://www.alsa-project.org/main/index.php/Asoundrc#Referenced_applications"><span class="tocnumber">10</span> <span class="toctext">Referenced applications</span></a></li>
+<li class="toclevel-1 tocsection-17"><a href="http://www.alsa-project.org/main/index.php/Asoundrc#Further_reading"><span class="tocnumber">11</span> <span class="toctext">Further reading</span></a></li>
+</ul>
+</td></tr></tbody></table>
+</td></tr></tbody></table>
+<h2> <span class="mw-headline" id="Why_asoundrc.3F">Why asoundrc?</span></h2>
+<p>What is it good for, why do I want one?
+</p><p>Neither the user-side <code>.asoundrc</code> nor the <code>asound.conf</code> configuration files are required for ALSA to work properly. Most applications will work without them. These files are used to allow extra functionality, such as routing and sample-rate conversion, through the alsa-lib layer.
+The actual reason that most applications will work without these user-side custom config files is that usually a default install of alsa-lib provides a sufficiently capable setup consisting of hierarchical config files (which always make use of the standard .asoundrc format syntax as well), which are specifically capable of supporting certain soundcard brands each.
+Thus, let's start with a quick overview of how ALSA config file framework evaluation is composed, globally:
+</p>
+<h2> <span class="mw-headline" id="Global_view_of_ALSA_config_file_framework.2C_executive_summary">Global view of ALSA config file framework, executive summary</span></h2>
+<p>The alsa-lib package (at least on Debian libasound2-data 1.0.27) provides the /usr/share/alsa/alsa.conf file as the <i>main entry point</i>.
+That file is responsible for including the full list of potential .asoundrc-format-type files on the system.
+It contains a reference to the ALSA "DATADIR" (Debian: /usr/share/alsa/).
+It continues by loading the DATADIR's cards/aliases.conf file: that one defines translation mappings from the kernel driver's sound card name (as listed at /proc/asound/cards, or aplay -Ll) to a "more detailed" description string. That "more detailed name" of a sound card then gets used to lookup a corresponding card-specific config file at DATADIR/cards/CARD.conf.
+And THAT card-specific file then attempts to provide a maximally elegant sound setup for its specific card brand, by compensating for various limitations of cards (e.g. use dmix to combat single-stream playback only, or stereo downmix to lessen a mono-output-only restriction).
+Finally (to support those cases where the standard setup of a soundcard is deficient/lacking, or custom plugin setup is desired), alsa.conf loads a system-global custom settings file /etc/asound.conf and a per-user custom settings file ~/.asoundrc.
+</p><p>So, the objective should be to achieve having the common alsa-lib configuration file framework enhanced <i>by default</i> in the best possible manner for each specific soundcard brand, to avoid the need of creating manually customized config files in all standard cases.
+</p><p>With this global overview done and cared for, let's have a look at the actual configuration format of alsa-lib files.
+</p><p><br>
+</p>
+<h2> <span class="mw-headline" id="The_.asoundrc_file_format">The .asoundrc file format</span></h2>
+<p>This file allows you to have more advanced control over your card/device. The <code>.asoundrc</code> file consists of definitions of the various cards available in your system. It also gives you access to the pcm plugins in alsa-lib. These allow you to do tricky things like combine your cards into one or access multiple I/Os on your multichannel card.
+</p>
+<h2> <span class="mw-headline" id="Where_does_asoundrc_live.3F">Where does asoundrc live?</span></h2>
+<p>The asoundrc file is typically installed in a user's home directory
+</p>
+<pre>$HOME/.asoundrc
+</pre>
+<p>and is called from
+</p>
+<pre>/usr/share/alsa/alsa.conf
+</pre>
+<p>It is also possible to install a system wide configuration file as
+</p>
+<pre>/etc/asound.conf
+</pre>
+<p>When an alsa application starts both configuration files are read.
+</p><p>Below is the most basic definition.
+</p>
+<h2> <span class="mw-headline" id="The_default_plugin">The default plugin</span></h2>
+<p>Make a file called .asoundrc in your home and/or root directory.
+</p>
+<pre>vi /home/xxx/.asoundrc
+</pre>
+<p>copy and paste the following into the file then save it.
+</p>
+<pre>pcm.!default {
+	type hw
+	card 0
+}
+
+ctl.!default {
+	type hw           
+	card 0
+}
+</pre>
+<p><br>
+The keyword <code>default</code> is defined in the ALSA lib API and will always access <code>hw:0,0</code>&nbsp;— the default device on the default soundcard. Specifying the <code>!default</code> name supersedes the one defined in the ALSA lib API.
+</p><p>Now you can test:
+</p>
+<pre>aplay -D default test.wav
+</pre>
+<h2> <span class="mw-headline" id="The_naming_of_PCM_devices">The naming of PCM devices</span></h2>
+<p>A typical asoundrc starts with a 'PCM hw type'. This gives an ALSA application the ability to start a virtual soundcard (plugin, or slave) by a given name. Without this, the soundcard(s)/devices(s) must be accessed with names like <code>hw:0,0</code> or default. For example:
+</p>
+<pre>aplay -D hw:0,0 test.wav
+</pre>
+<p>or with ecasound
+</p>
+<pre>ecasound -i test.wav -o alsa,hw:0,0
+</pre>
+<p>The numbers after <code>hw:</code> stand for the soundcard number and device number. This can get confusing as some sound "cards" are better represented by calling them sound "devices", for example USB sounddevices. However they are still "cards" in the sense that they have a specific driver controlling a specific piece of hardware. They also correspond to the index shown in
+</p>
+<pre>/proc/asound/cards
+</pre>
+<p>As with most arrays the first item usually starts at <code>0</code> not <code>1</code>. This is true for the way pcm devices (physical I/O channels) are represented in ALSA. Starting at <code>pcm0c</code> (capture), <code>pcm0p</code> (playback).
+</p><p>We use subdevices mainly for hardware which can mix several streams together. It is impractical to have 32 devices with exactly the same capabilities. The subdevices can be opened without a specific address, so the first free subdevice is opened. Also, we temporarily use subdevices for hardware with a lot of streams (I/O connectors)&nbsp;— for example MIDI. There are several limits given by used minor numbers (8 PCM devices per card, 8 MIDI devices per card etc.).
+</p><p>For example, to access the first device on the first soundcard/device, you would use
+</p>
+<pre>hw:0,0
+</pre>
+<p>to access the first device on the second soundcard/device, you would use
+</p>
+<pre>hw:1,0
+</pre>
+<p>to access the second device on the third soundcard/device, you would use
+</p>
+<pre>hw:2,1
+</pre>
+<h3> <span class="mw-headline" id="The_Control_device">The Control device</span></h3>
+<p>The control device for a card is the way that programs modify various "controls" on the card. For many cards this includes the mixer (but some cards, for example the rme9652, have no mixer). However, they do still have a number of other controls and some programs like JACK need to be able to access them. Examples include the digital I/O sync indicators, sample clock source switch and so on.
+</p>
+<h2> <span class="mw-headline" id="Aliases">Aliases</span></h2>
+<p>With the 'PCM hw type' you are able to define aliases for your devices. The syntax for this definition is:
+</p>
+<pre>pcm.NAME {
+	type hw               # Kernel PCM
+	card INT/STR          # Card name or number
+	[device] INT          # Device number (default 0)     
+	[subdevice] INT       # Subdevice number, -1 first available (default -1)
+	mmap_emulation BOOL   # enable mmap emulation for ro/wo devices
+}
+</pre>
+<p>For example, this gives your first soundcard an alias:
+</p>
+<pre>pcm.primary {
+	type hw
+	card 0
+	device 0
+}
+</pre>
+<p>Now you can access this card by the alias '<code>primary</code>'.
+</p>
+<pre>aplay -D primary test.wav
+</pre>
+<p><br>
+</p>
+<h2> <span class="mw-headline" id="Plugins">Plugins</span></h2>
+<p><b>Q:</b> What are plugins?
+</p><p><b>A:</b> In ALSA, PCM plugins extend functionality and features of PCM devices. The plugins deal automagically with jobs like naming devices, sample rate conversions, sample copying among channels, writing to a file, joining sound cards/devices for multiple inputs/outputs (not sample synced), using multi channel sound cards/devices and other possibilities left for you to explore. To make use of them, you need to create a virtual slave device.
+</p><p>To see a full list of plugins and options, go to the <a rel="nofollow" class="external text" href="http://www.alsa-project.org/alsa-doc/alsa-lib/pcm_plugins.html">alsa-lib documentation</a>. The following is a brief introduction.
+</p><p>A very simple slave could be defined as follows:
+</p>
+<pre>pcm_slave.sltest {
+	pcm "hw:1,0"
+}
+</pre>
+<p>This defines a slave without any parameters. It's nothing more than another alias for your sound device. The slightly more complicated thing to understand is that parameters for 'pcm types' must be defined in the slave-definition-block. Let's setup a rate-converter which shows this behaviour.
+</p>
+<pre>pcm_slave.sl2 {
+	pcm "hw:1,0"
+	rate 48000
+}
+
+pcm.rate_convert {
+	type rate
+	slave sl2
+}
+</pre>
+<p>Now you can call this newly created virtual device by:
+</p>
+<pre>aplay -D rate_convert test.wav
+</pre>
+<p>Which automatically converts your samples to a 44.1 kHz sample rate while playing. It's not very useful because most players and alsa converts samples to the right sample rate which your soundcard is capable of, but you can use it for a conversion to a lower static sample rate for example.
+</p><p>For conciseness, this can be also rewritten using nested device definitions:
+</p>
+<pre>pcm.rate_convert {
+	type rate
+	slave {
+		pcm
+		rate 48000
+	}
+}
+</pre>
+<p>A more complex tool for conversion is the pcm type plug. the syntax is:
+</p>
+<pre>type plug             	# Format adjusted PCM
+slave STR               # Slave name (see pcm_slave)
+# or
+slave {                 # Slave definition
+	pcm STR         # Slave PCM name
+	# or
+	pcm { }         # Slave PCM definition
+	[format STR]    # Slave format (default nearest) or "unchanged"
+	[channels INT]  # Slave channels (default nearest) or "unchanged"
+	[rate INT]      # Slave rate (default nearest) or "unchanged"
+}
+route_policy STR 	# route policy for automatic ttable generation
+      	                # STR can be 'default', 'average', 'copy', 'duplicate'
+                       # average: result is average of input channels
+                      	# copy: only first channels are copied to destination
+                      	# duplicate: duplicate first set of channels
+                       # default: copy policy, except for mono capture - sum
+ttable {               # Transfer table (bidimensional compound of 
+                       # cchannels * schannels numbers)
+	CCHANNEL {
+		SCHANNEL REAL     # route value (0.0 ... 1.0)
+	}
+}
+</pre>
+<p>We can use it as follows:
+</p>
+<pre>pcm_slave.sl3 {
+	pcm "hw:1,0"
+	format S16_LE
+	channels 1
+	rate 16000
+}
+
+pcm.complex_convert {
+	type plug
+	slave sl3
+}
+</pre>
+<p>By calling it with:
+</p>
+<pre>aplay -vD complex_convert test.wav
+</pre>
+<p>You will convert the sample during playing to the sample format: S16_LE, one channel and a sample rate of 16 kHz. As you called aplay with the verbose option -v you see this options as it appears as it comes from the original file. with:
+</p>
+<pre>aplay -v test.wav
+</pre>
+<p>You see the original settings of the file.
+</p>
+<h2> <span class="mw-headline" id="Software_mixing">Software mixing</span></h2>
+<p>Software mixing is the ability to play multiple sound files or applications at the same time through the same device. There are many ways to have software mixing in the Linux environment. Usually it requires a server application such as ARTSD, ESD, JACK... The list is large and the apps can often be confusing to use.
+</p>
+<h3> <span class="mw-headline" id="dmix">dmix</span></h3>
+<p>These days we have a native plugin for ALSA called the <code>dmix</code> (direct mixing) plugin. It allows software mixing in an easy to use syntax and without the hassle of installing/understanding a new application first.
+</p><p>A very interesting and potentially extremely useful aspect of this plugin is using it combined with the default plugin name. In theory this means all applications that have native ALSA support will share the sound device. In practice not many applications are able to take advantage of this functionality yet. However if you have time to test and report your findings to the application developers it is worth a try:
+</p>
+<pre>pcm.!default {
+	type plug
+	slave.pcm "dmixer"
+}
+
+pcm.dmixer  {
+ 	type dmix
+ 	ipc_key 1024
+ 	slave {
+		pcm "hw:1,0"
+		period_time 0
+		period_size 1024
+		buffer_size 4096
+		rate 44100
+	}
+	bindings {
+		0 0
+		1 1
+	}
+}
+
+ctl.dmixer {
+	type hw
+	card 0
+}
+</pre>
+<p>(To use it with your own name just change the word <code>!default</code> above)
+</p><p>Now try:
+</p>
+<pre>aplay -f cd -D default test.wav
+</pre>
+<p>on multiple consoles.
+</p><p>Some notes:
+</p><p>The dmix PCM name is already defined in the global configuration file <code>/usr/share/alsa/alsa.conf</code>.
+</p><p>- The default sample rate for this device is 48000Hz. If you would like to change it use:
+</p>
+<pre>aplay -D"plug:'dmix:RATE=44100'" test.wav
+</pre>
+<p>- An example command for dmix plugin to use 44100Hz sample-rate and <code>hw:1,0</code> output device:
+</p>
+<pre>aplay -Dplug:\'dmix:SLAVE=\"hw:1,0\",RATE=44100\' test.wav
+</pre>
+<p>- The dmix PCM name is already defined in the global configuration file <code>/usr/share/alsa/alsa.conf</code>.
+</p><p>Defaults are:
+</p>
+<pre>SLAVE="hw:0,0",RATE=48000
+</pre>
+<p>NB the dmix plugin is not based on client/server architecture, but it writes directly to the soundcard's DMA buffer. There is no limit to the amount of instances that can be run at one time.
+</p>
+<h3> <span class="mw-headline" id="dsnoop">dsnoop</span></h3>
+<p>While the dmix plugin is for mixing multiple output(playback) streams together, if you want to use multiple input(capture) clients you need to use the <code>dsnoop</code> plugin:
+</p>
+<pre>pcm.mixin {
+	type dsnoop
+	ipc_key 5978293	# must be unique for all dmix plugins!!!!
+	ipc_key_add_uid yes
+	slave {
+		pcm "hw:0,0"
+		channels 2
+		period_size 1024
+		buffer_size 4096
+		rate 44100
+		periods 0 
+		period_time 0
+	}
+	bindings {
+		0 0
+		0 1
+	}
+}
+</pre>
+<h3> <span class="mw-headline" id="JACK_plugin">JACK plugin</span></h3>
+<p>This plugin allows the user to connect applications that support alsa natively to the JACK daemon.
+</p><p>To compile and install jack, you need to move to <code>src/pcm/ext</code>
+directory, and run "<code>make jack</code>" and "<code>make install-jack</code>".
+this is intentional.
+</p><p>To use the JACK plugin you will need to add the following to your .asoundrc.
+</p>
+<pre>pcm.jackplug {
+	type plug
+	slave { pcm "jack" }
+}
+
+pcm.jack {
+	type jack
+	playback_ports {
+		0 alsa_pcm:playback_1
+		1 alsa_pcm:playback_2
+	}
+	capture_ports {
+		0 alsa_pcm:capture_1
+		1 alsa_pcm:capture_2
+	}
+}
+</pre>
+<p>Now, you can use:
+</p>
+<pre>aplay -Djackplug somefile
+arecord -Djackplug somefile
+</pre>
+<h3> <span class="mw-headline" id="Virtual_multi_channel_devices">Virtual multi channel devices</span></h3>
+<p>If you would like to link two or more ALSA devices together so that you have a virtual multi channel device it is possible. However this will not create the mythical "multi-channel soundcard out of el-cheapo consumer cards". The real devices will drift out of sync over time. It is sometimes helpful to make applications that can for example see one 4 channel card to allow for flexible routing if they can't easily be made to talk to multiple cards (making use of JACK being one example).
+</p><p>Copy and paste the following into your asoundrc.
+</p>
+<pre># create a virtual four-channel device with two sound devices:
+# This is in fact two interleaved stereo streams in
+# different memory locations, so JACK will complain that it
+# cannot get mmap-based access. see below.
+
+pcm.multi {
+        type multi;
+        slaves.a.pcm "hw:0,0";
+        slaves.a.channels 2;
+        slaves.b.pcm "hw:1,0";
+        slaves.b.channels 2;
+        bindings.0.slave a;
+        bindings.0.channel 0;
+        bindings.1.slave a;
+        bindings.1.channel 1;
+        bindings.2.slave b;
+        bindings.2.channel 0;
+        bindings.3.slave b;
+        bindings.3.channel 1;
+}
+
+# JACK will be unhappy if there is no mixer to talk to, so we set
+# this to card 0. This could be any device but 0 is easy. 
+
+ctl.multi {
+        type hw;
+        card 0;
+}
+
+# This creates a 4 channel interleaved pcm stream based on
+# the multi device. JACK will work with this one.
+
+pcm.ttable {
+        type route;
+        slave.pcm "multi";
+        slave.channels 4;
+        ttable.0.0 1;
+        ttable.1.1 1;
+        ttable.2.2 1;
+        ttable.3.3 1;
+}
+# see above.
+ctl.ttable {
+        type hw;
+        card 0;
+}
+</pre>
+<p>This will give you xruns, but it's suitable for testing. To test the above setting feed an audio signal to the real sound devices play it back and listen to it with an external mixer:
+</p>
+<pre>arecord -f S16_LE -r 44100 -c 4 -D multi | aplay -f S16_LE -r 44100 -c 4 -D multi
+</pre>
+<p>To start JACK with the new device, use
+</p>
+<pre>jackd [-a] -R [-v] -d alsa -d ttable [-p 1024]
+</pre>
+<h4> <span class="mw-headline" id="Bindings_explained">Bindings explained</span></h4>
+<p>The above example for a virtual multi channel device uses bindings to make the connections work. The following is a more advanced asoundrc for 2 RME Hammerfalls which is a professional multichannel sound device. Below is a full explanation of how bindings work.
+</p>
+<pre># This is for two RME Hammerfall cards. They have been conceptually split into rows
+# and will be mapped to ALSA channels 0-27: with channels 0-7 and 16-23 on rme9652_0 and channels 8-15 on
+# rme9652_1, and finally channels 24-25 of both cards, used as two stereo channels, mapped to ALSA channels 24-27 (while the others are mono).
+
+# eg. ALSA channels on card1 = rme9652_0                          
+#     | 0  1  2  3  4  5  6  7       |  
+#     | 8  9  10 11 12 13 14 15      |
+#     |                         24 25|
+#
+#     ALSA channels on card2 = rme9652_1
+#     | 16 17 18 19 20 21 22 23      |
+#     |                         26 27|
+
+
+
+pcm_slave.rme9652_s {
+	pcm rme9652_0
+}
+pcm.rme9652_1 {
+	type hw
+	card 1
+}
+ctl.rme9652_1 {
+	type hw
+	card 1
+}
+pcm.rme9652_0 {
+	type hw
+	card 0
+}
+ctl.rme9652_0 {
+	type hw
+	card 0
+}
+ctl.rme9652_48 {
+	type hw
+	card 0
+}
+pcm.rme9652_48 {
+	type multi;
+	slaves.a.pcm rme9652_0;
+	slaves.a.channels 26;
+	slaves.b.pcm rme9652_1;
+	slaves.b.channels 26;
+
+	# Use rme9652_0 ch 0-7 mapped to ALSA ch 0-7
+
+	bindings.0.slave a;
+	bindings.0.channel 0;
+	bindings.1.slave a;
+	bindings.1.channel 1;
+	bindings.2.slave a;
+	bindings.2.channel 2;
+	bindings.3.slave a;
+	bindings.3.channel 3;
+	bindings.4.slave a;
+	bindings.4.channel 4;
+	bindings.5.slave a;
+	bindings.5.channel 5;
+	bindings.6.slave a;
+	bindings.6.channel 6;
+	bindings.7.slave a;
+	bindings.7.channel 7;
+
+	# Use rme9652_0 ch 16-23 mapped to ALSA ch 8-15
+
+	bindings.8.slave a;
+	bindings.8.channel 16;
+	bindings.9.slave a;
+	bindings.9.channel 17;
+	bindings.10.slave a;
+	bindings.10.channel 18;
+	bindings.11.slave a;
+	bindings.11.channel 19;
+	bindings.12.slave a;
+	bindings.12.channel 20;
+	bindings.13.slave a;
+	bindings.13.channel 21;
+	bindings.14.slave a;
+	bindings.14.channel 22;
+	bindings.15.slave a;
+	bindings.15.channel 23;
+
+	# Use rme9652_1 ch 8-15 mapped to ALSA ch 16-23
+
+	bindings.16.slave b;
+	bindings.16.channel 8;
+	bindings.17.slave b;
+	bindings.17.channel 9;
+	bindings.18.slave b;
+	bindings.18.channel 10;
+	bindings.19.slave b;
+	bindings.19.channel 11;
+	bindings.20.slave b;
+	bindings.20.channel 12;
+	bindings.21.slave b;
+	bindings.21.channel 13;
+	bindings.22.slave b;
+	bindings.22.channel 14;
+	bindings.23.slave b;
+	bindings.23.channel 15;
+
+	# stereo channels: slave a+b ch 24-25 mapped to ALSA ch 24-27
+
+	bindings.24.slave a;
+	bindings.24.channel 24;
+	bindings.25.slave a;
+	bindings.25.channel 25;
+	bindings.26.slave b;
+	bindings.26.channel 24;
+	bindings.27.slave b;
+	bindings.27.channel 25;
+}
+</pre>
+<p>What is happening?
+</p><p>There are two sound cards which are linked with a wordclock pipe. That allows them to keep sample sync with each other which is very important for multichannel work. If the sample rates are not in sync then your sounds become out of time with each other.
+</p><p>In this example each sound card has a number of physical channels being used: 18 (a) + 10 (b). They are represented in <code>/proc/asound/card</code>x as <code>pcm</code>X<code>c</code> (capture) and <code>pcm</code>X<code>p</code> (playback). Where X equals the number of the physical input/output (i/o) channels starting at 0.
+</p><p>If you look at the lines:
+</p>
+<pre>type multi;
+slaves.a.pcm rme9652_0;
+slaves.a.channels 26;
+</pre>
+<p>You can see that the card has been nicknamed "<code>a</code>" and given a range of 26 channels. You can assign the card any number of channels you want but you can only use as many channels as the card has physically available. The bindings start at the first available pcm device for the card ie. <code>pcm0c pcm0p</code> - and move upwards sequentially from there.
+</p><p>The first card for this file has 18 physical pcm devices. Nine of them are capture devices ie. <code>pcm0c pcm1c pcm2c</code> ... <code>pcm8c</code>, each with corresponding playback channels ie. <code>pcm0p pcm1p pcm2p</code> ... <code>pcm8p</code>. The second card has 10 physical pcm devices ie. <code>pcm0c pcm1c pcm2c</code> ... <code>pcm9c</code>.
+</p><p>If you look at the lines:
+</p>
+<pre>bindings.0.slave a;
+bindings.0.channel 0;
+bindings.1.slave a;
+bindings.1.channel 1;
+</pre>
+<p>The first binding points to the first available pcm device on the card represented as "<code>a</code>". The second binding points to the second available pcm device on "<code>a</code>" and so on up to the last one available. We then assign a channel number to the binding so that the channels on the new virtual "soundcard" we have created are easy for us to access.
+</p><p>Another way of saying it is:
+</p>
+<pre>address of.the first channel on my new soundcard.using my real soundcard called "a";
+make this address of.the first channel on my new soundcard.be the first pcm device on my new soundcard;
+</pre>
+<pre>address of.the second channel on my new soundcard.using my real soundcard called "a";
+make this address of.the second channel on my real soundcard.be the second pcm device on my new soundcard;
+</pre>
+<h2> <span class="mw-headline" id="Referenced_applications">Referenced applications</span></h2>
+<ul><li>  <b>aRTsd</b> - the aRTs sound server was the basis of desktop sound for KDE 3.
+</li><li>  <b>ESD</b> - the Enlightened Sound Daemon mixes several audio streams for playback by a single audio device.
+</li><li>  <b>Ecasound</b> - a commandline multitrack recorder and editor with various GUI apps.
+</li><li>  <b>JACK</b> - Jack Audio Connection Kit. If you don't know this app you don't know JACK.
+</li></ul>
+<h2> <span class="mw-headline" id="Further_reading">Further reading</span></h2>
+<ul><li> <a rel="nofollow" class="external text" href="http://www.volkerschatz.com/noise/alsa.html">A close look at ALSA</a> explaining ALSA and the asoundrc in particular from A to Z. By Volker Schatz
+</li><li> <a rel="nofollow" class="external text" href="http://alsa.opensrc.org/.asoundrc">.asoundrc</a> at the <a rel="nofollow" class="external text" href="http://alsa.opensrc.org/">Unofficial wiki</a>
+</li></ul>
+
+<!-- Tidy found serious XHTML errors -->
+
+<!-- 
+NewPP limit report
+Preprocessor node count: 67/1000000
+Post-expand include size: 0/2097152 bytes
+Template argument size: 0/2097152 bytes
+Highest expansion depth: 2/40
+Expensive parser function count: 0/100
+-->
+
+<!-- Saved in parser cache with key wikidb-alsa:pcache:idhash:390-0!*!*!!en!*!* and timestamp 20140725025932 -->
+</div>				<!-- /bodycontent -->
+								<!-- printfooter -->
+				<div class="printfooter">
+				Retrieved from "<a href="http://www.alsa-project.org/main/index.php?title=Asoundrc&oldid=6699">http://www.alsa-project.org/main/index.php?title=Asoundrc&amp;oldid=6699</a>"				</div>
+				<!-- /printfooter -->
+												<!-- catlinks -->
+				<div id="catlinks" class="catlinks catlinks-allhidden"></div>				<!-- /catlinks -->
+												<!-- dataAfterContent -->
+				<div id="mw-data-after-content">
+	<div style="padding-top: 8px;">
+<style type="text/css">
+@import url(http://www.google.com/cse/api/branding.css);
+</style>
+<div class="cse-branding-right" style="background-color:#FFFFFF;color:#000000">
+  <div class="cse-branding-form">
+    <form action="http://www.google.com/cse" id="cse-search-box">
+      <div>
+        <input type="hidden" name="cx" value="partner-pub-3796951087194496:tg5em8-xyd9">
+        <input type="hidden" name="ie" value="UTF-8">
+        <input type="text" name="q" size="40">
+        <input type="submit" name="sa" value="Search">
+      </div>
+    </form>
+  </div>
+  <div class="cse-branding-logo" align="left">
+    <img src="./Asoundrc - AlsaProject_files/poweredby_FFFFFF.gif" alt="Google">
+  </div>
+  <div class="cse-branding-text" align="left">
+    Custom Search
+  </div>
+</div>
+</div>
+
+</div>
+				<!-- /dataAfterContent -->
+								<div class="visualClear"></div>
+				<!-- debughtml -->
+								<!-- /debughtml -->
+			</div>
+			<!-- /bodyContent -->
+		</div>
+		<!-- /content -->
+		<!-- header -->
+		<div id="mw-head" class="noprint">
+			
+<!-- 0 -->
+<div id="p-personal" class="">
+	<h5>Personal tools</h5>
+	<ul>
+		<li id="pt-login"><a href="http://www.alsa-project.org/main/index.php?title=Special:UserLogin&returnto=Asoundrc" title="You are encouraged to log in; however, it is not mandatory [alt-o]" accesskey="o">Log in / create account</a></li>
+		<li><div id="___plusone_0" style="text-indent: 0px; margin: 0px; padding: 0px; background-color: transparent; border-style: none; float: none; line-height: normal; font-size: 1px; vertical-align: baseline; display: inline-block; width: 70px; height: 15px; background-position: initial initial; background-repeat: initial initial;"><iframe frameborder="0" hspace="0" marginheight="0" marginwidth="0" scrolling="no" style="position: static; top: 0px; width: 70px; margin: 0px; border-style: none; left: 0px; visibility: visible; height: 15px;" tabindex="0" vspace="0" width="100%" id="I0_1406259895758" name="I0_1406259895758" src="./Asoundrc - AlsaProject_files/fastbutton.html" data-gapiattached="true" title="+1"></iframe></div></li>
+	</ul>
+</div>
+
+<!-- /0 -->
+			<div id="left-navigation">
+				
+<!-- 0 -->
+<div id="p-namespaces" class="vectorTabs">
+	<h5>Namespaces</h5>
+	<ul>
+					<li id="ca-nstab-main" class="selected"><span><a href="./Asoundrc - AlsaProject_files/Asoundrc - AlsaProject.html" title="View the content page [alt-c]" accesskey="c">Page</a></span></li>
+					<li id="ca-talk"><span><a href="http://www.alsa-project.org/main/index.php/Talk:Asoundrc" title="Discussion about the content page [alt-t]" accesskey="t">Discussion</a></span></li>
+			</ul>
+</div>
+
+<!-- /0 -->
+
+<!-- 1 -->
+<div id="p-variants" class="vectorMenu emptyPortlet">
+	<h4>
+		</h4>
+	<h5><span>Variants</span><a href="http://www.alsa-project.org/main/index.php/Asoundrc#"></a></h5>
+	<div class="menu">
+		<ul>
+					</ul>
+	</div>
+</div>
+
+<!-- /1 -->
+			</div>
+			<div id="right-navigation">
+				
+<!-- 0 -->
+<div id="p-views" class="vectorTabs">
+	<h5>Views</h5>
+	<ul>
+					<li id="ca-view" class="selected"><span><a href="./Asoundrc - AlsaProject_files/Asoundrc - AlsaProject.html">Read</a></span></li>
+					<li id="ca-viewsource"><span><a href="http://www.alsa-project.org/main/index.php?title=Asoundrc&action=edit" title="This page is protected.
+You can view its source [alt-e]" accesskey="e">View source</a></span></li>
+					<li id="ca-history" class="collapsible"><span><a href="http://www.alsa-project.org/main/index.php?title=Asoundrc&action=history" title="Past revisions of this page [alt-h]" accesskey="h">View history</a></span></li>
+			</ul>
+</div>
+
+<!-- /0 -->
+
+<!-- 1 -->
+<div id="p-cactions" class="vectorMenu emptyPortlet">
+	<h5><span>Actions</span><a href="http://www.alsa-project.org/main/index.php/Asoundrc#"></a></h5>
+	<div class="menu">
+		<ul>
+					</ul>
+	</div>
+</div>
+
+<!-- /1 -->
+
+<!-- 2 -->
+<div id="p-search">
+	<h5><label for="searchInput">Search</label></h5>
+	<form action="http://www.alsa-project.org/main/index.php" id="searchform">
+				<div>
+			<input type="search" name="search" title="Search AlsaProject [alt-f]" accesskey="f" id="searchInput">			<input type="submit" name="go" value="Go" title="Go to a page with this exact name if exists" id="searchGoButton" class="searchButton">			<input type="submit" name="fulltext" value="Search" title="Search the pages for this text" id="mw-searchButton" class="searchButton">					<input type="hidden" name="title" value="Special:Search">
+		</div>
+	</form>
+</div>
+
+<!-- /2 -->
+			</div>
+		</div>
+		<!-- /header -->
+		<!-- panel -->
+			<div id="mw-panel" class="noprint">
+				<!-- logo -->
+					<div id="p-logo"><a style="background-image: url(/images/alsalogo.gif);" href="http://www.alsa-project.org/main/index.php/Main_Page" title="Visit the main page"></a></div>
+				<!-- /logo -->
+				
+<!-- navigation -->
+<div class="portal" id="p-navigation">
+	<h5>Navigation</h5>
+	<div class="body">
+		<ul>
+			<li id="n-mainpage"><a href="http://www.alsa-project.org/main/index.php/Main_Page" title="Visit the main page [alt-z]" accesskey="z">Main Page</a></li>
+			<li id="n-Developer-Zone"><a href="http://www.alsa-project.org/main/index.php/Developer_Zone">Developer Zone</a></li>
+			<li id="n-Download..."><a href="http://www.alsa-project.org/main/index.php/Download">Download...</a></li>
+			<li id="n-SoundCards"><a href="http://www.alsa-project.org/main/index.php/Matrix:Main">SoundCards</a></li>
+			<li id="n-Applications"><a href="http://www.alsa-project.org/main/index.php/Applications">Applications</a></li>
+			<li id="n-Documentation"><a href="http://www.alsa-project.org/main/index.php/Documentation">Documentation</a></li>
+			<li id="n-Mailing-lists"><a href="http://www.alsa-project.org/main/index.php/Mailing-lists">Mailing-lists</a></li>
+			<li id="n-Bug-Tracker"><a href="https://bugtrack.alsa-project.org/alsa-bug" rel="nofollow">Bug Tracker</a></li>
+			<li id="n-Help-to-debug"><a href="http://www.alsa-project.org/main/index.php/Help_To_Debug">Help to debug</a></li>
+			<li id="n-Links"><a href="http://www.alsa-project.org/main/index.php/Links">Links</a></li>
+		</ul>
+	</div>
+</div>
+
+<!-- /navigation -->
+
+<!-- wiki -->
+<div class="portal" id="p-wiki">
+	<h5>wiki</h5>
+	<div class="body">
+		<ul>
+			<li id="n-About"><a href="http://www.alsa-project.org/main/index.php/AlsaProject:About">About</a></li>
+			<li id="n-portal"><a href="http://www.alsa-project.org/main/index.php/AlsaProject:Community_portal" title="About the project, what you can do, where to find things">Community portal</a></li>
+			<li id="n-currentevents"><a href="http://www.alsa-project.org/main/index.php/AlsaProject:Current_events" title="Find background information on current events">Current events</a></li>
+			<li id="n-recentchanges"><a href="http://www.alsa-project.org/main/index.php/Special:RecentChanges" title="A list of recent changes in the wiki [alt-r]" accesskey="r">Recent changes</a></li>
+			<li id="n-randompage"><a href="http://www.alsa-project.org/main/index.php/Special:Random" title="Load a random page [alt-x]" accesskey="x">Random page</a></li>
+			<li id="n-sitesupport"><a href="http://www.alsa-project.org/main/index.php/Sitesupport-url">sitesupport</a></li>
+			<li id="n-help"><a href="http://www.alsa-project.org/main/index.php/Help:Contents" title="The place to find out">Help</a></li>
+		</ul>
+	</div>
+</div>
+
+<!-- /wiki -->
+
+<!-- SEARCH -->
+
+<!-- /SEARCH -->
+
+<!-- TOOLBOX -->
+<div class="portal" id="p-tb">
+	<h5>Toolbox</h5>
+	<div class="body">
+		<ul>
+			<li id="t-whatlinkshere"><a href="http://www.alsa-project.org/main/index.php/Special:WhatLinksHere/Asoundrc" title="A list of all wiki pages that link here [alt-j]" accesskey="j">What links here</a></li>
+			<li id="t-recentchangeslinked"><a href="http://www.alsa-project.org/main/index.php/Special:RecentChangesLinked/Asoundrc" title="Recent changes in pages linked from this page [alt-k]" accesskey="k">Related changes</a></li>
+			<li id="t-specialpages"><a href="http://www.alsa-project.org/main/index.php/Special:SpecialPages" title="A list of all special pages [alt-q]" accesskey="q">Special pages</a></li>
+			<li><a href="http://www.alsa-project.org/main/index.php?title=Asoundrc&printable=yes" rel="alternate">Printable version</a></li>
+			<li id="t-permalink"><a href="http://www.alsa-project.org/main/index.php?title=Asoundrc&oldid=6699" title="Permanent link to this revision of the page">Permanent link</a></li>
+		</ul>
+<p>
+</p><div style="margin:0px -20px -10px">
+<script type="text/javascript"><!--
+google_ad_client = "ca-pub-3796951087194496";
+/* alsa-project */
+//google_ad_slot = "5629048529";
+//google_ad_width = 125;
+//google_ad_height = 240;
+/* alsa-project-big */
+google_ad_slot = "2524243199";
+google_ad_width = 160;
+google_ad_height = 600;
+//-->
+</script>
+<script type="text/javascript" src="./Asoundrc - AlsaProject_files/show_ads.js">
+</div>
+	</div>
+</div>
+
+<!-- /TOOLBOX -->
+
+<!-- LANGUAGES -->
+
+<!-- /LANGUAGES -->
+			</div>
+		<!-- /panel -->
+		<!-- footer -->
+		<div id="footer">
+							<ul id="footer-info">
+											<li id="footer-info-lastmod"> This page was last modified on 9 February 2014, at 19:10.</li>
+											<li id="footer-info-viewcount">This page has been accessed 358,580 times.</li>
+											<li id="footer-info-copyright">Content is available under <a class="external" href="http://www.gnu.org/copyleft/fdl.html">GNU Free Documentation License 1.2</a>.</li>
+									</ul>
+							<ul id="footer-places">
+											<li id="footer-places-privacy"><a href="/main/index.php/AlsaProject:Privacy_policy" title="AlsaProject:Privacy policy">Privacy policy</a></li>
+											<li id="footer-places-about"><a href="/main/index.php/AlsaProject:About" title="AlsaProject:About">About AlsaProject</a></li>
+											<li id="footer-places-disclaimer"><a href="/main/index.php/AlsaProject:General_disclaimer" title="AlsaProject:General disclaimer">Disclaimers</a></li>
+									</ul>
+										<ul id="footer-icons" class="noprint">
+					<li id="footer-copyrightico">
+						<a href="http://www.gnu.org/copyleft/fdl.html"><img src="/main/skins/common/images/gnu-fdl.png" alt="GNU Free Documentation License 1.2" width="88" height="31" /></a>
+					</li>
+					<li id="footer-poweredbyico">
+						<a href="//www.mediawiki.org/"><img src="/main/skins/common/images/poweredby_mediawiki_88x31.png" alt="Powered by MediaWiki" width="88" height="31" /></a>
+					</li>
+				</ul>
+						<div style="clear:both"></div>
+		</div>
+		<!-- /footer -->
+		<script>if(window.mw){
+mw.loader.state({"site":"loading","user":"missing","user.groups":"ready"});
+}</script><ins style="display:inline-table;border:none;height:600px;margin:0;padding:0;position:relative;visibility:visible;width:160px;background-color:transparent"><ins id="aswift_0_anchor" style="display:block;border:none;height:600px;margin:0;padding:0;position:relative;visibility:visible;width:160px;background-color:transparent"><iframe width="160" height="600" frameborder="0" marginwidth="0" marginheight="0" vspace="0" hspace="0" allowtransparency="true" scrolling="no" allowfullscreen="true" onload="var i=this.id,s=window.google_iframe_oncopy,H=s&amp;&amp;s.handlers,h=H&amp;&amp;H[i],w=this.contentWindow,d;try{d=w.document}catch(e){}if(h&amp;&amp;d&amp;&amp;(!d.body||!d.body.firstChild)){if(h.call){setTimeout(h,0)}else if(h.match){try{h=s.upd(h,i)}catch(e){}w.location.replace(h)}}" id="aswift_0" name="aswift_0" style="left:0;position:absolute;top:0;"></iframe></ins></ins>
+<script src="./Asoundrc - AlsaProject_files/load(3).php"></script>
+<script>if(window.mw){
+mw.loader.load(["mediawiki.user","mediawiki.page.ready"], null, true);
+}</script>
+<script type="text/javascript" language="javascript" src="./Asoundrc - AlsaProject_files/plusone.js" gapi_processed="true"></script>
+<script src="./Asoundrc - AlsaProject_files/load(4).php"></script>
+<!-- Served in 0.070 secs. -->
+	
+
+</div></div></div></div><script src="./Asoundrc - AlsaProject_files/load(5).php" type="text/javascript"></script><iframe name="oauth2relay834064909" id="oauth2relay834064909" src="./Asoundrc - AlsaProject_files/postmessageRelay.html" tabindex="-1" style="width: 1px; height: 1px; position: absolute; top: -100px;"></iframe><iframe id="google_osd_static_frame_5428097646217" name="google_osd_static_frame" style="display: none; width: 0px; height: 0px;"></iframe></body></html>
