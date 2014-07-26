@@ -70,14 +70,7 @@ TclRenderer::~TclRenderer() {
     pthread_join(thread_, NULL);
   }
 
-  while (!queue_.empty()) {
-    WorkItem item = queue_.top();
-    queue_.pop();
-    if (item.frame_data_)
-      delete[] item.frame_data_;
-    if (item.img_)
-      delete[] item.img_;
-  }
+  ResetImageQueue();
 
   if (last_image_)
     delete[] last_image_;
@@ -203,6 +196,16 @@ void TclRenderer::ScheduleStrandsAt(
   if (err != 0) {
     fprintf(stderr, "Unable to signal condition: %d\n", err);
     CHECK(false);
+  }
+}
+
+void TclRenderer::ResetImageQueue() {
+  Autolock l(lock_);
+  while (!queue_.empty()) {
+    WorkItem item = queue_.top();
+    queue_.pop();
+    delete[] item.frame_data_;
+    delete[] item.img_;
   }
 }
 

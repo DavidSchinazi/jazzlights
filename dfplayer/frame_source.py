@@ -24,13 +24,14 @@ class Frame(object):
 class FrameSource(object):
 
   def __init__(self, fps, screen_width, frame_width, frame_height,
-               clips_dir):
+               clips_dir, tcl):
     self._fps = fps
     self._screen_width = screen_width
     self._frame_width = frame_width
     self._frame_height = frame_height
     self._clips_dir = clips_dir
     self._effect = None
+    self._tcl = tcl
 
     self._prefetch_size = fps / 2
     self._clear_cache('')
@@ -97,6 +98,7 @@ class FrameSource(object):
   def _clear_cache(self, clip_name):
     self._clip_name = clip_name
     self._frames = collections.deque(maxlen=self._prefetch_size)
+    self._tcl.reset_image_queue()
 
   def get_frame_at(self, elapsed_sec):
     prev_frame = None

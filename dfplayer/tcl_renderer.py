@@ -84,6 +84,10 @@ class TclRenderer(object):
     else:
       return -1
 
+  def reset_image_queue(self):
+    if self._use_cc_impl:
+      self._renderer.ResetImageQueue()
+
   def send_frame(self, image, id, delay_ms):
     if self._use_cc_impl:
       time = TclCcTime()

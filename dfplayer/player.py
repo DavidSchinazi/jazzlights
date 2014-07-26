@@ -91,13 +91,13 @@ class Player(object):
         self._render_durations = Stats(100)
         self._visualization_period_stats = Stats(100)
 
-        self._frame_source = FrameSource(
-            FPS, _SCREEN_FRAME_WIDTH, IMAGE_FRAME_WIDTH,
-            FRAME_HEIGHT, CLIPS_DIR)
-
         self._tcl = TclRenderer(
             TCL_CONTROLLER, _SCREEN_FRAME_WIDTH, FRAME_HEIGHT,
             'dfplayer/layout.dxf', self._target_gamma, _USE_CC_TCL)
+
+        self._frame_source = FrameSource(
+            FPS, _SCREEN_FRAME_WIDTH, IMAGE_FRAME_WIDTH,
+            FRAME_HEIGHT, CLIPS_DIR, self._tcl)
 
         self._use_visualization = False
         self._visualizer = None

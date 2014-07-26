@@ -72,6 +72,8 @@ class TclRenderer {
       int g_min, int g_max, double g_gamma,
       int b_min, int b_max, double b_gamma);
 
+  void ResetImageQueue();
+
   void ScheduleImageAt(Bytes* bytes, int id, const AdjustableTime& time);
 
   Bytes* GetAndClearLastImage();
