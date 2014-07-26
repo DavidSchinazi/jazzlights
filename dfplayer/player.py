@@ -105,6 +105,9 @@ class Player(object):
         self._load_playlist()
         self._fetch_state()
 
+    def disable_reset(self):
+        self._tcl.disable_reset()
+
     def __str__(self):
         elapsed_sec = int(self.elapsed_time)
         duration, delays = self._tcl.get_and_clear_frame_delays()
@@ -147,7 +150,8 @@ class Player(object):
         if self._use_visualization:
             lines.append(self._visualizer.GetCurrentPresetNameProgress())
         else:
-            lines.append('Playing video')
+            lines.append('Playing video (frame %s)' % (
+                self._tcl.get_last_image_id()))
         return lines
 
     def get_frame_size(self):
@@ -459,36 +463,22 @@ class Player(object):
             return None
         else:
             elapsed_time = self.elapsed_time
-            if self._use_visualization:
-                start_time = time.time()
-                newimg_data = self._visualizer.GetAndClearImage()
-                if newimg_data:
-                    texsize = self._visualizer.GetTexSize()
-                    new_image = Image.fromstring(
-                        'RGB', (texsize, texsize), newimg_data)
-                    src_img = new_image.resize(
-                        (IMAGE_FRAME_WIDTH, FRAME_HEIGHT))
-                    frame_img = Image.new(
-                        'RGB', (_SCREEN_FRAME_WIDTH, FRAME_HEIGHT))
-                    frame_img.paste(src_img, (IMAGE_FRAME_WIDTH, 0))
-                    flip_img = src_img.transpose(Image.FLIP_LEFT_RIGHT)
-                    frame_img.paste(flip_img, (0, 0))
-                    self._frame = frame_img
-                duration_ms = int(round((time.time() - start_time) * 1000))
-                self._render_durations.add(duration_ms)
-                return self._frame
-
             if self._tcl.has_scheduling_support():
                 start_time = time.time()
-                self._frame_source.prefetch(self.clip_name, elapsed_time)
-                baseline_ms = get_time_millis()
-                for f in self._frame_source.get_cached_frames():
-                    if not f.rendered:
-                        f.rendered = True
-                        self._tcl.send_frame(f.image, f.current_ms - baseline_ms)
-                new_frame = self._frame_source.get_frame_at(elapsed_time)
-                if new_frame:
-                    self._frame = new_frame.image
+                if not self._use_visualization:
+                    self._frame_source.prefetch(self.clip_name, elapsed_time)
+                    baseline_ms = get_time_millis()
+                    for f in self._frame_source.get_cached_frames():
+                        if not f.rendered:
+                            f.rendered = True
+                            self._tcl.send_frame(
+                                f.image, f.frame_num,
+                                f.current_ms - baseline_ms)
+                newimg_data = self._tcl.get_and_clear_last_image()
+                if newimg_data:
+                    self._frame = Image.fromstring(
+                        'RGB', (_SCREEN_FRAME_WIDTH, FRAME_HEIGHT),
+                        newimg_data)
                 duration_ms = int(round((time.time() - start_time) * 1000))
                 self._render_durations.add(duration_ms)
                 return self._frame
@@ -508,7 +498,7 @@ class Player(object):
             self._last_frame_file = frame_file
 
             delay_ms = int((float(frame_num) / FPS - elapsed_time) * 1000.0)
-            self._tcl.send_frame(self._frame, delay_ms)
+            self._tcl.send_frame(self._frame, frame_num, delay_ms)
 
             duration_ms = int(round((time.time() - start_time) * 1000))
             self._render_durations.add(duration_ms)

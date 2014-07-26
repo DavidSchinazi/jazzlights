@@ -72,7 +72,10 @@ class TclRenderer {
       int g_min, int g_max, double g_gamma,
       int b_min, int b_max, double b_gamma);
 
-  void ScheduleImageAt(Bytes* bytes, const AdjustableTime& time);
+  void ScheduleImageAt(Bytes* bytes, int id, const AdjustableTime& time);
+
+  Bytes* GetAndClearLastImage();
+  int GetLastImageId();
 
   std::vector<int> GetFrameDataForTest(Bytes* bytes);
 
@@ -115,8 +118,10 @@ class TclRenderer {
   };
 
   struct WorkItem {
-    WorkItem(bool needs_reset, uint8_t* frame_data, uint64_t time)
-        : needs_reset_(needs_reset), frame_data_(frame_data), time_(time) {}
+    WorkItem(bool needs_reset, uint8_t* frame_data,
+             uint8_t* img, int id, uint64_t time)
+        : needs_reset_(needs_reset), frame_data_(frame_data),
+          img_(img), id_(id), time_(time) {}
 
     bool operator<(const WorkItem& other) const {
       return (time_ > other.time_);
@@ -124,6 +129,8 @@ class TclRenderer {
 
     bool needs_reset_;
     uint8_t* frame_data_;
+    uint8_t* img_;
+    int id_;
     uint64_t time_;
   };
 
@@ -142,9 +149,12 @@ class TclRenderer {
   bool PopNextWorkItemLocked(WorkItem* item, int64_t* next_time);
   void WaitForQueueLocked(int64_t next_time);
 
-  Strands* ConvertImageToStrands(uint8_t* image_data, int len);
-  void ScheduleStrandsAt(Strands* strands, uint64_t time);
-  void ApplyGamma(Strands* strands);
+  uint8_t* CreateAdjustedImage(Bytes* bytes);
+  void ApplyGammaLocked(uint8_t* img);
+
+  Strands* ConvertImageToStrands(uint8_t* image_data);
+  void ScheduleStrandsAt(
+      Strands* strands, uint8_t* img, int id, uint64_t time);
 
   static uint8_t* ConvertStrandsToFrame(Strands* strands);
   static int BuildFrameColorSeq(
@@ -166,6 +176,8 @@ class TclRenderer {
   int socket_;
   bool require_reset_;
   uint64_t last_reply_time_;
+  uint8_t* last_image_;
+  int last_image_id_;
   std::priority_queue<WorkItem> queue_;
   pthread_mutex_t lock_;
   pthread_cond_t cond_;

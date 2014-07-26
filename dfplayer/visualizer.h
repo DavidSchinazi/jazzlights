@@ -43,10 +43,9 @@ class Visualizer {
   int GetHeight() const { return height_; }
   int GetTexSize() const { return texsize_; }
 
-  Bytes* GetAndClearImage();
+  Bytes* GetAndClearLastImageForTest();
 
   int GetAndClearOverrunCount();
-  int GetAndClearDroppedImageCount();
   int GetAndClearTotalPcmSampleCount();
   std::vector<int> GetAndClearFramePeriods();
 
@@ -98,7 +97,6 @@ class Visualizer {
   uint8_t* image_buffer_;
   uint32_t image_buffer_size_;
   bool has_image_;
-  int dropped_image_count_;
   uint64_t last_render_time_;
   uint32_t ms_per_frame_;
   bool is_shutting_down_;

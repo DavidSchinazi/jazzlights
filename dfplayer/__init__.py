@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
+
+import argparse
+import logging
 import os
 import sys
-import logging
 
 from gevent import monkey, sleep, spawn
 
@@ -15,15 +17,23 @@ def main():
     from .ui_browser import run as run_browser_ui
     from .ui_desktop import run as run_desktop_ui
 
+    arg_parser = argparse.ArgumentParser(description='Start player')
+    arg_parser.add_argument('--listen')
+    arg_parser.add_argument('--no-reset', action='store_true')
+    args = arg_parser.parse_args()
+
     logging.basicConfig(level=logging.INFO, format='%(message)s')
-    if len(sys.argv) > 1 and (sys.argv[1])[:9] == '--listen=':
-        (host, port) = (sys.argv[1])[9:].split(':')
+
+    if args.listen:
+        (host, port) = args.listen.split(':')
         port = int(port)
     else:
         host = '127.0.0.1'
         port = 8080
 
     player = Player('playlist')
+    if args.no_reset:
+        player.disable_reset()
     player.play(0)
     print player
 

@@ -30,7 +30,6 @@ class TclRenderer(object):
           layout.AddCoord(s.get_id(), c[0], c[1])
       self._renderer = TclCcImpl(controller_id, width, height, layout, gamma)
       self._frame_send_duration = self._renderer.GetFrameSendDuration()
-      # self._renderer.SetAutoResetAfterNoDataMs(0)
       if not test_mode:
         self._renderer.StartMessageLoop()
     else:
@@ -58,8 +57,23 @@ class TclRenderer(object):
     else:
       self._renderer.set_gamma_ranges(r, g, b)
 
+  def disable_reset(self):
+    if self._use_cc_impl:
+      self._renderer.SetAutoResetAfterNoDataMs(0)
+
   def has_scheduling_support(self):
     return self._use_cc_impl
+
+  def get_and_clear_last_image(self):
+    if not self._use_cc_impl:
+      print 'get_and_clear_last_image not supported'
+      return None
+    return self._renderer.GetAndClearLastImage()
+
+  def get_last_image_id(self):
+    if not self._use_cc_impl:
+      return 0
+    return self._renderer.GetLastImageId()
 
   def get_send_duration_ms(self):
     return self._frame_send_duration
@@ -70,11 +84,11 @@ class TclRenderer(object):
     else:
       return -1
 
-  def send_frame(self, image, delay_ms):
+  def send_frame(self, image, id, delay_ms):
     if self._use_cc_impl:
       time = TclCcTime()
       time.AddMillis(delay_ms - self._frame_send_duration)
-      self._renderer.ScheduleImageAt(image.tostring(), time)
+      self._renderer.ScheduleImageAt(image.tostring(), id, time)
     else:
       self._renderer.send_frame(list(image.getdata()), get_time_millis())
 

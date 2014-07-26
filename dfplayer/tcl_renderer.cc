@@ -52,7 +52,7 @@ TclRenderer::TclRenderer(
       auto_reset_after_no_data_ms_(5000), init_sent_(false),
       is_shutting_down_(false), has_started_thread_(false), layout_(layout),
       socket_(-1), require_reset_(true), last_reply_time_(0),
-      lock_(PTHREAD_MUTEX_INITIALIZER),
+      last_image_(NULL), last_image_id_(0), lock_(PTHREAD_MUTEX_INITIALIZER),
       cond_(PTHREAD_COND_INITIALIZER),
       frames_sent_after_reply_(0) {
   SetGamma(gamma);
@@ -75,7 +75,13 @@ TclRenderer::~TclRenderer() {
     queue_.pop();
     if (item.frame_data_)
       delete[] item.frame_data_;
+    if (item.img_)
+      delete[] item.img_;
   }
+
+  if (last_image_)
+    delete[] last_image_;
+
   pthread_cond_destroy(&cond_);
   pthread_mutex_destroy(&lock_);
 }
@@ -149,27 +155,50 @@ int TclRenderer::GetFrameSendDuration() {
   return usec / 1000;
 }
 
-void TclRenderer::ScheduleImageAt(Bytes* bytes, const AdjustableTime& time) {
-  Strands* strands = ConvertImageToStrands(bytes->GetData(), bytes->GetLen());
-  if (!strands)
+Bytes* TclRenderer::GetAndClearLastImage() {
+  Autolock l(lock_);
+  if (!last_image_)
+    return NULL;
+  Bytes* result = new Bytes(last_image_, width_ * height_ * 3);
+  delete[] last_image_;
+  last_image_ = NULL;
+  return result;
+}
+
+int TclRenderer::GetLastImageId() {
+  Autolock l(lock_);
+  return last_image_id_;
+}
+
+void TclRenderer::ScheduleImageAt(
+    Bytes* bytes, int id, const AdjustableTime& time) {
+  uint8_t* img = CreateAdjustedImage(bytes);
+  if (!img)
     return;
-  ApplyGamma(strands);
-  ScheduleStrandsAt(strands, time.time_);
+  Strands* strands = ConvertImageToStrands(img);
+  if (!strands) {
+    delete[] img;
+    return;
+  }
+  ScheduleStrandsAt(strands, img, id, time.time_);
   delete strands;
 }
 
-void TclRenderer::ScheduleStrandsAt(Strands* strands, uint64_t time) {
+void TclRenderer::ScheduleStrandsAt(
+    Strands* strands, uint8_t* img, int id, uint64_t time) {
   uint8_t* frame_data = ConvertStrandsToFrame(strands);
 
   Autolock l(lock_);
   CHECK(has_started_thread_);
   if (is_shutting_down_) {
     delete[] frame_data;
+    if (img)
+      delete[] img;
     return;
   }
   // TODO(igorc): Recalculate time from relative to absolute.
   uint64_t abs_time = time;
-  queue_.push(WorkItem(false, frame_data, abs_time));
+  queue_.push(WorkItem(false, frame_data, img, id, abs_time));
   int err = pthread_cond_broadcast(&cond_);
   if (err != 0) {
     fprintf(stderr, "Unable to signal condition: %d\n", err);
@@ -179,17 +208,35 @@ void TclRenderer::ScheduleStrandsAt(Strands* strands, uint64_t time) {
 
 std::vector<int> TclRenderer::GetFrameDataForTest(Bytes* bytes) {
   std::vector<int> result;
-  Strands* strands = ConvertImageToStrands(bytes->GetData(), bytes->GetLen());
-  if (!strands)
+  uint8_t* img = CreateAdjustedImage(bytes);
+  if (!img)
     return result;
-  ApplyGamma(strands);
+  Strands* strands = ConvertImageToStrands(img);
+  if (!strands) {
+    delete[] img;
+    return result;
+  }
   uint8_t* frame_data = ConvertStrandsToFrame(strands);
   for (int i = 0; i < FRAME_DATA_LEN; i++) {
     result.push_back(frame_data[i]);
   }
   delete[] frame_data;
+  delete[] img;
   delete strands;
   return result;
+}
+
+uint8_t* TclRenderer::CreateAdjustedImage(Bytes* bytes) {
+  Autolock l(lock_);
+  if (bytes->GetLen() != width_ * height_ * 3) {
+    fprintf(stderr, "Unexpected image size in TCL renderer: %d\n",
+            bytes->GetLen());
+    return NULL;
+  }
+  uint8_t* img = new uint8_t[bytes->GetLen()];
+  memcpy(img, bytes->GetData(), bytes->GetLen());
+  ApplyGammaLocked(img);
+  return img;
 }
 
 int TclRenderer::GetQueueSize() {
@@ -197,9 +244,9 @@ int TclRenderer::GetQueueSize() {
   return queue_.size();
 }
 
-TclRenderer::Strands* TclRenderer::ConvertImageToStrands(
-    uint8_t* image_data, int len) {
+TclRenderer::Strands* TclRenderer::ConvertImageToStrands(uint8_t* image_data) {
   Autolock l(lock_);
+  int len = width_ * height_ * 3;
   Strands* strands = new Strands();
   for (int strand_id  = 0; strand_id < STRAND_COUNT; strand_id++) {
     int* x = layout_.x_[strand_id];
@@ -226,15 +273,13 @@ TclRenderer::Strands* TclRenderer::ConvertImageToStrands(
   return strands;
 }
 
-void TclRenderer::ApplyGamma(TclRenderer::Strands* strands) {
-  Autolock l(lock_);
-  for (int strand_id  = 0; strand_id < STRAND_COUNT; strand_id++) {
-    int len = strands->lengths[strand_id] * 3;
-    uint8_t* colors = strands->colors[strand_id];
-    for (int i = 0; i < len; i += 3) {
-      colors[i] = gamma_r_[colors[i]];
-      colors[i + 1] = gamma_g_[colors[i + 1]];
-      colors[i + 2] = gamma_b_[colors[i + 2]];
+void TclRenderer::ApplyGammaLocked(uint8_t* img) {
+  for (int y = 0; y < height_; y++) {
+    for (int x = 0; x < width_; x++) {
+      int i = (y * width_ + x) * 3;
+      img[i] = gamma_r_[img[i]];
+      img[i + 1] = gamma_g_[img[i + 1]];
+      img[i + 2] = gamma_b_[img[i + 2]];
     }
   }
 }
@@ -327,7 +372,7 @@ void TclRenderer::Run() {
       continue;
     }
 
-    WorkItem item(false, NULL, 0);
+    WorkItem item(false, NULL, NULL, 0, 0);
     {
       Autolock l(lock_);
       while (!is_shutting_down_) {
@@ -343,8 +388,15 @@ void TclRenderer::Run() {
         require_reset_ = true;
         if (item.frame_data_)
           delete[] item.frame_data_;
+        if (item.img_)
+          delete[] item.img_;
         continue;
       }
+
+      if (last_image_)
+        delete[] last_image_;
+      last_image_ = item.img_;
+      last_image_id_ = item.id_;
     }
 
     if (item.frame_data_) {

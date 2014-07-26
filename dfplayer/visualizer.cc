@@ -27,7 +27,7 @@ Visualizer::Visualizer(
     std::string preset_dir, int preset_duration)
     : width_(width), height_(height), texsize_(texsize), fps_(fps),
       alsa_handle_(NULL), projectm_(NULL), projectm_tex_(0),
-      total_overrun_count_(0), has_image_(false), dropped_image_count_(0),
+      total_overrun_count_(0), has_image_(false),
       is_shutting_down_(false), has_started_thread_(false),
       preset_dir_(preset_dir), preset_duration_(preset_duration),
       current_preset_index_(-1),
@@ -134,13 +134,6 @@ int Visualizer::GetAndClearTotalPcmSampleCount() {
   return result;
 }
 
-int Visualizer::GetAndClearDroppedImageCount() {
-  Autolock l(lock_);
-  int result = dropped_image_count_;
-  dropped_image_count_ = 0;
-  return result;
-}
-
 std::vector<int> Visualizer::GetAndClearFramePeriods() {
   Autolock l(lock_);
   std::vector<int> result = frame_periods_;
@@ -148,7 +141,7 @@ std::vector<int> Visualizer::GetAndClearFramePeriods() {
   return result;
 }
 
-Bytes* Visualizer::GetAndClearImage() {
+Bytes* Visualizer::GetAndClearLastImageForTest() {
   Autolock l(lock_);
   if (!has_image_)
     return NULL;
@@ -439,9 +432,6 @@ bool Visualizer::RenderFrameLocked() {
 }*/
 
 void Visualizer::PostTclFrameLocked() {
-  if (!has_image_)
-    return;
-
   TclRenderer* tcl = TclRenderer::GetByControllerId(1);
   if (!tcl) {
     fprintf(stderr, "TCL controller not found\n");
@@ -473,7 +463,7 @@ void Visualizer::PostTclFrameLocked() {
 
   AdjustableTime now;
   Bytes* bytes = new Bytes(dst, len);
-  tcl->ScheduleImageAt(bytes, now);
+  tcl->ScheduleImageAt(bytes, 0, now);
   delete[] dst;
   delete bytes;
 }
@@ -576,10 +566,11 @@ void Visualizer::Run() {
         current_preset_ = "";
       }
 
-      if (has_image_)
-        dropped_image_count_++;
       has_image_ = has_new_image;
-      PostTclFrameLocked();
+
+      if (has_new_image)
+        PostTclFrameLocked();
+
       uint64_t now = GetCurrentMillis();
       if (prev_frame_time)
         frame_periods_.push_back(now - prev_frame_time);
