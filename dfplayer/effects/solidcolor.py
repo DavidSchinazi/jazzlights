@@ -4,7 +4,7 @@ from ..effect import FixedDurationEffect, register
 
 class SolidColor(FixedDurationEffect):
 
-  def __init__(self, duration=2, color='green'):
+  def __init__(self, duration=20, color='#00FF00'):
     FixedDurationEffect.__init__(self, duration=duration)
     self._color = color
 

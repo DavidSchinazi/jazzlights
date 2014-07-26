@@ -22,6 +22,11 @@
 
 #include "tcl_renderer.h"
 
+// ProjectM can handle 2048 frames per frame. For 15 FPS this translates to
+// 30720. Use the next lower standard sampling rate. We request ALSA
+// to produce S16_LE, which matches "signed short" used by ProjectM.
+static const int kPcmSampleRate = 22050;
+
 Visualizer::Visualizer(
     int width, int height, int texsize, int fps,
     std::string preset_dir, int preset_duration)
@@ -39,6 +44,9 @@ Visualizer::Visualizer(
 
   image_buffer_size_ = texsize_ * texsize_ * 3;
   image_buffer_ = new uint8_t[image_buffer_size_];
+
+  pcm_samples_per_frame_ = std::min(
+      PCM::maxsamples, kPcmSampleRate / fps_);
 }
 
 Visualizer::~Visualizer() {
@@ -173,10 +181,7 @@ bool Visualizer::TransferPcmDataLocked() {
       return false;
     }
     fprintf(stderr, "Connecting to ALSA input %s\n", alsa_device_.c_str());
-    // ProjectM can handle 2048 frames per frame. For 15 FPS this translates to
-    // 30720. Use the next lower standard sampling rate. We request ALSA
-    // to produce S16_LE, which matches "signed short" used by ProjectM.
-    alsa_handle_ = inp_alsa_init(alsa_device_.c_str(), 22050);
+    alsa_handle_ = inp_alsa_init(alsa_device_.c_str(), kPcmSampleRate);
     if (!alsa_handle_) {
       fprintf(stderr, "Failed to open ALSA input\n");
       return false;
@@ -185,11 +190,11 @@ bool Visualizer::TransferPcmDataLocked() {
 
   int sample_count = 0;
   PCM* pcm = projectm_->pcm();
-  while (sample_count < PCM::maxsamples) {
+  while (sample_count < pcm_samples_per_frame_) {
     int overrun_count = 0;
     int samples = inp_alsa_read(
         alsa_handle_, pcm_buffer_ + sample_count * 2,
-        PCM::maxsamples - sample_count, &overrun_count);
+        pcm_samples_per_frame_ - sample_count, &overrun_count);
     total_overrun_count_ += overrun_count;
     if (samples <= 0)
       break;

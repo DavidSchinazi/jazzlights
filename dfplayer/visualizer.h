@@ -99,6 +99,7 @@ class Visualizer {
   bool has_image_;
   uint64_t last_render_time_;
   uint32_t ms_per_frame_;
+  int pcm_samples_per_frame_;
   bool is_shutting_down_;
   bool has_started_thread_;
   std::deque<WorkItem*> work_items_;
