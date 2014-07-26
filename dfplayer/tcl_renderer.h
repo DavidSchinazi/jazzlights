@@ -76,6 +76,8 @@ class TclRenderer {
 
   void ScheduleImageAt(Bytes* bytes, int id, const AdjustableTime& time);
 
+  void SetEffectImage(Bytes* bytes, bool mirror);
+
   Bytes* GetAndClearLastImage();
   int GetLastImageId();
 
@@ -120,17 +122,14 @@ class TclRenderer {
   };
 
   struct WorkItem {
-    WorkItem(bool needs_reset, uint8_t* frame_data,
-             uint8_t* img, int id, uint64_t time)
-        : needs_reset_(needs_reset), frame_data_(frame_data),
-          img_(img), id_(id), time_(time) {}
+    WorkItem(bool needs_reset, uint8_t* img, int id, uint64_t time)
+        : needs_reset_(needs_reset), img_(img), id_(id), time_(time) {}
 
     bool operator<(const WorkItem& other) const {
       return (time_ > other.time_);
     }
 
     bool needs_reset_;
-    uint8_t* frame_data_;
     uint8_t* img_;
     int id_;
     uint64_t time_;
@@ -151,12 +150,11 @@ class TclRenderer {
   bool PopNextWorkItemLocked(WorkItem* item, int64_t* next_time);
   void WaitForQueueLocked(int64_t next_time);
 
-  uint8_t* CreateAdjustedImage(Bytes* bytes);
-  void ApplyGammaLocked(uint8_t* img);
+  uint8_t* CreateAdjustedImageLocked(Bytes* bytes, int w, int h);
+  void ApplyGammaLocked(uint8_t* image, int w, int h);
+  void ApplyEffectLocked(uint8_t* image);
 
-  Strands* DiffuseAndConvertImageToStrands(uint8_t* image_data);
-  void ScheduleStrandsAt(
-      Strands* strands, uint8_t* img, int id, uint64_t time);
+  Strands* DiffuseAndConvertImageToStrandsLocked(uint8_t* image_data);
 
   static uint8_t* ConvertStrandsToFrame(Strands* strands);
   static int BuildFrameColorSeq(
@@ -180,6 +178,9 @@ class TclRenderer {
   uint64_t last_reply_time_;
   uint8_t* last_image_;
   int last_image_id_;
+  bool has_last_image_;
+  uint8_t* effect_image_;
+  bool effect_image_mirrored_;
   std::priority_queue<WorkItem> queue_;
   pthread_mutex_t lock_;
   pthread_cond_t cond_;

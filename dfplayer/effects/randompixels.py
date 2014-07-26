@@ -2,21 +2,23 @@
 
 import random
 
-from ..effect import FixedDurationEffect, register
+from ..effect import Effect, register
 
 
-class RandomPixels(FixedDurationEffect):
+class RandomPixels(Effect):
 
-  def __init__(self, duration=5):
-    FixedDurationEffect.__init__(self, duration=duration)
+  def __init__(self, duration=7):
+    Effect.__init__(self, duration=duration)
 
-  def _apply(self, frame, elapsed):
+  def get_image(self, elapsed):
     def random_pixels(size):
       for i in xrange(size[0] * size[1]):
         yield (random.randint(0, 255),
             random.randint(0, 255), random.randint(0, 255))
 
-    frame.putdata(list(random_pixels(frame.size)))
+    image = self._create_image('black', 255)
+    image.putdata(list(random_pixels(image.size)))
+    return image
 
 
 register('randompixels', RandomPixels)

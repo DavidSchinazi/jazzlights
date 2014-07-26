@@ -1,19 +1,18 @@
 # -*- coding: utf-8 -*-
 
-from ..effect import FixedDurationEffect, register
+from ..effect import Effect, register
 from ..util import hsl2rgb
 
 
-class Chameleon(FixedDurationEffect):
+class Chameleon(Effect):
 
-  def __init__(self, duration=60):
-    FixedDurationEffect.__init__(self, duration=duration)
+  def __init__(self, duration=30):
+    Effect.__init__(self, duration=duration)
 
-  def _apply(self, frame, elapsed):
-    (w, h) = frame.size
+  def get_image(self, elapsed):
     hsl = (360 * elapsed / self._duration, 1, 0.5)
     rgb = hsl2rgb(*hsl)
-    frame.paste(rgb, (0, 0, w, h))
+    return self._create_image(rgb, 255)
 
 
 register('chameleon', Chameleon)

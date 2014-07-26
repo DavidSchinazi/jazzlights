@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 
-from ..effect import FixedDurationEffect, register
+from ..effect import Effect, register
 
-class SolidColor(FixedDurationEffect):
+class SolidColor(Effect):
 
   def __init__(self, duration=20, color='#00FF00'):
-    FixedDurationEffect.__init__(self, duration=duration)
+    Effect.__init__(self, duration=duration)
     self._color = color
 
-  def _apply(self, frame, elapsed):
-    frame.paste(self._color, (0, 0, frame.size[0], frame.size[1]))
+  def get_image(self, elapsed):
+    return self._create_image(self._color, 255)
 
 
 register('solidcolor', SolidColor)

@@ -96,6 +96,10 @@ class TclRenderer(object):
     else:
       self._renderer.send_frame(list(image.getdata()), get_time_millis())
 
+  def set_effect_image(self, image, mirror):
+    if self._use_cc_impl:
+      self._renderer.SetEffectImage(image.tostring() if image else '', mirror)
+
   def get_frame_data_for_test(self, image):
     if self._use_cc_impl:
       return self._renderer.GetFrameDataForTest(image.tostring())

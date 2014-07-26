@@ -74,5 +74,11 @@ uint64_t GetCurrentMillis();
 uint8_t* ResizeImage(
     uint8_t* src, int src_w, int src_h, int dst_w, int dst_h);
 
+uint8_t* FlipImage(uint8_t* src, int w, int h);
+
+void PasteSubImage(
+    uint8_t* src, int src_w, int src_h,
+    uint8_t* dst, int dst_x, int dst_y, int dst_w, int dst_h);
+
 #endif  // __DFPLAYER_UTILS_H
 

@@ -124,6 +124,7 @@ class PlayerApp(Frame):
             status_lines = self.player.get_status_lines()
             self._canvas.itemconfig(
                 self._main_label, text='\n'.join(status_lines))
+            # TODO(igorc): Reschedule after errors.
             self.root.after(1000 / FPS / 4, lambda : self.update())
         except KeyboardInterrupt:
             self.quit()

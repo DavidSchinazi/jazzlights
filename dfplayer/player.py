@@ -19,6 +19,7 @@ from PIL import ImageChops
 from gevent import sleep
 from gevent.coros import RLock
 
+from .effect import load as load_effect
 from .frame_source import FrameSource
 from .stats import Stats
 from .util import catch_and_log, PROJECT_DIR, PACKAGE_DIR, VENV_DIR
@@ -86,6 +87,7 @@ class Player(object):
         self._target_gamma = 2.4
         self._seek_time = None
         self._frame = None
+        self._effect = None
         self._last_frame_file = ''
         self._frame_delay_stats = Stats(100)
         self._render_durations = Stats(100)
@@ -459,6 +461,16 @@ class Player(object):
         else:
             self._visualizer.SelectPreviousPreset()
 
+    def _get_effect_image(self):
+        if self._effect is None:
+            return (None, False)
+        effect_time = self._effect.get_elapsed_sec()
+        if effect_time is None:
+            self._effect = None
+            return (None, False)
+        return (self._effect.get_image(effect_time),
+                self._effect.should_mirror())
+
     def get_frame_image(self):
         if self.status == 'idle':
             # TODO(igorc): Keep drawing some neutral pattern for fun.
@@ -467,6 +479,7 @@ class Player(object):
             elapsed_time = self.elapsed_time
             if self._tcl.has_scheduling_support():
                 start_time = time.time()
+                # TODO(igorc): Implement effects with visualization.
                 if not self._use_visualization:
                     self._frame_source.prefetch(self.clip_name, elapsed_time)
                     baseline_ms = get_time_millis()
@@ -476,6 +489,8 @@ class Player(object):
                             self._tcl.send_frame(
                                 f.image, f.frame_num,
                                 f.current_ms - baseline_ms)
+                (effect_img, mirror) = self._get_effect_image()
+                self._tcl.set_effect_image(effect_img, mirror)
                 newimg_data = self._tcl.get_and_clear_last_image()
                 if newimg_data:
                     self._frame = Image.fromstring(
@@ -509,10 +524,11 @@ class Player(object):
 
     def play_effect(self, name, **kwargs):
         logging.info("Playing %s: %s", name, kwargs)
-        self._frame_source.play_effect(name, **kwargs)
+        self._effect = load_effect(
+            name, IMAGE_FRAME_WIDTH, FRAME_HEIGHT, **kwargs)
 
     def stop_effect(self):
-        self._frame_source.stop_effect()
+        self._effect = None
 
     def run(self):
         while True:

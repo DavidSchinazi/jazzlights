@@ -52,11 +52,14 @@ TclRenderer::TclRenderer(
       auto_reset_after_no_data_ms_(5000), init_sent_(false),
       is_shutting_down_(false), has_started_thread_(false), layout_(layout),
       socket_(-1), require_reset_(true), last_reply_time_(0),
-      last_image_(NULL), last_image_id_(0), lock_(PTHREAD_MUTEX_INITIALIZER),
+      last_image_id_(0), has_last_image_(false), effect_image_(NULL),
+      effect_image_mirrored_(false),
+      lock_(PTHREAD_MUTEX_INITIALIZER),
       cond_(PTHREAD_COND_INITIALIZER),
       frames_sent_after_reply_(0) {
   SetGamma(gamma);
   all_renderers_.push_back(this);
+  last_image_ = new uint8_t[width_ * height_ * 3];
 }
 
 TclRenderer::~TclRenderer() {
@@ -72,8 +75,8 @@ TclRenderer::~TclRenderer() {
 
   ResetImageQueue();
 
-  if (last_image_)
-    delete[] last_image_;
+  delete[] last_image_;
+  delete[] effect_image_;
 
   pthread_cond_destroy(&cond_);
   pthread_mutex_destroy(&lock_);
@@ -150,11 +153,10 @@ int TclRenderer::GetFrameSendDuration() {
 
 Bytes* TclRenderer::GetAndClearLastImage() {
   Autolock l(lock_);
-  if (!last_image_)
+  if (!has_last_image_)
     return NULL;
   Bytes* result = new Bytes(last_image_, width_ * height_ * 3);
-  delete[] last_image_;
-  last_image_ = NULL;
+  has_last_image_ = false;
   return result;
 }
 
@@ -165,33 +167,19 @@ int TclRenderer::GetLastImageId() {
 
 void TclRenderer::ScheduleImageAt(
     Bytes* bytes, int id, const AdjustableTime& time) {
-  uint8_t* img = CreateAdjustedImage(bytes);
+  Autolock l(lock_);
+  uint8_t* img = CreateAdjustedImageLocked(bytes, width_, height_);
   if (!img)
     return;
-  Strands* strands = DiffuseAndConvertImageToStrands(img);
-  if (!strands) {
+  CHECK(has_started_thread_);
+  if (is_shutting_down_) {
     delete[] img;
     return;
   }
-  ScheduleStrandsAt(strands, img, id, time.time_);
-  delete strands;
-}
 
-void TclRenderer::ScheduleStrandsAt(
-    Strands* strands, uint8_t* img, int id, uint64_t time) {
-  uint8_t* frame_data = ConvertStrandsToFrame(strands);
-
-  Autolock l(lock_);
-  CHECK(has_started_thread_);
-  if (is_shutting_down_) {
-    delete[] frame_data;
-    if (img)
-      delete[] img;
-    return;
-  }
   // TODO(igorc): Recalculate time from relative to absolute.
-  uint64_t abs_time = time;
-  queue_.push(WorkItem(false, frame_data, img, id, abs_time));
+  uint64_t abs_time = time.time_;
+  queue_.push(WorkItem(false, img, id, abs_time));
   int err = pthread_cond_broadcast(&cond_);
   if (err != 0) {
     fprintf(stderr, "Unable to signal condition: %d\n", err);
@@ -199,22 +187,51 @@ void TclRenderer::ScheduleStrandsAt(
   }
 }
 
+void TclRenderer::SetEffectImage(Bytes* bytes, bool mirror) {
+  Autolock l(lock_);
+  delete[] effect_image_;
+  effect_image_ = NULL;
+  if (bytes && bytes->GetLen()) {
+    effect_image_ = CreateAdjustedImageLocked(bytes, width_ / 2, height_);
+    effect_image_mirrored_ = mirror;
+  }
+}
+
+void TclRenderer::ApplyEffectLocked(uint8_t* image) {
+  if (!effect_image_)
+    return;
+
+  // TODO(igorc): Switch to RGBA and implement alpha blending.
+  PasteSubImage(effect_image_, width_ / 2, height_,
+      image, 0, 0, width_, height_);
+
+  uint8_t* second_image = effect_image_;
+  if (effect_image_mirrored_)
+    second_image = FlipImage(effect_image_, width_ / 2, height_);
+
+  PasteSubImage(second_image, width_ / 2, height_,
+      image, width_ / 2, 0, width_, height_);
+
+  if (second_image != effect_image_)
+    delete[] second_image;
+}
+
 void TclRenderer::ResetImageQueue() {
   Autolock l(lock_);
   while (!queue_.empty()) {
     WorkItem item = queue_.top();
     queue_.pop();
-    delete[] item.frame_data_;
     delete[] item.img_;
   }
 }
 
 std::vector<int> TclRenderer::GetFrameDataForTest(Bytes* bytes) {
+  Autolock l(lock_);
   std::vector<int> result;
-  uint8_t* img = CreateAdjustedImage(bytes);
+  uint8_t* img = CreateAdjustedImageLocked(bytes, width_, height_);
   if (!img)
     return result;
-  Strands* strands = DiffuseAndConvertImageToStrands(img);
+  Strands* strands = DiffuseAndConvertImageToStrandsLocked(img);
   if (!strands) {
     delete[] img;
     return result;
@@ -229,16 +246,15 @@ std::vector<int> TclRenderer::GetFrameDataForTest(Bytes* bytes) {
   return result;
 }
 
-uint8_t* TclRenderer::CreateAdjustedImage(Bytes* bytes) {
-  Autolock l(lock_);
-  if (bytes->GetLen() != width_ * height_ * 3) {
+uint8_t* TclRenderer::CreateAdjustedImageLocked(Bytes* bytes, int w, int h) {
+  if (bytes->GetLen() != w * h * 3) {
     fprintf(stderr, "Unexpected image size in TCL renderer: %d\n",
             bytes->GetLen());
     return NULL;
   }
   uint8_t* img = new uint8_t[bytes->GetLen()];
   memcpy(img, bytes->GetData(), bytes->GetLen());
-  ApplyGammaLocked(img);
+  ApplyGammaLocked(img, w, h);
   return img;
 }
 
@@ -286,6 +302,8 @@ static void DiffuseColorValue(uint8_t* image, int w, int h, int x, int y) {
     color2_r = color2_r * 16 / color2_count;
     color2_g = color2_g * 16 / color2_count;
     color2_b = color2_b * 16 / color2_count;
+    // Use 1/2 of the nearest colors, and 1/4 of the next ones.
+    // TODO(igorc): Experiment with 1/4 for nearest.
     int fraction = 1 << d;
     color_r = (color_r * (fraction - 1) + color2_r) / fraction;
     color_g = (color_g * (fraction - 1) + color2_g) / fraction;
@@ -296,9 +314,8 @@ static void DiffuseColorValue(uint8_t* image, int w, int h, int x, int y) {
   image[color_pos + 2] = std::min(0xFF, std::max(0, color_b / 16)) & 0xFF;
 }
 
-TclRenderer::Strands* TclRenderer::DiffuseAndConvertImageToStrands(
+TclRenderer::Strands* TclRenderer::DiffuseAndConvertImageToStrandsLocked(
     uint8_t* image_data) {
-  Autolock l(lock_);
   int len = width_ * height_ * 3;
   Strands* strands = new Strands();
   for (int strand_id  = 0; strand_id < STRAND_COUNT; strand_id++) {
@@ -329,10 +346,10 @@ TclRenderer::Strands* TclRenderer::DiffuseAndConvertImageToStrands(
   return strands;
 }
 
-void TclRenderer::ApplyGammaLocked(uint8_t* img) {
-  for (int y = 0; y < height_; y++) {
-    for (int x = 0; x < width_; x++) {
-      int i = (y * width_ + x) * 3;
+void TclRenderer::ApplyGammaLocked(uint8_t* img, int w, int h) {
+  for (int y = 0; y < h; y++) {
+    for (int x = 0; x < w; x++) {
+      int i = (y * w + x) * 3;
       img[i] = gamma_r_[img[i]];
       img[i + 1] = gamma_g_[img[i + 1]];
       img[i + 2] = gamma_b_[img[i + 2]];
@@ -428,7 +445,8 @@ void TclRenderer::Run() {
       continue;
     }
 
-    WorkItem item(false, NULL, NULL, 0, 0);
+    uint8_t* frame_data = NULL;
+    WorkItem item(false, NULL, 0, 0);
     {
       Autolock l(lock_);
       while (!is_shutting_down_) {
@@ -442,21 +460,28 @@ void TclRenderer::Run() {
 
       if (item.needs_reset_) {
         require_reset_ = true;
-        if (item.frame_data_)
-          delete[] item.frame_data_;
-        if (item.img_)
-          delete[] item.img_;
+        delete[] item.img_;
         continue;
       }
 
-      if (last_image_)
-        delete[] last_image_;
-      last_image_ = item.img_;
-      last_image_id_ = item.id_;
+      if (item.img_) {
+        ApplyEffectLocked(item.img_);
+        Strands* strands = DiffuseAndConvertImageToStrandsLocked(item.img_);
+        if (strands) {
+          frame_data = ConvertStrandsToFrame(strands);
+          delete strands;
+        }
+
+        memcpy(last_image_, item.img_, width_ * height_ * 3);
+        last_image_id_ = item.id_;
+        has_last_image_ = true;
+        delete[] item.img_;
+        item.img_ = NULL;
+      }
     }
 
-    if (item.frame_data_) {
-      if (SendFrame(item.frame_data_)) {
+    if (frame_data) {
+      if (SendFrame(frame_data)) {
         Autolock l(lock_);
         frame_delays_.push_back(GetCurrentMillis() - item.time_);
         // fprintf(stderr, "Sent frame for %ld at %ld\n", item.time_, GetCurrentMillis());
@@ -464,7 +489,7 @@ void TclRenderer::Run() {
         fprintf(stderr, "Scheduling reset after failed frame\n");
         require_reset_ = true;
       }
-      delete[] item.frame_data_;
+      delete[] frame_data;
     }
   }
 

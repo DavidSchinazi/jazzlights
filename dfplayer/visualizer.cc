@@ -417,25 +417,6 @@ bool Visualizer::RenderFrameLocked() {
   return false;
 }
 
-/*uint8_t* ScaleImage(uint8_t* src, int src_w, int src_h, int dst_w, int dst_h) {
-  double w_scale = ((double) dst_w) / src_w;
-  double h_scale = ((double) dst_h) / src_h;
-  int len = dst_w * dst_h * 3;
-  uint8_t* data = new uint8_t[len];
-  for (int x = 0; x < dst_w; x++) {
-    for (int y = 0; y < dst_h; y++) {
-      int x2 = std::min((int) (((double) x) / w_scale), src_w - 1);
-      int y2 = std::min((int) (((double) y) / h_scale), src_h - 1);
-      int dst_idx = (y * dst_w + x) * 3;
-      int src_idx = (y2 * src_w + x2) * 3;
-      data[dst_idx] = src[src_idx];
-      data[dst_idx+1] = src[src_idx+1];
-      data[dst_idx+2] = src[src_idx+2];
-    }
-  }
-  return data;
-}*/
-
 void Visualizer::PostTclFrameLocked() {
   TclRenderer* tcl = TclRenderer::GetByControllerId(1);
   if (!tcl) {

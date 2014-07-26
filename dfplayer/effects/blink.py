@@ -1,22 +1,21 @@
 # -*- coding: utf-8 -*-
 
-from ..effect import FixedDurationEffect, register
+from ..effect import Effect, register
 
-class Blink(FixedDurationEffect):
+class Blink(Effect):
 
   def __init__(self, duration=60, fgcolor='orange', bgcolor='grey', freq=8):
-    FixedDurationEffect.__init__(self, duration=duration)
+    Effect.__init__(self, duration=duration)
     self._fgcolor = fgcolor
     self._bgcolor = bgcolor
     self._freq = freq
 
-  def _apply(self, frame, elapsed):
-    (w, h) = frame.size
+  def get_image(self, elapsed):
     phase = int(elapsed * self._freq) % 2
     if phase:
-      frame.paste(self._fgcolor, (0, 0, w, h))
+      return self._create_image(self._fgcolor, 255)
     else:
-      frame.paste(self._bgcolor, (0, 0, w, h))
+      return self._create_image(self._bgcolor, 255)
 
 
 register('blink', Blink)

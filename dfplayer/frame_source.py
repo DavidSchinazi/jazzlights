@@ -7,7 +7,6 @@ import os
 
 from PIL import Image
 
-from .effect import load as load_effect
 from .util import get_time_millis
 
 
@@ -30,17 +29,10 @@ class FrameSource(object):
     self._frame_width = frame_width
     self._frame_height = frame_height
     self._clips_dir = clips_dir
-    self._effect = None
     self._tcl = tcl
 
     self._prefetch_size = fps / 2
     self._clear_cache('')
-
-  def play_effect(self, name, **kwargs):
-    self._effect = load_effect(name, **kwargs)
-
-  def stop_effect(self):
-    self._effect = None
 
   def prefetch(self, clip_name, elapsed_sec):
     baseline_ms = get_time_millis()
@@ -129,11 +121,6 @@ class FrameSource(object):
         src_img.size[1] != self._frame_height):
       print 'Unexpected image size for %s = %s' % (path, [src_img.size])
       return None
-
-    if self._effect is not None:
-      # TODO(igorc): Do not transpose text effect.
-      if not self._effect(src_img, current_ms):
-        self._effect = None
 
     if self._screen_width / self._frame_width == 2:
       # Pre-split images, just copy them twice.
