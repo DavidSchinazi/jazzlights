@@ -154,7 +154,7 @@ class TclRenderer {
   uint8_t* CreateAdjustedImage(Bytes* bytes);
   void ApplyGammaLocked(uint8_t* img);
 
-  Strands* ConvertImageToStrands(uint8_t* image_data);
+  Strands* DiffuseAndConvertImageToStrands(uint8_t* image_data);
   void ScheduleStrandsAt(
       Strands* strands, uint8_t* img, int id, uint64_t time);
 

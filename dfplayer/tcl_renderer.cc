@@ -168,7 +168,7 @@ void TclRenderer::ScheduleImageAt(
   uint8_t* img = CreateAdjustedImage(bytes);
   if (!img)
     return;
-  Strands* strands = ConvertImageToStrands(img);
+  Strands* strands = DiffuseAndConvertImageToStrands(img);
   if (!strands) {
     delete[] img;
     return;
@@ -214,7 +214,7 @@ std::vector<int> TclRenderer::GetFrameDataForTest(Bytes* bytes) {
   uint8_t* img = CreateAdjustedImage(bytes);
   if (!img)
     return result;
-  Strands* strands = ConvertImageToStrands(img);
+  Strands* strands = DiffuseAndConvertImageToStrands(img);
   if (!strands) {
     delete[] img;
     return result;
@@ -247,26 +247,79 @@ int TclRenderer::GetQueueSize() {
   return queue_.size();
 }
 
-TclRenderer::Strands* TclRenderer::ConvertImageToStrands(uint8_t* image_data) {
+#define ADD_IMG_BYTE()                           \
+  if (x1 >= 0 && x1 < w && y1 >= 0 && y1 < h) {  \
+    int pos2 = (y1 * w + x1) * 3;                \
+    color2_r += image[pos2];                     \
+    color2_g += image[pos2 + 1];                 \
+    color2_b += image[pos2 + 2];                 \
+    color2_count++;                              \
+  }
+
+static void DiffuseColorValue(uint8_t* image, int w, int h, int x, int y) {
+  int color_pos = (y * w + x) * 3;
+  int32_t color_r = 16 * image[color_pos];
+  int32_t color_g = 16 * image[color_pos + 1];
+  int32_t color_b = 16 * image[color_pos + 2];
+  for (int d = 1; d <= 2; d++) {
+    int32_t color2_r = 0;
+    int32_t color2_g = 0;
+    int32_t color2_b = 0;
+    int color2_count = 0;
+    int x1 = 0;
+    int y1 = y - d;
+    for (x1 = x - d; x1 <= x + d; x1++) {
+      ADD_IMG_BYTE();
+    }
+    y1 = y + d;
+    for (x1 = x - d; x1 <= x + d; x1++) {
+      ADD_IMG_BYTE();
+    }
+    x1 = x + d;
+    for (y1 = y - d + 1; y1 <= y + d - 1; y1++) {
+      ADD_IMG_BYTE();
+    }
+    x1 = x - d;
+    for (y1 = y - d + 1; y1 <= y + d - 1; y1++) {
+      ADD_IMG_BYTE();
+    }
+    color2_r = color2_r * 16 / color2_count;
+    color2_g = color2_g * 16 / color2_count;
+    color2_b = color2_b * 16 / color2_count;
+    int fraction = 1 << d;
+    color_r = (color_r * (fraction - 1) + color2_r) / fraction;
+    color_g = (color_g * (fraction - 1) + color2_g) / fraction;
+    color_b = (color_b * (fraction - 1) + color2_b) / fraction;
+  }
+  image[color_pos] = std::min(0xFF, std::max(0, color_r / 16)) & 0xFF;
+  image[color_pos + 1] = std::min(0xFF, std::max(0, color_g / 16)) & 0xFF;
+  image[color_pos + 2] = std::min(0xFF, std::max(0, color_b / 16)) & 0xFF;
+}
+
+TclRenderer::Strands* TclRenderer::DiffuseAndConvertImageToStrands(
+    uint8_t* image_data) {
   Autolock l(lock_);
   int len = width_ * height_ * 3;
   Strands* strands = new Strands();
   for (int strand_id  = 0; strand_id < STRAND_COUNT; strand_id++) {
-    int* x = layout_.x_[strand_id];
-    int* y = layout_.y_[strand_id];
+    int* x_arr = layout_.x_[strand_id];
+    int* y_arr = layout_.y_[strand_id];
     int strand_len = layout_.lengths_[strand_id];
     uint8_t* dst_colors = strands->colors[strand_id];
     for (int i = 0; i < strand_len; i++) {
-      int color_idx = (y[i] * width_ + x[i]) * 3;
+      int x = x_arr[i];
+      int y = y_arr[i];
+      int color_idx = (y * width_ + x) * 3;
       if ((color_idx + 3) > len) {
         fprintf(stderr,
                 "Not enough data in image. Accessing %d, len=%d, strand=%d, "
                 "led=%d, x=%d, y=%d\n",
-                color_idx, len, strand_id, i, x[i], y[i]);
+                color_idx, len, strand_id, i, x, y);
         delete strands;
         return NULL;
       }
       int dst_idx = i * 3;
+      DiffuseColorValue(image_data, width_, height_, x, y);
       dst_colors[dst_idx] = image_data[color_idx];
       dst_colors[dst_idx + 1] = image_data[color_idx + 1];
       dst_colors[dst_idx + 2] = image_data[color_idx + 2];

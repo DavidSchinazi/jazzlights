@@ -152,6 +152,8 @@ class Player(object):
         else:
             lines.append('Playing video (frame %s)' % (
                 self._tcl.get_last_image_id()))
+        # TODO(igorc): Show CPU, virtual and resident memory sizes
+        # resource.getrusage(resource.RUSAGE_SELF)
         return lines
 
     def get_frame_size(self):
