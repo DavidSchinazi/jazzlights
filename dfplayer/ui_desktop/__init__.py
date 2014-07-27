@@ -16,6 +16,8 @@ WIN_WIDTH = 1024
 WIN_HEIGHT = 768
 FPS = 15
 
+_SPLIT_IMAGES = True
+
 
 # TODO(igorc): It would be nice to self-resize, but the window keeps growing.
 # http://stackoverflow.com/questions/22838255
@@ -49,21 +51,38 @@ class PlayerApp(Frame):
 
         self.player = player
 
+        frame_size = self.player.get_frame_size()
+        self._led_mask_t = self.create_led_mask(200)
+        self._led_mask_o = self.create_led_mask(255)
+        self._led_mask_t = self._led_mask_t.resize(frame_size, Image.NEAREST)
+        self._led_mask_o = self._led_mask_o.resize(frame_size, Image.NEAREST)
+
+        self._img_mode = 0
+        if _SPLIT_IMAGES:
+            self._img_size = (frame_size[0] / 2, frame_size[1])
+            self._img_mode_count = 4
+        else:
+            self._img_size = frame_size
+            self._img_mode_count = 2
+
         # Scale the size to with the entire width of our window.
         # TODO(igorc): Avoid scaling? Or auto-rescale when window resizes.
-        img_size = self.player.get_frame_size()
-        img_size = (WIN_WIDTH,
-            int(round((float(WIN_WIDTH) / img_size[0]) * img_size[1])))
+        self._img_size = (WIN_WIDTH,
+            int(round(
+                (float(WIN_WIDTH) / self._img_size[0]) * self._img_size[1])))
 
-        self._led_mask1 = self.create_led_mask(200)
-        self._led_mask2 = self.create_led_mask(255)
-        self._led_mask1 = self._led_mask1.resize(img_size, Image.NEAREST)
-        self._led_mask2 = self._led_mask2.resize(img_size, Image.NEAREST)
-        self._led_mask = self._led_mask1
-
-        self._img = ImageTk.PhotoImage('RGBA', img_size)
-        self._canvas.create_image(
-            WIN_WIDTH / 2, WIN_HEIGHT / 2, image=self._img)
+        self._img1 = ImageTk.PhotoImage('RGBA', self._img_size)
+        if _SPLIT_IMAGES:
+            self._img2 = ImageTk.PhotoImage('RGBA', self._img_size)
+            self._canvas.create_image(
+                WIN_WIDTH / 2, WIN_HEIGHT * 2 / 3 - WIN_HEIGHT / 4,
+                image=self._img1)
+            self._canvas.create_image(
+                WIN_WIDTH / 2, WIN_HEIGHT * 2 / 3 + WIN_HEIGHT / 12,
+                image=self._img2)
+        else:
+            self._canvas.create_image(
+                WIN_WIDTH / 2, WIN_HEIGHT / 2, image=self._img1)
 
         self.root.bind('q', lambda e: player.volume_up())
         self.root.bind('a', lambda e: player.volume_down())
@@ -95,10 +114,9 @@ class PlayerApp(Frame):
         self.player.effect = effect    
 
     def switch_mask(self):
-        if self._led_mask == self._led_mask1:
-            self._led_mask = self._led_mask2
-        else:
-            self._led_mask = self._led_mask1
+        self._img_mode += 1
+        if self._img_mode == self._img_mode_count:
+            self._img_mode = 0
 
     def quit(self):
         self.running = False
@@ -113,15 +131,40 @@ class PlayerApp(Frame):
         img_bytes = str(bytearray(img_bytes))
         return Image.frombytes('RGBA', size, img_bytes)
 
+    def _paste_frame(self, frame):
+        frame_size = self._led_mask_t.size
+        frame1 = frame.copy()
+        if not _SPLIT_IMAGES:
+            frame1.paste(
+                '#000000', (0, 0, frame_size[0], frame_size[1]),
+                self._led_mask_o if self._img_mode else self._led_mask_t)
+            self._img1.paste(frame1.resize(self._img_size))
+            return
+
+        frame2 = frame.copy()
+        frame1.paste(
+            '#000000', (0, 0, frame_size[0], frame_size[1]), self._led_mask_o)
+        frame2.paste(
+            '#000000', (0, 0, frame_size[0], frame_size[1]), self._led_mask_t)
+
+        if (self._img_mode & 2) == 0:
+            rect = (0, 0, frame_size[0] / 2, frame_size[1])
+        else:
+            rect = (frame_size[0] / 2, 0, frame_size[0], frame_size[1])
+
+        if (self._img_mode & 1) == 1:
+            frame2.paste('black')
+
+        frame1 = frame1.crop(rect)
+        frame2 = frame2.crop(rect)
+        self._img1.paste(frame1.resize(self._img_size))
+        self._img2.paste(frame2.resize(self._img_size))
+
     def update(self):
         try:
             frame = self.player.get_frame_image()
             if frame:
-                frame = frame.resize(self._led_mask.size)
-                frame.paste("#000000",
-                    (0, 0, self._led_mask.size[0], self._led_mask.size[1]),
-                    self._led_mask)
-                self._img.paste(frame)
+                self._paste_frame(frame)
             status_lines = self.player.get_status_lines()
             self._canvas.itemconfig(
                 self._main_label, text='\n'.join(status_lines))

@@ -357,7 +357,7 @@ void Visualizer::CreateProjectM() {
   settings.presetURL = preset_dir_;
   settings.titleFontURL = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf";
   settings.menuFontURL = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf";
-  settings.beatSensitivity = 50;
+  settings.beatSensitivity = 10;
   settings.aspectCorrection = 1;
   // Preset duration is based on gaussian distribution
   // with mean of |presetDuration| and sigma of |easterEgg|.

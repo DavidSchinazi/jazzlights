@@ -85,7 +85,7 @@ class Player(object):
         self.playlist = []
 
         self._target_gamma = 2.4
-        self._visualization_volume = 2.0
+        self._visualization_volume = 2.3
         self._seek_time = None
         self._frame = None
         self._effect = None
