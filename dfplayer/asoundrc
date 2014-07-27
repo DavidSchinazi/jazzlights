@@ -61,6 +61,13 @@ pcm._int_df_loopback_hw_out {
   device 0
 }
 
+# Input device that uses line input and
+# adjusts sampling rate.
+pcm.df_line_in {
+  type plug
+  slave.pcm "hw:0,0"
+}
+
 #pcm.df_real_device {
 #  type dmix
 #  ipc_key 1024

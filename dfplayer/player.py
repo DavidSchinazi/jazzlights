@@ -51,6 +51,9 @@ _PRESET_DIR = 'projectm/presets'
 #_PRESET_DIR = 'projectm/presets_yin'
 _PRESET_DURATION = 10000
 
+_SOUND_INPUT_LOOPBACK = 'df_audio'
+_SOUND_INPUT_LINE_IN = 'df_line_in'
+
 # See http://manpages.ubuntu.com/manpages/lucid/man5/mpd.conf.5.html
 MPD_CONFIG_TPL = '''
 music_directory     "%(CLIPS_DIR)s"
@@ -72,14 +75,23 @@ audio_output {
 
 class Player(object):
 
-    def __init__(self, playlist):
+    def __init__(self, playlist, line_in):
         self._update_card_id()
 
+        self._line_in = line_in
+        if line_in:
+            self._sound_input = _SOUND_INPUT_LINE_IN
+        else:
+            self._sound_input = _SOUND_INPUT_LOOPBACK
+
+        # Call start_mpd even with line-in to allow MPD to kill itself.
         self._start_mpd()
+
         self.lock = RLock()
-        with self.lock:
-            self.mpd = mpd.MPDClient()
-            self.mpd.connect('localhost', MPD_PORT)
+        if not self._line_in:
+            with self.lock:
+                self.mpd = mpd.MPDClient()
+                self.mpd.connect('localhost', MPD_PORT)
 
         self._playlist_name = playlist
         self.playlist = []
@@ -105,7 +117,11 @@ class Player(object):
         self._use_visualization = False
         self._visualizer = None
 
-        self._load_playlist()
+        if self._line_in:
+            self.toggle_visualization()
+        else:
+            self._load_playlist()
+
         self._fetch_state()
 
     def disable_reset(self):
@@ -145,11 +161,14 @@ class Player(object):
             elapsed_time = self.elapsed_time
         elapsed_sec = int(elapsed_time)
         lines = []
-        lines.append('%s / %s / %02d:%02d' % (
-            self.status.upper(), self.clip_name,
-            elapsed_sec / 60, elapsed_sec % 60))
-        lines.append('Soft Vol = %s, Gamma = %s' % (
-            self._volume, self._target_gamma))
+        if self._line_in:
+            lines.append('Line In, Gamma = %.1f' % (self._target_gamma))
+        else:
+            lines.append('%s / %s / %02d:%02d' % (
+                self.status.upper(), self.clip_name,
+                elapsed_sec / 60, elapsed_sec % 60))
+            lines.append('Soft Vol = %s, Gamma = %.1f' % (
+                self._volume, self._target_gamma))
         if self._use_visualization:
             lines.append(self._visualizer.GetCurrentPresetNameProgress())
             lines.append('Sound RMS = %.3f, Vol Mult = %.2f' % (
@@ -249,6 +268,8 @@ class Player(object):
         self._fetch_playlist(True)
 
     def _read_state(self):
+        if self._line_in:
+            return None
         with self.lock:
             try:
                 return self.mpd.status()
@@ -264,6 +285,13 @@ class Player(object):
         # TODO(igorc): Add "mpd" prefix to all mpd-related state vars.
         s = self._read_state()
         if not s:
+            self._mpd_state_ts = 0
+            self._volume = 0
+            self._seek_time = None
+            self.status = 'unknown'
+            self.clip_name = None
+            self._mpd_elapsed_time = 0
+            self._songid = 0
             return
 
         self._mpd_state_ts = time.time()
@@ -289,8 +317,6 @@ class Player(object):
             self._mpd_elapsed_time = float(s['elapsed'])
 
         # print 'MPD status', s
-
-        # self._fetch_playlist(False)
 
     def _config_mpd(self):
         for d in (MPD_DIR, CLIPS_DIR, PLAYLISTS_DIR):
@@ -371,6 +397,10 @@ class Player(object):
     def _start_mpd(self):
         self._config_mpd()
         self._stop_mpd()
+
+        if self._line_in:
+            return
+
         logging.info('Starting mpd')
 
         if os.path.exists(MPD_DB_FILE):
@@ -392,6 +422,8 @@ class Player(object):
 
     @volume.setter
     def volume(self, value):
+        if self._line_in:
+            return
         if value < 0:
             value = 0
         elif value > 1:
@@ -408,6 +440,8 @@ class Player(object):
         self.volume = self.volume - 0.05
 
     def play(self, clip_idx):
+        if self._line_in:
+            return
         with self.lock:
             if len(self.playlist) < 1:
                 logging.error('Playlist is empty')
@@ -423,18 +457,26 @@ class Player(object):
             self.resume()
 
     def pause(self):
+        if self._line_in:
+            return
         with self.lock:
             self.mpd.pause(1)
 
     def resume(self):
+        if self._line_in:
+            return
         with self.lock:
             self.mpd.pause(0)
 
     def next(self):
+        if self._line_in:
+            return
         with self.lock:
             self.mpd.next()
 
     def prev(self):
+        if self._line_in:
+            return
         with self.lock:
             self.mpd.previous()
 
@@ -445,6 +487,8 @@ class Player(object):
         self.skip(-20)
 
     def skip(self, seconds):
+        if self._line_in:
+            return
         if self.status == 'idle':
             return
         if self._seek_time:
@@ -470,7 +514,7 @@ class Player(object):
             self._visualizer.SetVolumeMultiplier(self._visualization_volume)
             self._visualizer.StartMessageLoop()
         if self._use_visualization:
-            self._visualizer.UseAlsa('df_audio')
+            self._visualizer.UseAlsa(self._sound_input)
         else:
             self._visualizer.UseAlsa('')
 

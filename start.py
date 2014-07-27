@@ -11,6 +11,7 @@ def main():
   arg_parser = argparse.ArgumentParser(description='Start player')
   arg_parser.add_argument('--gdb', action='store_true')
   arg_parser.add_argument('--no-reset', action='store_true')
+  arg_parser.add_argument('--line-in', action='store_true')
   args = arg_parser.parse_args()
 
   shutil.copyfile(
@@ -19,6 +20,9 @@ def main():
   params = ['env/bin/dfplayer', '--listen=0.0.0.0:8080']
   if args.no_reset:
     params.append('--no-reset')
+  if args.line_in:
+    params.append('--line-in')
+
   try:
     if args.gdb:
       subprocess.check_call(

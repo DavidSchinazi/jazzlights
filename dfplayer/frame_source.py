@@ -107,10 +107,17 @@ class FrameSource(object):
       return frame.image
     return None
 
+  def has_frames(self):
+    return os.path.exists(self._clips_dir + '/%s' % self._clip_name)
+
   def _load_frame(self, frame_num, timestamp, current_ms):
     path = self._clips_dir + '/%s/frame%06d.jpg' % (
         self._clip_name, frame_num + 1)
     if not os.path.exists(path):
+      if not self.has_frames():
+        img = Image.new(
+            'RGBA', (self._screen_width, self._frame_height), (0, 0, 255, 0))
+        return Frame(timestamp, frame_num, current_ms, img)
       print 'No file', path
       return None
 
