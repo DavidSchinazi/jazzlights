@@ -45,6 +45,7 @@ class Visualizer {
 
   Bytes* GetAndClearLastImageForTest();
 
+  void SetVolumeMultiplier(double value);
   double GetLastVolumeRms();
 
   int GetAndClearOverrunCount();
@@ -100,6 +101,7 @@ class Visualizer {
   uint32_t image_buffer_size_;
   bool has_image_;
   uint64_t last_render_time_;
+  double volume_multiplier_;
   double last_volume_rms_;
   uint32_t ms_per_frame_;
   int pcm_samples_per_frame_;

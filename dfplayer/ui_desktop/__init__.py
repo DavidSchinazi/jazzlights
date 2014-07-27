@@ -70,6 +70,8 @@ class PlayerApp(Frame):
         self.root.bind('m', lambda e: self.switch_mask())
         self.root.bind('g', lambda e: player.gamma_up())
         self.root.bind('b', lambda e: player.gamma_down())
+        self.root.bind('h', lambda e: player.visualization_volume_up())
+        self.root.bind('n', lambda e: player.visualization_volume_down())
         self.root.bind('v', lambda e: player.toggle_visualization())
         self.root.bind('o', lambda e: player.select_next_preset(False))
         self.root.bind('p', lambda e: player.select_next_preset(True))

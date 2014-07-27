@@ -32,7 +32,8 @@ Visualizer::Visualizer(
     std::string preset_dir, int preset_duration)
     : width_(width), height_(height), texsize_(texsize), fps_(fps),
       alsa_handle_(NULL), projectm_(NULL), projectm_tex_(0),
-      total_overrun_count_(0), has_image_(false), last_volume_rms_(0),
+      total_overrun_count_(0), has_image_(false),
+      volume_multiplier_(1), last_volume_rms_(0),
       is_shutting_down_(false), has_started_thread_(false),
       preset_dir_(preset_dir), preset_duration_(preset_duration),
       current_preset_index_(-1),
@@ -157,6 +158,11 @@ Bytes* Visualizer::GetAndClearLastImageForTest() {
   return new Bytes(image_buffer_, image_buffer_size_);
 }
 
+void Visualizer::SetVolumeMultiplier(double value) {
+  Autolock l(lock_);
+  volume_multiplier_ = value;
+}
+
 double Visualizer::GetLastVolumeRms() {
   Autolock l(lock_);
   return last_volume_rms_;
@@ -179,12 +185,35 @@ void Visualizer::CloseInputLocked() {
   return buf;
 }*/
 
+static void AdjustVolume(
+    int16_t* pcm_buffer, int sample_count, double volume_multiplier) {
+  int32_t mult = (int32_t) round(volume_multiplier * 1000.0);
+  if (mult == 1000)
+    return;
+  for (int i = 0; i < sample_count; i++) {
+    int32_t s_l = ((int32_t) pcm_buffer[i * 2]) * mult;
+    int32_t s_r = ((int32_t) pcm_buffer[i * 2 + 1]) * mult;
+    if (s_l >= 32768000) {
+      s_l = 32767000;
+    } else if (s_l <= -32768000) {
+      s_l = -32767000;
+    }
+    if (s_r >= 32768000) {
+      s_r = 32767000;
+    } else if (s_r <= -32768000) {
+      s_r = -32767000;
+    }
+    pcm_buffer[i * 2] = (int16_t) (s_l / 1000);
+    pcm_buffer[i * 2 + 1] = (int16_t) (s_r / 1000);
+  }
+}
+
 static double CalcVolumeRms(int16_t* pcm_buffer, int sample_count) {
   double sum_l = 0;
   double sum_r = 0;
   for (int i = 0; i < sample_count; i++) {
-    double s_l = ((double) pcm_buffer[i * 2]) / 16384.0;
-    double s_r = ((double) pcm_buffer[i * 2 + 1]) / 16384.0;
+    double s_l = ((double) pcm_buffer[i * 2]) / 32768.0;
+    double s_r = ((double) pcm_buffer[i * 2 + 1]) / 32768.0;
     sum_l += s_l * s_l;
     sum_r += s_r * s_r;
   }
@@ -219,6 +248,8 @@ bool Visualizer::TransferPcmDataLocked() {
       break;
     sample_count += samples;
   }
+
+  AdjustVolume(pcm_buffer_, sample_count, volume_multiplier_);
 
   last_volume_rms_ = CalcVolumeRms(pcm_buffer_, sample_count);
 

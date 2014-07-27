@@ -85,6 +85,7 @@ class Player(object):
         self.playlist = []
 
         self._target_gamma = 2.4
+        self._visualization_volume = 2.0
         self._seek_time = None
         self._frame = None
         self._effect = None
@@ -151,7 +152,9 @@ class Player(object):
             self._volume, self._target_gamma))
         if self._use_visualization:
             lines.append(self._visualizer.GetCurrentPresetNameProgress())
-            lines.append('Sound RMS = %.3f' % self._visualizer.GetLastVolumeRms())
+            lines.append('Sound RMS = %.3f, Vol Mult = %.2f' % (
+                self._visualizer.GetLastVolumeRms(),
+                self._visualization_volume))
         else:
             lines.append('Playing video (frame %s)' % (
                 self._tcl.get_last_image_id()))
@@ -176,6 +179,22 @@ class Player(object):
             self._target_gamma = 0.1
         print 'Setting gamma to %s' % self._target_gamma
         self._tcl.set_gamma(self._target_gamma)
+
+    def visualization_volume_up(self):
+        if not self._use_visualization:
+            return
+        self._visualization_volume += 0.1
+        print 'Setting visualization volume to %s' % self._visualization_volume
+        self._visualizer.SetVolumeMultiplier(self._visualization_volume)
+
+    def visualization_volume_down(self):
+        if not self._use_visualization:
+            return
+        self._visualization_volume -= 0.1
+        if self._visualization_volume <= 0:
+            self._visualization_volume = 0.1
+        print 'Setting visualization volume to %s' % self._visualization_volume
+        self._visualizer.SetVolumeMultiplier(self._visualization_volume)
 
     def _fetch_playlist(self, is_startup):
         if len(self.playlist) == self._target_playlist_len:
@@ -448,6 +467,7 @@ class Player(object):
             self._visualizer = Visualizer(
                 self._visualizer_size[0], self._visualizer_size[1], 256, FPS,
                 _PRESET_DIR, _PRESET_DURATION)
+            self._visualizer.SetVolumeMultiplier(self._visualization_volume)
             self._visualizer.StartMessageLoop()
         if self._use_visualization:
             self._visualizer.UseAlsa('df_audio')
