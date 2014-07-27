@@ -19,7 +19,7 @@ class TextTicker(Effect):
         int(self._height * 0.9))
     (w, h) = font.getsize(self._text)
     self._rendered_text = Image.new(
-        'RGB', (int(w * 1.6), self._height), 'black')
+        'RGBA', (int(w * 1.6), self._height), 'black')
     draw = ImageDraw.Draw(self._rendered_text)
     draw.text((int(w * 0.3), int(self._height * 0.1)),
               self._text, self._color, font=font)

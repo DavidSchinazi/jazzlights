@@ -53,21 +53,21 @@ void Bytes::SetData(void* data, int len) {
 // Resizes image using bilinear interpolation.
 uint8_t* ResizeImage(
     uint8_t* src, int src_w, int src_h, int dst_w, int dst_h) {
-  cv::Mat src_img(src_h, src_w, CV_8UC3, src);
-  cv::Mat dst_img(cv::Size(dst_w, dst_h), CV_8UC3);
+  cv::Mat src_img(src_h, src_w, CV_8UC4, src);
+  cv::Mat dst_img(cv::Size(dst_w, dst_h), CV_8UC4);
   cv::resize(src_img, dst_img, dst_img.size());
   dst_img = dst_img.clone();  // Make it contiguous
-  int dst_len = dst_w * dst_h * 3;
+  int dst_len = dst_w * dst_h * 4;
   uint8_t* dst = new uint8_t[dst_len];
   memcpy(dst, dst_img.data, dst_len);
   return dst;
 }
 
 uint8_t* FlipImage(uint8_t* src, int w, int h) {
-  cv::Mat src_img(h, w, CV_8UC3, src);
-  cv::Mat dst_img(cv::Size(w, h), CV_8UC3);
+  cv::Mat src_img(h, w, CV_8UC4, src);
+  cv::Mat dst_img(cv::Size(w, h), CV_8UC4);
   cv::flip(src_img, dst_img, 1);
-  int dst_len = w * h * 3;
+  int dst_len = w * h * 4;
   uint8_t* dst = new uint8_t[dst_len];
   memcpy(dst, dst_img.data, dst_len);
   return dst;
@@ -84,11 +84,9 @@ void PasteSubImage(
       int x2 = dst_x + x;
       if (x2 >= dst_w)
         break;
-      int src_pos = (y * src_w + x) * 3;
-      int dst_pos = (y2 * dst_w + x2) * 3;
-      dst[dst_pos] = src[src_pos];
-      dst[dst_pos + 1] = src[src_pos + 1];
-      dst[dst_pos + 2] = src[src_pos + 2];
+      int src_pos = (y * src_w + x) * 4;
+      int dst_pos = (y2 * dst_w + x2) * 4;
+      COPY_PIXEL(dst, dst_pos, src, src_pos);
     }
   }
 }

@@ -20,7 +20,7 @@ def _get_test_frame(image, use_cc_tcl):
 
 
 def _test_tcl_render():
-  image = Image.new('RGB', (FRAME_WIDTH, FRAME_HEIGHT))
+  image = Image.new('RGBA', (FRAME_WIDTH, FRAME_HEIGHT))
   image.paste('red', (0, 0, FRAME_WIDTH / 2, FRAME_HEIGHT / 2))
   data_py = _get_test_frame(image, False)
   data_cc = _get_test_frame(image, True)

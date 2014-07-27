@@ -494,7 +494,7 @@ class Player(object):
                 newimg_data = self._tcl.get_and_clear_last_image()
                 if newimg_data:
                     self._frame = Image.fromstring(
-                        'RGB', (_SCREEN_FRAME_WIDTH, FRAME_HEIGHT),
+                        'RGBA', (_SCREEN_FRAME_WIDTH, FRAME_HEIGHT),
                         newimg_data)
                 duration_ms = int(round((time.time() - start_time) * 1000))
                 self._render_durations.add(duration_ms)

@@ -11,8 +11,8 @@ class Chameleon(Effect):
 
   def get_image(self, elapsed):
     hsl = (360 * elapsed / self._duration, 1, 0.5)
-    rgb = hsl2rgb(*hsl)
-    return self._create_image(rgb, 255)
+    color = hsl2rgb(*hsl)
+    return self._create_image(color, 255)
 
 
 register('chameleon', Chameleon)

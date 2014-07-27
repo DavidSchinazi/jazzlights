@@ -25,6 +25,11 @@
     exit(-1);                                                   \
   }
 
+#define COPY_PIXEL(dst, dst_pos, src, src_pos)                  \
+  *((uint32_t*) ((uint8_t*) (dst) + (dst_pos))) =               \
+      *((uint32_t*)((uint8_t*) (src) + (src_pos)))
+
+#define PIX_LEN(w, h)   ((w) * (h) * 4)
 
 class Autolock {
  public:

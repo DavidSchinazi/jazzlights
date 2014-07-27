@@ -35,7 +35,7 @@ class TclRenderer(object):
   """To use this class:
        renderer = TclRenderer(controller_id, width, height, layout)
        renderer.connect()
-       # 'image_colors' has tuples with 3 RGB bytes for each pixel,
+       # 'image_colors' has tuples with 4 RGBA bytes for each pixel,
        # with 'height' number of sequential rows, each row having
        # length of 'width' pixels.
        renderer.send_frame(image_color)

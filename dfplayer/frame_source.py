@@ -125,7 +125,7 @@ class FrameSource(object):
     if self._screen_width / self._frame_width == 2:
       # Pre-split images, just copy them twice.
       frame_img = Image.new(
-          'RGB', (self._screen_width, self._frame_height))
+          'RGBA', (self._screen_width, self._frame_height))
       frame_img.paste(src_img, (self._frame_width, 0))
       flip_img = src_img.transpose(Image.FLIP_LEFT_RIGHT)
       frame_img.paste(flip_img, (0, 0))
@@ -133,7 +133,7 @@ class FrameSource(object):
       sub_img = src_img.resize((src_img.size[0] / 2, src_img.size[1]))
       #sub_img = src_img.crop((
       #    src_img.size[0] / 4, 0, src_img.size[0] * 3 / 4, src_img.size[1]))
-      frame_img = Image.new('RGB', src_img.size)
+      frame_img = Image.new('RGBA', src_img.size)
       frame_img.paste(sub_img, (0, 0))
       frame_img.paste(sub_img, (sub_img.size[0], 0))
 

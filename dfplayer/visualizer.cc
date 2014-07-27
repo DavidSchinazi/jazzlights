@@ -42,7 +42,7 @@ Visualizer::Visualizer(
 
   pcm_buffer_ = new int16_t[PCM::maxsamples * 2];
 
-  image_buffer_size_ = texsize_ * texsize_ * 3;
+  image_buffer_size_ = PIX_LEN(texsize_, texsize_);
   image_buffer_ = new uint8_t[image_buffer_size_];
 
   pcm_samples_per_frame_ = std::min(
@@ -386,7 +386,7 @@ bool Visualizer::RenderFrameLocked() {
 
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glPixelStorei(GL_PACK_ALIGNMENT, 1);
-  glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, image_buffer_);
+  glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_buffer_);
 
   err = glGetError();
   glBindTexture(GL_TEXTURE_2D, 0);
@@ -425,27 +425,22 @@ void Visualizer::PostTclFrameLocked() {
   }
 
   int dst_w = tcl->GetWidth();
-  int dst_h = tcl->GetHeight();
   int src_w = dst_w / 2;
-  uint8_t* src_img = ResizeImage(
-      image_buffer_, texsize_, texsize_, src_w, dst_h);
-  // TODO(igorc): Use cv::flip(src, dst, 1)
-  int len = dst_w * dst_h * 3;
+  int height = tcl->GetHeight();
+
+  uint8_t* src_img1 = ResizeImage(
+      image_buffer_, texsize_, texsize_, src_w, height);
+  uint8_t* src_img2 = FlipImage(src_img1, src_w, height);
+
+  int len = PIX_LEN(dst_w, height);
   uint8_t* dst = new uint8_t[len];
-  for (int y = 0; y < dst_h; y++) {
-    for (int x = 0; x < src_w; x++) {
-      int src_idx = (y * src_w + x) * 3;
-      int dst_idx = (y * dst_w + x) * 3;
-      dst[dst_idx] = src_img[src_idx];
-      dst[dst_idx + 1] = src_img[src_idx + 1];
-      dst[dst_idx + 2] = src_img[src_idx + 2];
-      dst_idx = (y * dst_w + (dst_w - x - 1)) * 3;
-      dst[dst_idx] = src_img[src_idx];
-      dst[dst_idx + 1] = src_img[src_idx + 1];
-      dst[dst_idx + 2] = src_img[src_idx + 2];
-    }
-  }
-  delete[] src_img;
+  PasteSubImage(src_img1, src_w, height,
+      dst, 0, 0, dst_w, height);
+  PasteSubImage(src_img2, src_w, height,
+      dst, src_w, 0, dst_w, height);
+
+  delete[] src_img1;
+  delete[] src_img2;
 
   AdjustableTime now;
   Bytes* bytes = new Bytes(dst, len);

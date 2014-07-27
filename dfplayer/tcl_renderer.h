@@ -47,7 +47,7 @@ struct Layout {
 // To use this class:
 //   renderer = new TclRenderer(controller_id, width, height, gamma);
 //   renderer->SetLayout(layout);
-//   // 'image_colors' has tuples with 3 RGB bytes for each pixel,
+//   // 'image_colors' has tuples with 4 RGBA bytes for each pixel,
 //   //  with 'height' number of sequential rows, each row having
 //   // length of 'width' pixels.
 //   renderer->ScheduleImage(image_data, time);

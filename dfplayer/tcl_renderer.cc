@@ -59,7 +59,7 @@ TclRenderer::TclRenderer(
       frames_sent_after_reply_(0) {
   SetGamma(gamma);
   all_renderers_.push_back(this);
-  last_image_ = new uint8_t[width_ * height_ * 3];
+  last_image_ = new uint8_t[PIX_LEN(width_, height_)];
 }
 
 TclRenderer::~TclRenderer() {
@@ -155,7 +155,7 @@ Bytes* TclRenderer::GetAndClearLastImage() {
   Autolock l(lock_);
   if (!has_last_image_)
     return NULL;
-  Bytes* result = new Bytes(last_image_, width_ * height_ * 3);
+  Bytes* result = new Bytes(last_image_, PIX_LEN(width_, height_));
   has_last_image_ = false;
   return result;
 }
@@ -201,7 +201,7 @@ void TclRenderer::ApplyEffectLocked(uint8_t* image) {
   if (!effect_image_)
     return;
 
-  // TODO(igorc): Switch to RGBA and implement alpha blending.
+  // TODO(igorc): Implement alpha blending.
   PasteSubImage(effect_image_, width_ / 2, height_,
       image, 0, 0, width_, height_);
 
@@ -247,7 +247,7 @@ std::vector<int> TclRenderer::GetFrameDataForTest(Bytes* bytes) {
 }
 
 uint8_t* TclRenderer::CreateAdjustedImageLocked(Bytes* bytes, int w, int h) {
-  if (bytes->GetLen() != w * h * 3) {
+  if (bytes->GetLen() != PIX_LEN(w, h)) {
     fprintf(stderr, "Unexpected image size in TCL renderer: %d\n",
             bytes->GetLen());
     return NULL;
@@ -265,7 +265,7 @@ int TclRenderer::GetQueueSize() {
 
 #define ADD_IMG_BYTE()                           \
   if (x1 >= 0 && x1 < w && y1 >= 0 && y1 < h) {  \
-    int pos2 = (y1 * w + x1) * 3;                \
+    int pos2 = (y1 * w + x1) * 4;                \
     color2_r += image[pos2];                     \
     color2_g += image[pos2 + 1];                 \
     color2_b += image[pos2 + 2];                 \
@@ -273,7 +273,7 @@ int TclRenderer::GetQueueSize() {
   }
 
 static void DiffuseColorValue(uint8_t* image, int w, int h, int x, int y) {
-  int color_pos = (y * w + x) * 3;
+  int color_pos = (y * w + x) * 4;
   int32_t color_r = 16 * image[color_pos];
   int32_t color_g = 16 * image[color_pos + 1];
   int32_t color_b = 16 * image[color_pos + 2];
@@ -316,7 +316,7 @@ static void DiffuseColorValue(uint8_t* image, int w, int h, int x, int y) {
 
 TclRenderer::Strands* TclRenderer::DiffuseAndConvertImageToStrandsLocked(
     uint8_t* image_data) {
-  int len = width_ * height_ * 3;
+  int len = PIX_LEN(width_, height_);
   Strands* strands = new Strands();
   for (int strand_id  = 0; strand_id < STRAND_COUNT; strand_id++) {
     int* x_arr = layout_.x_[strand_id];
@@ -326,8 +326,8 @@ TclRenderer::Strands* TclRenderer::DiffuseAndConvertImageToStrandsLocked(
     for (int i = 0; i < strand_len; i++) {
       int x = x_arr[i];
       int y = y_arr[i];
-      int color_idx = (y * width_ + x) * 3;
-      if ((color_idx + 3) > len) {
+      int color_idx = (y * width_ + x) * 4;
+      if ((color_idx + 4) > len) {
         fprintf(stderr,
                 "Not enough data in image. Accessing %d, len=%d, strand=%d, "
                 "led=%d, x=%d, y=%d\n",
@@ -335,8 +335,9 @@ TclRenderer::Strands* TclRenderer::DiffuseAndConvertImageToStrandsLocked(
         delete strands;
         return NULL;
       }
-      int dst_idx = i * 3;
       DiffuseColorValue(image_data, width_, height_, x, y);
+
+      int dst_idx = i * 3;  // Strands are RGB.
       dst_colors[dst_idx] = image_data[color_idx];
       dst_colors[dst_idx + 1] = image_data[color_idx + 1];
       dst_colors[dst_idx + 2] = image_data[color_idx + 2];
@@ -349,7 +350,7 @@ TclRenderer::Strands* TclRenderer::DiffuseAndConvertImageToStrandsLocked(
 void TclRenderer::ApplyGammaLocked(uint8_t* img, int w, int h) {
   for (int y = 0; y < h; y++) {
     for (int x = 0; x < w; x++) {
-      int i = (y * w + x) * 3;
+      int i = (y * w + x) * 4;
       img[i] = gamma_r_[img[i]];
       img[i + 1] = gamma_g_[img[i + 1]];
       img[i + 2] = gamma_b_[img[i + 2]];
@@ -472,7 +473,7 @@ void TclRenderer::Run() {
           delete strands;
         }
 
-        memcpy(last_image_, item.img_, width_ * height_ * 3);
+        memcpy(last_image_, item.img_, PIX_LEN(width_, height_));
         last_image_id_ = item.id_;
         has_last_image_ = true;
         delete[] item.img_;

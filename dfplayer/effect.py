@@ -42,8 +42,8 @@ class Effect(object):
       color_rgb = ImageColor.getrgb(color)
     else:
       color_rgb = color
-    return Image.new('RGB', (self._width, self._height),
-                     (color_rgb[0], color_rgb[1], color_rgb[2]))
+    return Image.new('RGBA', (self._width, self._height),
+                     (color_rgb[0], color_rgb[1], color_rgb[2], alpha))
 
   def get_image(self, elapsed_sec):
     raise Exception('Effect.get_image() needs to be implemented by a subclass')
