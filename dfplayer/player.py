@@ -147,10 +147,11 @@ class Player(object):
         lines.append('%s / %s / %02d:%02d' % (
             self.status.upper(), self.clip_name,
             elapsed_sec / 60, elapsed_sec % 60))
-        lines.append('volume = %s, gamma = %s' % (
+        lines.append('Soft Vol = %s, Gamma = %s' % (
             self._volume, self._target_gamma))
         if self._use_visualization:
             lines.append(self._visualizer.GetCurrentPresetNameProgress())
+            lines.append('Sound RMS = %.3f' % self._visualizer.GetLastVolumeRms())
         else:
             lines.append('Playing video (frame %s)' % (
                 self._tcl.get_last_image_id()))

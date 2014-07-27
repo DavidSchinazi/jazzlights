@@ -32,7 +32,7 @@ Visualizer::Visualizer(
     std::string preset_dir, int preset_duration)
     : width_(width), height_(height), texsize_(texsize), fps_(fps),
       alsa_handle_(NULL), projectm_(NULL), projectm_tex_(0),
-      total_overrun_count_(0), has_image_(false),
+      total_overrun_count_(0), has_image_(false), last_volume_rms_(0),
       is_shutting_down_(false), has_started_thread_(false),
       preset_dir_(preset_dir), preset_duration_(preset_duration),
       current_preset_index_(-1),
@@ -157,6 +157,11 @@ Bytes* Visualizer::GetAndClearLastImageForTest() {
   return new Bytes(image_buffer_, image_buffer_size_);
 }
 
+double Visualizer::GetLastVolumeRms() {
+  Autolock l(lock_);
+  return last_volume_rms_;
+}
+
 void Visualizer::CloseInputLocked() {
   if (alsa_handle_) {
     inp_alsa_cleanup(alsa_handle_);
@@ -173,6 +178,20 @@ void Visualizer::CloseInputLocked() {
   pos[0] = 0;
   return buf;
 }*/
+
+static double CalcVolumeRms(int16_t* pcm_buffer, int sample_count) {
+  double sum_l = 0;
+  double sum_r = 0;
+  for (int i = 0; i < sample_count; i++) {
+    double s_l = ((double) pcm_buffer[i * 2]) / 16384.0;
+    double s_r = ((double) pcm_buffer[i * 2 + 1]) / 16384.0;
+    sum_l += s_l * s_l;
+    sum_r += s_r * s_r;
+  }
+  sum_l = sqrt(sum_l / sample_count);
+  sum_r = sqrt(sum_r / sample_count);
+  return (sum_l + sum_r) / 2.0;
+}
 
 bool Visualizer::TransferPcmDataLocked() {
   if (!alsa_handle_) {
@@ -201,7 +220,10 @@ bool Visualizer::TransferPcmDataLocked() {
     sample_count += samples;
   }
 
-  //fprintf(stderr, "Adding %d samples\n", sample_count);
+  last_volume_rms_ = CalcVolumeRms(pcm_buffer_, sample_count);
+
+  //fprintf(stderr, "Adding %d samples, RMS=%.3f\n",
+  //    sample_count, last_volume_rms_);
   //fprintf(stderr, "Adding %d samples %s\n",
   //        sample_count, GetPcmDump(pcm_buffer_, sample_count).c_str());
 
