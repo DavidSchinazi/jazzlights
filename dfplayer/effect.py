@@ -8,6 +8,7 @@ import time
 from PIL import Image
 from PIL import ImageColor
 
+from .util import create_image
 from .util import get_time_millis
 
 _EFFECTS = {}
@@ -38,12 +39,7 @@ class Effect(object):
     return elapsed_sec
 
   def _create_image(self, color, alpha):
-    if isinstance(color, basestring):
-      color_rgb = ImageColor.getrgb(color)
-    else:
-      color_rgb = color
-    return Image.new('RGBA', (self._width, self._height),
-                     (color_rgb[0], color_rgb[1], color_rgb[2], alpha))
+    return create_image(self._width, self._height, color, alpha)
 
   def get_image(self, elapsed_sec):
     raise Exception('Effect.get_image() needs to be implemented by a subclass')

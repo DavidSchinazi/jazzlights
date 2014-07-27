@@ -73,9 +73,14 @@ uint8_t* FlipImage(uint8_t* src, int w, int h) {
   return dst;
 }
 
+#define BLEND_COLOR(f, b, a)                               \
+    (uint8_t) ( ( ((uint32_t) (a)) * (f) +                 \
+                  (255 - ((uint32_t) (a))) * (b) ) / 255 )
+
 void PasteSubImage(
     uint8_t* src, int src_w, int src_h,
-    uint8_t* dst, int dst_x, int dst_y, int dst_w, int dst_h) {
+    uint8_t* dst, int dst_x, int dst_y, int dst_w, int dst_h,
+    bool enable_alpha) {
   for (int y = 0; y < src_h; y++) {
     int y2 = dst_y + y;
     if (y2 >= dst_h)
@@ -86,7 +91,16 @@ void PasteSubImage(
         break;
       int src_pos = (y * src_w + x) * 4;
       int dst_pos = (y2 * dst_w + x2) * 4;
-      COPY_PIXEL(dst, dst_pos, src, src_pos);
+      uint8_t alpha = src[src_pos + 3];
+      if (!enable_alpha || alpha == 255) {
+        COPY_PIXEL(dst, dst_pos, src, src_pos);
+      } else if (alpha != 0) {
+        dst[dst_pos] = BLEND_COLOR(src[src_pos], dst[dst_pos], alpha);
+        dst[dst_pos + 1] = BLEND_COLOR(
+            src[src_pos + 1], dst[dst_pos + 1], alpha);
+        dst[dst_pos + 2] = BLEND_COLOR(
+            src[src_pos + 2], dst[dst_pos + 2], alpha);
+      }
     }
   }
 }

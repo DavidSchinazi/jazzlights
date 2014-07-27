@@ -177,9 +177,7 @@ void TclRenderer::ScheduleImageAt(
     return;
   }
 
-  // TODO(igorc): Recalculate time from relative to absolute.
-  uint64_t abs_time = time.time_;
-  queue_.push(WorkItem(false, img, id, abs_time));
+  queue_.push(WorkItem(false, img, id, time.time_));
   int err = pthread_cond_broadcast(&cond_);
   if (err != 0) {
     fprintf(stderr, "Unable to signal condition: %d\n", err);
@@ -201,16 +199,15 @@ void TclRenderer::ApplyEffectLocked(uint8_t* image) {
   if (!effect_image_)
     return;
 
-  // TODO(igorc): Implement alpha blending.
   PasteSubImage(effect_image_, width_ / 2, height_,
-      image, 0, 0, width_, height_);
+      image, 0, 0, width_, height_, true);
 
   uint8_t* second_image = effect_image_;
   if (effect_image_mirrored_)
     second_image = FlipImage(effect_image_, width_ / 2, height_);
 
   PasteSubImage(second_image, width_ / 2, height_,
-      image, width_ / 2, 0, width_, height_);
+      image, width_ / 2, 0, width_, height_, true);
 
   if (second_image != effect_image_)
     delete[] second_image;

@@ -8,6 +8,9 @@ import pdb
 import time
 import traceback
 
+from PIL import Image
+from PIL import ImageColor
+
 PACKAGE_DIR = os.path.abspath(os.path.dirname(__file__))
 PROJECT_DIR = os.path.dirname(PACKAGE_DIR)
 VENV_DIR = os.path.join(PROJECT_DIR, 'env')
@@ -15,6 +18,14 @@ VENV_DIR = os.path.join(PROJECT_DIR, 'env')
 
 def get_time_millis():
     return int(round(time.time() * 1000))
+
+
+def create_image(w, h, color, alpha):
+  if isinstance(color, basestring):
+    rgb = ImageColor.getrgb(color)
+  else:
+    rgb = color
+  return Image.new('RGBA', (w, h), (rgb[0], rgb[1], rgb[2], alpha))
 
 
 def hsl2rgb(H, S, L):

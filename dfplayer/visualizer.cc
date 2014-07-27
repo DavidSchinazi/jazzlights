@@ -435,9 +435,9 @@ void Visualizer::PostTclFrameLocked() {
   int len = PIX_LEN(dst_w, height);
   uint8_t* dst = new uint8_t[len];
   PasteSubImage(src_img1, src_w, height,
-      dst, 0, 0, dst_w, height);
+      dst, 0, 0, dst_w, height, false);
   PasteSubImage(src_img2, src_w, height,
-      dst, src_w, 0, dst_w, height);
+      dst, src_w, 0, dst_w, height, false);
 
   delete[] src_img1;
   delete[] src_img2;
