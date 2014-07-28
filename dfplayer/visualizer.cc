@@ -29,13 +29,15 @@ static const int kPcmSampleRate = 22050;
 
 Visualizer::Visualizer(
     int width, int height, int texsize, int fps,
-    std::string preset_dir, int preset_duration)
+    const std::string& preset_dir, const std::string& textures_dir,
+    int preset_duration)
     : width_(width), height_(height), texsize_(texsize), fps_(fps),
       alsa_handle_(NULL), projectm_(NULL), projectm_tex_(0),
       total_overrun_count_(0), has_image_(false),
       volume_multiplier_(1), last_volume_rms_(0),
       is_shutting_down_(false), has_started_thread_(false),
-      preset_dir_(preset_dir), preset_duration_(preset_duration),
+      preset_dir_(preset_dir), textures_dir_(textures_dir),
+      preset_duration_(preset_duration),
       current_preset_index_(-1),
       lock_(PTHREAD_MUTEX_INITIALIZER) {
   last_render_time_ = GetCurrentMillis();
@@ -209,6 +211,8 @@ static void AdjustVolume(
 }
 
 static double CalcVolumeRms(int16_t* pcm_buffer, int sample_count) {
+  if (sample_count == 0)
+    return 0;
   double sum_l = 0;
   double sum_r = 0;
   for (int i = 0; i < sample_count; i++) {
@@ -367,7 +371,8 @@ void Visualizer::CreateProjectM() {
   settings.smoothPresetDuration = 3;
   settings.shuffleEnabled = 0;
   settings.softCutRatingsEnabled = 0;
-  projectm_ = new projectM(settings);
+  projectm_ = new projectM(
+      settings, "dfplayer/shaders", textures_dir_, projectM::FLAG_NONE);
 
   projectm_tex_ = projectm_->initRenderToTexture();
   if (projectm_tex_ == -1 || projectm_tex_ == 0) {

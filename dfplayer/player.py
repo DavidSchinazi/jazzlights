@@ -46,9 +46,11 @@ MPD_CARD_ID = -1  # From 'aplay -l'
 CLIPS_DIR = VENV_DIR + '/clips'
 PLAYLISTS_DIR = VENV_DIR + '/playlists'
 
-_PRESET_DIR = 'projectm/presets'
-#_PRESET_DIR = 'dfplayer/presets'
-#_PRESET_DIR = 'projectm/presets_yin'
+_PRESET_DIR = ('projectm/presets', '')
+#_PRESET_DIR = ('triptonaut/presets', 'triptonaut/textures')
+#_PRESET_DIR = ('bltc21', '')
+#_PRESET_DIR = ('dfplayer/presets', '')
+#_PRESET_DIR = ('projectm/presets_yin', '')
 _PRESET_DURATION = 10000
 
 _SOUND_INPUT_LOOPBACK = 'df_audio'
@@ -510,7 +512,7 @@ class Player(object):
                 IMAGE_FRAME_WIDTH / MESH_RATIO, FRAME_HEIGHT / MESH_RATIO)
             self._visualizer = Visualizer(
                 self._visualizer_size[0], self._visualizer_size[1], 256, FPS,
-                _PRESET_DIR, _PRESET_DURATION)
+                _PRESET_DIR[0], _PRESET_DIR[1], _PRESET_DURATION)
             self._visualizer.SetVolumeMultiplier(self._visualization_volume)
             self._visualizer.StartMessageLoop()
         if self._use_visualization:

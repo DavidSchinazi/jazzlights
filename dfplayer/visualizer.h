@@ -24,7 +24,8 @@ class Visualizer {
  public:
   Visualizer(
       int width, int height, int texsize, int fps,
-      std::string preset_dir, int preset_duration);
+      const std::string& preset_dir, const std::string& textures_dir,
+      int preset_duration);
   ~Visualizer();
 
   void StartMessageLoop();
@@ -110,6 +111,7 @@ class Visualizer {
   std::deque<WorkItem*> work_items_;
   std::vector<int> frame_periods_;
   std::string preset_dir_;
+  std::string textures_dir_;
   int preset_duration_;
   std::string current_preset_;
   unsigned int current_preset_index_;
