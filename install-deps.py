@@ -23,6 +23,8 @@ _PLAYER_DEPS = [
     'libopencv-dev',
     'mpd',
     #'nvidia-current',
+    'nvidia-cg-dev',
+    'nvidia-cg-toolkit',
     'opencv-doc',
     'python-dev',
     'python-mpd',

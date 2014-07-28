@@ -47,6 +47,7 @@ CLIPS_DIR = VENV_DIR + '/clips'
 PLAYLISTS_DIR = VENV_DIR + '/playlists'
 
 _PRESET_DIR = ('projectm/presets', '')
+#_PRESET_DIR = ('projectm/presets_milkdrop_200', '')
 #_PRESET_DIR = ('triptonaut/presets', 'triptonaut/textures')
 #_PRESET_DIR = ('bltc21', '')
 #_PRESET_DIR = ('dfplayer/presets', '')
