@@ -20,6 +20,7 @@ def main():
     arg_parser = argparse.ArgumentParser(description='Start player')
     arg_parser.add_argument('--listen')
     arg_parser.add_argument('--no-reset', action='store_true')
+    arg_parser.add_argument('--disable-net', action='store_true')
     arg_parser.add_argument('--line-in', action='store_true')
     args = arg_parser.parse_args()
 
@@ -32,7 +33,7 @@ def main():
         host = '127.0.0.1'
         port = 8080
 
-    player = Player('playlist', args.line_in)
+    player = Player('playlist', args.line_in, not args.disable_net)
     if args.no_reset:
         player.disable_reset()
     player.play(0)

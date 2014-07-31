@@ -20,7 +20,7 @@ class TclRenderer(object):
   """
 
   def __init__(self, controller_id, width, height, layout_file,
-               gamma, use_cc_impl, test_mode=False):
+               gamma, use_cc_impl, enable_net, test_mode=False):
     self._layout = TclLayout(layout_file, width - 1, height - 1)
     self._use_cc_impl = use_cc_impl
     if self._use_cc_impl:
@@ -31,7 +31,7 @@ class TclRenderer(object):
       self._renderer = TclCcImpl(controller_id, width, height, layout, gamma)
       self._frame_send_duration = self._renderer.GetFrameSendDuration()
       if not test_mode:
-        self._renderer.StartMessageLoop()
+        self._renderer.StartMessageLoop(enable_net)
     else:
       self._renderer = TclPyImpl(controller_id, width, height, self._layout)
       if not test_mode:

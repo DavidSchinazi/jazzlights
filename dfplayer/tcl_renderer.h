@@ -61,7 +61,7 @@ class TclRenderer {
   // TODO(igorc): Refactor TclRenderer collection.
   static TclRenderer* GetByControllerId(int id);
 
-  void StartMessageLoop();
+  void StartMessageLoop(bool enable_net);
 
   int GetWidth() const { return width_; }
   int GetHeight() const { return height_; }
@@ -169,6 +169,7 @@ class TclRenderer {
   bool init_sent_;
   bool is_shutting_down_;
   bool has_started_thread_;
+  bool enable_net_;
   double gamma_r_[256];
   double gamma_g_[256];
   double gamma_b_[256];

@@ -49,7 +49,6 @@ PLAYLISTS_DIR = VENV_DIR + '/playlists'
 _PRESET_DIR = ('projectm/presets', '')
 #_PRESET_DIR = ('projectm/presets_milkdrop_200', '')
 #_PRESET_DIR = ('triptonaut/presets', 'triptonaut/textures')
-#_PRESET_DIR = ('bltc21', '')
 #_PRESET_DIR = ('dfplayer/presets', '')
 #_PRESET_DIR = ('projectm/presets_yin', '')
 _PRESET_DURATION = 10000
@@ -78,7 +77,7 @@ audio_output {
 
 class Player(object):
 
-    def __init__(self, playlist, line_in):
+    def __init__(self, playlist, line_in, enable_net):
         self._update_card_id()
 
         self._line_in = line_in
@@ -99,8 +98,8 @@ class Player(object):
         self._playlist_name = playlist
         self.playlist = []
 
-        self._target_gamma = 2.4
-        self._visualization_volume = 2.3
+        self._target_gamma = 1
+        self._visualization_volume = 1
         self._seek_time = None
         self._frame = None
         self._effect = None
@@ -111,7 +110,8 @@ class Player(object):
 
         self._tcl = TclRenderer(
             TCL_CONTROLLER, _SCREEN_FRAME_WIDTH, FRAME_HEIGHT,
-            'dfplayer/layout.dxf', self._target_gamma, _USE_CC_TCL)
+            'dfplayer/layout.dxf', self._target_gamma,
+            _USE_CC_TCL, enable_net)
 
         self._frame_source = FrameSource(
             FPS, _SCREEN_FRAME_WIDTH, IMAGE_FRAME_WIDTH,
@@ -119,6 +119,7 @@ class Player(object):
 
         self._use_visualization = False
         self._visualizer = None
+        self._visualizer_render = False
 
         if self._line_in:
             self.toggle_visualization()
@@ -512,7 +513,7 @@ class Player(object):
             self._visualizer_size = (
                 IMAGE_FRAME_WIDTH / MESH_RATIO, FRAME_HEIGHT / MESH_RATIO)
             self._visualizer = Visualizer(
-                self._visualizer_size[0], self._visualizer_size[1], 256, FPS,
+                self._visualizer_size[0], self._visualizer_size[1], 512, FPS,
                 _PRESET_DIR[0], _PRESET_DIR[1], _PRESET_DURATION)
             self._visualizer.SetVolumeMultiplier(self._visualization_volume)
             self._visualizer.StartMessageLoop()
@@ -520,6 +521,9 @@ class Player(object):
             self._visualizer.UseAlsa(self._sound_input)
         else:
             self._visualizer.UseAlsa('')
+
+    def toggle_visualizer_render(self):
+        self._visualizer_render = not self._visualizer_render
 
     def select_next_preset(self, is_forward):
         if not self._use_visualization:
@@ -559,11 +563,18 @@ class Player(object):
                                 f.current_ms - baseline_ms)
                 (effect_img, mirror) = self._get_effect_image()
                 self._tcl.set_effect_image(effect_img, mirror)
-                newimg_data = self._tcl.get_and_clear_last_image()
-                if newimg_data:
-                    self._frame = Image.fromstring(
-                        'RGBA', (_SCREEN_FRAME_WIDTH, FRAME_HEIGHT),
-                        newimg_data)
+                if self._visualizer_render and self._use_visualization:
+                    newimg_data = self._visualizer.GetAndClearLastImageForTest()
+                    if newimg_data and len(newimg_data) > 0:
+                        self._frame = Image.fromstring(
+                            'RGBA', (512, 512),
+                            newimg_data)
+                else:
+                    newimg_data = self._tcl.get_and_clear_last_image()
+                    if newimg_data and len(newimg_data) > 0:
+                        self._frame = Image.fromstring(
+                            'RGBA', (_SCREEN_FRAME_WIDTH, FRAME_HEIGHT),
+                            newimg_data)
                 duration_ms = int(round((time.time() - start_time) * 1000))
                 self._render_durations.add(duration_ms)
                 return self._frame

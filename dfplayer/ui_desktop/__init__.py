@@ -52,7 +52,7 @@ class PlayerApp(Frame):
         self.player = player
 
         frame_size = self.player.get_frame_size()
-        self._led_mask_t = self.create_led_mask(200)
+        self._led_mask_t = self.create_led_mask(64)
         self._led_mask_o = self.create_led_mask(255)
         self._led_mask_t = self._led_mask_t.resize(frame_size, Image.NEAREST)
         self._led_mask_o = self._led_mask_o.resize(frame_size, Image.NEAREST)
@@ -92,6 +92,7 @@ class PlayerApp(Frame):
         self.root.bind('h', lambda e: player.visualization_volume_up())
         self.root.bind('n', lambda e: player.visualization_volume_down())
         self.root.bind('v', lambda e: player.toggle_visualization())
+        self.root.bind('t', lambda e: player.toggle_visualizer_render())
         self.root.bind('o', lambda e: player.select_next_preset(False))
         self.root.bind('p', lambda e: player.select_next_preset(True))
         self.root.bind('0', lambda e: player.stop_effect())
@@ -132,20 +133,24 @@ class PlayerApp(Frame):
         return Image.frombytes('RGBA', size, img_bytes)
 
     def _paste_frame(self, frame):
-        frame_size = self._led_mask_t.size
+        frame_size = frame.size
+        test_mode = (frame_size != self._led_mask_t.size)
+
         frame1 = frame.copy()
         if not _SPLIT_IMAGES:
-            frame1.paste(
-                '#000000', (0, 0, frame_size[0], frame_size[1]),
-                self._led_mask_o if self._img_mode else self._led_mask_t)
+            if not test_mode:
+                frame1.paste(
+                    '#000000', (0, 0, frame_size[0], frame_size[1]),
+                    self._led_mask_o if self._img_mode else self._led_mask_t)
             self._img1.paste(frame1.resize(self._img_size))
             return
 
         frame2 = frame.copy()
-        frame1.paste(
-            '#000000', (0, 0, frame_size[0], frame_size[1]), self._led_mask_o)
-        frame2.paste(
-            '#000000', (0, 0, frame_size[0], frame_size[1]), self._led_mask_t)
+        if not test_mode:
+            frame1.paste(
+                '#000000', (0, 0, frame_size[0], frame_size[1]), self._led_mask_o)
+            frame2.paste(
+                '#000000', (0, 0, frame_size[0], frame_size[1]), self._led_mask_t)
 
         if (self._img_mode & 2) == 0:
             rect = (0, 0, frame_size[0] / 2, frame_size[1])
@@ -155,8 +160,10 @@ class PlayerApp(Frame):
         if (self._img_mode & 1) == 1:
             frame2.paste('black')
 
-        frame1 = frame1.crop(rect)
-        frame2 = frame2.crop(rect)
+        if not test_mode:
+            frame1 = frame1.crop(rect)
+            frame2 = frame2.crop(rect)
+
         self._img1.paste(frame1.resize(self._img_size))
         self._img2.paste(frame2.resize(self._img_size))
 

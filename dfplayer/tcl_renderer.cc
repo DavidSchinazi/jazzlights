@@ -50,7 +50,8 @@ TclRenderer::TclRenderer(
     : controller_id_(controller_id), width_(width), height_(height),
       mgs_start_delay_us_(500), mgs_data_delay_us_(1500),
       auto_reset_after_no_data_ms_(5000), init_sent_(false),
-      is_shutting_down_(false), has_started_thread_(false), layout_(layout),
+      is_shutting_down_(false), has_started_thread_(false),
+      enable_net_(false), layout_(layout),
       socket_(-1), require_reset_(true), last_reply_time_(0),
       last_image_id_(0), has_last_image_(false), effect_image_(NULL),
       effect_image_mirrored_(false),
@@ -91,10 +92,11 @@ TclRenderer* TclRenderer::GetByControllerId(int id) {
   return NULL;
 }
 
-void TclRenderer::StartMessageLoop() {
+void TclRenderer::StartMessageLoop(bool enable_net) {
   Autolock l(lock_);
   if (has_started_thread_)
     return;
+  enable_net_ = enable_net;
   has_started_thread_ = true;
   int err = pthread_create(&thread_, NULL, &ThreadEntry, this);
   if (err != 0) {
@@ -428,7 +430,7 @@ void TclRenderer::Run() {
       auto_reset_after_no_data_ms = auto_reset_after_no_data_ms_;
     }
 
-    if (!require_reset_ && frames_sent_after_reply_ > 2 &&
+    if (enable_net_ && !require_reset_ && frames_sent_after_reply_ > 2 &&
         auto_reset_after_no_data_ms > 0) {
       uint64_t reply_delay = GetCurrentMillis() - last_reply_time_;
       if (reply_delay > auto_reset_after_no_data_ms) {
@@ -634,6 +636,8 @@ bool TclRenderer::InitController() {
   static const uint8_t MSG_RESET[] = {0xC2, 0x77, 0x88, 0x00, 0x00};
   static const double MSG_RESET_DELAY = 5;
 
+  if (!enable_net_)
+    return true;
   if (!Connect())
     return false;
   if (init_sent_ && !require_reset_)
@@ -664,6 +668,9 @@ bool TclRenderer::SendFrame(uint8_t* frame_data) {
       0x88, 0x00, 0x68, 0x3F, 0x2B, 0xFD,
       0x60, 0x8B, 0x95, 0xEF, 0x04, 0x69};
   static const uint8_t FRAME_MSG_SUFFIX[] = {0x00, 0x00, 0x00, 0x00};
+
+  if (!enable_net_)
+    return true;
 
   int mgs_start_delay_us;
   int mgs_data_delay_us;
@@ -707,6 +714,8 @@ bool TclRenderer::SendFrame(uint8_t* frame_data) {
 
 void TclRenderer::ConsumeReplyData() {
   // static const uint8_t MSG_REPLY[] = {0x55, 0x00, 0x00, 0x00, 0x00};
+  if (!enable_net_)
+    return;
   uint8_t buf[65536];
   while (true) {
     ssize_t size = TEMP_FAILURE_RETRY(

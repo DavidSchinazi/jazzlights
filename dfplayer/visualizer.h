@@ -50,7 +50,6 @@ class Visualizer {
   double GetLastVolumeRms();
 
   int GetAndClearOverrunCount();
-  int GetAndClearTotalPcmSampleCount();
   std::vector<int> GetAndClearFramePeriods();
 
  private:
@@ -97,7 +96,6 @@ class Visualizer {
   int projectm_tex_;
   int16_t* pcm_buffer_;
   int total_overrun_count_;
-  int total_pcm_sample_count_;
   uint8_t* image_buffer_;
   uint32_t image_buffer_size_;
   bool has_image_;
@@ -105,7 +103,6 @@ class Visualizer {
   double volume_multiplier_;
   double last_volume_rms_;
   uint32_t ms_per_frame_;
-  int pcm_samples_per_frame_;
   bool is_shutting_down_;
   bool has_started_thread_;
   std::deque<WorkItem*> work_items_;

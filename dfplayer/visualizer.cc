@@ -22,10 +22,11 @@
 
 #include "tcl_renderer.h"
 
-// ProjectM can handle 2048 frames per frame. For 15 FPS this translates to
-// 30720. Use the next lower standard sampling rate. We request ALSA
-// to produce S16_LE, which matches "signed short" used by ProjectM.
-static const int kPcmSampleRate = 22050;
+// MilkDrop and ProjectM expect 44.1kHz sampling rate. We will discard
+// all samples that fall out of MilkDrop's sample window of 512. We request
+// ALSA to produce S16_LE, which matches "signed short" used by ProjectM.
+static const int kPcmSampleRate = 44100;
+static const int kPcmMaxSamples = 512;
 
 Visualizer::Visualizer(
     int width, int height, int texsize, int fps,
@@ -43,13 +44,10 @@ Visualizer::Visualizer(
   last_render_time_ = GetCurrentMillis();
   ms_per_frame_ = (uint32_t) (1000.0 / (double) fps);
 
-  pcm_buffer_ = new int16_t[PCM::maxsamples * 2];
+  pcm_buffer_ = new int16_t[kPcmMaxSamples * 2];
 
   image_buffer_size_ = PIX_LEN(texsize_, texsize_);
   image_buffer_ = new uint8_t[image_buffer_size_];
-
-  pcm_samples_per_frame_ = std::min(
-      PCM::maxsamples, kPcmSampleRate / fps_);
 }
 
 Visualizer::~Visualizer() {
@@ -138,13 +136,6 @@ int Visualizer::GetAndClearOverrunCount() {
   return result;
 }
 
-int Visualizer::GetAndClearTotalPcmSampleCount() {
-  Autolock l(lock_);
-  int result = total_pcm_sample_count_;
-  total_pcm_sample_count_ = 0;
-  return result;
-}
-
 std::vector<int> Visualizer::GetAndClearFramePeriods() {
   Autolock l(lock_);
   std::vector<int> result = frame_periods_;
@@ -157,6 +148,25 @@ Bytes* Visualizer::GetAndClearLastImageForTest() {
   if (!has_image_)
     return NULL;
   has_image_ = false;
+  /*int dst_w = 500;
+  int src_w = 250;
+  int height = 50;
+  uint8_t* src_img1 = ResizeImage(
+      image_buffer_, texsize_, texsize_, src_w, height);
+  uint8_t* src_img2 = FlipImage(src_img1, src_w, height);
+
+  int len = PIX_LEN(dst_w, height);
+  uint8_t* dst = new uint8_t[len];
+  PasteSubImage(src_img1, src_w, height,
+      dst, 0, 0, dst_w, height, false);
+  PasteSubImage(src_img2, src_w, height,
+      dst, src_w, 0, dst_w, height, false);
+
+  Bytes* result = new Bytes(dst, len);
+  delete[] src_img1;
+  delete[] src_img2;
+  delete[] dst;
+  return result;*/
   return new Bytes(image_buffer_, image_buffer_size_);
 }
 
@@ -241,16 +251,26 @@ bool Visualizer::TransferPcmDataLocked() {
   }
 
   int sample_count = 0;
-  PCM* pcm = projectm_->pcm();
-  while (sample_count < pcm_samples_per_frame_) {
+  while (sample_count < kPcmMaxSamples) {
     int overrun_count = 0;
     int samples = inp_alsa_read(
         alsa_handle_, pcm_buffer_ + sample_count * 2,
-        pcm_samples_per_frame_ - sample_count, &overrun_count);
+        kPcmMaxSamples - sample_count, &overrun_count);
     total_overrun_count_ += overrun_count;
     if (samples <= 0)
       break;
     sample_count += samples;
+  }
+
+  // Disacrd all remaining samples, so on next frame we can get fresh data.
+  while (true) {
+    int16_t discard_buf[kPcmMaxSamples * 2];
+    int overrun_count = 0;
+    int samples = inp_alsa_read(
+        alsa_handle_, discard_buf, kPcmMaxSamples, &overrun_count);
+    total_overrun_count_ += overrun_count;
+    if (samples <= 0)
+      break;
   }
 
   AdjustVolume(pcm_buffer_, sample_count, volume_multiplier_);
@@ -273,7 +293,7 @@ bool Visualizer::TransferPcmDataLocked() {
     fprintf(stderr, "ALSA produced %d samples with empy data\n", sample_count);
   }
 
-  total_pcm_sample_count_ += sample_count;
+  PCM* pcm = projectm_->pcm();
   pcm->addPCM16Data(pcm_buffer_, sample_count);
 
   return true;
@@ -292,6 +312,8 @@ void Visualizer::CreateRenderContext() {
       GLX_RED_SIZE, 8,
       GLX_GREEN_SIZE, 8,
       GLX_BLUE_SIZE, 8,
+      GLX_ALPHA_SIZE, 8,
+      GLX_DEPTH_SIZE, 8,
       None
   };
   int fb_config_count = 0;
@@ -319,8 +341,8 @@ void Visualizer::CreateRenderContext() {
   }
 
   int pbuffer_attribs[] = {
-      GLX_PBUFFER_WIDTH,  width_,
-      GLX_PBUFFER_HEIGHT, height_,
+      GLX_PBUFFER_WIDTH,  texsize_,
+      GLX_PBUFFER_HEIGHT, texsize_,
       None
   };
   pbuffer_ = glXCreatePbuffer(display_, fb_configs[0], pbuffer_attribs);
@@ -352,12 +374,12 @@ void Visualizer::CreateProjectM() {
   // TODO(igorc): Consider disabling threads in CMakeCache.txt.
   //              Threads are used for evaluating the second preset.
   projectM::Settings settings;
-  settings.windowWidth = width_;
-  settings.windowHeight = height_;
+  settings.windowWidth = texsize_;
+  settings.windowHeight = texsize_ / (width_ / height_);
   settings.fps = fps_;
   settings.textureSize = texsize_;
-  settings.meshX = width_;
-  settings.meshY = height_;
+  settings.meshX = 48; //16;
+  settings.meshY = 36; //12;
   settings.presetURL = preset_dir_;
   settings.titleFontURL = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf";
   settings.menuFontURL = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf";
@@ -429,14 +451,14 @@ bool Visualizer::RenderFrameLocked() {
   glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_ALPHA_SIZE, &alpha_size);
   glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_COMPONENTS, &internal_format);
   if (w != texsize_ || h != texsize_) {
-    fprintf(stderr, "Unexpected texture size of %d x %d, instead of %d",
+    fprintf(stderr, "Unexpected texture size of %d x %d, instead of %d\n",
             w, h, texsize_);
     glBindTexture(GL_TEXTURE_2D, 0);
     return false;
   }
   if (red_size != 8 || green_size != 8 || blue_size != 8 ||
       alpha_size != 0 || internal_format != GL_RGB) {
-    fprintf(stderr, "Unexpected color sizes of %d %d %d %d fmt=0x%x",
+    fprintf(stderr, "Unexpected color sizes of %d %d %d %d fmt=0x%x\n",
             red_size, green_size, blue_size, alpha_size, internal_format);
     glBindTexture(GL_TEXTURE_2D, 0);
     return false;
