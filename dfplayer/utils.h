@@ -79,7 +79,7 @@ uint64_t GetCurrentMillis();
 uint8_t* ResizeImage(
     uint8_t* src, int src_w, int src_h, int dst_w, int dst_h);
 
-uint8_t* FlipImage(uint8_t* src, int w, int h);
+uint8_t* FlipImage(uint8_t* src, int w, int h, bool horizontal);
 
 void PasteSubImage(
     uint8_t* src, int src_w, int src_h,

@@ -63,10 +63,10 @@ uint8_t* ResizeImage(
   return dst;
 }
 
-uint8_t* FlipImage(uint8_t* src, int w, int h) {
+uint8_t* FlipImage(uint8_t* src, int w, int h, bool horizontal) {
   cv::Mat src_img(h, w, CV_8UC4, src);
   cv::Mat dst_img(cv::Size(w, h), CV_8UC4);
-  cv::flip(src_img, dst_img, 1);
+  cv::flip(src_img, dst_img, (horizontal ? 1 : 0));
   int dst_len = w * h * 4;
   uint8_t* dst = new uint8_t[dst_len];
   memcpy(dst, dst_img.data, dst_len);

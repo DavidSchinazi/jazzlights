@@ -32,7 +32,7 @@ Visualizer::Visualizer(
     int width, int height, int texsize, int fps,
     const std::string& preset_dir, const std::string& textures_dir,
     int preset_duration)
-    : width_(width), height_(height), texsize_(texsize), fps_(fps),
+    : width_(width), height_(height), texsize_(texsize), fps_(fps * 2),
       alsa_handle_(NULL), projectm_(NULL), projectm_tex_(0),
       total_overrun_count_(0), has_image_(false),
       volume_multiplier_(1), last_volume_rms_(0),
@@ -153,7 +153,7 @@ Bytes* Visualizer::GetAndClearLastImageForTest() {
   int height = 50;
   uint8_t* src_img1 = ResizeImage(
       image_buffer_, texsize_, texsize_, src_w, height);
-  uint8_t* src_img2 = FlipImage(src_img1, src_w, height);
+  uint8_t* src_img2 = FlipImage(src_img1, src_w, height, true);
 
   int len = PIX_LEN(dst_w, height);
   uint8_t* dst = new uint8_t[len];
@@ -378,8 +378,8 @@ void Visualizer::CreateProjectM() {
   settings.windowHeight = texsize_ / (width_ / height_);
   settings.fps = fps_;
   settings.textureSize = texsize_;
-  settings.meshX = 48; //16;
-  settings.meshY = 36; //12;
+  settings.meshX = 32;
+  settings.meshY = 24;
   settings.presetURL = preset_dir_;
   settings.titleFontURL = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf";
   settings.menuFontURL = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf";
@@ -420,7 +420,7 @@ void Visualizer::CreateProjectM() {
 // dfplayer/presets/nil - Can't Stop the Blithering.milk
 
 
-bool Visualizer::RenderFrameLocked() {
+bool Visualizer::RenderFrameLocked(bool need_image) {
   projectm_->renderFrame();
 
   GLenum err = glGetError();
@@ -428,6 +428,9 @@ bool Visualizer::RenderFrameLocked() {
     fprintf(stderr, "ProjectM rendering ended with err=0x%x\n", err);
     return true;
   }
+
+  if (!need_image)
+    return false;
 
   //glFlush();
   glXSwapBuffers(display_, pbuffer_);
@@ -471,9 +474,16 @@ bool Visualizer::RenderFrameLocked() {
   err = glGetError();
   glBindTexture(GL_TEXTURE_2D, 0);
   glDisable(GL_TEXTURE_2D);
-  if (err == GL_NO_ERROR) {
-    return true;
+  if (err != GL_NO_ERROR) {
+    GLenum status = 0; //glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    fprintf(stderr, "Unable to read pixels, err=0x%x, fb_status=0x%x\n",
+            err, status);
+    return false;
   }
+
+  const uint8_t* img2 = FlipImage(image_buffer_, texsize_, texsize_, false);
+  memcpy(image_buffer_, img2, image_buffer_size_);
+  delete[] img2;
 
   // RenderTarget constructor stores:
   //  - FB in fbuffer[0]
@@ -491,10 +501,7 @@ bool Visualizer::RenderFrameLocked() {
   //  - FB-bound texture in textureID[2], RGB
   //  - renderToTexture is set to 1
 
-  GLenum status = 0; //glCheckFramebufferStatus(GL_FRAMEBUFFER);
-  fprintf(stderr, "Unable to read pixels, err=0x%x, fb_status=0x%x\n",
-          err, status);
-  return false;
+  return true;
 }
 
 void Visualizer::PostTclFrameLocked() {
@@ -510,7 +517,7 @@ void Visualizer::PostTclFrameLocked() {
 
   uint8_t* src_img1 = ResizeImage(
       image_buffer_, texsize_, texsize_, src_w, height);
-  uint8_t* src_img2 = FlipImage(src_img1, src_w, height);
+  uint8_t* src_img2 = FlipImage(src_img1, src_w, height, true);
 
   int len = PIX_LEN(dst_w, height);
   uint8_t* dst = new uint8_t[len];
@@ -574,6 +581,7 @@ void Visualizer::Run() {
   bool should_sleep = false;
   uint64_t next_render_time = GetCurrentMillis() + ms_per_frame_;
   uint64_t prev_frame_time = 0;
+  uint32_t frame_num = 0;
   while (true) {
     if (should_sleep) {
       should_sleep = false;
@@ -612,7 +620,10 @@ void Visualizer::Run() {
       }
     }
 
-    bool has_new_image = RenderFrameLocked();
+    // We run at 2x the max rendering FPS to make it 30FPS,
+    // so deliver every other frame.
+    bool need_image = (frame_num & 1) == 0;
+    bool has_new_image = RenderFrameLocked(need_image);
     //fprintf(stderr, "Rendered frame = %d\n", (int)has_new_image);
 
     {
@@ -627,7 +638,7 @@ void Visualizer::Run() {
         current_preset_ = "";
       }
 
-      has_image_ = has_new_image;
+      has_image_ |= has_new_image;
 
       if (has_new_image)
         PostTclFrameLocked();
@@ -638,6 +649,8 @@ void Visualizer::Run() {
       prev_frame_time = now;
       next_render_time += ms_per_frame_;
     }
+
+    frame_num++;
   }
 
   delete projectm_;

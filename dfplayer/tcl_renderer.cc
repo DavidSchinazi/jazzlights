@@ -206,7 +206,7 @@ void TclRenderer::ApplyEffectLocked(uint8_t* image) {
 
   uint8_t* second_image = effect_image_;
   if (effect_image_mirrored_)
-    second_image = FlipImage(effect_image_, width_ / 2, height_);
+    second_image = FlipImage(effect_image_, width_ / 2, height_, true);
 
   PasteSubImage(second_image, width_ / 2, height_,
       image, width_ / 2, 0, width_, height_, true);
