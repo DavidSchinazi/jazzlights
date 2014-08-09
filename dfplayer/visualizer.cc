@@ -48,6 +48,10 @@ Visualizer::Visualizer(
 
   image_buffer_size_ = PIX_LEN(texsize_, texsize_);
   image_buffer_ = new uint8_t[image_buffer_size_];
+
+  for (int i = 0; i < 6; ++i) {
+    last_bass_info_.push_back(0);
+  }
 }
 
 Visualizer::~Visualizer() {
@@ -178,6 +182,11 @@ void Visualizer::SetVolumeMultiplier(double value) {
 double Visualizer::GetLastVolumeRms() {
   Autolock l(lock_);
   return last_volume_rms_;
+}
+
+std::vector<double> Visualizer::GetLastBassInfo() {
+  Autolock l(lock_);
+  return last_bass_info_;
 }
 
 void Visualizer::CloseInputLocked() {
@@ -422,6 +431,8 @@ void Visualizer::CreateProjectM() {
 
 bool Visualizer::RenderFrameLocked(bool need_image) {
   projectm_->renderFrame();
+
+  last_bass_info_ = projectm_->getBassData();
 
   GLenum err = glGetError();
   if (err != GL_NO_ERROR) {

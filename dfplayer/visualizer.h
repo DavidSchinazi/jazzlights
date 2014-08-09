@@ -49,6 +49,9 @@ class Visualizer {
   void SetVolumeMultiplier(double value);
   double GetLastVolumeRms();
 
+  // Returns [bass, bass_att, mid, mid_att, treb, treb_att].
+  std::vector<double> GetLastBassInfo();
+
   int GetAndClearOverrunCount();
   std::vector<int> GetAndClearFramePeriods();
 
@@ -113,6 +116,7 @@ class Visualizer {
   std::string current_preset_;
   unsigned int current_preset_index_;
   std::vector<std::string> all_presets_;
+  std::vector<double> last_bass_info_;
   pthread_mutex_t lock_;
   pthread_t thread_;
 
