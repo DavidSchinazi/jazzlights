@@ -29,8 +29,7 @@ platforms.
         sudo vi /etc/pulse/client.conf
             autospawn = no
             daemon-binary = /bin/true
-        pulseaudio --kill
-        rm ~/.config/pulse/client.conf
+        pulseaudio --kill ; rm ~/.config/pulse/client.conf
 
 5. Set up sound loopback:
 
@@ -55,14 +54,32 @@ platforms.
         While installing:
           Use fish / otto as username and password
           Enable auto-login
+        Install updates
+        Add terminal to quick-launch
         All Settings / Brightness & Lock
           Do not turn off the screen
           Do not lock
           Do not require password
+        Click on networking, disable WiFi
+        Click on networking, Edit Connections / Wired Connection 2
+          Verify it is "eth1", go to IPv4 Settings
+            Set Method to Manual
+            Add address: 192.168.60.178 / 255.255.255.0
+            Save
 
 8. Reboot
 
-9. Configure the router (if using with TCL):
+
+Physical Setup
+--------------
+
+1. Use a separate USB for DAC
+
+2. Connect UPS, keyboard and mouse through a USB hub
+
+3. Connect "eth1" (central networking port) to router
+
+4. Configure the router for TCL communication:
 
     Change router password to 'otto'
     Enable WiFi as FISHLIGHT, with password 6503355358
@@ -94,18 +111,18 @@ will take a while.
 
         make cpp
 
-3. Preprocess clips (the results will go into `env/clips`):
+4. Preprocess clips (the results will go into `env/clips`):
 
         make clips
 
-4. Run the player (without TCL):
+5. Run the player (without TCL):
 
         ./start.py --disable-net
 
-5. If there is no audio, run 'aplay -l' and update
+6. If there is no audio, run 'aplay -l' and update
    MPD_CARD_ID in dfplayer/player.py.
 
-6. Some useful commands:
+7. Some useful commands:
 
         git config --global core.editor "vim"
         git push origin mybranch:master
