@@ -81,16 +81,19 @@ Physical Setup
 
 4. Configure the router for TCL communication:
 
-    Change router password to 'otto'
-    Enable WiFi as FISHLIGHT, with password 6503355358
-    Change router IP to 192.168.60.1/255.255.255.0
-    Set DHCP range as 192.168.60.60-254
-    Set MAC-based static IP for computer: 192.168.60.178
-    Disable router's connection to the Internet (if any)
-    Refresh IP address by unplugging/plugging the cable and/or:
-        sudo dhclient -r ; sudo dhclient
-        ifconfig
-    (for WGR614: http://www.routerlogin.com/basicsetting.htm)
+    1. Use NetGear N300 WNR3500L (or better something that supports DD-WRT)
+    2. Advanced/Setup/Internet Setup:
+       - Apply without making changes
+    3. Advanced/Setup/LAN Setup:
+       - Set IP address to 192.168.60.1/255.255.255.0
+       - Set DHCP range as 192.168.60.60-254
+       - Apply
+    4. Advanced/Setup/Wireless Setup:
+       - Set WiFi as FISHLIGHT, with password 155155155
+       - Apply
+    5. Advanced/Administration/Set Password:
+       - Change admin password to 'otto'
+    (for WGR614 use http://www.routerlogin.com/basicsetting.htm)
 
 
 Running the Player
@@ -128,6 +131,9 @@ will take a while.
         git push origin mybranch:master
         git submodule update --init
         apcaccess status
+        Refresh IP address by unplugging/plugging the cable and/or:
+          sudo dhclient -r ; sudo dhclient
+          ifconfig
 
 
 After the player is running you can control it via browser UI. Navigate to 
