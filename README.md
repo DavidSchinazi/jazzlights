@@ -50,9 +50,19 @@ platforms.
           Set ISCONFIGURED to yes
         sudo ln -s /etc/init.d/apcupsd /etc/rc2.d/S20apcupsd
 
-7. Reboot
+7. Configure Ubuntu
 
-8. Configure the router (if using with TCL):
+        While installing:
+          Use fish / otto as username and password
+          Enable auto-login
+        All Settings / Brightness & Lock
+          Do not turn off the screen
+          Do not lock
+          Do not require password
+
+8. Reboot
+
+9. Configure the router (if using with TCL):
 
     Change router password to 'otto'
     Enable WiFi as FISHLIGHT, with password 6503355358
