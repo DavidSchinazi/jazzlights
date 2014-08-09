@@ -4,11 +4,11 @@ DiscoFish Player
 Media player software for [DiscoFish art car](http://www.discofish.org/).
 
 
-Getting started
----------------
+Computer Setup
+--------------
 
-The player should happily run on most UNIXy systems. Steps below assume
-you're on some Debian flavour, e.g. Ubuntu. Modify accordingly for other 
+The player runs Ubuntu 14.04. Steps below assume you're on some
+Debian flavour, e.g. Ubuntu. Modify accordingly for other 
 platforms.
 
 1. Install git:
@@ -17,28 +17,14 @@ platforms.
 
 2. Clone this repo:
 
-        git clone git@bitbucket.org:azov/dfplayer.git $PROJECT_DIR
-        cd $PROJECT_DIR
+        git clone https://bitbucket.org/azov/dfplayer.git dfplayer
+        cd dfplayer
 
 3. Install other required packages:
 
         sudo ./instal-deps.py
 
-4. Download some videos and put them into the `$PROJECT_DIR/clips` directory. 
-For now the script will only look for `*.mp4` files.
-
-5. Run `make` to create virtual environment in `$PROJECT_DIR/env`, 
-build and install dependencies, and do the rest of setuptools magic. **If it fails 
-the first time try re-running it again** (some upstream packages have their 
-dependency checking screwed up??) The whole process will take a while.
-
-        make develop
-
-6. Preprocess clips (the results will go into `$PROJECT_DIR/env/clips`):
-
-        make clips
-
-7. Disable PulseAudio:
+4. Disable PulseAudio:
 
         sudo vi /etc/pulse/client.conf
             autospawn = no
@@ -46,10 +32,27 @@ dependency checking screwed up??) The whole process will take a while.
         pulseaudio --kill
         rm ~/.config/pulse/client.conf
 
-8. If there is no audio, run 'aplay -l' and update
-   MPD_CARD_ID in dfplayer/player.py.
+5. Set up sound loopback:
 
-9. Configure the router:
+        sudo vi /etc/modules
+          Add snd-aloop
+        sudo vi /etc/modprobe.d/sound.conf
+          Add lines:
+            options snd_usb_audio index=10
+            options snd_aloop index=11
+
+6. Set up UPS daemon (if used):
+
+        sudo vi /etc/apcupsd/apcupsd.conf
+          Change UPSTYPE and UPSCABLE to usb
+          Comment out DEVICE
+        sudo vi /etc/default/apcupsd
+          Set ISCONFIGURED to yes
+        sudo ln -s /etc/init.d/apcupsd /etc/rc2.d/S20apcupsd
+
+7. Reboot
+
+8. Configure the router (if using with TCL):
 
     Change router password to 'otto'
     Enable WiFi as FISHLIGHT, with password 6503355358
@@ -62,30 +65,43 @@ dependency checking screwed up??) The whole process will take a while.
         ifconfig
     (for WGR614: http://www.routerlogin.com/basicsetting.htm)
 
-10. Run the player:
 
-        env/bin/dfplayer --listen=0.0.0.0:8080
+Running the Player
+------------------
 
-11. Some useful commands:
+1. Download some videos and audio files, and put them into `clips`
+directory. The script will only look for `mp4` and `m4a` files.
+
+2. Run `make develop` to create virtual environment in `env`,
+build and install dependencies, and do the rest of setuptools magic.
+**If it fails the first time try re-running it again** (some upstream
+packages have their dependency checking screwed up??) The whole process
+will take a while.
+
+        make develop
+
+3. Compile C++ code:
+
+        make cpp
+
+3. Preprocess clips (the results will go into `env/clips`):
+
+        make clips
+
+4. Run the player (without TCL):
+
+        ./start.py --disable-net
+
+5. If there is no audio, run 'aplay -l' and update
+   MPD_CARD_ID in dfplayer/player.py.
+
+6. Some useful commands:
 
         git config --global core.editor "vim"
         git push origin mybranch:master
         git submodule update --init
+        apcaccess status
 
-12. Setting up sound loopback:
-
-	TODO(igorc): Automate sound loopback setup.
-	See https://bbs.archlinux.org/viewtopic.php?pid=765075#p765075
-	    https://bbs.archlinux.org/viewtopic.php?pid=1153194#p1153194
-	sudo vi /etc/modules
-	  Add snd-aloop
-	sudo vi /etc/modprobe.d/sound.conf
-	  Add lines:
-	    options snd_usb_audio index=10
-	    options snd_aloop index=11
-	
-
-You can also type `make run` instead of steps 5-7 if you're feeling lazy.
 
 After the player is running you can control it via browser UI. Navigate to 
 http://*yourhost*:8080 and enjoy :)

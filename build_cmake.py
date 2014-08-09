@@ -11,7 +11,8 @@ if len(sys.argv) < 2:
 
 directory = sys.argv[1]
 
-os.unlink(directory + '/CMakeCache.txt')
+if os.path.exists(directory + '/CMakeCache.txt'):
+  os.unlink(directory + '/CMakeCache.txt')
 
 subprocess.check_call(['cmake', '.'], cwd=directory)
 subprocess.check_call(['make', '-j', '2'], cwd=directory)

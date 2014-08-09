@@ -42,6 +42,7 @@ _EXTERNAL_DEPS = [
     ]
 
 _USEFUL_PACKAGES = [
+    'apcupsd',
     'gdb',
     'gimp',
     'git',
