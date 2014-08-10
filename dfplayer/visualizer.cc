@@ -44,8 +44,6 @@ Visualizer::Visualizer(
   last_render_time_ = GetCurrentMillis();
   ms_per_frame_ = (uint32_t) (1000.0 / (double) fps);
 
-  pcm_buffer_ = new int16_t[kPcmMaxSamples * 2];
-
   image_buffer_size_ = PIX_LEN(texsize_, texsize_);
   image_buffer_ = new uint8_t[image_buffer_size_];
 
@@ -74,7 +72,6 @@ Visualizer::~Visualizer() {
 
   pthread_mutex_destroy(&lock_);
 
-  delete[] pcm_buffer_;
   delete[] image_buffer_;
 }
 
@@ -196,47 +193,46 @@ void Visualizer::CloseInputLocked() {
   }
 }
 
-/*static std::string GetPcmDump(int16_t* pcm_buffer, int sample_count) {
+/*static std::string GetPcmDump(float* pcm_buffer, int sample_count) {
   char buf[100 * 1024];
   char* pos = buf;
   for (int i = 0; i < sample_count; i++) {
-    pos += sprintf(pos, "%X/%X ", pcm_buffer[i * 2], pcm_buffer[i * 2 + 1]);
+    pos += sprintf(pos, "%.3f/%.3f ", pcm_buffer[i * 2], pcm_buffer[i * 2 + 1]);
   }
   pos[0] = 0;
   return buf;
 }*/
 
 static void AdjustVolume(
-    int16_t* pcm_buffer, int sample_count, double volume_multiplier) {
-  int32_t mult = (int32_t) round(volume_multiplier * 1000.0);
-  if (mult == 1000)
+    float* pcm_buffer, int sample_count, float volume_multiplier) {
+  if (volume_multiplier == 1.0)
     return;
   for (int i = 0; i < sample_count; i++) {
-    int32_t s_l = ((int32_t) pcm_buffer[i * 2]) * mult;
-    int32_t s_r = ((int32_t) pcm_buffer[i * 2 + 1]) * mult;
-    if (s_l >= 32768000) {
-      s_l = 32767000;
-    } else if (s_l <= -32768000) {
-      s_l = -32767000;
+    float s_l = pcm_buffer[i * 2] * volume_multiplier;
+    float s_r = pcm_buffer[i * 2 + 1] * volume_multiplier;
+    if (s_l > 1.0) {
+      s_l = 1.0;
+    } else if (s_l < -1.0) {
+      s_l = -1.0;
     }
-    if (s_r >= 32768000) {
-      s_r = 32767000;
-    } else if (s_r <= -32768000) {
-      s_r = -32767000;
+    if (s_r > 1.0) {
+      s_r = 1.0;
+    } else if (s_r < -1.0) {
+      s_r = -1.0;
     }
-    pcm_buffer[i * 2] = (int16_t) (s_l / 1000);
-    pcm_buffer[i * 2 + 1] = (int16_t) (s_r / 1000);
+    pcm_buffer[i * 2] = s_l;
+    pcm_buffer[i * 2 + 1] = s_r;
   }
 }
 
-static double CalcVolumeRms(int16_t* pcm_buffer, int sample_count) {
+static float CalcVolumeRms(float* pcm_buffer, int sample_count) {
   if (sample_count == 0)
     return 0;
-  double sum_l = 0;
-  double sum_r = 0;
+  float sum_l = 0;
+  float sum_r = 0;
   for (int i = 0; i < sample_count; i++) {
-    double s_l = ((double) pcm_buffer[i * 2]) / 32768.0;
-    double s_r = ((double) pcm_buffer[i * 2 + 1]) / 32768.0;
+    float s_l = pcm_buffer[i * 2];
+    float s_r = pcm_buffer[i * 2 + 1];
     sum_l += s_l * s_l;
     sum_r += s_r * s_r;
   }
@@ -272,28 +268,31 @@ bool Visualizer::TransferPcmDataLocked() {
   }
 
   // Disacrd all remaining samples, so on next frame we can get fresh data.
+  int discard_count = 0;
   while (true) {
-    int16_t discard_buf[kPcmMaxSamples * 2];
+    float discard_buf[kPcmMaxSamples * 2];
     int overrun_count = 0;
     int samples = inp_alsa_read(
         alsa_handle_, discard_buf, kPcmMaxSamples, &overrun_count);
     total_overrun_count_ += overrun_count;
     if (samples <= 0)
       break;
+    discard_count += samples;
   }
 
   AdjustVolume(pcm_buffer_, sample_count, volume_multiplier_);
 
   last_volume_rms_ = CalcVolumeRms(pcm_buffer_, sample_count);
 
-  //fprintf(stderr, "Adding %d samples, RMS=%.3f\n",
-  //    sample_count, last_volume_rms_);
-  //fprintf(stderr, "Adding %d samples %s\n",
-  //        sample_count, GetPcmDump(pcm_buffer_, sample_count).c_str());
+  //fprintf(stderr, "Adding %d samples, discarded=%d, overrun=%d, RMS=%.3f\n",
+  //    sample_count, discard_count, total_overrun_count_, last_volume_rms_);
+  //fprintf(stderr, "Adding %d samples, discarded=%d, overrun=%d, data=%s\n",
+  //        sample_count, discard_count, total_overrun_count_,
+  //        GetPcmDump(pcm_buffer_, sample_count).c_str());
 
   bool has_real_data = false;
   for (int i = 0; i < sample_count * 2; i++) {
-    if (pcm_buffer_[i]) {
+    if (fabsf(pcm_buffer_[i]) > 0.001) {
       has_real_data = true;
       break;
     }
@@ -303,7 +302,7 @@ bool Visualizer::TransferPcmDataLocked() {
   }
 
   PCM* pcm = projectm_->pcm();
-  pcm->addPCM16Data(pcm_buffer_, sample_count);
+  pcm->setPCM(pcm_buffer_, sample_count);
 
   return true;
 }

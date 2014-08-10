@@ -175,9 +175,12 @@ class Player(object):
             lines.append('Soft Vol = %s, Gamma = %.1f' % (
                 self._volume, self._target_gamma))
         if self._use_visualization:
+            bass = self._visualizer.GetLastBassInfo()
             lines.append(self._visualizer.GetCurrentPresetNameProgress())
-            lines.append('Sound RMS = %.3f, Vol Mult = %.2f' % (
+            lines.append((
+                'Sound RMS=%.3f, B=%.2f, M=%.2f, T=%.2f, VolX=%.2f') % (
                 self._visualizer.GetLastVolumeRms(),
+                bass[1], bass[3], bass[5],
                 self._visualization_volume))
         else:
             lines.append('Playing video (frame %s)' % (

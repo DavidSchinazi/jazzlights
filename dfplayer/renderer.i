@@ -4,6 +4,11 @@
 %include "std_vector.i"
 %include "typemaps.i"
 
+namespace std {
+  %template(vectori) vector<int>;
+  %template(vectord) vector<double>;
+};
+
 %newobject Visualizer::GetAndClearImage();
 
 %typemap(out) Bytes* {
@@ -31,8 +36,6 @@
 #include "tcl_renderer.h"
 #include "visualizer.h"
 %}
-
-%template(IntVector) std::vector<int>;
 
 %inline %{
 %}

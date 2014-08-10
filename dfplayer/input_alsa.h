@@ -19,7 +19,7 @@ void inp_alsa_cleanup (AlsaInputHandle* handle);
 // Reads stereo PCM data, with sample rate of 44100.
 // |data| must accomodate twice the the amount of |sampleCount|.
 int inp_alsa_read (
-	AlsaInputHandle* handle, int16_t *data,
+	AlsaInputHandle* handle, float* data,
 	int sampleCount, int *overrunCount);
 
 #endif  // __DFPLAYER_INPUT_ALSA_H

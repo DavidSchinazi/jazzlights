@@ -97,7 +97,7 @@ class Visualizer {
   AlsaInputHandle* alsa_handle_;
   projectM* projectm_;
   int projectm_tex_;
-  int16_t* pcm_buffer_;
+  float pcm_buffer_[512 * 2];
   int total_overrun_count_;
   uint8_t* image_buffer_;
   uint32_t image_buffer_size_;
