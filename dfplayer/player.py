@@ -121,9 +121,9 @@ class Player(object):
         self._visualizer = None
         self._visualizer_render = False
 
-        if self._line_in:
-            self.toggle_visualization()
-        else:
+        self.toggle_visualization()
+
+        if not self._line_in:
             self._load_playlist()
 
         self._fetch_state()
