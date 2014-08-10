@@ -256,21 +256,28 @@ bool Visualizer::TransferPcmDataLocked() {
   }
 
   int sample_count = 0;
+  float pcm_buffer[kPcmMaxSamples * 2];
   while (sample_count < kPcmMaxSamples) {
+    int16_t read_buf[kPcmMaxSamples * 2];
     int overrun_count = 0;
     int samples = inp_alsa_read(
-        alsa_handle_, pcm_buffer_ + sample_count * 2,
-        kPcmMaxSamples - sample_count, &overrun_count);
+        alsa_handle_, read_buf, kPcmMaxSamples - sample_count, &overrun_count);
     total_overrun_count_ += overrun_count;
     if (samples <= 0)
       break;
-    sample_count += samples;
+    for (int i = 0; i < samples; i++) {
+      float s_l = read_buf[i * 2];
+      float s_r = read_buf[i * 2 + 1];
+      pcm_buffer[sample_count * 2] = s_l / 32768.0;
+      pcm_buffer[sample_count * 2 + 1] = s_r / 32768.0;
+      sample_count++;
+    }
   }
 
   // Disacrd all remaining samples, so on next frame we can get fresh data.
   int discard_count = 0;
   while (true) {
-    float discard_buf[kPcmMaxSamples * 2];
+    int16_t discard_buf[kPcmMaxSamples * 2];
     int overrun_count = 0;
     int samples = inp_alsa_read(
         alsa_handle_, discard_buf, kPcmMaxSamples, &overrun_count);
@@ -280,29 +287,32 @@ bool Visualizer::TransferPcmDataLocked() {
     discard_count += samples;
   }
 
-  AdjustVolume(pcm_buffer_, sample_count, volume_multiplier_);
+  AdjustVolume(pcm_buffer, sample_count, volume_multiplier_);
 
-  last_volume_rms_ = CalcVolumeRms(pcm_buffer_, sample_count);
+  last_volume_rms_ = CalcVolumeRms(pcm_buffer, sample_count);
 
   //fprintf(stderr, "Adding %d samples, discarded=%d, overrun=%d, RMS=%.3f\n",
   //    sample_count, discard_count, total_overrun_count_, last_volume_rms_);
   //fprintf(stderr, "Adding %d samples, discarded=%d, overrun=%d, data=%s\n",
   //        sample_count, discard_count, total_overrun_count_,
-  //        GetPcmDump(pcm_buffer_, sample_count).c_str());
+  //        GetPcmDump(pcm_buffer, sample_count).c_str());
 
   bool has_real_data = false;
   for (int i = 0; i < sample_count * 2; i++) {
-    if (fabsf(pcm_buffer_[i]) > 0.001) {
+    if (fabsf(pcm_buffer[i]) > 0.001) {
       has_real_data = true;
       break;
     }
   }
-  if (sample_count && !has_real_data) {
+  if (!sample_count) {
+    fprintf(stderr, "ALSA produced no samples, discarded=%d, overrun=%d\n",
+            discard_count, total_overrun_count_);
+  } else if (!has_real_data) {
     fprintf(stderr, "ALSA produced %d samples with empy data\n", sample_count);
   }
 
   PCM* pcm = projectm_->pcm();
-  pcm->setPCM(pcm_buffer_, sample_count);
+  pcm->setPCM(pcm_buffer, sample_count);
 
   return true;
 }

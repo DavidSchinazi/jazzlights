@@ -102,10 +102,10 @@ static int inp_alsa_init_internal (
 
 #if VISUAL_LITTLE_ENDIAN == 1
 	if (snd_pcm_hw_params_set_format(priv->chandle, hwparams,
-					 SND_PCM_FORMAT_FLOAT_LE) < 0) {
+					 SND_PCM_FORMAT_S16_LE) < 0) {
 #else
 	if (snd_pcm_hw_params_set_format(priv->chandle, hwparams,
-					 SND_PCM_FORMAT_FLOAT_BE_nouse) < 0) {
+					 SND_PCM_FORMAT_S16_BE_nouse) < 0) {
 #endif
 		visual_log(VISUAL_LOG_ERROR, "Error setting format");
 		snd_pcm_hw_params_free(hwparams);
@@ -192,7 +192,7 @@ void inp_alsa_cleanup (AlsaInputHandle* handle)
 }
 
 int inp_alsa_read (
-	AlsaInputHandle* handle, float* data,
+	AlsaInputHandle* handle, int16_t* data,
 	int sampleCount, int *overrunCount)
 {
 	alsaPrivate *priv =  (alsaPrivate*) handle;

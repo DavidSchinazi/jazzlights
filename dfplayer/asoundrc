@@ -38,7 +38,11 @@ pcm._int_df_dup_output {
 # Input device that adjusts loopback sampling rate.
 pcm._int_df_loopback_in {
   type plug
-  slave.pcm "_int_df_loopback_hw_in"
+  slave {
+    pcm "_int_df_loopback_hw_in"
+    rate 44100
+    format S16_LE
+  }
 }
 
 # Output device that adjusts loopback sampling rate.
