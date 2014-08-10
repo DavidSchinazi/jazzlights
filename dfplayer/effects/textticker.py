@@ -10,7 +10,7 @@ from ..effect import Effect, register
 
 class TextTicker(Effect):
 
-  def __init__(self, text='HELLO', duration=7, color='white', alpha=32):
+  def __init__(self, text='HELLO', duration=7, color='white', alpha=128):
     Effect.__init__(self, duration=duration, mirror=False)
     self._text = text
     self._color = color
