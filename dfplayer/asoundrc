@@ -69,7 +69,11 @@ pcm._int_df_loopback_hw_out {
 # adjusts sampling rate.
 pcm.df_line_in {
   type plug
-  slave.pcm "hw:0,0"
+  slave {
+    pcm "hw:10,0"
+    rate 44100
+    format S16_LE
+  }
 }
 
 #pcm.df_real_device {

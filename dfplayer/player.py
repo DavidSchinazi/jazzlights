@@ -46,11 +46,10 @@ MPD_CARD_ID = -1  # From 'aplay -l'
 CLIPS_DIR = VENV_DIR + '/clips'
 PLAYLISTS_DIR = VENV_DIR + '/playlists'
 
-#_PRESET_DIR = ('pre2', '')
-_PRESET_DIR = ('projectm/presets', '')
+_PRESET_DIR = ('presets', '')
+#_PRESET_DIR = ('projectm/presets', '')
 #_PRESET_DIR = ('projectm/presets_milkdrop_200', '')
 #_PRESET_DIR = ('triptonaut/presets', 'triptonaut/textures')
-#_PRESET_DIR = ('dfplayer/presets', '')
 #_PRESET_DIR = ('projectm/presets_yin', '')
 _PRESET_DURATION = 10000
 
