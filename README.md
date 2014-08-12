@@ -17,7 +17,7 @@ platforms.
 
 2. Clone this repo:
 
-        git clone https://bitbucket.org/azov/dfplayer.git dfplayer
+        git clone https://bitbucket.org/discofish/dfplayer.git dfplayer
         cd dfplayer
 
 3. Install other required packages:
