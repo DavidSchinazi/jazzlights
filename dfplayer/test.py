@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# Licensed under The MIT License
 #
 # Test.
 

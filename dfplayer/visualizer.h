@@ -1,5 +1,5 @@
 // Copyright 2014, Igor Chernyshev.
-// Licensed under Apache 2.0 ASF license.
+// Licensed under The MIT License
 //
 // Visualization module.
 

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# Licensed under The MIT License
 
 def register_all():
     from . import textticker

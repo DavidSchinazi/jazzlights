@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# Licensed under The MIT License
+
 import os
 import sys
 import time

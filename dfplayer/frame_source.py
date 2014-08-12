@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# Licensed under The MIT License
 #
 # Loads and builds frame images.
 

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# Licensed under The MIT License
 #
 # Controls TCL controller.
 
