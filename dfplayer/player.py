@@ -543,7 +543,13 @@ class Player(object):
         if effect_time is None:
             self._effect = None
             return (None, False)
-        return (self._effect.get_image(effect_time),
+        if self._use_visualization:
+            bass = self._visualizer.GetLastBassInfo()
+            rms = self._visualizer.GetLastVolumeRms()
+        else:
+            bass = [0, 0, 0, 0, 0, 0]
+            rms = 0
+        return (self._effect.get_image(effect_time, rms=rms, bass=bass),
                 self._effect.should_mirror())
 
     def get_frame_image(self):

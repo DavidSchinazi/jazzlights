@@ -7,4 +7,5 @@ def register_all():
     from . import teststripes
     from . import blink
     from . import chameleon
+    from . import indicator
 

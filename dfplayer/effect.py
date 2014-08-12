@@ -41,7 +41,7 @@ class Effect(object):
   def _create_image(self, color, alpha):
     return create_image(self._width, self._height, color, alpha)
 
-  def get_image(self, elapsed_sec):
+  def get_image(self, elapsed_sec, rms=None, bass=None):
     raise Exception('Effect.get_image() needs to be implemented by a subclass')
 
 
