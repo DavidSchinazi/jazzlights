@@ -52,7 +52,7 @@ platforms.
 7. Configure Ubuntu
 
         While installing:
-          Use fish / otto as username and password
+          Use fish / .... as username and password
           Enable auto-login
         Install updates
         Add terminal to quick-launch
@@ -89,10 +89,10 @@ Physical Setup
        - Set DHCP range as 192.168.60.60-254
        - Apply
     4. Advanced/Setup/Wireless Setup:
-       - Set WiFi as FISHLIGHT, with password 155155155
+       - Set WiFi as FISHLIGHT, with password our password
        - Apply
     5. Advanced/Administration/Set Password:
-       - Change admin password to 'otto'
+       - Change admin password to our password
     (for WGR614 use http://www.routerlogin.com/basicsetting.htm)
 
 
