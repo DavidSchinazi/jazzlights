@@ -11,7 +11,7 @@ class Blink(Effect):
     self._bgcolor = bgcolor
     self._freq = freq
 
-  def get_image(self, elapsed):
+  def get_image(self, elapsed, **kwargs):
     phase = int(elapsed * self._freq) % 2
     if phase:
       return self._create_image(self._fgcolor, 255)

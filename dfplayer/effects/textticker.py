@@ -27,7 +27,7 @@ class TextTicker(Effect):
     draw.text((int(w * 0.3), int(self._height * 0.1)),
               self._text, self._color, font=font)
 
-  def get_image(self, elapsed):
+  def get_image(self, elapsed, **kwargs):
     image = self._create_image('black', self._alpha)
     frame_width = image.size[0]
     text_width = self._rendered_text.size[0]

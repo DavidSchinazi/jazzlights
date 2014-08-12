@@ -11,7 +11,7 @@ class RandomPixels(Effect):
   def __init__(self, duration=7):
     Effect.__init__(self, duration=duration)
 
-  def get_image(self, elapsed):
+  def get_image(self, elapsed, **kwargs):
     def random_pixels(size):
       for i in xrange(size[0] * size[1]):
         yield (random.randint(0, 255),

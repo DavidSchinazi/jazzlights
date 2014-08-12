@@ -13,7 +13,7 @@ class TestStripes(Effect):
     self._bgcolor = bgcolor
     self._thickness = thickness
 
-  def get_image(self, elapsed):
+  def get_image(self, elapsed, **kwargs):
     image = self._create_image(self._bgcolor, 255)
     if elapsed < self._duration / 2:
       x = int(2 * self._width * elapsed / self._duration)

@@ -14,7 +14,7 @@ class Indicator(Effect):
     self._bass_old3 = 0
     self._elapsed = 0
 
-  def get_image(self, elapsed, rms, bass):
+  def get_image(self, elapsed, rms, bass, **kwargs):
     if self._elapsed:
       dt = elapsed - self._elapsed
     else:

@@ -9,7 +9,7 @@ class SolidColor(Effect):
     Effect.__init__(self, duration=duration)
     self._color = color
 
-  def get_image(self, elapsed):
+  def get_image(self, elapsed, **kwargs):
     return self._create_image(self._color, 255)
 
 
