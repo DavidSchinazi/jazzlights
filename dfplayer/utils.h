@@ -73,6 +73,23 @@ struct Bytes {
   int len_;
 };
 
+struct RgbGamma {
+  RgbGamma();
+
+  void SetGamma(double gamma);
+  void SetGammaRanges(
+      int r_min, int r_max, double r_gamma,
+      int g_min, int g_max, double g_gamma,
+      int b_min, int b_max, double b_gamma);
+
+  void Apply(uint8_t* dst, const uint8_t* src, int w, int h) const;
+
+ private:
+  double gamma_r_[256];
+  double gamma_g_[256];
+  double gamma_b_[256];
+};
+
 uint64_t GetCurrentMillis();
 
 // Resizes image using bilinear interpolation.

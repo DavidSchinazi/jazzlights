@@ -50,6 +50,47 @@ void Bytes::SetData(void* data, int len) {
   len_ = len;
 }
 
+RgbGamma::RgbGamma() {
+  SetGamma(1);
+}
+
+void RgbGamma::SetGamma(double gamma) {
+  SetGammaRanges(0, 255, gamma, 0, 255, gamma, 0, 255, gamma);
+}
+
+void RgbGamma::SetGammaRanges(
+    int r_min, int r_max, double r_gamma,
+    int g_min, int g_max, double g_gamma,
+    int b_min, int b_max, double b_gamma) {
+  if (r_min < 0 || r_max > 255 || r_min > r_max || r_gamma < 0.1 ||
+      g_min < 0 || g_max > 255 || g_min > g_max || g_gamma < 0.1 ||
+      b_min < 0 || b_max > 255 || b_min > b_max || b_gamma < 0.1) {
+    fprintf(stderr, "Incorrect gamma values\n");
+    return;
+  }
+
+  for (int i = 0; i < 256; i++) {
+    double d = ((double) i) / 255.0;
+    gamma_r_[i] =
+        (int) (r_min + floor((r_max - r_min) * pow(d, r_gamma) + 0.5));
+    gamma_g_[i] =
+        (int) (g_min + floor((g_max - g_min) * pow(d, g_gamma) + 0.5));
+    gamma_b_[i] =
+        (int) (b_min + floor((b_max - b_min) * pow(d, b_gamma) + 0.5));
+  }
+}
+
+void RgbGamma::Apply(uint8_t* dst, const uint8_t* src, int w, int h) const {
+  for (int y = 0; y < h; y++) {
+    for (int x = 0; x < w; x++) {
+      int i = (y * w + x) * 4;
+      dst[i] = gamma_r_[src[i]];
+      dst[i + 1] = gamma_g_[src[i + 1]];
+      dst[i + 2] = gamma_b_[src[i + 2]];
+    }
+  }
+}
+
 // Resizes image using bilinear interpolation.
 uint8_t* ResizeImage(
     uint8_t* src, int src_w, int src_h, int dst_w, int dst_h) {

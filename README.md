@@ -83,6 +83,7 @@ Physical Setup
 
     1. Use NetGear N300 WNR3500L (or better something that supports DD-WRT)
     2. Advanced/Setup/Internet Setup:
+       - Connect yellow (NetGear's Internet) port to the Internet
        - Apply without making changes
     3. Advanced/Setup/LAN Setup:
        - Set IP address to 192.168.60.1/255.255.255.0

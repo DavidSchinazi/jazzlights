@@ -151,7 +151,6 @@ class TclRenderer {
   void WaitForQueueLocked(int64_t next_time);
 
   uint8_t* CreateAdjustedImageLocked(Bytes* bytes, int w, int h);
-  void ApplyGammaLocked(uint8_t* image, int w, int h);
   void ApplyEffectLocked(uint8_t* image);
 
   Strands* DiffuseAndConvertImageToStrandsLocked(uint8_t* image_data);
@@ -170,9 +169,7 @@ class TclRenderer {
   bool is_shutting_down_;
   bool has_started_thread_;
   bool enable_net_;
-  double gamma_r_[256];
-  double gamma_g_[256];
-  double gamma_b_[256];
+  RgbGamma gamma_;
   Layout layout_;
   int socket_;
   bool require_reset_;

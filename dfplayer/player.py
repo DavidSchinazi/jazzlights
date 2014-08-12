@@ -99,7 +99,7 @@ class Player(object):
         self._playlist_name = playlist
         self.playlist = []
 
-        self._target_gamma = 1
+        self._target_gamma = 2.4
         self._visualization_volume = 1
         self._seek_time = None
         self._frame = None

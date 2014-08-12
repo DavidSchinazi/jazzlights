@@ -109,30 +109,17 @@ void TclRenderer::SetGamma(double gamma) {
   // 1.0 is uncorrected gamma, which is perceived as "too bright"
   // in the middle. 2.4 is a good starting point. Changing this value
   // affects mid-range pixels - higher values produce dimmer pixels.
-  SetGammaRanges(0, 255, gamma, 0, 255, gamma, 0, 255, gamma);
+  Autolock l(lock_);
+  gamma_.SetGamma(gamma);
 }
 
 void TclRenderer::SetGammaRanges(
     int r_min, int r_max, double r_gamma,
     int g_min, int g_max, double g_gamma,
     int b_min, int b_max, double b_gamma) {
-  if (r_min < 0 || r_max > 255 || r_min > r_max || r_gamma < 0.1 ||
-      g_min < 0 || g_max > 255 || g_min > g_max || g_gamma < 0.1 ||
-      b_min < 0 || b_max > 255 || b_min > b_max || b_gamma < 0.1) {
-    fprintf(stderr, "Incorrect gamma values\n");
-    return;
-  }
-
   Autolock l(lock_);
-  for (int i = 0; i < 256; i++) {
-    double d = ((double) i) / 255.0;
-    gamma_r_[i] =
-        (int) (r_min + floor((r_max - r_min) * pow(d, r_gamma) + 0.5));
-    gamma_g_[i] =
-        (int) (g_min + floor((g_max - g_min) * pow(d, g_gamma) + 0.5));
-    gamma_b_[i] =
-        (int) (b_min + floor((b_max - b_min) * pow(d, b_gamma) + 0.5));
-  }
+  gamma_.SetGammaRanges(
+      r_min, r_max, r_gamma, g_min, g_max, g_gamma, b_min, b_max, b_gamma);
 }
 
 void TclRenderer::SetAutoResetAfterNoDataMs(int value) {
@@ -253,7 +240,7 @@ uint8_t* TclRenderer::CreateAdjustedImageLocked(Bytes* bytes, int w, int h) {
   }
   uint8_t* img = new uint8_t[bytes->GetLen()];
   memcpy(img, bytes->GetData(), bytes->GetLen());
-  ApplyGammaLocked(img, w, h);
+  gamma_.Apply(img, img, w, h);
   return img;
 }
 
@@ -344,17 +331,6 @@ TclRenderer::Strands* TclRenderer::DiffuseAndConvertImageToStrandsLocked(
     strands->lengths[strand_id] = strand_len;
   }
   return strands;
-}
-
-void TclRenderer::ApplyGammaLocked(uint8_t* img, int w, int h) {
-  for (int y = 0; y < h; y++) {
-    for (int x = 0; x < w; x++) {
-      int i = (y * w + x) * 4;
-      img[i] = gamma_r_[img[i]];
-      img[i + 1] = gamma_g_[img[i + 1]];
-      img[i + 2] = gamma_b_[img[i + 2]];
-    }
-  }
 }
 
 // static
