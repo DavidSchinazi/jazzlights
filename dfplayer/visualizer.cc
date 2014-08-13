@@ -305,10 +305,10 @@ bool Visualizer::TransferPcmDataLocked() {
     }
   }
   if (!sample_count) {
-    fprintf(stderr, "ALSA produced no samples, discarded=%d, overrun=%d\n",
-            discard_count, total_overrun_count_);
+    //fprintf(stderr, "ALSA produced no samples, discarded=%d, overrun=%d\n",
+    //        discard_count, total_overrun_count_);
   } else if (!has_real_data) {
-    fprintf(stderr, "ALSA produced %d samples with empy data\n", sample_count);
+    //fprintf(stderr, "ALSA produced %d samples with empy data\n", sample_count);
   }
 
   PCM* pcm = projectm_->pcm();

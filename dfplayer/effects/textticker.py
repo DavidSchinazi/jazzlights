@@ -19,12 +19,12 @@ class TextTicker(Effect):
 
   def _prepare(self):
     font = ImageFont.truetype(PROJECT_DIR + '/dfplayer/effects/impact.ttf',
-        int(self._height * 0.9))
+        int(self._height * 0.8))
     (w, h) = font.getsize(self._text)
     self._rendered_text = create_image(
         int(w * 1.6), self._height, 'black', self._alpha)
     draw = ImageDraw.Draw(self._rendered_text)
-    draw.text((int(w * 0.3), int(self._height * 0.1)),
+    draw.text((int(w * 0.3), int(self._height * 0.1 - 3)),
               self._text, self._color, font=font)
 
   def get_image(self, elapsed, **kwargs):

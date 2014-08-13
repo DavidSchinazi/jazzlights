@@ -623,7 +623,7 @@ class Player(object):
         while True:
             with catch_and_log():
                 self._fetch_state()
-                logging.info(self)
+                #logging.info(self)
                 # with self.lock:
                 #    self.mpd.idle()
                 sleep(1)

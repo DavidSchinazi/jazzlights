@@ -94,14 +94,36 @@ def prev():
 @socketio.on('volume', namespace='/player')
 @catch_and_log()
 def volume(msg):
+    print 'Volume', msg['volume']
     player.volume = msg['volume']
+
+
+@socketio.on('play-effect', namespace='/player')
+@catch_and_log()
+def play_effect(msg):
+    print 'Effect ', msg
+    player.play_effect( **msg )
+
+
+@socketio.on('next-preset', namespace='/player')
+@catch_and_log()
+def next_preset():
+    print 'Next preset'
+    player.select_next_preset( True )
+
+
+@socketio.on('prev-preset', namespace='/player')
+@catch_and_log()
+def prev_preset():
+    print 'Prev preset'
+    player.select_next_preset( False )
 
 
 def run(with_player, host, port):
     global player
     player = with_player
     gevent.spawn(workthread)
-    print 'Listening on %s:%d' % (host, port)
+    print 'HTTP server listening on %s:%d' % (host, port)
     socketio.run(app, host=host, port=port)
 
 
