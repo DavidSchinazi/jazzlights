@@ -80,7 +80,7 @@ class Visualizer {
 
   void CloseInputLocked();
   bool TransferPcmDataLocked();
-  bool RenderFrameLocked(bool need_image);
+  bool RenderFrame(bool need_image);
   void PostTclFrameLocked();
 
   void CreateRenderContext();

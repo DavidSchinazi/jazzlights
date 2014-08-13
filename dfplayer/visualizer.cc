@@ -438,8 +438,12 @@ void Visualizer::CreateProjectM() {
 // dfplayer/presets/nil - Can't Stop the Blithering.milk
 
 
-bool Visualizer::RenderFrameLocked(bool need_image) {
+bool Visualizer::RenderFrame(bool need_image) {
   projectm_->renderFrame();
+
+  Autolock l(lock_);
+  if (is_shutting_down_)
+    return false;
 
   double bass = 0;
   double bass_att = 0;
@@ -623,7 +627,7 @@ void Visualizer::Run() {
     // We run at 2x the max rendering FPS to make it 30FPS,
     // so deliver every other frame.
     bool need_image = (frame_num & 1) == 0;
-    bool has_new_image = RenderFrameLocked(need_image);
+    bool has_new_image = RenderFrame(need_image);
     //fprintf(stderr, "Rendered frame = %d\n", (int)has_new_image);
 
     {
