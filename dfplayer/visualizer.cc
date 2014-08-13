@@ -441,7 +441,20 @@ void Visualizer::CreateProjectM() {
 bool Visualizer::RenderFrameLocked(bool need_image) {
   projectm_->renderFrame();
 
-  last_bass_info_ = projectm_->getBassData();
+  double bass = 0;
+  double bass_att = 0;
+  double mid = 0;
+  double mid_att = 0;
+  double treb = 0;
+  double treb_att = 0;
+  projectm_->getBassData(&bass, &bass_att, &mid, &mid_att, &treb, &treb_att);
+  last_bass_info_.clear();
+  last_bass_info_.push_back(bass);
+  last_bass_info_.push_back(bass_att);
+  last_bass_info_.push_back(mid);
+  last_bass_info_.push_back(mid_att);
+  last_bass_info_.push_back(treb);
+  last_bass_info_.push_back(treb_att);
 
   GLenum err = glGetError();
   if (err != GL_NO_ERROR) {
