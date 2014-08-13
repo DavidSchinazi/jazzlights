@@ -110,7 +110,7 @@ class Player(object):
         self._visualization_period_stats = Stats(100)
 
         self._tcl = TclRenderer(
-            TCL_CONTROLLER, _SCREEN_FRAME_WIDTH, FRAME_HEIGHT,
+            TCL_CONTROLLER, FPS, _SCREEN_FRAME_WIDTH, FRAME_HEIGHT,
             'dfplayer/layout.dxf', self._target_gamma,
             _USE_CC_TCL, enable_net)
 

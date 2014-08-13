@@ -40,7 +40,15 @@ struct Layout {
   int x_[STRAND_COUNT][STRAND_LENGTH];
   int y_[STRAND_COUNT][STRAND_LENGTH];
   int lengths_[STRAND_COUNT];
-  friend class TclRenderer;
+  friend class TclController;
+};
+
+class TclController;
+
+enum EffectMode {
+  EFFECT_OVERLAY = 0,
+  EFFECT_DUPLICATE = 1,
+  EFFECT_MIRROR = 2,
 };
 
 // Sends requested images to TCL controller.
@@ -53,18 +61,14 @@ struct Layout {
 //   renderer->ScheduleImage(image_data, time);
 class TclRenderer {
  public:
-  TclRenderer(
-      int controller_id, int width, int height,
+  void AddController(
+      int id, int width, int height,
       const Layout& layout, double gamma);
-  ~TclRenderer();
+  void LockControllers();
 
-  // TODO(igorc): Refactor TclRenderer collection.
-  static TclRenderer* GetByControllerId(int id);
+  static TclRenderer* GetInstance() { return instance_; }
 
-  void StartMessageLoop(bool enable_net);
-
-  int GetWidth() const { return width_; }
-  int GetHeight() const { return height_; }
+  void StartMessageLoop(int fps, bool enable_net);
 
   void SetGamma(double gamma);
   void SetGammaRanges(
@@ -74,14 +78,19 @@ class TclRenderer {
 
   void ResetImageQueue();
 
-  void ScheduleImageAt(Bytes* bytes, int id, const AdjustableTime& time);
+  void ScheduleImageAt(
+      int controller_id, Bytes* bytes, int w, int h, EffectMode mode,
+      int crop_x, int crop_y, int crop_w, int crop_h,
+      int id, const AdjustableTime& time);
 
-  void SetEffectImage(Bytes* bytes, bool mirror);
+  void SetEffectImage(
+      int controller_id, Bytes* bytes, int w, int h, EffectMode mode);
 
-  Bytes* GetAndClearLastImage();
-  int GetLastImageId();
+  Bytes* GetAndClearLastImage(int controller_id);
+  int GetLastImageId(int controller_id);
 
-  std::vector<int> GetFrameDataForTest(Bytes* bytes);
+  std::vector<int> GetFrameDataForTest(
+      int controller_id, Bytes* bytes, int w, int h);
 
   // Returns the total of all artificial delays
   // added during sending of data.
@@ -96,41 +105,24 @@ class TclRenderer {
   int GetQueueSize();
 
  private:
+  TclRenderer();
   TclRenderer(const TclRenderer& src);
   TclRenderer& operator=(const TclRenderer& rhs);
-
-  struct Strands {
-    Strands() {
-      for (int i = 0; i < STRAND_COUNT; i++) {
-        colors[i] = new uint8_t[STRAND_LENGTH * 3];
-        lengths[i] = 0;
-      }
-    }
-
-    ~Strands() {
-      for (int i = 0; i < STRAND_COUNT; i++) {
-        delete[] colors[i];
-      }
-    }
-
-    uint8_t* colors[STRAND_COUNT];
-    int lengths[STRAND_COUNT];
-
-  private:
-    Strands(const Strands& src);
-    Strands& operator=(const Strands& rhs);
-  };
+  ~TclRenderer();
 
   struct WorkItem {
-    WorkItem(bool needs_reset, uint8_t* img, int id, uint64_t time)
-        : needs_reset_(needs_reset), img_(img), id_(id), time_(time) {}
+    WorkItem(bool needs_reset, TclController* controller,
+             const RgbaImage& img, int id, uint64_t time)
+        : needs_reset_(needs_reset), controller_(controller),
+          img_(img), id_(id), time_(time) {}
 
     bool operator<(const WorkItem& other) const {
       return (time_ > other.time_);
     }
 
     bool needs_reset_;
-    uint8_t* img_;
+    TclController* controller_;
+    RgbaImage img_;
     int id_;
     uint64_t time_;
   };
@@ -138,55 +130,26 @@ class TclRenderer {
   void Run();
   static void* ThreadEntry(void* arg);
 
-  // Socket communication funtions are invoked from worker thread only.
-  bool Connect();
-  void CloseSocket();
-  bool InitController();
-  bool SendFrame(uint8_t* frame_data);
-  bool SendPacket(const void* data, int size);
-  void ConsumeReplyData();
-  void SetLastReplyTime();
+  TclController* FindControllerLocked(int id);
 
   bool PopNextWorkItemLocked(WorkItem* item, int64_t* next_time);
   void WaitForQueueLocked(int64_t next_time);
 
-  uint8_t* CreateAdjustedImageLocked(Bytes* bytes, int w, int h);
-  void ApplyEffectLocked(uint8_t* image);
-
-  Strands* DiffuseAndConvertImageToStrandsLocked(uint8_t* image_data);
-
-  static uint8_t* ConvertStrandsToFrame(Strands* strands);
-  static int BuildFrameColorSeq(
-    Strands* strands, int led_id, int color_component, uint8_t* dst);
-
-  int controller_id_;
-  int width_;
-  int height_;
-  int mgs_start_delay_us_;
-  int mgs_data_delay_us_;
+  std::vector<TclController*> controllers_;
+  int fps_;
   int auto_reset_after_no_data_ms_;
-  bool init_sent_;
   bool is_shutting_down_;
   bool has_started_thread_;
   bool enable_net_;
-  RgbGamma gamma_;
-  Layout layout_;
-  int socket_;
-  bool require_reset_;
-  uint64_t last_reply_time_;
-  uint8_t* last_image_;
-  int last_image_id_;
-  bool has_last_image_;
-  uint8_t* effect_image_;
-  bool effect_image_mirrored_;
+  bool controllers_locked_;
+  uint64_t base_time_;
   std::priority_queue<WorkItem> queue_;
   pthread_mutex_t lock_;
   pthread_cond_t cond_;
   pthread_t thread_;
-  int frames_sent_after_reply_;
   std::vector<int> frame_delays_;
 
-  static std::vector<TclRenderer*> all_renderers_;
+  static TclRenderer* instance_;
 };
 
 #endif  // __DFPLAYER_TCL_RENDERER_H

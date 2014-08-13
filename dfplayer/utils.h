@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #define REPORT_ERRNO(name)                           \
   fprintf(stderr, "Failure in '%s' call: %d, %s\n",  \
@@ -29,7 +30,7 @@
   *((uint32_t*) ((uint8_t*) (dst) + (dst_pos))) =               \
       *((uint32_t*)((uint8_t*) (src) + (src_pos)))
 
-#define PIX_LEN(w, h)   ((w) * (h) * 4)
+#define RGBA_LEN(w, h)   ((w) * (h) * 4)
 
 class Autolock {
  public:
@@ -90,7 +91,33 @@ struct RgbGamma {
   double gamma_b_[256];
 };
 
+struct RgbaImage {
+  RgbaImage();
+  RgbaImage(uint8_t* data, int w, int h);
+  RgbaImage(const RgbaImage& src);
+  RgbaImage& operator=(const RgbaImage& rhs);
+  ~RgbaImage();
+
+  void Clear() { Set(NULL, 0, 0); }
+  void Set(uint8_t* data, int w, int h);
+
+  bool IsEmpty() const { return data_ == NULL; }
+  uint8_t* GetData() const { return data_; }
+  int GetWidth() const { return width_; }
+  int GetHeight() const { return height_; }
+  int GetDataLen() const { return RGBA_LEN(width_, height_); }
+
+ private:
+  uint8_t* data_;
+  int width_;
+  int height_;
+};
+
 uint64_t GetCurrentMillis();
+
+void Sleep(double seconds);
+
+void AddTimeMillis(struct timespec* time, uint64_t increment);
 
 // Resizes image using bilinear interpolation.
 uint8_t* ResizeImage(

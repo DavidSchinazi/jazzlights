@@ -42,9 +42,9 @@ Visualizer::Visualizer(
       current_preset_index_(-1),
       lock_(PTHREAD_MUTEX_INITIALIZER) {
   last_render_time_ = GetCurrentMillis();
-  ms_per_frame_ = (uint32_t) (1000.0 / (double) fps);
+  ms_per_frame_ = (uint32_t) (1000.0 / (double) fps_);
 
-  image_buffer_size_ = PIX_LEN(texsize_, texsize_);
+  image_buffer_size_ = RGBA_LEN(texsize_, texsize_);
   image_buffer_ = new uint8_t[image_buffer_size_];
 
   for (int i = 0; i < 6; ++i) {
@@ -525,51 +525,18 @@ bool Visualizer::RenderFrameLocked(bool need_image) {
 }
 
 void Visualizer::PostTclFrameLocked() {
-  TclRenderer* tcl = TclRenderer::GetByControllerId(1);
+  TclRenderer* tcl = TclRenderer::GetInstance();
   if (!tcl) {
-    fprintf(stderr, "TCL controller not found\n");
+    fprintf(stderr, "TCL renderer not found\n");
     return;
   }
 
-  int dst_w = tcl->GetWidth();
-  int src_w = dst_w / 2;
-  int height = tcl->GetHeight();
-
-  uint8_t* src_img1 = ResizeImage(
-      image_buffer_, texsize_, texsize_, src_w, height);
-  uint8_t* src_img2 = FlipImage(src_img1, src_w, height, true);
-
-  int len = PIX_LEN(dst_w, height);
-  uint8_t* dst = new uint8_t[len];
-  PasteSubImage(src_img1, src_w, height,
-      dst, 0, 0, dst_w, height, false);
-  PasteSubImage(src_img2, src_w, height,
-      dst, src_w, 0, dst_w, height, false);
-
-  delete[] src_img1;
-  delete[] src_img2;
-
   AdjustableTime now;
-  Bytes* bytes = new Bytes(dst, len);
-  tcl->ScheduleImageAt(bytes, 0, now);
-  delete[] dst;
+  Bytes* bytes = new Bytes(image_buffer_, RGBA_LEN(texsize_, texsize_));
+  tcl->ScheduleImageAt(
+      1, bytes, texsize_, texsize_, EFFECT_MIRROR,
+      0, 0, texsize_, texsize_, 0, now);
   delete bytes;
-}
-
-static void Sleep(double seconds) {
-  struct timespec req;
-  struct timespec rem;
-  req.tv_sec = (int) seconds;
-  req.tv_nsec = (long) ((seconds - req.tv_sec) * 1000000000.0);
-  rem.tv_sec = 0;
-  rem.tv_nsec = 0;
-  while (nanosleep(&req, &rem) == -1) {
-    if (errno != EINTR) {
-      REPORT_ERRNO("nanosleep");
-      break;
-    }
-    req = rem;
-  }
 }
 
 void Visualizer::NextPresetWorkItem::Run(Visualizer* self) {

@@ -20,8 +20,9 @@ class TclRenderer(object):
        renderer.send_frame(image_data)
   """
 
-  def __init__(self, controller_id, width, height, layout_file,
+  def __init__(self, controller_id, fps, width, height, layout_file,
                gamma, use_cc_impl, enable_net, test_mode=False):
+    self._controller_id = controller_id
     self._layout = TclLayout(layout_file, width - 1, height - 1)
     self._use_cc_impl = use_cc_impl
     if self._use_cc_impl:
@@ -29,10 +30,12 @@ class TclRenderer(object):
       for s in self._layout.get_strands():
         for c in s.get_coords():
           layout.AddCoord(s.get_id(), c[0], c[1])
-      self._renderer = TclCcImpl(controller_id, width, height, layout, gamma)
+      self._renderer = TclCcImpl.GetInstance()
+      self._renderer.AddController(controller_id, width, height, layout, gamma)
+      self._renderer.LockControllers()
       self._frame_send_duration = self._renderer.GetFrameSendDuration()
       if not test_mode:
-        self._renderer.StartMessageLoop(enable_net)
+        self._renderer.StartMessageLoop(fps, enable_net)
     else:
       self._renderer = TclPyImpl(controller_id, width, height, self._layout)
       if not test_mode:
@@ -69,12 +72,12 @@ class TclRenderer(object):
     if not self._use_cc_impl:
       print 'get_and_clear_last_image not supported'
       return None
-    return self._renderer.GetAndClearLastImage()
+    return self._renderer.GetAndClearLastImage(self._controller_id)
 
   def get_last_image_id(self):
     if not self._use_cc_impl:
       return 0
-    return self._renderer.GetLastImageId()
+    return self._renderer.GetLastImageId(self._controller_id)
 
   def get_send_duration_ms(self):
     return self._frame_send_duration
@@ -93,17 +96,26 @@ class TclRenderer(object):
     if self._use_cc_impl:
       time = TclCcTime()
       time.AddMillis(delay_ms - self._frame_send_duration)
-      self._renderer.ScheduleImageAt(image.tostring(), id, time)
+      self._renderer.ScheduleImageAt(
+          self._controller_id, image.tostring(), image.size[0], image.size[1],
+          0, 0, image.size[0], image.size[1], 2, id, time)
     else:
       self._renderer.send_frame(list(image.getdata()), get_time_millis())
 
   def set_effect_image(self, image, mirror):
     if self._use_cc_impl:
-      self._renderer.SetEffectImage(image.tostring() if image else '', mirror)
+      if image:
+        self._renderer.SetEffectImage(
+            self._controller_id, image.tostring(),
+            image.size[0], image.size[1], 2 if mirror else 1)
+      else:
+        self._renderer.SetEffectImage(
+            self._controller_id, '', 0, 0, 2)
 
   def get_frame_data_for_test(self, image):
     if self._use_cc_impl:
-      return self._renderer.GetFrameDataForTest(image.tostring())
+      return self._renderer.GetFrameDataForTest(
+          self._controller_id, image.tostring())
     else:
       return self._renderer.get_frame_data_for_test(list(image.getdata()))
 

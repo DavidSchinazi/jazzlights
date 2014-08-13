@@ -27,6 +27,28 @@ uint64_t GetCurrentMillis() {
   return ((uint64_t) time.tv_sec) * 1000 + time.tv_nsec / 1000000;
 }
 
+void Sleep(double seconds) {
+  struct timespec req;
+  struct timespec rem;
+  req.tv_sec = (int) seconds;
+  req.tv_nsec = (long) ((seconds - req.tv_sec) * 1000000000.0);
+  rem.tv_sec = 0;
+  rem.tv_nsec = 0;
+  while (nanosleep(&req, &rem) == -1) {
+    if (errno != EINTR) {
+      REPORT_ERRNO("nanosleep");
+      break;
+    }
+    req = rem;
+  }
+}
+
+void AddTimeMillis(struct timespec* time, uint64_t increment) {
+  uint64_t nsec = (increment % 1000000) * 1000000 + time->tv_nsec;
+  time->tv_sec += increment / 1000 + nsec / 1000000000;
+  time->tv_nsec = nsec % 1000000000;
+}
+
 Bytes::Bytes(void* data, int len)
     : data_(NULL), len_(0) {
   SetData(data, len);
@@ -88,6 +110,40 @@ void RgbGamma::Apply(uint8_t* dst, const uint8_t* src, int w, int h) const {
       dst[i + 1] = gamma_g_[src[i + 1]];
       dst[i + 2] = gamma_b_[src[i + 2]];
     }
+  }
+}
+
+RgbaImage::RgbaImage() : data_(NULL) {
+  Set(NULL, 0, 0);
+}
+
+RgbaImage::RgbaImage(uint8_t* data, int w, int h) : data_(NULL) {
+  Set(data, w, h);
+}
+
+RgbaImage::RgbaImage(const RgbaImage& src) : data_(NULL) {
+  Set(src.data_, src.width_, src.height_);
+}
+
+RgbaImage& RgbaImage::operator=(const RgbaImage& rhs) {
+  // We could avoid memory copies... but it is not a big deal yet.
+  Set(rhs.data_, rhs.width_, rhs.height_);
+  return *this;
+}
+
+RgbaImage::~RgbaImage() {
+  delete[] data_;
+}
+
+void RgbaImage::Set(uint8_t* data, int w, int h) {
+  delete[] data_;
+  data_ = NULL;
+  width_ = w;
+  height_ = h;
+  int len = RGBA_LEN(w, h);
+  if (len) {
+    data_ = new uint8_t[len];
+    memcpy(data_, data, len);
   }
 }
 

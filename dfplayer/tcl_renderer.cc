@@ -20,233 +20,211 @@
 
 #define FRAME_DATA_LEN  (STRAND_LENGTH * 8 * 3)
 
-std::vector<TclRenderer*> TclRenderer::all_renderers_;
+static const int kMgsStartDelayUs = 500;
+static const int kMgsDataDelayUs = 1500;
+static const int kFrameSendDurationUs =
+    kMgsStartDelayUs + kMgsDataDelayUs * (FRAME_DATA_LEN / 1024);
 
-AdjustableTime::AdjustableTime() : time_(GetCurrentMillis()) {}
+TclRenderer* TclRenderer::instance_ = new TclRenderer();
 
-void AdjustableTime::AddMillis(int ms) {
-  time_ += ms;
-}
+///////////////////////////////////////////////////////////////////////////////
+// TclController
+///////////////////////////////////////////////////////////////////////////////
 
-Layout::Layout() {
-  memset(lengths_, 0, sizeof(lengths_));
-}
-
-void Layout::AddCoord(int strand_id, int x, int y) {
-  CHECK(strand_id >= 0 && strand_id < STRAND_COUNT);
-  if (lengths_[strand_id] == STRAND_LENGTH) {
-    fprintf(stderr, "Cannot add more coords to strand %d\n", strand_id);
-    return;
-  }
-  int pos = lengths_[strand_id];
-  lengths_[strand_id] = pos + 1;
-  x_[strand_id][pos] = x;
-  y_[strand_id][pos] = y;
-}
-
-TclRenderer::TclRenderer(
-    int controller_id, int width, int height,
-    const Layout& layout, double gamma)
-    : controller_id_(controller_id), width_(width), height_(height),
-      mgs_start_delay_us_(500), mgs_data_delay_us_(1500),
-      auto_reset_after_no_data_ms_(5000), init_sent_(false),
-      is_shutting_down_(false), has_started_thread_(false),
-      enable_net_(false), layout_(layout),
-      socket_(-1), require_reset_(true), last_reply_time_(0),
-      last_image_id_(0), has_last_image_(false), effect_image_(NULL),
-      effect_image_mirrored_(false),
-      lock_(PTHREAD_MUTEX_INITIALIZER),
-      cond_(PTHREAD_COND_INITIALIZER),
-      frames_sent_after_reply_(0) {
-  SetGamma(gamma);
-  all_renderers_.push_back(this);
-  last_image_ = new uint8_t[PIX_LEN(width_, height_)];
-}
-
-TclRenderer::~TclRenderer() {
-  if (has_started_thread_) {
-    {
-      Autolock l(lock_);
-      is_shutting_down_ = true;
-      pthread_cond_broadcast(&cond_);
+struct Strands {
+  Strands() {
+    for (int i = 0; i < STRAND_COUNT; i++) {
+      colors[i] = new uint8_t[STRAND_LENGTH * 3];
+      lengths[i] = 0;
     }
-
-    pthread_join(thread_, NULL);
   }
 
-  ResetImageQueue();
-
-  delete[] last_image_;
-  delete[] effect_image_;
-
-  pthread_cond_destroy(&cond_);
-  pthread_mutex_destroy(&lock_);
-}
-
-// static
-TclRenderer* TclRenderer::GetByControllerId(int id) {
-  for (size_t i = 0; i < all_renderers_.size(); i++) {
-    if (all_renderers_[i]->controller_id_ == id)
-      return all_renderers_[i];
+  ~Strands() {
+    for (int i = 0; i < STRAND_COUNT; i++) {
+      delete[] colors[i];
+    }
   }
-  return NULL;
+
+  uint8_t* colors[STRAND_COUNT];
+  int lengths[STRAND_COUNT];
+
+ private:
+  Strands(const Strands& src);
+  Strands& operator=(const Strands& rhs);
+};
+
+class TclController {
+ public:
+  TclController(
+      int id, int width, int height,
+      const Layout& layout, double gamma);
+  ~TclController();
+
+  int GetId() const { return id_; }
+  int GetWidth() const { return width_; }
+  int GetHeight() const { return height_; }
+
+  bool BuildImage(Bytes* bytes, int w, int h, EffectMode mode, RgbaImage* dst);
+
+  Bytes* GetAndClearLastImage();
+  int GetLastImageId() const { return last_image_id_; }
+
+  void SetEffectImage(Bytes* bytes, int w, int h, EffectMode mode);
+
+  void SetGammaRanges(
+      int r_min, int r_max, double r_gamma,
+      int g_min, int g_max, double g_gamma,
+      int b_min, int b_max, double b_gamma);
+
+  // Socket communication funtions are invoked from worker thread only.
+  void UpdateAutoReset(uint64_t auto_reset_after_no_data_ms);
+  void ScheduleReset();
+  bool InitController();
+  bool SendFrame(uint8_t* frame_data);
+
+  uint8_t* BuildFrameDataForImage(RgbaImage* img, int id);
+
+  void ApplyEffect(RgbaImage* image);
+  Strands* DiffuseAndConvertImageToStrands(const RgbaImage& image);
+
+  static uint8_t* ConvertStrandsToFrame(Strands* strands);
+  static int BuildFrameColorSeq(
+      Strands* strands, int led_id, int color_component, uint8_t* dst);
+
+ private:
+  TclController(const TclController& src);
+  TclController& operator=(const TclController& rhs);
+
+  bool Connect();
+  void CloseSocket();
+  bool SendPacket(const void* data, int size);
+  void ConsumeReplyData();
+  void SetLastReplyTime();
+
+  int id_;
+  int width_;
+  int height_;
+  bool init_sent_;
+  RgbGamma gamma_;
+  Layout layout_;
+  int socket_;
+  bool require_reset_;
+  uint64_t last_reply_time_;
+  RgbaImage last_image_;
+  int last_image_id_;
+  bool has_last_image_;
+  RgbaImage effect_image_;
+  int frames_sent_after_reply_;
+};
+
+TclController::TclController(
+    int id, int width, int height,
+    const Layout& layout, double gamma)
+    : id_(id), width_(width), height_(height), init_sent_(false),
+      layout_(layout), socket_(-1), require_reset_(true), last_reply_time_(0),
+      last_image_id_(0), has_last_image_(false),
+      frames_sent_after_reply_(0) {
+  SetGammaRanges(0, 255, gamma, 0, 255, gamma, 0, 255, gamma);
 }
 
-void TclRenderer::StartMessageLoop(bool enable_net) {
-  Autolock l(lock_);
-  if (has_started_thread_)
+TclController::~TclController() {
+  CloseSocket();
+}
+
+void TclController::UpdateAutoReset(uint64_t auto_reset_after_no_data_ms) {
+  if (auto_reset_after_no_data_ms <= 0 || require_reset_ ||
+      frames_sent_after_reply_ <= 2) {
     return;
-  enable_net_ = enable_net;
-  has_started_thread_ = true;
-  int err = pthread_create(&thread_, NULL, &ThreadEntry, this);
-  if (err != 0) {
-    fprintf(stderr, "pthread_create failed with %d\n", err);
-    CHECK(false);
+  }
+
+  uint64_t reply_delay = GetCurrentMillis() - last_reply_time_;
+  if (reply_delay > auto_reset_after_no_data_ms) {
+    fprintf(stderr, "No reply in %lld ms and %d frames, RESETTING !!!\n",
+            (long long) reply_delay, frames_sent_after_reply_);
+    require_reset_ = true;
   }
 }
 
-void TclRenderer::SetGamma(double gamma) {
-  // 1.0 is uncorrected gamma, which is perceived as "too bright"
-  // in the middle. 2.4 is a good starting point. Changing this value
-  // affects mid-range pixels - higher values produce dimmer pixels.
-  Autolock l(lock_);
-  gamma_.SetGamma(gamma);
+void TclController::ScheduleReset() {
+  require_reset_ = true;
 }
 
-void TclRenderer::SetGammaRanges(
-    int r_min, int r_max, double r_gamma,
-    int g_min, int g_max, double g_gamma,
-    int b_min, int b_max, double b_gamma) {
-  Autolock l(lock_);
-  gamma_.SetGammaRanges(
-      r_min, r_max, r_gamma, g_min, g_max, g_gamma, b_min, b_max, b_gamma);
-}
-
-void TclRenderer::SetAutoResetAfterNoDataMs(int value) {
-  Autolock l(lock_);
-  auto_reset_after_no_data_ms_ = value;
-}
-
-std::vector<int> TclRenderer::GetAndClearFrameDelays() {
-  Autolock l(lock_);
-  std::vector<int> result = frame_delays_;
-  frame_delays_.clear();
-  return result;
-}
-
-int TclRenderer::GetFrameSendDuration() {
-  Autolock l(lock_);
-  int usec = mgs_start_delay_us_ + mgs_data_delay_us_ * (FRAME_DATA_LEN / 1024);
-  return usec / 1000;
-}
-
-Bytes* TclRenderer::GetAndClearLastImage() {
-  Autolock l(lock_);
+Bytes* TclController::GetAndClearLastImage() {
   if (!has_last_image_)
     return NULL;
-  Bytes* result = new Bytes(last_image_, PIX_LEN(width_, height_));
+  Bytes* result = new Bytes(last_image_.GetData(), last_image_.GetDataLen());
   has_last_image_ = false;
   return result;
 }
 
-int TclRenderer::GetLastImageId() {
-  Autolock l(lock_);
-  return last_image_id_;
+void TclController::SetGammaRanges(
+    int r_min, int r_max, double r_gamma,
+    int g_min, int g_max, double g_gamma,
+    int b_min, int b_max, double b_gamma) {
+  gamma_.SetGammaRanges(
+      r_min, r_max, r_gamma, g_min, g_max, g_gamma, b_min, b_max, b_gamma);
 }
 
-void TclRenderer::ScheduleImageAt(
-    Bytes* bytes, int id, const AdjustableTime& time) {
-  Autolock l(lock_);
-  uint8_t* img = CreateAdjustedImageLocked(bytes, width_, height_);
-  if (!img)
+bool TclController::BuildImage(
+    Bytes* bytes, int w, int h, EffectMode mode, RgbaImage* dst) {
+  if (!bytes || !bytes->GetLen())
+    return false;
+
+  // TODO(igorc): Linearize RGB gamma.
+  uint8_t* img_data;
+  if (mode == EFFECT_OVERLAY) {
+    img_data = ResizeImage(bytes->GetData(), w, h, width_, height_);
+  } else if (mode == EFFECT_DUPLICATE) {
+    img_data = new uint8_t[RGBA_LEN(width_, height_)];
+    uint8_t* img1 = ResizeImage(bytes->GetData(), w, h, width_ / 2, height_);
+    PasteSubImage(img1, width_ / 2, height_,
+        img_data, 0, 0, width_, height_, false);
+    PasteSubImage(img1, width_ / 2, height_,
+        img_data, width_ / 2, 0, width_, height_, false);
+    delete[] img1;
+  } else {  // EFFECT_MIRROR
+    img_data = new uint8_t[RGBA_LEN(width_, height_)];
+    uint8_t* img1 = ResizeImage(bytes->GetData(), w, h, width_ / 2, height_);
+    uint8_t* img2 = FlipImage(img1, width_ / 2, height_, true);
+    PasteSubImage(img1, width_ / 2, height_,
+        img_data, 0, 0, width_, height_, false);
+    PasteSubImage(img2, width_ / 2, height_,
+        img_data, width_ / 2, 0, width_, height_, false);
+    delete[] img1;
+    delete[] img2;
+  }
+
+  dst->Set(img_data, width_, height_);
+  delete[] img_data;
+  return true;
+}
+
+void TclController::SetEffectImage(
+    Bytes* bytes, int w, int h, EffectMode mode) {
+  effect_image_.Clear();
+  BuildImage(bytes, w, h, mode, &effect_image_);
+}
+
+void TclController::ApplyEffect(RgbaImage* image) {
+  if (effect_image_.IsEmpty())
     return;
-  CHECK(has_started_thread_);
-  if (is_shutting_down_) {
-    delete[] img;
-    return;
-  }
 
-  queue_.push(WorkItem(false, img, id, time.time_));
-  int err = pthread_cond_broadcast(&cond_);
-  if (err != 0) {
-    fprintf(stderr, "Unable to signal condition: %d\n", err);
-    CHECK(false);
-  }
+  PasteSubImage(effect_image_.GetData(), width_, height_,
+      image->GetData(), 0, 0, width_, height_, true);
 }
 
-void TclRenderer::SetEffectImage(Bytes* bytes, bool mirror) {
-  Autolock l(lock_);
-  delete[] effect_image_;
-  effect_image_ = NULL;
-  if (bytes && bytes->GetLen()) {
-    effect_image_ = CreateAdjustedImageLocked(bytes, width_ / 2, height_);
-    effect_image_mirrored_ = mirror;
-  }
-}
-
-void TclRenderer::ApplyEffectLocked(uint8_t* image) {
-  if (!effect_image_)
-    return;
-
-  PasteSubImage(effect_image_, width_ / 2, height_,
-      image, 0, 0, width_, height_, true);
-
-  uint8_t* second_image = effect_image_;
-  if (effect_image_mirrored_)
-    second_image = FlipImage(effect_image_, width_ / 2, height_, true);
-
-  PasteSubImage(second_image, width_ / 2, height_,
-      image, width_ / 2, 0, width_, height_, true);
-
-  if (second_image != effect_image_)
-    delete[] second_image;
-}
-
-void TclRenderer::ResetImageQueue() {
-  Autolock l(lock_);
-  while (!queue_.empty()) {
-    WorkItem item = queue_.top();
-    queue_.pop();
-    delete[] item.img_;
-  }
-}
-
-std::vector<int> TclRenderer::GetFrameDataForTest(Bytes* bytes) {
-  Autolock l(lock_);
-  std::vector<int> result;
-  uint8_t* img = CreateAdjustedImageLocked(bytes, width_, height_);
-  if (!img)
-    return result;
-  Strands* strands = DiffuseAndConvertImageToStrandsLocked(img);
-  if (!strands) {
-    delete[] img;
-    return result;
-  }
-  uint8_t* frame_data = ConvertStrandsToFrame(strands);
-  for (int i = 0; i < FRAME_DATA_LEN; i++) {
-    result.push_back(frame_data[i]);
-  }
-  delete[] frame_data;
-  delete[] img;
-  delete strands;
-  return result;
-}
-
-uint8_t* TclRenderer::CreateAdjustedImageLocked(Bytes* bytes, int w, int h) {
-  if (bytes->GetLen() != PIX_LEN(w, h)) {
-    fprintf(stderr, "Unexpected image size in TCL renderer: %d\n",
-            bytes->GetLen());
+uint8_t* TclController::BuildFrameDataForImage(RgbaImage* img, int id) {
+  ApplyEffect(img);
+  Strands* strands = DiffuseAndConvertImageToStrands(*img);
+  if (!strands)
     return NULL;
-  }
-  uint8_t* img = new uint8_t[bytes->GetLen()];
-  memcpy(img, bytes->GetData(), bytes->GetLen());
-  gamma_.Apply(img, img, w, h);
-  return img;
-}
 
-int TclRenderer::GetQueueSize() {
-  Autolock l(lock_);
-  return queue_.size();
+  uint8_t* frame_data = ConvertStrandsToFrame(strands);
+  last_image_ = *img;
+  last_image_id_ = id;
+  has_last_image_ = true;
+  delete strands;
+  return frame_data;
 }
 
 #define ADD_IMG_BYTE()                           \
@@ -258,7 +236,8 @@ int TclRenderer::GetQueueSize() {
     color2_count++;                              \
   }
 
-static void DiffuseColorValue(uint8_t* image, int w, int h, int x, int y) {
+/*static void DiffuseColorValue(
+    const uint8_t* image, int w, int h, int x, int y) {
   int color_pos = (y * w + x) * 4;
   int32_t color_r = 16 * image[color_pos];
   int32_t color_g = 16 * image[color_pos + 1];
@@ -298,12 +277,13 @@ static void DiffuseColorValue(uint8_t* image, int w, int h, int x, int y) {
   image[color_pos] = std::min(0xFF, std::max(0, color_r / 16)) & 0xFF;
   image[color_pos + 1] = std::min(0xFF, std::max(0, color_g / 16)) & 0xFF;
   image[color_pos + 2] = std::min(0xFF, std::max(0, color_b / 16)) & 0xFF;
-}
+}*/
 
-TclRenderer::Strands* TclRenderer::DiffuseAndConvertImageToStrandsLocked(
-    uint8_t* image_data) {
-  int len = PIX_LEN(width_, height_);
+Strands* TclController::DiffuseAndConvertImageToStrands(
+    const RgbaImage& image) {
+  int len = RGBA_LEN(width_, height_);
   Strands* strands = new Strands();
+  const uint8_t* image_data = image.GetData();
   for (int strand_id  = 0; strand_id < STRAND_COUNT; strand_id++) {
     int* x_arr = layout_.x_[strand_id];
     int* y_arr = layout_.y_[strand_id];
@@ -321,7 +301,7 @@ TclRenderer::Strands* TclRenderer::DiffuseAndConvertImageToStrandsLocked(
         delete strands;
         return NULL;
       }
-      DiffuseColorValue(image_data, width_, height_, x, y);
+      //DiffuseColorValue(image_data, width_, height_, x, y);
 
       int dst_idx = i * 3;  // Strands are RGB.
       dst_colors[dst_idx] = image_data[color_idx];
@@ -334,7 +314,7 @@ TclRenderer::Strands* TclRenderer::DiffuseAndConvertImageToStrandsLocked(
 }
 
 // static
-uint8_t* TclRenderer::ConvertStrandsToFrame(TclRenderer::Strands* strands) {
+uint8_t* TclController::ConvertStrandsToFrame(Strands* strands) {
   uint8_t* result = new uint8_t[FRAME_DATA_LEN];
   int pos = 0;
   for (int led_id = 0; led_id < STRAND_LENGTH; led_id++) {
@@ -351,8 +331,8 @@ uint8_t* TclRenderer::ConvertStrandsToFrame(TclRenderer::Strands* strands) {
 }
 
 // static
-int TclRenderer::BuildFrameColorSeq(
-    TclRenderer::Strands* strands, int led_id,
+int TclController::BuildFrameColorSeq(
+    Strands* strands, int led_id,
     int color_component, uint8_t* dst) {
   int pos = 0;
   int color_bit_mask = 0x80;
@@ -373,20 +353,373 @@ int TclRenderer::BuildFrameColorSeq(
   return pos;
 }
 
-static void Sleep(double seconds) {
-  struct timespec req;
-  struct timespec rem;
-  req.tv_sec = (int) seconds;
-  req.tv_nsec = (long) ((seconds - req.tv_sec) * 1000000000.0);
-  rem.tv_sec = 0;
-  rem.tv_nsec = 0;
-  while (nanosleep(&req, &rem) == -1) {
-    if (errno != EINTR) {
-      REPORT_ERRNO("nanosleep");
-      break;
-    }
-    req = rem;
+void TclController::CloseSocket() {
+  if (socket_ != -1) {
+    close(socket_);
+    socket_ = -1;
   }
+}
+
+bool TclController::Connect() {
+  if (socket_ != -1)
+    return true;
+
+  socket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+  if (socket_ == -1) {
+    REPORT_ERRNO("socket");
+    return false;
+  }
+
+  /*if (fcntl(socket_, F_SETFL, O_NONBLOCK, 1) == -1) {
+    REPORT_ERRNO("fcntl");
+    CloseSocket();
+    return false;
+  }*/
+
+  struct sockaddr_in si_local;
+  memset(&si_local, 0, sizeof(si_local));
+  si_local.sin_family = AF_INET;
+  si_local.sin_port = htons(0);
+  si_local.sin_addr.s_addr = htonl(INADDR_ANY);
+  if (bind(socket_, (struct sockaddr*) &si_local, sizeof(si_local)) == -1) {
+    REPORT_ERRNO("bind");
+    CloseSocket();
+    return false;
+  }
+
+  char addr_str[65];
+  snprintf(addr_str, sizeof(addr_str), "192.168.60.%d", (49 + id_));
+
+  struct sockaddr_in si_remote;
+  memset(&si_remote, 0, sizeof(si_remote));
+  si_remote.sin_family = AF_INET;
+  si_remote.sin_port = htons(5000);
+  if (inet_aton(addr_str, &si_remote.sin_addr) == 0) {
+    fprintf(stderr, "inet_aton() failed\n");
+    CloseSocket();
+    return false;
+  }
+
+  if (TEMP_FAILURE_RETRY(connect(
+          socket_, (struct sockaddr*) &si_remote, sizeof(si_remote))) == -1) {
+    REPORT_ERRNO("connect");
+    CloseSocket();
+    return false;
+  }
+
+  return true;
+}
+
+bool TclController::SendPacket(const void* data, int size) {
+  int sent = TEMP_FAILURE_RETRY(send(socket_, data, size, 0));
+  if (sent == -1) {
+    REPORT_ERRNO("send");
+    return false;
+  }
+  if (sent != size) {
+    fprintf(stderr, "Not all data was sent in UDP packet\n");
+    require_reset_ = true;
+    return false;
+  }
+  return true;
+}
+
+bool TclController::InitController() {
+  static const uint8_t MSG_INIT[] = {0xC5, 0x77, 0x88, 0x00, 0x00};
+  static const double MSG_INIT_DELAY = 0.1;
+  static const uint8_t MSG_RESET[] = {0xC2, 0x77, 0x88, 0x00, 0x00};
+  static const double MSG_RESET_DELAY = 5;
+
+  if (!Connect())
+    return false;
+  if (init_sent_ && !require_reset_)
+    return true;
+
+  if (require_reset_) {
+    if (init_sent_)
+      fprintf(stderr, "Performing a requested reset\n");
+    if (!SendPacket(MSG_RESET, sizeof(MSG_RESET)))
+      return false;
+    require_reset_ = false;
+    Sleep(MSG_RESET_DELAY);
+  }
+
+  if (!SendPacket(MSG_INIT, sizeof(MSG_INIT)))
+    return false;
+  Sleep(MSG_INIT_DELAY);
+
+  init_sent_ = true;
+  SetLastReplyTime();
+  return true;
+}
+
+bool TclController::SendFrame(uint8_t* frame_data) {
+  static const uint8_t MSG_START_FRAME[] = {0xC5, 0x77, 0x88, 0x00, 0x00};
+  static const uint8_t MSG_END_FRAME[] = {0xAA, 0x01, 0x8C, 0x01, 0x55};
+  static const uint8_t FRAME_MSG_PREFIX[] = {
+      0x88, 0x00, 0x68, 0x3F, 0x2B, 0xFD,
+      0x60, 0x8B, 0x95, 0xEF, 0x04, 0x69};
+  static const uint8_t FRAME_MSG_SUFFIX[] = {0x00, 0x00, 0x00, 0x00};
+
+  ConsumeReplyData();
+  if (!SendPacket(MSG_START_FRAME, sizeof(MSG_START_FRAME)))
+    return false;
+  Sleep(((double) kMgsStartDelayUs) / 1000000.0);
+
+  uint8_t packet[sizeof(FRAME_MSG_PREFIX) + 1024 + sizeof(FRAME_MSG_SUFFIX)];
+  memcpy(packet, FRAME_MSG_PREFIX, sizeof(FRAME_MSG_PREFIX));
+  memcpy(packet + sizeof(FRAME_MSG_PREFIX) + 1024,
+         FRAME_MSG_SUFFIX, sizeof(FRAME_MSG_SUFFIX));
+
+  int message_idx = 0;
+  int frame_data_pos = 0;
+  while (frame_data_pos < FRAME_DATA_LEN) {
+    packet[1] = message_idx++;
+    memcpy(packet + sizeof(FRAME_MSG_PREFIX),
+           frame_data + frame_data_pos, 1024);
+    frame_data_pos += 1024;
+
+    if (!SendPacket(packet, sizeof(packet)))
+      return false;
+    Sleep(((double) kMgsDataDelayUs) / 1000000.0);
+  }
+  CHECK(frame_data_pos == FRAME_DATA_LEN);
+  CHECK(message_idx == 12);
+
+  if (!SendPacket(MSG_END_FRAME, sizeof(MSG_END_FRAME)))
+    return false;
+  ConsumeReplyData();
+  frames_sent_after_reply_++;
+  return true;
+}
+
+void TclController::ConsumeReplyData() {
+  // static const uint8_t MSG_REPLY[] = {0x55, 0x00, 0x00, 0x00, 0x00};
+  uint8_t buf[65536];
+  while (true) {
+    ssize_t size = TEMP_FAILURE_RETRY(
+        recv(socket_, buf, sizeof(buf), MSG_DONTWAIT));
+    if (size != -1) {
+      SetLastReplyTime();
+      continue;
+    }
+    if (errno != EAGAIN && errno != EWOULDBLOCK)
+      REPORT_ERRNO("recv");
+    break;
+  }
+}
+
+void TclController::SetLastReplyTime() {
+  last_reply_time_ = GetCurrentMillis();
+  frames_sent_after_reply_ = 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// TclRenderer
+///////////////////////////////////////////////////////////////////////////////
+
+TclRenderer::TclRenderer()
+    : fps_(15), auto_reset_after_no_data_ms_(5000),
+      is_shutting_down_(false), has_started_thread_(false),
+      enable_net_(false), controllers_locked_(false),
+      lock_(PTHREAD_MUTEX_INITIALIZER),
+      cond_(PTHREAD_COND_INITIALIZER) {
+  base_time_ = GetCurrentMillis();
+}
+
+TclRenderer::~TclRenderer() {
+  if (has_started_thread_) {
+    {
+      Autolock l(lock_);
+      is_shutting_down_ = true;
+      pthread_cond_broadcast(&cond_);
+    }
+
+    pthread_join(thread_, NULL);
+  }
+
+  ResetImageQueue();
+
+  for (std::vector<TclController*>::iterator it = controllers_.begin();
+        it != controllers_.end(); ++it) {
+    delete (*it);
+  }
+
+  pthread_cond_destroy(&cond_);
+  pthread_mutex_destroy(&lock_);
+}
+
+void TclRenderer::AddController(
+    int id, int width, int height,
+    const Layout& layout, double gamma) {
+  Autolock l(lock_);
+  CHECK(!controllers_locked_);
+  CHECK(FindControllerLocked(id) == NULL);
+  TclController* controller = new TclController(
+      id, width, height, layout, gamma);
+  controllers_.push_back(controller);
+}
+
+TclController* TclRenderer::FindControllerLocked(int id) {
+  for (std::vector<TclController*>::iterator it = controllers_.begin();
+        it != controllers_.end(); ++it) {
+    if ((*it)->GetId() == id)
+      return *it;
+  }
+  return NULL;
+}
+
+void TclRenderer::LockControllers() {
+  Autolock l(lock_);
+  controllers_locked_ = true;
+}
+
+void TclRenderer::StartMessageLoop(int fps, bool enable_net) {
+  Autolock l(lock_);
+  CHECK(controllers_locked_);
+  if (has_started_thread_)
+    return;
+  fps_ = fps;
+  enable_net_ = enable_net;
+  has_started_thread_ = true;
+  int err = pthread_create(&thread_, NULL, &ThreadEntry, this);
+  if (err != 0) {
+    fprintf(stderr, "pthread_create failed with %d\n", err);
+    CHECK(false);
+  }
+}
+
+void TclRenderer::SetGamma(double gamma) {
+  // 1.0 is uncorrected gamma, which is perceived as "too bright"
+  // in the middle. 2.4 is a good starting point. Changing this value
+  // affects mid-range pixels - higher values produce dimmer pixels.
+  SetGammaRanges(0, 255, gamma, 0, 255, gamma, 0, 255, gamma);
+}
+
+void TclRenderer::SetGammaRanges(
+    int r_min, int r_max, double r_gamma,
+    int g_min, int g_max, double g_gamma,
+    int b_min, int b_max, double b_gamma) {
+  Autolock l(lock_);
+  for (std::vector<TclController*>::iterator it = controllers_.begin();
+        it != controllers_.end(); ++it) {
+    (*it)->SetGammaRanges(
+        r_min, r_max, r_gamma, g_min, g_max, g_gamma, b_min, b_max, b_gamma);
+  }
+}
+
+void TclRenderer::SetAutoResetAfterNoDataMs(int value) {
+  Autolock l(lock_);
+  auto_reset_after_no_data_ms_ = value;
+}
+
+std::vector<int> TclRenderer::GetAndClearFrameDelays() {
+  Autolock l(lock_);
+  std::vector<int> result = frame_delays_;
+  frame_delays_.clear();
+  return result;
+}
+
+int TclRenderer::GetFrameSendDuration() {
+  return kFrameSendDurationUs / 1000;
+}
+
+Bytes* TclRenderer::GetAndClearLastImage(int controller_id) {
+  Autolock l(lock_);
+  TclController* controller = FindControllerLocked(controller_id);
+  return (controller ? controller->GetAndClearLastImage() : NULL);
+}
+
+int TclRenderer::GetLastImageId(int controller_id) {
+  Autolock l(lock_);
+  TclController* controller = FindControllerLocked(controller_id);
+  return (controller ? controller->GetLastImageId() : -1);
+}
+
+void TclRenderer::ScheduleImageAt(
+    int controller_id, Bytes* bytes, int w, int h, EffectMode mode,
+    int crop_x, int crop_y, int crop_w, int crop_h,
+    int id, const AdjustableTime& time) {
+  Autolock l(lock_);
+  CHECK(has_started_thread_);
+  if (is_shutting_down_)
+    return;
+  TclController* controller = FindControllerLocked(controller_id);
+  if (!controller) {
+    fprintf(stderr, "Ignoring TclRenderer::ScheduleImageAt on %d\n", controller_id);
+    return;
+  }
+  if (bytes->GetLen() != RGBA_LEN(w, h)) {
+    fprintf(stderr, "Unexpected image size in TCL renderer: %d\n",
+            bytes->GetLen());
+    return;
+  }
+
+  uint64_t time_abs = time.time_;
+  if (time_abs > base_time_) {
+    // Align with FPS.
+    double frame_num = round(((double) (time_abs - base_time_)) / 1000.0 * fps_);
+    time_abs = base_time_ + (uint64_t) (frame_num * 1000.0 / fps_);
+    //fprintf(stderr, "Changed target time from %ld to %ld, f=%.2f\n",
+    //        time.time_, time_abs, frame_num);
+  }
+
+  // TODO(igorc): Support crop_x.
+  (void) crop_x;
+  (void) crop_y;
+  (void) crop_w;
+  (void) crop_h;
+
+  RgbaImage image;
+  controller->BuildImage(bytes, w, h, mode, &image);
+  queue_.push(WorkItem(false, controller, image, id, time_abs));
+
+  int err = pthread_cond_broadcast(&cond_);
+  if (err != 0) {
+    fprintf(stderr, "Unable to signal condition: %d\n", err);
+    CHECK(false);
+  }
+}
+
+void TclRenderer::SetEffectImage(
+    int controller_id, Bytes* bytes, int w, int h, EffectMode mode) {
+  Autolock l(lock_);
+  TclController* controller = FindControllerLocked(controller_id);
+  if (controller)
+    controller->SetEffectImage(bytes, w, h, mode);
+}
+
+void TclRenderer::ResetImageQueue() {
+  Autolock l(lock_);
+  while (!queue_.empty()) {
+    WorkItem item = queue_.top();
+    queue_.pop();
+  }
+}
+
+std::vector<int> TclRenderer::GetFrameDataForTest(
+    int controller_id, Bytes* bytes, int w, int h) {
+  Autolock l(lock_);
+  std::vector<int> result;
+  TclController* controller = FindControllerLocked(controller_id);
+  if (!bytes || !bytes->GetData() || !controller)
+    return result;
+  RgbaImage img(bytes->GetData(), w, h);
+  Strands* strands = controller->DiffuseAndConvertImageToStrands(img);
+  if (!strands)
+    return result;
+  uint8_t* frame_data = controller->ConvertStrandsToFrame(strands);
+  for (int i = 0; i < FRAME_DATA_LEN; i++) {
+    result.push_back(frame_data[i]);
+  }
+  delete[] frame_data;
+  delete strands;
+  return result;
+}
+
+int TclRenderer::GetQueueSize() {
+  Autolock l(lock_);
+  return queue_.size();
 }
 
 // static
@@ -398,31 +731,33 @@ void* TclRenderer::ThreadEntry(void* arg) {
 
 void TclRenderer::Run() {
   while (true) {
-    uint64_t auto_reset_after_no_data_ms;
     {
       Autolock l(lock_);
       if (is_shutting_down_)
         break;
-      auto_reset_after_no_data_ms = auto_reset_after_no_data_ms_;
-    }
 
-    if (enable_net_ && !require_reset_ && frames_sent_after_reply_ > 2 &&
-        auto_reset_after_no_data_ms > 0) {
-      uint64_t reply_delay = GetCurrentMillis() - last_reply_time_;
-      if (reply_delay > auto_reset_after_no_data_ms) {
-        fprintf(stderr, "No reply in %lld ms and %d frames, RESETTING !!!\n",
-                (long long) reply_delay, frames_sent_after_reply_);
-        require_reset_ = true;
+      if (enable_net_) {
+        for (std::vector<TclController*>::iterator it = controllers_.begin();
+              it != controllers_.end(); ++it) {
+          (*it)->UpdateAutoReset(auto_reset_after_no_data_ms_);
+        }
       }
     }
 
-    if (!InitController()) {
-      Sleep(1);
-      continue;
+    if (enable_net_) {
+      bool failed_init = false;
+      for (std::vector<TclController*>::iterator it = controllers_.begin();
+            it != controllers_.end(); ++it) {
+        failed_init |= !(*it)->InitController();
+      }
+      if (failed_init) {
+        Sleep(1);
+        continue;
+      }
     }
 
     uint8_t* frame_data = NULL;
-    WorkItem item(false, NULL, 0, 0);
+    WorkItem item(false, NULL, RgbaImage(), 0, 0);
     {
       Autolock l(lock_);
       while (!is_shutting_down_) {
@@ -435,41 +770,27 @@ void TclRenderer::Run() {
         break;
 
       if (item.needs_reset_) {
-        require_reset_ = true;
-        delete[] item.img_;
+        item.controller_->ScheduleReset();
         continue;
       }
 
-      if (item.img_) {
-        ApplyEffectLocked(item.img_);
-        Strands* strands = DiffuseAndConvertImageToStrandsLocked(item.img_);
-        if (strands) {
-          frame_data = ConvertStrandsToFrame(strands);
-          delete strands;
-        }
-
-        memcpy(last_image_, item.img_, PIX_LEN(width_, height_));
-        last_image_id_ = item.id_;
-        has_last_image_ = true;
-        delete[] item.img_;
-        item.img_ = NULL;
-      }
+      if (!item.img_.IsEmpty())
+        frame_data = item.controller_->BuildFrameDataForImage(
+            &item.img_, item.id_);
     }
 
     if (frame_data) {
-      if (SendFrame(frame_data)) {
+      if (!enable_net_ || item.controller_->SendFrame(frame_data)) {
         Autolock l(lock_);
         frame_delays_.push_back(GetCurrentMillis() - item.time_);
         // fprintf(stderr, "Sent frame for %ld at %ld\n", item.time_, GetCurrentMillis());
       } else {
         fprintf(stderr, "Scheduling reset after failed frame\n");
-        require_reset_ = true;
+        item.controller_->ScheduleReset();
       }
       delete[] frame_data;
     }
   }
-
-  CloseSocket();
 }
 
 bool TclRenderer::PopNextWorkItemLocked(
@@ -509,12 +830,6 @@ bool TclRenderer::PopNextWorkItemLocked(
   }
 }
 
-static void AddTimeMillis(struct timespec* time, uint64_t increment) {
-  uint64_t nsec = (increment % 1000000) * 1000000 + time->tv_nsec;
-  time->tv_sec += increment / 1000 + nsec / 1000000000;
-  time->tv_nsec = nsec % 1000000000;
-}
-
 void TclRenderer::WaitForQueueLocked(int64_t next_time) {
   int err;
   if (next_time) {
@@ -534,180 +849,29 @@ void TclRenderer::WaitForQueueLocked(int64_t next_time) {
   }
 }
 
-void TclRenderer::CloseSocket() {
-  if (socket_ != -1) {
-    close(socket_);
-    socket_ = -1;
-  }
+///////////////////////////////////////////////////////////////////////////////
+// Misc classes
+///////////////////////////////////////////////////////////////////////////////
+
+AdjustableTime::AdjustableTime() : time_(GetCurrentMillis()) {}
+
+void AdjustableTime::AddMillis(int ms) {
+  time_ += ms;
 }
 
-bool TclRenderer::Connect() {
-  if (socket_ != -1)
-    return true;
-
-  socket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-  if (socket_ == -1) {
-    REPORT_ERRNO("socket");
-    return false;
-  }
-
-  /*if (fcntl(socket_, F_SETFL, O_NONBLOCK, 1) == -1) {
-    REPORT_ERRNO("fcntl");
-    CloseSocket();
-    return false;
-  }*/
-
-  struct sockaddr_in si_local;
-  memset(&si_local, 0, sizeof(si_local));
-  si_local.sin_family = AF_INET;
-  si_local.sin_port = htons(0);
-  si_local.sin_addr.s_addr = htonl(INADDR_ANY);
-  if (bind(socket_, (struct sockaddr*) &si_local, sizeof(si_local)) == -1) {
-    REPORT_ERRNO("bind");
-    CloseSocket();
-    return false;
-  }
-
-  char addr_str[65];
-  snprintf(addr_str, sizeof(addr_str),
-           "192.168.60.%d", (49 + controller_id_));
-
-  struct sockaddr_in si_remote;
-  memset(&si_remote, 0, sizeof(si_remote));
-  si_remote.sin_family = AF_INET;
-  si_remote.sin_port = htons(5000);
-  if (inet_aton(addr_str, &si_remote.sin_addr) == 0) {
-    fprintf(stderr, "inet_aton() failed\n");
-    CloseSocket();
-    return false;
-  }
-
-  if (TEMP_FAILURE_RETRY(connect(
-          socket_, (struct sockaddr*) &si_remote, sizeof(si_remote))) == -1) {
-    REPORT_ERRNO("connect");
-    CloseSocket();
-    return false;
-  }
-
-  return true;
+Layout::Layout() {
+  memset(lengths_, 0, sizeof(lengths_));
 }
 
-bool TclRenderer::SendPacket(const void* data, int size) {
-  int sent = TEMP_FAILURE_RETRY(send(socket_, data, size, 0));
-  if (sent == -1) {
-    REPORT_ERRNO("send");
-    return false;
-  }
-  if (sent != size) {
-    fprintf(stderr, "Not all data was sent in UDP packet\n");
-    require_reset_ = true;
-    return false;
-  }
-  return true;
-}
-
-bool TclRenderer::InitController() {
-  static const uint8_t MSG_INIT[] = {0xC5, 0x77, 0x88, 0x00, 0x00};
-  static const double MSG_INIT_DELAY = 0.1;
-  static const uint8_t MSG_RESET[] = {0xC2, 0x77, 0x88, 0x00, 0x00};
-  static const double MSG_RESET_DELAY = 5;
-
-  if (!enable_net_)
-    return true;
-  if (!Connect())
-    return false;
-  if (init_sent_ && !require_reset_)
-    return true;
-
-  if (require_reset_) {
-    if (init_sent_)
-      fprintf(stderr, "Performing a requested reset\n");
-    if (!SendPacket(MSG_RESET, sizeof(MSG_RESET)))
-      return false;
-    require_reset_ = false;
-    Sleep(MSG_RESET_DELAY);
-  }
-
-  if (!SendPacket(MSG_INIT, sizeof(MSG_INIT)))
-    return false;
-  Sleep(MSG_INIT_DELAY);
-
-  init_sent_ = true;
-  SetLastReplyTime();
-  return true;
-}
-
-bool TclRenderer::SendFrame(uint8_t* frame_data) {
-  static const uint8_t MSG_START_FRAME[] = {0xC5, 0x77, 0x88, 0x00, 0x00};
-  static const uint8_t MSG_END_FRAME[] = {0xAA, 0x01, 0x8C, 0x01, 0x55};
-  static const uint8_t FRAME_MSG_PREFIX[] = {
-      0x88, 0x00, 0x68, 0x3F, 0x2B, 0xFD,
-      0x60, 0x8B, 0x95, 0xEF, 0x04, 0x69};
-  static const uint8_t FRAME_MSG_SUFFIX[] = {0x00, 0x00, 0x00, 0x00};
-
-  if (!enable_net_)
-    return true;
-
-  int mgs_start_delay_us;
-  int mgs_data_delay_us;
-  {
-    Autolock l(lock_);
-    mgs_start_delay_us = mgs_start_delay_us_;
-    mgs_data_delay_us = mgs_data_delay_us_;
-  }
-
-  ConsumeReplyData();
-  if (!SendPacket(MSG_START_FRAME, sizeof(MSG_START_FRAME)))
-    return false;
-  Sleep(((double) mgs_start_delay_us) / 1000000.0);
-
-  uint8_t packet[sizeof(FRAME_MSG_PREFIX) + 1024 + sizeof(FRAME_MSG_SUFFIX)];
-  memcpy(packet, FRAME_MSG_PREFIX, sizeof(FRAME_MSG_PREFIX));
-  memcpy(packet + sizeof(FRAME_MSG_PREFIX) + 1024,
-         FRAME_MSG_SUFFIX, sizeof(FRAME_MSG_SUFFIX));
-
-  int message_idx = 0;
-  int frame_data_pos = 0;
-  while (frame_data_pos < FRAME_DATA_LEN) {
-    packet[1] = message_idx++;
-    memcpy(packet + sizeof(FRAME_MSG_PREFIX),
-           frame_data + frame_data_pos, 1024);
-    frame_data_pos += 1024;
-
-    if (!SendPacket(packet, sizeof(packet)))
-      return false;
-    Sleep(((double) mgs_data_delay_us) / 1000000.0);
-  }
-  CHECK(frame_data_pos == FRAME_DATA_LEN);
-  CHECK(message_idx == 12);
-
-  if (!SendPacket(MSG_END_FRAME, sizeof(MSG_END_FRAME)))
-    return false;
-  ConsumeReplyData();
-  frames_sent_after_reply_++;
-  return true;
-}
-
-void TclRenderer::ConsumeReplyData() {
-  // static const uint8_t MSG_REPLY[] = {0x55, 0x00, 0x00, 0x00, 0x00};
-  if (!enable_net_)
+void Layout::AddCoord(int strand_id, int x, int y) {
+  CHECK(strand_id >= 0 && strand_id < STRAND_COUNT);
+  if (lengths_[strand_id] == STRAND_LENGTH) {
+    fprintf(stderr, "Cannot add more coords to strand %d\n", strand_id);
     return;
-  uint8_t buf[65536];
-  while (true) {
-    ssize_t size = TEMP_FAILURE_RETRY(
-        recv(socket_, buf, sizeof(buf), MSG_DONTWAIT));
-    if (size != -1) {
-      SetLastReplyTime();
-      continue;
-    }
-    if (errno != EAGAIN && errno != EWOULDBLOCK)
-      REPORT_ERRNO("recv");
-    break;
   }
-}
-
-void TclRenderer::SetLastReplyTime() {
-  last_reply_time_ = GetCurrentMillis();
-  frames_sent_after_reply_ = 0;
+  int pos = lengths_[strand_id];
+  lengths_[strand_id] = pos + 1;
+  x_[strand_id][pos] = x;
+  y_[strand_id][pos] = y;
 }
 
