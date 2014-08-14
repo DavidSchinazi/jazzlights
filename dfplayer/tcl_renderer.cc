@@ -191,17 +191,71 @@ void TclController::SetGammaRanges(
       r_min, r_max, r_gamma, g_min, g_max, g_gamma, b_min, b_max, b_gamma);
 }
 
+struct PixelUsage {
+  bool in_use;
+  int strand_id;
+  int led_id;
+};
+
+static void AddCoord(
+    LayoutMap* layout, PixelUsage* usage, int strand_id, int led_id,
+    int x, int y, int w, int h) {
+  if (x < 0 || x >= w || y < 0 || y >= h || usage[y * w + x].in_use)
+    return;
+  layout->AddCoord(strand_id, led_id, x, y);
+  int pos = y * w + x;
+  usage[pos].strand_id = strand_id;
+  usage[pos].led_id = led_id;
+  usage[pos].in_use = true;
+}
+
+/*static void CopyCoord(
+    LayoutMap* layout, PixelUsage* usage, int x, int y, int w, int h,
+    int x_src, int y_src) {
+  if (x_src < 0 || x_src >= w || y_src < 0 || y_src >= h ||
+      !usage[y_src * w + x_src].in_use) {
+    return;
+  }
+  int pos_src = y_src * w + x_src;
+  layout->AddCoord(usage[pos_src].strand_id, usage[pos_src].led_id, x, y);
+  usage[y * w + x] = usage[pos_src];
+}*/
+
 void TclController::PopulateLayoutMap(const Layout& layout) {
-  // TODO(igorc): Fill the pixel area.
+  PixelUsage* usage = new PixelUsage[width_ * height_];
+  memset(usage, 0, width_ * height_ * sizeof(PixelUsage));
   for (int strand_id = 0; strand_id < STRAND_COUNT; ++strand_id) {
     int len = layout.lengths_[strand_id];
     layout_.lengths_[strand_id] = len;
     for (int led_id = 0; led_id < len; ++led_id) {
-      layout_.AddCoord(
-          strand_id, led_id, layout.x_[strand_id][led_id],
-          layout.y_[strand_id][led_id]);
+      int x = layout.x_[strand_id][led_id];
+      int y = layout.y_[strand_id][led_id];
+      AddCoord(&layout_, usage, strand_id, led_id, x, y, width_, height_);
+      AddCoord(&layout_, usage, strand_id, led_id, x-1, y-1, width_, height_);
+      AddCoord(&layout_, usage, strand_id, led_id, x-1, y,   width_, height_);
+      AddCoord(&layout_, usage, strand_id, led_id, x-1, y+1, width_, height_);
+      AddCoord(&layout_, usage, strand_id, led_id, x+1, y-1, width_, height_);
+      AddCoord(&layout_, usage, strand_id, led_id, x+1, y,   width_, height_);
+      AddCoord(&layout_, usage, strand_id, led_id, x+1, y+1, width_, height_);
+      AddCoord(&layout_, usage, strand_id, led_id, x,   y-1, width_, height_);
+      AddCoord(&layout_, usage, strand_id, led_id, x,   y+1, width_, height_);
     }
   }
+  // TODO(igorc): Fill more of the pixel area.
+  // Find matches for all points that were not filled. Do only one iteration
+  // as the majority of the relevant pixels have already been mapped.
+  /*for (int x = 0; x < width_; ++x) {
+    for (int y = 0; y < height_; ++y) {
+      CopyCoord(&layout_, usage, x, y, width_, height_, x-1, y-1);
+      CopyCoord(&layout_, usage, x, y, width_, height_, x-1, y  );
+      CopyCoord(&layout_, usage, x, y, width_, height_, x-1, y+1);
+      CopyCoord(&layout_, usage, x, y, width_, height_, x+1, y-1);
+      CopyCoord(&layout_, usage, x, y, width_, height_, x+1, y  );
+      CopyCoord(&layout_, usage, x, y, width_, height_, x+1, y+1);
+      CopyCoord(&layout_, usage, x, y, width_, height_, x, y-1);
+      CopyCoord(&layout_, usage, x, y, width_, height_, x, y+1);
+    }
+  }*/
 }
 
 bool TclController::BuildImage(
@@ -297,10 +351,14 @@ Strands* TclController::ConvertImageToStrands(
         b += image_data[color_idx + 2];
       }
 
+      r = (r / coord_count) & 0xFF;
+      g = (g / coord_count) & 0xFF;
+      b = (b / coord_count) & 0xFF;
+
       int dst_idx = led_id * 3;  // Strands are RGB.
-      dst_colors[dst_idx] = (uint8_t) (r / coord_count);
-      dst_colors[dst_idx + 1] = (uint8_t) (g / coord_count);
-      dst_colors[dst_idx + 2] = (uint8_t) (b / coord_count);
+      dst_colors[dst_idx] = r;
+      dst_colors[dst_idx + 1] = g;
+      dst_colors[dst_idx + 2] = b;
 
       for (int c_id = 0; c_id < coord_count; ++c_id) {
         int x = coords[c_id].x_;

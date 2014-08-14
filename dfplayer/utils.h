@@ -91,6 +91,7 @@ struct RgbGamma {
   double gamma_b_[256];
 };
 
+// TODO(igorc): Reduce the number of data copies.
 struct RgbaImage {
   RgbaImage();
   RgbaImage(uint8_t* data, int w, int h);

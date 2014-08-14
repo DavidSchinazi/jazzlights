@@ -548,16 +548,16 @@ class Player(object):
         return (self._effect.get_image(effect_time, rms=rms, bass=bass),
                 self._effect.should_mirror())
 
-    def get_frame_images(self):
+    def get_frame_images(self, need_original, need_intermediate):
         if self.status == 'idle':
             # TODO(igorc): Keep drawing some neutral pattern for fun.
             return None
         if self._tcl.has_scheduling_support():
-            return self._get_frame_images_new()
+            return self._get_frame_images_new(need_original, need_intermediate)
         else:
             return self._get_frame_images_old()
 
-    def _get_frame_images_new(self):
+    def _get_frame_images_new(self, need_original, need_intermediate):
         elapsed_time = self.elapsed_time
         start_time = time.time()
         if not self._use_visualization:
@@ -572,12 +572,15 @@ class Player(object):
         (effect_img, mirror) = self._get_effect_image()
         self._tcl.set_effect_image(effect_img, mirror)
         orig_image = None
-        if self._use_visualization:
+        if self._use_visualization and need_original:
             # TODO(igorc): Get original image from renderer.
             newimg_data = self._visualizer.GetAndClearLastImageForTest()
             if newimg_data and len(newimg_data) > 0:
                 orig_image = Image.fromstring('RGBA', (512, 512), newimg_data)
-        last_image = self._tcl.get_and_clear_last_image()
+        if need_intermediate:
+            last_image = self._tcl.get_and_clear_last_image()
+        else:
+            last_image = None
         last_led_image = self._tcl.get_and_clear_last_led_image()
         duration_ms = int(round((time.time() - start_time) * 1000))
         self._render_durations.add(duration_ms)

@@ -152,7 +152,10 @@ class PlayerApp(Frame):
 
     def update(self):
         try:
-            images = self.player.get_frame_images()
+            need_original = (self._img_mode % 3) == 1
+            need_intermediate = (self._img_mode % 3) == 0
+            images = self.player.get_frame_images(
+                need_original, need_intermediate)
             if images:
                 self._paste_images(images)
             status_lines = self.player.get_status_lines()

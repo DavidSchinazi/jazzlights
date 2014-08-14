@@ -542,6 +542,8 @@ bool Visualizer::RenderFrame(bool need_image) {
 }
 
 void Visualizer::PostTclFrameLocked() {
+  static const int kCropWidth = 4;
+
   TclRenderer* tcl = TclRenderer::GetInstance();
   if (!tcl) {
     fprintf(stderr, "TCL renderer not found\n");
@@ -552,7 +554,9 @@ void Visualizer::PostTclFrameLocked() {
   Bytes* bytes = new Bytes(image_buffer_, RGBA_LEN(texsize_, texsize_));
   tcl->ScheduleImageAt(
       1, bytes, texsize_, texsize_, EFFECT_MIRROR,
-      0, 0, texsize_, texsize_, 0, now);
+      kCropWidth, kCropWidth,
+      texsize_ - kCropWidth * 2, texsize_ - kCropWidth * 2,
+      0, now);
   delete bytes;
 }
 
