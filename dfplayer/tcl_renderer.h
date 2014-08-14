@@ -18,6 +18,7 @@
 #define STRAND_LENGTH   512
 
 class TclRenderer;
+class TclController;
 
 // Represents time that can be used for scheduling purposes.
 struct AdjustableTime {
@@ -43,8 +44,6 @@ struct Layout {
   friend class TclController;
 };
 
-class TclController;
-
 enum EffectMode {
   EFFECT_OVERLAY = 0,
   EFFECT_DUPLICATE = 1,
@@ -61,6 +60,9 @@ enum EffectMode {
 //   renderer->ScheduleImage(image_data, time);
 class TclRenderer {
  public:
+  // Configures a controller. Width and height define the size of
+  // the intermediate image used internally. LED coordinates in
+  // layout should be normalized to this image size.
   void AddController(
       int id, int width, int height,
       const Layout& layout, double gamma);
@@ -87,6 +89,7 @@ class TclRenderer {
       int controller_id, Bytes* bytes, int w, int h, EffectMode mode);
 
   Bytes* GetAndClearLastImage(int controller_id);
+  Bytes* GetAndClearLastLedImage(int controller_id);
   int GetLastImageId(int controller_id);
 
   std::vector<int> GetFrameDataForTest(

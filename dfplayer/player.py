@@ -102,7 +102,6 @@ class Player(object):
         self._target_gamma = 2.4
         self._visualization_volume = 1
         self._seek_time = None
-        self._frame = None
         self._effect = None
         self._last_frame_file = ''
         self._frame_delay_stats = Stats(100)
@@ -120,7 +119,6 @@ class Player(object):
 
         self._use_visualization = False
         self._visualizer = None
-        self._visualizer_render = False
 
         self.toggle_visualization()
 
@@ -526,9 +524,6 @@ class Player(object):
         else:
             self._visualizer.UseAlsa('')
 
-    def toggle_visualizer_render(self):
-        self._visualizer_render = not self._visualizer_render
-
     def select_next_preset(self, is_forward):
         if not self._use_visualization:
             return
@@ -553,63 +548,59 @@ class Player(object):
         return (self._effect.get_image(effect_time, rms=rms, bass=bass),
                 self._effect.should_mirror())
 
-    def get_frame_image(self):
+    def get_frame_images(self):
         if self.status == 'idle':
             # TODO(igorc): Keep drawing some neutral pattern for fun.
             return None
+        if self._tcl.has_scheduling_support():
+            return self._get_frame_images_new()
         else:
-            elapsed_time = self.elapsed_time
-            if self._tcl.has_scheduling_support():
-                start_time = time.time()
-                # TODO(igorc): Implement effects with visualization.
-                if not self._use_visualization:
-                    self._frame_source.prefetch(self.clip_name, elapsed_time)
-                    baseline_ms = get_time_millis()
-                    for f in self._frame_source.get_cached_frames():
-                        if not f.rendered:
-                            f.rendered = True
-                            self._tcl.send_frame(
-                                f.image, f.frame_num,
-                                f.current_ms - baseline_ms)
-                (effect_img, mirror) = self._get_effect_image()
-                self._tcl.set_effect_image(effect_img, mirror)
-                if self._visualizer_render and self._use_visualization:
-                    newimg_data = self._visualizer.GetAndClearLastImageForTest()
-                    if newimg_data and len(newimg_data) > 0:
-                        self._frame = Image.fromstring(
-                            'RGBA', (512, 512),
-                            newimg_data)
-                else:
-                    newimg_data = self._tcl.get_and_clear_last_image()
-                    if newimg_data and len(newimg_data) > 0:
-                        self._frame = Image.fromstring(
-                            'RGBA', (_SCREEN_FRAME_WIDTH, FRAME_HEIGHT),
-                            newimg_data)
-                duration_ms = int(round((time.time() - start_time) * 1000))
-                self._render_durations.add(duration_ms)
-                return self._frame
+            return self._get_frame_images_old()
 
-            frame_num = int(elapsed_time * FPS)
-            frame_file = CLIPS_DIR + '/%s/frame%06d.jpg' \
-                % (self.clip_name, frame_num + 1)
-            if frame_file == self._last_frame_file:
-                return self._frame
+    def _get_frame_images_new(self):
+        elapsed_time = self.elapsed_time
+        start_time = time.time()
+        if not self._use_visualization:
+            self._frame_source.prefetch(self.clip_name, elapsed_time)
+            baseline_ms = get_time_millis()
+            for f in self._frame_source.get_cached_frames():
+                if f.rendered:
+                    continue
+                f.rendered = True
+                self._tcl.send_frame(
+                    f.image, f.frame_num, f.current_ms - baseline_ms)
+        (effect_img, mirror) = self._get_effect_image()
+        self._tcl.set_effect_image(effect_img, mirror)
+        orig_image = None
+        if self._use_visualization:
+            # TODO(igorc): Get original image from renderer.
+            newimg_data = self._visualizer.GetAndClearLastImageForTest()
+            if newimg_data and len(newimg_data) > 0:
+                orig_image = Image.fromstring('RGBA', (512, 512), newimg_data)
+        last_image = self._tcl.get_and_clear_last_image()
+        last_led_image = self._tcl.get_and_clear_last_led_image()
+        duration_ms = int(round((time.time() - start_time) * 1000))
+        self._render_durations.add(duration_ms)
+        return (orig_image, last_image, last_led_image)
 
-            start_time = time.time()
-            new_frame = self._frame_source.load_frame_file(
-                self.clip_name, frame_num)
-            if not new_frame:
-                return self._frame
-            self._frame = new_frame
-            self._last_frame_file = frame_file
-
-            delay_ms = int((float(frame_num) / FPS - elapsed_time) * 1000.0)
-            self._tcl.send_frame(self._frame, frame_num, delay_ms)
-
-            duration_ms = int(round((time.time() - start_time) * 1000))
-            self._render_durations.add(duration_ms)
-
-            return self._frame
+    def _get_frame_images_old(self):
+        elapsed_time = self.elapsed_time
+        frame_num = int(elapsed_time * FPS)
+        frame_file = CLIPS_DIR + '/%s/frame%06d.jpg' \
+            % (self.clip_name, frame_num + 1)
+        if frame_file == self._last_frame_file:
+            return None
+        start_time = time.time()
+        new_frame = self._frame_source.load_frame_file(
+            self.clip_name, frame_num)
+        if not new_frame:
+            return None
+        self._last_frame_file = frame_file
+        delay_ms = int((float(frame_num) / FPS - elapsed_time) * 1000.0)
+        self._tcl.send_frame(new_frame, frame_num, delay_ms)
+        duration_ms = int(round((time.time() - start_time) * 1000))
+        self._render_durations.add(duration_ms)
+        return (None, new_frame, None)
 
     def play_effect(self, name, **kwargs):
         logging.info("Playing %s: %s", name, kwargs)

@@ -113,6 +113,13 @@ struct RgbaImage {
   int height_;
 };
 
+struct Coord {
+  Coord(int x, int y) : x_(x), y_(y) {}
+
+  int x_;
+  int y_;
+};
+
 uint64_t GetCurrentMillis();
 
 void Sleep(double seconds);

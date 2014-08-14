@@ -103,6 +103,16 @@ class TclRenderer(object):
   def get_frame_data_for_test(self, image_colors):
     return self._convert_image_to_frame_data(image_colors)
 
+  def create_led_mask(self, default_alpha):
+    size = self.player.get_frame_size()
+    img_bytes = [default_alpha] * size[0] * size[1] * 4
+    for c in self.player.get_tcl_coords():
+      x, y = c
+      idx = (x + y * size[0]) * 4
+      img_bytes[idx + 3] = 0
+    img_bytes = str(bytearray(img_bytes))
+    return Image.frombytes('RGBA', size, img_bytes)
+
   def send_frame(self, image_colors, dst_time):
     self._init_controller()
 

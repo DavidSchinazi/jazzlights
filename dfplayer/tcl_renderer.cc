@@ -31,6 +31,19 @@ TclRenderer* TclRenderer::instance_ = new TclRenderer();
 // TclController
 ///////////////////////////////////////////////////////////////////////////////
 
+struct LayoutMap {
+  LayoutMap() {
+    memset(lengths_, 0, sizeof(lengths_));
+  }
+
+  void AddCoord(int strand_id, int led_id, int x, int y) {
+    coords_[strand_id][led_id].push_back(Coord(x, y));
+  }
+
+  std::vector<Coord> coords_[STRAND_COUNT][STRAND_LENGTH];
+  int lengths_[STRAND_COUNT];
+};
+
 struct Strands {
   Strands() {
     for (int i = 0; i < STRAND_COUNT; i++) {
@@ -47,6 +60,7 @@ struct Strands {
 
   uint8_t* colors[STRAND_COUNT];
   int lengths[STRAND_COUNT];
+  RgbaImage led_image;
 
  private:
   Strands(const Strands& src);
@@ -67,6 +81,7 @@ class TclController {
   bool BuildImage(Bytes* bytes, int w, int h, EffectMode mode, RgbaImage* dst);
 
   Bytes* GetAndClearLastImage();
+  Bytes* GetAndClearLastLedImage();
   int GetLastImageId() const { return last_image_id_; }
 
   void SetEffectImage(Bytes* bytes, int w, int h, EffectMode mode);
@@ -85,7 +100,7 @@ class TclController {
   uint8_t* BuildFrameDataForImage(RgbaImage* img, int id);
 
   void ApplyEffect(RgbaImage* image);
-  Strands* DiffuseAndConvertImageToStrands(const RgbaImage& image);
+  Strands* ConvertImageToStrands(const RgbaImage& image);
 
   static uint8_t* ConvertStrandsToFrame(Strands* strands);
   static int BuildFrameColorSeq(
@@ -94,6 +109,8 @@ class TclController {
  private:
   TclController(const TclController& src);
   TclController& operator=(const TclController& rhs);
+
+  void PopulateLayoutMap(const Layout& layout);
 
   bool Connect();
   void CloseSocket();
@@ -106,13 +123,13 @@ class TclController {
   int height_;
   bool init_sent_;
   RgbGamma gamma_;
-  Layout layout_;
+  LayoutMap layout_;
   int socket_;
   bool require_reset_;
   uint64_t last_reply_time_;
   RgbaImage last_image_;
+  RgbaImage last_led_image_;
   int last_image_id_;
-  bool has_last_image_;
   RgbaImage effect_image_;
   int frames_sent_after_reply_;
 };
@@ -121,10 +138,10 @@ TclController::TclController(
     int id, int width, int height,
     const Layout& layout, double gamma)
     : id_(id), width_(width), height_(height), init_sent_(false),
-      layout_(layout), socket_(-1), require_reset_(true), last_reply_time_(0),
-      last_image_id_(0), has_last_image_(false),
-      frames_sent_after_reply_(0) {
+      socket_(-1), require_reset_(true), last_reply_time_(0),
+      last_image_id_(0), frames_sent_after_reply_(0) {
   SetGammaRanges(0, 255, gamma, 0, 255, gamma, 0, 255, gamma);
+  PopulateLayoutMap(layout);
 }
 
 TclController::~TclController() {
@@ -150,10 +167,19 @@ void TclController::ScheduleReset() {
 }
 
 Bytes* TclController::GetAndClearLastImage() {
-  if (!has_last_image_)
+  if (last_image_.IsEmpty())
     return NULL;
   Bytes* result = new Bytes(last_image_.GetData(), last_image_.GetDataLen());
-  has_last_image_ = false;
+  last_image_.Clear();
+  return result;
+}
+
+Bytes* TclController::GetAndClearLastLedImage() {
+  if (last_led_image_.IsEmpty())
+    return NULL;
+  Bytes* result = new Bytes(
+      last_led_image_.GetData(), last_led_image_.GetDataLen());
+  last_led_image_.Clear();
   return result;
 }
 
@@ -163,6 +189,19 @@ void TclController::SetGammaRanges(
     int b_min, int b_max, double b_gamma) {
   gamma_.SetGammaRanges(
       r_min, r_max, r_gamma, g_min, g_max, g_gamma, b_min, b_max, b_gamma);
+}
+
+void TclController::PopulateLayoutMap(const Layout& layout) {
+  // TODO(igorc): Fill the pixel area.
+  for (int strand_id = 0; strand_id < STRAND_COUNT; ++strand_id) {
+    int len = layout.lengths_[strand_id];
+    layout_.lengths_[strand_id] = len;
+    for (int led_id = 0; led_id < len; ++led_id) {
+      layout_.AddCoord(
+          strand_id, led_id, layout.x_[strand_id][led_id],
+          layout.y_[strand_id][led_id]);
+    }
+  }
 }
 
 bool TclController::BuildImage(
@@ -215,101 +254,67 @@ void TclController::ApplyEffect(RgbaImage* image) {
 
 uint8_t* TclController::BuildFrameDataForImage(RgbaImage* img, int id) {
   ApplyEffect(img);
-  Strands* strands = DiffuseAndConvertImageToStrands(*img);
+  Strands* strands = ConvertImageToStrands(*img);
   if (!strands)
     return NULL;
 
   uint8_t* frame_data = ConvertStrandsToFrame(strands);
   last_image_ = *img;
   last_image_id_ = id;
-  has_last_image_ = true;
+  last_led_image_ = strands->led_image;
   delete strands;
   return frame_data;
 }
 
-#define ADD_IMG_BYTE()                           \
-  if (x1 >= 0 && x1 < w && y1 >= 0 && y1 < h) {  \
-    int pos2 = (y1 * w + x1) * 4;                \
-    color2_r += image[pos2];                     \
-    color2_g += image[pos2 + 1];                 \
-    color2_b += image[pos2 + 2];                 \
-    color2_count++;                              \
-  }
-
-/*static void DiffuseColorValue(
-    const uint8_t* image, int w, int h, int x, int y) {
-  int color_pos = (y * w + x) * 4;
-  int32_t color_r = 16 * image[color_pos];
-  int32_t color_g = 16 * image[color_pos + 1];
-  int32_t color_b = 16 * image[color_pos + 2];
-  for (int d = 1; d <= 2; d++) {
-    int32_t color2_r = 0;
-    int32_t color2_g = 0;
-    int32_t color2_b = 0;
-    int color2_count = 0;
-    int x1 = 0;
-    int y1 = y - d;
-    for (x1 = x - d; x1 <= x + d; x1++) {
-      ADD_IMG_BYTE();
-    }
-    y1 = y + d;
-    for (x1 = x - d; x1 <= x + d; x1++) {
-      ADD_IMG_BYTE();
-    }
-    x1 = x + d;
-    for (y1 = y - d + 1; y1 <= y + d - 1; y1++) {
-      ADD_IMG_BYTE();
-    }
-    x1 = x - d;
-    for (y1 = y - d + 1; y1 <= y + d - 1; y1++) {
-      ADD_IMG_BYTE();
-    }
-    color2_r = color2_r * 16 / color2_count;
-    color2_g = color2_g * 16 / color2_count;
-    color2_b = color2_b * 16 / color2_count;
-    // Use 1/2 of the nearest colors, and 1/4 of the next ones.
-    // TODO(igorc): Experiment with 1/4 for nearest.
-    int fraction = 1 << d;
-    color_r = (color_r * (fraction - 1) + color2_r) / fraction;
-    color_g = (color_g * (fraction - 1) + color2_g) / fraction;
-    color_b = (color_b * (fraction - 1) + color2_b) / fraction;
-  }
-  image[color_pos] = std::min(0xFF, std::max(0, color_r / 16)) & 0xFF;
-  image[color_pos + 1] = std::min(0xFF, std::max(0, color_g / 16)) & 0xFF;
-  image[color_pos + 2] = std::min(0xFF, std::max(0, color_b / 16)) & 0xFF;
-}*/
-
-Strands* TclController::DiffuseAndConvertImageToStrands(
+Strands* TclController::ConvertImageToStrands(
     const RgbaImage& image) {
   int len = RGBA_LEN(width_, height_);
   Strands* strands = new Strands();
   const uint8_t* image_data = image.GetData();
-  for (int strand_id  = 0; strand_id < STRAND_COUNT; strand_id++) {
-    int* x_arr = layout_.x_[strand_id];
-    int* y_arr = layout_.y_[strand_id];
+  uint8_t* led_image_data = new uint8_t[RGBA_LEN(width_, height_)];
+  memset(led_image_data, 0, RGBA_LEN(width_, height_));
+  for (int strand_id  = 0; strand_id < STRAND_COUNT; ++strand_id) {
     int strand_len = layout_.lengths_[strand_id];
     uint8_t* dst_colors = strands->colors[strand_id];
-    for (int i = 0; i < strand_len; i++) {
-      int x = x_arr[i];
-      int y = y_arr[i];
-      int color_idx = (y * width_ + x) * 4;
-      if ((color_idx + 4) > len) {
-        fprintf(stderr,
-                "Not enough data in image. Accessing %d, len=%d, strand=%d, "
-                "led=%d, x=%d, y=%d\n",
-                color_idx, len, strand_id, i, x, y);
-        delete strands;
-        return NULL;
+    for (int led_id = 0; led_id < strand_len; ++led_id) {
+      uint32_t r = 0, g = 0, b = 0;
+      const std::vector<Coord>& coords = layout_.coords_[strand_id][led_id];
+      int coord_count = coords.size();
+      for (int c_id = 0; c_id < coord_count; ++c_id) {
+        int x = coords[c_id].x_;
+        int y = coords[c_id].y_;
+        int color_idx = (y * width_ + x) * 4;
+        if (color_idx < 0 || (color_idx + 4) > len) {
+          fprintf(stderr,
+                  "Not enough data in image. Accessing %d, len=%d, strand=%d, "
+                  "led=%d, x=%d, y=%d\n",
+                  color_idx, len, strand_id, led_id, x, y);
+          delete strands;
+          return NULL;
+        }
+        r += image_data[color_idx];
+        g += image_data[color_idx + 1];
+        b += image_data[color_idx + 2];
       }
-      //DiffuseColorValue(image_data, width_, height_, x, y);
 
-      int dst_idx = i * 3;  // Strands are RGB.
-      dst_colors[dst_idx] = image_data[color_idx];
-      dst_colors[dst_idx + 1] = image_data[color_idx + 1];
-      dst_colors[dst_idx + 2] = image_data[color_idx + 2];
+      int dst_idx = led_id * 3;  // Strands are RGB.
+      dst_colors[dst_idx] = (uint8_t) (r / coord_count);
+      dst_colors[dst_idx + 1] = (uint8_t) (g / coord_count);
+      dst_colors[dst_idx + 2] = (uint8_t) (b / coord_count);
+
+      for (int c_id = 0; c_id < coord_count; ++c_id) {
+        int x = coords[c_id].x_;
+        int y = coords[c_id].y_;
+        int color_idx = (y * width_ + x) * 4;
+        led_image_data[color_idx] = r;
+        led_image_data[color_idx + 1] = g;
+        led_image_data[color_idx + 2] = b;
+        led_image_data[color_idx + 3] = 255;
+      }
     }
     strands->lengths[strand_id] = strand_len;
   }
+  strands->led_image.Set(led_image_data, width_, height_);
   return strands;
 }
 
@@ -630,6 +635,12 @@ Bytes* TclRenderer::GetAndClearLastImage(int controller_id) {
   return (controller ? controller->GetAndClearLastImage() : NULL);
 }
 
+Bytes* TclRenderer::GetAndClearLastLedImage(int controller_id) {
+  Autolock l(lock_);
+  TclController* controller = FindControllerLocked(controller_id);
+  return (controller ? controller->GetAndClearLastLedImage() : NULL);
+}
+
 int TclRenderer::GetLastImageId(int controller_id) {
   Autolock l(lock_);
   TclController* controller = FindControllerLocked(controller_id);
@@ -705,7 +716,7 @@ std::vector<int> TclRenderer::GetFrameDataForTest(
   if (!bytes || !bytes->GetData() || !controller)
     return result;
   RgbaImage img(bytes->GetData(), w, h);
-  Strands* strands = controller->DiffuseAndConvertImageToStrands(img);
+  Strands* strands = controller->ConvertImageToStrands(img);
   if (!strands)
     return result;
   uint8_t* frame_data = controller->ConvertStrandsToFrame(strands);

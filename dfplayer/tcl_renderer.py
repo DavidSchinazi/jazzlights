@@ -3,6 +3,8 @@
 #
 # Controls TCL controller.
 
+from PIL import Image
+
 from .stats import Stats
 from .tcl_layout import TclLayout
 from .tcl_renderer_py import TclRenderer as TclPyImpl
@@ -23,6 +25,8 @@ class TclRenderer(object):
   def __init__(self, controller_id, fps, width, height, layout_file,
                gamma, use_cc_impl, enable_net, test_mode=False):
     self._controller_id = controller_id
+    self._width = width
+    self._height = height
     self._layout = TclLayout(layout_file, width - 1, height - 1)
     self._use_cc_impl = use_cc_impl
     if self._use_cc_impl:
@@ -72,7 +76,21 @@ class TclRenderer(object):
     if not self._use_cc_impl:
       print 'get_and_clear_last_image not supported'
       return None
-    return self._renderer.GetAndClearLastImage(self._controller_id)
+    img_data = self._renderer.GetAndClearLastImage(self._controller_id)
+    if not img_data or len(img_data) == 0:
+      return None
+    return Image.fromstring(
+        'RGBA', (self._width, self._height), img_data)
+
+  def get_and_clear_last_led_image(self):
+    if not self._use_cc_impl:
+      print 'get_and_clear_last_led_image not supported'
+      return None
+    img_data = self._renderer.GetAndClearLastLedImage(self._controller_id)
+    if not img_data or len(img_data) == 0:
+      return None
+    return Image.fromstring(
+        'RGBA', (self._width, self._height), img_data)
 
   def get_last_image_id(self):
     if not self._use_cc_impl:
