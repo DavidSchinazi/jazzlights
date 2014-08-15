@@ -29,7 +29,7 @@ class TclRenderer(object):
     self._height = height
     self._layout = TclLayout(layout_file, width - 1, height - 1)
     self._use_cc_impl = use_cc_impl
-    self._hdr_mode = 0
+    self._hdr_mode = 2  # Saturation only
     if self._use_cc_impl:
       layout = TclCcLayout()
       for s in self._layout.get_strands():

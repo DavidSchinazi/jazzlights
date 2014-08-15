@@ -296,7 +296,7 @@ void TclController::PopulateLayoutMap(const Layout& layout) {
 
   // Find HDR siblings.
   // TODO(igorc): Compute max distance instead of hard-coding.
-  static const int kHdrSiblingsDistance = 10;
+  static const int kHdrSiblingsDistance = 13;
   int max_distance2 = kHdrSiblingsDistance * kHdrSiblingsDistance;
   for (int strand_id1 = 0; strand_id1 < STRAND_COUNT; ++strand_id1) {
     for (int led_id1 = 0; led_id1 < layout.lengths_[strand_id1]; ++led_id1) {
