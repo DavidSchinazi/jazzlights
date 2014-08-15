@@ -117,6 +117,7 @@ class TclController {
       Strands* strands, const RgbaImage& image);
   void SaveLedImageForStrands(Strands* strands);
   void ConvertStrandsHls(Strands* strands, bool to_hls);
+  void ApplyStrandsGamma(Strands* strands);
 
   bool Connect();
   void CloseSocket();
@@ -346,6 +347,10 @@ Strands* TclController::ConvertImageToStrands(
   // TODO(igorc): Fill the darkness.
 
   ConvertStrandsHls(strands, false);
+
+  // TODO(igorc): Check with kmy@ whether gamma should be applied before HDR.
+  ApplyStrandsGamma(strands);
+
   SaveLedImageForStrands(strands);
   return strands;
 }
@@ -381,7 +386,6 @@ bool TclController::PopulateStrandsColors(
       g = (g / coord_count) & 0xFF;
       b = (b / coord_count) & 0xFF;
       uint32_t color = PACK_COLOR32(r, g, b, 255);
-      color = gamma_.Apply(color);
 
       int dst_idx = led_id * 4;
       *((uint32_t*) (dst_colors + dst_idx)) = color;
@@ -389,6 +393,17 @@ bool TclController::PopulateStrandsColors(
     strands->lengths[strand_id] = strand_len;
   }
   return true;
+}
+
+void TclController::ApplyStrandsGamma(Strands* strands) {
+  for (int strand_id  = 0; strand_id < STRAND_COUNT; ++strand_id) {
+    int strand_len = layout_.lengths_[strand_id];
+    uint8_t* colors = strands->colors[strand_id];
+    for (int led_id = 0; led_id < strand_len; ++led_id) {
+      uint32_t* color = (uint32_t*) (colors + led_id * 4);
+      *color = gamma_.Apply(*color);
+    }
+  }
 }
 
 void TclController::SaveLedImageForStrands(Strands* strands) {
