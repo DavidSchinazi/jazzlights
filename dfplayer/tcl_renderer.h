@@ -53,7 +53,8 @@ enum EffectMode {
 enum HdrMode {
   HDR_NONE = 0,
   HDR_LUMINANCE = 1,
-  HDR_LSAT = 2,
+  HDR_SATURATION = 2,
+  HDR_LSAT = 3,
 };
 
 // Sends requested images to TCL controller.

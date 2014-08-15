@@ -396,11 +396,13 @@ Strands* TclController::ConvertImageToStrands(
   ConvertStrandsHls(strands, true);
   PerformHdr(strands);
 
+  // TODO(igorc): Adjust S and L through a user-controlled gamma curve.
+
   // TODO(igorc): Fill the darkness.
 
   ConvertStrandsHls(strands, false);
 
-  // TODO(igorc): Check with kmy@ whether gamma should be applied before HDR.
+  // Apply gamma at the end to preserve linear RGB-HSL conversions.
   ApplyStrandsGamma(strands);
 
   SaveLedImageForStrands(strands);
@@ -500,6 +502,11 @@ void TclController::ConvertStrandsHls(Strands* strands, bool to_hls) {
   }
 }
 
+// Extrapolates value to a range from 0 to 255.
+#define EXTEND256(value, min, max)   \
+  ((max) == (min) ? (max) :          \
+      ((256 * ((value) - (min)) / ((max) - (min))) & 0xFF))
+
 void TclController::PerformHdr(Strands* strands) {
   if (hdr_mode_ == HDR_NONE)
     return;
@@ -537,10 +544,13 @@ void TclController::PerformHdr(Strands* strands) {
       }
       // Always preserve the hue and alpha.
       res_color[0] = src_color[0];
-      // TODO(igorc): Process S and L through a gamma curve.
-      res_color[1] = ((l_max + l_min) / 2) & 0xFF;
-      if (hdr_mode_ == HDR_LSAT) {
-        res_color[2] = ((s_max + s_min) / 2) & 0xFF;
+      if (hdr_mode_ == HDR_LSAT || hdr_mode_ == HDR_LUMINANCE) {
+        res_color[1] = EXTEND256(src_color[1], l_min, l_max);
+      } else {
+        res_color[1] = src_color[1];
+      }
+      if (hdr_mode_ == HDR_LSAT || hdr_mode_ == HDR_SATURATION) {
+        res_color[2] = EXTEND256(src_color[2], s_min, s_max);
       } else {
         res_color[2] = src_color[2];
       }

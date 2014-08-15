@@ -136,7 +136,7 @@ class TclRenderer(object):
     if not self._use_cc_impl:
       return
     self._hdr_mode += 1
-    self._hdr_mode %= 3
+    self._hdr_mode %= 4
     self._renderer.SetHdrMode(self._hdr_mode)
 
   def get_hdr_mode(self):
