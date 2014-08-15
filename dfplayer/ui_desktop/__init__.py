@@ -52,7 +52,7 @@ class PlayerApp(Frame):
 
         frame_size = self.player.get_frame_size()
 
-        self._img_mode = 0
+        self._img_mode = 1
         self._img_size = (frame_size[0] / 2, frame_size[1])
         self._img_mode_count = 6
 

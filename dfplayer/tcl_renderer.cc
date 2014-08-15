@@ -10,6 +10,7 @@
 #include <fcntl.h>
 #include <math.h>
 #include <netinet/in.h>
+#include <opencv2/opencv.hpp>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -111,6 +112,11 @@ class TclController {
   TclController& operator=(const TclController& rhs);
 
   void PopulateLayoutMap(const Layout& layout);
+
+  bool PopulateStrandsColors(
+      Strands* strands, const RgbaImage& image);
+  void SaveLedImageForStrands(Strands* strands);
+  void ConvertStrandsHls(Strands* strands, bool to_hls);
 
   bool Connect();
   void CloseSocket();
@@ -328,11 +334,26 @@ uint8_t* TclController::BuildFrameDataForImage(RgbaImage* img, int id) {
 
 Strands* TclController::ConvertImageToStrands(
     const RgbaImage& image) {
-  int len = RGBA_LEN(width_, height_);
   Strands* strands = new Strands();
+  if (!PopulateStrandsColors(strands, image)) {
+    delete strands;
+    return NULL;
+  }
+
+  ConvertStrandsHls(strands, true);
+
+  // TODO(igorc): Perform HDR.
+  // TODO(igorc): Fill the darkness.
+
+  ConvertStrandsHls(strands, false);
+  SaveLedImageForStrands(strands);
+  return strands;
+}
+
+bool TclController::PopulateStrandsColors(
+    Strands* strands, const RgbaImage& image) {
   const uint8_t* image_data = image.GetData();
-  uint8_t* led_image_data = new uint8_t[RGBA_LEN(width_, height_)];
-  memset(led_image_data, 0, RGBA_LEN(width_, height_));
+  int image_len = RGBA_LEN(width_, height_);
   for (int strand_id  = 0; strand_id < STRAND_COUNT; ++strand_id) {
     int strand_len = layout_.lengths_[strand_id];
     uint8_t* dst_colors = strands->colors[strand_id];
@@ -344,13 +365,12 @@ Strands* TclController::ConvertImageToStrands(
         int x = coords[c_id].x_;
         int y = coords[c_id].y_;
         int color_idx = (y * width_ + x) * 4;
-        if (color_idx < 0 || (color_idx + 4) > len) {
+        if (color_idx < 0 || (color_idx + 4) > image_len) {
           fprintf(stderr,
                   "Not enough data in image. Accessing %d, len=%d, strand=%d, "
                   "led=%d, x=%d, y=%d\n",
-                  color_idx, len, strand_id, led_id, x, y);
-          delete strands;
-          return NULL;
+                  color_idx, image_len, strand_id, led_id, x, y);
+          return false;
         }
         r += image_data[color_idx];
         g += image_data[color_idx + 1];
@@ -365,18 +385,52 @@ Strands* TclController::ConvertImageToStrands(
 
       int dst_idx = led_id * 4;
       *((uint32_t*) (dst_colors + dst_idx)) = color;
+    }
+    strands->lengths[strand_id] = strand_len;
+  }
+  return true;
+}
 
-      for (int c_id = 0; c_id < coord_count; ++c_id) {
+void TclController::SaveLedImageForStrands(Strands* strands) {
+  uint8_t* led_image_data = new uint8_t[RGBA_LEN(width_, height_)];
+  memset(led_image_data, 0, RGBA_LEN(width_, height_));
+  for (int strand_id  = 0; strand_id < STRAND_COUNT; ++strand_id) {
+    int strand_len = layout_.lengths_[strand_id];
+    uint8_t* colors = strands->colors[strand_id];
+    for (int led_id = 0; led_id < strand_len; ++led_id) {
+      const std::vector<Coord>& coords = layout_.coords_[strand_id][led_id];
+      uint32_t color = *((uint32_t*) (colors + led_id * 4));
+      for (size_t c_id = 0; c_id < coords.size(); ++c_id) {
         int x = coords[c_id].x_;
         int y = coords[c_id].y_;
         int color_idx = (y * width_ + x) * 4;
         *((uint32_t*) (led_image_data + color_idx)) = color;
       }
     }
-    strands->lengths[strand_id] = strand_len;
   }
   strands->led_image.Set(led_image_data, width_, height_);
-  return strands;
+}
+
+void TclController::ConvertStrandsHls(Strands* strands, bool to_hls) {
+  uint32_t tmp = 0;
+  cv::Mat hls(1, 1, CV_8UC3, &tmp);
+  cv::Mat rgb(1, 1, CV_8UC3, &tmp);
+  for (int strand_id  = 0; strand_id < STRAND_COUNT; ++strand_id) {
+    int strand_len = layout_.lengths_[strand_id];
+    uint8_t* colors = strands->colors[strand_id];
+    for (int led_id = 0; led_id < strand_len; ++led_id) {
+      uint8_t* color_ptr = colors + led_id * 4;
+      if (to_hls) {
+        memcpy(rgb.data, color_ptr, 3);
+        cv::cvtColor(rgb, hls, CV_RGB2HLS);
+        memcpy(color_ptr, hls.data, 3);
+      } else {
+        memcpy(hls.data, color_ptr, 3);
+        cv::cvtColor(hls, rgb, CV_HLS2RGB);
+        memcpy(color_ptr, rgb.data, 3);
+      }
+    }
+  }
 }
 
 // static
