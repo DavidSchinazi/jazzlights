@@ -41,7 +41,21 @@ struct LayoutMap {
     coords_[strand_id][led_id].push_back(Coord(x, y));
   }
 
+  void AddHdrSibling(int strand_id, int led_id, int strand_id2, int led_id2) {
+    hdr_siblings_[strand_id][led_id].push_back(
+        HdrSibling(strand_id2, led_id2));
+  }
+
+  struct HdrSibling {
+    HdrSibling(int strand_id, int led_id)
+        : strand_id_(strand_id), led_id_(led_id) {}
+
+    int strand_id_;
+    int led_id_;
+  };
+
   std::vector<Coord> coords_[STRAND_COUNT][STRAND_LENGTH];
+  std::vector<HdrSibling> hdr_siblings_[STRAND_COUNT][STRAND_LENGTH];
   int lengths_[STRAND_COUNT];
 };
 
@@ -103,6 +117,8 @@ class TclController {
   void ApplyEffect(RgbaImage* image);
   Strands* ConvertImageToStrands(const RgbaImage& image);
 
+  void SetHdrMode(HdrMode mode);
+
   static uint8_t* ConvertStrandsToFrame(Strands* strands);
   static int BuildFrameColorSeq(
       Strands* strands, int led_id, int color_component, uint8_t* dst);
@@ -117,6 +133,7 @@ class TclController {
       Strands* strands, const RgbaImage& image);
   void SaveLedImageForStrands(Strands* strands);
   void ConvertStrandsHls(Strands* strands, bool to_hls);
+  void PerformHdr(Strands* strands);
   void ApplyStrandsGamma(Strands* strands);
 
   bool Connect();
@@ -139,6 +156,7 @@ class TclController {
   int last_image_id_;
   RgbaImage effect_image_;
   int frames_sent_after_reply_;
+  HdrMode hdr_mode_;
 };
 
 TclController::TclController(
@@ -146,7 +164,8 @@ TclController::TclController(
     const Layout& layout, double gamma)
     : id_(id), width_(width), height_(height), init_sent_(false),
       socket_(-1), require_reset_(true), last_reply_time_(0),
-      last_image_id_(0), frames_sent_after_reply_(0) {
+      last_image_id_(0), frames_sent_after_reply_(0),
+      hdr_mode_(HDR_NONE) {
   SetGammaRanges(0, 255, gamma, 0, 255, gamma, 0, 255, gamma);
   PopulateLayoutMap(layout);
 }
@@ -196,6 +215,10 @@ void TclController::SetGammaRanges(
     int b_min, int b_max, double b_gamma) {
   gamma_.SetGammaRanges(
       r_min, r_max, r_gamma, g_min, g_max, g_gamma, b_min, b_max, b_gamma);
+}
+
+void TclController::SetHdrMode(HdrMode mode) {
+  hdr_mode_ = mode;
 }
 
 struct PixelUsage {
@@ -252,8 +275,12 @@ void TclController::PopulateLayoutMap(const Layout& layout) {
       AddCoord(&layout_, usage, strand_id, led_id, x+1, y+1, width_, height_);
       AddCoord(&layout_, usage, strand_id, led_id, x,   y-1, width_, height_);
       AddCoord(&layout_, usage, strand_id, led_id, x,   y+1, width_, height_);
+
+      // TODO(igorc): Add other HDR siblings.
+      layout_.AddHdrSibling(strand_id, led_id, strand_id, led_id);
     }
   }
+
   // TODO(igorc): Fill more of the pixel area.
   // Find matches for all points that were not filled. Do only one iteration
   // as the majority of the relevant pixels have already been mapped.
@@ -342,8 +369,8 @@ Strands* TclController::ConvertImageToStrands(
   }
 
   ConvertStrandsHls(strands, true);
+  PerformHdr(strands);
 
-  // TODO(igorc): Perform HDR.
   // TODO(igorc): Fill the darkness.
 
   ConvertStrandsHls(strands, false);
@@ -446,6 +473,64 @@ void TclController::ConvertStrandsHls(Strands* strands, bool to_hls) {
       }
     }
   }
+}
+
+void TclController::PerformHdr(Strands* strands) {
+  if (hdr_mode_ == HDR_NONE)
+    return;
+
+  uint8_t* res_colors[STRAND_COUNT];
+  for (int i = 0; i < STRAND_COUNT; ++i)
+    res_colors[i] = new uint8_t[STRAND_LENGTH * 4];
+
+  // Populate resulting colors with HDR image.
+  for (int strand_id  = 0; strand_id < STRAND_COUNT; ++strand_id) {
+    int strand_len = layout_.lengths_[strand_id];
+    for (int led_id = 0; led_id < strand_len; ++led_id) {
+      uint32_t l_min = 255, l_max = 0, s_min = 255, s_max = 0;
+      const std::vector<LayoutMap::HdrSibling>& siblings =
+          layout_.hdr_siblings_[strand_id][led_id];
+      uint8_t* src_color = strands->colors[strand_id] + led_id * 4;
+      uint8_t* res_color = res_colors[strand_id] + led_id * 4;
+      for (size_t i = 0; i < siblings.size(); ++i) {
+        uint8_t* hls = strands->colors[siblings[i].strand_id_] +
+            siblings[i].led_id_ * 4;
+        uint8_t l = hls[1];
+        uint8_t s = hls[2];
+        if (l < l_min) {
+          l_min = l;
+        }
+        if (l > l_max) {
+          l_max = l;
+        }
+        if (s < s_min) {
+          s_min = s;
+        }
+        if (s > s_max) {
+          s_max = s;
+        }
+      }
+      // Always preserve the hue and alpha.
+      res_color[0] = src_color[0];
+      res_color[1] = ((l_max + l_min) / 2) & 0xFF;
+      if (hdr_mode_ == HDR_LSAT) {
+        res_color[2] = ((s_max + s_min) / 2) & 0xFF;
+      } else {
+        res_color[2] = src_color[2];
+      }
+      res_color[3] = src_color[3];
+    }
+  }
+
+  // Copy resulting colors back to the strand.
+  for (int strand_id  = 0; strand_id < STRAND_COUNT; ++strand_id) {
+    int strand_len = layout_.lengths_[strand_id];
+    memcpy(strands->colors[strand_id], res_colors[strand_id],
+           strand_len * 4);
+  }
+
+  for (int i = 0; i < STRAND_COUNT; ++i)
+    delete[] res_colors[i];
 }
 
 // static
@@ -736,10 +821,20 @@ void TclRenderer::SetGammaRanges(
     int g_min, int g_max, double g_gamma,
     int b_min, int b_max, double b_gamma) {
   Autolock l(lock_);
+  CHECK(controllers_locked_);
   for (std::vector<TclController*>::iterator it = controllers_.begin();
         it != controllers_.end(); ++it) {
     (*it)->SetGammaRanges(
         r_min, r_max, r_gamma, g_min, g_max, g_gamma, b_min, b_max, b_gamma);
+  }
+}
+
+void TclRenderer::SetHdrMode(HdrMode mode) {
+  Autolock l(lock_);
+  CHECK(controllers_locked_);
+  for (std::vector<TclController*>::iterator it = controllers_.begin();
+        it != controllers_.end(); ++it) {
+    (*it)->SetHdrMode(mode);
   }
 }
 

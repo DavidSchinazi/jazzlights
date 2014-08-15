@@ -50,6 +50,12 @@ enum EffectMode {
   EFFECT_MIRROR = 2,
 };
 
+enum HdrMode {
+  HDR_NONE = 0,
+  HDR_LUMINANCE = 1,
+  HDR_LSAT = 2,
+};
+
 // Sends requested images to TCL controller.
 // To use this class:
 //   renderer = new TclRenderer(controller_id, width, height, gamma);
@@ -103,6 +109,8 @@ class TclRenderer {
 
   // Reset controller if no reply data in ms. Default is 5000.
   void SetAutoResetAfterNoDataMs(int value);
+
+  void SetHdrMode(HdrMode mode);
 
   // Returns the number of currently queued frames.
   int GetQueueSize();

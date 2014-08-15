@@ -29,6 +29,7 @@ class TclRenderer(object):
     self._height = height
     self._layout = TclLayout(layout_file, width - 1, height - 1)
     self._use_cc_impl = use_cc_impl
+    self._hdr_mode = 0
     if self._use_cc_impl:
       layout = TclCcLayout()
       for s in self._layout.get_strands():
@@ -38,6 +39,7 @@ class TclRenderer(object):
       self._renderer.AddController(controller_id, width, height, layout, gamma)
       self._renderer.LockControllers()
       self._frame_send_duration = self._renderer.GetFrameSendDuration()
+      self._renderer.SetHdrMode(self._hdr_mode)
       if not test_mode:
         self._renderer.StartMessageLoop(fps, enable_net)
     else:
@@ -129,6 +131,16 @@ class TclRenderer(object):
       else:
         self._renderer.SetEffectImage(
             self._controller_id, '', 0, 0, 2)
+
+  def toggle_hdr_mode(self):
+    if not self._use_cc_impl:
+      return
+    self._hdr_mode += 1
+    self._hdr_mode %= 3
+    self._renderer.SetHdrMode(self._hdr_mode)
+
+  def get_hdr_mode(self):
+    return self._hdr_mode
 
   def get_frame_data_for_test(self, image):
     if self._use_cc_impl:

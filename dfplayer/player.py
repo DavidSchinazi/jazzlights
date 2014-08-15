@@ -164,14 +164,16 @@ class Player(object):
             elapsed_time = self.elapsed_time
         elapsed_sec = int(elapsed_time)
         lines = []
+        hdr_mode = self._tcl.get_hdr_mode()
         if self._line_in:
-            lines.append('Line In, Gamma = %.1f' % (self._target_gamma))
+            lines.append('Line In, Gamma = %.1f, HDR = %s' % (
+                self._target_gamma, hdr_mode))
         else:
             lines.append('%s / %s / %02d:%02d' % (
                 self.status.upper(), self.clip_name,
                 elapsed_sec / 60, elapsed_sec % 60))
-            lines.append('Soft Vol = %s, Gamma = %.1f' % (
-                self._volume, self._target_gamma))
+            lines.append('Soft Vol = %s, Gamma = %.1f, HDR = %s' % (
+                self._volume, self._target_gamma, hdr_mode))
         if self._use_visualization:
             bass = self._visualizer.GetLastBassInfo()
             lines.append(self._visualizer.GetCurrentPresetNameProgress())
@@ -531,6 +533,9 @@ class Player(object):
             self._visualizer.SelectNextPreset()
         else:
             self._visualizer.SelectPreviousPreset()
+
+    def toggle_hdr_mode(self):
+        self._tcl.toggle_hdr_mode()
 
     def _get_effect_image(self):
         if self._effect is None:

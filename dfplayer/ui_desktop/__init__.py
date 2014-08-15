@@ -82,6 +82,7 @@ class PlayerApp(Frame):
         self.root.bind('n', lambda e: player.visualization_volume_down())
         self.root.bind('v', lambda e: player.toggle_visualization())
         self.root.bind('t', lambda e: self.toggle_visualizer_render())
+        self.root.bind('d', lambda e: player.toggle_hdr_mode())
         self.root.bind('o', lambda e: player.select_next_preset(False))
         self.root.bind('p', lambda e: player.select_next_preset(True))
         self.root.bind('0', lambda e: player.stop_effect())
