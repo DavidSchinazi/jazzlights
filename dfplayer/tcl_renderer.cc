@@ -275,9 +275,6 @@ void TclController::PopulateLayoutMap(const Layout& layout) {
       AddCoord(&layout_, usage, strand_id, led_id, x+1, y+1, width_, height_);
       AddCoord(&layout_, usage, strand_id, led_id, x,   y-1, width_, height_);
       AddCoord(&layout_, usage, strand_id, led_id, x,   y+1, width_, height_);
-
-      // TODO(igorc): Add other HDR siblings.
-      layout_.AddHdrSibling(strand_id, led_id, strand_id, led_id);
     }
   }
 
@@ -296,6 +293,34 @@ void TclController::PopulateLayoutMap(const Layout& layout) {
       CopyCoord(&layout_, usage, x, y, width_, height_, x,   y+1);
     }
   }
+
+  // Find HDR siblings.
+  // TODO(igorc): Compute max distance instead of hard-coding.
+  static const int kHdrSiblingsDistance = 10;
+  int max_distance2 = kHdrSiblingsDistance * kHdrSiblingsDistance;
+  for (int strand_id1 = 0; strand_id1 < STRAND_COUNT; ++strand_id1) {
+    for (int led_id1 = 0; led_id1 < layout.lengths_[strand_id1]; ++led_id1) {
+      int x1 = layout.x_[strand_id1][led_id1];
+      int y1 = layout.y_[strand_id1][led_id1];
+      for (int strand_id2 = 0; strand_id2 < STRAND_COUNT; ++strand_id2) {
+        for (int led_id2 = 0; led_id2 < layout.lengths_[strand_id2]; ++led_id2) {
+          int x_d = layout.x_[strand_id2][led_id2] - x1;
+          int y_d = layout.y_[strand_id2][led_id2] - y1;
+          int distance2 = x_d * x_d + y_d * y_d;
+          if (distance2 < max_distance2)
+            layout_.AddHdrSibling(strand_id1, led_id1, strand_id2, led_id2);
+        }
+      }
+    }
+  }
+
+  /*for (int strand_id  = 0; strand_id < STRAND_COUNT; ++strand_id) {
+    for (int led_id = 0; led_id < layout_.lengths_[strand_id]; ++led_id) {
+      fprintf(stderr, "HDR siblings: strand=%d, led=%d, count=%ld\n",
+              strand_id, led_id,
+              layout_.hdr_siblings_[strand_id][led_id].size());
+    }
+  }*/
 }
 
 bool TclController::BuildImage(
@@ -512,6 +537,7 @@ void TclController::PerformHdr(Strands* strands) {
       }
       // Always preserve the hue and alpha.
       res_color[0] = src_color[0];
+      // TODO(igorc): Process S and L through a gamma curve.
       res_color[1] = ((l_max + l_min) / 2) & 0xFF;
       if (hdr_mode_ == HDR_LSAT) {
         res_color[2] = ((s_max + s_min) / 2) & 0xFF;
