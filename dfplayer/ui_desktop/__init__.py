@@ -62,7 +62,9 @@ class PlayerApp(Frame):
             int(round(
                 (float(WIN_WIDTH) / self._img_size[0]) * self._img_size[1])))
 
-        self._img1 = ImageTk.PhotoImage('RGBA', self._img_size)
+        # Undo gamma correction in LED preview, otherwise it is too dark.
+        # Keep a fixed value to have better feedback on LED gamma changes.
+        self._img1 = ImageTk.PhotoImage('RGBA', self._img_size, gamma=2.2)
         self._img2 = ImageTk.PhotoImage('RGBA', self._img_size)
         self._canvas.create_image(
             WIN_WIDTH / 2, WIN_HEIGHT * 2 / 3 - WIN_HEIGHT / 4,

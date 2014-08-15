@@ -74,6 +74,9 @@ struct Bytes {
   int len_;
 };
 
+#define PACK_COLOR32(r, g, b, a)    \
+  (((a) << 24) | ((b) << 16) | ((g) << 8) | (r))
+
 struct RgbGamma {
   RgbGamma();
 
@@ -82,6 +85,17 @@ struct RgbGamma {
       int r_min, int r_max, double r_gamma,
       int g_min, int g_max, double g_gamma,
       int b_min, int b_max, double b_gamma);
+
+  inline uint32_t Apply(uint32_t color) const {
+    uint32_t r = gamma_r_[color & 0xFF];
+    uint32_t g = gamma_g_[(color >> 8) & 0xFF];
+    uint32_t b = gamma_b_[(color >> 16) & 0xFF];
+    return PACK_COLOR32(r, g, b, (color >> 24));
+  }
+
+  inline void Apply(uint8_t* dst, const uint8_t* src) const {
+    *((uint32_t*) dst) = Apply(*((uint32_t*) src));
+  }
 
   void Apply(uint8_t* dst, const uint8_t* src, int w, int h) const;
 

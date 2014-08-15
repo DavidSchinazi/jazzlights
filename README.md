@@ -45,6 +45,7 @@ platforms.
         sudo vi /etc/apcupsd/apcupsd.conf
           Change UPSTYPE and UPSCABLE to usb
           Comment out DEVICE
+          Set TIMEOUT to 60
         sudo vi /etc/default/apcupsd
           Set ISCONFIGURED to yes
         sudo ln -s /etc/init.d/apcupsd /etc/rc2.d/S20apcupsd

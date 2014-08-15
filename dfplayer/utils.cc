@@ -106,9 +106,7 @@ void RgbGamma::Apply(uint8_t* dst, const uint8_t* src, int w, int h) const {
   for (int y = 0; y < h; y++) {
     for (int x = 0; x < w; x++) {
       int i = (y * w + x) * 4;
-      dst[i] = gamma_r_[src[i]];
-      dst[i + 1] = gamma_g_[src[i + 1]];
-      dst[i + 2] = gamma_b_[src[i + 2]];
+      Apply(dst + i, src + i);
     }
   }
 }

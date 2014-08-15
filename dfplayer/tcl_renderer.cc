@@ -47,7 +47,7 @@ struct LayoutMap {
 struct Strands {
   Strands() {
     for (int i = 0; i < STRAND_COUNT; i++) {
-      colors[i] = new uint8_t[STRAND_LENGTH * 3];
+      colors[i] = new uint8_t[STRAND_LENGTH * 4];
       lengths[i] = 0;
     }
   }
@@ -193,6 +193,7 @@ void TclController::SetGammaRanges(
 
 struct PixelUsage {
   bool in_use;
+  bool is_primary;
   int strand_id;
   int led_id;
 };
@@ -207,19 +208,24 @@ static void AddCoord(
   usage[pos].strand_id = strand_id;
   usage[pos].led_id = led_id;
   usage[pos].in_use = true;
+  usage[pos].is_primary = true;
 }
 
-/*static void CopyCoord(
+static void CopyCoord(
     LayoutMap* layout, PixelUsage* usage, int x, int y, int w, int h,
     int x_src, int y_src) {
+  int pos_dst = y * w + x;
   if (x_src < 0 || x_src >= w || y_src < 0 || y_src >= h ||
-      !usage[y_src * w + x_src].in_use) {
+      !usage[y_src * w + x_src].is_primary || usage[pos_dst].in_use) {
     return;
   }
-  int pos_src = y_src * w + x_src;
+  (void) layout;
+  /*int pos_src = y_src * w + x_src;
   layout->AddCoord(usage[pos_src].strand_id, usage[pos_src].led_id, x, y);
-  usage[y * w + x] = usage[pos_src];
-}*/
+  usage[pos_dst].strand_id = usage[pos_src].strand_id;
+  usage[pos_dst].led_id = usage[pos_src].led_id;
+  usage[pos_dst].in_use = true;*/
+}
 
 void TclController::PopulateLayoutMap(const Layout& layout) {
   PixelUsage* usage = new PixelUsage[width_ * height_];
@@ -244,7 +250,7 @@ void TclController::PopulateLayoutMap(const Layout& layout) {
   // TODO(igorc): Fill more of the pixel area.
   // Find matches for all points that were not filled. Do only one iteration
   // as the majority of the relevant pixels have already been mapped.
-  /*for (int x = 0; x < width_; ++x) {
+  for (int x = 0; x < width_; ++x) {
     for (int y = 0; y < height_; ++y) {
       CopyCoord(&layout_, usage, x, y, width_, height_, x-1, y-1);
       CopyCoord(&layout_, usage, x, y, width_, height_, x-1, y  );
@@ -252,10 +258,10 @@ void TclController::PopulateLayoutMap(const Layout& layout) {
       CopyCoord(&layout_, usage, x, y, width_, height_, x+1, y-1);
       CopyCoord(&layout_, usage, x, y, width_, height_, x+1, y  );
       CopyCoord(&layout_, usage, x, y, width_, height_, x+1, y+1);
-      CopyCoord(&layout_, usage, x, y, width_, height_, x, y-1);
-      CopyCoord(&layout_, usage, x, y, width_, height_, x, y+1);
+      CopyCoord(&layout_, usage, x, y, width_, height_, x,   y-1);
+      CopyCoord(&layout_, usage, x, y, width_, height_, x,   y+1);
     }
-  }*/
+  }
 }
 
 bool TclController::BuildImage(
@@ -263,7 +269,7 @@ bool TclController::BuildImage(
   if (!bytes || !bytes->GetLen())
     return false;
 
-  // TODO(igorc): Linearize RGB gamma.
+  // We expect all incoming images to use linearized RGB gamma.
   uint8_t* img_data;
   if (mode == EFFECT_OVERLAY) {
     img_data = ResizeImage(bytes->GetData(), w, h, width_, height_);
@@ -354,20 +360,17 @@ Strands* TclController::ConvertImageToStrands(
       r = (r / coord_count) & 0xFF;
       g = (g / coord_count) & 0xFF;
       b = (b / coord_count) & 0xFF;
+      uint32_t color = PACK_COLOR32(r, g, b, 255);
+      color = gamma_.Apply(color);
 
-      int dst_idx = led_id * 3;  // Strands are RGB.
-      dst_colors[dst_idx] = r;
-      dst_colors[dst_idx + 1] = g;
-      dst_colors[dst_idx + 2] = b;
+      int dst_idx = led_id * 4;
+      *((uint32_t*) (dst_colors + dst_idx)) = color;
 
       for (int c_id = 0; c_id < coord_count; ++c_id) {
         int x = coords[c_id].x_;
         int y = coords[c_id].y_;
         int color_idx = (y * width_ + x) * 4;
-        led_image_data[color_idx] = r;
-        led_image_data[color_idx + 1] = g;
-        led_image_data[color_idx + 2] = b;
-        led_image_data[color_idx + 3] = 255;
+        *((uint32_t*) (led_image_data + color_idx)) = color;
       }
     }
     strands->lengths[strand_id] = strand_len;
@@ -405,7 +408,7 @@ int TclController::BuildFrameColorSeq(
       if (led_id >= strands->lengths[strand_id])
         continue;
       uint8_t* colors = strands->colors[strand_id];
-      uint8_t color = colors[led_id * 3 + color_component];
+      uint8_t color = colors[led_id * 4 + color_component];
       if ((color & color_bit_mask) != 0)
         dst_byte |= 1 << strand_id;
     }
