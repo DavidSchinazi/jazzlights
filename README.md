@@ -122,7 +122,7 @@ will take a while.
 
 5. Run the player (without TCL):
 
-        ./start.py --disable-net
+        ./start.py --disable-net --mpd
 
 6. If there is no audio, run 'aplay -l' and update
    MPD_CARD_ID in dfplayer/player.py.

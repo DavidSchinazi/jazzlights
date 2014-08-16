@@ -12,7 +12,7 @@ def main():
   arg_parser.add_argument('--gdb', action='store_true')
   arg_parser.add_argument('--no-reset', action='store_true')
   arg_parser.add_argument('--disable-net', action='store_true')
-  arg_parser.add_argument('--line-in', action='store_true')
+  arg_parser.add_argument('--mpd', action='store_true')
   args = arg_parser.parse_args()
 
   shutil.copyfile(
@@ -23,8 +23,8 @@ def main():
     params.append('--no-reset')
   if args.disable_net:
     params.append('--disable-net')
-  if args.line_in:
-    params.append('--line-in')
+  if args.mpd:
+    params.append('--mpd')
 
   try:
     if args.gdb:

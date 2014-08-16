@@ -22,7 +22,7 @@ def main():
     arg_parser.add_argument('--listen')
     arg_parser.add_argument('--no-reset', action='store_true')
     arg_parser.add_argument('--disable-net', action='store_true')
-    arg_parser.add_argument('--line-in', action='store_true')
+    arg_parser.add_argument('--mpd', action='store_true')
     args = arg_parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format='%(message)s')
@@ -34,7 +34,7 @@ def main():
         host = '127.0.0.1'
         port = 8080
 
-    player = Player('playlist', args.line_in, not args.disable_net)
+    player = Player('playlist', args.mpd, not args.disable_net)
     if args.no_reset:
         player.disable_reset()
     player.play(0)

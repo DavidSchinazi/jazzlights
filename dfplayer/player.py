@@ -78,11 +78,11 @@ audio_output {
 
 class Player(object):
 
-    def __init__(self, playlist, line_in, enable_net):
+    def __init__(self, playlist, use_mpd, enable_net):
         self._update_card_id()
 
-        self._line_in = line_in
-        if line_in:
+        self._line_in = not use_mpd
+        if self._line_in:
             self._sound_input = _SOUND_INPUT_LINE_IN
         else:
             self._sound_input = _SOUND_INPUT_LOOPBACK
