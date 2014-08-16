@@ -505,7 +505,7 @@ void TclController::ConvertStrandsHls(Strands* strands, bool to_hls) {
 // Extrapolates value to a range from 0 to 255.
 #define EXTEND256(value, min, max)   \
   ((max) == (min) ? (max) :          \
-      ((256 * ((value) - (min)) / ((max) - (min))) & 0xFF))
+      ((255 * ((value) - (min)) / ((max) - (min))) & 0xFF))
 
 void TclController::PerformHdr(Strands* strands) {
   if (hdr_mode_ == HDR_NONE)
