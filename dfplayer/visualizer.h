@@ -31,6 +31,7 @@ class Visualizer {
   void StartMessageLoop();
 
   void UseAlsa(const std::string& spec);
+  void AddTargetController(int id);
 
   std::string GetCurrentPresetName();
   std::string GetCurrentPresetNameProgress();
@@ -97,6 +98,7 @@ class Visualizer {
   AlsaInputHandle* alsa_handle_;
   projectM* projectm_;
   int projectm_tex_;
+  std::vector<int> target_controllers_;
   int total_overrun_count_;
   uint8_t* image_buffer_;
   uint32_t image_buffer_size_;

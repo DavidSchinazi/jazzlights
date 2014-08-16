@@ -22,37 +22,44 @@ class TclRenderer(object):
        renderer.send_frame(image_data)
   """
 
-  def __init__(self, controller_id, fps, width, height, layout_file,
-               gamma, use_cc_impl, enable_net, test_mode=False):
-    self._controller_id = controller_id
-    self._width = width
-    self._height = height
-    self._layout = TclLayout(layout_file, width - 1, height - 1)
+  def __init__(self, fps, use_cc_impl, enable_net, test_mode=False):
+    self._fps = fps
     self._use_cc_impl = use_cc_impl
+    self._enable_net = enable_net
+    self._test_mode = test_mode
     self._hdr_mode = 2  # Saturation only
+    self._widths = {}
+    self._heights = {}
+
+  def add_controller(self, controller_id, width, height, gamma):
+    self._widths[controller_id] = width
+    self._heights[controller_id] = height
+    layout_file = 'dfplayer/layout%d.dxf' % controller_id
+    layout_src = TclLayout(layout_file, width - 1, height - 1)
     if self._use_cc_impl:
       layout = TclCcLayout()
-      for s in self._layout.get_strands():
+      for s in layout_src.get_strands():
         for c in s.get_coords():
           layout.AddCoord(s.get_id(), c[0], c[1])
       self._renderer = TclCcImpl.GetInstance()
       self._renderer.AddController(controller_id, width, height, layout, gamma)
+    else:
+      self._renderer = TclPyImpl(controller_id, width, height, layout_src)
+      self.set_gamma(gamma)
+      if not self._test_mode:
+        self._renderer.connect()
+
+  def lock_controllers(self):
+    if self._use_cc_impl:
       self._renderer.LockControllers()
       self._frame_send_duration = self._renderer.GetFrameSendDuration()
       self._renderer.SetHdrMode(self._hdr_mode)
-      if not test_mode:
-        self._renderer.StartMessageLoop(fps, enable_net)
+      if not self._test_mode:
+        self._renderer.StartMessageLoop(self._fps, self._enable_net)
     else:
-      self._renderer = TclPyImpl(controller_id, width, height, self._layout)
-      if not test_mode:
-        self._renderer.connect()
       self._frame_send_duration = self._renderer.get_send_duration_ms()
-    self.set_gamma(gamma)
     self._frame_delays = []
     self._frame_delays_clear_time = get_time_millis()
-
-  def get_layout_coords(self):
-    return self._layout.get_all_coords()
 
   def set_gamma(self, gamma):
     # 1.0 is uncorrected gamma, which is perceived as "too bright"
@@ -74,30 +81,32 @@ class TclRenderer(object):
   def has_scheduling_support(self):
     return self._use_cc_impl
 
-  def get_and_clear_last_image(self):
+  def get_and_clear_last_image(self, controller):
     if not self._use_cc_impl:
       print 'get_and_clear_last_image not supported'
       return None
-    img_data = self._renderer.GetAndClearLastImage(self._controller_id)
+    img_data = self._renderer.GetAndClearLastImage(controller)
     if not img_data or len(img_data) == 0:
       return None
     return Image.fromstring(
-        'RGBA', (self._width, self._height), img_data)
+        'RGBA', (self._widths[controller], self._heights[controller]),
+        img_data)
 
-  def get_and_clear_last_led_image(self):
+  def get_and_clear_last_led_image(self, controller):
     if not self._use_cc_impl:
       print 'get_and_clear_last_led_image not supported'
       return None
-    img_data = self._renderer.GetAndClearLastLedImage(self._controller_id)
+    img_data = self._renderer.GetAndClearLastLedImage(controller)
     if not img_data or len(img_data) == 0:
       return None
     return Image.fromstring(
-        'RGBA', (self._width, self._height), img_data)
+        'RGBA', (self._widths[controller], self._heights[controller]),
+        img_data)
 
-  def get_last_image_id(self):
+  def get_last_image_id(self, controller):
     if not self._use_cc_impl:
       return 0
-    return self._renderer.GetLastImageId(self._controller_id)
+    return self._renderer.GetLastImageId(controller)
 
   def get_send_duration_ms(self):
     return self._frame_send_duration
@@ -112,25 +121,24 @@ class TclRenderer(object):
     if self._use_cc_impl:
       self._renderer.ResetImageQueue()
 
-  def send_frame(self, image, id, delay_ms):
+  def send_frame(self, controller, image, id, delay_ms):
     if self._use_cc_impl:
       time = TclCcTime()
       time.AddMillis(delay_ms - self._frame_send_duration)
       self._renderer.ScheduleImageAt(
-          self._controller_id, image.tostring(), image.size[0], image.size[1],
+          controller, image.tostring(), image.size[0], image.size[1],
           0, 0, image.size[0], image.size[1], 2, id, time)
     else:
       self._renderer.send_frame(list(image.getdata()), get_time_millis())
 
-  def set_effect_image(self, image, mirror):
+  def set_effect_image(self, controller, image, mirror):
     if self._use_cc_impl:
       if image:
         self._renderer.SetEffectImage(
-            self._controller_id, image.tostring(),
+            controller, image.tostring(),
             image.size[0], image.size[1], 2 if mirror else 1)
       else:
-        self._renderer.SetEffectImage(
-            self._controller_id, '', 0, 0, 2)
+        self._renderer.SetEffectImage(controller, '', 0, 0, 2)
 
   def toggle_hdr_mode(self):
     if not self._use_cc_impl:
@@ -142,10 +150,10 @@ class TclRenderer(object):
   def get_hdr_mode(self):
     return self._hdr_mode
 
-  def get_frame_data_for_test(self, image):
+  def get_frame_data_for_test(self, controller, image):
     if self._use_cc_impl:
       return self._renderer.GetFrameDataForTest(
-          self._controller_id, image.tostring())
+          controller, image.tostring())
     else:
       return self._renderer.get_frame_data_for_test(list(image.getdata()))
 

@@ -108,10 +108,11 @@ class Player(object):
         self._render_durations = Stats(100)
         self._visualization_period_stats = Stats(100)
 
-        self._tcl = TclRenderer(
-            TCL_CONTROLLER, FPS, _SCREEN_FRAME_WIDTH, FRAME_HEIGHT,
-            'dfplayer/layout.dxf', self._target_gamma,
-            _USE_CC_TCL, enable_net)
+        self._tcl = TclRenderer(FPS, _USE_CC_TCL, enable_net)
+        self._tcl.add_controller(
+            TCL_CONTROLLER, _SCREEN_FRAME_WIDTH, FRAME_HEIGHT,
+            self._target_gamma)
+        self._tcl.lock_controllers()
 
         self._frame_source = FrameSource(
             FPS, _SCREEN_FRAME_WIDTH, IMAGE_FRAME_WIDTH,
@@ -184,16 +185,13 @@ class Player(object):
                 self._visualization_volume))
         else:
             lines.append('Playing video (frame %s)' % (
-                self._tcl.get_last_image_id()))
+                self._tcl.get_last_image_id(TCL_CONTROLLER)))
         # TODO(igorc): Show CPU, virtual and resident memory sizes
         # resource.getrusage(resource.RUSAGE_SELF)
         return lines
 
     def get_frame_size(self):
         return (_SCREEN_FRAME_WIDTH, FRAME_HEIGHT)
-
-    def get_tcl_coords(self):
-        return self._tcl.get_layout_coords()
 
     def gamma_up(self):
         self._target_gamma += 0.1
@@ -520,6 +518,7 @@ class Player(object):
                 self._visualizer_size[0], self._visualizer_size[1], 512, FPS,
                 _PRESET_DIR[0], _PRESET_DIR[1], _PRESET_DURATION)
             self._visualizer.SetVolumeMultiplier(self._visualization_volume)
+            self._visualizer.AddTargetController(TCL_CONTROLLER)
             self._visualizer.StartMessageLoop()
         if self._use_visualization:
             self._visualizer.UseAlsa(self._sound_input)
@@ -573,9 +572,10 @@ class Player(object):
                     continue
                 f.rendered = True
                 self._tcl.send_frame(
-                    f.image, f.frame_num, f.current_ms - baseline_ms)
+                    TCL_CONTROLLER, f.image, f.frame_num,
+                    f.current_ms - baseline_ms)
         (effect_img, mirror) = self._get_effect_image()
-        self._tcl.set_effect_image(effect_img, mirror)
+        self._tcl.set_effect_image(TCL_CONTROLLER, effect_img, mirror)
         orig_image = None
         if self._use_visualization and need_original:
             # TODO(igorc): Get original image from renderer.
@@ -583,10 +583,10 @@ class Player(object):
             if newimg_data and len(newimg_data) > 0:
                 orig_image = Image.fromstring('RGBA', (512, 512), newimg_data)
         if need_intermediate:
-            last_image = self._tcl.get_and_clear_last_image()
+            last_image = self._tcl.get_and_clear_last_image(TCL_CONTROLLER)
         else:
             last_image = None
-        last_led_image = self._tcl.get_and_clear_last_led_image()
+        last_led_image = self._tcl.get_and_clear_last_led_image(TCL_CONTROLLER)
         duration_ms = int(round((time.time() - start_time) * 1000))
         self._render_durations.add(duration_ms)
         return (orig_image, last_image, last_led_image)
@@ -605,7 +605,7 @@ class Player(object):
             return None
         self._last_frame_file = frame_file
         delay_ms = int((float(frame_num) / FPS - elapsed_time) * 1000.0)
-        self._tcl.send_frame(new_frame, frame_num, delay_ms)
+        self._tcl.send_frame(TCL_CONTROLLER, new_frame, frame_num, delay_ms)
         duration_ms = int(round((time.time() - start_time) * 1000))
         self._render_durations.add(duration_ms)
         return (None, new_frame, None)
