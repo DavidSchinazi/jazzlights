@@ -13,8 +13,9 @@ from PIL import Image, ImageTk
 
 from ..util import PROJECT_DIR
 
-WIN_WIDTH = 1024
-WIN_HEIGHT = 768
+WIN_WIDTH = 1224
+WIN_HEIGHT = int(WIN_WIDTH / 1.333)
+
 FPS = 15
 
 
@@ -39,7 +40,7 @@ class PlayerApp(Frame):
         self.root = root
         self.pack()
         self._canvas = Canvas(
-            root, width=WIN_WIDTH, height=WIN_HEIGHT,
+            root, width=(WIN_WIDTH), height=WIN_HEIGHT,
             borderwidth=0, background='black')
         self._canvas.pack()
 
@@ -53,25 +54,37 @@ class PlayerApp(Frame):
         frame_size = self.player.get_frame_size()
 
         self._img_mode = 1
-        self._img_size = (frame_size[0] / 2, frame_size[1])
         self._img_mode_count = 6
+
+        aspect = frame_size[0] / 2 / frame_size[1]
 
         # Scale the size to with the entire width of our window.
         # TODO(igorc): Avoid scaling? Or auto-rescale when window resizes.
-        self._img_size = (WIN_WIDTH,
-            int(round(
-                (float(WIN_WIDTH) / self._img_size[0]) * self._img_size[1])))
+        if self.player.is_fin_enabled():
+            img1_base_width = int(WIN_WIDTH * 0.85)
+        else:
+            img1_base_width = WIN_WIDTH
+        img1_width = int(img1_base_width * 0.95)
+        self._img1_size = (img1_width, int(img1_width / aspect))
 
         # Undo gamma correction in LED preview, otherwise it is too dark.
         # Keep a fixed value to have better feedback on LED gamma changes.
-        self._img1 = ImageTk.PhotoImage('RGBA', self._img_size, gamma=2.2)
-        self._img2 = ImageTk.PhotoImage('RGBA', self._img_size)
+        self._img1 = ImageTk.PhotoImage('RGBA', self._img1_size, gamma=2.2)
+        self._img2 = ImageTk.PhotoImage('RGBA', self._img1_size)
         self._canvas.create_image(
-            WIN_WIDTH / 2, WIN_HEIGHT * 2 / 3 - WIN_HEIGHT / 4,
+            int(img1_base_width / 2), int(WIN_HEIGHT * 0.42),
             image=self._img1)
         self._canvas.create_image(
-            WIN_WIDTH / 2, WIN_HEIGHT * 2 / 3 + WIN_HEIGHT / 12,
+            int(img1_base_width / 2), int(WIN_HEIGHT * 0.74),
             image=self._img2)
+
+        if self.player.is_fin_enabled():
+            img3_width = int((WIN_WIDTH - img1_base_width) * 0.54)
+            self._img3_size = (img3_width, int(img3_width * aspect))
+            self._img3 = ImageTk.PhotoImage('RGBA', self._img3_size, gamma=2.2)
+            self._canvas.create_image(
+                WIN_WIDTH - int((WIN_WIDTH - img1_base_width) / 2),
+                int(WIN_HEIGHT * 0.58), image=self._img3)
 
         self.root.bind('q', lambda e: player.volume_up())
         self.root.bind('a', lambda e: player.volume_down())
@@ -124,6 +137,7 @@ class PlayerApp(Frame):
     def _paste_images(self, images):
         # Always use LED image as the first image.
         frame1 = images[2].copy() if images[2] else None
+        frame3 = images[3].copy() if images[3] else None
 
         crop_rect = None
         frame_size = self.player.get_frame_size()
@@ -146,12 +160,14 @@ class PlayerApp(Frame):
                 frame2 = frame2.transpose(Image.FLIP_LEFT_RIGHT)
         else:
             # Show black if disabled.
-            frame2 = Image.new('RGBA', self._img_size, (0, 0, 0, 0))
+            frame2 = Image.new('RGBA', self._img1_size, (0, 0, 0, 0))
 
         if frame1:
-            self._img1.paste(frame1.resize(self._img_size))
+            self._img1.paste(frame1.resize(self._img1_size))
         if frame2:
-            self._img2.paste(frame2.resize(self._img_size))
+            self._img2.paste(frame2.resize(self._img1_size))
+        if frame3:
+            self._img3.paste(frame3.resize(self._img3_size))
 
     def update(self):
         try:
@@ -174,6 +190,7 @@ def run(player):
     root = Tk()
     # width, height = (root.winfo_screenwidth(), root.winfo_screenheight())
     root.geometry('%dx%d' % (WIN_WIDTH, WIN_HEIGHT))
+    root.configure(background='black')
     # root.attributes("-topmost", True)
 
     app = PlayerApp(root, player)

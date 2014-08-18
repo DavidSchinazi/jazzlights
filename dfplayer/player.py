@@ -140,6 +140,9 @@ class Player(object):
     def disable_reset(self):
         self._tcl.disable_reset()
 
+    def is_fin_enabled(self):
+        return self._enable_fin
+
     def __str__(self):
         elapsed_sec = int(self.elapsed_time)
         duration, delays = self._tcl.get_and_clear_frame_delays()
