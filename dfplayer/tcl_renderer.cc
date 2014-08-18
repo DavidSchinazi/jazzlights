@@ -94,7 +94,7 @@ class TclController {
   int GetHeight() const { return height_; }
 
   bool BuildImage(
-      Bytes* bytes, int w, int h, EffectMode mode,
+      uint8_t* img, int w, int h, EffectMode mode,
       int rotation_angle, RgbaImage* dst);
 
   Bytes* GetAndClearLastImage();
@@ -328,12 +328,12 @@ void TclController::PopulateLayoutMap(const Layout& layout) {
 }
 
 bool TclController::BuildImage(
-    Bytes* bytes, int w, int h, EffectMode mode,
+    uint8_t* input_img, int w, int h, EffectMode mode,
     int rotation_angle, RgbaImage* dst) {
-  if (!bytes || !bytes->GetLen())
+  if (!input_img)
     return false;
 
-  uint8_t* src_img = bytes->GetData();
+  uint8_t* src_img = input_img;
   if (rotation_angle != 0)
     src_img = RotateImage(src_img, w, h, h, w, rotation_angle);
 
@@ -361,7 +361,7 @@ bool TclController::BuildImage(
     delete[] img2;
   }
 
-  if (src_img != bytes->GetData())
+  if (src_img != input_img)
     delete[] src_img;
 
   dst->Set(img_data, width_, height_);
@@ -373,7 +373,8 @@ void TclController::SetEffectImage(
     Bytes* bytes, int w, int h, EffectMode mode) {
   effect_image_.Clear();
   int rotation_angle = 0;
-  BuildImage(bytes, w, h, mode, rotation_angle, &effect_image_);
+  if (bytes && bytes->GetLen())
+    BuildImage(bytes->GetData(), w, h, mode, rotation_angle, &effect_image_);
 }
 
 void TclController::ApplyEffect(RgbaImage* image) {
@@ -952,17 +953,26 @@ void TclRenderer::ScheduleImageAt(
     //        time.time_, time_abs, frame_num);
   }
 
-  // TODO(igorc): Support crop_x.
-  (void) crop_x;
-  (void) crop_y;
-  (void) crop_w;
-  (void) crop_h;
+  uint8_t* cropped_img = bytes->GetData();
+  if (cropped_img) {
+    if (crop_x != 0 || crop_y != 0 || crop_w != w || crop_h != h) {
+      cropped_img = CropImage(
+          cropped_img, w, h, crop_x, crop_y, crop_w, crop_h);
+    } else {
+      crop_w = w;
+      crop_h = h;
+    }
+  }
 
   RgbaImage image;
-  controller->BuildImage(bytes, w, h, mode, rotation_angle, &image);
+  controller->BuildImage(
+      cropped_img, crop_w, crop_h, mode, rotation_angle, &image);
   queue_.push(WorkItem(false, controller, image, id, time_abs));
 
   //fprintf(stderr, "Scheduled item with time=%ld\n", time_abs);
+
+  if (cropped_img != bytes->GetData())
+    delete[] cropped_img;
 
   if (wakeup)
     WakeupLocked();

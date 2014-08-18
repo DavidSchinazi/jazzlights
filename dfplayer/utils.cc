@@ -184,6 +184,18 @@ uint8_t* RotateImage(
   return dst;
 }
 
+uint8_t* CropImage(
+    uint8_t* src, int src_w, int src_h,
+    int crop_x, int crop_y, int crop_w, int crop_h) {
+  cv::Mat src_img(src_h, src_w, CV_8UC4, src);
+  cv::Rect roi(crop_x, crop_y, crop_w, crop_h);
+  cv::Mat dst_img = src_img(roi);
+  int dst_len = RGBA_LEN(crop_w, crop_h);
+  uint8_t* dst = new uint8_t[dst_len];
+  memcpy(dst, dst_img.data, dst_len);
+  return dst;
+}
+
 #define BLEND_COLOR(f, b, a)                               \
     (uint8_t) ( ( ((uint32_t) (a)) * (f) +                 \
                   (255 - ((uint32_t) (a))) * (b) ) / 255 )
