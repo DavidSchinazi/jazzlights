@@ -93,7 +93,9 @@ class TclController {
   int GetWidth() const { return width_; }
   int GetHeight() const { return height_; }
 
-  bool BuildImage(Bytes* bytes, int w, int h, EffectMode mode, RgbaImage* dst);
+  bool BuildImage(
+      Bytes* bytes, int w, int h, EffectMode mode,
+      int rotation_angle, RgbaImage* dst);
 
   Bytes* GetAndClearLastImage();
   Bytes* GetAndClearLastLedImage();
@@ -326,17 +328,22 @@ void TclController::PopulateLayoutMap(const Layout& layout) {
 }
 
 bool TclController::BuildImage(
-    Bytes* bytes, int w, int h, EffectMode mode, RgbaImage* dst) {
+    Bytes* bytes, int w, int h, EffectMode mode,
+    int rotation_angle, RgbaImage* dst) {
   if (!bytes || !bytes->GetLen())
     return false;
+
+  uint8_t* src_img = bytes->GetData();
+  if (rotation_angle != 0)
+    src_img = RotateImage(src_img, w, h, h, w, rotation_angle);
 
   // We expect all incoming images to use linearized RGB gamma.
   uint8_t* img_data;
   if (mode == EFFECT_OVERLAY) {
-    img_data = ResizeImage(bytes->GetData(), w, h, width_, height_);
+    img_data = ResizeImage(src_img, w, h, width_, height_);
   } else if (mode == EFFECT_DUPLICATE) {
     img_data = new uint8_t[RGBA_LEN(width_, height_)];
-    uint8_t* img1 = ResizeImage(bytes->GetData(), w, h, width_ / 2, height_);
+    uint8_t* img1 = ResizeImage(src_img, w, h, width_ / 2, height_);
     PasteSubImage(img1, width_ / 2, height_,
         img_data, 0, 0, width_, height_, false);
     PasteSubImage(img1, width_ / 2, height_,
@@ -344,7 +351,7 @@ bool TclController::BuildImage(
     delete[] img1;
   } else {  // EFFECT_MIRROR
     img_data = new uint8_t[RGBA_LEN(width_, height_)];
-    uint8_t* img1 = ResizeImage(bytes->GetData(), w, h, width_ / 2, height_);
+    uint8_t* img1 = ResizeImage(src_img, w, h, width_ / 2, height_);
     uint8_t* img2 = FlipImage(img1, width_ / 2, height_, true);
     PasteSubImage(img1, width_ / 2, height_,
         img_data, 0, 0, width_, height_, false);
@@ -354,6 +361,9 @@ bool TclController::BuildImage(
     delete[] img2;
   }
 
+  if (src_img != bytes->GetData())
+    delete[] src_img;
+
   dst->Set(img_data, width_, height_);
   delete[] img_data;
   return true;
@@ -362,7 +372,8 @@ bool TclController::BuildImage(
 void TclController::SetEffectImage(
     Bytes* bytes, int w, int h, EffectMode mode) {
   effect_image_.Clear();
-  BuildImage(bytes, w, h, mode, &effect_image_);
+  int rotation_angle = 0;
+  BuildImage(bytes, w, h, mode, rotation_angle, &effect_image_);
 }
 
 void TclController::ApplyEffect(RgbaImage* image) {
@@ -915,7 +926,7 @@ int TclRenderer::GetLastImageId(int controller_id) {
 
 void TclRenderer::ScheduleImageAt(
     int controller_id, Bytes* bytes, int w, int h, EffectMode mode,
-    int crop_x, int crop_y, int crop_w, int crop_h,
+    int crop_x, int crop_y, int crop_w, int crop_h, int rotation_angle,
     int id, const AdjustableTime& time, bool wakeup) {
   Autolock l(lock_);
   CHECK(has_started_thread_);
@@ -948,7 +959,7 @@ void TclRenderer::ScheduleImageAt(
   (void) crop_h;
 
   RgbaImage image;
-  controller->BuildImage(bytes, w, h, mode, &image);
+  controller->BuildImage(bytes, w, h, mode, rotation_angle, &image);
   queue_.push(WorkItem(false, controller, image, id, time_abs));
 
   //fprintf(stderr, "Scheduled item with time=%ld\n", time_abs);

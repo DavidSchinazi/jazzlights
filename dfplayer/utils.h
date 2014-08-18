@@ -147,6 +147,9 @@ uint8_t* ResizeImage(
 
 uint8_t* FlipImage(uint8_t* src, int w, int h, bool horizontal);
 
+uint8_t* RotateImage(
+    uint8_t* src, int src_w, int src_h, int w, int h, int angle);
+
 void PasteSubImage(
     uint8_t* src, int src_w, int src_h,
     uint8_t* dst, int dst_x, int dst_y, int dst_w, int dst_h,

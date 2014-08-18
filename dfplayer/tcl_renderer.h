@@ -89,7 +89,7 @@ class TclRenderer {
 
   void ScheduleImageAt(
       int controller_id, Bytes* bytes, int w, int h, EffectMode mode,
-      int crop_x, int crop_y, int crop_w, int crop_h,
+      int crop_x, int crop_y, int crop_w, int crop_h, int rotation_angle,
       int id, const AdjustableTime& time, bool wakeup);
   void Wakeup();
 

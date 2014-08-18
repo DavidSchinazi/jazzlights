@@ -93,9 +93,11 @@ void Visualizer::UseAlsa(const std::string& spec) {
   alsa_device_ = spec;
 }
 
-void Visualizer::AddTargetController(int id, int effect_mode) {
+void Visualizer::AddTargetController(
+    int id, int effect_mode, int rotation_angle) {
   Autolock l(lock_);
-  target_controllers_.push_back(ControllerInfo(id, effect_mode));
+  target_controllers_.push_back(
+      ControllerInfo(id, effect_mode, rotation_angle));
 }
 
 std::string Visualizer::GetCurrentPresetName() {
@@ -564,7 +566,7 @@ void Visualizer::PostTclFrameLocked() {
         (EffectMode) controller.effect_mode_,
         kCropWidth, kCropWidth,
         texsize_ - kCropWidth * 2, texsize_ - kCropWidth * 2,
-        0, now, false);
+        controller.rotation_angle_, 0, now, false);
   }
   // Wakeup only once to avoid concurrent locking.
   tcl->Wakeup();

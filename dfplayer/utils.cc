@@ -168,6 +168,22 @@ uint8_t* FlipImage(uint8_t* src, int w, int h, bool horizontal) {
   return dst;
 }
 
+uint8_t* RotateImage(
+    uint8_t* src, int src_w, int src_h, int w, int h, int angle) {
+  cv::Mat src_img(src_h, src_w, CV_8UC4, src);
+  cv::Mat dst_img(cv::Size(w, h), CV_8UC4);
+
+  int max_dim = std::max(src_img.cols, src_img.rows);
+  cv::Mat r = cv::getRotationMatrix2D(
+      cv::Point2f(max_dim / 2.0, max_dim / 2.0), angle, 1.0);
+  cv::warpAffine(src_img, dst_img, r, cv::Size(w, h));
+
+  int dst_len = RGBA_LEN(w, h);
+  uint8_t* dst = new uint8_t[dst_len];
+  memcpy(dst, dst_img.data, dst_len);
+  return dst;
+}
+
 #define BLEND_COLOR(f, b, a)                               \
     (uint8_t) ( ( ((uint32_t) (a)) * (f) +                 \
                   (255 - ((uint32_t) (a))) * (b) ) / 255 )
