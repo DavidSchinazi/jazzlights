@@ -119,7 +119,7 @@ class Player(object):
             self._target_gamma)
         if self._enable_fin:
             self._tcl.add_controller(
-                TCL_FIN, _SCREEN_FRAME_WIDTH, FRAME_HEIGHT,
+                TCL_FIN, FRAME_HEIGHT, _SCREEN_FRAME_WIDTH / 2,
                 self._target_gamma)
         self._tcl.lock_controllers()
 

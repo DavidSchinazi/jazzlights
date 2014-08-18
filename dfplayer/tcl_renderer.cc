@@ -1006,6 +1006,34 @@ void* TclRenderer::ThreadEntry(void* arg) {
   return NULL;
 }
 
+struct FoundItem {
+  FoundItem(TclController* controller, uint8_t* frame_data) {
+    controller_ = controller;
+    frame_data_ = new uint8_t[FRAME_DATA_LEN];
+    memcpy(frame_data_, frame_data, FRAME_DATA_LEN);
+  }
+
+  FoundItem(const FoundItem& src) {
+    controller_ = src.controller_;
+    frame_data_ = new uint8_t[FRAME_DATA_LEN];
+    memcpy(frame_data_, src.frame_data_, FRAME_DATA_LEN);
+  }
+
+  FoundItem& operator=(const FoundItem& rhs) {
+    controller_ = rhs.controller_;
+    frame_data_ = new uint8_t[FRAME_DATA_LEN];
+    memcpy(frame_data_, rhs.frame_data_, FRAME_DATA_LEN);
+    return *this;
+  }
+
+  ~FoundItem() {
+    delete[] frame_data_;
+  }
+
+  TclController* controller_;
+  uint8_t* frame_data_;
+};
+
 void TclRenderer::Run() {
   while (true) {
     {
@@ -1033,39 +1061,59 @@ void TclRenderer::Run() {
       }
     }
 
-    uint8_t* frame_data = NULL;
-    WorkItem item(false, NULL, RgbaImage(), 0, 0);
+    std::vector<FoundItem> items;
+    uint64_t min_time = GetCurrentMillis();
     {
       Autolock l(lock_);
       while (!is_shutting_down_) {
         int64_t next_time;
-        if (PopNextWorkItemLocked(&item, &next_time))
-          break;
-        WaitForQueueLocked(next_time);
+        WorkItem item(false, NULL, RgbaImage(), 0, 0);
+        if (!PopNextWorkItemLocked(&item, &next_time)) {
+          if (!items.empty())
+            break;
+          WaitForQueueLocked(next_time);
+          continue;
+        }
+
+        if (item.needs_reset_) {
+          item.controller_->ScheduleReset();
+          continue;
+        }
+
+        if (item.img_.IsEmpty())
+          continue;
+
+        uint8_t* frame_data = item.controller_->BuildFrameDataForImage(
+            &item.img_, item.id_);
+        if (!frame_data)
+          continue;
+
+        if (item.time_ < min_time)
+          min_time = item.time_;
+        items.push_back(FoundItem(item.controller_, frame_data));
+        delete[] frame_data;
       }
+
       if (is_shutting_down_)
         break;
-
-      if (item.needs_reset_) {
-        item.controller_->ScheduleReset();
-        continue;
-      }
-
-      if (!item.img_.IsEmpty())
-        frame_data = item.controller_->BuildFrameDataForImage(
-            &item.img_, item.id_);
     }
 
-    if (frame_data) {
-      if (!enable_net_ || item.controller_->SendFrame(frame_data)) {
+    if (!enable_net_) {
+      Autolock l(lock_);
+      frame_delays_.push_back(GetCurrentMillis() - min_time);
+      continue;
+    }
+
+    for (std::vector<FoundItem>::iterator it = items.begin();
+          it != items.end(); ++it) {
+      if (it->controller_->SendFrame(it->frame_data_)) {
         Autolock l(lock_);
-        frame_delays_.push_back(GetCurrentMillis() - item.time_);
+        frame_delays_.push_back(GetCurrentMillis() - min_time);
         // fprintf(stderr, "Sent frame for %ld at %ld\n", item.time_, GetCurrentMillis());
       } else {
         fprintf(stderr, "Scheduling reset after failed frame\n");
-        item.controller_->ScheduleReset();
+        it->controller_->ScheduleReset();
       }
-      delete[] frame_data;
     }
   }
 }
