@@ -393,7 +393,6 @@ void Visualizer::DestroyRenderContext() {
 void Visualizer::CreateProjectM() {
   //raise(SIGINT);
 
-  // TODO(igorc): Tune the settings.
   // TODO(igorc): Consider disabling threads in CMakeCache.txt.
   //              Threads are used for evaluating the second preset.
   projectM::Settings settings;
@@ -413,8 +412,9 @@ void Visualizer::CreateProjectM() {
   settings.presetDuration = preset_duration_;
   settings.easterEgg = 1;
   // Transition period for switching between presets.
-  settings.smoothPresetDuration = 3;
-  settings.shuffleEnabled = 0;
+  // Shows white screen with some presets.
+  settings.smoothPresetDuration = 0;
+  settings.shuffleEnabled = (preset_duration_ < 600 ? 1 : 0);
   settings.softCutRatingsEnabled = 0;
   projectm_ = new projectM(
       settings, "dfplayer/shaders", textures_dir_, projectM::FLAG_NONE);

@@ -52,7 +52,9 @@ _PRESET_DIR = ('presets', '')
 #_PRESET_DIR = ('projectm/presets_milkdrop_200', '')
 #_PRESET_DIR = ('triptonaut/presets', 'triptonaut/textures')
 #_PRESET_DIR = ('projectm/presets_yin', '')
-_PRESET_DURATION = 10000
+
+# Values over 600 disable shuffle mode.
+_PRESET_DURATION = 1000
 
 _SOUND_INPUT_LOOPBACK = 'df_audio'
 _SOUND_INPUT_LINE_IN = 'df_line_in'
@@ -264,7 +266,7 @@ class Player(object):
             self._target_playlist_len = len(
                 self.mpd.listplaylist(self._playlist_name))
             self.mpd.repeat(1)
-            self.mpd.single(1)
+            #self.mpd.single(1)
             self.mpd.update()
         # Give MPD some time to find music files before loading the playlist.
         # This helps playlist to be more complete on the first load.
