@@ -527,9 +527,9 @@ class Player(object):
                 self._visualizer_size[0], self._visualizer_size[1], 512, FPS,
                 _PRESET_DIR[0], _PRESET_DIR[1], _PRESET_DURATION)
             self._visualizer.SetVolumeMultiplier(self._visualization_volume)
-            self._visualizer.AddTargetController(TCL_MAIN)
+            self._visualizer.AddTargetController(TCL_MAIN, 2)
             if self._enable_fin:
-                self._visualizer.AddTargetController(TCL_FIN)
+                self._visualizer.AddTargetController(TCL_FIN, 0)
             self._visualizer.StartMessageLoop()
         if self._use_visualization:
             self._visualizer.UseAlsa(self._sound_input)

@@ -916,7 +916,7 @@ int TclRenderer::GetLastImageId(int controller_id) {
 void TclRenderer::ScheduleImageAt(
     int controller_id, Bytes* bytes, int w, int h, EffectMode mode,
     int crop_x, int crop_y, int crop_w, int crop_h,
-    int id, const AdjustableTime& time) {
+    int id, const AdjustableTime& time, bool wakeup) {
   Autolock l(lock_);
   CHECK(has_started_thread_);
   if (is_shutting_down_)
@@ -951,6 +951,18 @@ void TclRenderer::ScheduleImageAt(
   controller->BuildImage(bytes, w, h, mode, &image);
   queue_.push(WorkItem(false, controller, image, id, time_abs));
 
+  //fprintf(stderr, "Scheduled item with time=%ld\n", time_abs);
+
+  if (wakeup)
+    WakeupLocked();
+}
+
+void TclRenderer::Wakeup() {
+  Autolock l(lock_);
+  WakeupLocked();
+}
+
+void TclRenderer::WakeupLocked() {
   int err = pthread_cond_broadcast(&cond_);
   if (err != 0) {
     fprintf(stderr, "Unable to signal condition: %d\n", err);
@@ -1075,18 +1087,26 @@ void TclRenderer::Run() {
           continue;
         }
 
+        //fprintf(stderr, "Found item with time=%ld\n", item.time_);
+
         if (item.needs_reset_) {
           item.controller_->ScheduleReset();
           continue;
         }
 
-        if (item.img_.IsEmpty())
+        if (item.img_.IsEmpty()) {
+          fprintf(stderr, "Skipping an item with no image on %d\n",
+                  item.controller_->GetId());
           continue;
+        }
 
         uint8_t* frame_data = item.controller_->BuildFrameDataForImage(
             &item.img_, item.id_);
-        if (!frame_data)
+        if (!frame_data) {
+          fprintf(stderr, "Failed to build frame_data for an image on %d\n",
+                  item.controller_->GetId());
           continue;
+        }
 
         if (item.time_ < min_time)
           min_time = item.time_;
@@ -1097,6 +1117,8 @@ void TclRenderer::Run() {
       if (is_shutting_down_)
         break;
     }
+
+    //fprintf(stderr, "Processing %ld items\n", items.size());
 
     if (!enable_net_) {
       Autolock l(lock_);
@@ -1145,7 +1167,8 @@ bool TclRenderer::PopNextWorkItemLocked(
       *next_time = 0;
       return true;
     }
-    if (queue_.top().time_ > cur_time) {
+    if (queue_.top().controller_ != item->controller_ ||
+        queue_.top().time_ > cur_time) {
       // Return current item, and report future item's time.
       *next_time = queue_.top().time_;
       return true;

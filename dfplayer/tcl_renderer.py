@@ -127,7 +127,7 @@ class TclRenderer(object):
       time.AddMillis(delay_ms - self._frame_send_duration)
       self._renderer.ScheduleImageAt(
           controller, image.tostring(), image.size[0], image.size[1],
-          0, 0, image.size[0], image.size[1], 2, id, time)
+          0, 0, image.size[0], image.size[1], 2, id, time, True)
     else:
       self._renderer.send_frame(list(image.getdata()), get_time_millis())
 

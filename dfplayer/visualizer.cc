@@ -93,9 +93,9 @@ void Visualizer::UseAlsa(const std::string& spec) {
   alsa_device_ = spec;
 }
 
-void Visualizer::AddTargetController(int id) {
+void Visualizer::AddTargetController(int id, int effect_mode) {
   Autolock l(lock_);
-  target_controllers_.push_back(id);
+  target_controllers_.push_back(ControllerInfo(id, effect_mode));
 }
 
 std::string Visualizer::GetCurrentPresetName() {
@@ -558,13 +558,16 @@ void Visualizer::PostTclFrameLocked() {
   AdjustableTime now;
   Bytes* bytes = new Bytes(image_buffer_, RGBA_LEN(texsize_, texsize_));
   for (size_t i = 0; i < target_controllers_.size(); ++i) {
-    int controller = target_controllers_[i];
+    const ControllerInfo& controller = target_controllers_[i];
     tcl->ScheduleImageAt(
-        controller, bytes, texsize_, texsize_, EFFECT_MIRROR,
+        controller.id_, bytes, texsize_, texsize_,
+        (EffectMode) controller.effect_mode_,
         kCropWidth, kCropWidth,
         texsize_ - kCropWidth * 2, texsize_ - kCropWidth * 2,
-        0, now);
+        0, now, false);
   }
+  // Wakeup only once to avoid concurrent locking.
+  tcl->Wakeup();
   delete bytes;
 }
 

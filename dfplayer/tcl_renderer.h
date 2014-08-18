@@ -90,7 +90,8 @@ class TclRenderer {
   void ScheduleImageAt(
       int controller_id, Bytes* bytes, int w, int h, EffectMode mode,
       int crop_x, int crop_y, int crop_w, int crop_h,
-      int id, const AdjustableTime& time);
+      int id, const AdjustableTime& time, bool wakeup);
+  void Wakeup();
 
   void SetEffectImage(
       int controller_id, Bytes* bytes, int w, int h, EffectMode mode);
@@ -146,6 +147,7 @@ class TclRenderer {
 
   bool PopNextWorkItemLocked(WorkItem* item, int64_t* next_time);
   void WaitForQueueLocked(int64_t next_time);
+  void WakeupLocked();
 
   std::vector<TclController*> controllers_;
   int fps_;

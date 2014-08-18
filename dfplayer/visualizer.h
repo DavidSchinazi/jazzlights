@@ -31,7 +31,7 @@ class Visualizer {
   void StartMessageLoop();
 
   void UseAlsa(const std::string& spec);
-  void AddTargetController(int id);
+  void AddTargetController(int id, int effect_mode);
 
   std::string GetCurrentPresetName();
   std::string GetCurrentPresetNameProgress();
@@ -76,6 +76,14 @@ class Visualizer {
     bool is_next_;
   };
 
+  struct ControllerInfo {
+    ControllerInfo(int id, int effect_mode)
+        : id_(id), effect_mode_(effect_mode) {}
+
+    int id_;
+    int effect_mode_;
+  };
+
   void Run();
   static void* ThreadEntry(void* arg);
 
@@ -98,7 +106,7 @@ class Visualizer {
   AlsaInputHandle* alsa_handle_;
   projectM* projectm_;
   int projectm_tex_;
-  std::vector<int> target_controllers_;
+  std::vector<ControllerInfo> target_controllers_;
   int total_overrun_count_;
   uint8_t* image_buffer_;
   uint32_t image_buffer_size_;
