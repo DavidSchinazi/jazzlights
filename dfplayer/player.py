@@ -33,7 +33,8 @@ _SCREEN_FRAME_WIDTH = 500
 IMAGE_FRAME_WIDTH = _SCREEN_FRAME_WIDTH / 2
 FRAME_HEIGHT = 50
 MESH_RATIO = 5  # Make it 50x10
-TCL_CONTROLLER = 1
+TCL_MAIN = 1
+TCL_FIN = 3
 _USE_CC_TCL = True
 
 MPD_PORT = 6605
@@ -54,7 +55,7 @@ _PRESET_DIR = ('presets', '')
 #_PRESET_DIR = ('projectm/presets_yin', '')
 
 # Values over 600 disable shuffle mode.
-_PRESET_DURATION = 1000
+_PRESET_DURATION = 10
 
 _SOUND_INPUT_LOOPBACK = 'df_audio'
 _SOUND_INPUT_LINE_IN = 'df_line_in'
@@ -80,8 +81,10 @@ audio_output {
 
 class Player(object):
 
-    def __init__(self, playlist, use_mpd, enable_net):
+    def __init__(self, playlist, use_mpd, enable_net, enable_fin):
         self._update_card_id()
+
+        self._enable_fin = False  # enable_fin
 
         self._line_in = not use_mpd
         if self._line_in:
@@ -112,8 +115,12 @@ class Player(object):
 
         self._tcl = TclRenderer(FPS, _USE_CC_TCL, enable_net)
         self._tcl.add_controller(
-            TCL_CONTROLLER, _SCREEN_FRAME_WIDTH, FRAME_HEIGHT,
+            TCL_MAIN, _SCREEN_FRAME_WIDTH, FRAME_HEIGHT,
             self._target_gamma)
+        if self._enable_fin:
+            self._tcl.add_controller(
+                TCL_FIN, _SCREEN_FRAME_WIDTH, FRAME_HEIGHT,
+                self._target_gamma)
         self._tcl.lock_controllers()
 
         self._frame_source = FrameSource(
@@ -187,7 +194,7 @@ class Player(object):
                 self._visualization_volume))
         else:
             lines.append('Playing video (frame %s)' % (
-                self._tcl.get_last_image_id(TCL_CONTROLLER)))
+                self._tcl.get_last_image_id(TCL_MAIN)))
         # TODO(igorc): Show CPU, virtual and resident memory sizes
         # resource.getrusage(resource.RUSAGE_SELF)
         return lines
@@ -520,7 +527,9 @@ class Player(object):
                 self._visualizer_size[0], self._visualizer_size[1], 512, FPS,
                 _PRESET_DIR[0], _PRESET_DIR[1], _PRESET_DURATION)
             self._visualizer.SetVolumeMultiplier(self._visualization_volume)
-            self._visualizer.AddTargetController(TCL_CONTROLLER)
+            self._visualizer.AddTargetController(TCL_MAIN)
+            if self._enable_fin:
+                self._visualizer.AddTargetController(TCL_FIN)
             self._visualizer.StartMessageLoop()
         if self._use_visualization:
             self._visualizer.UseAlsa(self._sound_input)
@@ -574,10 +583,10 @@ class Player(object):
                     continue
                 f.rendered = True
                 self._tcl.send_frame(
-                    TCL_CONTROLLER, f.image, f.frame_num,
+                    TCL_MAIN, f.image, f.frame_num,
                     f.current_ms - baseline_ms)
         (effect_img, mirror) = self._get_effect_image()
-        self._tcl.set_effect_image(TCL_CONTROLLER, effect_img, mirror)
+        self._tcl.set_effect_image(TCL_MAIN, effect_img, mirror)
         orig_image = None
         if self._use_visualization and need_original:
             # TODO(igorc): Get original image from renderer.
@@ -585,13 +594,18 @@ class Player(object):
             if newimg_data and len(newimg_data) > 0:
                 orig_image = Image.fromstring('RGBA', (512, 512), newimg_data)
         if need_intermediate:
-            last_image = self._tcl.get_and_clear_last_image(TCL_CONTROLLER)
+            last_image = self._tcl.get_and_clear_last_image(TCL_MAIN)
         else:
             last_image = None
-        last_led_image = self._tcl.get_and_clear_last_led_image(TCL_CONTROLLER)
+        last_led_image_main = self._tcl.get_and_clear_last_led_image(TCL_MAIN)
+        last_led_image_fin = None
+        if self._enable_fin:
+            last_led_image_fin = \
+                self._tcl.get_and_clear_last_led_image(TCL_FIN)
         duration_ms = int(round((time.time() - start_time) * 1000))
         self._render_durations.add(duration_ms)
-        return (orig_image, last_image, last_led_image)
+        return (orig_image, last_image, last_led_image_main,
+                last_led_image_fin)
 
     def _get_frame_images_old(self):
         elapsed_time = self.elapsed_time
@@ -607,7 +621,7 @@ class Player(object):
             return None
         self._last_frame_file = frame_file
         delay_ms = int((float(frame_num) / FPS - elapsed_time) * 1000.0)
-        self._tcl.send_frame(TCL_CONTROLLER, new_frame, frame_num, delay_ms)
+        self._tcl.send_frame(TCL_MAIN, new_frame, frame_num, delay_ms)
         duration_ms = int(round((time.time() - start_time) * 1000))
         self._render_durations.add(duration_ms)
         return (None, new_frame, None)

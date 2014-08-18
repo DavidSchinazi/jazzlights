@@ -314,6 +314,8 @@ void TclController::PopulateLayoutMap(const Layout& layout) {
     }
   }
 
+  // TODO(igorc): Warn when no coordingates were found.
+
   /*for (int strand_id  = 0; strand_id < STRAND_COUNT; ++strand_id) {
     for (int led_id = 0; led_id < layout_.lengths_[strand_id]; ++led_id) {
       fprintf(stderr, "HDR siblings: strand=%d, led=%d, count=%ld\n",
@@ -420,6 +422,8 @@ bool TclController::PopulateStrandsColors(
       uint32_t r = 0, g = 0, b = 0;
       const std::vector<Coord>& coords = layout_.coords_[strand_id][led_id];
       int coord_count = coords.size();
+      if (!coord_count)
+        continue;
       for (int c_id = 0; c_id < coord_count; ++c_id) {
         int x = coords[c_id].x_;
         int y = coords[c_id].y_;
