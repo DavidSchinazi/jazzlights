@@ -478,6 +478,7 @@ void TclController::SaveLedImageForStrands(Strands* strands) {
     }
   }
   strands->led_image.Set(led_image_data, width_, height_);
+  delete[] led_image_data;
 }
 
 void TclController::ConvertStrandsHls(Strands* strands, bool to_hls) {
