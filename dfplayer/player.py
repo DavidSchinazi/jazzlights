@@ -84,7 +84,8 @@ class Player(object):
     def __init__(self, playlist, use_mpd, enable_net, enable_fin):
         self._update_card_id()
 
-        self._enable_fin = False  # enable_fin
+        self._enable_fin = False
+        self._enable_fin = enable_fin
 
         self._line_in = not use_mpd
         if self._line_in:
@@ -119,7 +120,7 @@ class Player(object):
             self._target_gamma)
         if self._enable_fin:
             self._tcl.add_controller(
-                TCL_FIN, FRAME_HEIGHT, _SCREEN_FRAME_WIDTH / 2,
+                TCL_FIN, 13 * 5, 50 * 5,
                 self._target_gamma)
         self._tcl.lock_controllers()
 
@@ -189,7 +190,12 @@ class Player(object):
                 self._volume, self._target_gamma, hdr_mode))
         if self._use_visualization:
             bass = self._visualizer.GetLastBassInfo()
-            lines.append(self._visualizer.GetCurrentPresetNameProgress())
+            preset = self._visualizer.GetCurrentPresetNameProgress()
+            if preset and preset.endswith('.milk\''):
+                preset = preset[:-6] + '\''
+            if preset and len(preset) > 54:
+                preset = preset[:50] + '...\''
+            lines.append(preset)
             lines.append((
                 'Sound RMS=%.3f, B=%.2f, M=%.2f, T=%.2f, VolX=%.2f') % (
                 self._visualizer.GetLastVolumeRms(),
@@ -530,9 +536,10 @@ class Player(object):
                 self._visualizer_size[0], self._visualizer_size[1], 512, FPS,
                 _PRESET_DIR[0], _PRESET_DIR[1], _PRESET_DURATION)
             self._visualizer.SetVolumeMultiplier(self._visualization_volume)
-            self._visualizer.AddTargetController(TCL_MAIN, 2, 0)
+            # id, effect_mode, rotation_angle, flip_mode
+            self._visualizer.AddTargetController(TCL_MAIN, 2, 0, 0)
             if self._enable_fin:
-                self._visualizer.AddTargetController(TCL_FIN, 0, 90)
+                self._visualizer.AddTargetController(TCL_FIN, 0, 0, 1)
             self._visualizer.StartMessageLoop()
         if self._use_visualization:
             self._visualizer.UseAlsa(self._sound_input)

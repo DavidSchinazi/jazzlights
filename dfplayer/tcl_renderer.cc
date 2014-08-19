@@ -928,7 +928,7 @@ int TclRenderer::GetLastImageId(int controller_id) {
 void TclRenderer::ScheduleImageAt(
     int controller_id, Bytes* bytes, int w, int h, EffectMode mode,
     int crop_x, int crop_y, int crop_w, int crop_h, int rotation_angle,
-    int id, const AdjustableTime& time, bool wakeup) {
+    int flip_mode, int id, const AdjustableTime& time, bool wakeup) {
   Autolock l(lock_);
   CHECK(has_started_thread_);
   if (is_shutting_down_)
@@ -954,10 +954,20 @@ void TclRenderer::ScheduleImageAt(
   }
 
   uint8_t* cropped_img = bytes->GetData();
+
+  if (flip_mode == 1) {
+    cropped_img = FlipImage(cropped_img, w, h, true);
+  } else if (flip_mode == 2) {
+    cropped_img = FlipImage(cropped_img, w, h, false);
+  }
+
   if (cropped_img) {
     if (crop_x != 0 || crop_y != 0 || crop_w != w || crop_h != h) {
+      uint8_t* old_img = cropped_img;
       cropped_img = CropImage(
           cropped_img, w, h, crop_x, crop_y, crop_w, crop_h);
+      if (old_img != bytes->GetData())
+        delete[] old_img;
     } else {
       crop_w = w;
       crop_h = h;

@@ -44,47 +44,59 @@ class PlayerApp(Frame):
             borderwidth=0, background='black')
         self._canvas.pack()
 
-        self._main_label = self._canvas.create_text(
-            (WIN_WIDTH / 2, WIN_HEIGHT / 10), fill='#fff', justify='center',
-            font=("Sans Serif", 16))
-        self._canvas.itemconfig(self._main_label, text="this is the text")
-
         self.player = player
 
-        frame_size = self.player.get_frame_size()
-
-        self._img_mode = 1
+        self._img_mode = 4
         self._img_mode_count = 6
-
-        aspect = frame_size[0] / 2 / frame_size[1]
 
         # Scale the size to with the entire width of our window.
         # TODO(igorc): Avoid scaling? Or auto-rescale when window resizes.
-        if self.player.is_fin_enabled():
-            img1_base_width = int(WIN_WIDTH * 0.85)
-        else:
-            img1_base_width = WIN_WIDTH
+        #if self.player.is_fin_enabled():
+        #    img1_base_width = int(WIN_WIDTH * 0.85)
+        #else:
+        img1_base_width = WIN_WIDTH
         img1_width = int(img1_base_width * 0.95)
-        self._img1_size = (img1_width, int(img1_width / aspect))
+        frame1_size = self.player.get_frame_size()
+        img1_aspect = frame1_size[0] / 2 / frame1_size[1]
+        self._img1_size = (img1_width, int(img1_width / img1_aspect))
+
+        text_y = 0.08
+        img1_y = 0.42
+        img2_y = 0.74
+        if self.player.is_fin_enabled():
+            text_y *= 1.2
+            img1_y *= 1.19
+            img2_y *= 1.11
 
         # Undo gamma correction in LED preview, otherwise it is too dark.
         # Keep a fixed value to have better feedback on LED gamma changes.
         self._img1 = ImageTk.PhotoImage('RGBA', self._img1_size, gamma=2.2)
         self._img2 = ImageTk.PhotoImage('RGBA', self._img1_size)
         self._canvas.create_image(
-            int(img1_base_width / 2), int(WIN_HEIGHT * 0.42),
+            int(img1_base_width / 2), int(WIN_HEIGHT * img1_y),
             image=self._img1)
         self._canvas.create_image(
-            int(img1_base_width / 2), int(WIN_HEIGHT * 0.74),
+            int(img1_base_width / 2), int(WIN_HEIGHT * img2_y),
             image=self._img2)
 
         if self.player.is_fin_enabled():
-            img3_width = int((WIN_WIDTH - img1_base_width) * 0.54)
-            self._img3_size = (img3_width, int(img3_width * aspect))
+            #img3_width = int((WIN_WIDTH - img1_base_width) * 0.54)
+            img3_width = int(WIN_WIDTH * 0.18)
+            # The fin dimensions are 150x240 inches.
+            self._img3_size = (img3_width, int(img3_width * 1.1))
             self._img3 = ImageTk.PhotoImage('RGBA', self._img3_size, gamma=2.2)
+            #self._canvas.create_image(
+            #    WIN_WIDTH - int((WIN_WIDTH - img1_base_width) / 2),
+            #    int(WIN_HEIGHT * 0.58), image=self._img3)
             self._canvas.create_image(
-                WIN_WIDTH - int((WIN_WIDTH - img1_base_width) / 2),
-                int(WIN_HEIGHT * 0.58), image=self._img3)
+                int(WIN_WIDTH * 0.75), int(WIN_HEIGHT * 0.18),
+                image=self._img3)
+
+        self._main_label = self._canvas.create_text(
+            (WIN_WIDTH * 0.05, WIN_HEIGHT * text_y),
+            fill='#fff', anchor='nw', justify='left',
+            font=("Sans Serif", 16))
+        self._canvas.itemconfig(self._main_label, text="this is the text")
 
         self.root.bind('q', lambda e: player.volume_up())
         self.root.bind('a', lambda e: player.volume_down())

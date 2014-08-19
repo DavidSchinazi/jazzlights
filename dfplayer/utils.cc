@@ -192,7 +192,7 @@ uint8_t* CropImage(
   cv::Mat dst_img = src_img(roi);
   int dst_len = RGBA_LEN(crop_w, crop_h);
   uint8_t* dst = new uint8_t[dst_len];
-  memcpy(dst, dst_img.data, dst_len);
+  memcpy(dst, dst_img.clone().data, dst_len);
   return dst;
 }
 

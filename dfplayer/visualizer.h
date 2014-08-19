@@ -31,7 +31,8 @@ class Visualizer {
   void StartMessageLoop();
 
   void UseAlsa(const std::string& spec);
-  void AddTargetController(int id, int effect_mode, int rotation_angle);
+  void AddTargetController(
+      int id, int effect_mode, int rotation_angle, int flip_mode);
 
   std::string GetCurrentPresetName();
   std::string GetCurrentPresetNameProgress();
@@ -77,13 +78,14 @@ class Visualizer {
   };
 
   struct ControllerInfo {
-    ControllerInfo(int id, int effect_mode, int rotation_angle)
+    ControllerInfo(int id, int effect_mode, int rotation_angle, int flip_mode)
         : id_(id), effect_mode_(effect_mode),
-          rotation_angle_(rotation_angle) {}
+          rotation_angle_(rotation_angle), flip_mode_(flip_mode) {}
 
     int id_;
     int effect_mode_;
     int rotation_angle_;
+    int flip_mode_;
   };
 
   void Run();
