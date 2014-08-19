@@ -24,11 +24,12 @@ def _preprocess_video(src_path, name, audio_files):
   outpath = os.path.join(CLIPS_DIR, name)
 
   audio_codec = _get_audio_codec(src_path)
-  need_m4a = audio_codec == 'aac'
-  if need_m4a:
-    audio_files.append(name + '.m4a')
-  else:
-    audio_files.append(name + '.' + audio_codec)
+  if audio_codec is not None:
+      need_m4a = audio_codec == 'aac'
+      if need_m4a:
+        audio_files.append(name + '.m4a')
+      else:
+        audio_files.append(name + '.' + audio_codec)
 
   if not _needs_processing(src_path, name):
     return
@@ -55,25 +56,28 @@ def _preprocess_video(src_path, name, audio_files):
        outpath + '/frame%6d.jpg',
       ])
 
-  audio_stream_file = outpath + '.' + audio_codec
-  subprocess.check_call(
-      ['avconv', '-y',
-       '-ss', str(start_t),
-       '-i', src_path,
-       '-t', str(duration),
-       '-acodec', 'copy',
-       audio_stream_file,
-      ])
+  if not audio_codec:
+      print "Could not get audio codec name for %s, skipping audio stream" % src_path
+  else:
+      audio_stream_file = outpath + '.' + audio_codec
+      subprocess.check_call(
+          ['avconv', '-y',
+           '-ss', str(start_t),
+           '-i', src_path,
+           '-t', str(duration),
+           '-acodec', 'copy',
+           audio_stream_file,
+          ])
 
-  if need_m4a:
-    # Wrap in a container to allow seeking.
-    subprocess.check_call(
-        ['avconv', '-y',
-         '-i', audio_stream_file,
-         '-acodec', 'copy',
-          outpath + '.m4a',
-        ])
-    os.unlink(audio_stream_file)
+      if need_m4a:
+        # Wrap in a container to allow seeking.
+        subprocess.check_call(
+            ['avconv', '-y',
+             '-i', audio_stream_file,
+             '-acodec', 'copy',
+              outpath + '.m4a',
+            ])
+        os.unlink(audio_stream_file)
 
   _create_stamp_file(src_path, name);
 
@@ -120,9 +124,7 @@ def _get_audio_codec(src_path):
       ['avprobe', src_path], stderr=subprocess.STDOUT)
   probe_str = probe_str.replace('\n', ' ')
   m = re.match(r'.*Audio:\s([0-9,a-z]+)\,.*', probe_str)
-  if not m:
-    raise Exception('Unable to get audio codec name for ' + src_path)
-  return m.group(1)
+  return m.group(1) if m else None
 
 
 def _remove_one_output(name, ext):
@@ -163,6 +165,7 @@ def main():
 
   src_paths = glob.glob(indir + '/*.mp4')
   src_paths += glob.glob(indir + '/*.m4a')
+  #src_paths += glob.glob(indir + '/*.avi')
 
   names = []
   audio_files = []

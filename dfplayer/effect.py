@@ -39,7 +39,7 @@ class Effect(object):
   def get_elapsed_sec(self):
     current_ms = get_time_millis()
     elapsed_sec = float(current_ms - self._start_ms) / 1000.0
-    if elapsed_sec > self._duration:
+    if self._duration is not None and elapsed_sec > self._duration:
       return None
     return elapsed_sec
 

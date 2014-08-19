@@ -119,6 +119,7 @@ class PlayerApp(Frame):
         self.root.bind('5', lambda e: player.play_effect('blink'))
         self.root.bind('6', lambda e: player.play_effect('chameleon'))
         self.root.bind('7', lambda e: player.play_effect('indicator'))
+        self.root.bind('8', lambda e: player.play_effect('flick'))
         self.root.bind('<space>', lambda e: player.toggle())
         self.root.bind('<Up>', lambda e: player.prev())
         self.root.bind('<Down>', lambda e: player.next())
@@ -161,12 +162,12 @@ class PlayerApp(Frame):
         if frame1:
             frame1 = frame1.crop(crop_rect)
 
-        if (self._img_mode % 3) == 0:
+        if (self._img_mode % 3) == 0 and not self.player.is_playing_effect():
             # Second is intermediate image by default.
             frame2 = images[1].copy() if images[1] else None
             if frame2:
                 frame2 = frame2.crop(crop_rect)
-        elif (self._img_mode % 3) == 1:
+        elif (self._img_mode % 3) == 1 and not self.player.is_playing_effect():
             # Otherwise show original image.
             frame2 = images[0].copy() if images[0] else None
             if frame2 and self._img_mode >= 3:

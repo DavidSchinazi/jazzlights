@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
 # Licensed under The MIT License
+from .util import PROJECT_DIR, PACKAGE_DIR, VENV_DIR
 
 FPS = 15
+
+CLIPS_DIR = VENV_DIR + '/clips'
+PLAYLISTS_DIR = VENV_DIR + '/playlists'
+
 _SCREEN_FRAME_WIDTH = 500
 IMAGE_FRAME_WIDTH = _SCREEN_FRAME_WIDTH / 2
 FRAME_HEIGHT = 50
@@ -15,6 +20,9 @@ class Player(object):
         self.status = "mock status"
         self.clip_name = "mock clip"
 
+    def is_fin_enabled(self):
+        return False
+            
     def disable_reset(self):
         pass
 
