@@ -4,6 +4,7 @@
 ._.DS_Store
 env/
 clips/
+dfplayer/asoundrc
 dfplayer.egg-info/
 dfplayer/_renderer_cc.so
 dfplayer/renderer_cc.py
