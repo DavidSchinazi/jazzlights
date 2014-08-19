@@ -22,6 +22,10 @@ class Effect(object):
     self._mirror = mirror
     self._start_ms = get_time_millis()
 
+  @classmethod
+  def get_name(cls):
+    return cls.__name__
+    
   def _set_dimensions(self, w, h):
     self._width = w
     self._height = h
@@ -57,3 +61,6 @@ def load(name, w, h, **kwargs):
   effect._prepare()
   return effect
 
+
+def list_all():
+  return _EFFECTS.iteritems() 

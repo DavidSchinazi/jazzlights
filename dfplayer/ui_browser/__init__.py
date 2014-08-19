@@ -12,6 +12,7 @@ import StringIO
 from flask import Flask, request, render_template, make_response, abort
 from flask.ext.socketio import SocketIO, emit
 
+from ..effect import list_all as list_all_effects
 from ..util import catch_and_log, PROJECT_DIR, PACKAGE_DIR
 
 STREAM_FRAMES = False
@@ -48,7 +49,7 @@ def workthread():
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', effects=list_all_effects())
 
 
 @app.route('/currframe')

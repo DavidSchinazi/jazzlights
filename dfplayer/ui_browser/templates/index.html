@@ -17,6 +17,7 @@
       <!-- Bootstrap core CSS -->
       <link href="/static/css/bootstrap-3.1.1.min.css" rel="stylesheet">
       <link href="/static/css/bootstrap-slider-3.0.0.css" rel="stylesheet">
+      <link href="/static/css/font-awesome.min.css" rel="stylesheet">
 
       <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
       <!--[if lt IE 9]>
@@ -31,13 +32,13 @@
             left: 0px;
             right: 0px;
             overflow: hidden;
-            background: black;
+            background: #111111;
             color: #eeeeee;
             font-size: 25px;
          }
 
          #disconnected {
-            position: absolute;
+            position: fixed;
             top: 50%;
             left: 50%;
             width: 400px;
@@ -46,29 +47,71 @@
             margin-top: -200px;
             overflow: hidden;
             text-align: center;
-            font-size: 150%;
+            font-size: 50px;
             color: #ffffff;
          }
 
-         #playlist {
-            position: absolute;
-            left: 50%;
-            top: 10px;
-            bottom: 200px;
-            width: 600px;
-            margin-left: -300px;
-            overflow-x: hidden;
-            overflow-y: scroll;
+         #reconnect-btn {
+            height: 100px;
+            margin-top: 40px;
+            border: solid #cccccc 1px;
+            padding: 15px;
+            font-size: 40px;
             color: #cccccc;
+            background: #444444;
          }
-         #playlist table {
+
+         #connected {
+            position: fixed;
+            left: 0px;
+            top: 0px;
+            right: 0px;
+            bottom: 100px;            
+         }
+
+         #footer {
+            position: fixed;
+            background: black;
+            margin: 0px;
+            padding: 0px;
+            left: 0px;
+            right: 0px;
+            bottom: 0px;
+            height: 100px;
+         }
+         #footer .nb-icon {
+            font-size: 45px;
+         }
+         #footer li {
+            display: inline-block;
+            font-size: 15px;
+            height: 100%;
+            width: 20%;
+            padding: 7px;
+            padding-top: 17px;
+            text-align: center;
+            cursor: pointer;
+         }
+         #footer li.active, #footer li.active a {
+            ccolor: #aaaaaa;
+            background: #222222;
+         }
+
+         #effects {
+            width: 100%;
+            height: 100%;
+            padding: 30px;
+            overflow-y: scroll;
+         }
+         #effects table {
             width: 100%;
          }
 
-         #playlist table tr {
+         #effects table tr {
             height: 100px;
+            border-bottom: solid #555555 1px;
          }
-         #playlist table td {
+         #effects  table td {
             font-size: 50px;
          }
 
@@ -77,7 +120,6 @@
          }
 
          #status-msg {
-            position: absolute;
             left: 50%;
             bottom: 200px;
             width: 100%;
@@ -93,7 +135,7 @@
             position: absolute;
             bottom: 0px;
             width: 100%;
-            height: 100px;
+            height: 150px;
             overflow: hidden;
             white-space:nowrap; 
             text-align: center;
@@ -101,79 +143,70 @@
          #playback-controls button {
             display: inline-block;
             width: 120px;
-            height: 60px;
+            height: 110px;
             color: #cccccc;
             background: none;
             border: none;
-            line-height: 60px;
-            font-size: 60px;
+            line-height: 110px;
+            font-size: 80px;
             margin: 10px;
             padding: 0px;
          }
          #playback-controls button:focus {
             outline: none;
          }
+
       </style>
    </head>
 
    <body>
-      <div id="disconnected">
+      <div id="disconnected" class="tab-pane">
          Disconnected
+         <br>
+         <button id="reconnect-btn">reconnect</button>
       </div>
       <div id="connected">
-         <div id="tabs">
-            <div id="player" class="tab-pane active">
+         <div id="clips" class="tab-pane active">
 
-               <div id="playlist">
-                  <table>
-                     <tr>
-                        <td>Next clip</td>
-                        <td><button id="play-nextclip"><span class="glyphicon glyphicon-play"></span></button></td>
-                     </tr>
-                     <tr>
-                        <td>Text ticker</td>
-                        <td><button id="play-textticker"><span class="glyphicon glyphicon-play"></span></button></td>
-                     </tr>
-                        <td><input id="ticker-text" type="text" value="HELLO"></td>
-                        <td>&nbsp;</td>
-                     </tr>
-                     <tr>
-                        <td>Solid color</td>
-                        <td><button id="play-solidcolor"><span class="glyphicon glyphicon-play"></span></button></td>
-                     </tr>
-                     <tr>
-                        <td>Random pixels</td>
-                        <td><button id="play-randompixels"><span class="glyphicon glyphicon-play"></span></button></td>
-                     </tr>
-                     <tr>
-                        <td>Blink</td>
-                        <td><button id="play-blink"><span class="glyphicon glyphicon-play"></span></button></td>
-                     </tr>
-                     <tr>
-                        <td>Chameleon</td>
-                        <td><button id="play-chameleon"><span class="glyphicon glyphicon-play"></span></button></td>
-                     </tr>
-                     <tr>
-                        <td>Indicator</td>
-                        <td><button id="play-indicator"><span class="glyphicon glyphicon-play"></span></button></td>
-                     </tr>
-                  </table>
-               </div>
+            <!-- div id="volume-controls">
+               <span class="glyphicon glyphicon-volume-down"></span>
+               <input id="volume-slider" class="slider" type="text" data-slider-min="0" data-slider-max="100" data-slider-step="1" data-slider-value="50"/>
+               <span class="glyphicon glyphicon-volume-up"></span>
+            </div -->
 
-               <!-- div id="volume-controls">
-                  <span class="glyphicon glyphicon-volume-down"></span>
-                  <input id="volume-slider" class="slider" type="text" data-slider-min="0" data-slider-max="100" data-slider-step="1" data-slider-value="50"/>
-                  <span class="glyphicon glyphicon-volume-up"></span>
-               </div -->
-
-               <div id="status-msg">No status</div>
-          
-               <div id="playback-controls">
-                  <button id="prev-btn"><span class="glyphicon glyphicon-step-backward"></span></button>
-                  <button id="play-btn"><span class="glyphicon glyphicon-play"></span></button>
-                  <button id="next-btn"><span class="glyphicon glyphicon-step-forward"></span></button>
-               </div>
+            <div id="status-msg">No status</div>
+       
+            <div id="playback-controls">
+               <button id="prev-clip-btn"><span class="glyphicon glyphicon-backward"></span></button>
+               <button id="stpb-clip-btn"><span class="glyphicon glyphicon-step-backward"></span></button>
+               <button id="play-clip-btn"><span class="glyphicon glyphicon-play"></span></button>
+               <button id="stpf-clip-btn"><span class="glyphicon glyphicon-step-forward"></span></button>
+               <button id="next-clip-btn"><span class="glyphicon glyphicon-forward"></span></button>
             </div>
+         
+         </div>
+
+         <div id="presets" class="tab-pane">
+            <div id="playback-controls">
+               <button id="prev-preset-btn"><span class="glyphicon glyphicon-step-backward"></span></button>
+               <button id="next-preset-btn"><span class="glyphicon glyphicon-step-forward"></span></button>
+            </div>
+         </div>
+
+         <div id="effects" class="tab-pane">
+            <table>
+               {% for efn,efc in effects %}
+                  <tr effect-id="{{efn}}">
+                     <td>{{ efc.get_name() }}</td>
+                     <td><i class="nb-icon fa fa-angle-right"></i></td>
+                  </tr>
+               {% endfor %}
+            </table>
+         </div>
+         <div id="footer">
+           <li view-toggle='effects' class="nav-link"><i class="nb-icon fa fa-magic"></i><br>Effects</a></li>
+           <li view-toggle='presets' class="nav-link"><i class="nb-icon fa fa-video-camera"></i><br>Presets</a></li>
+           <li view-toggle='clips' class="nav-link active"><i class="nb-icon fa fa-music"></i><br>Clips</a></li>
          </div>
       </div>   
 
@@ -223,87 +256,78 @@
          function navigate(state) {
             if ('view' in state && state.view != view) {
                console.log( "view: " + view + ' -> ' + state.view );
-               if (state.view == 'disconnected') {
-                  $('#connected').hide();
-                  $('#disconnected').show();
-               } 
+               view = state.view;
+               $('.tab-pane').hide();
+               $('#footer li').removeClass('active');
+               $('#footer li[view-toggle = "' + view + '"]').addClass('active');
+               $('#' + view).show();
+               if (view == 'disconnected') {
+                  $('#footer').hide();
+                  view = null;
+               }
                else {
-                  $('#disconnected').hide();
-                  $('#connected').show();
-
+                  $('#footer').show();
                   // $('#main .tab-pane').hide();
                   // $('#' + view ).show();
                   // if (view == 'map') {
                   //    map.invalidateSize(false);
-                  // }               
-               }
+                  // }
+               }               
             }
-            view = state.view;
          }
 
          function init() {
             navigate( { view: 'disconnected' } );
 
-            //$("input.slider").slider();
             var socket = io.connect('http://' + document.domain + ':' + location.port + '/player' );
             socket.on('connect', function() {
-                  navigate( { view:'player' } );
+                  navigate( { view:'effects' } );
             });
             socket.on('disconnect', function() {
-                  navigate( { view:'disconnected' } );
+               navigate( { view:'disconnected' } );
             });
             socket.on('player_state', function(state) {
                //console.log( state );
                if (state.status == 'paused' && status != 'paused') {
-                  $('#play-btn').off();
-                  $('#play-btn').on('click', function() { socket.emit('resume') });
-                  $('#play-btn').html( '<span class="glyphicon glyphicon-play"></span>');
+                  $('#play-clip-btn').off();
+                  $('#play-clip-btn').on('click', function() { socket.emit('resume') });
+                  $('#play-clip-btn').html( '<span class="glyphicon glyphicon-play"></span>');
                   status = 'paused';   
                }
                else if (state.status == 'playing' && status != 'playing') {
-                  $('#play-btn').off();
-                  $('#play-btn').on('click', function() { socket.emit('pause') });
-                  $('#play-btn').html( '<span class="glyphicon glyphicon-pause"></span>');
+                  $('#play-clip-btn').off();
+                  $('#play-clip-btn').on('click', function() { socket.emit('pause') });
+                  $('#play-clip-btn').html( '<span class="glyphicon glyphicon-pause"></span>');
                   status = 'playing';   
                }
                renderStatus( state.clipName, state.elapsed);
-               renderPlaylist( state.playlist, state.clipName, state.elapsed );
-            });
-            socket.on('frame', function(msg) {
-               document.getElementById('frame').setAttribute( 'src', 'data:image/png;base64,' + msg.data );
+               //renderPlaylist( state.playlist, state.clipName, state.elapsed );
             });
 
-            $('#prev-btn').on('click', function() { 
-               socket.emit('prev-preset') 
+            $('.nav-link').on('click', function() {
+               navigate( {view:$(this).attr('view-toggle')}); 
             });
-            $('#next-btn').on('click', function() { 
-               socket.emit('next-preset') 
+
+            $('#reconnect-btn').on('click', function() { 
+               location.reload(); 
             });
-            $('#play-nextclip').on('click', function() { 
+
+            $('#prev-clip-btn').on('click', function() { 
+               socket.emit('prev') 
+            });
+            $('#next-clip-btn').on('click', function() { 
                socket.emit('next') 
             });
-            $('#play-textticker').on('click', function() { 
-               socket.emit('play-effect', {name:'textticker', text:$('#ticker-text').val() } ); 
+            $('#prev-preset-btn').on('click', function() { 
+               socket.emit('prev-preset') 
             });
-            $('#play-solidcolor').on('click', function() { 
-               socket.emit('play-effect', {name:'solidcolor'} ); 
+            $('#next-preset-btn').on('click', function() { 
+               socket.emit('next-preset') 
             });
-            $('#play-randompixels').on('click', function() { 
-               socket.emit('play-effect', {name:'randompixels'} ); 
+            $('#effects table tr').on('click', function() { 
+               console.log( this );
+               socket.emit('play-effect', {name:$(this).attr('effect-id')} ); 
             });
-            $('#play-teststripes').on('click', function() { 
-               socket.emit('play-effect', {name:'teststripes'} ); 
-            });
-            $('#play-blink').on('click', function() { 
-               socket.emit('play-effect', {name:'blink'} ); 
-            });
-            $('#play-chameleon').on('click', function() { 
-               socket.emit('play-effect', {name:'chameleon'} ); 
-            });
-            $('#play-indicator').on('click', function() { 
-               socket.emit('play-effect', {name:'indicator'} ); 
-            });
-
       }
 
       init();
