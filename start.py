@@ -7,7 +7,12 @@ import os
 import shutil
 import subprocess
 
+_PROJ_DIR = os.path.dirname(__file__)
+
+
 def main():
+  os.chdir(_PROJ_DIR)
+
   arg_parser = argparse.ArgumentParser(description='Start player')
   arg_parser.add_argument('--gdb', action='store_true')
   arg_parser.add_argument('--no-reset', action='store_true')
