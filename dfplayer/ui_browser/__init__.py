@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Licensed under The MIT License
 
+import greenlet
 import os
 import sys
 import time
@@ -125,6 +126,8 @@ def run(with_player, host, port):
     player = with_player
     gevent.spawn(workthread)
     print 'HTTP server listening on %s:%d' % (host, port)
-    socketio.run(app, host=host, port=port)
-
+    try:
+        socketio.run(app, host=host, port=port)
+    except greenlet.GreenletExit:
+        pass
 

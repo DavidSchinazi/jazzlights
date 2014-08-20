@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 # Licensed under The MIT License
 
+import gc
+import gevent
 import io
 import logging
 import os
 import PIL
 import sys
 
-from gevent import sleep
+from greenlet import greenlet
 from Tkinter import Tk, Frame, Canvas
 from PIL import Image, ImageTk
 
@@ -208,9 +210,11 @@ def run(player, args):
     # root.attributes("-topmost", True)
 
     app = PlayerApp(root, player)
-    
+
     # root.mainloop()
     while app.running:
         root.update()
-        sleep(1.0 / FPS)
+        gevent.sleep(1.0 / FPS)
+
+    gevent.killall([obj for obj in gc.get_objects() if isinstance(obj, greenlet)])
 
