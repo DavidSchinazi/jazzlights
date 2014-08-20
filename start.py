@@ -14,6 +14,7 @@ def main():
   arg_parser.add_argument('--disable-net', action='store_true')
   arg_parser.add_argument('--mpd', action='store_true')
   arg_parser.add_argument('--disable-fin', action='store_true')
+  arg_parser.add_argument('--max', action='store_true')
   args = arg_parser.parse_args()
 
   shutil.copyfile(
@@ -28,6 +29,8 @@ def main():
     params.append('--disable-fin')
   if args.mpd:
     params.append('--mpd')
+  if args.max:
+    params.append('--max')
 
   try:
     if args.gdb:

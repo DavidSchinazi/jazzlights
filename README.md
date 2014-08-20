@@ -61,6 +61,8 @@ platforms.
           Do not turn off the screen
           Do not lock
           Do not require password
+        # All Settings / Appearance / Behavior
+        #   Auto-hide the Launcher
         Click on networking, disable WiFi
         Click on networking, Edit Connections / Wired Connection 2
           Verify it is "eth1", go to IPv4 Settings

@@ -19,6 +19,7 @@ def main():
     arg_parser.add_argument('--mpd', action='store_true')
     arg_parser.add_argument('--disable-fin', action='store_true')
     arg_parser.add_argument('--uimock', action='store_true')
+    arg_parser.add_argument('--max', action='store_true')
     args = arg_parser.parse_args()
 
     # have to do those imports after monkey patch
@@ -51,7 +52,7 @@ def main():
     register_all_effects()
 
     tasks = [lambda : player.run()]
-    tasks.append(lambda : run_desktop_ui(player))    
+    tasks.append(lambda : run_desktop_ui(player, args))
     tasks.append(lambda : run_browser_ui(player, host, port))
 
     try:

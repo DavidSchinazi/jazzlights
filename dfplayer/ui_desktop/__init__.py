@@ -38,10 +38,11 @@ class PlayerApp(Frame):
     def __init__(self, root, player):
         Frame.__init__(self, root)
         self.root = root
+        self.config(bd=0, bg='black', highlightbackground='black')
         self.pack()
         self._canvas = Canvas(
             root, width=(WIN_WIDTH), height=WIN_HEIGHT,
-            borderwidth=0, background='black')
+            bd=0, bg='black', highlightbackground='black')
         self._canvas.pack()
 
         self.player = player
@@ -198,11 +199,14 @@ class PlayerApp(Frame):
             self.quit()
 
 
-def run(player):
+def run(player, args):
     root = Tk()
     # width, height = (root.winfo_screenwidth(), root.winfo_screenheight())
-    root.geometry('%dx%d' % (WIN_WIDTH, WIN_HEIGHT))
-    root.configure(background='black')
+    if args.max:
+        root.attributes('-fullscreen', True)
+    else:
+        root.geometry('%dx%d' % (WIN_WIDTH, WIN_HEIGHT))
+    root.configure(bg='black', bd=0, highlightbackground='black')
     # root.attributes("-topmost", True)
 
     app = PlayerApp(root, player)
@@ -211,5 +215,4 @@ def run(player):
     while app.running:
         root.update()
         sleep(1.0 / FPS)
-
 
