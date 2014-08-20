@@ -13,20 +13,22 @@ _X_STEP = 2
 
 class TextTicker(Effect):
 
-  def __init__(self, text='HELLO', duration=10, color='white', alpha=200):
+  def __init__(self, text='HELLO', duration=10, color='white', alpha=185):
     Effect.__init__(self, duration=duration, mirror=False)
     self._text = text
     self._color = color
     self._alpha = alpha
 
   def _prepare(self):
-    font = ImageFont.truetype(PROJECT_DIR + '/dfplayer/effects/impact.ttf',
-        int(self._height * 0.9))
+    # More founts around: '/usr/share/fonts/truetype/'
+    font = ImageFont.truetype(
+        PROJECT_DIR + '/dfplayer/effects/DejaVuSans-Bold.ttf',
+        int(self._height * 1))
     (w, h) = font.getsize(self._text)
     self._rendered_text = create_image(
         int(w * 1.6), self._height, 'black', self._alpha)
     draw = ImageDraw.Draw(self._rendered_text)
-    draw.text((int(w * 0.3), 0), self._text, self._color, font=font)
+    draw.text((int(w * 0.2), -1), self._text, self._color, font=font)
 
   def get_image(self, elapsed, **kwargs):
     image = self._create_image('black', self._alpha)
