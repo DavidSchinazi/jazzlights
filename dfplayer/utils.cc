@@ -203,7 +203,7 @@ uint8_t* CropImage(
 void PasteSubImage(
     uint8_t* src, int src_w, int src_h,
     uint8_t* dst, int dst_x, int dst_y, int dst_w, int dst_h,
-    bool enable_alpha) {
+    bool enable_alpha, bool carry_alpha) {
   for (int y = 0; y < src_h; y++) {
     int y2 = dst_y + y;
     if (y2 >= dst_h)
@@ -223,7 +223,18 @@ void PasteSubImage(
             src[src_pos + 1], dst[dst_pos + 1], alpha);
         dst[dst_pos + 2] = BLEND_COLOR(
             src[src_pos + 2], dst[dst_pos + 2], alpha);
+        if (carry_alpha)  // TODO(igorc): Remove this param.
+          dst[dst_pos + 3] = src[src_pos + 3];
       }
+    }
+  }
+}
+
+void EraseAlpha(uint8_t* img, int w, int h) {
+  for (int y = 0; y < h; y++) {
+    for (int x = 0; x < w; x++) {
+      int pos = (y * w + x) * 4;
+      img[pos + 3] = 255;
     }
   }
 }

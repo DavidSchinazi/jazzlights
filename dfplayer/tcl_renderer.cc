@@ -345,18 +345,18 @@ bool TclController::BuildImage(
     img_data = new uint8_t[RGBA_LEN(width_, height_)];
     uint8_t* img1 = ResizeImage(src_img, w, h, width_ / 2, height_);
     PasteSubImage(img1, width_ / 2, height_,
-        img_data, 0, 0, width_, height_, false);
+        img_data, 0, 0, width_, height_, false, true);
     PasteSubImage(img1, width_ / 2, height_,
-        img_data, width_ / 2, 0, width_, height_, false);
+        img_data, width_ / 2, 0, width_, height_, false, true);
     delete[] img1;
   } else {  // EFFECT_MIRROR
     img_data = new uint8_t[RGBA_LEN(width_, height_)];
     uint8_t* img1 = ResizeImage(src_img, w, h, width_ / 2, height_);
     uint8_t* img2 = FlipImage(img1, width_ / 2, height_, true);
     PasteSubImage(img1, width_ / 2, height_,
-        img_data, 0, 0, width_, height_, false);
+        img_data, 0, 0, width_, height_, false, true);
     PasteSubImage(img2, width_ / 2, height_,
-        img_data, width_ / 2, 0, width_, height_, false);
+        img_data, width_ / 2, 0, width_, height_, false, true);
     delete[] img1;
     delete[] img2;
   }
@@ -381,8 +381,9 @@ void TclController::ApplyEffect(RgbaImage* image) {
   if (effect_image_.IsEmpty())
     return;
 
+  // Carry alpha from effect to help 
   PasteSubImage(effect_image_.GetData(), width_, height_,
-      image->GetData(), 0, 0, width_, height_, true);
+      image->GetData(), 0, 0, width_, height_, true, true);
 }
 
 uint8_t* TclController::BuildFrameDataForImage(RgbaImage* img, int id) {
@@ -392,9 +393,12 @@ uint8_t* TclController::BuildFrameDataForImage(RgbaImage* img, int id) {
     return NULL;
 
   uint8_t* frame_data = ConvertStrandsToFrame(strands);
-  last_image_ = *img;
+
   last_image_id_ = id;
+  last_image_ = *img;
+  EraseAlpha(last_image_.GetData(), width_, height_);
   last_led_image_ = strands->led_image;
+
   delete strands;
   return frame_data;
 }
@@ -431,12 +435,14 @@ bool TclController::PopulateStrandsColors(
     int strand_len = layout_.lengths_[strand_id];
     uint8_t* dst_colors = strands->colors[strand_id];
     for (int led_id = 0; led_id < strand_len; ++led_id) {
-      uint32_t r = 0, g = 0, b = 0;
       const std::vector<Coord>& coords = layout_.coords_[strand_id][led_id];
-      int coord_count = coords.size();
+      uint32_t coord_count = coords.size();
       if (!coord_count)
         continue;
-      for (int c_id = 0; c_id < coord_count; ++c_id) {
+
+      uint32_t r1 = 0, g1 = 0, b1 = 0, c1 = 0;
+      uint32_t r2 = 0, g2 = 0, b2 = 0, c2 = 0;
+      for (uint32_t c_id = 0; c_id < coord_count; ++c_id) {
         int x = coords[c_id].x_;
         int y = coords[c_id].y_;
         int color_idx = (y * width_ + x) * 4;
@@ -447,15 +453,30 @@ bool TclController::PopulateStrandsColors(
                   color_idx, image_len, strand_id, led_id, x, y);
           return false;
         }
-        r += image_data[color_idx];
-        g += image_data[color_idx + 1];
-        b += image_data[color_idx + 2];
+        if (image_data[color_idx + 3] == 255) {
+          r1 += image_data[color_idx];
+          g1 += image_data[color_idx + 1];
+          b1 += image_data[color_idx + 2];
+          c1++;
+        } else {
+          r2 += image_data[color_idx];
+          g2 += image_data[color_idx + 1];
+          b2 += image_data[color_idx + 2];
+          c2++;
+        }
       }
 
-      r = (r / coord_count) & 0xFF;
-      g = (g / coord_count) & 0xFF;
-      b = (b / coord_count) & 0xFF;
-      uint32_t color = PACK_COLOR32(r, g, b, 255);
+      if (c1 >= coord_count / 2) {
+        r1 = (r1 / c1) & 0xFF;
+        g1 = (g1 / c1) & 0xFF;
+        b1 = (b1 / c1) & 0xFF;
+      } else {
+        r1 = (r2 / c2) & 0xFF;
+        g1 = (g2 / c2) & 0xFF;
+        b1 = (b2 / c2) & 0xFF;
+      }
+
+      uint32_t color = PACK_COLOR32(r1, g1, b1, 255);
 
       int dst_idx = led_id * 4;
       *((uint32_t*) (dst_colors + dst_idx)) = color;

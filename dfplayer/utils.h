@@ -157,7 +157,9 @@ uint8_t* CropImage(
 void PasteSubImage(
     uint8_t* src, int src_w, int src_h,
     uint8_t* dst, int dst_x, int dst_y, int dst_w, int dst_h,
-    bool enable_alpha);
+    bool enable_alpha, bool carry_alpha);
+
+void EraseAlpha(uint8_t* img, int w, int h);
 
 #endif  // __DFPLAYER_UTILS_H
 
