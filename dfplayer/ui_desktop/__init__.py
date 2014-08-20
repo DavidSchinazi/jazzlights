@@ -142,29 +142,29 @@ class PlayerApp(Frame):
     def quit(self):
         self.running = False
 
-    def _paste_images(self, images):
+    def _paste_images(self, images, mode):
         # Always use LED image as the first image.
         frame1 = images[2].copy() if images[2] else None
         frame3 = images[3].copy() if images[3] else None
 
         crop_rect = None
         frame_size = self.player.get_frame_size()
-        if self._img_mode < 3:
+        if mode < 3:
             crop_rect = (0, 0, frame_size[0] / 2, frame_size[1])
         else:
             crop_rect = (frame_size[0] / 2, 0, frame_size[0], frame_size[1])
         if frame1:
             frame1 = frame1.crop(crop_rect)
 
-        if (self._img_mode % 3) == 0 and not self.player.is_playing_effect():
+        if (mode % 3) == 0:
             # Second is intermediate image by default.
             frame2 = images[1].copy() if images[1] else None
             if frame2:
                 frame2 = frame2.crop(crop_rect)
-        elif (self._img_mode % 3) == 1 and not self.player.is_playing_effect():
+        elif (mode % 3) == 1:
             # Otherwise show original image.
             frame2 = images[0].copy() if images[0] else None
-            if frame2 and self._img_mode >= 3:
+            if frame2 and mode >= 3:
                 frame2 = frame2.transpose(Image.FLIP_LEFT_RIGHT)
         else:
             # Show black if disabled.
@@ -179,12 +179,15 @@ class PlayerApp(Frame):
 
     def update(self):
         try:
-            need_original = (self._img_mode % 3) == 1
-            need_intermediate = (self._img_mode % 3) == 0
+            mode = self._img_mode
+            if (mode % 3) == 1 and self.player.is_playing_effect():
+                mode -= 1
+            need_original = (mode % 3) == 1
+            need_intermediate = (mode % 3) == 0
             images = self.player.get_frame_images(
                 need_original, need_intermediate)
             if images:
-                self._paste_images(images)
+                self._paste_images(images, mode)
             status_lines = self.player.get_status_lines()
             self._canvas.itemconfig(
                 self._main_label, text='\n'.join(status_lines))
