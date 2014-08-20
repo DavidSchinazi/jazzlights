@@ -15,10 +15,12 @@ def main():
   arg_parser.add_argument('--mpd', action='store_true')
   arg_parser.add_argument('--disable-fin', action='store_true')
   arg_parser.add_argument('--max', action='store_true')
+  arg_parser.add_argument('--nosound', action='store_true')
   args = arg_parser.parse_args()
 
-  shutil.copyfile(
-      'dfplayer/asoundrc', '/home/' + os.getlogin() + '/.asoundrc')
+  if not args.nosound:
+    shutil.copyfile(
+        'dfplayer/asoundrc.sample', '/home/' + os.getlogin() + '/.asoundrc')
 
   params = ['env/bin/dfplayer', '--listen=0.0.0.0:8080']
   if args.no_reset:
