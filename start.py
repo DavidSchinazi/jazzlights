@@ -6,6 +6,7 @@ import argparse
 import os
 import shutil
 import subprocess
+import time
 
 _PROJ_DIR = os.path.dirname(__file__)
 
@@ -21,6 +22,7 @@ def main():
   arg_parser.add_argument('--disable-fin', action='store_true')
   arg_parser.add_argument('--max', action='store_true')
   arg_parser.add_argument('--nosound', action='store_true')
+  arg_parser.add_argument('--prod', action='store_true')
   args = arg_parser.parse_args()
 
   if not args.nosound:
@@ -36,7 +38,7 @@ def main():
     params.append('--disable-fin')
   if args.mpd:
     params.append('--mpd')
-  if args.max:
+  if args.max or args.prod:
     params.append('--max')
 
   try:
@@ -48,6 +50,10 @@ def main():
       subprocess.check_call(params)
   except KeyboardInterrupt:
     print 'Player is exiting via KeyboardInterrupt'
+
+  if args.prod:
+    print 'dfplayer has exited and start.py script is now sleeping'
+    time.sleep(3600)
 
 main()
 

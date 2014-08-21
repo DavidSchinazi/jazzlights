@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Exec=python /home/fish/dfplayer/start.py --max --mpd
+Exec=python /home/fish/dfplayer/start.py --prod --mpd
 Terminal=true
 Hidden=false
 NoDisplay=false
