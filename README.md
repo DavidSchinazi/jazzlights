@@ -69,8 +69,8 @@ platforms.
             Set Method to Manual
             Add address: 192.168.60.178 / 255.255.255.0
             Save
-        Search for "Startup", open "Startup Applications"
-          Add /home/fish/dfplayer/start.py --max --disable-fin --mpd
+        Enable dfplayer to run at startup
+          cp dfplayer.desktop ~/.config/autostart/
 
 8. Reboot
 
