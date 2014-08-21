@@ -179,6 +179,14 @@ class Player(object):
         elapsed_sec = int(elapsed_time)
         lines = []
         hdr_mode = self._tcl.get_hdr_mode()
+        if hdr_mode == 0:
+          hdr_mode = 'N'
+        elif hdr_mode == 1:
+          hdr_mode = 'L'
+        elif hdr_mode == 2:
+          hdr_mode = 'S'
+        elif hdr_mode == 3:
+          hdr_mode = 'LS'
         if self._line_in:
             lines.append('Line In, Gamma = %.1f, HDR = %s' % (
                 self._target_gamma, hdr_mode))
