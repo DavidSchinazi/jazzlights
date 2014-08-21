@@ -103,6 +103,7 @@ class TclController {
   int GetHeight() const { return height_; }
 
   InitStatus GetInitStatus() const { return init_status_; }
+  void MarkInitialized() { init_status_ = INIT_OK; }
 
   bool BuildImage(
       uint8_t* img, int w, int h, EffectMode mode,
@@ -1176,6 +1177,11 @@ void TclRenderer::Run() {
         for (std::vector<TclController*>::iterator it = controllers_.begin();
               it != controllers_.end(); ++it) {
           (*it)->UpdateAutoReset(auto_reset_after_no_data_ms_);
+        }
+      } else {
+        for (std::vector<TclController*>::iterator it = controllers_.begin();
+              it != controllers_.end(); ++it) {
+          (*it)->MarkInitialized();
         }
       }
     }
