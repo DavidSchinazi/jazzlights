@@ -6,6 +6,7 @@ import argparse
 import os
 import shutil
 import subprocess
+import sys
 import time
 
 _PROJ_DIR = os.path.dirname(__file__)
@@ -24,6 +25,10 @@ def main():
   arg_parser.add_argument('--nosound', action='store_true')
   arg_parser.add_argument('--prod', action='store_true')
   args = arg_parser.parse_args()
+
+  if args.prod:
+    print 'dfplayer is sleeping for 30 seconds before startup'
+    time.sleep(30)
 
   if not args.nosound:
     shutil.copyfile(
@@ -50,6 +55,8 @@ def main():
       subprocess.check_call(params)
   except KeyboardInterrupt:
     print 'Player is exiting via KeyboardInterrupt'
+  except Exception, err:
+    print sys.exc_info()[0]
 
   if args.prod:
     print 'dfplayer has exited and start.py script is now sleeping'
