@@ -10,6 +10,7 @@
 #include <stdint.h>
 
 #include <queue>
+#include <string>
 #include <vector>
 
 #include "utils.h"
@@ -116,6 +117,8 @@ class TclRenderer {
 
   // Returns the number of currently queued frames.
   int GetQueueSize();
+
+  std::string GetInitStatus();
 
  private:
   TclRenderer();

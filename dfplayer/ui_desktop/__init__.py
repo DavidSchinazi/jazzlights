@@ -60,11 +60,11 @@ class PlayerApp(Frame):
         self._img1_size = (img1_width, int(img1_width / img1_aspect))
 
         if self.player.is_fin_enabled():
-            text_y = 0.09
+            text_y = 0.07
             img1_y = 0.28
             img2_y = 0.56
         else:
-            text_y = 0.06
+            text_y = 0.04
             img1_y = 0.23
             img2_y = 0.54
 

@@ -188,6 +188,7 @@ class Player(object):
                 elapsed_sec / 60, elapsed_sec % 60))
             lines.append('Soft Vol = %s, Gamma = %.1f, HDR = %s' % (
                 self._volume, self._target_gamma, hdr_mode))
+        lines.append('Controllers: %s' % (self._tcl.get_init_status()))
         if self._use_visualization:
             bass = self._visualizer.GetLastBassInfo()
             preset = self._visualizer.GetCurrentPresetNameProgress()

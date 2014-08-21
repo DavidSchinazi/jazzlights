@@ -117,6 +117,12 @@ class TclRenderer(object):
     else:
       return -1
 
+  def get_init_status(self):
+    if self._use_cc_impl:
+      return self._renderer.GetInitStatus()
+    else:
+      return 'Not Provided'
+
   def reset_image_queue(self):
     if self._use_cc_impl:
       self._renderer.ResetImageQueue()

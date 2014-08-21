@@ -19,6 +19,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <sstream>
+
 #define FRAME_DATA_LEN  (STRAND_LENGTH * 8 * 3)
 
 static const int kMgsStartDelayUs = 500;
@@ -82,6 +84,13 @@ struct Strands {
   Strands& operator=(const Strands& rhs);
 };
 
+enum InitStatus {
+  INIT_UNUSED,
+  INIT_OK,
+  INIT_FAIL,
+  INIT_RESETTING,
+};
+
 class TclController {
  public:
   TclController(
@@ -92,6 +101,8 @@ class TclController {
   int GetId() const { return id_; }
   int GetWidth() const { return width_; }
   int GetHeight() const { return height_; }
+
+  InitStatus GetInitStatus() const { return init_status_; }
 
   bool BuildImage(
       uint8_t* img, int w, int h, EffectMode mode,
@@ -111,10 +122,10 @@ class TclController {
   // Socket communication funtions are invoked from worker thread only.
   void UpdateAutoReset(uint64_t auto_reset_after_no_data_ms);
   void ScheduleReset();
-  bool InitController();
+  InitStatus InitController();
   bool SendFrame(uint8_t* frame_data);
 
-  uint8_t* BuildFrameDataForImage(RgbaImage* img, int id);
+  uint8_t* BuildFrameDataForImage(RgbaImage* img, int id, InitStatus* status);
 
   void ApplyEffect(RgbaImage* image);
   Strands* ConvertImageToStrands(const RgbaImage& image);
@@ -147,12 +158,14 @@ class TclController {
   int id_;
   int width_;
   int height_;
-  bool init_sent_;
+  // TODO(igorc): Do atomic read.
+  volatile InitStatus init_status_;
   RgbGamma gamma_;
   LayoutMap layout_;
   int socket_;
   bool require_reset_;
   uint64_t last_reply_time_;
+  uint64_t reset_start_time_;
   RgbaImage last_image_;
   RgbaImage last_led_image_;
   int last_image_id_;
@@ -164,9 +177,9 @@ class TclController {
 TclController::TclController(
     int id, int width, int height,
     const Layout& layout, double gamma)
-    : id_(id), width_(width), height_(height), init_sent_(false),
+    : id_(id), width_(width), height_(height), init_status_(INIT_UNUSED),
       socket_(-1), require_reset_(true), last_reply_time_(0),
-      last_image_id_(0), frames_sent_after_reply_(0),
+      reset_start_time_(0), last_image_id_(0), frames_sent_after_reply_(0),
       hdr_mode_(HDR_NONE) {
   SetGammaRanges(0, 255, gamma, 0, 255, gamma, 0, 255, gamma);
   PopulateLayoutMap(layout);
@@ -178,7 +191,7 @@ TclController::~TclController() {
 
 void TclController::UpdateAutoReset(uint64_t auto_reset_after_no_data_ms) {
   if (auto_reset_after_no_data_ms <= 0 || require_reset_ ||
-      frames_sent_after_reply_ <= 2) {
+      init_status_ == INIT_RESETTING || frames_sent_after_reply_ <= 2) {
     return;
   }
 
@@ -386,7 +399,9 @@ void TclController::ApplyEffect(RgbaImage* image) {
       image->GetData(), 0, 0, width_, height_, true, true);
 }
 
-uint8_t* TclController::BuildFrameDataForImage(RgbaImage* img, int id) {
+uint8_t* TclController::BuildFrameDataForImage(
+    RgbaImage* img, int id, InitStatus* status) {
+  *status = init_status_;
   ApplyEffect(img);
   Strands* strands = ConvertImageToStrands(*img);
   if (!strands)
@@ -397,7 +412,10 @@ uint8_t* TclController::BuildFrameDataForImage(RgbaImage* img, int id) {
   last_image_id_ = id;
   last_image_ = *img;
   EraseAlpha(last_image_.GetData(), width_, height_);
-  last_led_image_ = strands->led_image;
+
+  // Only show when OK, to make reset status more obvious.
+  if (init_status_ == INIT_OK)
+    last_led_image_ = strands->led_image;
 
   delete strands;
   return frame_data;
@@ -718,33 +736,53 @@ bool TclController::SendPacket(const void* data, int size) {
   return true;
 }
 
-bool TclController::InitController() {
+InitStatus TclController::InitController() {
   static const uint8_t MSG_INIT[] = {0xC5, 0x77, 0x88, 0x00, 0x00};
   static const double MSG_INIT_DELAY = 0.1;
   static const uint8_t MSG_RESET[] = {0xC2, 0x77, 0x88, 0x00, 0x00};
-  static const double MSG_RESET_DELAY = 5;
+  static const uint64_t MSG_RESET_DELAY_MS = 5000;
 
-  if (!Connect())
-    return false;
-  if (init_sent_ && !require_reset_)
-    return true;
-
-  if (require_reset_) {
-    if (init_sent_)
-      fprintf(stderr, "Performing a requested reset\n");
-    if (!SendPacket(MSG_RESET, sizeof(MSG_RESET)))
-      return false;
-    require_reset_ = false;
-    Sleep(MSG_RESET_DELAY);
+  if (!Connect()) {
+    init_status_ = INIT_FAIL;
+    return init_status_;
   }
 
-  if (!SendPacket(MSG_INIT, sizeof(MSG_INIT)))
-    return false;
+  if (init_status_ == INIT_RESETTING) {
+    require_reset_ = false;
+    uint64_t duration = GetCurrentMillis() - reset_start_time_;
+    if (duration < MSG_RESET_DELAY_MS)
+      return init_status_;
+    fprintf(stderr, "Completed a requested reset\n");
+    init_status_ = INIT_UNUSED;
+    reset_start_time_ = 0;
+  }
+
+  if (require_reset_) {
+    fprintf(stderr, "Performing a requested reset\n");
+    if (!SendPacket(MSG_RESET, sizeof(MSG_RESET))) {
+      init_status_ = INIT_FAIL;
+      return init_status_;
+    }
+    require_reset_ = false;
+    init_status_ = INIT_RESETTING;
+    reset_start_time_ = GetCurrentMillis();
+    return init_status_;
+  }
+
+  if (init_status_ == INIT_OK)
+    return init_status_;
+
+  // Either INIT_UNUSED or INIT_FAIL. Init again.
+
+  if (!SendPacket(MSG_INIT, sizeof(MSG_INIT))) {
+    init_status_ = INIT_FAIL;
+    return init_status_;
+  }
   Sleep(MSG_INIT_DELAY);
 
-  init_sent_ = true;
+  init_status_ = INIT_OK;
   SetLastReplyTime();
-  return true;
+  return init_status_;
 }
 
 bool TclController::SendFrame(uint8_t* frame_data) {
@@ -915,6 +953,35 @@ void TclRenderer::SetHdrMode(HdrMode mode) {
 void TclRenderer::SetAutoResetAfterNoDataMs(int value) {
   Autolock l(lock_);
   auto_reset_after_no_data_ms_ = value;
+}
+
+std::string TclRenderer::GetInitStatus() {
+  Autolock l(lock_);
+  std::ostringstream result;
+  for (std::vector<TclController*>::iterator it = controllers_.begin();
+        it != controllers_.end(); ++it) {
+    if (it != controllers_.begin())
+      result << ", ";
+    result << "TCL" << (*it)->GetId() << " = ";
+    switch ((*it)->GetInitStatus()) {
+      case INIT_UNUSED:
+        result << "UNUSED";
+        break;
+      case INIT_OK:
+        result << "OK";
+        break;
+      case INIT_FAIL:
+        result << "FAIL";
+        break;
+      case INIT_RESETTING:
+        result << "RESETTING";
+        break;
+      default:
+        result << "UNKNOWN!?";
+        break;
+    }
+  }
+  return result.str();
 }
 
 std::vector<int> TclRenderer::GetAndClearFrameDelays() {
@@ -1117,7 +1184,8 @@ void TclRenderer::Run() {
       bool failed_init = false;
       for (std::vector<TclController*>::iterator it = controllers_.begin();
             it != controllers_.end(); ++it) {
-        failed_init |= !(*it)->InitController();
+        InitStatus status = (*it)->InitController();
+        failed_init |= (status == INIT_FAIL);
       }
       if (failed_init) {
         Sleep(1);
@@ -1152,11 +1220,14 @@ void TclRenderer::Run() {
           continue;
         }
 
+        InitStatus status = INIT_FAIL;
         uint8_t* frame_data = item.controller_->BuildFrameDataForImage(
-            &item.img_, item.id_);
+            &item.img_, item.id_, &status);
         if (!frame_data) {
-          fprintf(stderr, "Failed to build frame_data for an image on %d\n",
-                  item.controller_->GetId());
+          if (status == INIT_FAIL) {
+            fprintf(stderr, "Failed to build frame_data for an image on %d\n",
+                    item.controller_->GetId());
+          }
           continue;
         }
 
