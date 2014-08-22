@@ -110,5 +110,8 @@ class Player(object):
     def stop_effect(self):
         pass
 
+    def is_playing_effect(self):
+        return False
+        
     def run(self):
         pass

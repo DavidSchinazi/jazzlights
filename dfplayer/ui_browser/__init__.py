@@ -93,6 +93,20 @@ def prev():
     player.prev()
 
 
+@socketio.on('skip-forward', namespace='/player')
+@catch_and_log()
+def skip_forward():
+    print 'Skip forwad'
+    player.skip_forward()
+
+
+@socketio.on('skip-backward', namespace='/player')
+@catch_and_log()
+def skip_backward():
+    print 'Skip backward'
+    player.skip_backward()
+
+
 @socketio.on('volume', namespace='/player')
 @catch_and_log()
 def volume(msg):

@@ -5,7 +5,6 @@ from PIL import Image, ImageFont, ImageDraw
 
 from ..util import create_image
 from ..util import PROJECT_DIR
-from ..player import FRAME_HEIGHT
 from ..effect import Effect, register
 
 _X_STEP = 2

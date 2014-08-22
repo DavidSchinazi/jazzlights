@@ -200,6 +200,10 @@
                      <td>{{ efc.get_name() }}</td>
                      <td><i class="nb-icon fa fa-angle-right"></i></td>
                   </tr>
+                  {% if efn == 'textticker' %}
+                     <td><input id="ticker-text" value="HELLO"></td>
+                     <td>&nbsp;</td>
+                  {% endif %}
                {% endfor %}
             </table>
          </div>
@@ -318,6 +322,12 @@
             $('#next-clip-btn').on('click', function() { 
                socket.emit('next') 
             });
+            $('#stpf-clip-btn').on('click', function() { 
+               socket.emit('skip-forward') 
+            });
+            $('#stpb-clip-btn').on('click', function() { 
+               socket.emit('skip-backward') 
+            });
             $('#prev-preset-btn').on('click', function() { 
                socket.emit('prev-preset') 
             });
@@ -326,7 +336,11 @@
             });
             $('#effects table tr').on('click', function() { 
                console.log( this );
-               socket.emit('play-effect', {name:$(this).attr('effect-id')} ); 
+               var msg = {name:$(this).attr('effect-id')}
+               if (msg.name == 'textticker') {
+                  msg.text = $('#ticker-text').val().toUpperCase();
+               }
+               socket.emit('play-effect',  msg); 
             });
       }
 
