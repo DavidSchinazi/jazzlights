@@ -12,13 +12,13 @@ _X_STEP = 2
 
 class TextTicker(Effect):
 
-  def __init__(self, text='HELLO', duration=None, speed=1.5, color='white', alpha=185):
+  def __init__(self, text='HELLO', duration=None, speed=1, color='white', alpha=185):
+    if duration is None:
+        duration = speed * len(text)
     Effect.__init__(self, duration=duration, mirror=False)
     self._text = text
     self._color = color
     self._alpha = alpha
-    if duration is None:
-        duration = speed * len(text)
 
   def _prepare(self):
     # More founts around: '/usr/share/fonts/truetype/'
