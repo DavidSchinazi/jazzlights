@@ -123,7 +123,7 @@ def play_effect(msg):
 
 @socketio.on('stop-effect', namespace='/player')
 @catch_and_log()
-def stop_effect(msg):
+def stop_effect():
     print 'Stoppig effects'
     player.stop_effect()
 
