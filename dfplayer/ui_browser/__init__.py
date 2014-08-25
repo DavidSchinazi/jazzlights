@@ -121,6 +121,13 @@ def play_effect(msg):
     player.play_effect( **msg )
 
 
+@socketio.on('stop-effect', namespace='/player')
+@catch_and_log()
+def stop_effect(msg):
+    print 'Stoppig effects'
+    player.stop_effect()
+
+
 @socketio.on('next-preset', namespace='/player')
 @catch_and_log()
 def next_preset():

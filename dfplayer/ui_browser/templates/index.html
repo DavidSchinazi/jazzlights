@@ -117,6 +117,7 @@
 
          #ticker-text {
             width:300px;
+            color: #000000;
          }
 
          #status-msg {
@@ -195,7 +196,104 @@
 
          <div id="effects" class="tab-pane">
             <table>
-               {% for efn,efc in effects %}
+               <tr id="stop-effect">
+                  <td>Stop effect</td>
+                  <td><i class="nb-icon fa fa-angle-right"></i></td>
+               </tr>
+               <tr onclick="socket.emit(
+               'play-effect', {name:'textticker', text:'Hello!'});">
+                  <td>Say "Hello!"</td>
+                  <td><i class="nb-icon fa fa-angle-right"></i></td>
+               </tr>
+               <tr onclick="socket.emit(
+               'play-effect', {name:'textticker', text:'DiscoFish loves you!', color: 'pink'})">
+                  <td>Say "DiscoFish loves you!"</td>
+                  <td><i class="nb-icon fa fa-angle-right"></i></td>
+               </tr>
+               <tr onclick="socket.emit(
+               'play-effect', {name:'textticker', text:'DiscoFish is awesome!'})">
+                  <td>Say "DiscoFish is awesome!"</td>
+                  <td><i class="nb-icon fa fa-angle-right"></i></td>
+               </tr>
+               <tr onclick="socket.emit(
+               'play-effect', {name:'textticker', text:'Hey, you, bikers'})">
+                  <td>Say "Hey, you, bikers"</td>
+                  <td><i class="nb-icon fa fa-angle-right"></i></td>
+               </tr>
+               <tr onclick="socket.emit(
+               'play-effect', {name:'textticker', text:'How are you?'})">
+                  <td>Say "How are you?"</td>
+                  <td><i class="nb-icon fa fa-angle-right"></i></td>
+               </tr>
+               <tr onclick="socket.emit(
+               'play-effect', {name:'textticker', text:'Are you having a good time?')}">
+                  <td>Say "Are you having a good time?"</td>
+                  <td><i class="nb-icon fa fa-angle-right"></i></td>
+               </tr>
+               <tr onclick="socket.emit(
+               'play-effect', {name:'textticker', text:'Look at mermaid!'})">
+                  <td>Say "Look at mermaid!"</td>
+                  <td><i class="nb-icon fa fa-angle-right"></i></td>
+               </tr>
+               <tr onclick="socket.emit(
+               'play-effect', {name:'textticker', text:'Hey, sexy'})">
+                  <td>Say "Hey sexy!"</td>
+                  <td><i class="nb-icon fa fa-angle-right"></i></td>
+               </tr>
+               <tr effect-id="textticker">
+                  <td>Say text below:</td>
+                  <td><i class="nb-icon fa fa-angle-right"></i></td>
+               </tr>
+               <tr>
+                  <td><input id="ticker-text" value="HELLO"></td>
+                  <td>&nbsp;</td>
+               </tr>
+               <tr effect-id="randompixels">
+                  <td>Randompixels</td>
+                  <td><i class="nb-icon fa fa-angle-right"></i></td>
+               </tr>
+               <tr onclick="socket.emit(
+               'play-effect', {name:'chameleon', duration:5})">
+                  <td>Chameleon</td>
+                  <td><i class="nb-icon fa fa-angle-right"></i></td>
+               </tr>
+               <tr onclick="socket.emit(
+               'play-effect', {name:'solidcolor', duration:3, color:'#ff0000'})">
+                  <td>Solid red</td>
+                  <td><i class="nb-icon fa fa-angle-right"></i></td>
+               </tr>
+               <tr onclick="socket.emit(
+               'play-effect', {name:'solidcolor', duration:3, color:'#00ff00'})">
+                  <td>Solid green</td>
+                  <td><i class="nb-icon fa fa-angle-right"></i></td>
+               </tr>
+               <tr onclick="socket.emit(
+               'play-effect', {name:'solidcolor', duration:3, color:'orange'})">
+                  <td>Solid orange</td>
+                  <td><i class="nb-icon fa fa-angle-right"></i></td>
+               </tr>
+               <tr onclick="socket.emit(
+               'play-effect', {name:'blink', duration:2, freq:8, color:'#ff0000'})">
+                  <td>Blinking red</td>
+                  <td><i class="nb-icon fa fa-angle-right"></i></td>
+               </tr>
+               <tr onclick="socket.emit(
+               'play-effect', {name:'blink', duration:2, freq:8, color:'#00ff00'})">
+                  <td>Blinking green</td>
+                  <td><i class="nb-icon fa fa-angle-right"></i></td>
+               </tr>
+               <tr onclick="socket.emit(
+               'play-effect', {name:'blink', duration:2, freq:8, color:'#0000ff'})">
+                  <td>Blinking blue</td>
+                  <td><i class="nb-icon fa fa-angle-right"></i></td>
+               </tr>
+               <tr effect-id="flick">
+                  <td>Flick</td>
+                  <td><i class="nb-icon fa fa-angle-right"></i></td>
+               </tr>
+
+
+               <!-- {% for efn,efc in effects %}
                   <tr effect-id="{{efn}}">
                      <td>{{ efc.get_name() }}</td>
                      <td><i class="nb-icon fa fa-angle-right"></i></td>
@@ -205,6 +303,7 @@
                      <td>&nbsp;</td>
                   {% endif %}
                {% endfor %}
+               -->
             </table>
          </div>
          <div id="footer">
@@ -283,7 +382,7 @@
          function init() {
             navigate( { view: 'disconnected' } );
 
-            var socket = io.connect('http://' + document.domain + ':' + location.port + '/player' );
+            socket = io.connect('http://' + document.domain + ':' + location.port + '/player' );
             socket.on('connect', function() {
                   navigate( { view:'effects' } );
             });
@@ -334,13 +433,18 @@
             $('#next-preset-btn').on('click', function() { 
                socket.emit('next-preset') 
             });
+            $('#stop-effect').on('click', function() { 
+               socket.emit('stop-effect') 
+            });
             $('#effects table tr').on('click', function() { 
                console.log( this );
                var msg = {name:$(this).attr('effect-id')}
-               if (msg.name == 'textticker') {
-                  msg.text = $('#ticker-text').val().toUpperCase();
+               if (msg.name) {
+                  if (msg.name == 'textticker') {
+                     msg.text = $('#ticker-text').val().toUpperCase();
+                  }
+                  socket.emit('play-effect',  msg);                   
                }
-               socket.emit('play-effect',  msg); 
             });
       }
 
