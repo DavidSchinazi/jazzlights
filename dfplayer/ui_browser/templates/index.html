@@ -273,17 +273,17 @@
                   <td><i class="nb-icon fa fa-angle-right"></i></td>
                </tr>
                <tr onclick="socket.emit(
-               'play-effect', {name:'blink', duration:2, freq:8, color:'#ff0000'})">
+               'play-effect', {name:'blink', duration:2, freq:8, fgcolor:'#ff0000'})">
                   <td>Blinking red</td>
                   <td><i class="nb-icon fa fa-angle-right"></i></td>
                </tr>
                <tr onclick="socket.emit(
-               'play-effect', {name:'blink', duration:2, freq:8, color:'#00ff00'})">
+               'play-effect', {name:'blink', duration:2, freq:8, fgcolor:'#00ff00'})">
                   <td>Blinking green</td>
                   <td><i class="nb-icon fa fa-angle-right"></i></td>
                </tr>
                <tr onclick="socket.emit(
-               'play-effect', {name:'blink', duration:2, freq:8, color:'#0000ff'})">
+               'play-effect', {name:'blink', duration:2, freq:8, fgcolor:'#0000ff'})">
                   <td>Blinking blue</td>
                   <td><i class="nb-icon fa fa-angle-right"></i></td>
                </tr>
@@ -412,7 +412,8 @@
             });
 
             $('#reconnect-btn').on('click', function() { 
-               location.reload(); 
+               console.log( "reconnecting");
+               window.location.reload(); 
             });
 
             $('#prev-clip-btn').on('click', function() { 
