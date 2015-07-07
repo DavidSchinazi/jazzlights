@@ -14,6 +14,11 @@ directory = sys.argv[1]
 if os.path.exists(directory + '/CMakeCache.txt'):
   os.unlink(directory + '/CMakeCache.txt')
 
-subprocess.check_call(['cmake', '.'], cwd=directory)
-subprocess.check_call(['make', '-j', '2'], cwd=directory)
+build_dir = directory + '/build'
+
+if not os.path.exists(build_dir):
+  os.mkdir(build_dir)
+
+subprocess.check_call(['cmake', '-L', '..'], cwd=build_dir)
+subprocess.check_call(['make', '-j', '2'], cwd=build_dir)
 

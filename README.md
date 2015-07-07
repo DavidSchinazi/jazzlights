@@ -145,4 +145,28 @@ will take a while.
 After the player is running you can control it via browser UI. Navigate to 
 http://*yourhost*:8080 and enjoy :)
 
+
+Installing OpenKinect (work in progress)
+----------------------------------------
+
+  Note that the first command will likely expect sudo password.
+
+  wget -O- http://neuro.debian.net/lists/$(lsb_release -cs).us-nh | sudo tee /etc/apt/sources.list.d/neurodebian.sources.list
+  sudo apt-key adv --recv-keys --keyserver pgp.mit.edu 2649A5A9
+  sudo apt-get update
+  sudo apt-get install freenect
+
+  Copy https://github.com/OpenKinect/libfreenect/blob/master/platform/linux/udev/51-kinect.rules
+    into /etc/udev/rules.d/51-kinect.rules
+  sudo udevadm control --reload-rules
+
+  Or compile:
+    sudo apt-get install git-core cmake freeglut3-dev pkg-config build-essential libxmu-dev libxi-dev libusb-1.0-0-dev
+    git clone https://github.com/OpenKinect/libfreenect.git
+    mkdir build ; cd build ; cmake -L ..
+    make
+
+  You may want to modify examples/glview.c to remove MOTOR subdevice.
+
+
 Happy hacking!

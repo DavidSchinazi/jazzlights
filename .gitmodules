@@ -7,3 +7,6 @@
 [submodule "mpd"]
 	path = mpd
 	url = https://bitbucket.org/discofish/mpd.git
+[submodule "libfreenect"]
+	path = libfreenect
+	url = https://github.com/OpenKinect/libfreenect.git

@@ -1,13 +1,34 @@
 .PHONY: all clean very-clean develop run
 
+SOURCES := \
+	dfplayer/tcl_renderer.cc \
+	dfplayer/visualizer.cc \
+	dfplayer/input_alsa.cc \
+	dfplayer/kinect.cc \
+	dfplayer/utils.cc \
+	dfplayer/renderer_wrap.cxx
+
+LINK_LIBS := \
+	-lpthread -lm -ldl -lasound -lGL -lopencv_core -lopencv_imgproc
+
+LINK_DEPS := \
+	dfplayer/libprojectM.so.2 \
+	dfplayer/libfreenect.so.0.5
+
+COPTS := \
+	-std=c++0x -Wall -Wextra \
+	-g -ggdb3 -fPIC \
+	-shared `python-config --includes` \
+	-Wl,-rpath,./dfplayer
+
 all: develop cpp clips
 
 develop: env
 	env/bin/python setup.py develop
 
-cpp: dfplayer/libprojectM.so.2
+cpp: $(LINK_DEPS)
 	swig -python -c++ `python-config --includes` dfplayer/renderer.i
-	g++ -std=c++0x -Wall -Wextra -g -ggdb3 -fPIC -shared `python-config --includes` -Wl,-rpath,./dfplayer -o dfplayer/_renderer_cc.so dfplayer/tcl_renderer.cc dfplayer/visualizer.cc dfplayer/input_alsa.cc dfplayer/utils.cc dfplayer/renderer_wrap.cxx -lpthread -lm -ldl -lasound -lGL -lopencv_core -lopencv_imgproc dfplayer/libprojectM.so.2
+	g++ $(COPTS) -o dfplayer/_renderer_cc.so $(SOURCES) $(LINK_LIBS) $(LINK_DEPS)
 
 run: develop cpp
 	env/bin/dfplayer --listen 127.0.0.1:8080
@@ -16,13 +37,21 @@ clips: develop
 	-rm -rf env/playlists
 	env/bin/dfprepr clips
 
-projectm/src/libprojectM/libprojectM.so.2:
+projectm/src/libprojectM/build/libprojectM.so.2:
 	./build_cmake.py projectm/src/libprojectM
-	cp projectm/src/libprojectM/libprojectM.so projectm/src/libprojectM/libprojectM.so.2
+	cp projectm/src/libprojectM/build/libprojectM.so projectm/src/libprojectM/build/libprojectM.so.2
+
+libfreenect/build/lib/libfreenect.so.0.5:
+	./build_cmake.py libfreenect
+	cp libfreenect/build/lib/libfreenect.so libfreenect/build/lib/libfreenect.so.0.5
 
 dfplayer/libprojectM.so.2:
 	./build_cmake.py projectm/src/libprojectM
-	cp projectm/src/libprojectM/libprojectM.so dfplayer/libprojectM.so.2
+	cp projectm/src/libprojectM/build/libprojectM.so dfplayer/libprojectM.so.2
+
+dfplayer/libfreenect.so.0.5:
+	./build_cmake.py libfreenect
+	cp libfreenect/build/lib/libfreenect.so dfplayer/libfreenect.so.0.5
 
 clean:
 	find . -name '*.pyc' -exec rm -f {} +
