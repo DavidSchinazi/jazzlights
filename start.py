@@ -24,6 +24,7 @@ def main():
   arg_parser.add_argument('--max', action='store_true')
   arg_parser.add_argument('--nosound', action='store_true')
   arg_parser.add_argument('--prod', action='store_true')
+  arg_parser.add_argument('--enable-kinect', action='store_true')
   args = arg_parser.parse_args()
 
   if args.prod:
@@ -41,6 +42,8 @@ def main():
     params.append('--disable-net')
   if args.disable_fin:
     params.append('--disable-fin')
+  if args.enable_kinect:
+    params.append('--enable-kinect')
   if args.mpd:
     params.append('--mpd')
   if args.max or args.prod:

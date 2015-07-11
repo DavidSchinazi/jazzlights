@@ -9,8 +9,6 @@ namespace std {
   %template(vectord) vector<double>;
 };
 
-%newobject Visualizer::GetAndClearImage();
-
 %typemap(out) Bytes* {
   if ($1) {
     $result = PyString_FromStringAndSize((const char*) $1->GetData(), $1->GetLen());
@@ -33,6 +31,7 @@ namespace std {
 }
 
 %{
+#include "kinect.h"
 #include "tcl_renderer.h"
 #include "visualizer.h"
 %}
@@ -40,6 +39,7 @@ namespace std {
 %inline %{
 %}
 
+%include "kinect.h"
 %include "tcl_renderer.h"
 %include "visualizer.h"
 

@@ -49,7 +49,7 @@ void AddTimeMillis(struct timespec* time, uint64_t increment) {
   time->tv_nsec = nsec % 1000000000;
 }
 
-Bytes::Bytes(void* data, int len)
+Bytes::Bytes(const void* data, int len)
     : data_(NULL), len_(0) {
   SetData(data, len);
 }
@@ -65,10 +65,16 @@ void Bytes::Clear() {
   len_ = 0;
 }
 
-void Bytes::SetData(void* data, int len) {
+void Bytes::SetData(const void* data, int len) {
   Clear();
   data_ = new uint8_t[len];
   memcpy(data_, data, len);
+  len_ = len;
+}
+
+void Bytes::MoveOwnership(void* data, int len) {
+  Clear();
+  data_ = reinterpret_cast<uint8_t*>(data);
   len_ = len;
 }
 

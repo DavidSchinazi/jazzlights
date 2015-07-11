@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <unistd.h>
 
 #define REPORT_ERRNO(name)                           \
   fprintf(stderr, "Failure in '%s' call: %d, %s\n",  \
@@ -23,7 +24,7 @@
     fprintf(stderr, "EXITING with check-fail at %s (%s:%d)"     \
             ". Condition = '" TOSTRING(cond) "'\n",             \
             __FILE__, __FUNCTION__, __LINE__);                  \
-    exit(-1);                                                   \
+    _exit(-1);                                                  \
   }
 
 #define COPY_PIXEL(dst, dst_pos, src, src_pos)                  \
@@ -59,10 +60,11 @@ class Autolock {
 
 // Contains array of bytes and deallocates in destructor.
 struct Bytes {
-  Bytes(void* data, int len);
+  Bytes(const void* data, int len);
   ~Bytes();
 
-  void SetData(void* data, int len);
+  void SetData(const void* data, int len);
+  void MoveOwnership(void* data, int len);
   uint8_t* GetData() const { return data_; }
   int GetLen() const { return len_; }
 

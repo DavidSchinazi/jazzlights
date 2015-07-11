@@ -26,6 +26,7 @@ from .stats import Stats
 from .util import catch_and_log, PROJECT_DIR, PACKAGE_DIR, VENV_DIR
 from .util import get_time_millis
 from .tcl_renderer import TclRenderer
+from .renderer_cc import KinectRange
 from .renderer_cc import Visualizer
 
 FPS = 15
@@ -81,7 +82,8 @@ audio_output {
 
 class Player(object):
 
-    def __init__(self, playlist, use_mpd, enable_net, enable_fin):
+    def __init__(
+          self, playlist, use_mpd, enable_net, enable_fin, enable_kinect):
         self._update_card_id()
 
         self._enable_fin = False
@@ -130,8 +132,12 @@ class Player(object):
 
         self._use_visualization = False
         self._visualizer = None
-
         self.toggle_visualization()
+
+        self._use_kinect = False
+        self._kinect = None
+        if enable_kinect:
+            self.toggle_kinect()
 
         if not self._line_in:
             self._load_playlist()
@@ -554,6 +560,14 @@ class Player(object):
             self._visualizer.UseAlsa(self._sound_input)
         else:
             self._visualizer.UseAlsa('')
+
+    def toggle_kinect(self):
+        if not _USE_CC_TCL:
+            return
+        self._use_kinect = not self._use_kinect
+        if not self._kinect:
+            self._kinect = KinectRange.GetInstance()
+            self._kinect.Start(15)
 
     def select_next_preset(self, is_forward):
         if not self._use_visualization:
