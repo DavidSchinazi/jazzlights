@@ -24,7 +24,7 @@
     fprintf(stderr, "EXITING with check-fail at %s (%s:%d)"     \
             ". Condition = '" TOSTRING(cond) "'\n",             \
             __FILE__, __FUNCTION__, __LINE__);                  \
-    _exit(-1);                                                  \
+    exit(-1);                                                   \
   }
 
 #define COPY_PIXEL(dst, dst_pos, src, src_pos)                  \
@@ -60,6 +60,7 @@ class Autolock {
 
 // Contains array of bytes and deallocates in destructor.
 struct Bytes {
+  Bytes() : data_(NULL), len_(0) {}
   Bytes(const void* data, int len);
   ~Bytes();
 

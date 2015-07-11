@@ -168,5 +168,7 @@ Installing OpenKinect (work in progress)
 
   You may want to modify examples/glview.c to remove MOTOR subdevice.
 
+  Issues:
+    https://github.com/OpenKinect/libfreenect/issues/402
 
 Happy hacking!

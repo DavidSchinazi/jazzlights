@@ -15,11 +15,24 @@
 #include "utils.h"
 #include "../libfreenect/include/libfreenect.h"
 
-#define CHECK_FREENECT(a)  CHECK(!(a))
+// TODO(igorc): Add atexit() to stop this, tcl and visualizer threads,
+// and to unblock all waiting Python threads.
+
+#define CHECK_FREENECT(call)                                            \
+    { int res__ = (call);                                               \
+      if (res__) {                                                      \
+        fprintf(stderr, "EXITING with check-fail at %s (%s:%d): %d"     \
+                ". Condition = '" TOSTRING(call) "'\n",                 \
+                __FILE__, __FUNCTION__, __LINE__, res__);               \
+        exit(-1);                                                       \
+      } }
+
 
 #define DEVICE_WIDTH     640
 #define DEVICE_HEIGHT    480
 #define DEVICE_ROW_SIZE  (DEVICE_WIDTH * 3)
+
+#define MAX_DEVICE_OPEN_ATTEMPTS   10
 
 ///////////////////////////////////////////////////////////////////////////////
 // KinectDevice
@@ -81,6 +94,8 @@ KinectDevice::~KinectDevice() {
 
 void KinectDevice::Setup() {
   CHECK_FREENECT(freenect_set_led(device_, LED_RED));
+  freenect_update_tilt_state(device_);
+  freenect_get_tilt_state(device_);
   // http://openkinect.org/wiki/Protocol_Documentation#RGB_Camera
   // !!! 0: uncompressed 16 bit depth stream between 0x0000 and 0x07ff
   // (2^11-1). Causes bandwidth issues; will drop packets.
@@ -93,8 +108,12 @@ void KinectDevice::Setup() {
   CHECK_FREENECT(freenect_set_depth_buffer(device_, depth_data1_));
   CHECK_FREENECT(freenect_set_video_buffer(device_, camera_data1_));
 
-  CHECK_FREENECT(freenect_start_depth(device_));
+  fprintf(stderr, "DEBUG: Before freenect_start_video\n");
   CHECK_FREENECT(freenect_start_video(device_));
+  fprintf(stderr, "DEBUG: Before freenect_start_depth\n");
+  // TODO(igorc): Reduce the bandwith and reenable depth image.
+  // CHECK_FREENECT(freenect_start_depth(device_));
+  fprintf(stderr, "DEBUG: After freenect_start_depth\n");
 }
 
 void KinectDevice::Teardown() {
@@ -234,8 +253,23 @@ void KinectRangeImpl::Start(int fps) {
   fprintf(stderr, "Found %d Kinect devices\n", device_count);
 
   for (int i = 0; i < device_count; ++i) {
+    fprintf(stderr, "Connecting to Kinect #%d\n", i);
+    int openAttempt = 1;
     freenect_device* device = nullptr;
-    CHECK_FREENECT(freenect_open_device(context_, &device, i));
+    while (true) {
+      int res = freenect_open_device(context_, &device, i);
+      if (!res)
+	break;
+      if (openAttempt >= MAX_DEVICE_OPEN_ATTEMPTS) {
+	CHECK_FREENECT(res);
+      }
+      Sleep(0.5);
+      fprintf(
+	  stderr, "Retrying freenect_open_device on #%d after error %d\n",
+	  i, res);
+      ++openAttempt;
+    }
+
     freenect_set_depth_callback(device, OnDepthCallback);
     freenect_set_video_callback(device, OnCameraCallback);
     KinectDevice* kinectDevice = new KinectDevice(device);
@@ -251,6 +285,8 @@ void KinectRangeImpl::Start(int fps) {
 
   CHECK(!pthread_create(&merger_thread_, NULL, RunMergerLoop, this));
   CHECK(!pthread_create(&freenect_thread_, NULL, RunFreenectLoop, this));
+
+  fprintf(stderr, "Finished connected to Kinect devices\n");
 }
 
 // static
@@ -260,9 +296,8 @@ void* KinectRangeImpl::RunFreenectLoop(void* arg) {
 }
 
 void KinectRangeImpl::RunFreenectLoop() {
-  while (!should_exit_ && freenect_process_events(context_) >= 0) {
-    // Let callbacks do the work.
-    fprintf(stderr, "RunFreenectLoop\n");
+  while (!should_exit_) {
+    CHECK_FREENECT(freenect_process_events(context_));
   }
 }
 
@@ -295,7 +330,6 @@ void KinectRangeImpl::HandleDepthData(
   KinectDevice* device = FindDeviceLocked(dev);
   CHECK(device);
   device->HandleDepthData(depth_data);
-  fprintf(stderr, "HandleDepthData\n");
 }
 
 void KinectRangeImpl::HandleCameraData(
@@ -304,7 +338,6 @@ void KinectRangeImpl::HandleCameraData(
   KinectDevice* device = FindDeviceLocked(dev);
   CHECK(device);
   device->HandleCameraData(rgb_data);
-  fprintf(stderr, "HandleCameraData\n");
 }
 
 // static
@@ -423,7 +456,8 @@ Bytes* KinectRangeImpl::GetAndClearLastCameraImage() {
       dst_row[3] = 0;
     }
   }
-  Bytes* result = new Bytes(dst, dst_size);
+  Bytes* result = new Bytes();
+  result->MoveOwnership(dst, dst_size);
   has_new_camera_image_ = false;
   return result;
 }
