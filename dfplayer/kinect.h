@@ -14,11 +14,14 @@ class KinectRange {
   KinectRange() {}
   virtual ~KinectRange() {}
 
+  virtual void EnableCamera() = 0;
+  virtual void EnableDepth() = 0;
   virtual void Start(int fps) = 0;
 
   // These functions are only valid after Start().
   virtual int GetWidth() const = 0;
   virtual int GetHeight() const = 0;
+  virtual int GetDepthDataLength() const = 0;
   virtual void GetDepthData(uint8_t* dst) const = 0;
   virtual void GetCameraData(uint8_t* dst) const = 0;
 

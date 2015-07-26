@@ -567,6 +567,7 @@ class Player(object):
         self._use_kinect = not self._use_kinect
         if not self._kinect:
             self._kinect = KinectRange.GetInstance()
+            self._kinect.EnableDepth()
             self._kinect.Start(15)
 
     def select_next_preset(self, is_forward):

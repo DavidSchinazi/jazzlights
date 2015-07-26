@@ -171,4 +171,14 @@ Installing OpenKinect (work in progress)
   Issues:
     https://github.com/OpenKinect/libfreenect/issues/402
 
+  Installing Raspbian on BananaPi:
+    Download and unzip M1 build from http://www.bananapi.com/index.php/download
+    Insert SD card, look for device name in `sudo fdisk -l` (e.g. 8GB size)
+    sudo dd if=2015-01-31-raspbian-bpi-r1.img of=/dev/sdX bs=1M
+    Boot BananaPi, open `sudo raspi-config`:
+      Extend partion size
+      Change locale to en-US
+      Reboot
+    
+
 Happy hacking!
