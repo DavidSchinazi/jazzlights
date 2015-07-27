@@ -173,7 +173,7 @@ class KinectRangeImpl : public KinectRange {
   void GetDepthData(uint8_t* dst) const override;
   void GetCameraData(uint8_t* dst) const override;
 
-  Bytes* GetAndClearLastDepthImage() override;
+  Bytes* GetAndClearLastDepthColorImage() override;
   Bytes* GetAndClearLastCameraImage() override;
 
  private:
@@ -414,8 +414,8 @@ void KinectRangeImpl::MergeImages() {
 
 void KinectRangeImpl::ContrastDepth() {
   // Blur the depth image to reduce noise.
-  // TODO(igorc): Try to reduce CPU usage here (using 10% now).
-  const int kernel_size = 4;
+  // TODO(igorc): Try to reduce CPU usage here (using 10% now?).
+  const int kernel_size = 7;
   cv::blur(
       depth_data_orig_, depth_data_blur_,
       cv::Size(kernel_size, kernel_size), cv::Point(-1,-1));
@@ -509,11 +509,30 @@ void KinectRangeImpl::GetCameraData(uint8_t* dst) const {
 	 camera_data_.total() * camera_data_.elemSize());
 }
 
-Bytes* KinectRangeImpl::GetAndClearLastDepthImage() {
+Bytes* KinectRangeImpl::GetAndClearLastDepthColorImage() {
   Autolock l(merger_mutex_);
   if (!has_new_depth_image_)
     return NULL;
-  Bytes* result = new Bytes(depth_data_blur_.data, GetDepthDataLength());
+
+  // Expand range to 0..255.
+  double min = 0;
+  double max = 0;
+  cv::minMaxIdx(depth_data_blur_, &min, &max);
+  cv::Mat adjMap;
+  float scale = 255 / (max - min);
+  depth_data_blur_.convertTo(adjMap, CV_8UC1, scale, -min * scale);
+
+  // Color-code the depth map.
+  cv::Mat coloredMap;
+  cv::applyColorMap(adjMap, coloredMap, cv::COLORMAP_JET);
+
+  // Convert to RGB.
+  cv::Mat coloredMapRgb;
+  cv::cvtColor(coloredMap, coloredMapRgb, CV_BGR2RGB);
+
+  Bytes* result = new Bytes(
+      coloredMapRgb.data,
+      coloredMapRgb.total() * coloredMapRgb.elemSize());
   has_new_depth_image_ = false;
   return result;
 }

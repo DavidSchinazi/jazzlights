@@ -59,7 +59,7 @@ class PlayerApp(Frame):
         img1_width = int(WIN_WIDTH * 0.95)
         self._img1_size = (img1_width, int(img1_width / img1_aspect))
 
-        if self.player.is_fin_enabled():
+        if self.player.is_fin_enabled() or self.player.is_kinect_enabled():
             text_y = 0.07
             img1_y = 0.28
             img2_y = 0.56
@@ -85,9 +85,18 @@ class PlayerApp(Frame):
             # The fin dimensions are 150x240 inches.
             self._img3_size = (img3_width, int(img3_width * 1.1))
             self._img3 = ImageTk.PhotoImage('RGBA', self._img3_size, gamma=2.2)
+            left_scale = 0.60 if self.player.is_kinect_enabled() else 0.65
             self._canvas.create_image(
-                int(WIN_WIDTH * 0.65), int(WIN_HEIGHT * 0.05),
+                int(WIN_WIDTH * left_scale), int(WIN_HEIGHT * 0.05),
                 anchor='nw', image=self._img3)
+
+        if self.player.is_kinect_enabled():
+            img4_width = int(WIN_WIDTH * 0.15)
+            self._img4_size = (img4_width, int(img4_width * 0.7))
+            self._img4 = ImageTk.PhotoImage('RGB', self._img4_size, gamma=2.2)
+            self._canvas.create_image(
+                int(WIN_WIDTH * 0.8), int(WIN_HEIGHT * 0.08),
+                anchor='nw', image=self._img4)
 
         self._main_label = self._canvas.create_text(
             (left_x, WIN_HEIGHT * text_y),
@@ -148,6 +157,7 @@ class PlayerApp(Frame):
         # Always use LED image as the first image.
         frame1 = images[2].copy() if images[2] else None
         frame3 = images[3].copy() if images[3] else None
+        frame4 = images[4].copy() if images[4] else None
 
         crop_rect = None
         frame_size = self.player.get_frame_size()
@@ -178,6 +188,8 @@ class PlayerApp(Frame):
             self._img2.paste(frame2.resize(self._img1_size))
         if frame3:
             self._img3.paste(frame3.resize(self._img3_size))
+        if frame4:
+            self._img4.paste(frame4.resize(self._img4_size))
 
     def update(self):
         try:

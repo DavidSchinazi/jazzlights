@@ -25,7 +25,7 @@ class KinectRange {
   virtual void GetDepthData(uint8_t* dst) const = 0;
   virtual void GetCameraData(uint8_t* dst) const = 0;
 
-  virtual Bytes* GetAndClearLastDepthImage() = 0;
+  virtual Bytes* GetAndClearLastDepthColorImage() = 0;
   virtual Bytes* GetAndClearLastCameraImage() = 0;
 
  private:

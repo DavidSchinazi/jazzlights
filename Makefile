@@ -9,7 +9,7 @@ SOURCES := \
 	dfplayer/renderer_wrap.cxx
 
 LINK_LIBS := \
-	-lpthread -lm -ldl -lasound -lGL -lopencv_core -lopencv_imgproc
+	-lpthread -lm -ldl -lasound -lGL -lopencv_core -lopencv_imgproc -lopencv_contrib
 
 LINK_DEPS := \
 	dfplayer/libprojectM.so.2 \

@@ -134,6 +134,7 @@ class Player(object):
         self._visualizer = None
         self.toggle_visualization()
 
+        self._is_kinect_enabled = enable_kinect
         self._use_kinect = False
         self._kinect = None
         if enable_kinect:
@@ -149,6 +150,9 @@ class Player(object):
 
     def is_fin_enabled(self):
         return self._enable_fin
+
+    def is_kinect_enabled(self):
+        return self._is_kinect_enabled
 
     def __str__(self):
         elapsed_sec = int(self.elapsed_time)
@@ -562,7 +566,7 @@ class Player(object):
             self._visualizer.UseAlsa('')
 
     def toggle_kinect(self):
-        if not _USE_CC_TCL:
+        if not _USE_CC_TCL or not self._is_kinect_enabled:
             return
         self._use_kinect = not self._use_kinect
         if not self._kinect:
@@ -636,10 +640,21 @@ class Player(object):
         if self._enable_fin:
             last_led_image_fin = \
                 self._tcl.get_and_clear_last_led_image(TCL_FIN)
+        last_depth_image = self._get_depth_image()
         duration_ms = int(round((time.time() - start_time) * 1000))
         self._render_durations.add(duration_ms)
         return (orig_image, last_image, last_led_image_main,
-                last_led_image_fin)
+                last_led_image_fin, last_depth_image)
+
+    def _get_depth_image(self):
+        if not self._use_kinect:
+            return None
+        img_data = self._kinect.GetAndClearLastDepthColorImage()
+        if not img_data or len(img_data) == 0:
+            return None
+        return Image.fromstring(
+            'RGB', (self._kinect.GetWidth(), self._kinect.GetHeight()),
+            img_data)
 
     def _get_frame_images_old(self):
         elapsed_time = self.elapsed_time
@@ -658,7 +673,7 @@ class Player(object):
         self._tcl.send_frame(TCL_MAIN, new_frame, frame_num, delay_ms)
         duration_ms = int(round((time.time() - start_time) * 1000))
         self._render_durations.add(duration_ms)
-        return (None, new_frame, None)
+        return (None, new_frame, None, None, None)
 
     def play_effect(self, name, **kwargs):
         logging.info("Playing %s: %s", name, kwargs)
