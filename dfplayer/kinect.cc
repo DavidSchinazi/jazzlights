@@ -55,7 +55,7 @@ class KinectDevice {
 
   const freenect_device* device() { return device_; }
   const uint8_t* last_camera_data() const { return last_camera_data_; }
-  const uint8_t* last_depth_data() const { return last_depth_data_; }
+  const uint16_t* last_depth_data() const { return last_depth_data_; }
 
   bool CheckAndClearCameraUpdate();
   bool CheckAndClearDepthUpdate();
@@ -67,10 +67,10 @@ class KinectDevice {
   freenect_device* device_;
   uint8_t* camera_data1_;
   uint8_t* camera_data2_;
-  uint8_t* depth_data1_;
-  uint8_t* depth_data2_;
+  uint16_t* depth_data1_;
+  uint16_t* depth_data2_;
   uint8_t* last_camera_data_ = nullptr;
-  uint8_t* last_depth_data_ = nullptr;
+  uint16_t* last_depth_data_ = nullptr;
   bool has_camera_update_ = false;
   bool has_depth_update_ = false;
 };
@@ -80,10 +80,8 @@ KinectDevice::KinectDevice(freenect_device* device) : device_(device) {
   int camera_data_size = DEVICE_PIXELS * 3;
   camera_data1_ = new uint8_t[camera_data_size];
   camera_data2_ = new uint8_t[camera_data_size];
-  // Depth data will be 10-bit packed, so it will take less space.
-  int depth_data_size = DEVICE_PIXELS * 2;
-  depth_data1_ = new uint8_t[depth_data_size];
-  depth_data2_ = new uint8_t[depth_data_size];
+  depth_data1_ = new uint16_t[DEVICE_PIXELS];
+  depth_data2_ = new uint16_t[DEVICE_PIXELS];
 }
 
 KinectDevice::~KinectDevice() {
@@ -103,7 +101,7 @@ void KinectDevice::Setup(bool camera_enabled, bool depth_enabled) {
   // TODO(igorc): Try switching to compressed UYVY and depth streams.
   CHECK_FREENECT(freenect_set_depth_mode(
       device_, freenect_find_depth_mode(
-	  FREENECT_RESOLUTION_MEDIUM, FREENECT_DEPTH_10BIT_PACKED)));
+	  FREENECT_RESOLUTION_MEDIUM, FREENECT_DEPTH_MM)));
   // Use YUV_RGB as it forces 15Hz refresh rate and takes 2 bytes per pixel.
   CHECK_FREENECT(freenect_set_video_mode(
       device_, freenect_find_video_mode(
@@ -139,7 +137,7 @@ bool KinectDevice::CheckAndClearCameraUpdate() {
 }
 
 void KinectDevice::HandleDepthData(void* depth_data) {
-  last_depth_data_ = reinterpret_cast<uint8_t*>(depth_data);
+  last_depth_data_ = reinterpret_cast<uint16_t*>(depth_data);
   CHECK_FREENECT(freenect_set_depth_buffer(
       device_,
       last_depth_data_ == depth_data1_ ? depth_data2_ : depth_data2_));
@@ -195,7 +193,7 @@ class KinectRangeImpl : public KinectRange {
   void MergeImages();
   void ContrastDepth();
   bool CopyCameraDataLocked(const uint8_t* src, int device_idx);
-  bool CopyDepthDataLocked(const uint8_t* src, int device_idx);
+  bool CopyDepthDataLocked(const uint16_t* src, int device_idx);
 
   int fps_;
   bool camera_enabled_ = false;
@@ -212,6 +210,9 @@ class KinectRangeImpl : public KinectRange {
   cv::Mat depth_data_orig_;
   cv::Mat depth_data_blur_;
   cv::Mat depth_data_range_;
+  cv::Mat depth_data_range_copy_;
+  cv::Mat erode_element_;
+  cv::Mat dilate_element_;
   bool has_new_depth_image_ = false;
   bool has_new_camera_image_ = false;
 };
@@ -228,7 +229,10 @@ KinectRangeImpl* KinectRangeImpl::GetInstanceImpl() {
   return reinterpret_cast<KinectRangeImpl*>(GetInstance());
 }
 
-KinectRangeImpl::KinectRangeImpl() : fps_(15) {}
+KinectRangeImpl::KinectRangeImpl() : fps_(15) {
+  erode_element_ = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
+  dilate_element_ = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(8, 8));
+}
 
 KinectRangeImpl::~KinectRangeImpl() {
   should_exit_ = true;
@@ -297,13 +301,11 @@ void KinectRangeImpl::Start(int fps) {
   }
 
   camera_data_.create(DEVICE_HEIGHT, DEVICE_WIDTH * device_count, CV_8UC3);
-  depth_data_orig_.create(DEVICE_HEIGHT, DEVICE_WIDTH * device_count, CV_8UC1);
-  depth_data_blur_.create(DEVICE_HEIGHT, DEVICE_WIDTH * device_count, CV_8UC1);
-  depth_data_range_.create(DEVICE_HEIGHT, DEVICE_WIDTH * device_count, CV_8UC1);
+  depth_data_orig_.create(DEVICE_HEIGHT, DEVICE_WIDTH * device_count, CV_16UC1);
+  depth_data_blur_.create(DEVICE_HEIGHT, DEVICE_WIDTH * device_count, CV_16UC1);
   camera_data_.setTo(cv::Scalar(0, 0, 0));
   depth_data_orig_.setTo(cv::Scalar(0));
   depth_data_blur_.setTo(cv::Scalar(0));
-  depth_data_range_.setTo(cv::Scalar(0));
 
   CHECK(!pthread_create(&merger_thread_, NULL, RunMergerLoop, this));
   CHECK(!pthread_create(&freenect_thread_, NULL, RunFreenectLoop, this));
@@ -424,19 +426,26 @@ void KinectRangeImpl::ContrastDepth() {
   // The depth range is approximately 3 meters. The height of the car
   // is approximately the same. We want to detect objects in the range
   // from 1 to 1.5 meters away from the Kinect.
-  const uint8_t min_threshold = static_cast<uint8_t>(256 / 3);
-  const uint8_t max_threshold = static_cast<uint8_t>(256 / 2);
-  depth_data_blur_.copyTo(depth_data_range_);
-  uint8_t* range_data = reinterpret_cast<uint8_t*>(depth_data_range_.data);
-  int data_len = depth_data_range_.total();
-  for (int i = 0; i < data_len; ++i) {
-    uint8_t b = range_data[i];
-    if (b >= min_threshold && b <= max_threshold) {
-      range_data[i] = 1;
-    } else {
-      range_data[i] = 0;
-    }
-  }
+  const uint16_t min_threshold = 1000;
+  const uint16_t max_threshold = 1500;
+  cv::inRange(depth_data_blur_,
+	      cv::Scalar(min_threshold),
+	      cv::Scalar(max_threshold),
+	      depth_data_range_);
+
+  // Further blur range image, using in-place erode-dilate.
+  cv::erode(depth_data_range_, depth_data_range_, erode_element_);
+  cv::erode(depth_data_range_, depth_data_range_, erode_element_);
+  cv::dilate(depth_data_range_, depth_data_range_, dilate_element_);
+  cv::dilate(depth_data_range_, depth_data_range_, dilate_element_);
+
+  // Find contours of objects in the range image.
+  // Use depth_data_range_copy_ as the image will be modified.
+  cv::vector<cv::vector<cv::Point> > contours;
+  cv::vector<cv::Vec4i> hierarchy;
+  depth_data_range_.copyTo(depth_data_range_copy_);
+  cv::findContours(depth_data_range_copy_, contours, hierarchy,
+		   CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
 }
 
 bool KinectRangeImpl::CopyCameraDataLocked(
@@ -461,25 +470,24 @@ bool KinectRangeImpl::CopyCameraDataLocked(
 }
 
 bool KinectRangeImpl::CopyDepthDataLocked(
-    const uint8_t* src, int device_idx) {
+    const uint16_t* src, int device_idx) {
   if (!src) {
     // Keep original zero's in the destination array.
     return false;
   }
-  // Convert 10-bit packed stream to 8-bit pixel map.
-  uint8_t* dst = reinterpret_cast<uint8_t*>(depth_data_orig_.data);
+  // Convert 16-bit depth mm to 8-bit depth by assuming >2.55 is too far.
+  uint16_t* dst = reinterpret_cast<uint16_t*>(depth_data_orig_.data);
   dst += DEVICE_WIDTH * device_idx;
-  uint32_t buffer = 0;
-  int bits_in_buffer = 0;
   for (int i = 0; i < DEVICE_HEIGHT; ++i) {
-    for (int i = 0; i < DEVICE_WIDTH; ++i) {
-      while (bits_in_buffer < 10) {
-	buffer = (buffer << 8) | *(src++);
-	bits_in_buffer += 8;
+    for (int j = 0; j < DEVICE_WIDTH; ++j) {
+      uint16_t distance = src[i * DEVICE_WIDTH + j];
+      // Clamp to practical limits of 0.5-3m.
+      if (distance < 500) {
+        distance = 500;
+      } else if (distance > 3000) {
+        distance = 3000;
       }
-      // Use highest 8 bits (shift all others out), but consume all 10 bits.
-      *(dst++) = buffer >> (bits_in_buffer - 8);
-      bits_in_buffer -= 10;
+      *(dst++) = distance;
     }
     dst += DEVICE_WIDTH * (devices_.size() - 1);
   }
@@ -519,8 +527,9 @@ Bytes* KinectRangeImpl::GetAndClearLastDepthColorImage() {
   double max = 0;
   cv::minMaxIdx(depth_data_blur_, &min, &max);
   cv::Mat adjMap;
-  float scale = 255 / (max - min);
+  double scale = 255.0 / (max - min);
   depth_data_blur_.convertTo(adjMap, CV_8UC1, scale, -min * scale);
+  // depth_data_range_.copyTo(adjMap);
 
   // Color-code the depth map.
   cv::Mat coloredMap;
