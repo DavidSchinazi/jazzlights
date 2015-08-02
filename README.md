@@ -149,6 +149,8 @@ http://*yourhost*:8080 and enjoy :)
 Installing OpenKinect (work in progress)
 ----------------------------------------
 
+  This should actually not be needed. TODO(igorc): Remove.
+
   Note that the first command will likely expect sudo password.
 
   wget -O- http://neuro.debian.net/lists/$(lsb_release -cs).us-nh | sudo tee /etc/apt/sources.list.d/neurodebian.sources.list

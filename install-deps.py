@@ -34,6 +34,12 @@ _PLAYER_DEPS = [
     'swig',
     ]
 
+_KINECT_DEPS = [
+    'freeglut3-dev',
+    'libusb-1.0-0-dev',
+    'libxmu-dev',
+    ]
+
 _EXTERNAL_DEPS = [
     'cmake',
     'libasound2-dev',
@@ -58,6 +64,7 @@ if os.geteuid() != 0:
 
 subprocess.check_call(['apt-get', 'install', '-y'] + _PILLOW_DEPS)
 subprocess.check_call(['apt-get', 'install', '-y'] + _PLAYER_DEPS)
+subprocess.check_call(['apt-get', 'install', '-y'] + _KINECT_DEPS)
 subprocess.check_call(['apt-get', 'install', '-y'] + _EXTERNAL_DEPS)
 subprocess.check_call(['apt-get', 'install', '-y'] + _USEFUL_PACKAGES)
 
