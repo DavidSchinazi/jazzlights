@@ -36,6 +36,8 @@ _PLAYER_DEPS = [
 
 _KINECT_DEPS = [
     'freeglut3-dev',
+    'libjpeg-turbo8-dev',
+    'libturbojpeg',
     'libusb-1.0-0-dev',
     'libxmu-dev',
     ]

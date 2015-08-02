@@ -13,7 +13,8 @@ LINK_LIBS := \
 
 LINK_DEPS := \
 	dfplayer/libprojectM.so.2 \
-	dfplayer/libfreenect.so.0.5
+	dfplayer/libfreenect.so.0.5 \
+	dfplayer/libfreenect2.so
 
 COPTS := \
 	-std=c++0x -Wall -Wextra \
@@ -52,6 +53,10 @@ dfplayer/libprojectM.so.2:
 dfplayer/libfreenect.so.0.5:
 	./build_cmake.py libfreenect
 	cp libfreenect/build/lib/libfreenect.so dfplayer/libfreenect.so.0.5
+
+dfplayer/libfreenect2.so:
+	./build_cmake.py libfreenect2/examples/protonect
+	cp libfreenect2/examples/protonect/lib/libfreenect2.so dfplayer/libfreenect2.so
 
 clean:
 	find . -name '*.pyc' -exec rm -f {} +
