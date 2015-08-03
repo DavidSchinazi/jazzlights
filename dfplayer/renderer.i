@@ -14,6 +14,7 @@ namespace std {
     $result = PyString_FromStringAndSize((const char*) $1->GetData(), $1->GetLen());
     delete $1;
   } else {
+    Py_INCREF(Py_None);
     $result = Py_None;
   }
 }
