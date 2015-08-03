@@ -173,6 +173,10 @@ Installing OpenKinect (work in progress)
   Issues:
     https://github.com/OpenKinect/libfreenect/issues/402
 
+
+  Update PIP:
+    sudo pip install --upgrade pip
+
   Installing Raspbian on BananaPi:
     Download and unzip M1 build from http://www.bananapi.com/index.php/download
     Insert SD card, look for device name in `sudo fdisk -l` (e.g. 8GB size)

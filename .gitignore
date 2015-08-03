@@ -11,3 +11,4 @@ dfplayer/renderer_cc.py
 dfplayer/renderer_wrap.cxx
 dfplayer/libprojectM.so.2
 dfplayer/libfreenect.so.0.5
+dfplayer/libfreenect2.so

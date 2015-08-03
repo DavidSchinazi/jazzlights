@@ -38,6 +38,7 @@ class TclLayout(object):
 
   def __init__(self, file_path, max_x, max_y):
     self._strands = {}
+    self._file_path = file_path
     self._max_x = max_x
     self._max_y = max_y
 
@@ -46,9 +47,7 @@ class TclLayout(object):
 
     self._normalize()
 
-    #for strand in self._strands.values():
-    #  print 'Strand #%s, %s leds = %s' % (
-    #      strand._id, len(strand._coords), strand._coords)
+    self._print_info()
 
   def get_strands(self):
     return list(self._strands.values())
@@ -63,6 +62,14 @@ class TclLayout(object):
     for s in self._strands.values():
       result += s._coords
     return result
+
+  def _print_info(self):
+    print 'Layout "%s", dst_width=%s, dst_height=%s' % (
+        self._file_path, self._max_x + 1, self._max_y + 1)
+    for s in self._strands.values():
+      min_x, max_x, min_y, max_y = self._find_min_max(s._coords)
+      print '  Strand P%s, led_count=%s, x=(%s-%s), y=(%s-%s)' % (
+          s._id + 1, len(s._coords), min_x, max_x, min_y, max_y)
 
   def _parse(self, dxf):
     anchors = {}
@@ -138,21 +145,7 @@ class TclLayout(object):
 
   def _normalize(self):
     # Make all coordinates be in range of [0-max_xy].
-    min_x = sys.float_info.max
-    min_y = sys.float_info.max
-    max_x = sys.float_info.min
-    max_y = sys.float_info.min
-    for s in self._strands.values():
-      for c in s._coords:
-        x, y = c[0], c[1]
-        if x < min_x:
-          min_x = x
-        if x > max_x:
-          max_x = x
-        if y < min_y:
-          min_y = y
-        if y > max_y:
-          max_y = y
+    min_x, max_x, min_y, max_y = self._find_min_max(self._get_all_coords())
     width = max_x - min_x
     height = max_y - min_y
     for s in self._strands.values():
@@ -164,3 +157,25 @@ class TclLayout(object):
         new_coords.append((int(round(x)), int(round(y))))
       s._coords = new_coords
 
+  def _get_all_coords(self):
+    result = []
+    for s in self._strands.values():
+      result += s._coords
+    return result
+
+  def _find_min_max(self, coords):
+    min_x = sys.float_info.max
+    min_y = sys.float_info.max
+    max_x = sys.float_info.min
+    max_y = sys.float_info.min
+    for c in coords:
+      x, y = c[0], c[1]
+      if x < min_x:
+        min_x = x
+      if x > max_x:
+        max_x = x
+      if y < min_y:
+        min_y = y
+      if y > max_y:
+        max_y = y
+    return (min_x, max_x, min_y, max_y)
