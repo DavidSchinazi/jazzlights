@@ -35,7 +35,7 @@ def main():
     shutil.copyfile(
         'dfplayer/asoundrc.sample', '/home/' + os.getlogin() + '/.asoundrc')
 
-  params = ['env/bin/dfplayer', '--listen=0.0.0.0:8080']
+  params = ['env/bin/dfplayer', '--listen=0.0.0.0:8081']
   if args.no_reset:
     params.append('--no-reset')
   if args.disable_net:

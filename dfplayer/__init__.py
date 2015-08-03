@@ -40,7 +40,7 @@ def main():
         port = int(port)
     else:
         host = '127.0.0.1'
-        port = 8080
+        port = 8081
  
     player = Player(
         'playlist', args.mpd, not args.disable_net, not args.disable_fin,
