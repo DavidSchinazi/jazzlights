@@ -15,7 +15,7 @@
 #include <vector>
 
 #include "utils.h"
-#include "../libfreenect/include/libfreenect.h"
+#include "../external/kkonnect/external/libfreenect/include/libfreenect.h"
 
 // TODO(igorc): Add atexit() to stop this, tcl and visualizer threads,
 // and to unblock all waiting Python threads.
