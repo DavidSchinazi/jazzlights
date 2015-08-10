@@ -4,5 +4,8 @@
 import subprocess
 import sys
 
-subprocess.check_call(['git', 'submodule', 'update', '--init'])
+command = ['git', 'submodule', 'update', '--init']
+
+subprocess.check_call(command)
+subprocess.check_call(command, cwd='external/kkonnect')
 

@@ -9,12 +9,12 @@ SOURCES := \
 	dfplayer/renderer_wrap.cxx
 
 LINK_LIBS := \
-	-lpthread -lm -ldl -lasound -lGL -lopencv_core -lopencv_imgproc -lopencv_contrib
+	-lpthread -lm -ldl -lasound -lGL \
+	-lopencv_core -lopencv_imgproc -lopencv_contrib
 
 LINK_DEPS := \
 	dfplayer/libprojectM.so.2 \
-	dfplayer/libfreenect.so.0.5 \
-	dfplayer/libfreenect2.so
+	dfplayer/libkkonnect.so.0.1
 
 COPTS := \
 	-std=c++0x -Wall -Wextra \
@@ -38,25 +38,13 @@ clips: develop
 	-rm -rf env/playlists
 	env/bin/dfprepr clips
 
-projectm/src/libprojectM/build/libprojectM.so.2:
-	./build_cmake.py projectm/src/libprojectM
-	cp projectm/src/libprojectM/build/libprojectM.so projectm/src/libprojectM/build/libprojectM.so.2
-
-libfreenect/build/lib/libfreenect.so.0.5:
-	./build_cmake.py libfreenect
-	cp libfreenect/build/lib/libfreenect.so libfreenect/build/lib/libfreenect.so.0.5
-
 dfplayer/libprojectM.so.2:
 	./build_cmake.py projectm/src/libprojectM
 	cp projectm/src/libprojectM/build/libprojectM.so dfplayer/libprojectM.so.2
 
-dfplayer/libfreenect.so.0.5:
-	./build_cmake.py libfreenect
-	cp libfreenect/build/lib/libfreenect.so dfplayer/libfreenect.so.0.5
-
-dfplayer/libfreenect2.so:
-	./build_cmake.py libfreenect2/examples/protonect
-	cp libfreenect2/examples/protonect/lib/libfreenect2.so dfplayer/libfreenect2.so
+dfplayer/libkkonnect.so.0.1:
+	./build_cmake.py external/kkonnect
+	cp external/kkonnect/build/lib/libkkonnect.so dfplayer/libkkonnect.so.0.1
 
 clean:
 	find . -name '*.pyc' -exec rm -f {} +
