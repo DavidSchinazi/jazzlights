@@ -14,7 +14,7 @@ class KinectRange {
   KinectRange() {}
   virtual ~KinectRange() {}
 
-  virtual void EnableCamera() = 0;
+  virtual void EnableVideo() = 0;
   virtual void EnableDepth() = 0;
   virtual void Start(int fps) = 0;
 
@@ -23,10 +23,10 @@ class KinectRange {
   virtual int GetHeight() const = 0;
   virtual int GetDepthDataLength() const = 0;
   virtual void GetDepthData(uint8_t* dst) const = 0;
-  virtual void GetCameraData(uint8_t* dst) const = 0;
+  virtual void GetVideoData(uint8_t* dst) const = 0;
 
   virtual Bytes* GetAndClearLastDepthColorImage() = 0;
-  virtual Bytes* GetAndClearLastCameraImage() = 0;
+  virtual Bytes* GetAndClearLastVideoImage() = 0;
 
  private:
   KinectRange(const KinectRange& src);
