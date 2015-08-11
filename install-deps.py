@@ -3,6 +3,7 @@
 # Installs useful dependencies for dfplayer development.
 
 import os
+import shutil
 import subprocess
 import sys
 
@@ -83,6 +84,15 @@ subprocess.check_call(['pip', 'install', 'virtualenv'])
 TURBO_JPEG = '/usr/lib/x86_64-linux-gnu/libturbojpeg.so'
 if not os.path.exists(TURBO_JPEG):
   os.symlink(TURBO_JPEG + '0', TURBO_JPEG)
+
+RULES_DIR = '/etc/udev/rules.d'
+shutil.copyfile(
+    'external/kkonnect/external/libfreenect/platform/linux/udev/51-kinect.rules',
+    RULES_DIR + '/51-kinect.rules')
+shutil.copyfile(
+    'external/kkonnect/external/libfreenect2/rules/90-kinect2.rules',
+    RULES_DIR + '/90-kinect2.rules')
+
 
 print '=== SUCCESS ==='
 
