@@ -83,7 +83,7 @@ subprocess.check_call(['pip', 'install', 'virtualenv'])
 
 TURBO_JPEG = '/usr/lib/x86_64-linux-gnu/libturbojpeg.so'
 if not os.path.exists(TURBO_JPEG):
-  os.symlink(TURBO_JPEG + '0', TURBO_JPEG)
+  os.symlink(TURBO_JPEG + '.0', TURBO_JPEG)
 
 RULES_DIR = '/etc/udev/rules.d'
 shutil.copyfile(
