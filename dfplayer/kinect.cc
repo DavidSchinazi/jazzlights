@@ -28,15 +28,7 @@ using kkonnect::ImageInfo;
 // TODO(igorc): Add atexit() to stop this, tcl and visualizer threads,
 // and to unblock all waiting Python threads.
 
-#define CHECK_FREENECT(call)                                            \
-    { int res__ = (call);                                               \
-      if (res__) {                                                      \
-        fprintf(stderr, "EXITING with check-fail at %s (%s:%d): %d"     \
-                ". Condition = '" TOSTRING(call) "'\n",                 \
-                __FILE__, __FUNCTION__, __LINE__, res__);               \
-        exit(-1);                                                       \
-      } }
-
+// TODO(igorc): Fix crashes on USB disconnect.
 
 class KinectRangeImpl : public KinectRange {
  public:

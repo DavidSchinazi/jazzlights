@@ -36,11 +36,21 @@ _PLAYER_DEPS = [
     ]
 
 _KINECT_DEPS = [
+    'automake',
+    'doxygen',
     'freeglut3-dev',
     'libjpeg-turbo8-dev',
+    'libtool',
     'libturbojpeg',
     'libusb-1.0-0-dev',
     'libxmu-dev',
+    'mesa-common-dev',
+    'nvidia-331',
+    'nvidia-opencl-icd-331',
+    'nvidia-libopencl1-331',
+    'nvidia-modprobe',
+    'nvidia-331-uvm',
+    'opencl-headers',
     ]
 
 _EXTERNAL_DEPS = [
@@ -71,6 +81,8 @@ subprocess.check_call(['apt-get', 'install', '-y'] + _KINECT_DEPS)
 subprocess.check_call(['apt-get', 'install', '-y'] + _EXTERNAL_DEPS)
 subprocess.check_call(['apt-get', 'install', '-y'] + _USEFUL_PACKAGES)
 
+subprocess.check_call(['add-apt-repository', 'ppa:xorg-edgers/ppa', '-y'])
+
 subprocess.check_call(['easy_install', 'pip'])
 
 # PIL and Pillow cannot coexist.
@@ -84,6 +96,10 @@ subprocess.check_call(['pip', 'install', 'virtualenv'])
 TURBO_JPEG = '/usr/lib/x86_64-linux-gnu/libturbojpeg.so'
 if not os.path.exists(TURBO_JPEG):
   os.symlink(TURBO_JPEG + '.0', TURBO_JPEG)
+
+OPENCL = '/usr/lib/x86_64-linux-gnu/libOpenCL.so'
+if not os.path.exists(OPENCL):
+  os.symlink(OPENCL + '.1', OPENCL)
 
 RULES_DIR = '/etc/udev/rules.d'
 shutil.copyfile(
