@@ -4,6 +4,7 @@
 
 #include "kinect.h"
 
+#include <math.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <pthread.h>
@@ -12,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <algorithm>
 #include <vector>
 
 #include "utils.h"
@@ -56,8 +58,9 @@ class KinectRangeImpl : public KinectRange {
   static void* RunMergerLoop(void* arg);
   void RunMergerLoop();
   void MergeImages();
-  void ContrastDepth();
-  void ClampDepthData();
+  void ContrastDepthLocked();
+  void ClampDepthDataLocked();
+  void FindContoursLocked();
 
   int fps_;
   bool video_enabled_ = false;
@@ -76,8 +79,10 @@ class KinectRangeImpl : public KinectRange {
   cv::Mat depth_data_blur_;
   cv::Mat depth_data_range_;
   cv::Mat depth_data_range_copy_;
+  cv::Mat depth_data_range_marked_;
   cv::Mat erode_element_;
   cv::Mat dilate_element_;
+  cv::vector<cv::Vec3i> circles_;
   bool has_new_depth_image_ = false;
   bool has_new_video_image_ = false;
 };
@@ -242,8 +247,10 @@ void KinectRangeImpl::MergeImages() {
     }
   }
 
+  circles_.clear();
   if (has_depth_update) {
-    ContrastDepth();
+    ContrastDepthLocked();
+    FindContoursLocked();
     has_new_depth_image_ = true;
   }
 
@@ -251,15 +258,15 @@ void KinectRangeImpl::MergeImages() {
     has_new_video_image_ = true;
 }
 
-void KinectRangeImpl::ContrastDepth() {
-  ClampDepthData();
+void KinectRangeImpl::ContrastDepthLocked() {
+  ClampDepthDataLocked();
 
   // Blur the depth image to reduce noise.
   // TODO(igorc): Try to reduce CPU usage here (using 10% now?).
-  const int kernel_size = 7;
+  const int kKernelSize = 7;
   cv::blur(
       depth_data_orig_, depth_data_blur_,
-      cv::Size(kernel_size, kernel_size), cv::Point(-1,-1));
+      cv::Size(kKernelSize, kKernelSize), cv::Point(-1,-1));
 
   // Select trigger pixels.
   // The depth range is approximately 3 meters. The height of the car
@@ -277,17 +284,68 @@ void KinectRangeImpl::ContrastDepth() {
   cv::erode(depth_data_range_, depth_data_range_, erode_element_);
   cv::dilate(depth_data_range_, depth_data_range_, dilate_element_);
   cv::dilate(depth_data_range_, depth_data_range_, dilate_element_);
-
-  // Find contours of objects in the range image.
-  // Use depth_data_range_copy_ as the image will be modified.
-  cv::vector<cv::vector<cv::Point> > contours;
-  cv::vector<cv::Vec4i> hierarchy;
-  depth_data_range_.copyTo(depth_data_range_copy_);
-  cv::findContours(depth_data_range_copy_, contours, hierarchy,
-		   CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
 }
 
-void KinectRangeImpl::ClampDepthData() {
+struct {
+  bool operator() (cv::Vec3i c1, cv::Vec3i c2) { return (c1[2] > c2[2]); }
+} CircleComparator;
+
+void KinectRangeImpl::FindContoursLocked() {
+  // Find contours of objects in the range image.
+  // Use depth_data_range_copy_ as the image will be modified.
+  cv::vector<cv::vector<cv::Point> > all_contours;
+  cv::vector<cv::Vec4i> hierarchy;
+  depth_data_range_.copyTo(depth_data_range_copy_);
+  depth_data_range_.copyTo(depth_data_range_marked_);
+  cv::findContours(depth_data_range_copy_, all_contours, hierarchy,
+		   CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+
+  int object_count = hierarchy.size();
+  if (!object_count) {
+    // fprintf(stderr, "No objects found\n");
+    return;
+  }
+  if (object_count > 50) {
+    fprintf(stderr, "Too many objects found: %d\n", object_count);
+    return;
+  }
+
+  // fprintf(stderr, "Found %d objects\n", object_count);
+
+  // Assuming that any human will take at least 10% of the image size.
+  constexpr double kMinObjectRatio = 0.10;
+  // A human as seen from above should be less than 33% of the image size.
+  constexpr double kMaxObjectRatio = 0.33;
+  bool is_first = true;
+  for (int index = 0; index >= 0; index = hierarchy[index][0]) {
+    int parent_index = hierarchy[index][3];
+    if (parent_index != -1) continue;  // Top-level contours only.
+
+    const cv::vector<cv::Point>& contours = all_contours[index];
+    cv::Moments moment = cv::moments(contours);
+    double area = moment.m00;
+    double radius = sqrt(area / M_PI);
+    double radius_ratio = radius / 500.0;
+    if (radius_ratio < kMinObjectRatio) continue;
+    if (radius_ratio > kMaxObjectRatio) continue;
+
+    int x = static_cast<int>(moment.m10 / area);
+    int y = static_cast<int>(moment.m01 / area);
+
+    if (false) {
+      // cv::Rect rect = cv::boundingRect(contours);
+      fprintf(stderr, "%sFound object idx=%d contours=%d radius=%d x=%d y=%d\n",
+          (is_first ? "-> " : "   "), index, (int) contours.size(),
+	  static_cast<int>(radius), x, y);
+    }
+    is_first = false;
+    circles_.push_back(cv::Vec3i(x, y, radius));
+  }
+
+  std::sort(circles_.begin(), circles_.end(), CircleComparator);
+}
+
+void KinectRangeImpl::ClampDepthDataLocked() {
   CHECK(depth_data_orig_.elemSize() == 2);
   uint16_t* data = reinterpret_cast<uint16_t*>(depth_data_orig_.data);
   for (uint32_t i = 0; i < video_data_.total(); ++i) {
@@ -345,6 +403,12 @@ Bytes* KinectRangeImpl::GetAndClearLastDepthColorImage() {
   // Convert to RGB.
   cv::Mat coloredMapRgb;
   cv::cvtColor(coloredMap, coloredMapRgb, CV_BGR2RGB);
+
+  for (size_t i = 0; i < circles_.size(); ++i) {
+    const cv::Vec3i& c = circles_[i];
+    cv::Scalar color = (i == 0 ? cv::Scalar(255, 0, 0) : cv::Scalar(0, 255, 0));
+    cv::circle(coloredMapRgb, cv::Point(c[0], c[1]), c[2], color, 3);
+  }
 
   Bytes* result = new Bytes(
       coloredMapRgb.data,

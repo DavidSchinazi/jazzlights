@@ -130,15 +130,16 @@ class Player(object):
             FPS, _SCREEN_FRAME_WIDTH, IMAGE_FRAME_WIDTH,
             FRAME_HEIGHT, CLIPS_DIR, self._tcl)
 
-        self._use_visualization = False
-        self._visualizer = None
-        self.toggle_visualization()
-
+        # Init Kinect before visualizer, as it crashes otherwise.
         self._is_kinect_enabled = enable_kinect
         self._use_kinect = False
         self._kinect = None
         if enable_kinect:
             self.toggle_kinect()
+
+        self._use_visualization = False
+        self._visualizer = None
+        self.toggle_visualization()
 
         if not self._line_in:
             self._load_playlist()
