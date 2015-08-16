@@ -28,6 +28,10 @@ class KinectRange {
   virtual Bytes* GetAndClearLastDepthColorImage() = 0;
   virtual Bytes* GetAndClearLastVideoImage() = 0;
 
+  // Position of detected person, in the range of [0, 1).
+  // Returns negative value when there is no person.
+  virtual double GetPersonCoordX() const = 0;
+
  private:
   KinectRange(const KinectRange& src);
   KinectRange& operator=(const KinectRange& rhs);

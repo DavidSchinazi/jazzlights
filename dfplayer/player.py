@@ -652,7 +652,18 @@ class Player(object):
             return None
         img_data = self._kinect.GetAndClearLastDepthColorImage()
         if not img_data or len(img_data) == 0:
+            self._tcl.enable_rainbow(TCL_MAIN, -1)
             return None
+        coord_x = self._kinect.GetPersonCoordX()
+        if coord_x >= 0:
+            width = self._tcl.get_width(TCL_MAIN)
+            kinect_center = width * 0.8
+            kinect_width = width * 0.15
+            abs_coord = (kinect_center + kinect_width / 2 -
+                coord_x * kinect_width)
+            self._tcl.enable_rainbow(TCL_MAIN, int(abs_coord))
+        else:
+            self._tcl.enable_rainbow(TCL_MAIN, -1)
         return Image.fromstring(
             'RGB', (self._kinect.GetWidth(), self._kinect.GetHeight()),
             img_data)

@@ -61,6 +61,12 @@ class TclRenderer(object):
     self._frame_delays = []
     self._frame_delays_clear_time = get_time_millis()
 
+  def get_width(self, controller_id):
+    return self._widths[controller_id]
+
+  def get_height(self, controller_id):
+    return self._heights[controller_id]
+
   def set_gamma(self, gamma):
     # 1.0 is uncorrected gamma, which is perceived as "too bright"
     # in the middle. 2.4 is a good starting point. Changing this value
@@ -136,6 +142,11 @@ class TclRenderer(object):
           0, 0, image.size[0], image.size[1], 0, 2, 0, id, time, True)
     else:
       self._renderer.send_frame(list(image.getdata()), get_time_millis())
+
+  def enable_rainbow(self, controller, x):
+    if not self._use_cc_impl:
+      return
+    self._renderer.EnableRainbow(controller, x)
 
   def set_effect_image(self, controller, image, mirror):
     if self._use_cc_impl:

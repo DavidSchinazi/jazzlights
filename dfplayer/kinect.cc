@@ -50,6 +50,8 @@ class KinectRangeImpl : public KinectRange {
   Bytes* GetAndClearLastDepthColorImage() override;
   Bytes* GetAndClearLastVideoImage() override;
 
+  double GetPersonCoordX() const override;
+
  private:
   static KinectRangeImpl* GetInstanceImpl();
 
@@ -415,6 +417,12 @@ Bytes* KinectRangeImpl::GetAndClearLastDepthColorImage() {
       coloredMapRgb.total() * coloredMapRgb.elemSize());
   has_new_depth_image_ = false;
   return result;
+}
+
+double KinectRangeImpl::GetPersonCoordX() const {
+  Autolock l(merger_mutex_);
+  if (circles_.empty()) return -1;
+  return static_cast<double>(circles_[0][0]) / width_;
 }
 
 Bytes* KinectRangeImpl::GetAndClearLastVideoImage() {

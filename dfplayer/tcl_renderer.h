@@ -97,6 +97,9 @@ class TclRenderer {
   void SetEffectImage(
       int controller_id, Bytes* bytes, int w, int h, EffectMode mode);
 
+  // Starts a rainbow at the give position. Pass -1 to disable.
+  void EnableRainbow(int controller_id, int x);
+
   Bytes* GetAndClearLastImage(int controller_id);
   Bytes* GetAndClearLastLedImage(int controller_id);
   int GetLastImageId(int controller_id);

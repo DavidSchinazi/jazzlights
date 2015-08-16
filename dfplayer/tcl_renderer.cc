@@ -28,6 +28,8 @@ static const int kMgsDataDelayUs = 1500;
 static const int kFrameSendDurationUs =
     kMgsStartDelayUs + kMgsDataDelayUs * (FRAME_DATA_LEN / 1024);
 
+static const int kRainbowSize = 256;
+
 TclRenderer* TclRenderer::instance_ = new TclRenderer();
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -115,6 +117,8 @@ class TclController {
 
   void SetEffectImage(Bytes* bytes, int w, int h, EffectMode mode);
 
+  void EnableRainbow(int x);
+
   void SetGammaRanges(
       int r_min, int r_max, double r_gamma,
       int g_min, int g_max, double g_gamma,
@@ -129,6 +133,8 @@ class TclController {
   uint8_t* BuildFrameDataForImage(RgbaImage* img, int id, InitStatus* status);
 
   void ApplyEffect(RgbaImage* image);
+  void ResetRainbow();
+  void ApplyRainbow(RgbaImage* image);
   Strands* ConvertImageToStrands(const RgbaImage& image);
 
   void SetHdrMode(HdrMode mode);
@@ -173,6 +179,11 @@ class TclController {
   RgbaImage effect_image_;
   int frames_sent_after_reply_;
   HdrMode hdr_mode_;
+  int rainbow_target_x_;
+  int rainbow_effective_x_;
+  int rainbow_height_;
+  int rainbow_shift_;
+  cv::Mat rainbow_;
 };
 
 TclController::TclController(
@@ -181,7 +192,18 @@ TclController::TclController(
     : id_(id), width_(width), height_(height), init_status_(INIT_UNUSED),
       socket_(-1), require_reset_(true), last_reply_time_(0),
       reset_start_time_(0), last_image_id_(0), frames_sent_after_reply_(0),
-      hdr_mode_(HDR_NONE) {
+      hdr_mode_(HDR_NONE), rainbow_target_x_(-1) {
+  ResetRainbow();
+
+  cv::Mat greyscale;
+  greyscale.create(1, kRainbowSize, CV_8UC1);
+  for (int i = 0; i < kRainbowSize; ++i) {
+    greyscale.at<uint8_t>(0, i) = i;
+  }
+  cv::Mat coloredMap;
+  cv::applyColorMap(greyscale, coloredMap, cv::COLORMAP_RAINBOW);
+  cv::cvtColor(coloredMap, rainbow_, CV_BGR2RGBA);
+
   SetGammaRanges(0, 255, gamma, 0, 255, gamma, 0, 255, gamma);
   PopulateLayoutMap(layout);
 }
@@ -392,12 +414,72 @@ void TclController::SetEffectImage(
 }
 
 void TclController::ApplyEffect(RgbaImage* image) {
-  if (effect_image_.IsEmpty())
+  if (!effect_image_.IsEmpty()) {
+    // Carry alpha from effect to help
+    PasteSubImage(effect_image_.GetData(), width_, height_,
+        image->GetData(), 0, 0, width_, height_, true, true);
+    ResetRainbow();
     return;
+  }
 
-  // Carry alpha from effect to help 
-  PasteSubImage(effect_image_.GetData(), width_, height_,
-      image->GetData(), 0, 0, width_, height_, true, true);
+  ApplyRainbow(image);
+}
+
+void TclController::EnableRainbow(int x) {
+  rainbow_target_x_ = x;
+}
+
+void TclController::ResetRainbow() {
+  rainbow_height_ = 0;
+  rainbow_effective_x_ = -1;
+  rainbow_shift_ = kRainbowSize - 1;
+}
+
+void TclController::ApplyRainbow(RgbaImage* image) {
+  // Update rainbow position, if it is still requested.
+  constexpr int kFps = 15;
+  if (rainbow_target_x_ >= 0) {
+    if (rainbow_effective_x_ >= 0) {
+      int distance = rainbow_target_x_ - rainbow_effective_x_;
+      int step = distance / kFps;
+      if (distance && !step) step = (distance > 0 ? 1 : -1);
+      rainbow_effective_x_ += step;
+    } else {
+      rainbow_effective_x_ = rainbow_target_x_;
+    }
+  }
+
+  // Update rainbow height. Go full height in 1 second.
+  int rainbow_height_step = height_ / kFps;
+  if (rainbow_effective_x_ >= 0 && rainbow_target_x_ >= 0) {
+    rainbow_height_ = std::min(rainbow_height_ + rainbow_height_step, height_);
+  } else {
+    rainbow_height_ = std::max(rainbow_height_ - rainbow_height_step, 0);
+  }
+
+  if (!rainbow_height_) {
+    ResetRainbow();
+    return;
+  }
+
+  // Make rainbow pass in 1 second.
+  rainbow_shift_ -= (kRainbowSize / kFps);
+  if (rainbow_shift_ < 0) rainbow_shift_ = kRainbowSize - 1;
+
+  int rainbow_width = rainbow_height_ / 3;
+  rainbow_width = std::min(std::max(rainbow_width, 1), width_);
+  int start_x = std::max(rainbow_effective_x_ - rainbow_width / 2, 0);
+  uint32_t* data = reinterpret_cast<uint32_t*>(image->GetData());
+  for (int y = 0; y < rainbow_height_; ++y) {
+    int rainbow_pos =
+	static_cast<int>(static_cast<double>(y) / height_ * kRainbowSize);
+    uint32_t color = rainbow_.at<uint32_t>(
+	0, (rainbow_pos + rainbow_shift_) % kRainbowSize);
+    uint32_t* start_data = data + (height_ - y - 1) * width_ + start_x;
+    for (int x = 0; x < rainbow_width; ++x) {
+      start_data[x] = color;
+    }
+  }
 }
 
 uint8_t* TclController::BuildFrameDataForImage(
@@ -1096,6 +1178,13 @@ void TclRenderer::SetEffectImage(
   TclController* controller = FindControllerLocked(controller_id);
   if (controller)
     controller->SetEffectImage(bytes, w, h, mode);
+}
+
+void TclRenderer::EnableRainbow(int controller_id, int x) {
+  Autolock l(lock_);
+  TclController* controller = FindControllerLocked(controller_id);
+  if (controller)
+    controller->EnableRainbow(x);
 }
 
 void TclRenderer::ResetImageQueue() {
