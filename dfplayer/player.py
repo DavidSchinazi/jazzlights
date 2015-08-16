@@ -548,6 +548,9 @@ class Player(object):
     def toggle_visualization(self):
         if not _USE_CC_TCL:
             return
+        # TODO(igorc): Fix crash on turning off visualization.
+        if self._use_visualization:
+            return
         self._use_visualization = not self._use_visualization
         if not self._visualizer:
             self._visualizer_size = (

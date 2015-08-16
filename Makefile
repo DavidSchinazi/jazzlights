@@ -52,6 +52,7 @@ clean:
 	find . -name '*~' -exec rm -f {} +
 	rm -rf dfplayer.egg-info
 	rm -rf build
+	rm -rf external/kkonnect/build
 	rm -rf env/mpd
 
 very-clean: clean
