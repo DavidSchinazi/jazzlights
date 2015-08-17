@@ -34,6 +34,50 @@ class Strand(object):
     return list(self._coords)
 
 
+class _StrandBuilder(object):
+
+  def __init__(self, min_x, max_x, min_y, max_y):
+    self._min_x = min_x
+    self._max_x = max_x
+    self._range_x = max_x - min_x
+    self._min_y = min_y
+    self._max_y = max_y
+    self._range_y = max_y - min_y
+    self._enable_horizontal_mirror = False
+    self._coords = []
+
+  def enable_horizontal_mirror(self):
+    self._enable_horizontal_mirror = True
+
+  # Note that x/y here are [0, 1] that will be mapped to [min, max] range.
+  def add_custom_coords(self, count, start_x, end_x, start_y, end_y):
+    if self._enable_horizontal_mirror:
+      start_x = 1.0 - start_x
+      end_x = 1.0 - end_x
+    start_x = float(start_x)
+    end_x = float(end_x)
+    start_y = float(start_y)
+    end_y = float(end_y)
+    step_x = (end_x - start_x) / count
+    step_y = (end_y - start_y) / count
+    for i in xrange(count):
+      x = (start_x + step_x * i) * self._range_x + self._min_x
+      y = (start_y + step_y * i) * self._range_y + self._min_y
+      if x < self._min_x or x > self._max_x:
+        raise Exception('x out of range: %s (%s / %s)' % (
+            x, self._min_x, self._max_x))
+      if y < self._min_y or y > self._max_y:
+        raise Exception('y out of range: %s (%s / %s)' % (
+            y, self._min_y, self._max_y))
+      self._coords.append((int(x), int(y)))
+
+  def add_horizontal(self, count, start_x, end_x, y):
+    self.add_custom_coords(count, start_x, end_x, y, y)
+
+  def get_coords(self):
+    return list(self._coords)
+
+
 class TclLayout(object):
 
   def __init__(self, file_path, max_x, max_y):
@@ -46,6 +90,8 @@ class TclLayout(object):
     self._parse(dxf)
 
     self._normalize()
+
+    self._customize()
 
     self._print_info()
 
@@ -179,3 +225,36 @@ class TclLayout(object):
       if y > max_y:
         max_y = y
     return (min_x, max_x, min_y, max_y)
+
+  # The place of terrible hacks, because I have no time to mod the DXF.
+  def _customize(self):
+    if self._file_path != 'dfplayer/layout1.dxf':
+      return
+    self._make_new_tail(2, 6, True)
+    self._make_new_tail(3, 7, False)
+
+  def _make_new_tail(self, old_strand_id, new_strand_id, is_mirrored):
+    if new_strand_id in self._strands:
+      raise Exception('Strand already exists')
+
+    old_cutoff_coord_id = 202
+    old_coords = self._strands[old_strand_id]._coords
+    min_x, max_x, min_y, max_y = self._find_min_max(
+        old_coords[old_cutoff_coord_id:])
+    del old_coords[old_cutoff_coord_id:]
+
+    builder = _StrandBuilder(min_x, max_x, min_y, max_y)
+    if is_mirrored:
+      builder.enable_horizontal_mirror()
+    y_step = 1.0 / 7.0
+    width = 20.0  # In feet.
+    builder.add_horizontal(61, 0, 20.0 / width, 0)
+    builder.add_horizontal(50, 0, 20.0 / width, y_step)
+    builder.add_horizontal(42, 0, 16.0 / width, y_step * 2)
+    builder.add_horizontal(38, 0, 14.0 / width, y_step * 3)
+    builder.add_horizontal(35, 0, 13.0 / width, y_step * 4)
+    builder.add_horizontal(37, 0, 14.0 / width, y_step * 5)
+    builder.add_horizontal(41, 0, 16.0 / width, y_step * 6)
+    builder.add_horizontal(50, 0, 20.0 / width, y_step * 7)
+    self._strands[new_strand_id] = Strand(new_strand_id)
+    self._strands[new_strand_id]._coords = builder.get_coords()
