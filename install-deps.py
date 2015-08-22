@@ -51,6 +51,7 @@ _KINECT_DEPS = [
     'nvidia-modprobe',
     'nvidia-331-uvm',
     'opencl-headers',
+    'screen',
     ]
 
 _EXTERNAL_DEPS = [
