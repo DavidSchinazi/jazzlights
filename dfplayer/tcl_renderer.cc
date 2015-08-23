@@ -183,6 +183,7 @@ class TclController {
   int rainbow_effective_x_;
   int rainbow_height_;
   int rainbow_shift_;
+  int rainbow_cycle_;
   cv::Mat rainbow_;
 };
 
@@ -433,6 +434,7 @@ void TclController::ResetRainbow() {
   rainbow_height_ = 0;
   rainbow_effective_x_ = -1;
   rainbow_shift_ = kRainbowSize - 1;
+  rainbow_cycle_ = 0;
 }
 
 void TclController::ApplyRainbow(RgbaImage* image) {
@@ -477,9 +479,14 @@ void TclController::ApplyRainbow(RgbaImage* image) {
 	0, (rainbow_pos + rainbow_shift_) % kRainbowSize);
     uint32_t* start_data = data + (height_ - y - 1) * width_ + start_x;
     for (int x = 0; x < rainbow_width; ++x) {
-      start_data[x] = color;
+      if (rainbow_cycle_ % 2 == 0) {
+        start_data[x] = color;
+      } else {
+        start_data[x] = 0;
+      }
     }
   }
+  ++rainbow_cycle_;
 }
 
 uint8_t* TclController::BuildFrameDataForImage(

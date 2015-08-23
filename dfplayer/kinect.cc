@@ -274,8 +274,8 @@ void KinectRangeImpl::ContrastDepthLocked() {
   // The depth range is approximately 3 meters. The height of the car
   // is approximately the same. We want to detect objects in the range
   // from 1 to 1.5 meters away from the Kinect.
-  const uint16_t min_threshold = 1000;
-  const uint16_t max_threshold = 1500;
+  const uint16_t min_threshold = 1500;
+  const uint16_t max_threshold = 2500;
   cv::inRange(depth_data_blur_,
 	      cv::Scalar(min_threshold),
 	      cv::Scalar(max_threshold),
@@ -307,7 +307,7 @@ void KinectRangeImpl::FindContoursLocked() {
     // fprintf(stderr, "No objects found\n");
     return;
   }
-  if (object_count > 50) {
+  if (object_count > 100) {
     fprintf(stderr, "Too many objects found: %d\n", object_count);
     return;
   }

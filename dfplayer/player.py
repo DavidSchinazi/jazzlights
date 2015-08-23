@@ -660,8 +660,8 @@ class Player(object):
         coord_x = self._kinect.GetPersonCoordX()
         if coord_x >= 0:
             width = self._tcl.get_width(TCL_MAIN)
-            kinect_center = width * 0.8
-            kinect_width = width * 0.15
+            kinect_center = width * 0.76
+            kinect_width = width * 0.11
             abs_coord = (kinect_center + kinect_width / 2 -
                 coord_x * kinect_width)
             self._tcl.enable_rainbow(TCL_MAIN, int(abs_coord))
