@@ -574,14 +574,18 @@ bool TclController::PopulateStrandsColors(
         }
       }
 
-      if (c1 >= coord_count / 2) {
+      if (c1 && c1 >= coord_count / 2) {
         r1 = (r1 / c1) & 0xFF;
         g1 = (g1 / c1) & 0xFF;
         b1 = (b1 / c1) & 0xFF;
-      } else {
+      } else if (c2) {
         r1 = (r2 / c2) & 0xFF;
         g1 = (g2 / c2) & 0xFF;
         b1 = (b2 / c2) & 0xFF;
+      } else {
+        r1 = 0;
+        g1 = 0;
+        b1 = 0;
       }
 
       uint32_t color = PACK_COLOR32(r1, g1, b1, 255);
