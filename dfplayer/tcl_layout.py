@@ -230,12 +230,12 @@ class TclLayout(object):
   def _customize(self):
     if self._file_path != 'dfplayer/layout1.dxf':
       return
-    #self._make_new_flipper(2, 0, 4, True)
-    #self._make_new_flipper(1, 3, 5, False)
-    self._make_new_tail(2, 6, True)
-    self._make_new_tail(3, 7, False)
+    self._make_new_flipper(2, 0, 4, False)
+    self._make_new_flipper(1, 3, 5, True)
+    self._make_new_tail(2, 6, False)
+    self._make_new_tail(3, 7, True)
 
-  def _make_new_tail(self, old_strand_id, new_strand_id, is_mirrored):
+  def _make_new_tail(self, old_strand_id, new_strand_id, is_driver):
     if new_strand_id in self._strands:
       raise Exception('Strand already exists')
 
@@ -246,7 +246,7 @@ class TclLayout(object):
     del old_coords[old_cutoff_coord_id:]
 
     builder = _StrandBuilder(min_x, max_x, min_y, max_y)
-    if is_mirrored:
+    if not is_driver:
       builder.enable_horizontal_mirror()
     y_step = 1.0 / 7.0
     width = 20.0  # In feet.
@@ -261,7 +261,7 @@ class TclLayout(object):
     self._strands[new_strand_id] = Strand(new_strand_id)
     self._strands[new_strand_id]._coords = builder.get_coords()
 
-  def _make_new_flipper(self, strand1, strand2, new_strand_id, is_mirrored):
+  def _make_new_flipper(self, strand1, strand2, new_strand_id, is_driver):
     if new_strand_id in self._strands:
       raise Exception('Strand already exists')
 
@@ -273,19 +273,30 @@ class TclLayout(object):
     min_x, max_x = max_x1 + 2, min_x2 - 2
     min_y, max_y = min(min_y1, min_y2), max(max_y1, max_y2)
     builder = _StrandBuilder(min_x, max_x, min_y, max_y)
-    if is_mirrored:
-      builder.enable_horizontal_mirror()
     y_step = 1.0 / 9.0
     width = 5.0  # In feet.
-    builder.add_horizontal(35, 0, 5.0 / width, 0)
-    builder.add_horizontal(25, 0, 5.0 / width, y_step)
-    builder.add_horizontal(25, 0, 5.0 / width, y_step * 2)
-    builder.add_horizontal(17, 0, 3.0 / width, y_step * 3)
-    builder.add_horizontal(17, 0, 3.0 / width, y_step * 4)
-    builder.add_horizontal(17, 0, 3.0 / width, y_step * 5)
-    builder.add_horizontal(17, 0, 3.0 / width, y_step * 6)
-    builder.add_horizontal(17, 0, 3.0 / width, y_step * 7)
-    builder.add_horizontal(17, 0, 3.0 / width, y_step * 8)
-    builder.add_horizontal(17, 0, 3.0 / width, y_step * 9)
+    if is_driver:
+      builder.add_horizontal(32, 0, 5.0 / width, 0)
+      builder.add_horizontal(25, 0, 5.0 / width, y_step)
+      builder.add_horizontal(25, 0, 5.0 / width, y_step * 2)
+      builder.add_horizontal(17, 0, 3.0 / width, y_step * 3)
+      builder.add_horizontal(18, 0, 3.0 / width, y_step * 4)
+      builder.add_horizontal(18, 0, 3.0 / width, y_step * 5)
+      builder.add_horizontal(18, 0, 3.0 / width, y_step * 6)
+      builder.add_horizontal(18, 0, 3.0 / width, y_step * 7)
+      builder.add_horizontal(15, 0, 3.0 / width, y_step * 8)
+      builder.add_horizontal(14, 0, 3.0 / width, y_step * 9)
+    else:
+      builder.enable_horizontal_mirror()
+      builder.add_horizontal(32, 0, 5.0 / width, 0)
+      builder.add_horizontal(26, 0, 5.0 / width, y_step)
+      builder.add_horizontal(26, 0, 5.0 / width, y_step * 2)
+      builder.add_horizontal(18, 0, 3.0 / width, y_step * 3)
+      builder.add_horizontal(18, 0, 3.0 / width, y_step * 4)
+      builder.add_horizontal(18, 0, 3.0 / width, y_step * 5)
+      builder.add_horizontal(17, 0, 3.0 / width, y_step * 6)
+      builder.add_horizontal(17, 0, 3.0 / width, y_step * 7)
+      builder.add_horizontal(15, 0, 3.0 / width, y_step * 8)
+      builder.add_horizontal(15, 0, 3.0 / width, y_step * 9)
     self._strands[new_strand_id] = Strand(new_strand_id)
     self._strands[new_strand_id]._coords = builder.get_coords()
