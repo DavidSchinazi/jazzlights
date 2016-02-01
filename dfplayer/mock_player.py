@@ -12,7 +12,6 @@ IMAGE_FRAME_WIDTH = _SCREEN_FRAME_WIDTH / 2
 FRAME_HEIGHT = 50
 MESH_RATIO = 5  # Make it 50x10
 TCL_CONTROLLER = 1
-_USE_CC_TCL = True
 
 class Player(object):
 

@@ -36,7 +36,6 @@ FRAME_HEIGHT = 50
 MESH_RATIO = 5  # Make it 50x10
 TCL_MAIN = 1
 TCL_FIN = 3
-_USE_CC_TCL = True
 
 MPD_PORT = 6605
 MPD_DIR = VENV_DIR + '/mpd'
@@ -111,12 +110,11 @@ class Player(object):
         self._visualization_volume = 1
         self._seek_time = None
         self._effect = None
-        self._last_frame_file = ''
         self._frame_delay_stats = Stats(100)
         self._render_durations = Stats(100)
         self._visualization_period_stats = Stats(100)
 
-        self._tcl = TclRenderer(FPS, _USE_CC_TCL, enable_net)
+        self._tcl = TclRenderer(FPS, enable_net)
         self._tcl.add_controller(
             TCL_MAIN, _SCREEN_FRAME_WIDTH, FRAME_HEIGHT,
             self._target_gamma)
@@ -546,8 +544,6 @@ class Player(object):
             self.mpd.seekid(self._songid, '%s' % self._seek_time)
 
     def toggle_visualization(self):
-        if not _USE_CC_TCL:
-            return
         # TODO(igorc): Fix crash on turning off visualization.
         if self._use_visualization:
             return
@@ -570,7 +566,7 @@ class Player(object):
             self._visualizer.UseAlsa('')
 
     def toggle_kinect(self):
-        if not _USE_CC_TCL or not self._is_kinect_enabled:
+        if not self._is_kinect_enabled:
             return
         self._use_kinect = not self._use_kinect
         if not self._kinect:
@@ -609,12 +605,9 @@ class Player(object):
         if self.status == 'idle':
             # TODO(igorc): Keep drawing some neutral pattern for fun.
             return None
-        if self._tcl.has_scheduling_support():
-            return self._get_frame_images_new(need_original, need_intermediate)
-        else:
-            return self._get_frame_images_old()
+        return self._get_frame_images(need_original, need_intermediate)
 
-    def _get_frame_images_new(self, need_original, need_intermediate):
+    def _get_frame_images(self, need_original, need_intermediate):
         elapsed_time = self.elapsed_time
         start_time = time.time()
         if not self._use_visualization:
@@ -670,25 +663,6 @@ class Player(object):
         return Image.fromstring(
             'RGB', (self._kinect.GetWidth(), self._kinect.GetHeight()),
             img_data)
-
-    def _get_frame_images_old(self):
-        elapsed_time = self.elapsed_time
-        frame_num = int(elapsed_time * FPS)
-        frame_file = CLIPS_DIR + '/%s/frame%06d.jpg' \
-            % (self.clip_name, frame_num + 1)
-        if frame_file == self._last_frame_file:
-            return None
-        start_time = time.time()
-        new_frame = self._frame_source.load_frame_file(
-            self.clip_name, frame_num)
-        if not new_frame:
-            return None
-        self._last_frame_file = frame_file
-        delay_ms = int((float(frame_num) / FPS - elapsed_time) * 1000.0)
-        self._tcl.send_frame(TCL_MAIN, new_frame, frame_num, delay_ms)
-        duration_ms = int(round((time.time() - start_time) * 1000))
-        self._render_durations.add(duration_ms)
-        return (None, new_frame, None, None, None)
 
     def play_effect(self, name, **kwargs):
         logging.info("Playing %s: %s", name, kwargs)
