@@ -37,6 +37,8 @@ int main(int argc, char **argv) {
   using std::printf;
 
   try {
+    printf("DiscoFish sparks server (DFSP/" VERSION ", port %d)\n", 
+      dfsparks::udp_port);
     std::thread server_thread(broadcast_frames);
     server_thread.join();
   }

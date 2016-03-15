@@ -1,7 +1,9 @@
 .PHONY: all clean install
 
+VERSION = 0.1
+
 CXX = c++ 
-CXX_FLAGS = -std=c++11 -I src -I src/arduinolib/DFSparks
+CXX_FLAGS = -std=c++11 -Isrc -Isrc/arduinolib/DFSparks -DVERSION=\"$(VERSION)\"
 BUILDDIR = build
 
 ARDUINO_HEADERS = $(shell find src/arduinolib -name *.h -type f)
