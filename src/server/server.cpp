@@ -9,13 +9,12 @@
 #include <arpa/inet.h>
  
 #include "server/server.h"
-#include "arduinolib/DiscoFish_Color.h"
-#include "arduinolib/DiscoFish_WearableProtocol.h"
+#include "DFSparks.h"
 
-namespace dfwearables {
+namespace dfsparks {
 
 Server::Server() : sockfd(-1) {
-  int portno = DISCOFISH_WEARABLES_PORT;
+  int portno = udp_port;
   int err = 0;
   int optval = 1;
   struct sockaddr_in serveraddr;
@@ -65,16 +64,20 @@ Server::~Server() {
 }
 
 void Server::broadcast_solid_color(uint32_t color) {
-  dfwp_frame frame;
-  memset(&frame, 0, sizeof(frame));
-  frame.header.frame_type = DFWP_FRAME_SOLID;
-  frame.header.frame_size = sizeof(frame.header) + sizeof(frame.data);
-  frame.data.solid.color = color;
+  using frame::Frame;
+  using frame::Type;
 
-  if (sendto(sockfd, &frame, frame.header.frame_size, 0,
+  Frame frame;
+  size_t size = sizeof(frame.header) + sizeof(frame.data);
+  memset(&frame, 0, sizeof(frame));
+  frame.header.frame_type = htonl(static_cast<uint32_t>(Type::SOLID));
+  frame.header.frame_size = htonl(size);
+  frame.data.solid.color = htonl(color);
+
+  if (sendto(sockfd, &frame, size, 0,
                (struct sockaddr *)&clientaddr, sizeof(clientaddr)) < 0) {
     throw std::system_error(errno, std::system_category(), "Can't broadcast frame");
   }
 }
 
-} // namespace
+} // namespace dfsparks

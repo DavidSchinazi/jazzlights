@@ -11,3 +11,11 @@ Change directory to project root and run the following commands:
     make 
  
 
+Installation (OSX)
+---------------------
+
+Change directory to project root and run the following commands: 
+
+	brew tap homebrew/versions
+	brew install glfw3
+	make

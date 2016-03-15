@@ -1,12 +1,14 @@
 #include <cstdio>
 #include <thread>
 #include <chrono>
+#include "DFSparks.h"
 #include "server/server.h"
-#include "arduinolib/DiscoFish_Color.h"
 
 void broadcast_frames() {
   using std::printf;
-  using dfwearables::Server;
+  using std::chrono::milliseconds;
+  using dfsparks::Server;
+  using dfsparks::rgb;
 
   try {
     Server server;
@@ -15,15 +17,15 @@ void broadcast_frames() {
       switch(n % 2) {
         case 0: 
           printf("GREEN\n");
-          server.broadcast_solid_color(DFWP_RGB(0,255,0)); 
+          server.broadcast_solid_color(rgb(0,255,0)); 
           break; 
 
         case 1: 
           printf("RED\n");
-          server.broadcast_solid_color(DFWP_RGB(255,0,0)); 
+          server.broadcast_solid_color(rgb(255,0,0)); 
           break; 
       }
-      std::this_thread::sleep_for(std::chrono::seconds(1));
+      std::this_thread::sleep_for(milliseconds(1000));
     }
   }
   catch(const std::exception& ex) {

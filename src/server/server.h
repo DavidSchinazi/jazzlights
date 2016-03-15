@@ -1,8 +1,9 @@
-#ifndef DFWP_SERVER_H
-#define DFWP_SERVER_H
+#ifndef DFSPARKS_SERVER_H
+#define DFSPARKS_SERVER_H
 #include <netinet/in.h>
 
-namespace dfwearables {
+namespace dfsparks {
+   
    class Server {
    public:
       Server();
@@ -17,6 +18,6 @@ namespace dfwearables {
       int sockfd; 
       sockaddr_in clientaddr;  
    };
-} // namespace
+} // namespace dfsparks
 
-#endif /* DFWP_SERVER_H */
+#endif /* DFSPARKS_SERVER_H */
