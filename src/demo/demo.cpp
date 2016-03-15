@@ -6,7 +6,6 @@
 
 void broadcast_frames() {
   using std::printf;
-  using namespace std::literals;
   using dfwearables::Server;
 
   try {
@@ -24,7 +23,7 @@ void broadcast_frames() {
           server.broadcast_solid_color(DFWP_RGB(255,0,0)); 
           break; 
       }
-      std::this_thread::sleep_for(1s);
+      std::this_thread::sleep_for(std::chrono::seconds(1));
     }
   }
   catch(const std::exception& ex) {
@@ -34,7 +33,6 @@ void broadcast_frames() {
 
 int main(int argc, char **argv) {
   using std::printf;
-  using namespace std::literals;
 
   try {
     std::thread server_thread(broadcast_frames);

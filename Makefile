@@ -1,7 +1,7 @@
 .PHONY: all clean install
 
 CXX = c++ 
-CXX_FLAGS = -std=c++14 -Isrc
+CXX_FLAGS = -std=c++11 -Isrc
 BUILDDIR = build
 
 ARDUINO_HEADERS = $(shell find src/arduinolib -name *.h -type f)
