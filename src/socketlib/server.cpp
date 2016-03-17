@@ -8,7 +8,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
  
-#include "server/server.h"
+#include "socketlib/server.h"
 #include "DFSparks.h"
 
 namespace dfsparks {
@@ -64,17 +64,12 @@ Server::~Server() {
 }
 
 void Server::broadcast_solid_color(uint32_t color) {
-  using frame::Frame;
-  using frame::Type;
-
-  Frame frame;
-  size_t size = sizeof(frame.header) + sizeof(frame.data);
-  memset(&frame, 0, sizeof(frame));
-  frame.header.frame_type = htonl(static_cast<uint32_t>(Type::SOLID));
-  frame.header.frame_size = htonl(size);
-  frame.data.solid.color = htonl(color);
-
-  if (sendto(sockfd, &frame, size, 0,
+  char buf[frame::max_size];
+  size_t size = frame::solid::encode(buf, sizeof(buf), color);
+  if (!size) {
+    throw std::runtime_error("failed to encode solid frame");
+  }
+  if (sendto(sockfd, &buf, size, 0,
                (struct sockaddr *)&clientaddr, sizeof(clientaddr)) < 0) {
     throw std::system_error(errno, std::system_category(), "Can't broadcast frame");
   }

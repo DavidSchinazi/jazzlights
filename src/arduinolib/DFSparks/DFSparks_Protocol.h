@@ -1,36 +1,27 @@
-// DiscoFish wearables protocol
 #ifndef DFSPARKS_PROTOCOL_H
 #define DFSPARKS_PROTOCOL_H
+#include <stdint.h>
+#include <stddef.h>
 
 namespace dfsparks {
    namespace frame {
-
+      const int max_size = 256;
+      
       enum class Type {
-         NONE, SOLID, RANDOM
+         UNKNOWN, SOLID, RANDOM
       };
 
-      struct Header {
-         uint16_t protocol_version;
-         uint32_t frame_type;
-         uint32_t frame_size;
-      } __attribute__ ((__packed__));   
+      Type decode_type(void *buf, size_t bufsize);
 
-   struct SolidData {
-      uint32_t color;
-   } __attribute__ ((__packed__));
+      namespace solid {
+         size_t encode(void *buf, size_t bufsize, uint32_t color);
+         size_t decode(void *buf, size_t bufsize, uint32_t *color);
+      } // namespace solid
 
-   struct Frame {
-      Header header;
-      union {
-         SolidData solid;    
-      } data;
-   };
-
-} // namespace frame
+   } // namespace frame
 
 const int proto_version = 0;
 const int udp_port = 0xDF0D;
-const int frame_size = sizeof(frame::Frame);
 
 } // namespace dfsparks
 

@@ -1,16 +1,14 @@
-#include <Arduino.h>
+#ifdef ARDUINO
+# include <Arduino.h>
+#else
+# include <cstdint>
+#endif
 #include "DFSparks_Color.h"
 #include "DFSparks_Protocol.h"
 #include "DFSparks_Strand.h"
 
 namespace dfsparks {
-
-inline uint32_t ntohl(uint32_t n) {
-	return ((n & 0xFF) << 24)  | 
-		   ((n & 0xFF00) << 8) |
-		   ((n & 0xFF0000) >> 8) |
-		   ((n & 0xFF000000) >> 24);
-}
+using frame::Type;
 
 int Strand::begin(int pixelCount) {
 	len = pixelCount;
@@ -23,19 +21,19 @@ void Strand::end() {
 }
 
 int Strand::update(void *data, size_t size) {
-  	using frame::Frame;
-  	using frame::Type;
-  	Frame frame;
-  	if (size > sizeof(frame)) {
-  		return -1;
-  	}
-  	memcpy(&frame, data, size);
-  	if (ntohl(frame.header.frame_type) == static_cast<uint32_t>(Type::SOLID)) {
-  		uint32_t color = ntohl(frame.data.solid.color);
-  		for(int i=0; i<length(); ++i) {
-  			colors[i]=color;
-  		}
-  	}
+  switch(frame::decode_type(data, size)) {
+    case Type::SOLID: {
+      uint32_t color;
+      frame::solid::decode(data, size, &color);  
+      for(int i=0; i<length(); ++i) {
+        colors[i]=color;
+      }
+    }
+    return 1;
+
+    default:
+    return 0;
+  }
 	return 0;	
 }
 

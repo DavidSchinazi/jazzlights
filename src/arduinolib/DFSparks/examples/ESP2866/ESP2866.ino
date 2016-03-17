@@ -5,7 +5,7 @@
 char ssid[] = "***";  //  your network SSID (name)
 char pass[] = "***";  // your network password
 
-byte packetBuffer[DFSPARKS_FRAME_SIZE]; // buffer to hold incoming packets
+byte packetBuffer[DFSPARKS_MAX_FRAME_SIZE]; // buffer to hold incoming packets
 
 // A UDP instance to let us send and receive packets over UDP
 WiFiUDP udp;
