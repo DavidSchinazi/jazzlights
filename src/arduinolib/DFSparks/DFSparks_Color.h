@@ -1,9 +1,7 @@
 #ifndef DFSPARKS_COLOR_H
 #define DFSPARKS_COLOR_H
-#ifndef ARDUINO
-# include <stdint.h>
-# include <string.h>
-#endif
+#include <stdint.h>
+#include <string.h>
 
 namespace dfsparks {
 
@@ -41,7 +39,7 @@ namespace dfsparks {
  	 * @param   l lightness, [0,1]
 	 * @return  encoded color	
 	 */
-	uint32_t hsl(float h, float s, float l);
+	uint32_t hsl(double h, double s, double l);
 
 	inline uint8_t chan_alpha(uint32_t color) {
 		return color & 0xFF;

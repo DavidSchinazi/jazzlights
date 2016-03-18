@@ -2,31 +2,26 @@
 
 namespace dfsparks {
 
-float hue2rgb(float p, float q, float t) {
-    if(t < 0) t += 1;
-    if(t > 1) t -= 1;
-    if(t < 1/6) return p + (q - p) * 6 * t;
-    if(t < 1/2) return q;
-    if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-    return p;
+uint32_t scale(double r, double g, double b) {
+    return rgb(
+        static_cast<uint8_t>(r*255),
+        static_cast<uint8_t>(g*255), 
+        static_cast<uint8_t>(b*255)); 
 }
 
-uint32_t hsl(float h, float s, float l) {
-	h = h/=360.0; // convert from [0,360] to [0,1]
-	double r,g,b;
-	if (s == 0) {
-		r = g = b = l; // achromatic
-	} else {
-        double q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-        double p = 2 * l - q;
-        r = hue2rgb(p, q, h + 1/3);
-        g = hue2rgb(p, q, h);
-        b = hue2rgb(p, q, h - 1/3);
-	}
-	return rgb(
-		static_cast<uint8_t>(r*255),
-		static_cast<uint8_t>(g*255), 
-		static_cast<uint8_t>(b*255)); 
+uint32_t hsl(double h, double s, double v) {
+    if (s == 0.0) return scale(v, v, v);
+    int i = static_cast<int>(h*6.0) % 6;
+    double f = (h*6.0) - i;
+    double p = v*(1.0 - s);
+    double q = v*(1.0 - s*f);
+    double t = v*(1.0 - s*(1.0-f));
+    if (i%6 == 0) return scale(v, t, p);
+    if (i == 1) return scale(q, v, p);
+    if (i == 2) return scale(p, v, t);
+    if (i == 3) return scale(p, q, v);
+    if (i == 4) return scale(t, p, v);
+    /*if (i == 5)*/ return scale(v, p, q);
 }
 
 } // namespace dfsparks
