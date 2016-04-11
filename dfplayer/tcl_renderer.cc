@@ -36,35 +36,9 @@ TclRenderer* TclRenderer::instance_ = new TclRenderer();
 // TclController
 ///////////////////////////////////////////////////////////////////////////////
 
-struct LayoutMap {
-  LayoutMap() {
-    memset(lengths_, 0, sizeof(lengths_));
-  }
-
-  void AddCoord(int strand_id, int led_id, int x, int y) {
-    coords_[strand_id][led_id].push_back(Coord(x, y));
-  }
-
-  void AddHdrSibling(int strand_id, int led_id, int strand_id2, int led_id2) {
-    hdr_siblings_[strand_id][led_id].push_back(
-        HdrSibling(strand_id2, led_id2));
-  }
-
-  struct HdrSibling {
-    HdrSibling(int strand_id, int led_id)
-        : strand_id_(strand_id), led_id_(led_id) {}
-
-    int strand_id_;
-    int led_id_;
-  };
-
-  std::vector<Coord> coords_[STRAND_COUNT][STRAND_LENGTH];
-  std::vector<HdrSibling> hdr_siblings_[STRAND_COUNT][STRAND_LENGTH];
-  int lengths_[STRAND_COUNT];
-};
-
 struct Strands {
   Strands() {
+    // TODO(igorc): Get sizes from LedLayout.
     for (int i = 0; i < STRAND_COUNT; i++) {
       colors[i] = new uint8_t[STRAND_LENGTH * 4];
       lengths[i] = 0;
@@ -97,7 +71,7 @@ class TclController {
  public:
   TclController(
       int id, int width, int height,
-      const Layout& layout, double gamma);
+      const LedLayout& layout, double gamma);
   ~TclController();
 
   int GetId() const { return id_; }
@@ -139,15 +113,13 @@ class TclController {
 
   void SetHdrMode(HdrMode mode);
 
-  static uint8_t* ConvertStrandsToFrame(Strands* strands);
-  static int BuildFrameColorSeq(
+  uint8_t* ConvertStrandsToFrame(Strands* strands);
+  int BuildFrameColorSeq(
       Strands* strands, int led_id, int color_component, uint8_t* dst);
 
  private:
   TclController(const TclController& src);
   TclController& operator=(const TclController& rhs);
-
-  void PopulateLayoutMap(const Layout& layout);
 
   bool PopulateStrandsColors(
       Strands* strands, const RgbaImage& image);
@@ -168,7 +140,7 @@ class TclController {
   // TODO(igorc): Do atomic read.
   volatile InitStatus init_status_;
   RgbGamma gamma_;
-  LayoutMap layout_;
+  LedLayoutMap layout_;
   int socket_;
   bool require_reset_;
   uint64_t last_reply_time_;
@@ -189,11 +161,11 @@ class TclController {
 
 TclController::TclController(
     int id, int width, int height,
-    const Layout& layout, double gamma)
+    const LedLayout& layout, double gamma)
     : id_(id), width_(width), height_(height), init_status_(INIT_UNUSED),
-      socket_(-1), require_reset_(true), last_reply_time_(0),
-      reset_start_time_(0), last_image_id_(0), frames_sent_after_reply_(0),
-      hdr_mode_(HDR_NONE), rainbow_target_x_(-1) {
+      layout_(width, height), socket_(-1), require_reset_(true),
+      last_reply_time_(0), reset_start_time_(0), last_image_id_(0),
+      frames_sent_after_reply_(0), hdr_mode_(HDR_NONE), rainbow_target_x_(-1) {
   ResetRainbow();
 
   cv::Mat greyscale;
@@ -206,7 +178,7 @@ TclController::TclController(
   cv::cvtColor(coloredMap, rainbow_, CV_BGR2RGBA);
 
   SetGammaRanges(0, 255, gamma, 0, 255, gamma, 0, 255, gamma);
-  PopulateLayoutMap(layout);
+  layout_.PopulateLayoutMap(layout);
 }
 
 TclController::~TclController() {
@@ -258,110 +230,6 @@ void TclController::SetGammaRanges(
 
 void TclController::SetHdrMode(HdrMode mode) {
   hdr_mode_ = mode;
-}
-
-struct PixelUsage {
-  bool in_use;
-  bool is_primary;
-  int strand_id;
-  int led_id;
-};
-
-static void AddCoord(
-    LayoutMap* layout, PixelUsage* usage, int strand_id, int led_id,
-    int x, int y, int w, int h) {
-  if (x < 0 || x >= w || y < 0 || y >= h || usage[y * w + x].in_use)
-    return;
-  layout->AddCoord(strand_id, led_id, x, y);
-  int pos = y * w + x;
-  usage[pos].strand_id = strand_id;
-  usage[pos].led_id = led_id;
-  usage[pos].in_use = true;
-  usage[pos].is_primary = true;
-}
-
-static void CopyCoord(
-    LayoutMap* layout, PixelUsage* usage, int x, int y, int w, int h,
-    int x_src, int y_src) {
-  int pos_dst = y * w + x;
-  if (x_src < 0 || x_src >= w || y_src < 0 || y_src >= h ||
-      !usage[y_src * w + x_src].is_primary || usage[pos_dst].in_use) {
-    return;
-  }
-  (void) layout;
-  /*int pos_src = y_src * w + x_src;
-  layout->AddCoord(usage[pos_src].strand_id, usage[pos_src].led_id, x, y);
-  usage[pos_dst].strand_id = usage[pos_src].strand_id;
-  usage[pos_dst].led_id = usage[pos_src].led_id;
-  usage[pos_dst].in_use = true;*/
-}
-
-void TclController::PopulateLayoutMap(const Layout& layout) {
-  PixelUsage* usage = new PixelUsage[width_ * height_];
-  memset(usage, 0, width_ * height_ * sizeof(PixelUsage));
-  for (int strand_id = 0; strand_id < STRAND_COUNT; ++strand_id) {
-    int len = layout.lengths_[strand_id];
-    layout_.lengths_[strand_id] = len;
-    for (int led_id = 0; led_id < len; ++led_id) {
-      int x = layout.x_[strand_id][led_id];
-      int y = layout.y_[strand_id][led_id];
-      AddCoord(&layout_, usage, strand_id, led_id, x, y, width_, height_);
-      AddCoord(&layout_, usage, strand_id, led_id, x-1, y-1, width_, height_);
-      AddCoord(&layout_, usage, strand_id, led_id, x-1, y,   width_, height_);
-      AddCoord(&layout_, usage, strand_id, led_id, x-1, y+1, width_, height_);
-      AddCoord(&layout_, usage, strand_id, led_id, x+1, y-1, width_, height_);
-      AddCoord(&layout_, usage, strand_id, led_id, x+1, y,   width_, height_);
-      AddCoord(&layout_, usage, strand_id, led_id, x+1, y+1, width_, height_);
-      AddCoord(&layout_, usage, strand_id, led_id, x,   y-1, width_, height_);
-      AddCoord(&layout_, usage, strand_id, led_id, x,   y+1, width_, height_);
-    }
-  }
-
-  // TODO(igorc): Fill more of the pixel area.
-  // Find matches for all points that were not filled. Do only one iteration
-  // as the majority of the relevant pixels have already been mapped.
-  for (int x = 0; x < width_; ++x) {
-    for (int y = 0; y < height_; ++y) {
-      CopyCoord(&layout_, usage, x, y, width_, height_, x-1, y-1);
-      CopyCoord(&layout_, usage, x, y, width_, height_, x-1, y  );
-      CopyCoord(&layout_, usage, x, y, width_, height_, x-1, y+1);
-      CopyCoord(&layout_, usage, x, y, width_, height_, x+1, y-1);
-      CopyCoord(&layout_, usage, x, y, width_, height_, x+1, y  );
-      CopyCoord(&layout_, usage, x, y, width_, height_, x+1, y+1);
-      CopyCoord(&layout_, usage, x, y, width_, height_, x,   y-1);
-      CopyCoord(&layout_, usage, x, y, width_, height_, x,   y+1);
-    }
-  }
-
-  // Find HDR siblings.
-  // TODO(igorc): Compute max distance instead of hard-coding.
-  static const int kHdrSiblingsDistance = 13;
-  int max_distance2 = kHdrSiblingsDistance * kHdrSiblingsDistance;
-  for (int strand_id1 = 0; strand_id1 < STRAND_COUNT; ++strand_id1) {
-    for (int led_id1 = 0; led_id1 < layout.lengths_[strand_id1]; ++led_id1) {
-      int x1 = layout.x_[strand_id1][led_id1];
-      int y1 = layout.y_[strand_id1][led_id1];
-      for (int strand_id2 = 0; strand_id2 < STRAND_COUNT; ++strand_id2) {
-        for (int led_id2 = 0; led_id2 < layout.lengths_[strand_id2]; ++led_id2) {
-          int x_d = layout.x_[strand_id2][led_id2] - x1;
-          int y_d = layout.y_[strand_id2][led_id2] - y1;
-          int distance2 = x_d * x_d + y_d * y_d;
-          if (distance2 < max_distance2)
-            layout_.AddHdrSibling(strand_id1, led_id1, strand_id2, led_id2);
-        }
-      }
-    }
-  }
-
-  // TODO(igorc): Warn when no coordingates were found.
-
-  /*for (int strand_id  = 0; strand_id < STRAND_COUNT; ++strand_id) {
-    for (int led_id = 0; led_id < layout_.lengths_[strand_id]; ++led_id) {
-      fprintf(stderr, "HDR siblings: strand=%d, led=%d, count=%ld\n",
-              strand_id, led_id,
-              layout_.hdr_siblings_[strand_id][led_id].size());
-    }
-  }*/
 }
 
 bool TclController::BuildImage(
@@ -539,11 +407,12 @@ bool TclController::PopulateStrandsColors(
     Strands* strands, const RgbaImage& image) {
   const uint8_t* image_data = image.GetData();
   int image_len = RGBA_LEN(width_, height_);
-  for (int strand_id  = 0; strand_id < STRAND_COUNT; ++strand_id) {
-    int strand_len = layout_.lengths_[strand_id];
+  for (int strand_id  = 0; strand_id < layout_.GetStrandCount(); ++strand_id) {
+    int strand_len = layout_.GetLedCount(strand_id);
     uint8_t* dst_colors = strands->colors[strand_id];
     for (int led_id = 0; led_id < strand_len; ++led_id) {
-      const std::vector<Coord>& coords = layout_.coords_[strand_id][led_id];
+      const std::vector<LedCoord> coords =
+          layout_.GetLedCoords(strand_id, led_id);
       uint32_t coord_count = coords.size();
       if (!coord_count)
         continue;
@@ -551,8 +420,8 @@ bool TclController::PopulateStrandsColors(
       uint32_t r1 = 0, g1 = 0, b1 = 0, c1 = 0;
       uint32_t r2 = 0, g2 = 0, b2 = 0, c2 = 0;
       for (uint32_t c_id = 0; c_id < coord_count; ++c_id) {
-        int x = coords[c_id].x_;
-        int y = coords[c_id].y_;
+        int x = coords[c_id].x;
+        int y = coords[c_id].y;
         int color_idx = (y * width_ + x) * 4;
         if (color_idx < 0 || (color_idx + 4) > image_len) {
           fprintf(stderr,
@@ -599,8 +468,8 @@ bool TclController::PopulateStrandsColors(
 }
 
 void TclController::ApplyStrandsGamma(Strands* strands) {
-  for (int strand_id  = 0; strand_id < STRAND_COUNT; ++strand_id) {
-    int strand_len = layout_.lengths_[strand_id];
+  for (int strand_id  = 0; strand_id < layout_.GetStrandCount(); ++strand_id) {
+    int strand_len = layout_.GetLedCount(strand_id);
     uint8_t* colors = strands->colors[strand_id];
     for (int led_id = 0; led_id < strand_len; ++led_id) {
       uint32_t* color = (uint32_t*) (colors + led_id * 4);
@@ -612,15 +481,16 @@ void TclController::ApplyStrandsGamma(Strands* strands) {
 void TclController::SaveLedImageForStrands(Strands* strands) {
   uint8_t* led_image_data = new uint8_t[RGBA_LEN(width_, height_)];
   memset(led_image_data, 0, RGBA_LEN(width_, height_));
-  for (int strand_id  = 0; strand_id < STRAND_COUNT; ++strand_id) {
-    int strand_len = layout_.lengths_[strand_id];
+  for (int strand_id  = 0; strand_id < layout_.GetStrandCount(); ++strand_id) {
+    int strand_len = layout_.GetLedCount(strand_id);
     uint8_t* colors = strands->colors[strand_id];
     for (int led_id = 0; led_id < strand_len; ++led_id) {
-      const std::vector<Coord>& coords = layout_.coords_[strand_id][led_id];
+      const std::vector<LedCoord>& coords =
+          layout_.GetLedCoords(strand_id, led_id);
       uint32_t color = *((uint32_t*) (colors + led_id * 4));
       for (size_t c_id = 0; c_id < coords.size(); ++c_id) {
-        int x = coords[c_id].x_;
-        int y = coords[c_id].y_;
+        int x = coords[c_id].x;
+        int y = coords[c_id].y;
         int color_idx = (y * width_ + x) * 4;
         *((uint32_t*) (led_image_data + color_idx)) = color;
       }
@@ -634,8 +504,8 @@ void TclController::ConvertStrandsHls(Strands* strands, bool to_hls) {
   uint32_t tmp = 0;
   cv::Mat hls(1, 1, CV_8UC3, &tmp);
   cv::Mat rgb(1, 1, CV_8UC3, &tmp);
-  for (int strand_id  = 0; strand_id < STRAND_COUNT; ++strand_id) {
-    int strand_len = layout_.lengths_[strand_id];
+  for (int strand_id  = 0; strand_id < layout_.GetStrandCount(); ++strand_id) {
+    int strand_len = layout_.GetLedCount(strand_id);
     uint8_t* colors = strands->colors[strand_id];
     for (int led_id = 0; led_id < strand_len; ++led_id) {
       uint8_t* color_ptr = colors + led_id * 4;
@@ -661,22 +531,23 @@ void TclController::PerformHdr(Strands* strands) {
   if (hdr_mode_ == HDR_NONE)
     return;
 
-  uint8_t* res_colors[STRAND_COUNT];
-  for (int i = 0; i < STRAND_COUNT; ++i)
-    res_colors[i] = new uint8_t[STRAND_LENGTH * 4];
+  uint8_t* res_colors[layout_.GetStrandCount()];
+  for (int i = 0; i < layout_.GetStrandCount(); ++i) {
+    res_colors[i] = new uint8_t[layout_.GetLedCount(i) * 4];
+  }
 
   // Populate resulting colors with HDR image.
-  for (int strand_id  = 0; strand_id < STRAND_COUNT; ++strand_id) {
-    int strand_len = layout_.lengths_[strand_id];
+  for (int strand_id  = 0; strand_id < layout_.GetStrandCount(); ++strand_id) {
+    int strand_len = layout_.GetLedCount(strand_id);
     for (int led_id = 0; led_id < strand_len; ++led_id) {
       uint32_t l_min = 255, l_max = 0, s_min = 255, s_max = 0;
-      const std::vector<LayoutMap::HdrSibling>& siblings =
-          layout_.hdr_siblings_[strand_id][led_id];
+      const std::vector<LedAddress> siblings =
+          layout_.GetHdrSiblings(strand_id, led_id);
       uint8_t* src_color = strands->colors[strand_id] + led_id * 4;
       uint8_t* res_color = res_colors[strand_id] + led_id * 4;
       for (size_t i = 0; i < siblings.size(); ++i) {
-        uint8_t* hls = strands->colors[siblings[i].strand_id_] +
-            siblings[i].led_id_ * 4;
+        uint8_t* hls = strands->colors[siblings[i].strand_id] +
+            siblings[i].led_id * 4;
         uint8_t l = hls[1];
         uint8_t s = hls[2];
         if (l < l_min) {
@@ -709,17 +580,16 @@ void TclController::PerformHdr(Strands* strands) {
   }
 
   // Copy resulting colors back to the strand.
-  for (int strand_id  = 0; strand_id < STRAND_COUNT; ++strand_id) {
-    int strand_len = layout_.lengths_[strand_id];
+  for (int strand_id  = 0; strand_id < layout_.GetStrandCount(); ++strand_id) {
+    int strand_len = layout_.GetLedCount(strand_id);
     memcpy(strands->colors[strand_id], res_colors[strand_id],
            strand_len * 4);
   }
 
-  for (int i = 0; i < STRAND_COUNT; ++i)
+  for (int i = 0; i < layout_.GetStrandCount(); ++i)
     delete[] res_colors[i];
 }
 
-// static
 uint8_t* TclController::ConvertStrandsToFrame(Strands* strands) {
   uint8_t* result = new uint8_t[FRAME_DATA_LEN];
   int pos = 0;
@@ -736,15 +606,13 @@ uint8_t* TclController::ConvertStrandsToFrame(Strands* strands) {
   return result;
 }
 
-// static
 int TclController::BuildFrameColorSeq(
-    Strands* strands, int led_id,
-    int color_component, uint8_t* dst) {
+    Strands* strands, int led_id, int color_component, uint8_t* dst) {
   int pos = 0;
   int color_bit_mask = 0x80;
   while (color_bit_mask > 0) {
     uint8_t dst_byte = 0;
-    for (int strand_id  = 0; strand_id < STRAND_COUNT; strand_id++) {
+    for (int strand_id  = 0; strand_id < layout_.GetStrandCount(); strand_id++) {
       if (led_id >= strands->lengths[strand_id])
         continue;
       uint8_t* colors = strands->colors[strand_id];
@@ -977,7 +845,7 @@ TclRenderer::~TclRenderer() {
 
 void TclRenderer::AddController(
     int id, int width, int height,
-    const Layout& layout, double gamma) {
+    const LedLayout& layout, double gamma) {
   Autolock l(lock_);
   CHECK(!controllers_locked_);
   CHECK(FindControllerLocked(id) == NULL);
@@ -1435,20 +1303,3 @@ AdjustableTime::AdjustableTime() : time_(GetCurrentMillis()) {}
 void AdjustableTime::AddMillis(int ms) {
   time_ += ms;
 }
-
-Layout::Layout() {
-  memset(lengths_, 0, sizeof(lengths_));
-}
-
-void Layout::AddCoord(int strand_id, int x, int y) {
-  CHECK(strand_id >= 0 && strand_id < STRAND_COUNT);
-  if (lengths_[strand_id] == STRAND_LENGTH) {
-    fprintf(stderr, "Cannot add more coords to strand %d\n", strand_id);
-    return;
-  }
-  int pos = lengths_[strand_id];
-  lengths_[strand_id] = pos + 1;
-  x_[strand_id][pos] = x;
-  y_[strand_id][pos] = y;
-}
-

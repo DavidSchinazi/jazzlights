@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "utils.h"
+#include "util/pixels.h"
 #include "input_alsa.h"
 #include "../projectm/src/libprojectM/projectM.hpp"
 

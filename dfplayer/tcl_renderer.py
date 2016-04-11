@@ -7,7 +7,7 @@ from PIL import Image
 
 from .stats import Stats
 from .tcl_layout import TclLayout
-from .renderer_cc import Layout as TclCcLayout
+from .renderer_cc import LedLayout as TclCcLayout
 from .renderer_cc import TclRenderer as TclCcImpl
 from .renderer_cc import AdjustableTime as TclCcTime
 from .util import get_time_millis

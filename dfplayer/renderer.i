@@ -35,6 +35,7 @@ namespace std {
 #include "kinect.h"
 #include "tcl_renderer.h"
 #include "visualizer.h"
+#include "../src/util/led_layout.h"
 %}
 
 %inline %{
@@ -43,4 +44,5 @@ namespace std {
 %include "kinect.h"
 %include "tcl_renderer.h"
 %include "visualizer.h"
+%include "../src/util/led_layout.h"
 

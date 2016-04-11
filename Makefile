@@ -6,7 +6,9 @@ SOURCES := \
 	dfplayer/input_alsa.cc \
 	dfplayer/kinect.cc \
 	dfplayer/utils.cc \
-	dfplayer/renderer_wrap.cxx
+	dfplayer/renderer_wrap.cxx \
+	src/util/led_layout.cc \
+	src/util/pixels.cc
 
 LINK_LIBS := \
 	-lpthread -lm -ldl -lasound -lGL \
@@ -19,7 +21,9 @@ LINK_DEPS := \
 COPTS := \
 	-std=c++0x -Wall -Wextra \
 	-g -ggdb3 -fPIC \
-	-shared `python-config --includes` \
+	-shared \
+	`python-config --includes` \
+	-Isrc \
 	-Wl,-rpath,./dfplayer
 
 all: develop cpp clips

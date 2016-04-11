@@ -14,6 +14,8 @@
 #include <vector>
 
 #include "utils.h"
+#include "util/led_layout.h"
+#include "util/pixels.h"
 
 #define STRAND_COUNT    8
 #define STRAND_LENGTH   512
@@ -30,19 +32,6 @@ struct AdjustableTime {
  private:
   uint64_t time_;
   friend class TclRenderer;
-};
-
-// Contains coordinates of the LED's on strands.
-struct Layout {
-  Layout();
-
-  void AddCoord(int strand_id, int x, int y);
-
- private:
-  int x_[STRAND_COUNT][STRAND_LENGTH];
-  int y_[STRAND_COUNT][STRAND_LENGTH];
-  int lengths_[STRAND_COUNT];
-  friend class TclController;
 };
 
 enum EffectMode {
@@ -73,7 +62,7 @@ class TclRenderer {
   // layout should be normalized to this image size.
   void AddController(
       int id, int width, int height,
-      const Layout& layout, double gamma);
+      const LedLayout& layout, double gamma);
   void LockControllers();
 
   static TclRenderer* GetInstance() { return instance_; }
