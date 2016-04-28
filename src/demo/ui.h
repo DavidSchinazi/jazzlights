@@ -4,9 +4,8 @@
 namespace dfsparks {
 namespace ui {
 
-int run();    
-void update(void *data, size_t len);
-
-}}
+int run();
+}
+}
 
 #endif /* DFSPARKS_UI_H */

@@ -3,9 +3,9 @@
 #include <atomic>
 
 namespace dfsparks {
-   namespace server {
-   		void run(std::atomic<bool>& stopped);
-   } // namespace server
+namespace server {
+void run(std::atomic<bool> &stopped);
+} // namespace server
 } // namespace dfsparks
 
 #endif /* DFSPARKS_SERVER_H */
