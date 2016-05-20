@@ -16,6 +16,8 @@
 #include <algorithm>
 #include <vector>
 
+#include "util/lock.h"
+#include "util/time.h"
 #include "utils.h"
 
 #include "../external/kkonnect/include/kk_connection.h"

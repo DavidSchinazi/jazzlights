@@ -60,7 +60,7 @@ RgbaImage::RgbaImage() : data_(NULL) {
   Set(NULL, 0, 0);
 }
 
-RgbaImage::RgbaImage(uint8_t* data, int w, int h) : data_(NULL) {
+RgbaImage::RgbaImage(const uint8_t* data, int w, int h) : data_(NULL) {
   Set(data, w, h);
 }
 
@@ -78,7 +78,7 @@ RgbaImage::~RgbaImage() {
   delete[] data_;
 }
 
-void RgbaImage::Set(uint8_t* data, int w, int h) {
+void RgbaImage::Set(const uint8_t* data, int w, int h) {
   delete[] data_;
   data_ = NULL;
   width_ = w;

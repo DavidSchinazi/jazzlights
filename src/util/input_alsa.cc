@@ -25,7 +25,7 @@
 // Original code taken from libvisual-plugins/plugins/input/alsa/input_alsa.c
 // Igor Chernyshev: Changed to work independently from libvisual.
 
-#include "input_alsa.h"
+#include "util/input_alsa.h"
 
 #include <alsa/version.h>
 #if (SND_LIB_MAJOR == 0 && SND_LIB_MINOR == 9)
@@ -224,4 +224,3 @@ int inp_alsa_read (
 
 	return 0;
 }
-

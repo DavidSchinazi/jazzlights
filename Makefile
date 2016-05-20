@@ -3,12 +3,15 @@
 SOURCES := \
 	dfplayer/tcl_renderer.cc \
 	dfplayer/visualizer.cc \
-	dfplayer/input_alsa.cc \
 	dfplayer/kinect.cc \
 	dfplayer/utils.cc \
 	dfplayer/renderer_wrap.cxx \
+	src/model/image_source.cc \
+	src/model/projectm_source.cc \
+	src/util/input_alsa.cc \
 	src/util/led_layout.cc \
-	src/util/pixels.cc
+	src/util/pixels.cc \
+	src/util/time.cc
 
 LINK_LIBS := \
 	-lpthread -lm -ldl -lasound -lGL \

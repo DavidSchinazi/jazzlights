@@ -45,20 +45,23 @@ struct RgbGamma {
 
 // TODO(igorc): Reduce the number of data copies.
 // Maybe reuse OpenCV classes.
-struct RgbaImage {
+class RgbaImage {
+ public:
   RgbaImage();
-  RgbaImage(uint8_t* data, int w, int h);
+  RgbaImage(const uint8_t* data, int w, int h);
   RgbaImage(const RgbaImage& src);
   RgbaImage& operator=(const RgbaImage& rhs);
   ~RgbaImage();
 
   void Clear() { Set(NULL, 0, 0); }
-  void Set(uint8_t* data, int w, int h);
+  void Set(const uint8_t* data, int w, int h);
 
-  bool IsEmpty() const { return data_ == NULL; }
-  uint8_t* GetData() const { return data_; }
   int GetWidth() const { return width_; }
   int GetHeight() const { return height_; }
+
+  bool IsEmpty() const { return data_ == NULL; }
+  uint8_t* GetData() { return data_; }
+  const uint8_t* GetData() const { return data_; }
   int GetDataLen() const { return RGBA_LEN(width_, height_); }
 
  private:
@@ -68,6 +71,7 @@ struct RgbaImage {
 };
 
 // Resizes image using bilinear interpolation.
+// TODO(igorc): Move these into RgbaImage.
 uint8_t* ResizeImage(
     uint8_t* src, int src_w, int src_h, int dst_w, int dst_h);
 

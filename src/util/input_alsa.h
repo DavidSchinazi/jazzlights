@@ -3,8 +3,8 @@
 //
 // ALSA input module.
 
-#ifndef __DFPLAYER_INPUT_ALSA_H
-#define __DFPLAYER_INPUT_ALSA_H
+#ifndef UITL_INPUT_ALSA_H_
+#define UITL_INPUT_ALSA_H_
 
 #include <stdint.h>
 
@@ -22,5 +22,4 @@ int inp_alsa_read (
 	AlsaInputHandle* handle, int16_t* data,
 	int sampleCount, int *overrunCount);
 
-#endif  // __DFPLAYER_INPUT_ALSA_H
-
+#endif  // UITL_INPUT_ALSA_H_

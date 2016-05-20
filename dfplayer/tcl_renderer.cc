@@ -21,6 +21,10 @@
 
 #include <sstream>
 
+#include "util/lock.h"
+#include "util/logging.h"
+#include "util/time.h"
+
 #define FRAME_DATA_LEN  (STRAND_LENGTH * 8 * 3)
 
 static const int kMgsStartDelayUs = 500;
