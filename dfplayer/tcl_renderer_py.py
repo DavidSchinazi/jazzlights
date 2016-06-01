@@ -99,9 +99,6 @@ class TclRenderer(object):
     self._frame_delays = []
     return result
 
-  def get_send_duration_ms(self):
-    return int((_MSG_START_FRAME_DELAY + _FRAME_MSG_DELAY * 12) * 1000.0)
-
   def get_frame_data_for_test(self, image_colors):
     return self._convert_image_to_frame_data(image_colors)
 

@@ -245,3 +245,42 @@ void LedLayoutMap::PopulateLayoutMap(const LedLayout& layout) {
     }
   }*/
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// LedStrands
+////////////////////////////////////////////////////////////////////////////////
+
+LedStrands::LedStrands(const LedLayout& layout) {
+  strands_.resize(layout.GetStrandCount());
+  for (int i = 0; i < layout.GetStrandCount(); ++i) {
+    int led_count = layout.GetLedCount(i);
+    strands_[i].color_data.resize(led_count * 4);
+  }
+}
+
+LedStrands::LedStrands(const LedLayoutMap& layout) {
+  strands_.resize(layout.GetStrandCount());
+  for (int i = 0; i < layout.GetStrandCount(); ++i) {
+    int led_count = layout.GetLedCount(i);
+    strands_[i].color_data.resize(led_count * 4);
+  }
+}
+
+int LedStrands::GetStrandCount() const {
+  return strands_.size();
+}
+
+int LedStrands::GetLedCount(int strand_id) const {
+  CHECK(strand_id >= 0 && strand_id < static_cast<int>(strands_.size()));
+  return strands_[strand_id].color_data.size() / 4;
+}
+
+uint8_t* LedStrands::GetColorData(int strand_id) {
+  CHECK(strand_id >= 0 && strand_id < static_cast<int>(strands_.size()));
+  return &strands_[strand_id].color_data[0];
+}
+
+const uint8_t* LedStrands::GetColorData(int strand_id) const {
+  CHECK(strand_id >= 0 && strand_id < static_cast<int>(strands_.size()));
+  return &strands_[strand_id].color_data[0];
+}

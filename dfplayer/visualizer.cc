@@ -128,7 +128,7 @@ Bytes* Visualizer::GetAndClearLastImageForTest() {
   delete[] dst;
   return result;*/
   std::unique_ptr<RgbaImage> image = projectm_source_->GetImage(-1);
-  return new Bytes(image->GetData(), image->GetDataLen());
+  return new Bytes(image->data(), image->data_size());
 }
 
 void Visualizer::SetVolumeMultiplier(double value) {
@@ -155,7 +155,7 @@ void Visualizer::PostTclFrameLocked() {
   AdjustableTime now;
   // TODO(igorc): Reduce data copies.
   std::unique_ptr<RgbaImage> image = projectm_source_->GetImage(-1);
-  Bytes* bytes = new Bytes(image->GetData(), image->GetDataLen());
+  Bytes* bytes = new Bytes(image->data(), image->data_size());
   for (size_t i = 0; i < target_controllers_.size(); ++i) {
     const ControllerInfo& controller = target_controllers_[i];
     tcl->ScheduleImageAt(

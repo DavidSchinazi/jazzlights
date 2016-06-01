@@ -91,9 +91,6 @@ class TclRenderer(object):
   def get_last_image_id(self, controller):
     return self._renderer.GetLastImageId(controller)
 
-  def get_send_duration_ms(self):
-    return self._frame_send_duration
-
   def get_queue_size(self):
     return self._renderer.GetQueueSize()
 

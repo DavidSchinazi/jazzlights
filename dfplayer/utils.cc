@@ -4,17 +4,10 @@
 
 #include "utils.h"
 
-#include <errno.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
-#include <time.h>
-#include <unistd.h>
 
 Bytes::Bytes(const void* data, int len)
-    : data_(NULL), len_(0) {
+    : data_(nullptr), len_(0) {
   SetData(data, len);
 }
 
@@ -25,7 +18,7 @@ Bytes::~Bytes() {
 void Bytes::Clear() {
   if (data_)
     delete[] data_;
-  data_ = NULL;
+  data_ = nullptr;
   len_ = 0;
 }
 

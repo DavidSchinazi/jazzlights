@@ -6,22 +6,19 @@
 #ifndef __DFPLAYER_TCL_RENDERER_H
 #define __DFPLAYER_TCL_RENDERER_H
 
-#include <pthread.h>
 #include <stdint.h>
 
-#include <queue>
+#include <memory>
 #include <string>
 #include <vector>
 
+#include "tcl/tcl_types.h"
 #include "utils.h"
 #include "util/led_layout.h"
 #include "util/pixels.h"
 
-#define STRAND_COUNT    8
-#define STRAND_LENGTH   512
-
 class TclRenderer;
-class TclController;
+class TclManager;
 
 // Represents time that can be used for scheduling purposes.
 struct AdjustableTime {
@@ -38,13 +35,6 @@ enum EffectMode {
   EFFECT_OVERLAY = 0,
   EFFECT_DUPLICATE = 1,
   EFFECT_MIRROR = 2,
-};
-
-enum HdrMode {
-  HDR_NONE = 0,
-  HDR_LUMINANCE = 1,
-  HDR_SATURATION = 2,
-  HDR_LSAT = 3,
 };
 
 // Sends requested images to TCL controller.
@@ -118,45 +108,11 @@ class TclRenderer {
   TclRenderer& operator=(const TclRenderer& rhs);
   ~TclRenderer();
 
-  struct WorkItem {
-    WorkItem(bool needs_reset, TclController* controller,
-             const RgbaImage& img, int id, uint64_t time)
-        : needs_reset_(needs_reset), controller_(controller),
-          img_(img), id_(id), time_(time) {}
+  std::unique_ptr<RgbaImage> BuildImageLocked(
+      const RgbaImage& input_img, EffectMode mode,
+      int rotation_angle, int dst_w, int dst_h);
 
-    bool operator<(const WorkItem& other) const {
-      return (time_ > other.time_);
-    }
-
-    bool needs_reset_;
-    TclController* controller_;
-    RgbaImage img_;
-    int id_;
-    uint64_t time_;
-  };
-
-  void Run();
-  static void* ThreadEntry(void* arg);
-
-  TclController* FindControllerLocked(int id);
-
-  bool PopNextWorkItemLocked(WorkItem* item, int64_t* next_time);
-  void WaitForQueueLocked(int64_t next_time);
-  void WakeupLocked();
-
-  std::vector<TclController*> controllers_;
-  int fps_;
-  int auto_reset_after_no_data_ms_;
-  bool is_shutting_down_;
-  bool has_started_thread_;
-  bool enable_net_;
-  bool controllers_locked_;
-  uint64_t base_time_;
-  std::priority_queue<WorkItem> queue_;
-  pthread_mutex_t lock_;
-  pthread_cond_t cond_;
-  pthread_t thread_;
-  std::vector<int> frame_delays_;
+  TclManager* tcl_manager_;
 
   static TclRenderer* instance_;
 };

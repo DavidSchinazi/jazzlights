@@ -5,15 +5,11 @@
 #ifndef __DFPLAYER_UTILS_H
 #define __DFPLAYER_UTILS_H
 
-#include <pthread.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
 
 // Contains array of bytes and deallocates in destructor.
 struct Bytes {
-  Bytes() : data_(NULL), len_(0) {}
+  Bytes() : data_(nullptr), len_(0) {}
   Bytes(const void* data, int len);
   ~Bytes();
 

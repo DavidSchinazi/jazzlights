@@ -8,6 +8,8 @@ SOURCES := \
 	dfplayer/renderer_wrap.cxx \
 	src/model/image_source.cc \
 	src/model/projectm_source.cc \
+	src/tcl/tcl_controller.cc \
+	src/tcl/tcl_manager.cc \
 	src/util/input_alsa.cc \
 	src/util/led_layout.cc \
 	src/util/pixels.cc \

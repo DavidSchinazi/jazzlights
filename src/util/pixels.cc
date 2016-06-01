@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "util/logging.h"
+
 ////////////////////////////////////////////////////////////////////////////////
 // RgbGamma
 ////////////////////////////////////////////////////////////////////////////////
@@ -56,15 +58,15 @@ void RgbGamma::Apply(uint8_t* dst, const uint8_t* src, int w, int h) const {
 // RgbaImage
 ////////////////////////////////////////////////////////////////////////////////
 
-RgbaImage::RgbaImage() : data_(NULL) {
+RgbaImage::RgbaImage() {
   Set(NULL, 0, 0);
 }
 
-RgbaImage::RgbaImage(const uint8_t* data, int w, int h) : data_(NULL) {
+RgbaImage::RgbaImage(const uint8_t* data, int w, int h) {
   Set(data, w, h);
 }
 
-RgbaImage::RgbaImage(const RgbaImage& src) : data_(NULL) {
+RgbaImage::RgbaImage(const RgbaImage& src) {
   Set(src.data_, src.width_, src.height_);
 }
 
@@ -74,20 +76,32 @@ RgbaImage& RgbaImage::operator=(const RgbaImage& rhs) {
   return *this;
 }
 
-RgbaImage::~RgbaImage() {
-  delete[] data_;
+RgbaImage::~RgbaImage() {}
+
+void RgbaImage::ResizeStorage(int w, int h) {
+  width_ = w;
+  height_ = h;
+  data_.resize(RGBA_LEN(w, h));
 }
 
 void RgbaImage::Set(const uint8_t* data, int w, int h) {
-  delete[] data_;
-  data_ = NULL;
-  width_ = w;
-  height_ = h;
-  int len = RGBA_LEN(w, h);
-  if (len) {
-    data_ = new uint8_t[len];
-    memcpy(data_, data, len);
-  }
+  ResizeStorage(w, h);
+  if (data_.size())
+    memcpy(&data_[0], data, data_.size());
+}
+
+void RgbaImage::Set(const std::vector<uint8_t>& data, int w, int h) {
+  CHECK(static_cast<int>(data.size()) == RGBA_LEN(w, h));
+  Set(&data[0], w, h);
+}
+
+std::unique_ptr<RgbaImage> RgbaImage::CloneAndClear(bool null_if_empty) {
+  if (null_if_empty && empty())
+    return std::unique_ptr<RgbaImage>();
+
+  RgbaImage* result = new RgbaImage(*this);
+  Clear();
+  return std::unique_ptr<RgbaImage>(result);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -95,20 +109,25 @@ void RgbaImage::Set(const uint8_t* data, int w, int h) {
 ////////////////////////////////////////////////////////////////////////////////
 
 // Resizes image using bilinear interpolation.
-uint8_t* ResizeImage(
-    uint8_t* src, int src_w, int src_h, int dst_w, int dst_h) {
-  cv::Mat src_img(src_h, src_w, CV_8UC4, src);
+void ResizeImage(
+    const uint8_t* src, int src_w, int src_h,
+    uint8_t* dst, int dst_w, int dst_h) {
+  const cv::Mat src_img(src_h, src_w, CV_8UC4, const_cast<uint8_t*>(src));
   cv::Mat dst_img(cv::Size(dst_w, dst_h), CV_8UC4);
   cv::resize(src_img, dst_img, dst_img.size());
   dst_img = dst_img.clone();  // Make it contiguous
-  int dst_len = dst_w * dst_h * 4;
-  uint8_t* dst = new uint8_t[dst_len];
-  memcpy(dst, dst_img.data, dst_len);
+  memcpy(dst, dst_img.data, RGBA_LEN(dst_w, dst_h));
+}
+
+uint8_t* ResizeImage(
+    const uint8_t* src, int src_w, int src_h, int dst_w, int dst_h) {
+  uint8_t* dst = new uint8_t[RGBA_LEN(dst_w, dst_h)];
+  ResizeImage(src, src_w, src_h, dst, dst_w, dst_h);
   return dst;
 }
 
-uint8_t* FlipImage(uint8_t* src, int w, int h, bool horizontal) {
-  cv::Mat src_img(h, w, CV_8UC4, src);
+uint8_t* FlipImage(const uint8_t* src, int w, int h, bool horizontal) {
+  const cv::Mat src_img(h, w, CV_8UC4, const_cast<uint8_t*>(src));
   cv::Mat dst_img(cv::Size(w, h), CV_8UC4);
   cv::flip(src_img, dst_img, (horizontal ? 1 : 0));
   int dst_len = w * h * 4;
@@ -118,8 +137,8 @@ uint8_t* FlipImage(uint8_t* src, int w, int h, bool horizontal) {
 }
 
 uint8_t* RotateImage(
-    uint8_t* src, int src_w, int src_h, int w, int h, int angle) {
-  cv::Mat src_img(src_h, src_w, CV_8UC4, src);
+    const uint8_t* src, int src_w, int src_h, int w, int h, int angle) {
+  const cv::Mat src_img(src_h, src_w, CV_8UC4, const_cast<uint8_t*>(src));
   cv::Mat dst_img(cv::Size(w, h), CV_8UC4);
 
   int max_dim = std::max(src_img.cols, src_img.rows);
@@ -134,9 +153,9 @@ uint8_t* RotateImage(
 }
 
 uint8_t* CropImage(
-    uint8_t* src, int src_w, int src_h,
+    const uint8_t* src, int src_w, int src_h,
     int crop_x, int crop_y, int crop_w, int crop_h) {
-  cv::Mat src_img(src_h, src_w, CV_8UC4, src);
+  const cv::Mat src_img(src_h, src_w, CV_8UC4, const_cast<uint8_t*>(src));
   cv::Rect roi(crop_x, crop_y, crop_w, crop_h);
   cv::Mat dst_img = src_img(roi);
   int dst_len = RGBA_LEN(crop_w, crop_h);
@@ -150,7 +169,7 @@ uint8_t* CropImage(
                   (255 - ((uint32_t) (a))) * (b) ) / 255 )
 
 void PasteSubImage(
-    uint8_t* src, int src_w, int src_h,
+    const uint8_t* src, int src_w, int src_h,
     uint8_t* dst, int dst_x, int dst_y, int dst_w, int dst_h,
     bool enable_alpha, bool carry_alpha) {
   for (int y = 0; y < src_h; y++) {

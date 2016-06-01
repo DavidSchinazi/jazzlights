@@ -96,4 +96,30 @@ class LedLayoutMap {
   std::vector<StrandData> strands_;
 };
 
+// Contains color data for individual LED's.
+class LedStrands {
+ public:
+  LedStrands(const LedLayout& layout);
+  LedStrands(const LedLayoutMap& layout);
+
+  int GetStrandCount() const;
+  int GetLedCount(int strand_id) const;
+
+  uint8_t* GetColorData(int strand_id);
+  const uint8_t* GetColorData(int strand_id) const;
+  int GetColorDataSize(int strand_id) const {
+    return GetLedCount(strand_id) * 4;
+  }
+
+ private:
+  struct StrandData {
+    std::vector<uint8_t> color_data;
+  };
+
+  LedStrands(const LedStrands& src);
+  LedStrands& operator=(const LedStrands& rhs);
+
+  std::vector<StrandData> strands_;
+};
+
 #endif  // UTIL_LED_LAYOUT_H_

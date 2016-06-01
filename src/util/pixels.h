@@ -6,6 +6,9 @@
 #include <stdint.h>
 #include <unistd.h>
 
+#include <memory>
+#include <vector>
+
 #define COPY_PIXEL(dst, dst_pos, src, src_pos)                  \
   *((uint32_t*) ((uint8_t*) (dst) + (dst_pos))) =               \
       *((uint32_t*)((uint8_t*) (src) + (src_pos)))
@@ -55,17 +58,23 @@ class RgbaImage {
 
   void Clear() { Set(NULL, 0, 0); }
   void Set(const uint8_t* data, int w, int h);
+  void Set(const std::vector<uint8_t>& data, int w, int h);
 
-  int GetWidth() const { return width_; }
-  int GetHeight() const { return height_; }
+  // Resizes image storage. Actual data will likely become garbage.
+  void ResizeStorage(int w, int h);
 
-  bool IsEmpty() const { return data_ == NULL; }
-  uint8_t* GetData() { return data_; }
-  const uint8_t* GetData() const { return data_; }
-  int GetDataLen() const { return RGBA_LEN(width_, height_); }
+  int width() const { return width_; }
+  int height() const { return height_; }
+
+  bool empty() const { return data_.empty(); }
+  uint8_t* data() { return &data_[0]; }
+  const uint8_t* data() const { return &data_[0]; }
+  int data_size() const { return data_.size(); }
+
+  std::unique_ptr<RgbaImage> CloneAndClear(bool null_if_empty);
 
  private:
-  uint8_t* data_;
+  std::vector<uint8_t> data_;
   int width_;
   int height_;
 };
@@ -73,19 +82,22 @@ class RgbaImage {
 // Resizes image using bilinear interpolation.
 // TODO(igorc): Move these into RgbaImage.
 uint8_t* ResizeImage(
-    uint8_t* src, int src_w, int src_h, int dst_w, int dst_h);
+    const uint8_t* src, int src_w, int src_h, int dst_w, int dst_h);
+void ResizeImage(
+    const uint8_t* src, int src_w, int src_h,
+    uint8_t* dst, int dst_w, int dst_h);
 
-uint8_t* FlipImage(uint8_t* src, int w, int h, bool horizontal);
+uint8_t* FlipImage(const uint8_t* src, int w, int h, bool horizontal);
 
 uint8_t* RotateImage(
-    uint8_t* src, int src_w, int src_h, int w, int h, int angle);
+    const uint8_t* src, int src_w, int src_h, int w, int h, int angle);
 
 uint8_t* CropImage(
-    uint8_t* src, int src_w, int src_h,
+    const uint8_t* src, int src_w, int src_h,
     int crop_x, int crop_y, int crop_w, int crop_h);
 
 void PasteSubImage(
-    uint8_t* src, int src_w, int src_h,
+    const uint8_t* src, int src_w, int src_h,
     uint8_t* dst, int dst_x, int dst_y, int dst_w, int dst_h,
     bool enable_alpha, bool carry_alpha);
 
