@@ -17,10 +17,10 @@ public:
   void render(Pixels &pixels) { effects[effect_idx]->render(pixels); }
 
   void mirror(int effect_id, int32_t start_time) {
-    if (effect_id >= 0) {
+    if (effect_id >= 0 && effect_id != effect_idx) {
       play(effect_id);
       if (effect_idx == effect_id) {
-        effects[effect_idx]->sync_start_time(start_time);
+        //effects[effect_idx]->sync_start_time(start_time);
       }
     }
   }
