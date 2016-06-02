@@ -1,17 +1,29 @@
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
+#include <Adafruit_NeoPixel.h>
 #include <DFSparks.h>
 
 char ssid[] = "***";  //  your network SSID (name)
 char pass[] = "***";  // your network password
 
-byte packetBuffer[DFSPARKS_MAX_FRAME_SIZE]; // buffer to hold incoming packets
+const int STATUS_PIN = 2; // builtin led
+const int RING_PIN = 5; // D1
+const int BUTTON_PIN = 13; // D7
+
+const int NUM_LEDS = 12;
+
+// 
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, RING_PIN, NEO_GRB + NEO_KHZ800);
 
 // A UDP instance to let us send and receive packets over UDP
-WiFiUDP udp;
+DFSparks_WiFiUDPClient<WiFiUDP> client;
 
-// An instance that parses network data and calculates RGB colors of each pixel
-DFSparks_Strand strand;
+class Demo : public DFSparks_Matrix<NUM_LEDS,1> {
+private: 
+  void on_set_pixel_color(int x, int y, uint8_t red, uint8_t green, uint8_t blue) override {
+         strip.setPixelColor(x, strip.Color(red/2,green/2,blue/2));     
+  };
+} demo;
 
 void setup()
 {
@@ -19,7 +31,18 @@ void setup()
   Serial.println();
   Serial.println();
 
-  // We start by connecting to a WiFi network
+  // Initialize LED strip
+  strip.begin();
+  strip.show(); 
+  strip.setPixelColor(0, 0xff0000);
+  strip.show();
+
+
+  pinMode(STATUS_PIN, OUTPUT);
+  pinMode(RING_PIN, OUTPUT);
+  pinMode(BUTTON_PIN, INPUT);
+
+  // Connect to a WiFi network
   Serial.print("Connecting to ");
   Serial.println(ssid);
   WiFi.begin(ssid, pass);
@@ -27,45 +50,32 @@ void setup()
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
+    
+    // Display connecting pattern
+    static int i = 0;
+    strip.setPixelColor(++i % strip.numPixels(), 0x00ff00);
+    strip.show();
   }
   Serial.println("");
   
   Serial.println("WiFi connected, my IP: ");
   Serial.println(WiFi.localIP());
 
-  Serial.println("Starting UDP");
-  udp.begin(DFSPARKS_UDP_PORT);
-  Serial.print("Local port: ");
-  Serial.println(udp.localPort());
-  Serial.println();
-
-  // initialize three LED strand
-  strand.begin(3);
+  Serial.println("Starting demo");
+  demo.begin(client);
 }
 
 void loop()
 {
-  int cb = udp.parsePacket();
-  if (cb) {
-    udp.read(packetBuffer, sizeof(packetBuffer));
-    if (strand.update(packetBuffer, sizeof(packetBuffer))) {
-      Serial.print("invalid frame, length=");
-      Serial.println(cb);
-    }
-    else {
-      for(int i=0; i<strand.length(); ++i) {
-        Serial.print("LED");
-        Serial.print(i);
-        Serial.print(": RGB(");
-        Serial.print(strand.red(i));
-        Serial.print(", ");
-        Serial.print(strand.green(i));
-        Serial.print(", ");
-        Serial.print(strand.blue(i));
-        Serial.print(") ");
-      }
-      Serial.println();  
-    }
-  }
+  static int prevButtonState = LOW;
+  int buttonState = digitalRead(BUTTON_PIN);
+  if (buttonState == HIGH && prevButtonState == LOW) {
+      demo.play_next(); 
+  } 
+  prevButtonState = buttonState;
+  //Serial.print("Start time:");
+  //Serial.println(client.get_start_time());
+  demo.render();
+  strip.show();
   delay(10);
 }

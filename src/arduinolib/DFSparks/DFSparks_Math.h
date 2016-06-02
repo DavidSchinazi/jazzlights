@@ -10,7 +10,6 @@ namespace dfsparks {
 static const uint8_t b_m16_interleave[] = {0, 49, 49, 41, 90, 27, 117, 10};
 
 inline int square(int x) { return x * x; }
-inline int min(int a, int b) { return a < b ? a : b; }
 
 /// take abs() of a signed 8-bit uint8_t
 inline int absi(int i) { return i < 0 ? -i : i; }

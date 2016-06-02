@@ -232,7 +232,7 @@ int run() {
 
     vest1.render();
     ring1.render();
-    printf(">>> start time: %d\n", cli.get_start_time());
+    //printf(">>> start time: %d\n", cli.get_start_time());
 
     glfwSwapBuffers(window);
     glfwPollEvents();
