@@ -1,5 +1,4 @@
-#include "DFSparks.h"
-#include "demo/socket.h"
+#include "DFSParks.h"
 #include <GLFW/glfw3.h>
 #include <chrono>
 #include <cmath>
@@ -38,148 +37,51 @@ void render_led(double cx, double cy, uint32_t color) {
   render_circle(cx, cy, LED_R, color);
 }
 
-
-class SocketClient : public Client {
-private:
-  int on_begin(int udp_port) override {
-    sock.set_reuseaddr(true);
-    sock.set_nonblocking(true);
-    sock.bind("*", udp_port);
-    return 0;
-  }
-
-  int on_recv(char *buf, size_t bufsize) override {
-     return sock.recvfrom(buf, bufsize);
-  }
-
-  Socket sock;
-};
-
-class SocketServer : public Server {
-private:
-  int on_begin() override {
-    sock.set_nonblocking(true);
-    sock.set_broadcast(true);
-    return 0;
-  }
-
-  int on_send(const char *addr, int port, char *buf, size_t bufsize) override {
-    sock.sendto("255.255.255.255", port, buf, bufsize);
-    return bufsize;
-  }
-
-  Socket sock;
-};
-
-class Vest : public Matrix<17,8> {
+class Vest : public UdpSocketPlayer {
 public:
-
-  Vest(double x, double y) : x0(x), y0(y) {
-  }
+  Vest(double x, double y) : x0(x), y0(y) {}
   ~Vest() {}
 
-
-private:
-
-  void on_set_pixel_color(int x, int y, uint8_t red, uint8_t green,
-                        uint8_t blue) {
-    render_led(x0 + 2.5 * LED_R * x, y0 + 2.5 * LED_R * y,
-               rgb(red, green, blue));
+  void render() {
+    int w = 8, h = 17;
+    start_frame(0,0,w,h,w*h);
+    for(int x=0; x<w; ++x) {
+      for(int y=0; y<h; ++y) {
+        render_led(x0 + 2.5 * LED_R * x, y0 + 2.5 * LED_R * y,
+                   get_pixel_color(x, y));
+      }
+    }
   }
+private:
 
   double x0;
   double y0;
 };
 
-template<int length>
-class Ring : public Matrix<length,1> {
+class Ring : public UdpSocketPlayer {
 public:
-  Ring(double cx, double cy)
-      : r(LED_DIST * length / TWO_PI), cx(cx), cy(cy) {
-      }
+  Ring(int length, double cx, double cy)
+      : length(length), r(LED_DIST * length / TWO_PI), cx(cx), cy(cy) {}
   ~Ring() {}
 
+  void render() {
+    start_frame(-r,-r,r,r,length);
+    for(int i=0; i<length; ++i) {
+      int x = r * cos(i * TWO_PI / length);
+      int y = r * sin(i * TWO_PI / length);
+      render_led(cx + x, cy + y, get_pixel_color(x,y));
+    }
+  }
+
 private:
-
-  void on_set_pixel_color(int i, int y, uint8_t red, uint8_t green,
-                        uint8_t blue) override {
-    render_led(cx + (r * cos(i * TWO_PI / length)),
-               cy + (r * sin(i * TWO_PI / length)), rgb(red, green, blue));
-  };
-
-  // void set_status_led_(bool ison) override {
-  //   render_led(cx, cy, ison ? rgb(255,255,255) : rgb(50,50,50));
-  // };
-
+  int length;
   double r;
   double cx;
   double cy;
 };
 
-// class Ring : public Matrix {
-// public:
-//   Ring(double cx, double cy, int length = 12)
-//       : length(length), r(LED_DIST * length / TWO_PI), cx(cx), cy(cy) {
-
-//         size = length; ///3.14 + 1;
-//         mask = new int[ size * size ];
-//         for(int i=0; i<length; ++i) {
-//           int x = size/2 + size/2 * cos(i * TWO_PI / length);
-//           int y = size/2 + size/2 * sin(i * TWO_PI / length);
-//           printf(">>> sz:%d, x:%d, y:%d\n", size, x, y);
-//           mask[y*size + x] = i+1;
-//         }
-//       }
-
-//   ~Ring2() {
-//     delete[] mask;
-//   }
-
-// private:
-//   int width_() const override { return size; }
-//   int height_() const override { return size; }
-
-//   void set_pixel_(int x, int y, uint8_t red, uint8_t green,
-//                         uint8_t blue) override {
-//     // render_led(cx + 2.5 * LED_R * x, cy + 2.5 * LED_R * y,
-//     //            rgb(red, green, blue));
-//     int i = mask[x + y*size];
-//     if (i) {
-//       i = i - 1;
-//       render_led(cx + (r * cos(i * TWO_PI / length)),
-//                  cy + (r * sin(i * TWO_PI / length)), rgb(red, green, blue));
-//     }
-//   };
-
-//   void set_status_led_(bool ison) override {
-//     render_led(cx, cy, ison ? rgb(255,255,255) : rgb(50,50,50));
-//   };
-
-//   int recv_packet_(char *buf, size_t bufsize) override {
-//     return sock.recvfrom(buf, bufsize);
-//   }
-
-//   int send_packet_(char *buf, size_t bufsize) override {
-//     sock.sendto("255.255.255.255", udp_port, buf, bufsize);
-//     return bufsize;
-//   }
-
-//   int32_t time_ms() const override { return millis(); }
-
-
-//   int size;
-//   int *mask;
-//   int length;
-//   double r;
-//   double cx;
-//   double cy;
-// };
-
-SocketClient cli;
-SocketServer srv;
-
-Vest vest1(-0.5, -0.5);
-Ring<12> ring1(0, 0.5);
+Vest vest1(-0.7, -0.5);
+Ring ring1(12, 0.2, 0.5);
 
 void on_resize(GLFWwindow *window, int width, int height) {
   double aspect = 1.0 * width / height;
@@ -192,16 +94,16 @@ void on_resize(GLFWwindow *window, int width, int height) {
 
 void on_key(GLFWwindow *window, int key, int scancode, int action, int mods) {
   if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
-    vest1.play_prev();
+    vest1.prev();
   }
   if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
-    vest1.play_next();
+    vest1.next();
   }
   if (key == GLFW_KEY_S && action == GLFW_PRESS) {
-    //vest1.set_network_mode(Matrix::SERVER);
+    // vest1.set_network_mode(Matrix::SERVER);
   }
   if (key == GLFW_KEY_C && action == GLFW_PRESS) {
-    //vest1.set_network_mode(Matrix::CLIENT);
+    // vest1.set_network_mode(Matrix::CLIENT);
   }
 }
 
@@ -224,15 +126,14 @@ int run() {
 
   on_resize(window, WIN_W, WIN_H);
 
-  vest1.begin(srv);
-  ring1.begin(cli);
+  vest1.begin(NetworkPlayer::server);
+  ring1.begin(NetworkPlayer::client);
 
   while (!glfwWindowShouldClose(window)) {
     glClear(GL_COLOR_BUFFER_BIT);
 
     vest1.render();
     ring1.render();
-    //printf(">>> start time: %d\n", cli.get_start_time());
 
     glfwSwapBuffers(window);
     glfwPollEvents();
