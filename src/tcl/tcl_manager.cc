@@ -11,7 +11,6 @@
 
 namespace {
 
-
 }  // namespace
 
 TclManager::TclManager()
@@ -49,7 +48,7 @@ void TclManager::AddController(
   CHECK(!controllers_locked_);
   CHECK(FindControllerLocked(id) == nullptr);
   TclController* controller = new TclController(
-      id, width, height, layout, gamma);
+      id, width, height, fps_, layout, gamma);
   controllers_.push_back(controller);
 }
 
@@ -227,18 +226,11 @@ void TclManager::WakeupLocked() {
   }
 }
 
-void TclManager::SetEffectImage(int controller_id, const RgbaImage& image) {
+void TclManager::StartEffect(int controller_id, Effect* effect) {
   Autolock l(lock_);
   TclController* controller = FindControllerLocked(controller_id);
   if (controller)
-    controller->SetEffectImage(image);
-}
-
-void TclManager::EnableRainbow(int controller_id, int x) {
-  Autolock l(lock_);
-  TclController* controller = FindControllerLocked(controller_id);
-  if (controller)
-    controller->EnableRainbow(x);
+    controller->StartEffect(effect);
 }
 
 void TclManager::ResetImageQueue() {

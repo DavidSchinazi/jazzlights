@@ -15,11 +15,19 @@
 
 #include <sstream>
 
+#include "effects/passthrough.h"
+#include "effects/rainbow.h"
 #include "tcl/tcl_manager.h"
 #include "util/logging.h"
 #include "util/time.h"
 
 TclRenderer* TclRenderer::instance_ = new TclRenderer();
+
+TclRenderer::ControllerInfo::ControllerInfo(int width, int height)
+    : width(width), height(height), rainbow_effect(nullptr),
+      generic_effect(nullptr) {
+  passthrough_effect = new PassthroughEffect();
+}
 
 TclRenderer::TclRenderer() {
   tcl_manager_ = new TclManager();
@@ -33,6 +41,8 @@ void TclRenderer::AddController(
     int id, int width, int height,
     const LedLayout& layout, double gamma) {
   tcl_manager_->AddController(id, width, height, layout, gamma);
+  controllers_[id] = ControllerInfo(width, height);
+  tcl_manager_->StartEffect(id, controllers_[id].passthrough_effect);
 }
 
 void TclRenderer::LockControllers() {
@@ -200,28 +210,68 @@ void TclRenderer::SetEffectImage(
     return;
   }
 
-  int controller_w = -1;
-  int controller_h = -1;
-  if (!tcl_manager_->GetControllerImageSize(
-          controller_id, &controller_w, &controller_h)) {
+  if (!controllers_.count(controller_id)) {
     fprintf(stderr, "SetEffectImage controller not found: %d\n", controller_id);
     return;
   }
 
+  const ControllerInfo& controller = controllers_[controller_id];
+
   RgbaImage input_img(bytes->GetData(), w, h);
   if (input_img.empty()) {
-    tcl_manager_->SetEffectImage(controller_id, input_img);
+    controller.passthrough_effect->SetImage(input_img);
     return;
   }
 
+  EnableRainbow(controller_id, -1);
+
   int rotation_angle = 0;
   std::unique_ptr<RgbaImage> render_img(BuildImageLocked(
-      input_img, mode, rotation_angle, controller_w, controller_h));
-  tcl_manager_->SetEffectImage(controller_id, *render_img.get());
+      input_img, mode, rotation_angle, controller.width, controller.height));
+  controller.passthrough_effect->SetImage(*render_img.get());
 }
 
 void TclRenderer::EnableRainbow(int controller_id, int x) {
-  tcl_manager_->EnableRainbow(controller_id, x);
+  if (!controllers_.count(controller_id))
+    return;
+
+  ControllerInfo& controller = controllers_[controller_id];
+
+  if (x < 0) {
+    if (controller.rainbow_effect) {
+      controller.rainbow_effect->Stop();
+      controller.rainbow_effect = nullptr;
+    }
+    return;
+  }
+
+  if (controller.rainbow_effect) {
+    controller.rainbow_effect->SetX(x);
+    return;
+  }
+
+  controller.rainbow_effect = new RainbowEffect(x);
+  tcl_manager_->StartEffect(controller_id, controller.rainbow_effect);
+}
+
+void TclRenderer::SetGenericEffect(int controller_id, Effect* effect) {
+  if (!controllers_.count(controller_id))
+    return;
+
+  ControllerInfo& controller = controllers_[controller_id];
+
+  if (controller.generic_effect == effect)
+    return;
+
+  if (controller.generic_effect)
+    controller.generic_effect->Stop();
+
+  controller.generic_effect = effect;
+
+  if (controller.generic_effect) {
+    EnableRainbow(controller_id, -1);
+    tcl_manager_->StartEffect(controller_id, controller.generic_effect);
+  }
 }
 
 void TclRenderer::ResetImageQueue() {

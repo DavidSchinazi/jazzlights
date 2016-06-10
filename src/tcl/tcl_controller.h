@@ -4,6 +4,7 @@
 #define TCL_TCL_CONTROLLER_H_
 
 #include <opencv2/opencv.hpp>
+#include <pthread.h>
 #include <stdint.h>
 
 #include <memory>
@@ -13,10 +14,12 @@
 #include "util/led_layout.h"
 #include "util/pixels.h"
 
+class Effect;
+
 class TclController {
  public:
   TclController(
-      int id, int width, int height,
+      int id, int width, int height, int fps,
       const LedLayout& layout, double gamma);
   ~TclController();
 
@@ -31,10 +34,7 @@ class TclController {
   std::unique_ptr<RgbaImage> GetAndClearLastLedImage();
   int last_image_id() const { return last_image_id_; }
 
-  void SetEffectImage(const RgbaImage& image);
-
-  // TODO(igorc): Remove rainbow code from controller.
-  void EnableRainbow(int x);
+  void StartEffect(Effect* effect);
 
   void SetGammaRanges(
       int r_min, int r_max, double r_gamma,
@@ -60,6 +60,8 @@ class TclController {
   TclController(const TclController& src);
   TclController& operator=(const TclController& rhs);
 
+  using EffectList = std::vector<Effect*>;
+
   bool PopulateLedStrandsColors(
       LedStrands* strands, const RgbaImage& image);
   void SavePixelsForLedStrands(const LedStrands& strands);
@@ -79,14 +81,12 @@ class TclController {
   void ConsumeReplyData();
   void SetLastReplyTime();
 
-  // TODO(igorc) Make image const.
-  void ApplyEffect(RgbaImage* image);
-  void ResetRainbow();
-  void ApplyRainbow(RgbaImage* image);
+  void ApplyEffects(RgbaImage* image);
 
   int id_;
   int width_;
   int height_;
+  int fps_;
   // TODO(igorc): Do atomic read.
   volatile InitStatus init_status_ = INIT_STATUS_UNUSED;
   RgbGamma gamma_;
@@ -100,13 +100,9 @@ class TclController {
   int last_image_id_ = 0;
   int frames_sent_after_reply_ = 0;
   HdrMode hdr_mode_ = HDR_MODE_NONE;
-  RgbaImage effect_image_;
-  int rainbow_target_x_ = -1;
-  int rainbow_effective_x_ = 0;
-  int rainbow_height_ = 0;
-  int rainbow_shift_ = 0;
-  int rainbow_cycle_ = 0;
-  cv::Mat rainbow_;
+
+  pthread_mutex_t effects_lock_;
+  EffectList effects_;
 };
 
 #endif  // TCL_TCL_CONTROLLER_H_

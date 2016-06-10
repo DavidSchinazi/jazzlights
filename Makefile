@@ -6,6 +6,9 @@ SOURCES := \
 	dfplayer/kinect.cc \
 	dfplayer/utils.cc \
 	dfplayer/renderer_wrap.cxx \
+	src/effects/passthrough.cc \
+	src/effects/rainbow.cc \
+	src/model/effect.cc \
 	src/model/image_source.cc \
 	src/model/projectm_source.cc \
 	src/tcl/tcl_controller.cc \

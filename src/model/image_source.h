@@ -20,6 +20,9 @@ class ImageSource {
   int fps() const { return fps_; }
 
  private:
+  ImageSource(const ImageSource& src);
+  ImageSource& operator=(const ImageSource& rhs);
+
   const int width_;
   const int height_;
   const int fps_;

@@ -8,6 +8,7 @@
 
 #include <stdint.h>
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -17,6 +18,9 @@
 #include "util/led_layout.h"
 #include "util/pixels.h"
 
+class Effect;
+class PassthroughEffect;
+class RainbowEffect;
 class TclRenderer;
 class TclManager;
 
@@ -108,14 +112,28 @@ class TclRenderer {
   TclRenderer& operator=(const TclRenderer& rhs);
   ~TclRenderer();
 
+  struct ControllerInfo {
+    ControllerInfo() : ControllerInfo(-1, -1) {}
+    ControllerInfo(int width, int height);
+
+    int width;
+    int height;
+    PassthroughEffect* passthrough_effect;
+    RainbowEffect* rainbow_effect;
+    Effect* generic_effect;
+  };
+
+  typedef std::map<int, ControllerInfo> ControllerInfoMap;
+
   std::unique_ptr<RgbaImage> BuildImageLocked(
       const RgbaImage& input_img, EffectMode mode,
       int rotation_angle, int dst_w, int dst_h);
+  void SetGenericEffect(int controller_id, Effect* effect);
 
   TclManager* tcl_manager_;
+  ControllerInfoMap controllers_;
 
   static TclRenderer* instance_;
 };
 
 #endif  // __DFPLAYER_TCL_RENDERER_H
-

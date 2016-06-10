@@ -12,6 +12,7 @@
 #include "util/led_layout.h"
 #include "util/pixels.h"
 
+class Effect;
 class TclController;
 
 class TclManager {
@@ -42,10 +43,7 @@ class TclManager {
       int controller_id, const RgbaImage& image, int id,
       uint64_t time, bool wakeup);
 
-  void SetEffectImage(int controller_id, const RgbaImage& image);
-
-  // Starts a rainbow at the give position. Pass -1 to disable.
-  void EnableRainbow(int controller_id, int x);
+  void StartEffect(int controller_id, Effect* effect);
 
   std::unique_ptr<RgbaImage> GetAndClearLastImage(int controller_id);
   std::unique_ptr<RgbaImage> GetAndClearLastLedImage(int controller_id);
