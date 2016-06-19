@@ -55,7 +55,7 @@ _PRESET_DIR = ('presets', '')
 #_PRESET_DIR = ('projectm/presets_yin', '')
 
 # Values over 600 disable shuffle mode.
-_PRESET_DURATION = 10
+_PRESET_DURATION = 100
 
 _SOUND_INPUT_LOOPBACK = 'df_audio'
 _SOUND_INPUT_LINE_IN = 'df_line_in'
