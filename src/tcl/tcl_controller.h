@@ -81,7 +81,8 @@ class TclController {
   void ConsumeReplyData();
   void SetLastReplyTime();
 
-  void ApplyEffects(RgbaImage* image);
+  void ApplyEffectsOnImage(RgbaImage* image);
+  void ApplyEffectsOnLeds(LedStrands* strands);
 
   int id_;
   int width_;

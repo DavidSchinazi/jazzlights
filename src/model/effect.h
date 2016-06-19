@@ -7,6 +7,8 @@
 
 #include "util/pixels.h"
 
+class LedStrands;
+
 // Defines base abstraction for effects. One instance can only be used
 // with one rendering surface such as TclController. Surface's dimensions
 // and FPS for calling Apply() are passed to Initialize() call.
@@ -23,7 +25,15 @@ class Effect {
   // Invoked by the rendering surface.
   void Initialize(int width, int height, int fps);
 
-  virtual void Apply(RgbaImage* dst, bool* is_done) = 0;
+  virtual void ApplyOnImage(RgbaImage* dst, bool* is_done) {
+    (void) dst;
+    (void) is_done;
+  }
+
+  virtual void ApplyOnLeds(LedStrands* strands, bool* is_done) {
+    (void) strands;
+    (void) is_done;
+  }
 
   // Invoked by the surface when |is_done| becomes true.
   virtual void Destroy() = 0;

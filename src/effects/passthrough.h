@@ -13,7 +13,7 @@ class PassthroughEffect : public Effect {
 
   void SetImage(const RgbaImage& image);
 
-  void Apply(RgbaImage* dst, bool* is_done) override;
+  void ApplyOnImage(RgbaImage* dst, bool* is_done) override;
 
   void Destroy() override;
 

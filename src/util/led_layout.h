@@ -111,15 +111,22 @@ class LedStrands {
     return GetLedCount(strand_id) * 4;
   }
 
+  int GetTotalLedCount() const { return color_data_.size() / 4; }
+  int GetAllColorDataSize() const { return color_data_.size(); }
+  uint8_t* GetAllColorData() { return &color_data_[0]; }
+  const uint8_t* GetAllColorData() const { return &color_data_[0]; }
+
  private:
   struct StrandData {
-    std::vector<uint8_t> color_data;
+    uint32_t start_led;
+    uint32_t led_count;
   };
 
   LedStrands(const LedStrands& src);
   LedStrands& operator=(const LedStrands& rhs);
 
   std::vector<StrandData> strands_;
+  std::vector<uint8_t> color_data_;
 };
 
 #endif  // UTIL_LED_LAYOUT_H_

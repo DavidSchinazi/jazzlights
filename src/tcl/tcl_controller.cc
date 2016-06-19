@@ -91,12 +91,27 @@ void TclController::StartEffect(Effect* effect) {
   effects_.push_back(effect);
 }
 
-void TclController::ApplyEffects(RgbaImage* image) {
+void TclController::ApplyEffectsOnImage(RgbaImage* image) {
   Autolock l(effects_lock_);
   for (EffectList::iterator it = effects_.begin(); it != effects_.end(); ) {
     bool is_last = (*it)->IsStopped();
     if (!is_last)
-      (*it)->Apply(image, &is_last);
+      (*it)->ApplyOnImage(image, &is_last);
+
+    if (is_last) {
+      effects_.erase(it++);
+    } else {
+      ++it;
+    }
+  }
+}
+
+void TclController::ApplyEffectsOnLeds(LedStrands* strands) {
+  Autolock l(effects_lock_);
+  for (EffectList::iterator it = effects_.begin(); it != effects_.end(); ) {
+    bool is_last = (*it)->IsStopped();
+    if (!is_last)
+      (*it)->ApplyOnLeds(strands, &is_last);
 
     if (is_last) {
       effects_.erase(it++);
@@ -111,7 +126,7 @@ void TclController::BuildFrameDataForImage(
   dst->clear();
   *status = init_status_;
 
-  ApplyEffects(image);
+  ApplyEffectsOnImage(image);
 
   std::unique_ptr<LedStrands> strands = ConvertImageToLedStrands(*image);
   if (!strands)
@@ -143,6 +158,8 @@ std::unique_ptr<LedStrands> TclController::ConvertImageToLedStrands(
   // TODO(igorc): Fill the darkness.
 
   ConvertLedStrandsHls(strands.get(), false);
+
+  ApplyEffectsOnLeds(strands.get());
 
   // Apply gamma at the end to preserve linear RGB-HSL conversions.
   ApplyLedStrandsGamma(strands.get());

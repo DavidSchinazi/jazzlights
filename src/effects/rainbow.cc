@@ -30,7 +30,7 @@ void RainbowEffect::SetX(int x) {
   rainbow_target_x_ = x;
 }
 
-void RainbowEffect::Apply(RgbaImage* dst, bool* is_done) {
+void RainbowEffect::ApplyOnImage(RgbaImage* dst, bool* is_done) {
   Autolock l(lock_);
 
   // Update rainbow position, if it is still requested.

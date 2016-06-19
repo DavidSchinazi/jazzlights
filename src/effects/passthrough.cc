@@ -20,7 +20,7 @@ void PassthroughEffect::SetImage(const RgbaImage& image) {
   image_ = image;
 }
 
-void PassthroughEffect::Apply(RgbaImage* dst, bool* is_done) {
+void PassthroughEffect::ApplyOnImage(RgbaImage* dst, bool* is_done) {
   (void) is_done;
 
   Autolock l(lock_);

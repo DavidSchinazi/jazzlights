@@ -15,7 +15,7 @@ class RainbowEffect : public Effect {
 
   void SetX(int x);
 
-  void Apply(RgbaImage* dst, bool* is_done) override;
+  void ApplyOnImage(RgbaImage* dst, bool* is_done) override;
 
   void Destroy() override;
 
