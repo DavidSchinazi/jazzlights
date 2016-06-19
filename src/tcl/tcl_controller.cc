@@ -142,15 +142,6 @@ std::unique_ptr<LedStrands> TclController::ConvertImageToLedStrands(
 
   // TODO(igorc): Fill the darkness.
 
-  for (int strand_id  = 0; strand_id < strands->GetStrandCount(); ++strand_id) {
-    int strand_len = strands->GetLedCount(strand_id);
-    for (int led_id = 0; led_id < strand_len; ++led_id) {
-      uint8_t* color = strands->GetColorData(strand_id) + led_id * 4;
-      uint32_t s = static_cast<uint32_t>(color[2]) * 2;
-      color[2] = static_cast<uint8_t>(s <= 255 ? s : 255);
-    }
-  }
-
   ConvertLedStrandsHls(strands.get(), false);
 
   // Apply gamma at the end to preserve linear RGB-HSL conversions.
