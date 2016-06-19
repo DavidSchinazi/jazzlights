@@ -113,6 +113,7 @@ class Player(object):
         self._frame_delay_stats = Stats(100)
         self._render_durations = Stats(100)
         self._visualization_period_stats = Stats(100)
+        self._screen_locked = False
 
         self._tcl = TclRenderer(FPS, enable_net)
         self._tcl.add_controller(
@@ -256,6 +257,9 @@ class Player(object):
             self._visualization_volume = 0.1
         print 'Setting visualization volume to %s' % self._visualization_volume
         self._visualizer.SetVolumeMultiplier(self._visualization_volume)
+
+    def lock_screen(self):
+        self._screen_locked = not self._screen_locked
 
     def _fetch_playlist(self, is_startup):
         if len(self.playlist) == self._target_playlist_len:
@@ -602,7 +606,7 @@ class Player(object):
                 self._effect.should_mirror())
 
     def get_frame_images(self, need_original, need_intermediate):
-        if self.status == 'idle':
+        if self.status == 'idle' or self._screen_locked:
             # TODO(igorc): Keep drawing some neutral pattern for fun.
             return None
         return self._get_frame_images(need_original, need_intermediate)

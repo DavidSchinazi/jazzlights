@@ -116,6 +116,7 @@ class PlayerApp(Frame):
         self.root.bind('d', lambda e: player.toggle_hdr_mode())
         self.root.bind('o', lambda e: player.select_next_preset(False))
         self.root.bind('p', lambda e: player.select_next_preset(True))
+        self.root.bind('l', lambda e: player.lock_screen())
         self.root.bind('0', lambda e: player.stop_effect())
         self.root.bind('1', lambda e: player.play_effect('textticker'))
         self.root.bind('2', lambda e: player.play_effect('solidcolor'))
