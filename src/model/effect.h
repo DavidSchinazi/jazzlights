@@ -13,6 +13,11 @@ class LedStrands;
 // with one rendering surface such as TclController. Surface's dimensions
 // and FPS for calling Apply() are passed to Initialize() call.
 // Apply() and Destroy() are accessed by surface rendering thread.
+//
+// Note that effects are started with individual priorities. Effect with lower
+// priority will execute later in the chain. However, image- and led-based
+// effects are invoked in separate loops. Accordingly, all effects are first
+// run with ApplyOnImage(), and then all are run with ApplyOnLeds().
 class Effect {
  public:
   Effect();

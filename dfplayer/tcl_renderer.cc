@@ -15,11 +15,23 @@
 
 #include <sstream>
 
+#include "effects/fishify.h"
 #include "effects/passthrough.h"
 #include "effects/rainbow.h"
 #include "tcl/tcl_manager.h"
 #include "util/logging.h"
 #include "util/time.h"
+
+namespace {
+
+// We first run Fishify to update visualization image.
+// The we run passthrough to overlay Python-provided images.
+// At the end we run rainbow effects.
+const int kFishifyEffectPriority = 30;
+const int kPassthroughEffectPriority = 20;
+const int kRainbowEffectPriority = 10;
+
+}  // namespace
 
 TclRenderer* TclRenderer::instance_ = new TclRenderer();
 
@@ -27,6 +39,7 @@ TclRenderer::ControllerInfo::ControllerInfo(int width, int height)
     : width(width), height(height), rainbow_effect(nullptr),
       generic_effect(nullptr) {
   passthrough_effect = new PassthroughEffect();
+  fishify_effect = new FishifyEffect();
 }
 
 TclRenderer::TclRenderer() {
@@ -42,7 +55,10 @@ void TclRenderer::AddController(
     const LedLayout& layout, double gamma) {
   tcl_manager_->AddController(id, width, height, layout, gamma);
   controllers_[id] = ControllerInfo(width, height);
-  tcl_manager_->StartEffect(id, controllers_[id].passthrough_effect);
+  tcl_manager_->StartEffect(
+      id, controllers_[id].passthrough_effect, kPassthroughEffectPriority);
+  tcl_manager_->StartEffect(
+      id, controllers_[id].fishify_effect, kFishifyEffectPriority);
 }
 
 void TclRenderer::LockControllers() {
@@ -251,10 +267,12 @@ void TclRenderer::EnableRainbow(int controller_id, int x) {
   }
 
   controller.rainbow_effect = new RainbowEffect(x);
-  tcl_manager_->StartEffect(controller_id, controller.rainbow_effect);
+  tcl_manager_->StartEffect(
+      controller_id, controller.rainbow_effect, kRainbowEffectPriority);
 }
 
-void TclRenderer::SetGenericEffect(int controller_id, Effect* effect) {
+void TclRenderer::SetGenericEffect(
+    int controller_id, Effect* effect, int priority) {
   if (!controllers_.count(controller_id))
     return;
 
@@ -270,7 +288,8 @@ void TclRenderer::SetGenericEffect(int controller_id, Effect* effect) {
 
   if (controller.generic_effect) {
     EnableRainbow(controller_id, -1);
-    tcl_manager_->StartEffect(controller_id, controller.generic_effect);
+    tcl_manager_->StartEffect(
+	controller_id, controller.generic_effect, priority);
   }
 }
 

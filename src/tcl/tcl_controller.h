@@ -34,7 +34,7 @@ class TclController {
   std::unique_ptr<RgbaImage> GetAndClearLastLedImage();
   int last_image_id() const { return last_image_id_; }
 
-  void StartEffect(Effect* effect);
+  void StartEffect(Effect* effect, int priority);
 
   void SetGammaRanges(
       int r_min, int r_max, double r_gamma,
@@ -60,7 +60,20 @@ class TclController {
   TclController(const TclController& src);
   TclController& operator=(const TclController& rhs);
 
-  using EffectList = std::vector<Effect*>;
+  struct EffectInfo {
+    EffectInfo() : effect(nullptr), priority(0) {}
+    EffectInfo(Effect* effect, int priority)
+        : effect(effect), priority(priority) {}
+
+    bool operator<(const EffectInfo& other) const {
+      return (priority > other.priority);
+    }
+
+    Effect* effect;
+    int priority;
+  };
+
+  using EffectList = std::vector<EffectInfo>;
 
   bool PopulateLedStrandsColors(
       LedStrands* strands, const RgbaImage& image);

@@ -226,11 +226,11 @@ void TclManager::WakeupLocked() {
   }
 }
 
-void TclManager::StartEffect(int controller_id, Effect* effect) {
+void TclManager::StartEffect(int controller_id, Effect* effect, int priority) {
   Autolock l(lock_);
   TclController* controller = FindControllerLocked(controller_id);
   if (controller)
-    controller->StartEffect(effect);
+    controller->StartEffect(effect, priority);
 }
 
 void TclManager::ResetImageQueue() {

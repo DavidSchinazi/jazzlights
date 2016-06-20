@@ -11,6 +11,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+#include <algorithm>
+
 #include "model/effect.h"
 #include "util/lock.h"
 #include "util/logging.h"
@@ -85,18 +87,19 @@ void TclController::SetHdrMode(HdrMode mode) {
   hdr_mode_ = mode;
 }
 
-void TclController::StartEffect(Effect* effect) {
+void TclController::StartEffect(Effect* effect, int priority) {
   Autolock l(effects_lock_);
   effect->Initialize(width_, height_, fps_);
-  effects_.push_back(effect);
+  effects_.push_back(EffectInfo(effect, priority));
+  std::sort(effects_.begin(), effects_.end());
 }
 
 void TclController::ApplyEffectsOnImage(RgbaImage* image) {
   Autolock l(effects_lock_);
   for (EffectList::iterator it = effects_.begin(); it != effects_.end(); ) {
-    bool is_last = (*it)->IsStopped();
+    bool is_last = it->effect->IsStopped();
     if (!is_last)
-      (*it)->ApplyOnImage(image, &is_last);
+      it->effect->ApplyOnImage(image, &is_last);
 
     if (is_last) {
       effects_.erase(it++);
@@ -109,9 +112,9 @@ void TclController::ApplyEffectsOnImage(RgbaImage* image) {
 void TclController::ApplyEffectsOnLeds(LedStrands* strands) {
   Autolock l(effects_lock_);
   for (EffectList::iterator it = effects_.begin(); it != effects_.end(); ) {
-    bool is_last = (*it)->IsStopped();
+    bool is_last = it->effect->IsStopped();
     if (!is_last)
-      (*it)->ApplyOnLeds(strands, &is_last);
+      it->effect->ApplyOnLeds(strands, &is_last);
 
     if (is_last) {
       effects_.erase(it++);
@@ -242,13 +245,10 @@ bool TclController::PopulateLedStrandsColors(
 }
 
 void TclController::ApplyLedStrandsGamma(LedStrands* strands) {
-  for (int strand_id  = 0; strand_id < strands->GetStrandCount(); ++strand_id) {
-    int strand_len = strands->GetLedCount(strand_id);
-    uint8_t* colors = strands->GetColorData(strand_id);
-    for (int led_id = 0; led_id < strand_len; ++led_id) {
-      uint32_t* color = (uint32_t*) (colors + led_id * 4);
-      *color = gamma_.Apply(*color);
-    }
+  uint8_t* all_colors = strands->GetAllColorData();
+  for (int i = 0; i < strands->GetTotalLedCount(); ++i) {
+    uint32_t* color = (uint32_t*) (all_colors + i * 4);
+    *color = gamma_.Apply(*color);
   }
 }
 

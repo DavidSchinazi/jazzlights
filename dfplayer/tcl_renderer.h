@@ -19,6 +19,7 @@
 #include "util/pixels.h"
 
 class Effect;
+class FishifyEffect;
 class PassthroughEffect;
 class RainbowEffect;
 class TclRenderer;
@@ -119,6 +120,7 @@ class TclRenderer {
     int width;
     int height;
     PassthroughEffect* passthrough_effect;
+    FishifyEffect* fishify_effect;
     RainbowEffect* rainbow_effect;
     Effect* generic_effect;
   };
@@ -128,7 +130,7 @@ class TclRenderer {
   std::unique_ptr<RgbaImage> BuildImageLocked(
       const RgbaImage& input_img, EffectMode mode,
       int rotation_angle, int dst_w, int dst_h);
-  void SetGenericEffect(int controller_id, Effect* effect);
+  void SetGenericEffect(int controller_id, Effect* effect, int priority);
 
   TclManager* tcl_manager_;
   ControllerInfoMap controllers_;

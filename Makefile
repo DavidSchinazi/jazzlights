@@ -6,6 +6,7 @@ SOURCES := \
 	dfplayer/kinect.cc \
 	dfplayer/utils.cc \
 	dfplayer/renderer_wrap.cxx \
+	src/effects/fishify.cc \
 	src/effects/passthrough.cc \
 	src/effects/rainbow.cc \
 	src/model/effect.cc \

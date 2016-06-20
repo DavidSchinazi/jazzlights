@@ -43,7 +43,7 @@ class TclManager {
       int controller_id, const RgbaImage& image, int id,
       uint64_t time, bool wakeup);
 
-  void StartEffect(int controller_id, Effect* effect);
+  void StartEffect(int controller_id, Effect* effect, int priority);
 
   std::unique_ptr<RgbaImage> GetAndClearLastImage(int controller_id);
   std::unique_ptr<RgbaImage> GetAndClearLastLedImage(int controller_id);
