@@ -65,7 +65,6 @@ class TclController {
   bool PopulateLedStrandsColors(
       LedStrands* strands, const RgbaImage& image);
   void SavePixelsForLedStrands(const LedStrands& strands);
-  void ConvertLedStrandsHls(LedStrands* strands, bool to_hls);
   void PerformHdr(LedStrands* strands);
   void ApplyLedStrandsGamma(LedStrands* strands);
 

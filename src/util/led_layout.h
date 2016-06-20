@@ -99,6 +99,11 @@ class LedLayoutMap {
 // Contains color data for individual LED's.
 class LedStrands {
  public:
+  enum Type {
+    TYPE_RGB,
+    TYPE_HSL,
+  };
+
   LedStrands(const LedLayout& layout);
   LedStrands(const LedLayoutMap& layout);
 
@@ -116,6 +121,9 @@ class LedStrands {
   uint8_t* GetAllColorData() { return &color_data_[0]; }
   const uint8_t* GetAllColorData() const { return &color_data_[0]; }
 
+  void ConvertTo(Type type);
+  Type type() const { return type_; }
+
  private:
   struct StrandData {
     uint32_t start_led;
@@ -125,6 +133,7 @@ class LedStrands {
   LedStrands(const LedStrands& src);
   LedStrands& operator=(const LedStrands& rhs);
 
+  Type type_ = TYPE_RGB;
   std::vector<StrandData> strands_;
   std::vector<uint8_t> color_data_;
 };

@@ -149,7 +149,7 @@ std::unique_ptr<LedStrands> TclController::ConvertImageToLedStrands(
   if (!PopulateLedStrandsColors(strands.get(), image))
     return nullptr;
 
-  ConvertLedStrandsHls(strands.get(), true);
+  strands->ConvertTo(LedStrands::TYPE_HSL);
 
   PerformHdr(strands.get());
 
@@ -157,9 +157,9 @@ std::unique_ptr<LedStrands> TclController::ConvertImageToLedStrands(
 
   // TODO(igorc): Fill the darkness.
 
-  ConvertLedStrandsHls(strands.get(), false);
-
   ApplyEffectsOnLeds(strands.get());
+
+  strands->ConvertTo(LedStrands::TYPE_RGB);
 
   // Apply gamma at the end to preserve linear RGB-HSL conversions.
   ApplyLedStrandsGamma(strands.get());
@@ -272,28 +272,6 @@ void TclController::SavePixelsForLedStrands(const LedStrands& strands) {
   }
   last_led_pixel_snapshot_.Set(led_image_data, width_, height_);
   delete[] led_image_data;
-}
-
-void TclController::ConvertLedStrandsHls(LedStrands* strands, bool to_hls) {
-  uint32_t tmp = 0;
-  cv::Mat hls(1, 1, CV_8UC3, &tmp);
-  cv::Mat rgb(1, 1, CV_8UC3, &tmp);
-  for (int strand_id  = 0; strand_id < strands->GetStrandCount(); ++strand_id) {
-    int strand_len = strands->GetLedCount(strand_id);
-    uint8_t* colors = strands->GetColorData(strand_id);
-    for (int led_id = 0; led_id < strand_len; ++led_id) {
-      uint8_t* color_ptr = colors + led_id * 4;
-      if (to_hls) {
-        memcpy(rgb.data, color_ptr, 3);
-        cv::cvtColor(rgb, hls, CV_RGB2HLS);
-        memcpy(color_ptr, hls.data, 3);
-      } else {
-        memcpy(hls.data, color_ptr, 3);
-        cv::cvtColor(hls, rgb, CV_HLS2RGB);
-        memcpy(color_ptr, rgb.data, 3);
-      }
-    }
-  }
 }
 
 // Extrapolates value to a range from 0 to 255.

@@ -30,6 +30,9 @@ class Effect {
     (void) is_done;
   }
 
+  // The implementor must ensure that |strands| is in proper format
+  // (HSL or RGB), and make no assumption about the incoming format.
+  // There's no need to convert the format back to its original form.
   virtual void ApplyOnLeds(LedStrands* strands, bool* is_done) {
     (void) strands;
     (void) is_done;

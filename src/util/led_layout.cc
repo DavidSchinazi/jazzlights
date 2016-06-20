@@ -2,6 +2,9 @@
 
 #include "util/led_layout.h"
 
+#include <memory.h>
+#include <opencv2/opencv.hpp>
+
 #include "util/logging.h"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -291,4 +294,26 @@ uint8_t* LedStrands::GetColorData(int strand_id) {
 const uint8_t* LedStrands::GetColorData(int strand_id) const {
   CHECK(strand_id >= 0 && strand_id < static_cast<int>(strands_.size()));
   return &color_data_[strands_[strand_id].start_led * 4];
+}
+
+void LedStrands::ConvertTo(Type type) {
+  if (type_ == type)
+    return;
+
+  type_ = type;
+  uint32_t tmp = 0;
+  cv::Mat hls(1, 1, CV_8UC3, &tmp);
+  cv::Mat rgb(1, 1, CV_8UC3, &tmp);
+  for (int i = 0; i < GetTotalLedCount(); ++i) {
+    uint8_t* color_ptr = &color_data_[i * 4];
+    if (type_ == TYPE_HSL) {
+      memcpy(rgb.data, color_ptr, 3);
+      cv::cvtColor(rgb, hls, CV_RGB2HLS);
+      memcpy(color_ptr, hls.data, 3);
+    } else {
+      memcpy(hls.data, color_ptr, 3);
+      cv::cvtColor(hls, rgb, CV_HLS2RGB);
+      memcpy(color_ptr, rgb.data, 3);
+    }
+  }
 }
