@@ -108,13 +108,13 @@ int TclRenderer::GetFrameSendDuration() {
 Bytes* TclRenderer::GetAndClearLastImage(int controller_id) {
   std::unique_ptr<RgbaImage> img(
       tcl_manager_->GetAndClearLastImage(controller_id));
-  return new Bytes(img->data(), img->data_size());
+  return img ? new Bytes(img->data(), img->data_size()) : nullptr;
 }
 
 Bytes* TclRenderer::GetAndClearLastLedImage(int controller_id) {
   std::unique_ptr<RgbaImage> img(
       tcl_manager_->GetAndClearLastLedImage(controller_id));
-  return new Bytes(img->data(), img->data_size());
+  return img ? new Bytes(img->data(), img->data_size()) : nullptr;
 }
 
 int TclRenderer::GetLastImageId(int controller_id) {
