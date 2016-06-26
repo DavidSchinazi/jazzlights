@@ -9,6 +9,7 @@ SOURCES := \
 	src/effects/fishify.cc \
 	src/effects/passthrough.cc \
 	src/effects/rainbow.cc \
+	src/effects/wearable.cc \
 	src/model/effect.cc \
 	src/model/image_source.cc \
 	src/model/projectm_source.cc \

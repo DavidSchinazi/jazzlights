@@ -22,6 +22,7 @@ class Effect;
 class FishifyEffect;
 class PassthroughEffect;
 class RainbowEffect;
+class WearableEffect;
 class TclRenderer;
 class TclManager;
 
@@ -84,6 +85,10 @@ class TclRenderer {
   // Starts a rainbow at the give position. Pass -1 to disable.
   void EnableRainbow(int controller_id, int x);
 
+  // Sets werable's effect number. Negative numbers set specific presets
+  // from ProjectM.
+  void SetWearableEffect(int id);
+
   Bytes* GetAndClearLastImage(int controller_id);
   Bytes* GetAndClearLastLedImage(int controller_id);
   int GetLastImageId(int controller_id);
@@ -122,6 +127,7 @@ class TclRenderer {
     PassthroughEffect* passthrough_effect;
     FishifyEffect* fishify_effect;
     RainbowEffect* rainbow_effect;
+    WearableEffect* wearable_effect;
     Effect* generic_effect;
   };
 

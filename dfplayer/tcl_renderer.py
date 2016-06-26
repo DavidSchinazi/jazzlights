@@ -107,6 +107,9 @@ class TclRenderer(object):
         controller, image.tostring(), image.size[0], image.size[1],
         0, 0, image.size[0], image.size[1], 0, 2, 0, id, time, True)
 
+  def set_wearable_effect(self, id):
+    self._renderer.SetWearableEffect(id)
+
   def enable_rainbow(self, controller, x):
     self._renderer.EnableRainbow(controller, x)
 

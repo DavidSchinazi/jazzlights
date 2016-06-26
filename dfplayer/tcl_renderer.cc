@@ -18,6 +18,7 @@
 #include "effects/fishify.h"
 #include "effects/passthrough.h"
 #include "effects/rainbow.h"
+#include "effects/wearable.h"
 #include "tcl/tcl_manager.h"
 #include "util/logging.h"
 #include "util/time.h"
@@ -27,7 +28,8 @@ namespace {
 // We first run Fishify to update visualization image.
 // The we run passthrough to overlay Python-provided images.
 // At the end we run rainbow effects.
-const int kFishifyEffectPriority = 30;
+const int kFishifyEffectPriority = 1;
+const int kWearableEffectPriority = 30;
 const int kPassthroughEffectPriority = 20;
 const int kRainbowEffectPriority = 10;
 
@@ -40,6 +42,7 @@ TclRenderer::ControllerInfo::ControllerInfo(int width, int height)
       generic_effect(nullptr) {
   passthrough_effect = new PassthroughEffect();
   fishify_effect = new FishifyEffect();
+  wearable_effect = new WearableEffect();
 }
 
 TclRenderer::TclRenderer() {
@@ -59,6 +62,8 @@ void TclRenderer::AddController(
       id, controllers_[id].passthrough_effect, kPassthroughEffectPriority);
   tcl_manager_->StartEffect(
       id, controllers_[id].fishify_effect, kFishifyEffectPriority);
+  tcl_manager_->StartEffect(
+      id, controllers_[id].wearable_effect, kWearableEffectPriority);
 }
 
 void TclRenderer::LockControllers() {
@@ -245,6 +250,12 @@ void TclRenderer::SetEffectImage(
   std::unique_ptr<RgbaImage> render_img(BuildImageLocked(
       input_img, mode, rotation_angle, controller.width, controller.height));
   controller.passthrough_effect->SetImage(*render_img.get());
+}
+
+void TclRenderer::SetWearableEffect(int id) {
+  for (auto& it : controllers_) {
+    it.second.wearable_effect->SetEffect(id);
+  }
 }
 
 void TclRenderer::EnableRainbow(int controller_id, int x) {
