@@ -1,5 +1,5 @@
-#include "DFSParks_Color.h"
-#include "DFSParks_Math.h"
+#include "DFSparks_Color.h"
+#include "DFSparks_Math.h"
 #include "DFSparks_Effect_Flame.h"
 
 namespace dfsparks {

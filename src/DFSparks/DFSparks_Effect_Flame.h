@@ -1,7 +1,7 @@
 #ifndef DFSPARKS_EFFECT_FLAME_H
 #define DFSPARKS_EFFECT_FLAME_H
-#include "DFSParks_Effect.h"
-#include "DFSParks_Math.h"
+#include "DFSparks_Effect.h"
+#include "DFSparks_Math.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -71,7 +71,6 @@ private:
 
   int step = 0;
   int cooling = 120;
-  uint8_t sparkling = 255;
   uint8_t *heat; // Array of temperature readings at each
                  // simulation cell
 };

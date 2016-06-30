@@ -1,6 +1,6 @@
 #ifndef DFSPARKS_EFFECT_RIDER_H
 #define DFSPARKS_EFFECT_RIDER_H
-#include <DFSParks_Math.h>
+#include <DFSparks_Math.h>
 #include <DFSparks_Effect.h>
 #include <stdio.h>
 
@@ -14,7 +14,6 @@ private:
   void on_render(Pixels &pixels) override {
     int32_t elapsed = get_elapsed_time();
     int width = pixels.get_width();
-    int height = pixels.get_height();
 
     uint8_t cycleHue = speed / width * elapsed / 300;
     uint8_t riderPos = speed / width * width * elapsed / 1000;

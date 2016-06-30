@@ -43,7 +43,6 @@ private:
   virtual void on_render(Pixels& pixels) = 0;
 
   int32_t frame_time = -1;
-  int32_t elapsed_time = -1;
   int32_t start_time = -1;
   int32_t beat_time = -1;
 };

@@ -1,7 +1,7 @@
 #ifndef DFSPARKS_NETWORK_H
 #define DFSPARKS_NETWORK_H
-#include "DFSParks_Player.h"
-#include "DFSParks_Timer.h"
+#include "DFSparks_Player.h"
+#include "DFSparks_Timer.h"
 #include "DFSparks_Log.h"
 #include <stddef.h>
 #include <stdint.h>
@@ -74,15 +74,18 @@ private:
 
   virtual int on_start_serving() {
     // udp.begin();
+    return 0;
   }
   virtual int on_stop_serving() {
     // udp.stop();
+    return 0;
   }
   virtual int on_broadcast(int port, char *buf, size_t bufsize) {
     // IPAddress ip(255, 255, 255, 255);
     // udp.beginPacket(ip, port);
     // udp.write(buf, bufsize);
     // udp.endPacket();
+    return 0;
   }
 
   UDP udp;

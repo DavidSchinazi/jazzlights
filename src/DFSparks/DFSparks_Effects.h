@@ -21,7 +21,7 @@ public:
 
   Blink slow_blink = {1000, 0xff0000, 0x00ff00};
   Blink fast_blink = {75, 0xff0000, 0x00ff00};
-  Rainbow radiate_rainbow = {1000};
+  Rainbow radiate_rainbow = {1800};
   Threesine threesine = {10};
   Plasma plasma = {30};
   Rider rider = {100};

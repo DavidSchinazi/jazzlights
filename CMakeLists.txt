@@ -1,29 +1,29 @@
 cmake_minimum_required(VERSION 2.8)
-project(dfsparks)
+project(DFSparks)
 set(CMAKE_MACOSX_RPATH 1)
 
 set(LIB_SOURCES 
-	src/DFSParks/DFSParks.h 
-	src/DFSParks/DFSParks_Color.cpp
-	src/DFSParks/DFSParks_Color.h
-	src/DFSParks/DFSParks_Effect.h
-	src/DFSParks/DFSParks_Effect_Blink.h
-	src/DFSParks/DFSParks_Effect_Flame.h
-	src/DFSParks/DFSParks_Effect_Flame.cpp
-	src/DFSParks/DFSParks_Effect_Rainbow.h
-	src/DFSParks/DFSParks_Effects.h
-	src/DFSParks/DFSParks_Effects.cpp
-	src/DFSParks/DFSParks_Log.h
-	src/DFSParks/DFSParks_Log.cpp
-	src/DFSParks/DFSParks_Math.h
-	src/DFSParks/DFSParks_Math.cpp
-	src/DFSParks/DFSParks_Network.h
-	src/DFSParks/DFSParks_Network.cpp
-	src/DFSParks/DFSParks_Palette.cpp
-	src/DFSParks/DFSParks_Palette.h
-	src/DFSParks/DFSParks_Player.h
-	src/DFSParks/DFSParks_Timer.cpp
-	src/DFSParks/DFSParks_Timer.h
+	src/DFSparks/DFSparks.h 
+	src/DFSparks/DFSparks_Color.cpp
+	src/DFSparks/DFSparks_Color.h
+	src/DFSparks/DFSparks_Effect.h
+	src/DFSparks/DFSparks_Effect_Blink.h
+	src/DFSparks/DFSparks_Effect_Flame.h
+	src/DFSparks/DFSparks_Effect_Flame.cpp
+	src/DFSparks/DFSparks_Effect_Rainbow.h
+	src/DFSparks/DFSparks_Effects.h
+	src/DFSparks/DFSparks_Effects.cpp
+	src/DFSparks/DFSparks_Log.h
+	src/DFSparks/DFSparks_Log.cpp
+	src/DFSparks/DFSparks_Math.h
+	src/DFSparks/DFSparks_Math.cpp
+	src/DFSparks/DFSparks_Network.h
+	src/DFSparks/DFSparks_Network.cpp
+	src/DFSparks/DFSparks_Palette.cpp
+	src/DFSparks/DFSparks_Palette.h
+	src/DFSparks/DFSparks_Player.h
+	src/DFSparks/DFSparks_Timer.cpp
+	src/DFSparks/DFSparks_Timer.h
 )
 
 set(DEMO_SOURCES 
@@ -31,7 +31,7 @@ set(DEMO_SOURCES
 	src/Demo/ui.cpp
 	src/Demo/main.cpp)
 
-set(CMAKE_CXX_FLAGS "-g -std=c++14 -DVERSION=\"0.1\"")
+set(CMAKE_CXX_FLAGS "-fPIC -std=c++11 -Wall -DVERSION=\"0.1\"")
 
 # ARDUINO LIBRARY
 add_custom_target(arduinolib ALL DEPENDS ${CMAKE_BINARY_DIR}/DFSparks.zip)

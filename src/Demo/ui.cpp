@@ -1,4 +1,4 @@
-#include "DFSParks.h"
+#include "DFSparks.h"
 #include <GLFW/glfw3.h>
 #include <chrono>
 #include <cmath>
