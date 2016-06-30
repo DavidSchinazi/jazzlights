@@ -39,20 +39,22 @@ void render_led(double cx, double cy, uint32_t color) {
 
 class Vest : public UdpSocketPlayer {
 public:
+  enum { width = 8, height = 17 }; 
   Vest(double x, double y) : x0(x), y0(y) {}
   ~Vest() {}
 
-  void render() {
-    int w = 8, h = 17;
-    start_frame(0,0,w,h,w*h);
-    for(int x=0; x<w; ++x) {
-      for(int y=0; y<h; ++y) {
-        render_led(x0 + 2.5 * LED_R * x, y0 + 2.5 * LED_R * y,
-                   get_pixel_color(x, y));
-      }
-    }
-  }
 private:
+  int on_get_number_of_pixels() const override { return width * height; };
+  int on_get_width() const override{ return width; }
+  int on_get_height() const override { return height; }
+  void on_get_coords(int i, int *x, int *y) const override { *x = i / height; *y = i % height; }
+  void on_set_pixel_color(int index, uint8_t red, uint8_t green,
+                                  uint8_t blue, uint8_t alpha) override {
+    int x,y;
+    on_get_coords(index, &x, &y);
+    render_led(x0 + 2.5 * LED_R * x, y0 + 2.5 * LED_R * y,
+               rgba(red, green, blue, alpha));
+  }
 
   double x0;
   double y0;
@@ -61,20 +63,26 @@ private:
 class Ring : public UdpSocketPlayer {
 public:
   Ring(int length, double cx, double cy)
-      : length(length), r(LED_DIST * length / TWO_PI), cx(cx), cy(cy) {}
+      : length(length), R(6*length/ TWO_PI), r(LED_DIST * length / TWO_PI), cx(cx), cy(cy) {}
   ~Ring() {}
 
-  void render() {
-    start_frame(-r,-r,r,r,length);
-    for(int i=0; i<length; ++i) {
-      int x = r * cos(i * TWO_PI / length);
-      int y = r * sin(i * TWO_PI / length);
-      render_led(cx + x, cy + y, get_pixel_color(x,y));
-    }
+private:
+  int on_get_number_of_pixels() const override { return length; };
+  int on_get_width() const override{ return 2*R; }
+  int on_get_height() const override { return 2*R; }
+  void on_get_coords(int i, int *x, int *y) const override { 
+      *x = R + int(R * cos(i * TWO_PI / length));
+      *y = R + int(R * sin(i * TWO_PI / length));
+  }
+  void on_set_pixel_color(int i, uint8_t red, uint8_t green,
+                                  uint8_t blue, uint8_t alpha) override {
+    double x = r * cos(i * TWO_PI / length);
+    double y = r * sin(i * TWO_PI / length);
+    render_led(cx + x, cy + y, rgba(red, green, blue, alpha));
   }
 
-private:
   int length;
+  int R;
   double r;
   double cx;
   double cy;
@@ -100,10 +108,12 @@ void on_key(GLFWwindow *window, int key, int scancode, int action, int mods) {
     vest1.next();
   }
   if (key == GLFW_KEY_S && action == GLFW_PRESS) {
-    // vest1.set_network_mode(Matrix::SERVER);
+    vest1.end();
+    vest1.begin(NetworkPlayer::server);
   }
   if (key == GLFW_KEY_C && action == GLFW_PRESS) {
-    // vest1.set_network_mode(Matrix::CLIENT);
+    vest1.end();
+    vest1.begin(NetworkPlayer::offline);
   }
 }
 

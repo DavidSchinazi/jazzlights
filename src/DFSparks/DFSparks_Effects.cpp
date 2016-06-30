@@ -2,13 +2,13 @@
 
 namespace dfsparks {
 
-void Effects::begin(Matrix &pixels) {
+void Effects::begin(Pixels &pixels) {
   for (int i = 0; i < count(); ++i) {
     get(i)->begin(pixels);
   }
 }
 
-void Effects::end(Matrix &pixels) {
+void Effects::end(Pixels &pixels) {
   for (int i = 0; i < count(); ++i) {
     get(i)->end(pixels);
   }

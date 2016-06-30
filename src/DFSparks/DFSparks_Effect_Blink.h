@@ -10,19 +10,15 @@ public:
       : period(pd), color1(c1), color2(c2) {}
 
 private:
-  void on_start_frame() override {
-  	curr_color = get_elapsed_time() / period % 2 ? color1 : color2;
-  }
-  void on_get_pixel_color(int x, int y) const override {
-  	return curr_color;
+  void on_render(Pixels &pixels) override {
+    int32_t elapsed = get_elapsed_time();
+    pixels.fill(elapsed / period % 2 ? color1 : color2);
   }
 
 private:
   int32_t period;
   uint32_t color1;
   uint32_t color2;
-
-  uint32_t curr_color;
 };
 
 } // namespace dfsparks

@@ -13,8 +13,8 @@ namespace dfsparks {
 
 class Effects {
 public:
-  void begin(Matrix &pixels);
-  void end(Matrix &pixels);
+  void begin(Pixels &pixels);
+  void end(Pixels &pixels);
 
   Effect *get(int32_t id);
   int count() const;
@@ -24,7 +24,7 @@ public:
   Rainbow radiate_rainbow = {1000};
   Threesine threesine = {10};
   Plasma plasma = {30};
-  Rider rider = {22};
+  Rider rider = {100};
   Flame flame = {};
 };
 

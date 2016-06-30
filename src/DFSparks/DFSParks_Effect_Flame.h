@@ -14,15 +14,15 @@ inline uint8_t random_(uint8_t from = 0, uint8_t to = 255) {
 
 class Flame : public Effect {
 private:
-  void on_begin(Matrix &pixels) override {
-    int numpixels = pixels.get_width() * pixels.get_height();
-    heat = new uint8_t[numpixels];
-    memset(heat, 0, numpixels);
+  void on_begin(const Pixels &pixels) override {
+    int simsize = pixels.get_width() * pixels.get_height();
+    heat = new uint8_t[simsize];
+    memset(heat, 0, simsize);
   }
 
-  void on_end(Matrix &pixels) override { delete heat; }
+  void on_end(const Pixels &pixels) override { delete heat; }
 
-  void on_render(Matrix &pixels) override {
+  void on_render(Pixels &pixels) override {
     int32_t elapsed = get_elapsed_time();
     int width = pixels.get_width();
     int height = pixels.get_height();
@@ -62,10 +62,10 @@ private:
     //   }
     // }
     // Step 4.  Map from heat cells to LED colors
-    for (int x = 0; x < width; ++x) {
-      for (int j = 0; j < height; j++) {
-        pixels.set_color(x, j, heat_color(heat[j * width + x]));
-      }
+    for (int i = 0; i < pixels.count(); ++i) {
+      int x, y;
+      pixels.get_coords(i, &x, &y);
+      pixels.set_color(i, heat_color(heat[y * width + x]));
     }
   }
 

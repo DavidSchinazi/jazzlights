@@ -7,7 +7,7 @@
 
 namespace dfsparks {
 
-class Player : private Matrix {
+class Player : private Pixels {
 public:
   void begin() { effects.begin(*this); }
 

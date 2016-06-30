@@ -251,7 +251,7 @@ int UdpSocketPlayer::on_broadcast(int port, char *buf, size_t bufsize) {
   memset((char *)&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
   addr.sin_port = htons((unsigned short)port);
-  addr.sin_addr.s_addr = htonl(INADDR_ANY);
+  addr.sin_addr.s_addr = inet_addr("255.255.255.255");
   if (sendto(fd, buf, bufsize, 0, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
     error("can't broadcast %d bytes on port %d", bufsize, port);
     return -1; 

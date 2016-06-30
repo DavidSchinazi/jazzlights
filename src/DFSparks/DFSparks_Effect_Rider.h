@@ -11,25 +11,30 @@ public:
   Rider(int32_t sp) : speed(sp) {}
 
 private:
-  void on_render(Matrix &pixels) override {
+  void on_render(Pixels &pixels) override {
     int32_t elapsed = get_elapsed_time();
     int width = pixels.get_width();
     int height = pixels.get_height();
 
-    uint8_t cycleHue = speed * elapsed / 300;
-    uint8_t riderPos = speed * width * elapsed / 1000;
+    uint8_t cycleHue = speed / width * elapsed / 300;
+    uint8_t riderPos = speed / width * width * elapsed / 1000;
 
-    for (uint8_t x = 0; x < width; x++) {
-      int brightness =
-          absi(x * (256 / width) - triwave8(riderPos) * 2 + 127) * 3;
-      if (brightness > 255) {
-        brightness = 255;
+    for (int i = 0; i < pixels.count(); ++i) {
+      int x, y;
+      pixels.get_coords(i, &x, &y);
+
+      // this is the same for all values of y, so we can optimize
+      uint32_t riderColor;
+      {
+        int brightness =
+            absi(x * (256 / width) - triwave8(riderPos) * 2 + 127) * 3;
+        if (brightness > 255) {
+          brightness = 255;
+        }
+        brightness = 255 - brightness;
+        riderColor = hsl(cycleHue, 255, brightness);        
       }
-      brightness = 255 - brightness;
-      uint32_t riderColor = hsl(cycleHue, 255, brightness);
-      for (int y = height; y >= 0; --y) {
-        pixels.set_color(x, y, riderColor);
-      }
+      pixels.set_color(i, riderColor);
     }
   }
 

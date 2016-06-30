@@ -10,7 +10,6 @@ set(LIB_SOURCES
 	src/DFSParks/DFSParks_Effect_Blink.h
 	src/DFSParks/DFSParks_Effect_Flame.h
 	src/DFSParks/DFSParks_Effect_Flame.cpp
-	src/DFSParks/DFSParks_Effect_Colorfill.h
 	src/DFSParks/DFSParks_Effect_Rainbow.h
 	src/DFSParks/DFSParks_Effects.h
 	src/DFSParks/DFSParks_Effects.cpp
@@ -32,7 +31,7 @@ set(DEMO_SOURCES
 	src/Demo/ui.cpp
 	src/Demo/main.cpp)
 
-set(CMAKE_CXX_FLAGS "-std=c++14 -DVERSION=\"0.1\"")
+set(CMAKE_CXX_FLAGS "-g -std=c++14 -DVERSION=\"0.1\"")
 
 # ARDUINO LIBRARY
 add_custom_target(arduinolib ALL DEPENDS ${CMAKE_BINARY_DIR}/DFSparks.zip)
