@@ -5,6 +5,8 @@
 
 #include "model/effect.h"
 #include "util/pixels.h"
+#include "dfsparks/player.h"
+#include "dfsparks/networks/udpsocket.h"
 
 class WearableEffect : public Effect {
  public:
@@ -15,16 +17,22 @@ class WearableEffect : public Effect {
   // presets from ProjectM.
   void SetEffect(int id);
 
-  void ApplyOnImage(RgbaImage* dst, bool* is_done) override;
+  void ApplyOnImage(RgbaImage* dst, bool* is_done) final;
 
-  void Destroy() override;
+  //void ApplyOnLeds(LedStrands* strands, bool* is_done) final;
+ 
+  void Destroy() final;
 
  protected:
-  void DoInitialize() override;
+  void DoInitialize() final;
 
  private:
   WearableEffect(const WearableEffect& src);
   WearableEffect& operator=(const WearableEffect& rhs);
+
+  dfsparks::Pixels *pixels = nullptr;
+  dfsparks::NetworkPlayer *player = nullptr;
+  int effect = 0;
 };
 
 #endif  // EFFECTS_WEARABLE_H_

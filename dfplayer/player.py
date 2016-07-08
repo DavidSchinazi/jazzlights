@@ -669,12 +669,26 @@ class Player(object):
             img_data)
 
     def play_effect(self, name, **kwargs):
+        wearable_effects = {
+            'slowblink': 0,
+            'radiaterainbow': 1,
+            'threesine': 2,
+            'plasma': 3,
+            'rider': 4,
+            'flame': 5,
+            'glitter': 6,
+            'slantbars': 7,
+        }
         logging.info("Playing %s: %s", name, kwargs)
-        self._effect = load_effect(
-            name, IMAGE_FRAME_WIDTH, FRAME_HEIGHT, **kwargs)
+        if name in wearable_effects:
+            self._tcl.set_wearable_effect(wearable_effects[name])
+        else:
+            self._effect = load_effect(
+                name, IMAGE_FRAME_WIDTH, FRAME_HEIGHT, **kwargs)
 
     def stop_effect(self):
         self._effect = None
+        self._tcl.set_wearable_effect(-1)
 
     def is_playing_effect(self):
         return self._effect is not None

@@ -15,6 +15,8 @@ _PROJ_DIR = os.path.dirname(__file__)
 def main():
   os.chdir(_PROJ_DIR)
 
+  os.environ['LD_LIBRARY_PATH'] = '/lib:/usr/lib:/usr/local/lib'
+  
   arg_parser = argparse.ArgumentParser(description='Start player')
   arg_parser.add_argument('--gdb', action='store_true')
   arg_parser.add_argument('--no-reset', action='store_true')

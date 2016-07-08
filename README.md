@@ -20,6 +20,13 @@ platforms.
         git clone https://bitbucket.org/discofish/dfplayer.git dfplayer
         cd dfplayer
 
+2.5 Clone dfsparks repo:
+
+        git clone https://bitbucket.org/discofish/dfsparks.git dfsparks
+        cd dfsparks 
+
+2.5.1 Follow instructions in dfsparks README.txt to build and install dfsparks
+
 3. Install other required packages:
 
         sudo ./instal-deps.py

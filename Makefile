@@ -1,5 +1,6 @@
 .PHONY: all clean very-clean develop run
 
+
 SOURCES := \
 	dfplayer/tcl_renderer.cc \
 	dfplayer/visualizer.cc \
@@ -22,7 +23,7 @@ SOURCES := \
 
 LINK_LIBS := \
 	-lpthread -lm -ldl -lasound -lGL \
-	-lopencv_core -lopencv_imgproc -lopencv_contrib
+	-lopencv_core -lopencv_imgproc -lopencv_contrib -ldfsparks
 
 LINK_DEPS := \
 	dfplayer/libprojectM.so.2 \
