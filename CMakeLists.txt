@@ -1,67 +1,90 @@
 cmake_minimum_required(VERSION 2.8)
 project(DFSparks)
-set(CMAKE_MACOSX_RPATH 1)
 
 set(LIB_SOURCES 
-	src/DFSparks/DFSparks.h 
-	src/DFSparks/DFSparks_Color.cpp
-	src/DFSparks/DFSparks_Color.h
-	src/DFSparks/DFSparks_Effect.h
-	src/DFSparks/DFSparks_Effect_Blink.h
-	src/DFSparks/DFSparks_Effect_Flame.h
-	src/DFSparks/DFSparks_Effect_Flame.cpp
-	src/DFSparks/DFSparks_Effect_Rainbow.h
-	src/DFSparks/DFSparks_Effects.h
-	src/DFSparks/DFSparks_Effects.cpp
-	src/DFSparks/DFSparks_Log.h
-	src/DFSparks/DFSparks_Log.cpp
-	src/DFSparks/DFSparks_Math.h
-	src/DFSparks/DFSparks_Math.cpp
-	src/DFSparks/DFSparks_Network.h
-	src/DFSparks/DFSparks_Network.cpp
-	src/DFSparks/DFSparks_Palette.cpp
-	src/DFSparks/DFSparks_Palette.h
-	src/DFSparks/DFSparks_Player.h
-	src/DFSparks/DFSparks_Timer.cpp
-	src/DFSparks/DFSparks_Timer.h
+	src/DFSparks.h 
+	src/dfsparks/color.cpp
+	src/dfsparks/color.h
+	src/dfsparks/effect.cpp
+	src/dfsparks/effect.h
+	src/dfsparks/effects.cpp
+	src/dfsparks/effects.h
+	src/dfsparks/effects/blink.h
+	src/dfsparks/effects/flame.cpp
+	src/dfsparks/effects/flame.h
+	src/dfsparks/effects/glitter.h
+	src/dfsparks/effects/rainbow.h
+	src/dfsparks/effects/slantbars.h
+	src/dfsparks/log.cpp
+	src/dfsparks/log.h
+	src/dfsparks/math.cpp
+	src/dfsparks/math.h
+	src/dfsparks/network.cpp
+	src/dfsparks/network.h
+	src/dfsparks/palette.cpp
+	src/dfsparks/palette.h
+	src/dfsparks/player.cpp
+	src/dfsparks/player.h
+	src/dfsparks/timer.cpp
+	src/dfsparks/timer.h
 )
 
-set(DEMO_SOURCES 
-	src/Demo/ui.h
-	src/Demo/ui.cpp
-	src/Demo/main.cpp)
+set(DEMO_SOURCES demo/demo.cpp)
 
-set(CMAKE_CXX_FLAGS "-fPIC -std=c++11 -Wall -DVERSION=\"0.1\"")
+set(CMAKE_CXX_FLAGS "-g -fPIC -std=c++11 -Wall -Wextra -DVERSION=\"0.1\"")
 
 # ARDUINO LIBRARY
-add_custom_target(arduinolib ALL DEPENDS ${CMAKE_BINARY_DIR}/DFSparks.zip)
-add_custom_command(
-	OUTPUT ${CMAKE_BINARY_DIR}/DFSparks.zip 
-	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src
-	COMMAND echo Building ${CMAKE_BINARY_DIR}/DFSparks.zip
-	COMMAND zip -r ${CMAKE_BINARY_DIR}/DFSparks.zip DFSparks --include "*.cpp" "*.h" "*.py" "*.ino"
-	DEPENDS ${LIB_SOURCES}
-)
+# add_custom_target(arduinolib ALL DEPENDS ${CMAKE_BINARY_DIR}/DFSparks.zip)
+# add_custom_command(
+# 	OUTPUT ${CMAKE_BINARY_DIR}/DFSparks.zip 
+# 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+# 	COMMAND echo Building ${CMAKE_BINARY_DIR}/DFSparks.zip
+# 	COMMAND zip -r ${CMAKE_BINARY_DIR}/DFSparks.zip src examples testserver --include "*.cpp" "*.h" "*.py" "*.ino" 
+# 	DEPENDS ${LIB_SOURCES}
+# )
 
 # PC LIBRARY
-add_library(dfsparks STATIC ${LIB_SOURCES})
-target_include_directories(dfsparks 
-	PUBLIC src/DFSparks)
+add_library(dfsparks SHARED ${LIB_SOURCES})
+target_include_directories(dfsparks PUBLIC src)
 
 # DEMO
 add_executable(dfsparks_demo ${DEMO_SOURCES})
-target_link_libraries(dfsparks_demo dfsparks glfw3)
+find_package(glfw3 3.2 REQUIRED)
+target_link_libraries(dfsparks_demo dfsparks glfw)
 target_include_directories(dfsparks_demo PRIVATE src)
 
 # PLATFORM DETAILS
-if (APPLE)
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+	set(CMAKE_MACOSX_RPATH 1)
 	include_directories(/usr/local/include)
-	set(ARDUINOLIB_INSTALL_PATH /Users/azov/Documents/Arduino/libraries)
+	set(ARDUINOLIB_INSTALL_PATH $ENV{HOME}/Documents/Arduino/libraries)
 	target_link_libraries(dfsparks_demo "-L/usr/local/lib -framework Cocoa -framework OpenGL -framework IOKit -framework CoreFoundation -framework CoreVideo")
+elseif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+	target_link_libraries(dfsparks_demo "-L/usr/local/lib -lGL")	
+elseif (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+	set(ARDUINOLIB_INSTALL_PATH $ENV{USERPROFILE}/Documents/Arduino/libraries)
 endif()
 
 # INSTALL
 if (DEFINED ARDUINOLIB_INSTALL_PATH)
-	install(DIRECTORY ${CMAKE_SOURCE_DIR}/src/DFSparks/ 
-		DESTINATION ${ARDUINOLIB_INSTALL_PATH}/DFSparks/)
+	install(DIRECTORY ${CMAKE_SOURCE_DIR}/
+		DESTINATION ${ARDUINOLIB_INSTALL_PATH}/DFSparks 
+		FILES_MATCHING
+		PATTERN "*.cpp"
+		PATTERN "*.h"
+		PATTERN "*.ino"
+		PATTERN "*.py"
+		PATTERN "library.properties"
+		PATTERN "build" EXCLUDE
+		PATTERN "demo" EXCLUDE
+		PATTERN ".*" EXCLUDE
+	)
 endif()
+install(TARGETS dfsparks
+	LIBRARY DESTINATION lib
+)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/src/dfsparks/
+		DESTINATION include/dfsparks
+        FILES_MATCHING PATTERN "*.h"
+  )
+
