@@ -42,14 +42,51 @@ inline uint32_t rgb(uint8_t r, uint8_t g, uint8_t b) {
  */
 uint32_t hsl(uint8_t h, uint8_t s, uint8_t l);
 
-inline uint8_t chan_blue(uint32_t color) { return color & 0xFF; }
-
-inline uint8_t chan_green(uint32_t color) { return (color >> 8) & 0xFF; }
-
-inline uint8_t chan_red(uint32_t color) { return (color >> 16) & 0xFF; }
-
-inline uint8_t chan_alpha(uint32_t color) {
+inline uint8_t blueChan(uint32_t color) { return color & 0xFF; }
+inline uint8_t greenChan(uint32_t color) { return (color >> 8) & 0xFF; }
+inline uint8_t redChan(uint32_t color) { return (color >> 16) & 0xFF; }
+inline uint8_t alphaChan(uint32_t color) {
   return 0xFF - ((color >> 24) & 0xFF);
+}
+
+/**
+ * Pre-defined hue values for HSV objects
+ */
+enum HueValue {
+  HUE_RED = 0,
+  HUE_ORANGE = 32,
+  HUE_YELLOW = 64,
+  HUE_GREEN = 96,
+  HUE_AQUA = 128,
+  HUE_BLUE = 160,
+  HUE_PURPLE = 192,
+  HUE_PINK = 224
+};
+
+extern void rgb2hsl(uint32_t color, uint8_t *outH, uint8_t *outS,
+                    uint8_t *outL);
+
+struct RgbaColor {
+  RgbaColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 0xFF)
+      : red(r), green(g), blue(b), alpha(a) {}
+  RgbaColor(uint32_t c)
+      : red(redChan(c)), green(greenChan(c)), blue(blueChan(c)),
+        alpha(alphaChan(c)) {}
+
+  uint8_t red;
+  uint8_t green;
+  uint8_t blue;
+  uint8_t alpha;
+};
+
+struct HslColor {
+  uint8_t hue;
+  uint8_t saturation;
+  uint8_t lightness;
+};
+
+inline uint32_t rgb(RgbaColor c) {
+  return rgba(c.red, c.green, c.blue, c.alpha);
 }
 
 } // namespace dfsparks

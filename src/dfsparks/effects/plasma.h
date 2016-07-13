@@ -7,10 +7,10 @@
 namespace dfsparks {
 
 class Plasma : public Effect {
-  void on_render(Pixels &pixels) final {
-    int32_t elapsed = get_elapsed_time();
-    int width = pixels.get_width();
-    int height = pixels.get_height();
+  void doRender(Pixels &pixels) final {
+    int32_t elapsed = timeElapsed();
+    int width = pixels.width();
+    int height = pixels.height();
 
     uint8_t offset = speed * elapsed / 255;
     int plasVector = offset * 16;
@@ -21,7 +21,7 @@ class Plasma : public Effect {
 
     for (int i = 0; i < pixels.count(); ++i) {
       int x, y;
-      pixels.get_coords(i, &x, &y);
+      pixels.coords(i, &x, &y);
 
       double xx = 16.0 * x / width;
       double yy = 16.0 * y / height;
@@ -29,7 +29,7 @@ class Plasma : public Effect {
                               square((yy - 2) * 10 + yOffset - 127)) +
                          offset);
 
-      pixels.set_color(i, hsl(hue, 255, 255));
+      pixels.setColor(i, hsl(hue, 255, 255));
     }
   }
 

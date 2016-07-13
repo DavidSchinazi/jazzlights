@@ -1,36 +1,30 @@
 #include "dfsparks/effect.h"
+#include "dfsparks/player.h"
+
+#include <assert.h>
 
 namespace dfsparks {
 
-void Effect::begin(Pixels &px) {
-  pixels = &px;
-  start_time = frame_time = time_ms();
-  beat_time = -1;
-  on_begin(*pixels);
+void Effect::render(Player& player) {
+  player_ = &player;
+  doRender(player_->pixels());
+  player_ = nullptr;
 }
 
-void Effect::end() {
-  on_end(*pixels);
-  pixels = nullptr;
+int32_t Effect::timeElapsed() const {
+  return player_ ? player_->timeElapsed() : -1;
 }
 
-void Effect::restart() { start_time = time_ms(); }
-
-void Effect::knock() { beat_time = time_ms(); }
-
-void Effect::sync(int32_t start_t, int32_t beat_t) {
-  start_time = start_t;
-  beat_time = beat_t;
+int32_t Effect::timeSinceBeat() const {
+  return player_ ? player_->timeSinceBeat() : -1;
 }
 
-void Effect::render() {
-  frame_time = time_ms();
-  on_render(*pixels);
+int32_t Effect::cycleDuration() const {
+  return player_ ? player_->cycleDuration() : 0;
 }
 
-Effect &Effect::set_name(const char *n) {
-  name = n;
-  return *this;
+uint8_t Effect::cycleHue() const {
+  return player_ ? player_->cycleHue() : 0;
 }
 
 } // namespace dfsparks

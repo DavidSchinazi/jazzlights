@@ -7,7 +7,7 @@ namespace dfsparks {
 /**
  * Get monotonically increasing time in milliseconds
  */
-int32_t time_ms();
+int32_t timeMillis();
 
 } // namespace dfsparks
 

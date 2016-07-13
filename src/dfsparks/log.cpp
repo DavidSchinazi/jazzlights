@@ -7,10 +7,10 @@
 
 namespace dfsparks {
 static const char *level_str[] = {"ERROR", "INFO", "DEBUG"};
-LogLevel log_level = LogLevel::error; // LogLevel::info;
+LogLevel logLevel = errorLevel; // infoLevel;
 
 void log(LogLevel level, const char *fmt, va_list args) {
-  if (level > log_level) {
+  if (level > logLevel) {
     return;
   }
 #ifdef ARDUINO

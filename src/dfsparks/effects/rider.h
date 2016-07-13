@@ -7,16 +7,16 @@
 namespace dfsparks {
 
 class Rider : public Effect {
-  void on_render(Pixels &pixels) final {
-    int32_t elapsed = get_elapsed_time();
-    int width = pixels.get_width();
+  void doRender(Pixels &pixels) final {
+    int32_t elapsed = timeElapsed();
+    int width = pixels.width();
 
     uint8_t cycleHue = 256 * elapsed / hue_period;
     uint8_t riderPos = 256 * elapsed / rider_period;
 
     for (int i = 0; i < pixels.count(); ++i) {
       int x, y;
-      pixels.get_coords(i, &x, &y);
+      pixels.coords(i, &x, &y);
 
       // this is the same for all values of y, so we can optimize
       uint32_t riderColor;
@@ -29,7 +29,7 @@ class Rider : public Effect {
         brightness = 255 - brightness;
         riderColor = hsl(cycleHue, 255, brightness);
       }
-      pixels.set_color(i, riderColor);
+      pixels.setColor(i, riderColor);
     }
   }
 

@@ -7,7 +7,7 @@
 
 namespace dfsparks {
 
-int32_t time_ms() {
+int32_t timeMillis() {
 #ifndef ARDUINO
   static auto t0 = std::chrono::steady_clock::now();
   return std::chrono::duration_cast<std::chrono::milliseconds>(

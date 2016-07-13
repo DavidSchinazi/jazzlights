@@ -1,4 +1,3 @@
-#include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 #include <Adafruit_NeoPixel.h>
 #include <DFSparks.h>
@@ -10,24 +9,25 @@ char pass[] = "***";  // your network password
 const int STATUS_PIN = 2; // builtin led
 const int RING_PIN = 5; // D1
 const int BUTTON_PIN = 13; // D7
-
 const int NUM_LEDS = 12;
 
 Adafruit_NeoPixel strip(NUM_LEDS, RING_PIN, NEO_GRB + NEO_KHZ800);
 
-struct RingPixels : public VerticalStrip {
-  RingPixels() : VerticalStrip(NUM_LEDS) {}
+struct RingPixels : public VerticalStrand {
+  RingPixels() : VerticalStrand(NUM_LEDS) {}
 
-  void on_set_color(int i, uint32_t color) final {
-    strip.setPixelColor(i, color);       
+  void doSetColor(int i, uint8_t red, uint8_t green, uint8_t blue, uint8_t /*alpha*/) final {
+    strip.setPixelColor(i, red, green, blue);       
   };  
 } pixels;
 
-WiFiUdpNetwork<WiFiUdp> network;
-NetworkPlayer player(pixels, network);
+Esp8266Network network(ssid, pass);
+NetworkPlayer player(network);
 
 void setup()
 {
+  logLevel = debugLevel;
+
   Serial.begin(115200);
   Serial.println();
   Serial.println();
@@ -42,37 +42,28 @@ void setup()
   pinMode(RING_PIN, OUTPUT);
   pinMode(BUTTON_PIN, INPUT);
 
-  // Connect to a WiFi network
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
-  WiFi.begin(ssid, pass);
-  
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-    
-    // Display connecting pattern
-    static int i = 0;
-    strip.setPixelColor(++i % strip.numPixels(), 0x00ff00);
-    strip.show();
-  }
-  Serial.println("");
-  
-  Serial.println("WiFi connected, my IP: ");
-  Serial.println(WiFi.localIP());
-
-  Serial.println("Starting demo");
-  player.begin();
+  delay(2000);
+  player.begin(pixels);
 }
 
 void loop()
 {
   static int prevButtonState = LOW;
+  static int pressTs = 0; 
   int buttonState = digitalRead(BUTTON_PIN);
   if (buttonState == HIGH && prevButtonState == LOW) {
-      player.next(); 
+    pressTs = millis();
+  }
+  else if (buttonState == LOW && prevButtonState == HIGH) {
+      if (millis() - pressTs < 500) { // short press
+         player.next();     
+      }
+      else {
+        player.showStatus();
+      }
   } 
   prevButtonState = buttonState;
+  network.poll();
   player.render();
   strip.show();
   delay(10);

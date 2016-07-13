@@ -1,65 +1,106 @@
 #ifndef DFSPARKS_PLAYER_H
 #define DFSPARKS_PLAYER_H
-#include "dfsparks/effects.h"
 #include "dfsparks/network.h"
 #include "dfsparks/pixels.h"
+#include "dfsparks/playlist.h"
+#include <assert.h>
 #include <stdio.h>
 
 namespace dfsparks {
 
 class Player {
 public:
-  Player(Pixels &px);
+  static constexpr int LOW_PRIORITY = 10;
+  static constexpr int HIGH_PRIORITY = 20;
+
+  Player(Pixels& pixels);
   virtual ~Player();
 
-  void begin();
-  void end();
-
   void render();
 
-  void next();
-  void prev();
+  void play(int track, int priority = HIGH_PRIORITY) {doPlay(playlist_.select(track), priority);}
+  void next(int priority = HIGH_PRIORITY) { doPlay(playlist_.next(), priority); }
+  void prev(int priority = HIGH_PRIORITY) { doPlay(playlist_.prev(), priority); }
 
-  void repeat();
-  void loop();
-  void shuffle();
+  int track() const { return playlist_.currentPosition(); }
 
-  void play(Effect &ef);
-  void play(int efi);
+  void cycleAll() { mode_ = cycle_all; }
+  void shuffleAll() { mode_ = shuffle_all; }
+  void loopOne() { mode_ = play_forever; }
 
-  void knock();
+  void knock() { time_since_beat_ = 0; }
 
-  Effect &get_playing_effect();
+  const char *effectName() const;
+  int32_t timeElapsed() const { return elapsed_time_; }
+  int32_t timeSinceBeat() const { return time_since_beat_; }
+  int32_t cycleDuration() const {return 500; }
+  uint8_t cycleHue() const { return cycle_hue_; }
+
+
+  Pixels &pixels() {
+    assert(pixels_);
+    return *pixels_;
+  }
+  const Pixels &pixels() const {
+    assert(pixels_);
+    return *pixels_;
+  }
+
+  void showStatus(bool show = true) { showStatus_ = show; }
+  bool isShowingStatus() const { return showStatus_; }
 
 protected:
-  Effects effects;
-  Pixels &pixels;
-  int32_t next_time;
+  Effect* findEffect(const char *name) const;
+  
+  void doPlay(Effect &ef, int priority);
+  void doPlay(Effect &ef, int priority, int32_t elapsed, int32_t remaining, uint8_t cycleHue);
 
 private:
-  virtual void on_playing(Effect &) {}
+  virtual void doRenderStatus();
 
-  enum PlaybackMode { repeat_one, loop_all, shuffle_all } pbmode = loop_all;
-  Effect *playing;
+  Repertoire repertoire_;
+  Playlist playlist_;
+  Effect *effect_ = nullptr;
+  int32_t elapsed_time_;
+  int32_t remaining_time_;
+  int32_t time_since_beat_;
+  int32_t frame_ts_;
+  uint8_t cycle_hue_;
+  int priority_ = LOW_PRIORITY;
+
+  enum Mode { play_forever, cycle_all, shuffle_all } mode_ = cycle_all;
+  Pixels *pixels_ = nullptr;
+  bool showStatus_ = false;
 };
 
-class NetworkPlayer : public Player {
+class NetworkPlayer : public Player, NetworkListener {
 public:
-  NetworkPlayer(Pixels &p, Network &n);
+  NetworkPlayer(Pixels& pixels, Network &n);
+  ~NetworkPlayer();
 
-  using Player::begin;
   void render();
-  void serve();
-  void listen();
-  void disconnect();
+
+  void serve() { mode_ = server; }
+  void listen() { mode_ = client; }
+  void disconnect() { mode_ = offline; }
+  bool isConnected() const {
+    return mode_ != offline && netwrk.status() == Network::connected;
+  }
 
 private:
-  enum Mode { offline, client, server };
+  void onReceived(Network &network, const Message::Frame &frame) final;
+  void onStatusChange(Network &) final{};
+  void doRenderStatus() final;
 
-  void on_playing(Effect &ef) override;
-
+  enum Mode { offline, client, server } mode_ = client;
   Network &netwrk;
-  Mode mode = client;
+
+  int32_t tx_time_ = INT32_MIN / 2;
+  int32_t tx_interval_ = 1000; // 250;
+  int32_t tx_track_ = -1;
+
+  int32_t rx_time_ = INT32_MIN / 2;
+  int32_t rx_timeout_ = 3000;
 };
 
 } // namespace dfsparks

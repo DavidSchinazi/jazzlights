@@ -28,3 +28,5 @@ To upload ESP8266 sketches using Arduino IDE:
 	3. Install ESP8266 board
 	4. Install USB to UART drivers (https://www.silabs.com/products/mcu/Pages/USBtoUARTBridgeVCPDrivers.aspx)
 	5. Use NodeMCU 1.0 (ESP-12E) board and /dev/cu.SLAB_USBtoUART port; set serial monitor to 115200 baud
+
+http://www.codenuke.net/2015/01/nodemcu-install-ch340-usb-to-serial-for-yosemite.html

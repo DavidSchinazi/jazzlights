@@ -150,6 +150,33 @@ inline uint8_t qsub8(uint8_t i, uint8_t j) {
 extern uint8_t random8();
 extern uint8_t random8(uint8_t lim);
 extern uint8_t random8(uint8_t min, uint8_t lim);
+extern uint8_t sqrt16(uint16_t x);
+
+/**
+ * Online calculation of median, variance, and standard deviation
+ */
+class Welford {
+public:
+  void reset() {
+    n_ = 0;
+    mean_ = m2_ = 0;
+  }
+  void add(double x) {
+    n_++;
+    double delta = x - mean_;
+    mean_ += delta / n_;
+    m2_ += delta * (x - mean_);
+  }
+
+  double mean() const { return mean_; }
+  double variance() const { return n_ < 2 ? NAN : m2_ / (n_ - 1); }
+  double stddev() const { return sqrt(variance()); }
+
+private:
+  int n_;
+  double mean_;
+  double m2_;
+};
 
 } // namespace dfsparks
 #endif /* DFSPARKS_PROTO_H */

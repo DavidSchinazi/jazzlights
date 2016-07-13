@@ -5,8 +5,8 @@
 namespace dfsparks {
 
 class Blink : public Effect {
-  void on_render(Pixels &pixels) final {
-    int32_t elapsed = get_elapsed_time();
+  void doRender(Pixels &pixels) final {
+    int32_t elapsed = timeElapsed();
     pixels.fill(elapsed / period % 2 ? color1 : color2);
   }
 

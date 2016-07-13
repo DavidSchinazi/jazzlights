@@ -1,118 +1,158 @@
 #include "dfsparks/player.h"
-#include <assert.h>
+#include "dfsparks/log.h"
+#include "dfsparks/math.h"
 #include <stdlib.h>
 
 namespace dfsparks {
 
-// ==========================================================================
-//  Player
-// ==========================================================================
-Player::Player(Pixels &px) : pixels(px) {}
-
-Player::~Player() {}
-
-void Player::begin() {
-  effects.begin(pixels);
-  playing = &effects.first();
-  next_time = time_ms() + playing->get_preferred_duration();
+// --------------------------------------------------------------------
+// Player
+// --------------------------------------------------------------------
+Player::Player(Pixels& pixels) : repertoire_(pixels), playlist_(repertoire_), effect_(&playlist_.currentEffect()) {
+  pixels_ = &pixels;
 }
-
-void Player::end() { effects.end(); }
+Player::~Player() { 
+}
 
 void Player::render() {
-  if (playing) {
-    playing->render();
-  }
-  int32_t curr_t = time_ms();
-  if (curr_t > next_time) {
-    switch (pbmode) {
-    case loop_all:
-      next();
-      break;
-    case shuffle_all:
-      play(rand() % effects.count());
-      break;
-    case repeat_one:
-      next_time = curr_t + playing->get_preferred_duration();
-      break;
+  assert(effect_);
+  int32_t curr_ts = timeMillis();
+  remaining_time_ -= curr_ts - frame_ts_;
+  elapsed_time_ += curr_ts - frame_ts_;
+  time_since_beat_ += curr_ts - frame_ts_;
+  frame_ts_ = curr_ts;
+
+  if (remaining_time_ <= 0) {
+    switch(mode_) {
+      case cycle_all:
+        doPlay(playlist_.next(), LOW_PRIORITY);
+        break;
+      case shuffle_all:
+        doPlay(playlist_.random(), LOW_PRIORITY);
+        break;
+      case play_forever:
+        remaining_time_ = effect_->preferredDuration(); 
+        priority_ = LOW_PRIORITY; // so that server can take over
+        break;
     }
   }
-}
 
-void Player::play(int idx) {
-  info("player %p: play %d", this, idx);
-  Effect *ef = effects.get(idx);
-  if (ef) {
-    play(*ef);
+  if (showStatus_) {
+    doRenderStatus();
+  }
+  else {
+    effect_->render(*this);
   }
 }
 
-void Player::play(Effect &ef) {
-  playing = &ef;
-  ef.restart();
-  next_time = time_ms() + ef.get_preferred_duration();
-  // info("player %p playing %s", this, ef.get_name());
-  on_playing(ef);
+void Player::doPlay(Effect& ef, int priority) {
+  doPlay(ef, priority, 0, ef.preferredDuration(), 0);
 }
 
-void Player::next() {
-  assert(playing);
-  Effect *next = effects.next(*playing);
-  assert(next);
-  play(*next);
-}
-
-void Player::prev() {
-  assert(playing);
-  Effect *prev = effects.prev(*playing);
-  assert(prev);
-  play(*prev);
-}
-
-void Player::knock() {
-  assert(playing);
-  playing->knock();
-}
-
-Effect &Player::get_playing_effect() {
-  assert(playing);
-  return *playing;
-}
-
-// ==========================================================================
-//  NetworkPlayer
-// ==========================================================================
-NetworkPlayer::NetworkPlayer(Pixels &p, Network &n) : Player(p), netwrk(n) {}
-
-void NetworkPlayer::on_playing(Effect &ef) {
-  if (mode == server) {
-    PlayerState st = {ef.get_name(), ef.get_start_time(), ef.get_beat_time()};
-    netwrk.broadcast(st);
+void Player::doPlay(Effect &ef, int priority, int32_t elapsed, int32_t remaining, uint8_t cycle_hue) {
+  if (priority_ > priority) {
+    return;
   }
+
+  effect_ = &ef;
+  elapsed_time_ = elapsed;
+  remaining_time_ = remaining;
+  cycle_hue_ = cycle_hue;
+  priority_ = priority;
+  frame_ts_ = timeMillis();
+
+  if (priority_ > LOW_PRIORITY) {
+    showStatus_ = false;
+  }
+  info("player %p selected effect %s", this, effectName());
+}
+
+void Player::doRenderStatus() {
+  pixels().fill(0x00ff00);
+}
+
+const char *Player::effectName() const {
+  const char *name = "unnamed";
+  repertoire_.find(*effect_, &name, nullptr);
+  return name;
+}
+
+Effect* Player::findEffect(const char *name) const {
+  Effect* ef = nullptr;
+  repertoire_.find(name, &ef, nullptr);
+  return ef;
+}
+
+// --------------------------------------------------------------------
+// NetworkPlayer
+// --------------------------------------------------------------------
+
+NetworkPlayer::NetworkPlayer(Pixels& pixels, Network &n) : Player(pixels), netwrk(n) {
+  netwrk.add(*this);
+}
+
+NetworkPlayer::~NetworkPlayer() {
+  netwrk.remove(*this);
 }
 
 void NetworkPlayer::render() {
-  if (mode == client) {
-    PlayerState st;
-    if (netwrk.sync(&st) >= 0) {
-      if (strcmp(st.effect_name, get_playing_effect().get_name())) {
-        play(*effects.get(st.effect_name));
-      }
-      get_playing_effect().sync(st.start_time, st.beat_time);
-      next_time = get_playing_effect().get_preferred_duration();
-    }
-  } else if (mode == server) {
-    Effect &ef = get_playing_effect();
-    PlayerState st = {ef.get_name(), ef.get_start_time(), ef.get_beat_time()};
-    netwrk.broadcast(st);
+  auto curr_time = timeMillis();
+  const char *name = effectName();
+  if (mode_ == server && name[0] != '_' && (tx_track_ != track() || curr_time - tx_time_ > tx_interval_)) {
+    Message::Frame fr;
+    strncpy(fr.pattern, name, sizeof(fr.pattern));
+    fr.elapsed_ms = timeElapsed();
+    fr.beat_ms = timeSinceBeat();
+    netwrk.broadcast(fr);
+    tx_track_ = track();
+    tx_time_ = curr_time;
   }
   Player::render();
 }
 
-void NetworkPlayer::serve() { mode = server; }
+void NetworkPlayer::doRenderStatus() {
+  int32_t t = timeMillis();
+  uint32_t color = 0x000000;
 
-void NetworkPlayer::listen() { mode = client; }
+  switch(netwrk.status()) {
+    case Network::disconnected: 
+    case Network::disconnecting: 
+      color = 0xff6600; 
+      break;
+    case Network::connecting: 
+      color = t % 500 < 250 ? 0 : 0xff6600;
+      break;
+    case Network::connected: 
+      color = t - rx_time_ < 100 ? 0 : 0x00ff00; 
+      break;
+    case Network::connection_failed: 
+      color = 0xff0000; 
+      break;
+  }
+  pixels().fill(color);
+}
 
-void NetworkPlayer::disconnect() { mode = offline; }
+void NetworkPlayer::onReceived(Network&, const Message::Frame& fr) {
+  int32_t currTime = timeMillis();
+  if (mode_ == client) {
+    Effect *ef = findEffect(fr.pattern);
+    if (ef) {
+      doPlay(*ef, LOW_PRIORITY, fr.elapsed_ms, rx_timeout_, 0);
+    }
+    else {
+      const char *altname = 0;
+      if (fr.hue_dev < 50) {
+        altname = "glitter";
+        doPlay(*findEffect(altname), LOW_PRIORITY, fr.elapsed_ms, rx_timeout_, fr.hue_med ? fr.hue_med : 255);
+      } else {
+        altname = "radiaterainbow";        
+        doPlay(*findEffect(altname), LOW_PRIORITY, fr.elapsed_ms, rx_timeout_, 0);
+      }
+      info("Can't play unknown effect '%s', using '%s' instead", fr.pattern, altname);
+    }
+  }
+  rx_time_ = currTime;
+}
+
 
 } // namespace dfsparks

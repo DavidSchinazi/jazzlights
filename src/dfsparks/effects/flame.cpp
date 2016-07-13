@@ -4,7 +4,7 @@
 
 namespace dfsparks {
 
-uint32_t heat_color(uint8_t temperature) {
+uint32_t heatColor(uint8_t temperature) {
   uint8_t r, g, b;
   // return rgb(temperature,temperature,temperature);
 

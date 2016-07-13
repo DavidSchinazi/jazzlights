@@ -7,24 +7,25 @@
 
 namespace dfsparks {
 
-uint32_t heat_color(uint8_t temperature);
+uint32_t heatColor(uint8_t temperature);
 inline uint8_t random_(uint8_t from = 0, uint8_t to = 255) {
   return from + rand() % (to - from);
 }
 
 class Flame : public Effect {
-  void on_begin(const Pixels &pixels) final {
-    int simsize = pixels.get_width() * pixels.get_height();
+public:
+  Flame(const Pixels &pixels) {
+    int simsize = pixels.width() * pixels.height();
     heat = new uint8_t[simsize];
     memset(heat, 0, simsize);
   }
+  ~Flame() {delete heat;}
 
-  void on_end(const Pixels &) final { delete heat; }
-
-  void on_render(Pixels &pixels) final {
-    int32_t elapsed = get_elapsed_time();
-    int width = pixels.get_width();
-    int height = pixels.get_height();
+private:
+  void doRender(Pixels &pixels) final {
+    int32_t elapsed = timeElapsed();
+    int width = pixels.width();
+    int height = pixels.height();
     int freq = 50;
 
     if (elapsed / freq != step) {
@@ -58,8 +59,8 @@ class Flame : public Effect {
     // Step 4.  Map from heat cells to LED colors
     for (int i = 0; i < pixels.count(); ++i) {
       int x, y;
-      pixels.get_coords(i, &x, &y);
-      pixels.set_color(i, heat_color(heat[(height - y - 1) * width + x]));
+      pixels.coords(i, &x, &y);
+      pixels.setColor(i, heatColor(heat[(height - y - 1) * width + x]));
     }
   }
 

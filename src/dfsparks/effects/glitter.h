@@ -7,12 +7,12 @@
 namespace dfsparks {
 
 class Glitter : public Effect {
-  void on_render(Pixels &pixels) final {
-    int32_t elapsed = get_elapsed_time();
+  void doRender(Pixels &pixels) final {
+    int32_t elapsed = timeElapsed();
     uint8_t cycleHue = 256 * elapsed / hue_period;
 
     for (int i = 0; i < pixels.count(); ++i) {
-      pixels.set_color(i, hsl(cycleHue, 255, random8(5) * 63));
+      pixels.setColor(i, hsl(cycleHue, 255, random8(5) * 63));
     }
   }
 
