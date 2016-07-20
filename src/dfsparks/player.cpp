@@ -23,6 +23,7 @@ void Player::render() {
   frame_ts_ = curr_ts;
 
   if (remaining_time_ <= 0) {
+    priority_ = LOW_PRIORITY; // so that server can take over
     switch(mode_) {
       case cycle_all:
         doPlay(playlist_.next(), LOW_PRIORITY);
@@ -32,7 +33,6 @@ void Player::render() {
         break;
       case play_forever:
         remaining_time_ = effect_->preferredDuration(); 
-        priority_ = LOW_PRIORITY; // so that server can take over
         break;
     }
   }
@@ -59,7 +59,6 @@ void Player::doPlay(Effect &ef, int priority, int32_t elapsed, int32_t remaining
   remaining_time_ = remaining;
   cycle_hue_ = cycle_hue;
   priority_ = priority;
-  frame_ts_ = timeMillis();
 
   if (priority_ > LOW_PRIORITY) {
     showStatus_ = false;

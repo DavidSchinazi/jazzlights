@@ -96,7 +96,7 @@ private:
   Network &netwrk;
 
   int32_t tx_time_ = INT32_MIN / 2;
-  int32_t tx_interval_ = 1000; // 250;
+  int32_t tx_interval_ = 500; // 250;
   int32_t tx_track_ = -1;
 
   int32_t rx_time_ = INT32_MIN / 2;
