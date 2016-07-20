@@ -171,7 +171,7 @@ int main(int argc, char ** argv) {
       }
       network.poll();
       //render_circle(700, 300, 50, dfsparks::hsl(h, 240, 255));
-      
+
       std::stringstream title;
       title << WIN_TITLE << " | " << controlled.effectName();
       glfwSetWindowTitle(window, title.str().c_str());

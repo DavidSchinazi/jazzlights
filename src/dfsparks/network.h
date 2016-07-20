@@ -20,7 +20,7 @@ struct Message {
     int32_t beat_ms;
     uint8_t hue_med;
     uint8_t hue_dev;
-  } frame;
+  } __attribute__((__packed__)) frame;  
 } __attribute__((__packed__));
 
 class Network;

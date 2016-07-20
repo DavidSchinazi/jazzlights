@@ -15,5 +15,8 @@ s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 
 while 1:
     data, addr = s.recvfrom(1024)
-    (msgcode, reserved, effect, elapsed, beat, hue) = struct.unpack("!I12s16sIIB", data)
-    print "RX %s:%s   %-16s elapsed: %04d beat: %04d hue: %03d" % (addr[0], addr[1], effect.rstrip('\0'), elapsed, beat, hue)
+    try:
+    	(msgcode, reserved, effect, elapsed, beat, hue_med, hue_dev) = struct.unpack("!I12s16sIIBB", data)
+    	print "RX %s:%s   %-16s elapsed: %04d beat: %04d hue_med: %03d hue_dev: %03d" % (addr[0], addr[1], effect.rstrip('\0'), elapsed, beat, hue_med, hue_dev)
+    except Exception as err:
+    	print "RX %d bytes, %s" % (len(data), err)

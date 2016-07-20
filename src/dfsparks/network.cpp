@@ -37,7 +37,7 @@ bool Network::broadcast(const Message::Frame& fr) {
   p.frame = fr;
   p.frame.elapsed_ms = htonl(p.frame.elapsed_ms);
   p.frame.beat_ms = htonl(p.frame.beat_ms);
-  info("TX frame %-16s elapsed:%010d beat:%010d hue_med:%03u hue_dev:%03u", fr.pattern, fr.elapsed_ms, fr.beat_ms, fr.hue_med, fr.hue_dev);
+  info("TX %d bytes, frame %-16s elapsed:%010d beat:%010d hue_med:%03u hue_dev:%03u", sizeof(p), fr.pattern, fr.elapsed_ms, fr.beat_ms, fr.hue_med, fr.hue_dev);
   return doBroadcast(&p, sizeof(p)) == sizeof(p);
 }
 
@@ -63,7 +63,7 @@ bool Network::poll() {
   }
   p.frame.elapsed_ms = ntohl(p.frame.elapsed_ms);
   p.frame.beat_ms = ntohl(p.frame.beat_ms);
-  info("RX frame %-16s elapsed:%010d beat:%010d hue_med:%03u hue_dev:%03u", p.frame.pattern, p.frame.elapsed_ms, p.frame.beat_ms, p.frame.hue_med, p.frame.hue_dev);
+  info("RX %d bytes, frame %-16s elapsed:%010d beat:%010d hue_med:%03u hue_dev:%03u", n, p.frame.pattern, p.frame.elapsed_ms, p.frame.beat_ms, p.frame.hue_med, p.frame.hue_dev);
   NetworkListener *l = first_;
   while(l) {
     l->onReceived(*this, p.frame);
