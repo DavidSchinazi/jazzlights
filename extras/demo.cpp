@@ -168,6 +168,7 @@ int main(int argc, char ** argv) {
     on_resize(window, WIN_W, WIN_H);
 
     controlled.setMaster();
+    controlled.shuffleAll();
 
     while (!glfwWindowShouldClose(window)) {
       glClear(GL_COLOR_BUFFER_BIT);

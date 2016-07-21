@@ -169,7 +169,7 @@ Effect& Playlist::prev() {
 }
 
 Effect& Playlist::random() {
-  track_ = track_ % size_;
+  track_ = ::random() % size_;
   return currentEffect(); 
 }
 
