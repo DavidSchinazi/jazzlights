@@ -1,32 +1,81 @@
-DiscoFish Wearables
-====================
+DFSparks Library
+================
 
-Installation (Ubuntu)
----------------------
+DFSparks is a library for building wearable electronics that synchronizes 
+with DiscoFish art car. The target platform is ESP8266 (though it should be
+trivial to modify it for any Arduino-compatible board). There's also a 
+PC version that we use on the fish itself.
 
-Change directory to project root and run the following commands: 
+Using with Arduino IDE
+----------------------------
+
+The easiest way to use it is to simply clone the repository into your Arduino
+libraries directory,  like that:
+
+	cd $HOME/Documents/Arduino/libraries
+	git clone git@bitbucket.org:discofish/dfsparks.git DFSparks 
+
+Then you can use it as any other Arduino library; see provided examples for
+details. You can use extras/test-server.py to test how your device
+synchronizes with the server.
+
+Building PC library (Ubuntu)
+----------------------------
 
     sudo apt-get install -y make
     sudo apt-get install -y cmake
-	pushd /tmp && git clone https://github.com/glfw/glfw --depth 1 && cd glfw && cmake . && make && sudo make install && popd 
-    make 
+	git clone git@bitbucket.org:discofish/dfsparks.git
+	mkdir dfsparks/build
+	cd dfsparks/build && cmake .. && make 
+	sudo make install
+
+The last step installs the library system-wide, so that dfplayer build can
+find it.
+
+Building demo app (Ubuntu)
+----------------------------
+
+Build PC library as explained above, then install GLFW and build the demo:
+
+	pushd /tmp && git clone https://github.com/glfw/glfw --depth 1 &&\
+		cd glfw && cmake . && make && sudo make install && popd 
+    cd dfsparks/build && make dfsparks_demo && ./dfspaks_demo
  
 
-Installation (OSX)
----------------------
+Adding new effects
+----------------------------
 
-Change directory to project root and run the following commands: 
+To implement new effect:
 
-	brew tap homebrew/versions
-	brew install glfw3
-	brew install cmake
-	make
+	1. Create a file that contains effect source, e.g. src/dfsparks/effects/coolstuff.h
+	(you may keep it header-only or add a .cpp file as well)
+	2. Use one of the existing files as an example. At a minimum, you need to extend 
+		the Effect class and implement 'doRender' method.
+	3. doRender gets Pixels object representing a viewport mapped to device pixels. 
+		You can get viewport width and height from the pixels object. You can also find 
+		out viewport coordinates of each pixel by calling 'coords' method of the Pixels
+		object. timeElapsed() method on the effect itself lets you query the time.
+		All times are in milliseconds, stored as int32_t.
+	4. Create the effect in src/dfsparks/playlist.cpp, see Repertoire constructor.
+	5. Add new effect sources to CMakeLists.txt
 
-To upload ESP8266 sketches using Arduino IDE:
+
+Uploading sketches on OSX
+-------------------------
+
+(this is generic stuff not specific to DFSparks library)
+
+To upload sketches to ESP8266 board from Arduino IDE on OSX:
+
 	1. Install ESP8266 board. Go to Arduino->Preferences->Settings; Additional board manager URLs
 	2. Add http://arduino.esp8266.com/stable/package_esp8266com_index.json
 	3. Install ESP8266 board
-	4. Install USB to UART drivers (https://www.silabs.com/products/mcu/Pages/USBtoUARTBridgeVCPDrivers.aspx)
-	5. Use NodeMCU 1.0 (ESP-12E) board and /dev/cu.SLAB_USBtoUART port; set serial monitor to 115200 baud
+	4. Install USB to UART drivers. Required drivers seem to be different for different 
+	   board flavours. 
+	   - For LoLin boards this worked: 
+			http://www.codenuke.net/2015/01/nodemcu-install-ch340-usb-to-serial-for-yosemite.html
+	   - For noname board I got from Amazon this worked: 
+			https://www.silabs.com/products/mcu/Pages/USBtoUARTBridgeVCPDrivers.aspx (/dev/cu.SLAB_USBtoUART)
+	5. Use NodeMCU 1.0 (ESP-12E) board and port corresponding to USB driver
+	6. Set serial monitor to 115200 baud
 
-http://www.codenuke.net/2015/01/nodemcu-install-ch340-usb-to-serial-for-yosemite.html
