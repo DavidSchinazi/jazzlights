@@ -37,7 +37,7 @@ void RainbowEffect::ApplyOnImage(RgbaImage* dst, bool* is_done) {
   if (rainbow_target_x_ >= 0) {
     if (rainbow_effective_x_ >= 0) {
       int distance = rainbow_target_x_ - rainbow_effective_x_;
-      int step = distance / fps();
+      int step = 2 * distance / fps();
       if (distance && !step) step = (distance > 0 ? 1 : -1);
       rainbow_effective_x_ += step;
     } else {
@@ -45,8 +45,8 @@ void RainbowEffect::ApplyOnImage(RgbaImage* dst, bool* is_done) {
     }
   }
 
-  // Update rainbow height. Go full height in 1 second.
-  int rainbow_height_step = height() / fps();
+  // Update rainbow height. Go full height in 0.5 second.
+  int rainbow_height_step = 2 * height() / fps();
   if (rainbow_effective_x_ >= 0 && rainbow_target_x_ >= 0) {
     rainbow_height_ = std::min(rainbow_height_ + rainbow_height_step, height());
   } else {
