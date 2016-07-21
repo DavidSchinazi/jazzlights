@@ -44,7 +44,7 @@ add_custom_command(
 	OUTPUT ${CMAKE_BINARY_DIR}/DFSparks.zip 
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 	COMMAND echo Building ${CMAKE_BINARY_DIR}/DFSparks.zip
-	COMMAND zip -r ${CMAKE_BINARY_DIR}/DFSparks.zip src examples testserver --include "*.cpp" "*.h" "*.py" "*.ino" 
+	COMMAND zip -r ${CMAKE_BINARY_DIR}/DFSparks.zip src examples extras --include "*.cpp" "*.h" "*.py" "*.ino" 
 	DEPENDS ${LIB_SOURCES}
 )
 
@@ -53,7 +53,7 @@ add_library(dfsparks SHARED ${LIB_SOURCES})
 target_include_directories(dfsparks PUBLIC src)
 
 # DEMO
-add_executable(dfsparks_demo ${DEMO_SOURCES})
+add_executable(dfsparks_demo EXCLUDE_FROM_ALL ${DEMO_SOURCES})
 find_package(glfw3 3.2 REQUIRED)
 target_link_libraries(dfsparks_demo dfsparks glfw)
 target_include_directories(dfsparks_demo PRIVATE src)
