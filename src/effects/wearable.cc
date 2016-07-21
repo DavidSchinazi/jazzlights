@@ -58,7 +58,7 @@ void WearableEffect::SetEffect(int id) {
   (void) id;
 
   Autolock l(lock_);
-  if (player && id > 0) {
+  if (player && id >= 0) {
     player->play(id, dfsparks::Player::HIGH_PRIORITY);
   }
   effect = id;
