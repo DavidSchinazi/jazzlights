@@ -117,14 +117,20 @@ void on_key(GLFWwindow * /*window*/, int key, int /*scancode*/, int action,
   else if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
     controlled.next();
   }
-  else if (key == GLFW_KEY_S && action == GLFW_PRESS) {
-    controlled.serve();
+  else if (key == GLFW_KEY_M && action == GLFW_PRESS) {
+    if (controlled.isMaster()) { 
+        controlled.setSlave();
+    } else {
+      controlled.setMaster();
+    }
   }
-  else if (key == GLFW_KEY_C && action == GLFW_PRESS) {
-    controlled.listen();
-  }
-  else if (key == GLFW_KEY_O && action == GLFW_PRESS) {
-    controlled.disconnect();
+  else if (key == GLFW_KEY_D && action == GLFW_PRESS) {
+    if (network.isConnected()) {
+      network.disconnect();
+    }
+    else {
+      network.reconnect();
+    }
   }
   else if (key >= GLFW_KEY_0 && key < GLFW_KEY_9 && action == GLFW_PRESS) {
     controlled.play(key - GLFW_KEY_0 + (mods & GLFW_MOD_SHIFT ? 10 : 0));
@@ -132,7 +138,7 @@ void on_key(GLFWwindow * /*window*/, int key, int /*scancode*/, int action,
   else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
     controlled.knock();
   }
-  else if (key == GLFW_KEY_T && action == GLFW_PRESS) {
+  else if (key == GLFW_KEY_S && action == GLFW_PRESS) {
     controlled.showStatus();
   }
 }
@@ -161,7 +167,7 @@ int main(int argc, char ** argv) {
 
     on_resize(window, WIN_W, WIN_H);
 
-    controlled.serve();
+    controlled.setMaster();
 
     while (!glfwWindowShouldClose(window)) {
       glClear(GL_COLOR_BUFFER_BIT);

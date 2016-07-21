@@ -32,6 +32,10 @@ namespace dfsparks {
 const char* const multicast_addr = "239.255.223.01";
 
 bool Network::broadcast(const Message::Frame& fr) {
+  doConnection();
+  if (status() != connected) {
+    return false;
+  }
   Message p;
   p.msgcode = htonl(msg_frame);
   p.frame = fr;
@@ -92,12 +96,28 @@ void Network::remove(NetworkListener& l) {
   }
 }
 
+void Network::disconnect() {
+  if (status_ == connected) {
+    setStatus(disconnecting);
+    poll();
+  }
+}
+
+void Network::reconnect() {
+  if (status_ != connected) {
+    setStatus(connecting);
+    poll();
+  }
+}
+
 void Network::setStatus(Status s) {
-  status_ = s;
-  NetworkListener *l = first_;
-  while(l) {
-    l->onStatusChange(*this);
-    l = l->next_;
+  if (s != status_) {
+    status_ = s;
+    NetworkListener *l = first_;
+    while(l) {
+      l->onStatusChange(*this);
+      l = l->next_;
+    }    
   }
 }
 

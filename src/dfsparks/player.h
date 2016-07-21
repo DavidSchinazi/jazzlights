@@ -80,19 +80,23 @@ public:
 
   void render();
 
-  void serve() { mode_ = server; }
-  void listen() { mode_ = client; }
-  void disconnect() { mode_ = offline; }
+  void setMaster() { mode_ = MASTER; }
+  void setSlave() { mode_ = SLAVE; }
+  void setStandalone() { mode_ = STANDALONE; }
+  bool isMaster() const {return mode_ == MASTER;}
   bool isConnected() const {
-    return mode_ != offline && netwrk.status() == Network::connected;
+    return mode_ != STANDALONE && netwrk.status() == Network::connected;
   }
+
+  // deprecated, use setMaster() instead
+  void serve() {setMaster();}
 
 private:
   void onReceived(Network &network, const Message::Frame &frame) final;
   void onStatusChange(Network &) final{};
   void doRenderStatus() final;
 
-  enum Mode { offline, client, server } mode_ = client;
+  enum Role {STANDALONE, SLAVE, MASTER} mode_ = SLAVE;
   Network &netwrk;
 
   int32_t tx_time_ = INT32_MIN / 2;

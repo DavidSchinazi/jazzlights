@@ -97,7 +97,7 @@ NetworkPlayer::~NetworkPlayer() {
 void NetworkPlayer::render() {
   auto curr_time = timeMillis();
   const char *name = effectName();
-  if (mode_ == server && name[0] != '_' && (tx_track_ != track() || curr_time - tx_time_ > tx_interval_)) {
+  if (mode_ == MASTER && name[0] != '_' && (tx_track_ != track() || curr_time - tx_time_ > tx_interval_)) {
     Message::Frame fr;
     strncpy(fr.pattern, name, sizeof(fr.pattern));
     fr.elapsed_ms = timeElapsed();
@@ -133,7 +133,7 @@ void NetworkPlayer::doRenderStatus() {
 
 void NetworkPlayer::onReceived(Network&, const Message::Frame& fr) {
   int32_t currTime = timeMillis();
-  if (mode_ == client) {
+  if (mode_ == SLAVE) {
     Effect *ef = findEffect(fr.pattern);
     if (ef) {
       doPlay(*ef, LOW_PRIORITY, fr.elapsed_ms, rx_timeout_, 0);

@@ -50,6 +50,10 @@ public:
   void add(NetworkListener &l);
   void remove(NetworkListener &l);
 
+  void disconnect();
+  void reconnect();
+  bool isConnected() const {return status_ == connected; }
+
   Status status() const { return status_; }
 
 protected:
