@@ -74,3 +74,8 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/src/dfsparks/
         FILES_MATCHING PATTERN "*.h"
   )
 
+# Test deployment
+add_custom_target(test-deploy 
+	COMMAND docker build -t dfsparks .
+	#COMMAND docker run -i -t dfsparks
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
