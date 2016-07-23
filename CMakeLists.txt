@@ -54,7 +54,7 @@ target_include_directories(dfsparks PUBLIC src)
 
 # DEMO
 add_executable(dfsparks_demo EXCLUDE_FROM_ALL ${DEMO_SOURCES})
-find_package(glfw3 3.2 REQUIRED)
+find_package(glfw3 3.2)
 target_link_libraries(dfsparks_demo dfsparks glfw)
 target_include_directories(dfsparks_demo PRIVATE src)
 
