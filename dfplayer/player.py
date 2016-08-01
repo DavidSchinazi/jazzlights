@@ -681,8 +681,10 @@ class Player(object):
         }
         logging.info("Playing %s: %s", name, kwargs)
         if name in wearable_effects:
+            self._effect = None
             self._tcl.set_wearable_effect(wearable_effects[name])
         else:
+            self._tcl.set_wearable_effect(-1)
             self._effect = load_effect(
                 name, IMAGE_FRAME_WIDTH, FRAME_HEIGHT, **kwargs)
 

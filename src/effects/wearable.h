@@ -32,7 +32,7 @@ class WearableEffect : public Effect {
 
   dfsparks::Pixels *pixels = nullptr;
   dfsparks::NetworkPlayer *player = nullptr;
-  int effect = 0;
+  int effect = -1;
 };
 
 #endif  // EFFECTS_WEARABLE_H_
