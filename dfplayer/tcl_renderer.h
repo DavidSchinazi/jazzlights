@@ -53,6 +53,11 @@ enum EffectMode {
 //   renderer->ScheduleImage(image_data, time);
 class TclRenderer {
  public:
+  enum RenderingState {
+    STATE_WEARABLE,
+    STATE_VISUALIZATION,
+  };
+
   // Configures a controller. Width and height define the size of
   // the intermediate image used internally. LED coordinates in
   // layout should be normalized to this image size.
@@ -85,9 +90,16 @@ class TclRenderer {
   // Starts a rainbow at the give position. Pass -1 to disable.
   void EnableRainbow(int controller_id, int x);
 
-  // Sets werable's effect number. Negative numbers set specific presets
-  // from ProjectM.
+  // Sets wearable effect id. Negative numbers switch back
+  // to automatic selection between wearable and visualization.
   void SetWearableEffect(int id);
+
+  // Forces the given rendering state for the next period.
+  void SetRenderingState(RenderingState state);
+  void ToggleRenderingState();
+
+  // Returns currently playing wearable effect id, or -1.
+  int GetCurrentWearableEffect();
 
   Bytes* GetAndClearLastImage(int controller_id);
   Bytes* GetAndClearLastLedImage(int controller_id);
@@ -117,11 +129,6 @@ class TclRenderer {
   TclRenderer(const TclRenderer& src);
   TclRenderer& operator=(const TclRenderer& rhs);
   ~TclRenderer();
-
-  enum RenderingState {
-    STATE_WEARABLE,
-    STATE_VISUALIZATION,
-  };
 
   struct ControllerInfo {
     ControllerInfo() : ControllerInfo(-1, -1) {}

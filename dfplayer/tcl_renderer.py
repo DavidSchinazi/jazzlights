@@ -92,6 +92,12 @@ class TclRenderer(object):
   def set_wearable_effect(self, id):
     self._renderer.SetWearableEffect(id)
 
+  def toggle_rendering_state(self):
+    self._renderer.ToggleRenderingState()
+
+  def get_current_wearable_effect(self):
+    return self._renderer.GetCurrentWearableEffect()
+
   def enable_rainbow(self, controller, x):
     self._renderer.EnableRainbow(controller, x)
 

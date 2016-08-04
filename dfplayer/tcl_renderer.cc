@@ -55,10 +55,7 @@ TclRenderer::ControllerInfo::ControllerInfo(int width, int height)
 
 TclRenderer::TclRenderer() {
   tcl_manager_ = new TclManager();
-
-  rendering_state_ = STATE_VISUALIZATION;
-  next_rendering_state_change_time_ =
-      GetCurrentMillis() + kVisualizationStateDurationMs;
+  SetRenderingState(STATE_VISUALIZATION);
 }
 
 TclRenderer::~TclRenderer() {
@@ -268,24 +265,51 @@ void TclRenderer::SetEffectImage(
 
 void TclRenderer::SetWearableEffect(int id) {
   requested_wearable_effect_id_ = id;
+  next_wearable_change_time_ = GetCurrentMillis() + kWearableChangeDurationMs;
+}
+
+int TclRenderer::GetCurrentWearableEffect() {
+  return selected_wearable_effect_id_;
+}
+
+void TclRenderer::SetRenderingState(RenderingState state) {
+  rendering_state_ = state;
+
+  uint64_t now = GetCurrentMillis();
+  if (rendering_state_ == STATE_WEARABLE) {
+    next_rendering_state_change_time_ = now + kWearableStateDurationMs;
+    fprintf(stderr, "Switched to STATE_WEARABLE\n");
+  } else {
+    next_rendering_state_change_time_ = now + kVisualizationStateDurationMs;
+    fprintf(stderr, "Switched to STATE_VISUALIZATION\n");
+  }
+
+  requested_wearable_effect_id_ = -1;
+  next_wearable_change_time_ = now;
+}
+
+void TclRenderer::ToggleRenderingState() {
+  if (rendering_state_ == STATE_VISUALIZATION) {
+    SetRenderingState(STATE_WEARABLE);
+  } else {
+    SetRenderingState(STATE_VISUALIZATION);
+  }
 }
 
 void TclRenderer::UpdateWearableEffects() {
   uint64_t now = GetCurrentMillis();
-  if (now >= next_rendering_state_change_time_) {
-    if (rendering_state_ == STATE_VISUALIZATION) {
-      rendering_state_ = STATE_WEARABLE;
-      next_rendering_state_change_time_ = now + kWearableStateDurationMs;
-      fprintf(stderr, "Switched to STATE_WEARABLE\n");
-    } else {
-      rendering_state_ = STATE_VISUALIZATION;
-      next_rendering_state_change_time_ = now + kVisualizationStateDurationMs;
-      fprintf(stderr, "Switched to STATE_VISUALIZATION\n");
-    }
-    next_wearable_change_time_ = now;
+  int prev_wearable_effect_id = selected_wearable_effect_id_;
+
+  if (requested_wearable_effect_id_ >= 0 &&
+      now >= next_wearable_change_time_) {
+    requested_wearable_effect_id_ = -1;
   }
 
-  int prev_wearable_effect_id = selected_wearable_effect_id_;
+  if (now >= next_rendering_state_change_time_ &&
+      requested_wearable_effect_id_ < 0) {
+    ToggleRenderingState();
+  }
+
   if (requested_wearable_effect_id_ >= 0) {
     selected_wearable_effect_id_ = requested_wearable_effect_id_;
   } else if (rendering_state_ == STATE_VISUALIZATION) {

@@ -217,8 +217,11 @@ class Player(object):
         lines.append('Controllers: %s' % (self._tcl.get_init_status()))
         bass = self._visualizer.GetLastBassInfo()
         preset = self._visualizer.GetCurrentPresetNameProgress()
+        wearable = self._tcl.get_current_wearable_effect()
         if preset and preset.endswith('.milk\''):
             preset = preset[:-6] + '\''
+        if wearable >= 0:
+            preset = 'Wearable #%s | %s' % (wearable, preset)
         if preset and len(preset) > 54:
             preset = preset[:50] + '...\''
         lines.append(preset)
@@ -548,7 +551,8 @@ class Player(object):
             self.mpd.seekid(self._songid, '%s' % self._seek_time)
 
     def toggle_visualization(self):
-        pass
+        self._tcl.set_wearable_effect(-1)
+        self._tcl.toggle_rendering_state()
 
     def toggle_kinect(self):
         if not self._is_kinect_enabled:
