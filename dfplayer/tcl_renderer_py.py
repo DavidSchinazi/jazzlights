@@ -3,7 +3,7 @@
 #
 # Controls TCL controller.
 #
-# PURE PYTHON IMPL - NO LONGEER IN USE DUE TO SLOWNESS.
+# PURE PYTHON IMPL - NO LONGER IN USE DUE TO SLOWNESS.
 
 import binascii
 import math

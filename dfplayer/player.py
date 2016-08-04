@@ -21,7 +21,6 @@ from gevent import sleep
 from gevent.coros import RLock
 
 from .effect import load as load_effect
-from .frame_source import FrameSource
 from .stats import Stats
 from .util import catch_and_log, PROJECT_DIR, PACKAGE_DIR, VENV_DIR
 from .util import get_time_millis
@@ -130,10 +129,6 @@ class Player(object):
                 self._target_gamma)
         self._tcl.lock_controllers()
 
-        self._frame_source = FrameSource(
-            FPS, _SCREEN_FRAME_WIDTH, IMAGE_FRAME_WIDTH,
-            FRAME_HEIGHT, CLIPS_DIR, self._tcl)
-
         # Init Kinect before visualizer, as it crashes otherwise.
         self._is_kinect_enabled = enable_kinect
         self._use_kinect = False
@@ -141,9 +136,18 @@ class Player(object):
         if enable_kinect:
             self.toggle_kinect()
 
-        self._use_visualization = False
-        self._visualizer = None
-        self.toggle_visualization()
+        self._visualizer_size = (
+            IMAGE_FRAME_WIDTH / MESH_RATIO, FRAME_HEIGHT / MESH_RATIO)
+        self._visualizer = Visualizer(
+            self._visualizer_size[0], self._visualizer_size[1], 512, FPS,
+            _PRESET_DIR[0], _PRESET_DIR[1], _PRESET_DURATION)
+        self._visualizer.SetVolumeMultiplier(self._visualization_volume)
+        # id, effect_mode, rotation_angle, flip_mode
+        self._visualizer.AddTargetController(TCL_MAIN, 2, 0, 0)
+        if self._enable_fin:
+            self._visualizer.AddTargetController(TCL_FIN, 0, 0, 1)
+        self._visualizer.StartMessageLoop()
+        self._visualizer.UseAlsa(self._sound_input)
 
         if self._use_mpd:
             self._load_playlist()
@@ -177,13 +181,12 @@ class Player(object):
             self._visualization_period_stats.get_average_and_stddev()
         render_avg = self._render_durations.get_average_and_stddev()
         return ('Player [%s %s %02d:%02d] (fps=%s, delay=%s/%s, '
-                'render=%d/%d, vis=%d/%d, cached=%s, queued=%s)') % (
+                'render=%d/%d, vis=%d/%d, queued=%s)') % (
                    self.status, self.clip_name,
                    elapsed_sec / 60, elapsed_sec % 60, fps,
                    int(frame_avg[0]), int(frame_avg[1]),
                    int(render_avg[0]), int(render_avg[1]),
                    int(visual_period_avg[0]), int(visual_period_avg[1]),
-                   self._frame_source.get_cache_size(),
                    self._tcl.get_queue_size())
 
     def get_status_lines(self):
@@ -212,22 +215,18 @@ class Player(object):
             lines.append('Soft Vol = %s, Gamma = %.1f, HDR = %s' % (
                 self._volume, self._target_gamma, hdr_mode))
         lines.append('Controllers: %s' % (self._tcl.get_init_status()))
-        if self._use_visualization:
-            bass = self._visualizer.GetLastBassInfo()
-            preset = self._visualizer.GetCurrentPresetNameProgress()
-            if preset and preset.endswith('.milk\''):
-                preset = preset[:-6] + '\''
-            if preset and len(preset) > 54:
-                preset = preset[:50] + '...\''
-            lines.append(preset)
-            lines.append((
-                'Sound RMS=%.3f, B=%.2f, M=%.2f, T=%.2f, VolX=%.2f') % (
-                self._visualizer.GetLastVolumeRms(),
-                bass[1], bass[3], bass[5],
-                self._visualization_volume))
-        else:
-            lines.append('Playing video (frame %s)' % (
-                self._tcl.get_last_image_id(TCL_MAIN)))
+        bass = self._visualizer.GetLastBassInfo()
+        preset = self._visualizer.GetCurrentPresetNameProgress()
+        if preset and preset.endswith('.milk\''):
+            preset = preset[:-6] + '\''
+        if preset and len(preset) > 54:
+            preset = preset[:50] + '...\''
+        lines.append(preset)
+        lines.append((
+            'Sound RMS=%.3f, B=%.2f, M=%.2f, T=%.2f, VolX=%.2f') % (
+            self._visualizer.GetLastVolumeRms(),
+            bass[1], bass[3], bass[5],
+            self._visualization_volume))
         # TODO(igorc): Show CPU, virtual and resident memory sizes
         # resource.getrusage(resource.RUSAGE_SELF)
         return lines
@@ -248,15 +247,11 @@ class Player(object):
         self._tcl.set_gamma(self._target_gamma)
 
     def visualization_volume_up(self):
-        if not self._use_visualization:
-            return
         self._visualization_volume += 0.1
         print 'Setting visualization volume to %s' % self._visualization_volume
         self._visualizer.SetVolumeMultiplier(self._visualization_volume)
 
     def visualization_volume_down(self):
-        if not self._use_visualization:
-            return
         self._visualization_volume -= 0.1
         if self._visualization_volume <= 0:
             self._visualization_volume = 0.1
@@ -553,26 +548,7 @@ class Player(object):
             self.mpd.seekid(self._songid, '%s' % self._seek_time)
 
     def toggle_visualization(self):
-        # TODO(igorc): Fix crash on turning off visualization.
-        if self._use_visualization:
-            return
-        self._use_visualization = not self._use_visualization
-        if not self._visualizer:
-            self._visualizer_size = (
-                IMAGE_FRAME_WIDTH / MESH_RATIO, FRAME_HEIGHT / MESH_RATIO)
-            self._visualizer = Visualizer(
-                self._visualizer_size[0], self._visualizer_size[1], 512, FPS,
-                _PRESET_DIR[0], _PRESET_DIR[1], _PRESET_DURATION)
-            self._visualizer.SetVolumeMultiplier(self._visualization_volume)
-            # id, effect_mode, rotation_angle, flip_mode
-            self._visualizer.AddTargetController(TCL_MAIN, 2, 0, 0)
-            if self._enable_fin:
-                self._visualizer.AddTargetController(TCL_FIN, 0, 0, 1)
-            self._visualizer.StartMessageLoop()
-        if self._use_visualization:
-            self._visualizer.UseAlsa(self._sound_input)
-        else:
-            self._visualizer.UseAlsa('')
+        pass
 
     def toggle_kinect(self):
         if not self._is_kinect_enabled:
@@ -584,8 +560,6 @@ class Player(object):
             self._kinect.Start(15)
 
     def select_next_preset(self, is_forward):
-        if not self._use_visualization:
-            return
         if is_forward:
             self._visualizer.SelectNextPreset()
         else:
@@ -601,12 +575,8 @@ class Player(object):
         if effect_time is None:
             self._effect = None
             return (None, False)
-        if self._use_visualization:
-            bass = self._visualizer.GetLastBassInfo()
-            rms = self._visualizer.GetLastVolumeRms()
-        else:
-            bass = [0, 0, 0, 0, 0, 0]
-            rms = 0
+        bass = self._visualizer.GetLastBassInfo()
+        rms = self._visualizer.GetLastVolumeRms()
         return (self._effect.get_image(effect_time, rms=rms, bass=bass),
                 self._effect.should_mirror())
 
@@ -617,22 +587,11 @@ class Player(object):
         return self._get_frame_images(need_original, need_intermediate)
 
     def _get_frame_images(self, need_original, need_intermediate):
-        elapsed_time = self.elapsed_time
         start_time = time.time()
-        if not self._use_visualization:
-            self._frame_source.prefetch(self.clip_name, elapsed_time)
-            baseline_ms = get_time_millis()
-            for f in self._frame_source.get_cached_frames():
-                if f.rendered:
-                    continue
-                f.rendered = True
-                self._tcl.send_frame(
-                    TCL_MAIN, f.image, f.frame_num,
-                    f.current_ms - baseline_ms)
         (effect_img, mirror) = self._get_effect_image()
         self._tcl.set_effect_image(TCL_MAIN, effect_img, mirror)
         orig_image = None
-        if self._use_visualization and need_original:
+        if need_original:
             # TODO(igorc): Get original image from renderer.
             newimg_data = self._visualizer.GetAndClearLastImageForTest()
             if newimg_data and len(newimg_data) > 0:

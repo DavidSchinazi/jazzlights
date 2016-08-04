@@ -2,6 +2,8 @@
 # Licensed under The MIT License
 #
 # Loads and builds frame images.
+#
+# NO LONGER IN USE.
 
 import collections
 import os

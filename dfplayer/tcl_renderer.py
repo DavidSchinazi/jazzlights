@@ -13,14 +13,6 @@ from .renderer_cc import AdjustableTime as TclCcTime
 from .util import get_time_millis
 
 class TclRenderer(object):
-  """To use this class:
-       renderer = TclRenderer(controller_id, width, height, 'layout.dxf', 2.4)
-       # 'image_colors' has tuples with 4 RGBA bytes for each pixel,
-       # with 'height' number of sequential rows, each row having
-       # length of 'width' pixels.
-       renderer.send_frame(image_data)
-  """
-
   def __init__(self, fps, enable_net, test_mode=False):
     self._fps = fps
     self._enable_net = enable_net
@@ -88,9 +80,6 @@ class TclRenderer(object):
         'RGBA', (self._widths[controller], self._heights[controller]),
         img_data)
 
-  def get_last_image_id(self, controller):
-    return self._renderer.GetLastImageId(controller)
-
   def get_queue_size(self):
     return self._renderer.GetQueueSize()
 
@@ -99,13 +88,6 @@ class TclRenderer(object):
 
   def reset_image_queue(self):
     self._renderer.ResetImageQueue()
-
-  def send_frame(self, controller, image, id, delay_ms):
-    time = TclCcTime()
-    time.AddMillis(delay_ms - self._frame_send_duration)
-    self._renderer.ScheduleImageAt(
-        controller, image.tostring(), image.size[0], image.size[1],
-        0, 0, image.size[0], image.size[1], 0, 2, 0, id, time, True)
 
   def set_wearable_effect(self, id):
     self._renderer.SetWearableEffect(id)
