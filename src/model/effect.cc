@@ -11,12 +11,14 @@ Effect::~Effect() {
   pthread_mutex_destroy(&lock_);
 }
 
-void Effect::Initialize(int width, int height, int fps) {
+void Effect::Initialize(int width, int height, int fps,
+			const LedLayout& layout) {
   CHECK(!initialized_);
   initialized_ = true;
   width_ = width;
   height_ = height;
   fps_ = fps;
+  layout_ = layout;
 
   DoInitialize();
 }

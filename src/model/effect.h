@@ -5,9 +5,8 @@
 
 #include <pthread.h>
 
+#include "util/led_layout.h"
 #include "util/pixels.h"
-
-class LedStrands;
 
 // Defines base abstraction for effects. One instance can only be used
 // with one rendering surface such as TclController. Surface's dimensions
@@ -28,7 +27,7 @@ class Effect {
   bool IsStopped() const;
 
   // Invoked by the rendering surface.
-  void Initialize(int width, int height, int fps);
+  void Initialize(int width, int height, int fps, const LedLayout& layout);
 
   virtual void ApplyOnImage(RgbaImage* dst, bool* is_done) {
     (void) dst;
@@ -55,6 +54,7 @@ class Effect {
   int width() const { return width_; }
   int height() const { return height_; }
   int fps() const { return fps_; }
+  const LedLayout& layout() const { return layout_; }
 
   mutable pthread_mutex_t lock_;
 
@@ -67,6 +67,7 @@ class Effect {
   int width_ = -1;
   int height_ = -1;
   int fps_ = -1;
+  LedLayout layout_;
 };
 
 #endif  // MODEL_EFFECT_H_

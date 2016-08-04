@@ -34,10 +34,10 @@ const int kFrameSendDurationUs =
 TclController::TclController(
     int id, int width, int height, int fps, const LedLayout& layout,
     double gamma)
-    : id_(id), width_(width), height_(height), fps_(fps),
-      layout_(width, height), effects_lock_(PTHREAD_MUTEX_INITIALIZER) {
+    : id_(id), width_(width), height_(height), fps_(fps), layout_(layout),
+      layout_map_(width, height), effects_lock_(PTHREAD_MUTEX_INITIALIZER) {
   SetGammaRanges(0, 255, gamma, 0, 255, gamma, 0, 255, gamma);
-  layout_.PopulateLayoutMap(layout);
+  layout_map_.PopulateLayoutMap(layout_);
 }
 
 TclController::~TclController() {
@@ -89,7 +89,7 @@ void TclController::SetHdrMode(HdrMode mode) {
 
 void TclController::StartEffect(Effect* effect, int priority) {
   Autolock l(effects_lock_);
-  effect->Initialize(width_, height_, fps_);
+  effect->Initialize(width_, height_, fps_, layout_);
   effects_.push_back(EffectInfo(effect, priority));
   std::sort(effects_.begin(), effects_.end());
 }
@@ -148,7 +148,7 @@ void TclController::BuildFrameDataForImage(
 
 std::unique_ptr<LedStrands> TclController::ConvertImageToLedStrands(
     const RgbaImage& image) {
-  std::unique_ptr<LedStrands> strands(new LedStrands(layout_));
+  std::unique_ptr<LedStrands> strands(new LedStrands(layout_map_));
   if (!PopulateLedStrandsColors(strands.get(), image))
     return nullptr;
 
@@ -190,7 +190,7 @@ bool TclController::PopulateLedStrandsColors(
     uint8_t* dst_colors = strands->GetColorData(strand_id);
     for (int led_id = 0; led_id < strand_len; ++led_id) {
       const std::vector<LedCoord> coords =
-          layout_.GetLedCoords(strand_id, led_id);
+          layout_map_.GetLedCoords(strand_id, led_id);
       uint32_t coord_count = coords.size();
       if (!coord_count)
         continue;
@@ -260,7 +260,7 @@ void TclController::SavePixelsForLedStrands(const LedStrands& strands) {
     const uint8_t* colors = strands.GetColorData(strand_id);
     for (int led_id = 0; led_id < strand_len; ++led_id) {
       const std::vector<LedCoord>& coords =
-          layout_.GetLedCoords(strand_id, led_id);
+          layout_map_.GetLedCoords(strand_id, led_id);
       uint32_t color = *((uint32_t*) (colors + led_id * 4));
       for (size_t c_id = 0; c_id < coords.size(); ++c_id) {
         int x = coords[c_id].x;
@@ -294,7 +294,7 @@ void TclController::PerformHdr(LedStrands* strands) {
     for (int led_id = 0; led_id < strand_len; ++led_id) {
       uint32_t l_min = 255, l_max = 0, s_min = 255, s_max = 0;
       const std::vector<LedAddress> siblings =
-          layout_.GetHdrSiblings(strand_id, led_id);
+          layout_map_.GetHdrSiblings(strand_id, led_id);
       uint8_t* src_color = strands->GetColorData(strand_id) + led_id * 4;
       uint8_t* res_color = res_colors[strand_id] + led_id * 4;
       for (size_t i = 0; i < siblings.size(); ++i) {

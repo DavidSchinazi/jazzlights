@@ -103,7 +103,8 @@ class TclController {
   // TODO(igorc): Do atomic read.
   volatile InitStatus init_status_ = INIT_STATUS_UNUSED;
   RgbGamma gamma_;
-  LedLayoutMap layout_;
+  LedLayout layout_;
+  LedLayoutMap layout_map_;
   int socket_ = -1;
   bool require_reset_ = true;
   uint64_t last_reply_time_ = 0;
