@@ -82,23 +82,28 @@ audio_output {
 class Player(object):
 
     def __init__(
-          self, playlist, use_mpd, enable_net, enable_fin, enable_kinect):
+          self, playlist, no_sound, use_mpd, enable_net, enable_fin,
+          enable_kinect):
         self._update_card_id()
 
         self._enable_fin = False
         self._enable_fin = enable_fin
 
-        self._line_in = not use_mpd
-        if self._line_in:
-            self._sound_input = _SOUND_INPUT_LINE_IN
+        self._use_mpd = use_mpd
+
+        if no_sound:
+            self._sound_input = '_fake_'
         else:
-            self._sound_input = _SOUND_INPUT_LOOPBACK
+            if self._use_mpd:
+                self._sound_input = _SOUND_INPUT_LOOPBACK
+            else:
+                self._sound_input = _SOUND_INPUT_LINE_IN
 
         # Call start_mpd even with line-in to allow MPD to kill itself.
         self._start_mpd()
 
         self.lock = RLock()
-        if not self._line_in:
+        if self._use_mpd:
             with self.lock:
                 self.mpd = mpd.MPDClient()
                 self.mpd.connect('localhost', MPD_PORT)
@@ -140,7 +145,7 @@ class Player(object):
         self._visualizer = None
         self.toggle_visualization()
 
-        if not self._line_in:
+        if self._use_mpd:
             self._load_playlist()
 
         self._fetch_state()
@@ -197,7 +202,7 @@ class Player(object):
           hdr_mode = 'S'
         elif hdr_mode == 3:
           hdr_mode = 'LS'
-        if self._line_in:
+        if not self._use_mpd:
             lines.append('Line In, Gamma = %.1f, HDR = %s' % (
                 self._target_gamma, hdr_mode))
         else:
@@ -314,7 +319,7 @@ class Player(object):
         self._fetch_playlist(True)
 
     def _read_state(self):
-        if self._line_in:
+        if not self._use_mpd:
             return None
         with self.lock:
             try:
@@ -444,7 +449,7 @@ class Player(object):
         self._config_mpd()
         self._stop_mpd()
 
-        if self._line_in:
+        if not self._use_mpd:
             return
 
         logging.info('Starting mpd')
@@ -468,7 +473,7 @@ class Player(object):
 
     @volume.setter
     def volume(self, value):
-        if self._line_in:
+        if not self._use_mpd:
             return
         if value < 0:
             value = 0
@@ -486,7 +491,7 @@ class Player(object):
         self.volume = self.volume - 0.05
 
     def play(self, clip_idx):
-        if self._line_in:
+        if not self._use_mpd:
             return
         with self.lock:
             if len(self.playlist) < 1:
@@ -503,25 +508,25 @@ class Player(object):
             self.resume()
 
     def pause(self):
-        if self._line_in:
+        if not self._use_mpd:
             return
         with self.lock:
             self.mpd.pause(1)
 
     def resume(self):
-        if self._line_in:
+        if not self._use_mpd:
             return
         with self.lock:
             self.mpd.pause(0)
 
     def next(self):
-        if self._line_in:
+        if not self._use_mpd:
             return
         with self.lock:
             self.mpd.next()
 
     def prev(self):
-        if self._line_in:
+        if not self._use_mpd:
             return
         with self.lock:
             self.mpd.previous()
@@ -533,7 +538,7 @@ class Player(object):
         self.skip(-20)
 
     def skip(self, seconds):
-        if self._line_in:
+        if not self._use_mpd:
             return
         if self.status == 'idle':
             return

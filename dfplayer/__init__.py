@@ -15,6 +15,7 @@ def main():
     arg_parser = argparse.ArgumentParser(description='Start player')
     arg_parser.add_argument('--listen')
     arg_parser.add_argument('--no-reset', action='store_true')
+    arg_parser.add_argument('--no-sound', action='store_true')
     arg_parser.add_argument('--disable-net', action='store_true')
     arg_parser.add_argument('--mpd', action='store_true')
     arg_parser.add_argument('--disable-fin', action='store_true')
@@ -43,8 +44,8 @@ def main():
         port = 8081
  
     player = Player(
-        'playlist', args.mpd, not args.disable_net, not args.disable_fin,
-        args.enable_kinect)
+        'playlist', args.no_sound, args.mpd, not args.disable_net,
+        not args.disable_fin, args.enable_kinect)
 
     if args.no_reset:
         player.disable_reset()

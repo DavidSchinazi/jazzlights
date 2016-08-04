@@ -212,49 +212,22 @@ int ProjectmSource::GetAndClearOverrunCount() {
 }*/
 
 bool ProjectmSource::TransferPcmDataLocked() {
-  if (!alsa_handle_) {
-    if (alsa_device_.empty()) {
-      //fprintf(stderr, "ALSA input is disabled\n");
-      return false;
-    }
-    fprintf(stderr, "Connecting to ALSA input %s\n", alsa_device_.c_str());
-    alsa_handle_ = inp_alsa_init(alsa_device_.c_str(), kPcmSampleRate);
-    if (!alsa_handle_) {
-      fprintf(stderr, "Failed to open ALSA input\n");
-      return false;
-    }
+  if (alsa_device_.empty()) {
+    //fprintf(stderr, "ALSA input is disabled\n");
+    return false;
   }
 
-  int sample_count = 0;
+  int sample_count;
   float pcm_buffer[kPcmMaxSamples * 2];
-  while (sample_count < kPcmMaxSamples) {
-    int16_t read_buf[kPcmMaxSamples * 2];
-    int overrun_count = 0;
-    int samples = inp_alsa_read(
-        alsa_handle_, read_buf, kPcmMaxSamples - sample_count, &overrun_count);
-    total_overrun_count_ += overrun_count;
-    if (samples <= 0)
-      break;
-    for (int i = 0; i < samples; i++) {
-      float s_l = read_buf[i * 2];
-      float s_r = read_buf[i * 2 + 1];
-      pcm_buffer[sample_count * 2] = s_l / 32768.0;
-      pcm_buffer[sample_count * 2 + 1] = s_r / 32768.0;
-      sample_count++;
+  if (alsa_device_ == "_fake_") {
+    sample_count = kPcmMaxSamples;
+    for (int i = 0; i < sample_count; ++i) {
+      // TODO(igorc): Generate some sine wave.
+      pcm_buffer[i * 2] = 0;
+      pcm_buffer[i * 2 + 1] = pcm_buffer[i * 2];
     }
-  }
-
-  // Disacrd all remaining samples, so on next frame we can get fresh data.
-  int discard_count = 0;
-  while (true) {
-    int16_t discard_buf[kPcmMaxSamples * 2];
-    int overrun_count = 0;
-    int samples = inp_alsa_read(
-        alsa_handle_, discard_buf, kPcmMaxSamples, &overrun_count);
-    total_overrun_count_ += overrun_count;
-    if (samples <= 0)
-      break;
-    discard_count += samples;
+  } else {
+    sample_count = ReadFromAlsa(pcm_buffer);
   }
 
   AdjustVolume(pcm_buffer, sample_count, volume_multiplier_);
@@ -285,6 +258,50 @@ bool ProjectmSource::TransferPcmDataLocked() {
   pcm->setPCM(pcm_buffer, sample_count);
 
   return true;
+}
+
+int ProjectmSource::ReadFromAlsa(float* pcm_buffer) {
+  if (!alsa_handle_) {
+    fprintf(stderr, "Connecting to ALSA input %s\n", alsa_device_.c_str());
+    alsa_handle_ = inp_alsa_init(alsa_device_.c_str(), kPcmSampleRate);
+    if (!alsa_handle_) {
+      fprintf(stderr, "Failed to open ALSA input\n");
+      return false;
+    }
+  }
+
+  int sample_count = 0;
+  while (sample_count < kPcmMaxSamples) {
+    int16_t read_buf[kPcmMaxSamples * 2];
+    int overrun_count = 0;
+    int samples = inp_alsa_read(
+        alsa_handle_, read_buf, kPcmMaxSamples - sample_count, &overrun_count);
+    total_overrun_count_ += overrun_count;
+    if (samples <= 0)
+      break;
+    for (int i = 0; i < samples; i++) {
+      float s_l = read_buf[i * 2];
+      float s_r = read_buf[i * 2 + 1];
+      pcm_buffer[sample_count * 2] = s_l / 32768.0;
+      pcm_buffer[sample_count * 2 + 1] = s_r / 32768.0;
+      sample_count++;
+    }
+  }
+
+  // Disacrd all remaining samples, so on next frame we can get fresh data.
+  int discard_count = 0;
+  while (true) {
+    int16_t discard_buf[kPcmMaxSamples * 2];
+    int overrun_count = 0;
+    int samples = inp_alsa_read(
+        alsa_handle_, discard_buf, kPcmMaxSamples, &overrun_count);
+    total_overrun_count_ += overrun_count;
+    if (samples <= 0)
+      break;
+    discard_count += samples;
+  }
+
+  return sample_count;
 }
 
 void ProjectmSource::CreateRenderContext() {

@@ -78,6 +78,7 @@ class ProjectmSource : public ImageSource {
   bool RenderFrame(bool need_image);
   void CloseInputLocked();
   bool TransferPcmDataLocked();
+  int ReadFromAlsa(float* pcm_buffer);
 
   void ScheduleWorkItemLocked(WorkItem* item);
 
