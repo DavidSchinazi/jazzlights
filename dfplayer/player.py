@@ -221,7 +221,7 @@ class Player(object):
         if preset and preset.endswith('.milk\''):
             preset = preset[:-6] + '\''
         if wearable >= 0:
-            preset = 'Wearable #%s | %s' % (wearable, preset)
+            preset = 'Wearable #%s | %s' % (wearable + 1, preset)
         if preset and len(preset) > 54:
             preset = preset[:50] + '...\''
         lines.append(preset)

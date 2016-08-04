@@ -61,9 +61,6 @@ class TclRenderer(object):
   def disable_reset(self):
     self._renderer.SetAutoResetAfterNoDataMs(0)
 
-  def has_scheduling_support(self):
-    return self._use_cc_impl
-
   def get_and_clear_last_image(self, controller):
     img_data = self._renderer.GetAndClearLastImage(controller)
     if not img_data or len(img_data) == 0:
