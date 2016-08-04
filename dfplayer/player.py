@@ -699,7 +699,7 @@ class Player(object):
 
     def is_playing_effect(self):
         return self._effect is not None
-        
+
     def run(self):
         while True:
             with catch_and_log():

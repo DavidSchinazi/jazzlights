@@ -33,6 +33,14 @@ const int kWearableEffectPriority = 30;
 const int kPassthroughEffectPriority = 20;
 const int kRainbowEffectPriority = 10;
 
+const uint64_t kWearableStateDurationMs = 300 * 1000;
+const uint64_t kVisualizationStateDurationMs = 300 * 1000;
+const uint64_t kWearableChangeDurationMs = 20 * 1000;
+
+const int kWearableEffectIdsCount = 8;
+const int kWearableEffectIds[kWearableEffectIdsCount] =
+    {0, 1, 2, 3, 4, 5, 6, 7};
+
 }  // namespace
 
 TclRenderer* TclRenderer::instance_ = new TclRenderer();
@@ -47,6 +55,10 @@ TclRenderer::ControllerInfo::ControllerInfo(int width, int height)
 
 TclRenderer::TclRenderer() {
   tcl_manager_ = new TclManager();
+
+  rendering_state_ = STATE_VISUALIZATION;
+  next_rendering_state_change_time_ =
+      GetCurrentMillis() + kVisualizationStateDurationMs;
 }
 
 TclRenderer::~TclRenderer() {
@@ -143,6 +155,10 @@ void TclRenderer::ScheduleImageAt(
     fprintf(stderr, "ScheduleImageAt controller not found: %d\n", controller_id);
     return;
   }
+
+  // Updating wearable effect id could be done on some more relaxed schedule,
+  // but given internal optimizations in that method, it's OK to call often.
+  UpdateWearableEffects();
 
   uint8_t* cropped_img = bytes->GetData();
   if (flip_mode == 1) {
@@ -244,8 +260,6 @@ void TclRenderer::SetEffectImage(
     return;
   }
 
-  EnableRainbow(controller_id, -1);
-
   int rotation_angle = 0;
   std::unique_ptr<RgbaImage> render_img(BuildImageLocked(
       input_img, mode, rotation_angle, controller.width, controller.height));
@@ -253,8 +267,41 @@ void TclRenderer::SetEffectImage(
 }
 
 void TclRenderer::SetWearableEffect(int id) {
+  requested_wearable_effect_id_ = id;
+}
+
+void TclRenderer::UpdateWearableEffects() {
+  uint64_t now = GetCurrentMillis();
+  if (now >= next_rendering_state_change_time_) {
+    if (rendering_state_ == STATE_VISUALIZATION) {
+      rendering_state_ = STATE_WEARABLE;
+      next_rendering_state_change_time_ = now + kWearableStateDurationMs;
+      fprintf(stderr, "Switched to STATE_WEARABLE\n");
+    } else {
+      rendering_state_ = STATE_VISUALIZATION;
+      next_rendering_state_change_time_ = now + kVisualizationStateDurationMs;
+      fprintf(stderr, "Switched to STATE_VISUALIZATION\n");
+    }
+    next_wearable_change_time_ = now;
+  }
+
+  int prev_wearable_effect_id = selected_wearable_effect_id_;
+  if (requested_wearable_effect_id_ >= 0) {
+    selected_wearable_effect_id_ = requested_wearable_effect_id_;
+  } else if (rendering_state_ == STATE_VISUALIZATION) {
+    selected_wearable_effect_id_ = -1;
+  } else if (now >= next_wearable_change_time_) {
+    int idx = rand() % kWearableEffectIdsCount;
+    selected_wearable_effect_id_ = kWearableEffectIds[idx];
+    next_wearable_change_time_ = now + kWearableChangeDurationMs;
+  }
+
+  if (selected_wearable_effect_id_ == prev_wearable_effect_id)
+    return;
+
+  fprintf(stderr, "Setting wearable effect %d\n", selected_wearable_effect_id_);
   for (auto& it : controllers_) {
-    it.second.wearable_effect->SetEffect(id);
+    it.second.wearable_effect->SetEffect(selected_wearable_effect_id_);
   }
 }
 

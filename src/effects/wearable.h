@@ -30,9 +30,10 @@ class WearableEffect : public Effect {
   WearableEffect(const WearableEffect& src);
   WearableEffect& operator=(const WearableEffect& rhs);
 
-  dfsparks::Pixels *pixels = nullptr;
-  dfsparks::NetworkPlayer *player = nullptr;
-  int effect = -1;
+  dfsparks::Pixels* pixels_ = nullptr;
+  dfsparks::NetworkPlayer* player_ = nullptr;
+  int effect_id_ = -1;
+  bool started_playing_ = false;
 };
 
 #endif  // EFFECTS_WEARABLE_H_

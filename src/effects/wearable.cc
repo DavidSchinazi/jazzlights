@@ -43,8 +43,8 @@ WearableEffect::WearableEffect() {
 }
 
 WearableEffect::~WearableEffect() {
-  delete player;
-  delete pixels;
+  delete player_;
+  delete pixels_;
 }
 
 
@@ -58,29 +58,33 @@ void WearableEffect::SetEffect(int id) {
   (void) id;
 
   Autolock l(lock_);
-  if (player && id >= 0) {
-    player->play(id, dfsparks::Player::HIGH_PRIORITY);
-  }
-  effect = id;
+  effect_id_ = id;
+  started_playing_ = false;
 }
 
 void WearableEffect::ApplyOnImage(RgbaImage* dst, bool* is_done) {
   (void) is_done;
-  if (effect < 0) {
-    return;
-  }
 
   Autolock l(lock_);
-  if (!player) {
-    pixels = new FishPixels(*dst);
-    player = new dfsparks::NetworkPlayer(*pixels, network);
-    player->shuffleAll();
+  if (effect_id_ < 0)
+    return;
+
+  if (!player_) {
+    pixels_ = new FishPixels(*dst);
+    player_ = new dfsparks::NetworkPlayer(*pixels_, network);
+    player_->shuffleAll();
     static bool haveServer = false;
     if (!haveServer) {
-      player->serve();
+      player_->serve();
       haveServer = true;
     }
   }
+
+  if (!started_playing_) {
+    started_playing_ = true;
+    player_->play(effect_id_, dfsparks::Player::HIGH_PRIORITY);
+  }
+
   network.poll(); 
-  player->render();
+  player_->render();
 }

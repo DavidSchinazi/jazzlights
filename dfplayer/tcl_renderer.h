@@ -118,6 +118,11 @@ class TclRenderer {
   TclRenderer& operator=(const TclRenderer& rhs);
   ~TclRenderer();
 
+  enum RenderingState {
+    STATE_WEARABLE,
+    STATE_VISUALIZATION,
+  };
+
   struct ControllerInfo {
     ControllerInfo() : ControllerInfo(-1, -1) {}
     ControllerInfo(int width, int height);
@@ -137,9 +142,15 @@ class TclRenderer {
       const RgbaImage& input_img, EffectMode mode,
       int rotation_angle, int dst_w, int dst_h);
   void SetGenericEffect(int controller_id, Effect* effect, int priority);
+  void UpdateWearableEffects();
 
   TclManager* tcl_manager_;
   ControllerInfoMap controllers_;
+  int requested_wearable_effect_id_ = -1;
+  int selected_wearable_effect_id_ = -2;
+  RenderingState rendering_state_;
+  uint64_t next_rendering_state_change_time_;
+  uint64_t next_wearable_change_time_ = -1;
 
   static TclRenderer* instance_;
 };
