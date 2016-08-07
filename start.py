@@ -45,7 +45,7 @@ def main():
     params.append('--no-sound')
   if args.disable_net:
     params.append('--disable-net')
-  if args.disable_fin:
+  if args.disable_fin or args.prod:
     params.append('--disable-fin')
   if args.enable_kinect:
     params.append('--enable-kinect')
