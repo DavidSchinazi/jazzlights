@@ -35,6 +35,7 @@ COPTS := \
 	-shared \
 	`python-config --includes` \
 	-Isrc \
+	-O1 -fno-omit-frame-pointer \
 	-Wl,-rpath,./dfplayer
 
 all: develop cpp clips
