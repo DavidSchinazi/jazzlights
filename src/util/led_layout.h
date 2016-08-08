@@ -57,7 +57,8 @@ class LedLayoutMap {
   int GetLedCount(int strand_id) const;
 
   std::vector<LedCoord> GetLedCoords(int strand_id, int led_id) const;
-  std::vector<LedAddress> GetHdrSiblings(int strand_id, int led_id) const;
+  const std::vector<LedAddress>& GetHdrSiblings(
+      int strand_id, int led_id) const;
 
   void PopulateLayoutMap(const LedLayout& layout);
 
@@ -94,6 +95,7 @@ class LedLayoutMap {
   int height_;
   std::vector<PixelUsage> pixel_usage_;
   std::vector<StrandData> strands_;
+  std::vector<LedAddress> empty_addresses_;
 };
 
 // Contains color data for individual LED's.
@@ -107,11 +109,19 @@ class LedStrands {
   LedStrands(const LedLayout& layout);
   LedStrands(const LedLayoutMap& layout);
 
-  int GetStrandCount() const;
+  int GetStrandCount() const { return strands_.size(); }
   int GetLedCount(int strand_id) const;
 
-  uint8_t* GetColorData(int strand_id);
-  const uint8_t* GetColorData(int strand_id) const;
+  inline uint8_t* GetColorData(int strand_id) {
+    // CHECK(strand_id >= 0 && strand_id < static_cast<int>(strands_.size()));
+    return &color_data_[strands_[strand_id].start_led * 4];
+  }
+
+  inline const uint8_t* GetColorData(int strand_id) const {
+    // CHECK(strand_id >= 0 && strand_id < static_cast<int>(strands_.size()));
+    return &color_data_[strands_[strand_id].start_led * 4];
+  }
+
   int GetColorDataSize(int strand_id) const {
     return GetLedCount(strand_id) * 4;
   }

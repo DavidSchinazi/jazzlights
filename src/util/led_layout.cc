@@ -80,11 +80,11 @@ std::vector<LedCoord> LedLayoutMap::GetLedCoords(int strand_id,
   return strand->leds.at(led_id).pixel_coords;
 }
 
-std::vector<LedAddress> LedLayoutMap::GetHdrSiblings(int strand_id,
-						     int led_id) const {
+const std::vector<LedAddress>& LedLayoutMap::GetHdrSiblings(
+    int strand_id, int led_id) const {
   const StrandData* strand = FindStrand(strand_id);
   if (!strand || static_cast<size_t>(led_id) >= strand->leds.size())
-    return std::vector<LedAddress>();
+    return empty_addresses_;
 
   return strand->leds.at(led_id).hdr_siblings;
 }
@@ -277,23 +277,9 @@ LedStrands::LedStrands(const LedLayoutMap& layout) {
   color_data_.resize(total_leds * 4);
 }
 
-int LedStrands::GetStrandCount() const {
-  return strands_.size();
-}
-
 int LedStrands::GetLedCount(int strand_id) const {
   CHECK(strand_id >= 0 && strand_id < static_cast<int>(strands_.size()));
   return strands_[strand_id].led_count;
-}
-
-uint8_t* LedStrands::GetColorData(int strand_id) {
-  CHECK(strand_id >= 0 && strand_id < static_cast<int>(strands_.size()));
-  return &color_data_[strands_[strand_id].start_led * 4];
-}
-
-const uint8_t* LedStrands::GetColorData(int strand_id) const {
-  CHECK(strand_id >= 0 && strand_id < static_cast<int>(strands_.size()));
-  return &color_data_[strands_[strand_id].start_led * 4];
 }
 
 void LedStrands::ConvertTo(Type type) {

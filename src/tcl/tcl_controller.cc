@@ -291,15 +291,18 @@ void TclController::PerformHdr(LedStrands* strands) {
   // Populate resulting colors with HDR image.
   for (int strand_id  = 0; strand_id < strands->GetStrandCount(); ++strand_id) {
     int strand_len = strands->GetLedCount(strand_id);
+    const uint8_t* src_strand_colors = strands->GetColorData(strand_id);
     for (int led_id = 0; led_id < strand_len; ++led_id) {
       uint32_t l_min = 255, l_max = 0, s_min = 255, s_max = 0;
-      const std::vector<LedAddress> siblings =
+      const std::vector<LedAddress>& siblings =
           layout_map_.GetHdrSiblings(strand_id, led_id);
-      uint8_t* src_color = strands->GetColorData(strand_id) + led_id * 4;
+      size_t siblings_size = siblings.size();
+      const LedAddress* siblings_data = siblings.data();
+      const uint8_t* src_color = src_strand_colors + led_id * 4;
       uint8_t* res_color = res_colors[strand_id] + led_id * 4;
-      for (size_t i = 0; i < siblings.size(); ++i) {
-        uint8_t* hls = strands->GetColorData(siblings[i].strand_id) +
-            siblings[i].led_id * 4;
+      for (size_t i = 0; i < siblings_size; ++i) {
+        uint8_t* hls = strands->GetColorData(siblings_data[i].strand_id) +
+            siblings_data[i].led_id * 4;
         uint8_t l = hls[1];
         uint8_t s = hls[2];
         if (l < l_min) {
