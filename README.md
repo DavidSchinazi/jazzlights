@@ -76,6 +76,10 @@ platforms.
             Set Method to Manual
             Add address: 192.168.60.178 / 255.255.255.0
             Save
+        Fix Zotac reboot problems:
+          sudo vi /etc/default/grub
+            GRUB_CMDLINE_LINUX_DEFAULT="acpi=off reboot=bios"
+          sudo update-grub
         Enable dfplayer to run at startup
           cp dfplayer.desktop ~/.config/autostart/
 
