@@ -23,11 +23,14 @@ To install Arduino and dfsparks code on Ubuntu:
     Open File/Preferences, and add to Additional Boards:
         http://arduino.esp8266.com/stable/package_esp8266com_index.json
     Open Tools/Boards/BoardsManager, search for esp8266, install
-    Select Tools/Boards/GenericESP8266
+    Select Tools/Boards/NodeMCU1.0
 
 To compile:
     ~/arduino-1.6.10/arduino &
     Click menu option: File/Examples/DFSparks/Vest
+    Click on the checkmark button to verify
+    Select Tools/Ports/ttyUSB0
+    Click the Upload button
 
 You can use extras/test-server.py to test how your device
 synchronizes with the server.
@@ -71,6 +74,25 @@ To implement new effect:
 		All times are in milliseconds, stored as int32_t.
 	4. Create the effect in src/dfsparks/playlist.cpp, see Repertoire constructor.
 	5. Add new effect sources to CMakeLists.txt
+
+
+Flashing updated firmware
+-------------------------
+
+To flash new firmware onto NodeMCU:
+    Open https://github.com/nodemcu/nodemcu-firmware/releases
+        download latest firmware
+    Otherwise, you can build your own newer firmware:
+        go to http://nodemcu-build.com/
+        enter email address, leave all default, start build
+        download using link from email, e.g.:
+            wget http://nodemcu-build.com/builds/nodemcu-master-7-modules-2016-08-14-10-43-06-float.bin
+    Connect the device using USB cable
+        try different cable if first one does not work
+    cd ~
+    git clone https://github.com/themadinventor/esptool
+    sudo python ./esptool/esptool.py --port /dev/ttyUSB0  write_flash 0x00000 \
+        nodemcu-master-7-modules-2016-08-14-10-43-06-float.bin
 
 
 Uploading sketches on OSX
