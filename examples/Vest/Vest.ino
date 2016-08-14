@@ -6,6 +6,7 @@
 
 // you need this line or the feather huzzah or LoLin nodecmu pins will not be mapped properly
 #define FASTLED_ESP8266_RAW_PIN_ORDER
+#define ESP8266
 #include <FastLED.h>
 #include <DFSparks.h>
 

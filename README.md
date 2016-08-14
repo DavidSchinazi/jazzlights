@@ -9,14 +9,27 @@ PC version that we use on the fish itself.
 Using with Arduino IDE
 ----------------------------
 
-The easiest way to use it is to simply clone the repository into your Arduino
-libraries directory,  like that:
+To install Arduino and dfsparks code on Ubuntu:
+    Download latest software from https://www.arduino.cc/en/Main/Softwarea
+      https://www.arduino.cc/download_handler.php?f=/arduino-1.6.10-linux64.tar.xz
+    cd ~
+    mv Downloads/arduino-1.6.10-linux64.tar.xz ./
+    tar -xf arduino-1.6.10-linux64.tar.xz
+    mkdir -p ~/Arduino/libraries
+    cd ~/Arduino/libraries
+    git clone https://igor_c@bitbucket.org/discofish/dfsparks.git DFSparks
+    git clone https://github.com/FastLED/FastLED
+    ~/arduino-1.6.10/arduino &
+    Open File/Preferences, and add to Additional Boards:
+        http://arduino.esp8266.com/stable/package_esp8266com_index.json
+    Open Tools/Boards/BoardsManager, search for esp8266, install
+    Select Tools/Boards/GenericESP8266
 
-	cd $HOME/Documents/Arduino/libraries
-	git clone git@bitbucket.org:discofish/dfsparks.git DFSparks 
+To compile:
+    ~/arduino-1.6.10/arduino &
+    Click menu option: File/Examples/DFSparks/Vest
 
-Then you can use it as any other Arduino library; see provided examples for
-details. You can use extras/test-server.py to test how your device
+You can use extras/test-server.py to test how your device
 synchronizes with the server.
 
 Building PC library (Ubuntu)

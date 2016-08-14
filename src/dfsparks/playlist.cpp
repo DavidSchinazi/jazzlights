@@ -8,6 +8,7 @@
 #include "dfsparks/effects/slantbars.h"
 #include "dfsparks/effects/threesine.h"
 #include <assert.h>
+#include <stdlib.h>
 
 namespace dfsparks {
 
@@ -169,7 +170,7 @@ Effect& Playlist::prev() {
 }
 
 Effect& Playlist::random() {
-  track_ = ::random() % size_;
+  track_ = ::rand() % size_;
   return currentEffect(); 
 }
 
