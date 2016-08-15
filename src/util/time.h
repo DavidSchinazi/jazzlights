@@ -9,6 +9,7 @@
 uint64_t GetCurrentMillis();
 
 void Sleep(double seconds);
+void SleepUs(int delay_us);
 
 void AddTimeMillis(struct timespec* time, uint64_t increment);
 

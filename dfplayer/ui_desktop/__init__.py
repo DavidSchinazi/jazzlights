@@ -196,8 +196,10 @@ class PlayerApp(Frame):
         if frame2:
             self._img2.paste(frame2.resize(self._img1_size))
         if frame3:
+            # Dorsal fin
             self._img3.paste(frame3.resize(self._img3_size))
         if frame4:
+            # Kinect
             self._img4.paste(frame4.resize(self._img4_size))
 
     def update(self):

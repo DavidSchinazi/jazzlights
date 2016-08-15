@@ -14,18 +14,34 @@ uint64_t GetCurrentMillis() {
 }
 
 void Sleep(double seconds) {
-  struct timespec req;
-  struct timespec rem;
-  req.tv_sec = (int) seconds;
-  req.tv_nsec = (long) ((seconds - req.tv_sec) * 1000000000.0);
-  rem.tv_sec = 0;
-  rem.tv_nsec = 0;
-  while (nanosleep(&req, &rem) == -1) {
-    if (errno != EINTR) {
-      REPORT_ERRNO("nanosleep");
-      break;
-    }
-    req = rem;
+  struct timespec time;
+  clock_gettime(CLOCK_REALTIME, &time);
+  time.tv_sec += (int) seconds;
+  time.tv_nsec += (long) ((seconds - (int) seconds) * 1000000000.0);
+  while (time.tv_nsec >= 1000000000) {
+    time.tv_sec += 1;
+    time.tv_nsec -= 1000000000;
+  }
+  int err = clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &time, nullptr);
+  if (err != 0) {
+    fprintf(stderr, "clock_nanosleep %d\n", err);
+    CHECK(false);
+  }
+}
+
+void SleepUs(int delay_us) {
+  struct timespec time;
+  clock_gettime(CLOCK_REALTIME, &time);
+  time.tv_sec += delay_us / 1000000;
+  time.tv_nsec += (delay_us % 1000000) * 1000;
+  while (time.tv_nsec >= 1000000000) {
+    time.tv_sec += 1;
+    time.tv_nsec -= 1000000000;
+  }
+  int err = clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &time, nullptr);
+  if (err != 0) {
+    fprintf(stderr, "clock_nanosleep %d\n", err);
+    CHECK(false);
   }
 }
 

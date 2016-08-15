@@ -84,6 +84,7 @@ void TclManager::StartMessageLoop(int fps, bool enable_net) {
   fps_ = fps;
   enable_net_ = enable_net;
   has_started_thread_ = true;
+
   int err = pthread_create(&thread_, nullptr, &ThreadEntry, this);
   if (err != 0) {
     fprintf(stderr, "pthread_create failed with %d\n", err);
@@ -277,14 +278,36 @@ struct FoundItem {
   FoundItem& operator=(const FoundItem& rhs) {
     controller = rhs.controller;
     frame_data_ = rhs.frame_data_;
+    time_ = rhs.time_;
     return *this;
   }
 
   TclController* controller;
   std::vector<uint8_t> frame_data_;
+  uint64_t time_ = 0;
 };
 
 void TclManager::Run() {
+  if (enable_net_) {
+    int policy = SCHED_RR;
+    struct sched_param param;
+    param.sched_priority = 10;
+    fprintf(stderr, "Requesting policy=%d, priority=%d\n",
+            policy, param.sched_priority);
+    int err = pthread_setschedparam(pthread_self(), policy, &param);
+    if (err != 0) {
+      fprintf(stderr, "pthread_setschedparam failed with %d\n", err);
+      // CHECK(false);
+    }
+    err = pthread_getschedparam(pthread_self(), &policy, &param);
+    if (err != 0) {
+      fprintf(stderr, "pthread_getschedparam failed with %d\n", err);
+      CHECK(false);
+    }
+    fprintf(stderr, "Obtained policy=%d, priority=%d\n",
+            policy, param.sched_priority);
+  }
+
   while (true) {
     {
       Autolock l(lock_);
@@ -345,6 +368,7 @@ void TclManager::Run() {
         }
 
         FoundItem found_item(item.controller);
+        found_item.time_ = item.time;
         InitStatus status = INIT_STATUS_FAIL;
         item.controller->BuildFrameDataForImage(
             &found_item.frame_data_, &item.img, item.id, &status);
@@ -365,7 +389,7 @@ void TclManager::Run() {
         break;
     }
 
-    //fprintf(stderr, "Processing %ld items\n", items.size());
+    // fprintf(stderr, "Processing %ld items\n", items.size());
 
     if (!enable_net_) {
       Autolock l(lock_);
@@ -378,7 +402,8 @@ void TclManager::Run() {
       if (it->controller->SendFrame(it->frame_data_.data())) {
         Autolock l(lock_);
         frame_delays_.push_back(GetCurrentMillis() - min_time);
-        // fprintf(stderr, "Sent frame for %ld at %ld\n", item.time_, GetCurrentMillis());
+        // fprintf(stderr, "Sent frame for %ld at %ld\n",
+        //         it->time_, GetCurrentMillis());
       } else {
         fprintf(stderr, "Scheduling reset after failed frame\n");
         it->controller->ScheduleReset();

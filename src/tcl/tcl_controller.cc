@@ -513,10 +513,12 @@ bool TclController::SendFrame(const uint8_t* frame_data) {
       0x60, 0x8B, 0x95, 0xEF, 0x04, 0x69};
   static const uint8_t FRAME_MSG_SUFFIX[] = {0x00, 0x00, 0x00, 0x00};
 
+  // uint64_t start_time = GetCurrentMillis();
+  // int total_delay = kMgsStartDelayUs;
   ConsumeReplyData();
   if (!SendPacket(MSG_START_FRAME, sizeof(MSG_START_FRAME)))
     return false;
-  Sleep(((double) kMgsStartDelayUs) / 1000000.0);
+  SleepUs(kMgsStartDelayUs);
 
   uint8_t packet[sizeof(FRAME_MSG_PREFIX) + 1024 + sizeof(FRAME_MSG_SUFFIX)];
   memcpy(packet, FRAME_MSG_PREFIX, sizeof(FRAME_MSG_PREFIX));
@@ -533,7 +535,8 @@ bool TclController::SendFrame(const uint8_t* frame_data) {
 
     if (!SendPacket(packet, sizeof(packet)))
       return false;
-    Sleep(((double) kMgsDataDelayUs) / 1000000.0);
+    SleepUs(kMgsDataDelayUs);
+    // total_delay += kMgsDataDelayUs;
   }
   CHECK(frame_data_pos == kControllerFrameLength);
   CHECK(message_idx == 12);
@@ -542,6 +545,9 @@ bool TclController::SendFrame(const uint8_t* frame_data) {
     return false;
   ConsumeReplyData();
   frames_sent_after_reply_++;
+  // uint64_t delay = GetCurrentMillis() - start_time;
+  // fprintf(stderr, "Wanted to wait for %d, waited for %d\n",
+  //         total_delay, (int) delay * 1000);
   return true;
 }
 
