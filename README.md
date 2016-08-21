@@ -25,6 +25,9 @@ To install Arduino and dfsparks code on Ubuntu:
         http://arduino.esp8266.com/stable/package_esp8266com_index.json
     Open Tools/Boards/BoardsManager, search for esp8266, install
     Select Tools/Boards/NodeMCU1.0
+    Add yourself to dialout group:
+        sudo usermod -a -G dialout igor
+
 
 To compile:
 
