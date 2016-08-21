@@ -10,6 +10,7 @@ Using with Arduino IDE
 ----------------------------
 
 To install Arduino and dfsparks code on Ubuntu:
+
     Download latest software from https://www.arduino.cc/en/Main/Softwarea
       https://www.arduino.cc/download_handler.php?f=/arduino-1.6.10-linux64.tar.xz
     cd ~
@@ -26,6 +27,7 @@ To install Arduino and dfsparks code on Ubuntu:
     Select Tools/Boards/NodeMCU1.0
 
 To compile:
+
     ~/arduino-1.6.10/arduino &
     Click menu option: File/Examples/DFSparks/Vest
     Click on the checkmark button to verify
@@ -80,6 +82,7 @@ Flashing updated firmware
 -------------------------
 
 To flash new firmware onto NodeMCU:
+
     Open https://github.com/nodemcu/nodemcu-firmware/releases
         download latest firmware
     Otherwise, you can build your own newer firmware:
