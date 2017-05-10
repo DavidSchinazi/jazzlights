@@ -1,0 +1,58 @@
+#!/bin/bash
+if [[ "$OSTYPE" == "linux"* ]]; then
+echo "Setting up Ubuntu environment"
+
+apt-get update 
+apt-get install -y build-essential cmake git zip curl 
+
+# Install Arduino
+if [[ -f "/usr/bin/arduino" ]]; then
+	echo "Arduino already installed"
+else
+	# Since arduino 1.8 on Ubuntu seems to requires Java 8, we'll need to install it as well.
+	java -version 2>&1 | grep "java version \"1.8"
+	if [ $? == 0 ]; then
+		echo "Java 1.8 already installed"
+	else
+		echo "Installing Java 1.8"
+		# install apt-add-repository command
+		apt-get install -y software-properties-common
+		apt-add-repository ppa:webupd8team/java
+		apt-get update
+		# shut up oracle license prompt. 
+		echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | debconf-set-selections
+		apt-get install -y oracle-java8-set-default 
+	fi
+
+	# Arduino package in Ubuntu repo is very old, so we'll install it from Arduino website.
+	echo "Installing Arduino"
+	mkdir -p /opt && curl -s http://download.arduino.org/IDE/1.8.2/arduino-1.8.2-linux64.tar.xz | tar xvJC /opt
+	ln -s /opt/arduino-1.8.2/arduino /usr/bin/arduino
+	ln -s /opt/arduino-1.8.2/arduino-builder /usr/bin/arduino-builder
+fi
+
+echo "Installing ESP8266 board"
+arduino --pref "boardsmanager.additional.urls=http://arduino.esp8266.com/stable/package_esp8266com_index.json" --save-prefs
+arduino --install-boards esp8266:esp8266 
+echo "Installing Arduino libraries"
+arduino --install-library "FastLED"
+arduino --install-library "Adafruit NeoPixel"
+
+# Install GLFW and X11
+apt-get install -y xorg-dev
+cd /tmp && git clone https://github.com/glfw/glfw --depth 1 &&\
+        cd glfw && cmake . && make && sudo make install
+apt-get install -y libgl1-mesa-dev
+
+# Add yourself to dialout group
+usermod -a -G dialout `whoami`
+
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+	echo "Setting up OSX environment"
+	brew install glfw3
+else
+	echo "Unsupported platform"
+	exit -1
+fi
+
+echo "Done installing dependencies"

@@ -1,0 +1,8 @@
+image: dfsparks/ubuntu
+
+pipelines:
+  default:
+    - step:
+        script: 
+          - mkdir build && cd build && cmake .. && make test 
+          
