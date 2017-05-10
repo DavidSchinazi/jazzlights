@@ -2,6 +2,7 @@
 #ifdef ESP8266
 #include <WiFiUdp.h>
 #include "dfsparks/log.h"
+#include "dfsparks/timer.h"
 
 namespace dfsparks {
 

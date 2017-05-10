@@ -31,17 +31,31 @@ namespace dfsparks {
 
 const char* const multicast_addr = "239.255.223.01";
 
-bool Network::broadcast(const Message::Frame& fr) {
+struct Message {
+  int32_t msgcode;
+  char reserved[12];
+  struct Frame {
+    char pattern[16];
+    int32_t elapsed_ms;
+    int32_t beat_ms;
+    uint8_t hue_med;
+    uint8_t hue_dev;
+  } __attribute__((__packed__)) frame;  
+} __attribute__((__packed__));
+
+bool Network::broadcast(const NetworkFrame& fr) {
   doConnection();
   if (status() != connected) {
     return false;
   }
   Message p;
+  info("TX %d bytes, frame %-16s elapsed:%010d beat:%010d", sizeof(p),
+         fr.pattern, fr.timeElapsed, fr.timeSinceBeat);
   p.msgcode = htonl(msg_frame);
-  p.frame = fr;
-  p.frame.elapsed_ms = htonl(p.frame.elapsed_ms);
-  p.frame.beat_ms = htonl(p.frame.beat_ms);
-  info("TX %d bytes, frame %-16s elapsed:%010d beat:%010d hue_med:%03u hue_dev:%03u", sizeof(p), fr.pattern, fr.elapsed_ms, fr.beat_ms, fr.hue_med, fr.hue_dev);
+  strncpy(p.frame.pattern, fr.pattern, sizeof(p.frame.pattern));
+  p.frame.elapsed_ms = htonl(fr.timeElapsed);
+  p.frame.beat_ms = htonl(fr.timeSinceBeat);
+  lastTxTime_ = timeMillis();
   return doBroadcast(&p, sizeof(p)) == sizeof(p);
 }
 
@@ -57,7 +71,8 @@ bool Network::poll() {
   }
   // TODO: Fix size!
   if (n < sizeof(p)) {
-    error("RX packet too short, received %d bytes, expected at least %d bytes", n, sizeof(p));
+    error("RX packet too short, received %d bytes, expected at least %d bytes", 
+      n, sizeof(p));
     return false;
   }
   p.msgcode = ntohl(p.msgcode);
@@ -65,12 +80,15 @@ bool Network::poll() {
     error("RX unknown message, code: %d", p.msgcode);
     return false;
   }
-  p.frame.elapsed_ms = ntohl(p.frame.elapsed_ms);
-  p.frame.beat_ms = ntohl(p.frame.beat_ms);
-  info("RX %d bytes, frame %-16s elapsed:%010d beat:%010d hue_med:%03u hue_dev:%03u", n, p.frame.pattern, p.frame.elapsed_ms, p.frame.beat_ms, p.frame.hue_med, p.frame.hue_dev);
+  lastRxTime_ = timeMillis();
+  NetworkFrame fr = {p.frame.pattern,
+      static_cast<int32_t>(ntohl(p.frame.elapsed_ms)),
+      static_cast<int32_t>(ntohl(p.frame.beat_ms))};
+  info("RX %d bytes, frame %-16s elapsed:%010d beat:%010d", n, fr.pattern, 
+    fr.timeElapsed, fr.timeSinceBeat);
   NetworkListener *l = first_;
   while(l) {
-    l->onReceived(*this, p.frame);
+    l->onReceived(*this, fr);
     l = l->next_;
   }
   return true;

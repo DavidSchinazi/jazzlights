@@ -1,52 +1,41 @@
-#ifndef DFSPARKS_EFFECTS_H
-#define DFSPARKS_EFFECTS_H
+#ifndef DFSPARKS_PLAYLIST_H
+#define DFSPARKS_PLAYLIST_H
 #include "dfsparks/effect.h"
-#include "dfsparks/playlist.h"
-
 namespace dfsparks {
-
-struct EffectInfo;
-
-class Repertoire {
-public:
-  Repertoire(Pixels& pixels);
-  Repertoire(const Repertoire &) = delete;
-  ~Repertoire();
-
-  Repertoire &operator=(const Repertoire &) = delete;
-
-  int size() const { return size_; }
-  Effect *effect(int i) const;
-  const char *name(int i) const;
-  bool find(const char *name, Effect **effect, int *index) const;
-  bool find(const Effect &ef, const char **name, int *index) const;
-
-private:
-  EffectInfo **effects_;
-  int size_;
-};
 
 class Playlist {
 public:
-  Playlist(const Repertoire &repertoire, const char *names[] = nullptr);
-  Playlist(const Repertoire &repertoire, double timeShare);
-  Playlist(const Playlist &) = delete;
-  ~Playlist();
-  Playlist &operator=(const Playlist &) = delete;
-
-  Effect &currentEffect() const { return *effects_[track_]; }
-  int currentPosition() const { return track_; }
-
-  Effect &next();
-  Effect &prev();
-  Effect &random();
-  Effect &select(int i);
-
-private:
-  Effect **effects_ = nullptr;
-  int track_ = 0;
-  int size_ = 0;
+    virtual ~Playlist() = default;
+    virtual int size() const = 0;
+    virtual const Effect* operator[](int i) const = 0;
+    const Effect* find(const char *name) const;
 };
 
+template <class... EffectTs>
+struct BasicPlaylist : public Playlist {
+  virtual const Effect* operator[](int i) const {return get(i);}
+  virtual int size() const {return staticSize();}
+  
+  constexpr const Effect* get(int) const {return nullptr;}
+  constexpr size_t staticMaxRendererSize() const {return 0;}
+  constexpr size_t staticSize() const {return 0;}
+};
+
+template <class EffectT, class... EffectTs>
+struct BasicPlaylist<EffectT, EffectTs...> : BasicPlaylist<EffectTs...> {
+  BasicPlaylist(EffectT e, EffectTs... es) : BasicPlaylist<EffectTs...>(es...), effect(e) {}
+  const Effect* operator[](int i) const override {return get(i);}
+  int size() const override {return staticSize();}  
+  constexpr const Effect* get(int i) const {return i==0 ? &effect : BasicPlaylist<EffectTs...>::get(i-1);}  
+  constexpr size_t staticSize() const {return BasicPlaylist<EffectTs...>::staticSize() + 1;}
+
+  EffectT effect;
+};
+
+template<typename... EffectTs>
+BasicPlaylist<EffectTs...> makePlaylist(EffectTs... args) {
+  return BasicPlaylist<EffectTs...>(args...);
+}
+
 } // namespace dfsparks
-#endif /* DFSPARKS_EFFECTS_H */
+#endif /* DFSPARKS_PLAYLIST_H */

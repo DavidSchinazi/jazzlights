@@ -1,10 +1,16 @@
 #include "dfsparks/effects/flame.h"
+
+#include <assert.h>
 #include "dfsparks/color.h"
 #include "dfsparks/math.h"
 
 namespace dfsparks {
 
-uint32_t heatColor(uint8_t temperature) {
+inline uint8_t random_(uint8_t from = 0, uint8_t to = 255) {
+  return from + rand() % (to - from);
+}
+
+RgbaColor heatColor(uint8_t temperature) {
   uint8_t r, g, b;
   // return rgb(temperature,temperature,temperature);
 
@@ -38,7 +44,50 @@ uint32_t heatColor(uint8_t temperature) {
     b = 0;        // no blue
   }
 
-  return rgb(r, g, b);
+  return RgbaColor(r, g, b);
+}
+
+void renderFlame(Pixels& pixels, const Frame& frame, uint8_t* heat) {
+  constexpr int cooling = 120;
+
+  int width = pixels.width();
+  int height = pixels.height();
+  int freq = 50;
+  int step = 0;
+
+  if (frame.timeElapsed / freq != step) {
+    step = frame.timeElapsed / freq;
+    for (int x = 0; x < width; ++x) {
+
+      // Step 1.  Cool down every cell a little
+      for (int i = 0; i < height; i++) {
+        heat[i * width + x] = qsub8(
+            heat[i * width + x], random_(0, ((cooling * 10) / height) + 2));
+      }
+
+      // Step 2.  Heat from each cell drifts 'up' and diffuses a little
+      for (int k = height - 3; k > 0; k--) {
+        heat[k * width + x] =
+            (heat[(k - 1) * width + x] + heat[(k - 2) * width + x] +
+             heat[(k - 2) * width + x]) /
+            3;
+      }
+
+      // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
+      // if (random8() < sparkling) {
+      //   int y = random8(min(height, 2));
+      //   heat[y * width + x] = qadd8(heat[y * width + x], random8(160,
+      //   255));
+      // }
+      heat[x] = random_(160, 255);
+    }
+  }
+
+  // Step 4.  Map from heat cells to LED colors
+  for (int i = 0; i < pixels.count(); ++i) {
+    Point pt = pixels.coords(i);
+    pixels.setColor(i, heatColor(heat[(height - pt.y - 1) * width + pt.x]));
+  }
 }
 
 } // namespace dfsparks

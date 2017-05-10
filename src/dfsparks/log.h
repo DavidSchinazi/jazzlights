@@ -2,6 +2,14 @@
 #define DFSPARKS_LOG_H
 #include <stdarg.h>
 
+#if __cplusplus >= 201402L
+#define DFSPARKS_DEPRECATED_MSG(msg) [[deprecated(msg)]]
+#define DFSPARKS_DEPRECATED_S
+#else
+#define DFSPARKS_DEPRECATED(msg) 
+#define DFSPARKS_DEPRECATED_S __attribute__((deprecated))
+#endif
+
 namespace dfsparks {
 extern enum LogLevel { errorLevel, infoLevel, debugLevel, maxLevel } logLevel;
 

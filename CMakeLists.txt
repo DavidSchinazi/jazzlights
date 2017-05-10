@@ -8,12 +8,12 @@ set(LIB_SOURCES
 	src/dfsparks/color.h
 	src/dfsparks/effect.cpp
 	src/dfsparks/effect.h
-	src/dfsparks/effects/blink.h
 	src/dfsparks/effects/flame.cpp
 	src/dfsparks/effects/flame.h
-	src/dfsparks/effects/glitter.h
-	src/dfsparks/effects/rainbow.h
-	src/dfsparks/effects/slantbars.h
+	src/dfsparks/effects/simple.cpp
+	src/dfsparks/effects/simple.h
+	src/dfsparks/effects/system.cpp
+	src/dfsparks/effects/system.h
 	src/dfsparks/log.cpp
 	src/dfsparks/log.h
 	src/dfsparks/math.cpp
@@ -71,7 +71,6 @@ add_custom_target(verify-examples
 	COMMAND ${ARDUINO} --verify --board ${BOARD} ${CMAKE_SOURCE_DIR}/examples/Vest/Vest.ino}
 	)
 
-
 # PC LIBRARY
 add_library(dfsparks SHARED ${LIB_SOURCES})
 target_include_directories(dfsparks PUBLIC src)
@@ -92,7 +91,7 @@ install(TARGETS dfsparks
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/src/dfsparks/
 		DESTINATION include/dfsparks
         FILES_MATCHING PATTERN "*.h"
-  )
+)
 
 # TESTS
 add_custom_target(test DEPENDS dfsparks dfsparks-demo verify-examples)
@@ -106,4 +105,5 @@ add_custom_target(push-docker-image
 	COMMAND docker login --username dfsparks --password $ENV{DFSPARKS_DOCKERHUB_PASSWORD}
 	COMMAND docker push dfsparks/ubuntu
 	)
-	
+
+

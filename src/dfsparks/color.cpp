@@ -6,10 +6,10 @@ namespace dfsparks {
 
 // This is an "accurate" version of color conversions using double prceision
 // floating-points, should be pretty slow on ESP8266 chips
-void rgb2hsl(uint32_t color, uint8_t* h, uint8_t* s, uint8_t* v) {
-    double in_r = redChan(color)/255.0;
-    double in_g = greenChan(color)/255.0;
-    double in_b = blueChan(color)/255.0;
+HslColor::HslColor(RgbaColor color) {
+    double in_r = color.red/255.0;
+    double in_g = color.green/255.0;
+    double in_b = color.blue/255.0;
     double out_h, out_s, out_v;
     double      min, max, delta;
 
@@ -50,19 +50,25 @@ void rgb2hsl(uint32_t color, uint8_t* h, uint8_t* s, uint8_t* v) {
         out_h += 360.0;
 
 ret:
-    *h = 255*out_h/360.0;
-    *s = 255*out_s;
-    *v = 255*out_v;
+    hue = 255*out_h/360.0;
+    saturation = 255*out_s;
+    lightness = 255*out_v;
 }
 
+RgbaColor::RgbaColor(HslColor color) {
+    alpha = 255;
 #ifndef FAST_HSL
-uint32_t hsl(uint8_t h, uint8_t s, uint8_t v) {
+    uint8_t h  = color.hue;
+    uint8_t s = color.saturation;
+    uint8_t v = color.lightness;
+
     double in_h = 360*h/255.0, in_s = s/255.0, in_v = v/255.0;
     double      hh, p, q, t, ff;
     long        i;
     double out_r, out_g, out_b;
 
-    if(in_s <= 0.0) {       
+    if(in_s <= 0.0) {  
+
         return rgb(255*in_v, 255*in_v, 255*in_v);
     }
     hh = in_h;
@@ -108,15 +114,20 @@ uint32_t hsl(uint8_t h, uint8_t s, uint8_t v) {
         out_b = q;
         break;
     }
-    return rgb(255*out_r, 255*out_g, 255*out_b);     
-}
+
+    red = 255*out_r;
+    green = 255*out_g;
+    blue = 255*out_b;
 #else
-uint32_t hsl(uint8_t hsv_h, uint8_t hsv_s, uint8_t hsv_v) {
+    uint8_t hsv_h  = color.hue;
+    uint8_t hsv_s = color.saturation;
+    uint8_t hsv_v = color.lightness;
+
     uint8_t region, remainder, p, q, t, rgb_r, rgb_g, rgb_b;
 
-    if (hsv_s == 0)
-    {
-      return rgb(hsv_v, hsv_v, hsv_v);
+    if (hsv_s == 0) {
+      red = green = blue = hsv_v;
+      return;
     }
 
     region = hsv_h / 43;
@@ -148,8 +159,10 @@ uint32_t hsl(uint8_t hsv_h, uint8_t hsv_s, uint8_t hsv_v) {
             break;
     }
 
-    return rgb(rgb_r, rgb_g, rgb_b);
-}
+    red = rgb_r;
+    green = rgb_g;
+    blue = rgb_b;
 #endif
+}
 
 } // namespace dfsparks

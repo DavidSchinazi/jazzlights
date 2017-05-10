@@ -9,14 +9,15 @@
 #include <sstream>
 #include <stdio.h>
 #include <vector>
+#include <functional>
 
-const char *WIN_TITLE = "DiscoFish Sparks Demo";
+const char *WIN_TITLE = "DFSparks Demo";
 const int WIN_W = 800;
 const int WIN_H = 600;
 
 const double TWO_PI = 2 * 3.1415926;
 
-void render_circle(double cx, double cy, double r, dfsparks::RgbaColor color,
+void renderCircle(double cx, double cy, double r, dfsparks::RgbaColor color,
                    int segments = 25) {
   using namespace dfsparks;
 
@@ -32,41 +33,48 @@ void render_circle(double cx, double cy, double r, dfsparks::RgbaColor color,
 
 dfsparks::UdpSocketNetwork network;
 
-
-class Matrix : public dfsparks::Matrix {
+class Matrix : public dfsparks::PixelMatrix {
 public:
   Matrix(int w, int h, double vpl, double vpt, double vpw, double vph)
-      : dfsparks::Matrix(w, h), viewport_left(vpl), viewport_top(vpt),
-        viewport_width(vpw), viewport_height(vph) {
-    led_sp = fmin(viewport_width / w, viewport_height / h);
-  }
+      : dfsparks::PixelMatrix(w, h, setColor, this), 
+        led_sp(fmin(vpw/w, vph/h)),
+        viewport_left(vpl), 
+        viewport_top(vpt) {}
 
 private:
-  void doSetColor(int x, int y, dfsparks::RgbaColor color) final {
-    render_circle(viewport_left + led_sp * (x + 0.5),
-                  viewport_top + led_sp * (y + 0.5), 0.4 * led_sp, color);
-  };
+  static void setColor(int i, dfsparks::RgbaColor color, void *m) {
+    static_cast<Matrix*>(m)->setColor(i, color);
+  }
+
+  void setColor(int i, dfsparks::RgbaColor color)  {
+    dfsparks::Point p = coords(i);
+    renderCircle(viewport_left + led_sp * (p.x + 0.5),
+                  viewport_top + led_sp * (p.y + 0.5), 0.4 * led_sp, color);  
+  }
 
   double led_sp;
   double viewport_left;
   double viewport_top;
-  double viewport_width;
-  double viewport_height;
 };
 
-class Ring : public dfsparks::VerticalStrand {
+
+class Ring : public dfsparks::PixelMatrix {
 public:
     Ring(int length, double vpl, double vpt, double vpw, double vph)
-        : VerticalStrand(length), cx(vpl + vpw / 2), cy(vpt + vph / 2),
+        : dfsparks::PixelMatrix(1, length, setColor, this), cx(vpl + vpw / 2), cy(vpt + vph / 2),
           r(0.8 * fmin(vpw, vph) / 2), led_sp(0.5 * TWO_PI * r / length) {}
 
 private:
-    void doSetColor(int i, dfsparks::RgbaColor color) final {
-      int length = VerticalStrand::length();
+  static void setColor(int i, dfsparks::RgbaColor color, void *m) {
+    static_cast<Ring*>(m)->setColor(i, color);
+  }
+
+  void setColor(int i, dfsparks::RgbaColor color)  {
+      int length = height();
       double x = r * cos(i * TWO_PI / length);
       double y = r * sin(i * TWO_PI / length);
-      render_circle(cx + x, cy + y, 0.8 * led_sp, color);
-    };
+      renderCircle(cx + x, cy + y, 0.8 * led_sp, color);
+  }
 
     double cx;
     double cy;
@@ -74,26 +82,28 @@ private:
     double led_sp;
 };
 
-/*const char *playlist[] = {"rider", "_none", "glitter", 0};*/
 
-template<typename PixelsT>
-struct Spark : public dfsparks::NetworkPlayer {
-  template<class... Args> 
-  Spark(Args&&... args) : NetworkPlayer(*(new PixelsT(std::forward<Args>(args)...)), network) {}
-  ~Spark() {
-    delete &pixels();
-  }
-};
-
-std::vector<std::shared_ptr<dfsparks::NetworkPlayer>> sparks = {
-    std::make_shared<Spark<Matrix>>(250, 50, 0.0, 0.0, 800.0, 160.0),
-    std::make_shared<Spark<Matrix>>(8, 17, 40.0, 170.0, 160.0, 440.0),
-    std::make_shared<Spark<Ring>>(12, 250.0, 200.0, 90.0, 90.0)
+std::vector<std::function<dfsparks::NetworkPlayer&(void)>> sparks = {
+    []() -> dfsparks::NetworkPlayer& {
+        static Matrix pixels(250, 50, 0.0, 0.0, 800.0, 160.0);
+        static dfsparks::NetworkPlayer player(pixels, network);
+        return player;
+    },
+    []() -> dfsparks::NetworkPlayer& {
+        static Matrix pixels(8, 17, 40.0, 170.0, 160.0, 440.0);
+        static dfsparks::NetworkPlayer player(pixels, network);
+        return player;
+    },
+    []() -> dfsparks::NetworkPlayer& {
+        static Ring pixels(12, 250.0, 200.0, 90.0, 90.0);
+        static dfsparks::NetworkPlayer player(pixels, network);
+        return player;
+    },
   };
 
-auto &controlled = *sparks[0];
+auto &controlled = sparks[0]();
 
-void on_resize(GLFWwindow * /*window*/, int width, int height) {
+void onResize(GLFWwindow * /*window*/, int width, int height) {
   double aspect = 1.0 * width * WIN_H / (height * WIN_W);
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
@@ -103,7 +113,7 @@ void on_resize(GLFWwindow * /*window*/, int width, int height) {
   glLoadIdentity();
 }
 
-void on_key(GLFWwindow * /*window*/, int key, int /*scancode*/, int action,
+void onKey(GLFWwindow * /*window*/, int key, int /*scancode*/, int action,
             int mods) {
   using namespace dfsparks;
 
@@ -148,9 +158,6 @@ int main(int argc, char ** argv) {
     if (argc > 1 && !strcmp(argv[1],"-v")) {
       dfsparks::logLevel = dfsparks::debugLevel;
     }
-    if (argc > 1 && !strcmp(argv[1],"-d")) {
-      printf("attach debugger\n"); getc(stdin);
-    }
 
     GLFWwindow *window;
     if (!glfwInit())
@@ -161,11 +168,11 @@ int main(int argc, char ** argv) {
       glfwTerminate();
       return -1;
     }
-    glfwSetWindowSizeCallback(window, on_resize);
+    glfwSetWindowSizeCallback(window, onResize);
     glfwMakeContextCurrent(window);
-    glfwSetKeyCallback(window, on_key);
+    glfwSetKeyCallback(window, onKey);
 
-    on_resize(window, WIN_W, WIN_H);
+    onResize(window, WIN_W, WIN_H);
 
     controlled.setMaster();
     controlled.shuffleAll();
@@ -174,11 +181,10 @@ int main(int argc, char ** argv) {
       glClear(GL_COLOR_BUFFER_BIT);
 
       for (auto &spark : sparks) {
-        spark->render();
+          spark.operator()().render();
       }
       network.poll();
-      //render_circle(700, 300, 50, dfsparks::hsl(h, 240, 255));
-
+ 
       std::stringstream title;
       title << WIN_TITLE << " | " << controlled.effectName();
       glfwSetWindowTitle(window, title.str().c_str());

@@ -7,7 +7,8 @@
 
 namespace dfsparks {
 static const char *level_str[] = {"ERROR", "INFO", "DEBUG"};
-LogLevel logLevel = errorLevel; // infoLevel;
+LogLevel logLevel = errorLevel;
+
 
 void log(LogLevel level, const char *fmt, va_list args) {
   if (level > logLevel) {

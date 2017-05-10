@@ -3,24 +3,42 @@
 #include "dfsparks/color.h"
 namespace dfsparks {
 
+struct Point {
+  int x;
+  int y;
+};
+
+struct Box {
+  int left;
+  int top;
+  int right;
+  int bottom;
+};
+
+struct Transform {  
+  Point operator()(const Point& point) { return {
+    matrix[0] * point.x + matrix[1] * point.y, 
+    matrix[2] * point.x + matrix[3] * point.y};
+  }
+  int matrix[4];
+};
+
+static const Transform IDENTITY = {.matrix={1,0,0,1}};
+static const Transform ROTATE_LEFT = {.matrix={0,1,-1,0}};
+static const Transform ROTATE_RIGHT = {.matrix={0,-1,1,0}};
+
 class Pixels {
 public:
   Pixels() = default;
   virtual ~Pixels() = default;
 
-  int count() const { return getNumberOfPixels(); }
-  int left() const { return 0; }
-  int top() const { return 0; }
-  int width() const { return iabs(tr_[0] * getWidth() + tr_[1] * getHeight()); }
-  int height() const {
-    return iabs(tr_[2] * getWidth() + tr_[3] * getHeight());
-  }
-  void coords(int index, int *x, int *y) const {
-    int xx, yy;
-    getCoords(index, &xx, &yy);
-    *x = tr_[0] * xx + tr_[1] * yy;
-    *y = tr_[2] * xx + tr_[3] * yy;
-  }
+  int count() const {return count_(); }
+  void setColor(int index, RgbaColor color) {setColor_(index, color);}
+  Point coords(int index) const {return coords_(index);}
+  Box boundingBox() const {return boundingBox_(); }
+
+  int width() const {Box bb = boundingBox(); return bb.right - bb.left;}
+  int height() const {Box bb = boundingBox(); return bb.bottom - bb.top;}
 
   void fill(RgbaColor color) {
     for (int i = 0; i < count(); ++i) {
@@ -28,144 +46,48 @@ public:
     }
   }
 
-  void setColor(int i, RgbaColor color) { doSetColor(i, color); }
-
-  Pixels &rotateLeft() {
-    tr_[0] = 0;  // cos(a);
-    tr_[1] = 1;  // sin(a);
-    tr_[2] = -1; //-sin(a);
-    tr_[3] = 0;  // cos(a);
-    return *this;
-  }
-
-  Pixels &rotateRight() {
-    tr_[0] = 0;  // cos(a);
-    tr_[1] = -1; // sin(a);
-    tr_[2] = 1;  //-sin(a);
-    tr_[3] = 0;  // cos(a);
-    return *this;
-  }
-
 private:
-  int iabs(int n) const { return n > 0 ? n : -n; }
-
-  virtual int getNumberOfPixels() const = 0;
-  virtual int getWidth() const = 0;
-  virtual int getHeight() const = 0;
-  virtual void getCoords(int i, int *x, int *y) const = 0;
-  virtual void doSetColor(int index, RgbaColor color) = 0;
-
-  int tr_[4] = {1, 0, 0, 1};
+  virtual int count_() const = 0;
+  virtual void setColor_(int index, RgbaColor color) = 0;
+  virtual Point coords_(int index) const = 0;
+  virtual Box boundingBox_() const  = 0;
 };
 
-// class Rotated : public Pixels {
-// public:
-//   Rotated(Pixels& orig, double a) : p_(orig) {
-//     tr_[0] = cos(a);
-//     tr_[1] = sin(a);
-//     tr_[2] = -sin(a);
-//     tr_[3] = cos(a);
-//   }
+typedef void (*PixelRenderer)(int, RgbaColor, void*);
 
-// private:
-//   int getNumberOfPixels() const final { return p_.count(); }
-//   int getWidth() const final {return tr_[0]*p_.width() + tr_[1]*p_.height();
-//   }
-//   int getHeight() const final {return tr_[2]*width() + tr_[3]*height(); }
-//   void getCoords(int i, int *x, int *y) const final {
-//     int xx, yy;
-//     p_.coords(i, &xx, &yy);
-//     *x = tr_[0]*xx + tr_[1]*yy;
-//     *y = tr_[2]*xx + tr_[3]*yy;
-//   }
-//   void doSetColor(int index, uint8_t red, uint8_t green, uint8_t blue,
-//                           uint8_t alpha) final
-//                           {p_.setColor(index,rgba(red,green,blue,alpha));}
-
-//   Pixels& p_;
-//   int tr_[4] = {1, 0, 0, 1};
-// };
-
-class VerticalStrand : public Pixels {
+class PixelMatrix : public Pixels {
 public:
-  VerticalStrand(int l, int p = 0) : length_(l), pos_(p) {}
-  int length() const { return length_; }
-
-private:
-  int length_;
-  int pos_;
-
-  int getNumberOfPixels() const final { return length_; };
-  int getWidth() const final { return 1; }
-  int getHeight() const final { return length_; }
-  void getCoords(int i, int *x, int *y) const final {
-    *x = pos_;
-    *y = i;
-  }
-};
-
-class HorizontalStrand : public Pixels {
-public:
-  HorizontalStrand(int l, int p = 0) : length_(l), pos_(p) {}
-  int length() const { return length_; }
-
-private:
-  int length_;
-  int pos_;
-
-  int getNumberOfPixels() const final { return length_; };
-  int getWidth() const final { return length_; }
-  int getHeight() const final { return 1; }
-  void getCoords(int i, int *x, int *y) const final {
-    *x = i;
-    *y = pos_;
-  }
-};
-
-class Matrix : public Pixels {
-public:
-  Matrix(int w, int h) : width_(w), height_(h) {}
-  int width() const { return width_; }
-  int height() const { return height_; }
+  PixelMatrix(int w, int h, PixelRenderer render, void *context = 0) :
+    width_(w), height_(h), render_(render), context_(context) {}
 
 private:
   int width_;
   int height_;
+  PixelRenderer render_;
+  void *context_;
 
-  virtual void doSetColor(int x, int y, RgbaColor color) = 0;
-
-  int getNumberOfPixels() const final { return width_ * height_; };
-  int getWidth() const final { return width_; }
-  int getHeight() const final { return height_; }
-  void getCoords(int i, int *x, int *y) const final {
-    *x = i % width_;
-    *y = i / width_;
-  }
-  void doSetColor(int index, RgbaColor color) final {
-    int x, y;
-    getCoords(index, &x, &y);
-    doSetColor(x, y, color);
-  }
+  int count_() const final { return width_ * height_; }
+  void setColor_(int index, RgbaColor color) { render_(index, color, context_); }
+  Point coords_(int index) const { return {index % width_, index/width_}; }
+  Box boundingBox_() const { return {0,0, width_, height_}; }
 };
+
 
 class PixelMap : public Pixels {
 public:
-  PixelMap(int w, int h, int pxcnt, const int *map, bool rotated = false)
-      : width_(w), height_(h), numberOfPixels_(pxcnt) {
-    xMap_ = new int[numberOfPixels_];
-    yMap_ = new int[numberOfPixels_];
+  PixelMap(int w, int h, int pxcnt, PixelRenderer render, const int *map, bool rotated = false, void *context = 0)
+      : numberOfPixels(pxcnt), width(w), height(h), render(render), context(context) {
+    points = new Point[numberOfPixels];
     for (int x = 0; x < w; ++x) {
       for (int y = 0; y < h; ++y) {
         int i = map[x + y * w];
-        if (i < numberOfPixels_) {
+        if (i < numberOfPixels) {
           // UGLY HACK, WILL ONLY WORK FOR THE VEST
           // TODO: Implement proper rotation on pixel level
           if (!rotated) {
-            xMap_[i] = x;
-            yMap_[i] = y;
+            points[i] = {x,y};
           } else {
-            yMap_[i] = w - x;
-            xMap_[i] = y;
+            points[i] = {w - x, y};
           }
         }
       }
@@ -173,24 +95,21 @@ public:
   }
 
   ~PixelMap() {
-    delete[] xMap_;
-    delete[] yMap_;
+    delete[] points;
   }
 
 private:
-  int getNumberOfPixels() const final { return numberOfPixels_; };
-  int getWidth() const { return width_; }
-  int getHeight() const { return height_; }
-  void getCoords(int i, int *x, int *y) const final {
-    *x = xMap_[i];
-    *y = yMap_[i];
-  }
+  int count_() const final { return numberOfPixels; }
+  void setColor_(int index, RgbaColor color) { render(index, color, context); }
+  Point coords_(int index) const {return points[index];}
+  Box boundingBox_() const {return {0,0, width, height};}
 
-  int width_;
-  int height_;
-  int numberOfPixels_;
-  int *xMap_;
-  int *yMap_;
+  int numberOfPixels;
+  int width;
+  int height;
+  PixelRenderer render;
+  void *context;
+  Point *points;
 };
 
 } // namespace dfsparks

@@ -2,7 +2,8 @@
 #define DFSPARKS_PLAYER_H
 #include "dfsparks/network.h"
 #include "dfsparks/pixels.h"
-#include "dfsparks/playlist.h"
+#include "dfsparks/playlists/default.h"
+#include "dfsparks/effects/system.h"
 #include <assert.h>
 #include <stdio.h>
 
@@ -10,75 +11,64 @@ namespace dfsparks {
 
 class Player {
 public:
-  static constexpr int LOW_PRIORITY = 10;
-  static constexpr int HIGH_PRIORITY = 20;
-
-  Player(Pixels& pixels);
+  Player(Pixels& pixels, const Playlist& playlist);
+  Player(Player&) = delete;
   virtual ~Player();
+
+  Player& operator=(Player&) = delete;
 
   void render();
 
-  void play(int track, int priority = HIGH_PRIORITY) {doPlay(playlist_.select(track), priority);}
-  void next(int priority = HIGH_PRIORITY) { doPlay(playlist_.next(), priority); }
-  void prev(int priority = HIGH_PRIORITY) { doPlay(playlist_.prev(), priority); }
+  void play(int track);
+  void next();
+  void prev(); 
 
-  int track() const { return playlist_.currentPosition(); }
+  int track() const { return track_; }
 
   void cycleAll() { mode_ = cycle_all; }
+  void cycleOne() { mode_ = cycle_one; }
   void shuffleAll() { mode_ = shuffle_all; }
-  void loopOne() { mode_ = play_forever; }
+  void playForever() { mode_ = play_forever; }
 
-  void knock() { time_since_beat_ = 0; }
+  void knock() { frame_.timeSinceBeat = 0; }
 
   const char *effectName() const;
-  int32_t timeElapsed() const { return elapsed_time_; }
-  int32_t timeSinceBeat() const { return time_since_beat_; }
-  int32_t cycleDuration() const {return 500; }
-  uint8_t cycleHue() const { return cycle_hue_; }
 
-
-  Pixels &pixels() {
-    assert(pixels_);
-    return *pixels_;
-  }
-  const Pixels &pixels() const {
-    assert(pixels_);
-    return *pixels_;
-  }
-
-  void showStatus(bool show = true) { showStatus_ = show; }
-  bool isShowingStatus() const { return showStatus_; }
+  // deprecated, use cycleOne
+  void loopOne() {cycleOne();}
 
 protected:
-  Effect* findEffect(const char *name) const;
-  
-  void doPlay(Effect &ef, int priority);
-  void doPlay(Effect &ef, int priority, int32_t elapsed, int32_t remaining, uint8_t cycleHue);
+  const Playlist& playlist_;
+
+  static constexpr int LOW_PRIORITY = 10;
+  static constexpr int HIGH_PRIORITY = 20;
+
+  void play(const Effect *ef, int priority);
+  void sync(const Effect& ef, int priority, Frame fr);
+  void advance();
+  const Frame &frame() const { return frame_; }
 
 private:
-  virtual void doRenderStatus();
+  enum Mode { play_forever, cycle_one, cycle_all, shuffle_all };
 
-  Repertoire repertoire_;
-  Playlist playlist_;
-  Effect *effect_ = nullptr;
-  int32_t elapsed_time_;
-  int32_t remaining_time_;
-  int32_t time_since_beat_;
-  int32_t frame_ts_;
-  uint8_t cycle_hue_;
+  Pixels& pixels_;
+
+  Frame frame_ = {0, INT32_MAX/2, INT32_MAX/2};
+  int32_t frameTs_ = 0;
+  int track_=  0;
   int priority_ = LOW_PRIORITY;
-
-  enum Mode { play_forever, cycle_all, shuffle_all } mode_ = cycle_all;
-  Pixels *pixels_ = nullptr;
-  bool showStatus_ = false;
+  Effect::Renderer *renderer_ = nullptr;
+  Mode mode_ = cycle_all;
+  uint8_t *renderBuf_;
+  size_t renderBufSize_;
 };
 
 class NetworkPlayer : public Player, NetworkListener {
 public:
-  NetworkPlayer(Pixels& pixels, Network &n);
+  NetworkPlayer(Pixels& px, Network &n, const Playlist& pl = defaultPlaylist());
   ~NetworkPlayer();
 
-  void render();
+  void showStatus();
 
   void setMaster() { mode_ = MASTER; }
   void setSlave() { mode_ = SLAVE; }
@@ -88,13 +78,21 @@ public:
     return mode_ != STANDALONE && netwrk.status() == Network::connected;
   }
 
-  // deprecated, use setMaster() instead
-  void serve() {setMaster();}
+  void render();
+
+  DFSPARKS_DEPRECATED("bool argument no longer supported, use showStatus() without parameters")
+  void showStatus(bool) DFSPARKS_DEPRECATED_S;
+    
+  DFSPARKS_DEPRECATED("check effectName() instead")
+  bool isShowingStatus() const DFSPARKS_DEPRECATED_S;
+
+  DFSPARKS_DEPRECATED("use setMaster() instead")
+  void serve() DFSPARKS_DEPRECATED_S;
 
 private:
-  void onReceived(Network &network, const Message::Frame &frame) final;
+  void onReceived(Network &network, const NetworkFrame &frame) final;
   void onStatusChange(Network &) final{};
-  void doRenderStatus() final;
+  void doRenderStatus();
 
   enum Role {STANDALONE, SLAVE, MASTER} mode_ = SLAVE;
   Network &netwrk;
@@ -105,6 +103,9 @@ private:
 
   int32_t rx_time_ = INT32_MIN / 2;
   int32_t rx_timeout_ = 3000;
+
+  bool showStatus_ = false;
+  NetworkStatus networkStatusEffect_;
 };
 
 } // namespace dfsparks
