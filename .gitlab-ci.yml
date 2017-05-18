@@ -1,0 +1,6 @@
+image: dfsparks/ubuntu
+
+build:
+  stage: build
+  script:
+    - mkdir build && cd build && cmake .. && make test 
