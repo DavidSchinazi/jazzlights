@@ -1,5 +1,7 @@
 # DFSparks Library
 
+[![Build Status](https://travis-ci.org/unisparks/unisparks.svg?branch=master)](https://travis-ci.org/unisparks/unisparks)
+
 DFSparks is a library for building networked LED art. We use it to create
 wearables, costumes, accessories, even robots and art cars that display
 synchronized light patterns. Check it out if you're tinkering with NeoPixels

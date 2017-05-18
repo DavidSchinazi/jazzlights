@@ -1,0 +1,17 @@
+language: c
+sudo: required
+
+matrix: 
+  include:
+    - os: linux
+      dist: trusty
+      install: extras/install-dependencies
+      script: mkdir build && cd build && cmake .. && make test 
+
+    - os: osx
+      osx_image: xcode7.3
+      install: extras/install-dependencies
+      # Unfortunately Arduino command-line does not seem to be working on a headless OSX, 
+      # so we'll just test building desktop library and demo 
+      script: mkdir build && cd build && cmake .. && make dfsparks dfsparks-demo 
+
