@@ -1,7 +1,7 @@
-#include "dfsparks/log.h"
-#include "dfsparks/player.h"
-#include "dfsparks/math.h"
-#include "dfsparks/networks/udpsocket.h"
+#include "unisparks/log.h"
+#include "unisparks/player.h"
+#include "unisparks/math.h"
+#include "unisparks/networks/udpsocket.h"
 #include <GLFW/glfw3.h>
 #include <cmath>
 #include <memory>
@@ -11,15 +11,15 @@
 #include <vector>
 #include <functional>
 
-const char *WIN_TITLE = "DFSparks Demo";
+const char *WIN_TITLE = "Unisparks Demo";
 const int WIN_W = 800;
 const int WIN_H = 600;
 
 const double TWO_PI = 2 * 3.1415926;
 
-void renderCircle(double cx, double cy, double r, dfsparks::RgbaColor color,
+void renderCircle(double cx, double cy, double r, unisparks::RgbaColor color,
                    int segments = 25) {
-  using namespace dfsparks;
+  using namespace unisparks;
 
   glColor4f(color.red / 255.f, color.green / 255.f, color.blue / 255.f, color.alpha / 255.f);
   glBegin(GL_TRIANGLE_FAN);
@@ -31,23 +31,23 @@ void renderCircle(double cx, double cy, double r, dfsparks::RgbaColor color,
   glEnd();
 }
 
-dfsparks::UdpSocketNetwork network;
+unisparks::UdpSocketNetwork network;
 
-class Matrix : public dfsparks::PixelMatrix {
+class Matrix : public unisparks::PixelMatrix {
 public:
   Matrix(int w, int h, double vpl, double vpt, double vpw, double vph)
-      : dfsparks::PixelMatrix(w, h, setColor, this), 
+      : unisparks::PixelMatrix(w, h, setColor, this), 
         led_sp(fmin(vpw/w, vph/h)),
         viewport_left(vpl), 
         viewport_top(vpt) {}
 
 private:
-  static void setColor(int i, dfsparks::RgbaColor color, void *m) {
+  static void setColor(int i, unisparks::RgbaColor color, void *m) {
     static_cast<Matrix*>(m)->setColor(i, color);
   }
 
-  void setColor(int i, dfsparks::RgbaColor color)  {
-    dfsparks::Point p = coords(i);
+  void setColor(int i, unisparks::RgbaColor color)  {
+    unisparks::Point p = coords(i);
     renderCircle(viewport_left + led_sp * (p.x + 0.5),
                   viewport_top + led_sp * (p.y + 0.5), 0.4 * led_sp, color);  
   }
@@ -58,18 +58,18 @@ private:
 };
 
 
-class Ring : public dfsparks::PixelMatrix {
+class Ring : public unisparks::PixelMatrix {
 public:
     Ring(int length, double vpl, double vpt, double vpw, double vph)
-        : dfsparks::PixelMatrix(1, length, setColor, this), cx(vpl + vpw / 2), cy(vpt + vph / 2),
+        : unisparks::PixelMatrix(1, length, setColor, this), cx(vpl + vpw / 2), cy(vpt + vph / 2),
           r(0.8 * fmin(vpw, vph) / 2), led_sp(0.5 * TWO_PI * r / length) {}
 
 private:
-  static void setColor(int i, dfsparks::RgbaColor color, void *m) {
+  static void setColor(int i, unisparks::RgbaColor color, void *m) {
     static_cast<Ring*>(m)->setColor(i, color);
   }
 
-  void setColor(int i, dfsparks::RgbaColor color)  {
+  void setColor(int i, unisparks::RgbaColor color)  {
       int length = height();
       double x = r * cos(i * TWO_PI / length);
       double y = r * sin(i * TWO_PI / length);
@@ -83,20 +83,20 @@ private:
 };
 
 
-std::vector<std::function<dfsparks::NetworkPlayer&(void)>> sparks = {
-    []() -> dfsparks::NetworkPlayer& {
+std::vector<std::function<unisparks::NetworkPlayer&(void)>> sparks = {
+    []() -> unisparks::NetworkPlayer& {
         static Matrix pixels(250, 50, 0.0, 0.0, 800.0, 160.0);
-        static dfsparks::NetworkPlayer player(pixels, network);
+        static unisparks::NetworkPlayer player(pixels, network);
         return player;
     },
-    []() -> dfsparks::NetworkPlayer& {
+    []() -> unisparks::NetworkPlayer& {
         static Matrix pixels(8, 17, 40.0, 170.0, 160.0, 440.0);
-        static dfsparks::NetworkPlayer player(pixels, network);
+        static unisparks::NetworkPlayer player(pixels, network);
         return player;
     },
-    []() -> dfsparks::NetworkPlayer& {
+    []() -> unisparks::NetworkPlayer& {
         static Ring pixels(12, 250.0, 200.0, 90.0, 90.0);
-        static dfsparks::NetworkPlayer player(pixels, network);
+        static unisparks::NetworkPlayer player(pixels, network);
         return player;
     },
   };
@@ -115,7 +115,7 @@ void onResize(GLFWwindow * /*window*/, int width, int height) {
 
 void onKey(GLFWwindow * /*window*/, int key, int /*scancode*/, int action,
             int mods) {
-  using namespace dfsparks;
+  using namespace unisparks;
 
   if (key == GLFW_KEY_V && action == GLFW_PRESS) {
     logLevel =
@@ -156,7 +156,7 @@ void onKey(GLFWwindow * /*window*/, int key, int /*scancode*/, int action,
 int main(int argc, char ** argv) {
   try {
     if (argc > 1 && !strcmp(argv[1],"-v")) {
-      dfsparks::logLevel = dfsparks::debugLevel;
+      unisparks::logLevel = unisparks::debugLevel;
     }
 
     GLFWwindow *window;

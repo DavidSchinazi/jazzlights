@@ -13,5 +13,5 @@ matrix:
       install: extras/install-dependencies
       # Unfortunately Arduino command-line does not seem to be working on a headless OSX, 
       # so we'll just test building desktop library and demo 
-      script: mkdir build && cd build && cmake .. && make dfsparks dfsparks-demo 
+      script: mkdir build && cd build && cmake .. && make unisparks unisparks-demo 
 

@@ -22,8 +22,8 @@ audience are not complete beginners. Keep it simple, but don't dumb it down.
 
 ### Complicated or stateful effects
 
-- Create header file, e.g. src/dfsparks/effects/coolstuff.h
-- Create source file, e.g. src/dfsparks/effects/coolstuff.cpp
+- Create header file, e.g. src/unisparks/effects/coolstuff.h
+- Create source file, e.g. src/unisparks/effects/coolstuff.cpp
 - Extend StatfulEffect (or BasicEffect if you're doing something unusual, or Effect
   if you want to start from scratch)
 - Register your new effect in src/playlists/default.h

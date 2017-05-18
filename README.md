@@ -1,8 +1,8 @@
-# DFSparks Library
+# Unisparks Library
 
 [![Build Status](https://travis-ci.org/unisparks/unisparks.svg?branch=master)](https://travis-ci.org/unisparks/unisparks)
 
-DFSparks is a library for building networked LED art. We use it to create
+Unisparks is a library for building networked LED art. We use it to create
 wearables, costumes, accessories, even robots and art cars that display
 synchronized light patterns. Check it out if you're tinkering with NeoPixels
 and similar electronics. And next time you're at Burning Man - go find
@@ -15,12 +15,11 @@ Features:
 - ESP8266, Ubuntu Linux, and OSX supported out of the box
 - Easy to modify for other Arduino boards or UNIXy systems
 
-
 ## Using the library
 
 ### Using with Arduino IDE
 
-To install Arduino and dfsparks code on Ubuntu:
+To install Arduino and unisparks code on Ubuntu:
 
     Download latest software from https://www.arduino.cc/en/Main/Softwarea
       https://www.arduino.cc/download_handler.php?f=/arduino-1.6.10-linux64.tar.xz
@@ -29,7 +28,7 @@ To install Arduino and dfsparks code on Ubuntu:
     tar -xf arduino-1.6.10-linux64.tar.xz
     mkdir -p ~/Arduino/libraries
     cd ~/Arduino/libraries
-    git clone https://igor_c@bitbucket.org/discofish/dfsparks.git DFSparks
+    git clone https://igor_c@bitbucket.org/discofish/unisparks.git Unisparks
     git clone https://github.com/FastLED/FastLED
     ~/arduino-1.6.10/arduino &
     Open File/Preferences, and add to Additional Boards:
@@ -43,7 +42,7 @@ To install Arduino and dfsparks code on Ubuntu:
 To compile:
 
     ~/arduino-1.6.10/arduino &
-    Click menu option: File/Examples/DFSparks/Vest
+    Click menu option: File/Examples/Unisparks/Vest
     Click on the checkmark button to verify
     Select Tools/Ports/ttyUSB0
     Click the Upload button
@@ -55,9 +54,9 @@ synchronizes with the server.
 
     sudo apt-get install -y make
     sudo apt-get install -y cmake
-	git clone git@bitbucket.org:discofish/dfsparks.git
-	mkdir dfsparks/build
-	cd dfsparks/build && cmake .. && make 
+	git clone git@bitbucket.org:discofish/unisparks.git
+	mkdir unisparks/build
+	cd unisparks/build && cmake .. && make 
 	sudo make install
 
 The last step installs the library system-wide, so that dfplayer build can
@@ -70,11 +69,11 @@ Build PC library as explained above, then install GLFW and build the demo:
 
 	pushd /tmp && git clone https://github.com/glfw/glfw --depth 1 &&\
 		cd glfw && cmake . && make && sudo make install && popd 
-    cd dfsparks/build && make dfsparks_demo && ./dfspaks_demo
+    cd unisparks/build && make unisparks_demo && ./dfspaks_demo
  
 ## Flashing updated firmware
 
-(this is generic stuff not specific to DFSparks library)
+(this is generic stuff not specific to Unisparks library)
 
 To flash new firmware onto NodeMCU:
 
@@ -95,7 +94,7 @@ To flash new firmware onto NodeMCU:
 
 ## Uploading sketches on OSX
 
-(this is generic stuff not specific to DFSparks library)
+(this is generic stuff not specific to Unisparks library)
 
 To upload sketches to ESP8266 board from Arduino IDE on OSX:
 

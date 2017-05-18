@@ -8,9 +8,9 @@
 #define FASTLED_ESP8266_RAW_PIN_ORDER
 #define ESP8266
 #include <FastLED.h>
-#include <DFSparks.h>
+#include <Unisparks.h>
 
-using namespace dfsparks;
+using namespace unisparks;
 
 char ssid[] = "***";  //  your network SSID (name)
 char pass[] = "***";  // your network password

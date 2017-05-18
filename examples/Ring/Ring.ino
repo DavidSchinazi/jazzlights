@@ -1,7 +1,7 @@
 #include <Adafruit_NeoPixel.h>
-#include <DFSparks.h>
+#include <Unisparks.h>
 
-using namespace dfsparks; 
+using namespace unisparks; 
 
 char ssid[] = "***";  //  your network SSID (name)
 char pass[] = "***";  // your network password
@@ -13,14 +13,14 @@ const int NUM_LEDS = 12;
 
 Adafruit_NeoPixel strip(NUM_LEDS, RING_PIN, NEO_GRB + NEO_KHZ800);
 
-void renderPixel(int i, DFSparks_Color color, void*) 
+void renderPixel(int i, Unisparks_Color color, void*) 
 {
     strip.setPixelColor(i, color.red, color.green, color.blue);       
 }
 
 Esp8266Network network(ssid, pass);
-DFSparks_PixelMatrix pixels(NUM_LEDS, 1, renderPixel);
-DFSparks_Player player(pixels, network);
+Unisparks_PixelMatrix pixels(NUM_LEDS, 1, renderPixel);
+Unisparks_Player player(pixels, network);
 
 void setup()
 {

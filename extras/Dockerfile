@@ -5,5 +5,5 @@ ADD ./install-dependencies ./setup
 RUN ./setup
 
 # Set up mount point and default commmand
-VOLUME /dfsparks
-CMD cd /dfsparks && mkdir -p build/ubuntu && cd build/ubuntu && cmake ../.. && make test  
+VOLUME /unisparks
+CMD cd /unisparks && mkdir -p build/ubuntu && cd build/ubuntu && cmake ../.. && make test  

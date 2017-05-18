@@ -1,37 +1,37 @@
 cmake_minimum_required(VERSION 2.8)
 set(CMAKE_MACOSX_RPATH 1)
-project(DFSparks)
+project(Unisparks)
 
 set(LIB_SOURCES 
-	src/DFSparks.h 
-	src/dfsparks/color.cpp
-	src/dfsparks/color.h
-	src/dfsparks/effect.cpp
-	src/dfsparks/effect.h
-	src/dfsparks/effects/flame.cpp
-	src/dfsparks/effects/flame.h
-	src/dfsparks/effects/simple.cpp
-	src/dfsparks/effects/simple.h
-	src/dfsparks/effects/system.cpp
-	src/dfsparks/effects/system.h
-	src/dfsparks/log.cpp
-	src/dfsparks/log.h
-	src/dfsparks/math.cpp
-	src/dfsparks/math.h
-	src/dfsparks/network.cpp
-	src/dfsparks/network.h
-	src/dfsparks/networks/esp8266wifi.cpp
-	src/dfsparks/networks/esp8266wifi.h
-	src/dfsparks/networks/udpsocket.cpp
-	src/dfsparks/networks/udpsocket.h
-	src/dfsparks/palette.cpp
-	src/dfsparks/palette.h
-	src/dfsparks/player.cpp
-	src/dfsparks/player.h
-	src/dfsparks/playlist.cpp
-	src/dfsparks/playlist.h
-	src/dfsparks/timer.cpp
-	src/dfsparks/timer.h
+	src/Unisparks.h 
+	src/unisparks/color.cpp
+	src/unisparks/color.h
+	src/unisparks/effect.cpp
+	src/unisparks/effect.h
+	src/unisparks/effects/flame.cpp
+	src/unisparks/effects/flame.h
+	src/unisparks/effects/simple.cpp
+	src/unisparks/effects/simple.h
+	src/unisparks/effects/system.cpp
+	src/unisparks/effects/system.h
+	src/unisparks/log.cpp
+	src/unisparks/log.h
+	src/unisparks/math.cpp
+	src/unisparks/math.h
+	src/unisparks/network.cpp
+	src/unisparks/network.h
+	src/unisparks/networks/esp8266wifi.cpp
+	src/unisparks/networks/esp8266wifi.h
+	src/unisparks/networks/udpsocket.cpp
+	src/unisparks/networks/udpsocket.h
+	src/unisparks/palette.cpp
+	src/unisparks/palette.h
+	src/unisparks/player.cpp
+	src/unisparks/player.h
+	src/unisparks/playlist.cpp
+	src/unisparks/playlist.h
+	src/unisparks/timer.cpp
+	src/unisparks/timer.h
 )
 
 set(DEMO_SOURCES extras/demo.cpp)
@@ -51,20 +51,20 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 endif()
 
 # ARDUINO LIBRARY
-add_custom_target(arduinolib ALL DEPENDS ${CMAKE_BINARY_DIR}/DFSparks.zip)
+add_custom_target(arduinolib ALL DEPENDS ${CMAKE_BINARY_DIR}/Unisparks.zip)
 add_custom_command(
-	OUTPUT ${CMAKE_BINARY_DIR}/DFSparks.zip 
+	OUTPUT ${CMAKE_BINARY_DIR}/Unisparks.zip 
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-	COMMAND echo Building ${CMAKE_BINARY_DIR}/DFSparks.zip
-	COMMAND zip -r ${CMAKE_BINARY_DIR}/DFSparks.zip src examples extras --include "*.cpp" "*.h" "*.py" "*.ino" 
+	COMMAND echo Building ${CMAKE_BINARY_DIR}/Unisparks.zip
+	COMMAND zip -r ${CMAKE_BINARY_DIR}/Unisparks.zip src examples extras --include "*.cpp" "*.h" "*.py" "*.ino" 
 	DEPENDS ${LIB_SOURCES}
 )
 
 set(BOARD "esp8266:esp8266:nodemcuv2:FlashSize=4M3M")
 add_custom_target(verify-examples
 	COMMAND mkdir -p "${ARDUINO_LIBS}"
-	COMMAND rm -f "${ARDUINO_LIBS}/DFSparks"
-	COMMAND ln -s "${CMAKE_SOURCE_DIR}" "${ARDUINO_LIBS}/DFSparks"
+	COMMAND rm -f "${ARDUINO_LIBS}/Unisparks"
+	COMMAND ln -s "${CMAKE_SOURCE_DIR}" "${ARDUINO_LIBS}/Unisparks"
 	COMMAND echo === Ring ===
 	COMMAND ${ARDUINO} --verify --board ${BOARD} ${CMAKE_SOURCE_DIR}/examples/Ring/Ring.ino}
 	COMMAND echo === Vest ===
@@ -72,38 +72,37 @@ add_custom_target(verify-examples
 	)
 
 # PC LIBRARY
-add_library(dfsparks SHARED ${LIB_SOURCES})
-target_include_directories(dfsparks PUBLIC src)
+add_library(unisparks SHARED ${LIB_SOURCES})
+target_include_directories(unisparks PUBLIC src)
 
 # DEMO
-add_executable(dfsparks-demo EXCLUDE_FROM_ALL ${DEMO_SOURCES})
+add_executable(unisparks-demo EXCLUDE_FROM_ALL ${DEMO_SOURCES})
 find_package(glfw3 3.2)
-target_link_libraries(dfsparks-demo dfsparks glfw ${DEMO_SYSTEM_LIBS})
-target_include_directories(dfsparks-demo PRIVATE src)
+target_link_libraries(unisparks-demo unisparks glfw ${DEMO_SYSTEM_LIBS})
+target_include_directories(unisparks-demo PRIVATE src)
 add_custom_target(demo
-	COMMAND dfsparks-demo
-    DEPENDS dfsparks-demo)
+	COMMAND unisparks-demo
+    DEPENDS unisparks-demo)
 
 # INSTALL
-install(TARGETS dfsparks
+install(TARGETS unisparks
 	LIBRARY DESTINATION lib
 )
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/src/dfsparks/
-		DESTINATION include/dfsparks
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/src/unisparks/
+		DESTINATION include/unisparks
         FILES_MATCHING PATTERN "*.h"
 )
 
 # TESTS
-add_custom_target(test DEPENDS dfsparks dfsparks-demo verify-examples)
-add_custom_target(docker-test COMMAND docker run -v ${CMAKE_SOURCE_DIR}:/dfsparks dfsparks/ubuntu)
+add_custom_target(test DEPENDS unisparks unisparks-demo verify-examples)
+add_custom_target(docker-test COMMAND docker run -v ${CMAKE_SOURCE_DIR}:/unisparks unisparks/ubuntu)
 
-# Docker images
+# Push Docker images (requires docker login)
 add_custom_target(push-docker-image
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/extras
-	COMMAND docker build -t dfsparks/ubuntu .
-	COMMAND docker run -v ${CMAKE_SOURCE_DIR}:/dfsparks dfsparks/ubuntu
-	COMMAND docker login --username dfsparks --password $ENV{DFSPARKS_DOCKERHUB_PASSWORD}
-	COMMAND docker push dfsparks/ubuntu
+	COMMAND docker build -t unisparks/ubuntu .
+	COMMAND docker run -v ${CMAKE_SOURCE_DIR}:/unisparks unisparks/ubuntu
+	COMMAND docker push unisparks/ubuntu
 	)
 
 
