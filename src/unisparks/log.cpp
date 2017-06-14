@@ -1,6 +1,7 @@
 #include "unisparks/log.h"
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #ifdef ARDUINO
 #include <Arduino.h>
 #endif
@@ -25,6 +26,9 @@ void log(LogLevel level, const char *fmt, va_list args) {
   vprintf(fmt, args);
   printf("\n");
 #endif
+  if (logLevel == fatalLevel) {
+    abort();
+  }
 }
 
 } // namespace unisparks

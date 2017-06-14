@@ -11,7 +11,7 @@
 #endif
 
 namespace unisparks {
-extern enum LogLevel { errorLevel, infoLevel, debugLevel, maxLevel } logLevel;
+extern enum LogLevel { fatalLevel, errorLevel, infoLevel, debugLevel, maxLevel } logLevel;
 
 void log(LogLevel level, const char *fmt, va_list args);
 
@@ -33,6 +33,13 @@ inline void error(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   log(errorLevel, fmt, args);
+  va_end(args);
+}
+
+inline void fatal(const char *fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  log(fatalLevel, fmt, args);
   va_end(args);
 }
 

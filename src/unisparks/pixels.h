@@ -1,6 +1,7 @@
 #ifndef UNISPARKS_PIXELS_H
 #define UNISPARKS_PIXELS_H
 #include "unisparks/color.h"
+#include "unisparks/log.h"
 namespace unisparks {
 
 struct Point {
@@ -78,6 +79,9 @@ public:
   PixelMap(int w, int h, int pxcnt, PixelRenderer render, const int *map, bool rotated = false, void *context = 0)
       : numberOfPixels(pxcnt), width(w), height(h), render(render), context(context) {
     points = new Point[numberOfPixels];
+    if (!points) {
+      fatal("Can't allocate %d points (%d bytes), out of memory?", numberOfPixels, sizeof(Point)*numberOfPixels);
+    }
     for (int x = 0; x < w; ++x) {
       for (int y = 0; y < h; ++y) {
         int i = map[x + y * w];

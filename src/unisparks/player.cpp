@@ -26,6 +26,9 @@ Player::Player(Pixels& pixels, const Playlist& playlist) : playlist_(playlist), 
     }
   }
   renderBuf_ = new uint8_t[renderBufSize_];
+  if (!renderBuf_) {
+    fatal("Can't allocate render buffer of size %d", renderBufSize_);
+  }
   play(playlist_[0], LOW_PRIORITY);
 }
 
