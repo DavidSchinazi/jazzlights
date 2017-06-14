@@ -23,7 +23,6 @@ private:
 
   WiFiUDP udp_;
   Credentials creds_;
-  bool needToBegin_ = true;
 };
 
 } // namespace unisparks

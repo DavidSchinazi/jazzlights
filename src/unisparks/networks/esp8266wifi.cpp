@@ -9,22 +9,41 @@ namespace unisparks {
 Esp8266Network::Esp8266Network(const char* ssid, const char *pass) : creds_{ssid, pass} {
 }
 
+/*
+WL_NO_SHIELD        = 255,   // for compatibility with WiFi Shield library
+    WL_IDLE_STATUS      = 0,
+    WL_NO_SSID_AVAIL    = 1,
+    WL_SCAN_COMPLETED   = 2,
+    WL_CONNECTED        = 3,
+    WL_CONNECT_FAILED   = 4,
+    WL_CONNECTION_LOST  = 5,
+    WL_DISCONNECTED     = 6
+    */
+
 void Esp8266Network::doConnection() {
-  enum Status {disconnected, connecting, connected, disconnecting, connection_failed};
   switch(status()) {
-  case Network::connected:
-  case Network::disconnected:
-  case Network::connection_failed:
-    // do nothing
+  case Network::beginning:
+    info("Connecting to %s...", creds_.ssid);
+    WiFi.begin(creds_.ssid, creds_.pass);            
+    setStatus(Network::connecting);
     break;
 
   case Network::connecting:
-    if (needToBegin_) {
-        info("Connecting to %s...", creds_.ssid);
-        WiFi.begin(creds_.ssid, creds_.pass);            
-        needToBegin_ = false;     
-    }
     switch(WiFi.status()) {
+      case WL_NO_SHIELD: 
+        error("Connection failed: there's no WiFi shield");
+        setStatus(Network::connection_failed);
+        break;
+
+      case WL_NO_SSID_AVAIL: 
+        error("Connection failed: SSID not available");
+        setStatus(Network::connection_failed);
+        break;
+
+      case WL_SCAN_COMPLETED: 
+        info("Scan completed, still connecting...");
+        break;
+
       case WL_CONNECTED: {
         IPAddress mcaddr;
         mcaddr.fromString(multicast_addr);
@@ -41,19 +60,37 @@ void Esp8266Network::doConnection() {
       }
       break;
 
-      // case WL_DISCONNECTED: {
-      //   goto err;
-      // }
-      // break;
+      case WL_CONNECT_FAILED: 
+        error("Connection failed");
+        setStatus(Network::connection_failed);
+        break;
 
+      case WL_CONNECTION_LOST: 
+        error("Connection lost");
+        setStatus(Network::beginning);
+        break;
+
+      case WL_DISCONNECTED:
       default: {
         static int32_t last_t = 0;
         if (timeMillis() - last_t > 500) {
-          info("Still connecting... %d (CNTD: %d, DCNTD: %d, IDLE: %d)", WiFi.status(), WL_CONNECTED, WL_DISCONNECTED, WL_IDLE_STATUS);
+          int st = WiFi.status();
+          if (st == WL_DISCONNECTED) {
+            info("Still connecting...");
+          }
+          else {
+            info("Still connecting, unknown status code %d", st);
+          }
           last_t = timeMillis();
         }         
       }
     }
+    break;
+
+  case Network::connected:
+  case Network::disconnected:
+  case Network::connection_failed:
+    // do nothing
     break;
 
   case Network::disconnecting:
@@ -62,7 +99,8 @@ void Esp8266Network::doConnection() {
         info("Disconnected from %s", creds_.ssid);
         setStatus(Network::disconnected);    
         break;      
-      case WL_CONNECTED:
+      default:
+        info("Disconnecting...");
         WiFi.disconnect();
         break;
     }
