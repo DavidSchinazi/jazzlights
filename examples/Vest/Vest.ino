@@ -6,7 +6,6 @@
 
 // you need this line or the feather huzzah or LoLin nodecmu pins will not be mapped properly
 #define FASTLED_ESP8266_RAW_PIN_ORDER
-#define ESP8266
 #include <FastLED.h>
 #include <Unisparks.h>
 
@@ -142,8 +141,11 @@ unsigned long buttonEvents[NUMBUTTONS];
 uint8_t buttonStatuses[NUMBUTTONS];
 uint8_t buttonPins[NUMBUTTONS] = {MODEBUTTON, BRIGHTNESSBUTTON, WIFIBUTTON};
 
-
+#ifdef ESP8266
 Esp8266Network network(ssid, pass);
+#else
+ArduinoEthernetNetwork network(MacAddress(0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xEC));
+#endif
 PixelMap pixels(MATRIX_WIDTH, MATRIX_HEIGHT, LEDNUM, renderPixel, pixelMap, true); 
 NetworkPlayer player(pixels, network);
 

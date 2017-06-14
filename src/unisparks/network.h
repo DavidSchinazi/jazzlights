@@ -28,6 +28,7 @@ class Network {
 public:
   enum Status {
     disconnected,
+    beginning,
     connecting,
     connected,
     disconnecting,
@@ -62,6 +63,14 @@ private:
   int32_t lastRxTime_ = 0;
 };
 
+struct MacAddress {
+  MacAddress(uint8_t *b) {
+    memcpy(bytes, b, sizeof(bytes));
+  } 
+  MacAddress(uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4, uint8_t b5, uint8_t b6) : 
+    bytes{b1, b2, b3, b4, b5, b6} {}
+  uint8_t bytes[6];
+};
 
 constexpr int udp_port = 0xDF0D;
 constexpr int msg_frame = 0xDF0002;

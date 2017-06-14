@@ -18,7 +18,11 @@ void renderPixel(int i, Unisparks_Color color, void*)
     strip.setPixelColor(i, color.red, color.green, color.blue);       
 }
 
+#ifdef ESP8266
 Esp8266Network network(ssid, pass);
+#else
+ArduinoEthernetNetwork network(MacAddress(0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED));
+#endif
 Unisparks_PixelMatrix pixels(NUM_LEDS, 1, renderPixel);
 Unisparks_Player player(pixels, network);
 

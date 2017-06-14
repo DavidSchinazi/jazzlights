@@ -6,8 +6,7 @@
 
 namespace unisparks {
 
-Esp8266Network::Esp8266Network(const char* ssid, const char *pass) {
-  creds_ = {ssid, pass};
+Esp8266Network::Esp8266Network(const char* ssid, const char *pass) : creds_{ssid, pass} {
 }
 
 void Esp8266Network::doConnection() {
@@ -88,6 +87,7 @@ int Esp8266Network::doReceive(void *buf, size_t bufsize) {
 int Esp8266Network::doBroadcast(void *buf, size_t bufsize) {
   (void)buf;
   (void)bufsize;
+  // We don't run ESP8266 devices in server mode yet
   // IPAddress ip(255, 255, 255, 255);
   // udp.beginPacket(ip, port);
   // udp.write(buf, bufsize);

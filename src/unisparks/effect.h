@@ -1,11 +1,23 @@
 #ifndef UNISPARKS_EFFECT_H
 #define UNISPARKS_EFFECT_H
-#include <new>
 #include <stdint.h>
 #include <assert.h>
 #include "unisparks/pixels.h"
 #include "unisparks/log.h"
+
+// <new> header is not available on all boards, so we'll
+// declare placement new/delete operators here
+#ifdef ARDUINO_AVR_UNO
+inline void* operator new(size_t, void* p) noexcept {return p;}
+inline void* operator new[](size_t, void* p) noexcept {return p;}
+inline void operator delete  (void*, void*) noexcept {}
+inline void operator delete[](void*, void*) noexcept {}
+#else 
+#include <new>
+#endif
+
 namespace unisparks {
+
 
 class Effect;
     

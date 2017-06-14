@@ -2,9 +2,11 @@
 #define UNISPARKS_H
 
 #include "unisparks/color.h"
-#include "unisparks/player.h"
 #include "unisparks/log.h"
+#include "unisparks/networks/arduinoethernet.h"
 #include "unisparks/networks/esp8266wifi.h"
+#include "unisparks/networks/udpsocket.h"
+#include "unisparks/player.h"
 
 typedef unisparks::PixelMatrix Unisparks_PixelMatrix;
 typedef unisparks::PixelMap Unisparks_PixelMaP;

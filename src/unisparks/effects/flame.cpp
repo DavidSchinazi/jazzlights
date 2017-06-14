@@ -53,10 +53,8 @@ void renderFlame(Pixels& pixels, const Frame& frame, uint8_t* heat) {
   int width = pixels.width();
   int height = pixels.height();
   int freq = 50;
-  int step = 0;
 
-  if (frame.timeElapsed / freq != step) {
-    step = frame.timeElapsed / freq;
+  if (frame.timeElapsed / freq != 0) {
     for (int x = 0; x < width; ++x) {
 
       // Step 1.  Cool down every cell a little

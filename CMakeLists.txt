@@ -20,6 +20,8 @@ set(LIB_SOURCES
 	src/unisparks/math.h
 	src/unisparks/network.cpp
 	src/unisparks/network.h
+	src/unisparks/networks/arduinoethernet.cpp
+	src/unisparks/networks/arduinoethernet.h
 	src/unisparks/networks/esp8266wifi.cpp
 	src/unisparks/networks/esp8266wifi.h
 	src/unisparks/networks/udpsocket.cpp
@@ -60,15 +62,20 @@ add_custom_command(
 	DEPENDS ${LIB_SOURCES}
 )
 
-set(BOARD "esp8266:esp8266:nodemcuv2:FlashSize=4M3M")
+set(BOARD1 "arduino:avr:uno")
+set(BOARD2 "esp8266:esp8266:nodemcuv2:FlashSize=4M3M")
 add_custom_target(verify-examples
 	COMMAND mkdir -p "${ARDUINO_LIBS}"
 	COMMAND rm -f "${ARDUINO_LIBS}/Unisparks"
 	COMMAND ln -s "${CMAKE_SOURCE_DIR}" "${ARDUINO_LIBS}/Unisparks"
-	COMMAND echo === Ring ===
-	COMMAND ${ARDUINO} --verify --board ${BOARD} ${CMAKE_SOURCE_DIR}/examples/Ring/Ring.ino}
-	COMMAND echo === Vest ===
-	COMMAND ${ARDUINO} --verify --board ${BOARD} ${CMAKE_SOURCE_DIR}/examples/Vest/Vest.ino}
+	COMMAND echo === Ring/${BOARD1} ===
+	COMMAND ${ARDUINO} --verify --board ${BOARD1} ${CMAKE_SOURCE_DIR}/examples/Ring/Ring.ino}
+	#COMMAND echo === Vest/${BOARD1} ===
+	#COMMAND ${ARDUINO} --verify --board ${BOARD1} ${CMAKE_SOURCE_DIR}/examples/Vest/Vest.ino}
+	COMMAND echo === Ring/${BOARD2} ===
+	COMMAND ${ARDUINO} --verify --board ${BOARD2} ${CMAKE_SOURCE_DIR}/examples/Ring/Ring.ino}
+	COMMAND echo === Vest/${BOARD2} ===
+	COMMAND ${ARDUINO} --verify --board ${BOARD2} ${CMAKE_SOURCE_DIR}/examples/Vest/Vest.ino}
 	)
 
 # PC LIBRARY

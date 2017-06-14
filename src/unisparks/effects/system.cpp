@@ -14,6 +14,7 @@ void NetworkStatus::render(Pixels &pixels, const Frame& frame) const {
 	  case Network::disconnecting: 
 	    color = 0xff6600; 
 	    break;
+	  case Network::beginning: 
 	  case Network::connecting: 
 	    color = frame.timeElapsed % 500 < 250 ? 0 : 0xff6600;
 	    break;
