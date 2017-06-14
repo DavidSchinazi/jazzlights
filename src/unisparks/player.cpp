@@ -76,6 +76,7 @@ void Player::play(const Effect *ef, int priority) {
   }
   if (renderer_) {
     renderer_->~Renderer();
+    renderer_ = nullptr;
   }
   if (!renderer_ || &renderer_->effect() != ef) {
     renderer_ = ef->start(pixels_, renderBuf_, renderBufSize_);
