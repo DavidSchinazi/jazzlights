@@ -26,7 +26,7 @@ else
 
 	# Arduino package in Ubuntu repo is very old, so we'll install it from Arduino website.
 	echo "Installing Arduino"
-	sudo mkdir -p /opt && sudo curl -s http://download.arduino.org/IDE/1.8.2/arduino-1.8.2-linux64.tar.xz | tar xvJC /opt
+	sudo mkdir -p /opt && sudo curl -s https://downloads.arduino.cc/arduino-1.8.2-linux64.tar.xz | tar xvJC /opt
 	sudo ln -s /opt/arduino-1.8.2/arduino /usr/bin/arduino
 	sudo ln -s /opt/arduino-1.8.2/arduino-builder /usr/bin/arduino-builder
 fi
