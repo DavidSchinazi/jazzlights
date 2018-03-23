@@ -26,9 +26,9 @@ else
 
 	# Arduino package in Ubuntu repo is very old, so we'll install it from Arduino website.
 	echo "Installing Arduino"
-	sudo mkdir -p /opt && sudo curl -s https://downloads.arduino.cc/arduino-1.8.2-linux64.tar.xz | tar xvJC /opt
-	sudo ln -s /opt/arduino-1.8.2/arduino /usr/bin/arduino
-	sudo ln -s /opt/arduino-1.8.2/arduino-builder /usr/bin/arduino-builder
+	sudo mkdir -p /opt && sudo curl -s https://downloads.arduino.cc/arduino-1.8.5-linux64.tar.xz | tar xvJC /opt
+	sudo ln -s /opt/arduino-1.8.5/arduino /usr/bin/arduino
+	sudo ln -s /opt/arduino-1.8.5/arduino-builder /usr/bin/arduino-builder
 fi
 
 # Install GLFW and X11
