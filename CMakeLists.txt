@@ -63,7 +63,7 @@ add_custom_command(
 )
 
 set(BOARD1 "arduino:avr:uno")
-set(BOARD2 "esp8266:esp8266:nodemcuv2:FlashSize=4M3M")
+set(BOARD2 "esp8266:esp8266:nodemcuv2:FlashSize=4M3M,CpuFrequency=80")
 add_custom_target(verify-examples
 	COMMAND mkdir -p "${ARDUINO_LIBS}"
 	COMMAND rm -f "${ARDUINO_LIBS}/Unisparks"

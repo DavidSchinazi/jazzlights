@@ -68,10 +68,7 @@ public:
     return sizeof(Renderer);
   }
 
-  Effect::Renderer* start(Pixels& pixels, void *buf, size_t bufsize) const {
-      assert(sizeof(Renderer) <= bufsize);
-      return new (buf) Renderer{*this, pixels};
-  }
+  Effect::Renderer* start(Pixels& pixels, void *buf, size_t bufsize) const;
 
 private:
     virtual void render(Pixels& pixels, const Frame& frame) const = 0;

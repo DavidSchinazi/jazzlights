@@ -1,6 +1,12 @@
 #include "unisparks/effect.h"
 namespace unisparks {
 
+Effect::Renderer* StatelessEffect::start(Pixels& pixels, void *buf, size_t bufsize) const {
+  assert(sizeof(Renderer) <= bufsize);
+  return new (buf) Renderer{*this, pixels};
+}
+
+
 // Effect::Renderer *BasicEffect::start(Pixels& pixels) const {
 // 	return new Renderer(*this, pixels);
 // }
