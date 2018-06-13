@@ -1,194 +1,319 @@
-#include "unisparks/player.h"
-#include "unisparks/log.h"
-#include "unisparks/math.h"
-#include "unisparks/timer.h"
+#include "unisparks/player.hpp"
+
 #include <stdlib.h>
+#include <assert.h>
+#include "unisparks/effects/chess.hpp"
+#include "unisparks/effects/glitter.hpp"
+#include "unisparks/effects/overlay.hpp"
+#include "unisparks/effects/plasma.hpp"
+#include "unisparks/effects/rainbow.hpp"
+#include "unisparks/effects/rider.hpp"
+#include "unisparks/effects/scroll.hpp"
+#include "unisparks/effects/sequence.hpp"
+#include "unisparks/effects/slantbars.hpp"
+#include "unisparks/effects/solid.hpp"
+#include "unisparks/effects/transform.hpp"
+#include "unisparks/effects/treesine.hpp"
+#include "unisparks/renderers/simple.hpp"
+#include "unisparks/util/log.hpp"
+#include "unisparks/util/math.hpp"
+#include "unisparks/util/new.hpp"
+#include "unisparks/util/stream.hpp"
+#include "unisparks/util/time.hpp"
 
 namespace unisparks {
 
-/** 
- * Add two conceptually unsigned integers handling
- * wrap/overflow.
- */
-inline int32_t addwrap(int32_t a, int32_t b) {
-  int32_t s = a + b;
-  return s >= 0 ? s : s - INT32_MIN;
+using namespace internal;
+
+const Playlist::Item* begin(const Playlist& pl) {
+  return pl.items;
 }
 
-// --------------------------------------------------------------------
-// Player
-// --------------------------------------------------------------------
-Player::Player(Pixels& pixels, const Playlist& playlist) : playlist_(playlist), pixels_(pixels) {
-  renderBufSize_ = 0;
-  for(int i=0; i<playlist_.size(); ++i) {
-    if (renderBufSize_ < playlist_[i]->renderBufSize(pixels_)) {
-      renderBufSize_ = playlist_[i]->renderBufSize(pixels_);
+const Playlist::Item* end(const Playlist& pl) {
+  return pl.items + pl.size;
+}
+
+static auto syncTestEffect = loop(100,
+                                  sequence(1000, solid(RED), 1000, solid(GREEN)));
+
+const Playlist& defaultEffects2D() {
+  static auto ef01 = rainbow();
+  static auto ef02 = treesine();
+  static auto ef03 = rider();
+  static auto ef04 = glitter();
+  static auto ef05 = slantbars();
+  static auto ef06 = plasma();
+  static auto ef07 = overlay(alphaLightnessBlend, rider(),
+                             transform(ROTATE_LEFT,
+                                       rider()));
+  static auto ef08 = overlay(alphaLightnessBlend, slantbars(),
+                             transform(ROTATE_LEFT,
+                                       slantbars()));
+
+  static const Playlist::Item effects[] = {
+    {&ef01, "rainbow"},
+    {&ef02, "treesine"},
+    {&ef03, "rider"},
+    {&ef04, "glitter"},
+    {&ef05, "slantbars"},
+    {&ef06, "plasma"},
+    {&ef07, "roboscan"},
+    {&ef08, "crossbars"},
+  };
+  static auto playlist = Playlist{
+    &effects[0], sizeof(effects) / sizeof(*effects)
+  };
+  return playlist;
+}
+
+inline int nextidx(int i, int first, int size) {
+  return i >= size - 1 ? first : i + 1;
+}
+
+inline int previdx(int i, int first, int size) {
+  return i > first ? i - 1 : size - 1;
+}
+
+inline int find(const Playlist& pl, const char* name) {
+  int i = 0;
+  for (auto& e : pl) {
+    if (!strcmp(e.name, name)) {
+      return i;
     }
+    i++;
   }
-  renderBuf_ = new uint8_t[renderBufSize_];
-  if (!renderBuf_) {
-    fatal("Can't allocate render buffer of size %d", renderBufSize_);
+  return -1;
+}
+
+Player::Player() {
+}
+
+Player::~Player() {
+}
+
+void Player::begin(const Layout& layout, Renderer& renderer,
+                   Network& network) {
+  firstStrand_ = {&layout, &renderer};
+  PlayerOptions opt;
+  opt.strands = &firstStrand_;
+  opt.strandCount = 1;
+  opt.network = &network;
+  begin(opt);
+}
+
+void Player::begin(const Layout& layout, Renderer& renderer) {
+  firstStrand_ = {&layout, &renderer};
+  PlayerOptions opt;
+  opt.strands = &firstStrand_;
+  opt.strandCount = 1;
+  begin(opt);
+}
+
+void Player::begin(const Layout& layout, SimpleRenderFunc renderer,
+                   Network& network) {
+  basicRenderer_ = SimpleRenderer(renderer);
+  firstStrand_ = {&layout, &basicRenderer_};
+  PlayerOptions opt;
+  opt.strands = &firstStrand_;
+  opt.strandCount = 1;
+  opt.network = &network;
+  begin(opt);
+}
+
+void Player::begin(const Layout& layout, SimpleRenderFunc renderer) {
+  basicRenderer_ = SimpleRenderer(renderer);
+  firstStrand_ = {&layout, &basicRenderer_};
+  PlayerOptions opt;
+  opt.strands = &firstStrand_;
+  opt.strandCount = 1;
+  begin(opt);
+}
+
+void Player::begin(PlayerOptions options) {
+  options_ = options;
+
+  if (options_.strands && options_.strandCount > 0) {
+    firstStrand_ = options_.strands[0];
   }
-  play(playlist_[0], LOW_PRIORITY);
-}
 
-Player::~Player() { 
-  delete[] renderBuf_;
-}
-
-void Player::play(int i) {
-  track_ = i % playlist_.size();
-  if (track_ < 0) {
-    track_ += playlist_.size();
+  if (!options_.playlist) {
+    options_.playlist = &defaultEffects2D();
   }
-  play(playlist_[track_], HIGH_PRIORITY);
-}
+  if (options_.playlist->size < 1 || !options_.playlist->items) {
+    fatal("Need at least one effect");
+  }
 
-void Player::next() { 
-  track_ = track_ < playlist_.size() - 1 ? track_ + 1 : 0; 
-  play(playlist_[track_], HIGH_PRIORITY);
-}
+  int pxcnt = 0;
+  for (Strand* s = options_.strands;
+       s < options_.strands + options_.strandCount; ++s) {
+    pxcnt += s->layout->pixelCount();
+  }
+  info("Starting player; strands: %d%s, pixels: %d, effects: %d, %s",
+       options_.strandCount,
+       options_.strandCount < 1 ? " (CONTROLLER ONLY!)" : "",
+       pxcnt,
+       options_.playlist->size,
+       options_.network ? "networked" : "standalone");
 
-void Player::prev() { 
-  track_ = track_ > 0 ? track_ - 1 : playlist_.size() - 1;
-  play(playlist_[track_], HIGH_PRIORITY);
+  rewind(0, 0);
 }
 
 void Player::render() {
-  if (!renderer_) {
-    return;
+  sync();
+
+  Milliseconds currTime = timeMillis();
+  Milliseconds timeSinceLastRender = currTime - lastRenderTime_;
+  if (options_.throttleFps > 0
+      && timeSinceLastRender < ONE_SECOND / options_.throttleFps) {
+    delay(ONE_SECOND / options_.throttleFps - timeSinceLastRender);
+    currTime = timeMillis();
+    timeSinceLastRender = currTime - lastRenderTime_;
   }
-  int32_t currTs = timeMillis();
-  int32_t dt = addwrap(currTs, -frameTs_);
-  frameTs_ = currTs;
-  frame_.timeElapsed = addwrap(frame_.timeElapsed, dt);
-  frame_.timeSinceBeat = addwrap(frame_.timeSinceBeat, dt);
-  if (mode_ != play_forever) {
-    frame_.timeRemaining -= dt;
-  }
-  if (frame_.timeRemaining <= 0) {
-    advance();
-  }
-  renderer_->render(frame_);
-}
-
-void Player::play(const Effect *ef, int priority) {
-  assert(ef);
-  if (priority_ > priority) {
-    return;
-  }
-  if (renderer_) {
-    renderer_->~Renderer();
-    renderer_ = nullptr;
-  }
-  if (!renderer_ || &renderer_->effect() != ef) {
-    renderer_ = ef->start(pixels_, renderBuf_, renderBufSize_);
-    priority_ = priority;
-    frame_.timeElapsed = 0;
-    frame_.timeRemaining = ef->preferredDuration();
-    info("player %p selected effect %s", this, effectName());
-  }
-}
-
-void Player::advance() {
-    switch(mode_) {
-      case cycle_one:
-        play(playlist_[track_], LOW_PRIORITY);
-        break;
-      case cycle_all:
-        track_ = track_ < playlist_.size() - 1 ? track_ + 1 : 0; 
-        play(playlist_[track_], LOW_PRIORITY);
-        break;
-      case shuffle_all:
-        track_ = ::rand() % playlist_.size();
-        play(playlist_[track_], LOW_PRIORITY);
-        break;
-      case play_forever:
-        /* do nothing */;
-    }
-}
-
-void Player::sync(const Effect& ef, int priority, Frame fr) {
-  play(&ef, priority);
-  Frame &ofr = frame_;
-  ofr.timeElapsed = fr.timeElapsed;
-  ofr.timeRemaining = fr.timeRemaining;
-  ofr.timeSinceBeat = ofr.timeSinceBeat < fr.timeSinceBeat ? 
-      ofr.timeSinceBeat : fr.timeSinceBeat;
-}
-
-const char *Player::effectName() const {
-  return renderer_ ? renderer_->effect().name() : "_none";
-}
-
-    
-// --------------------------------------------------------------------
-// NetworkPlayer
-// --------------------------------------------------------------------
-
-NetworkPlayer::NetworkPlayer(Pixels& px, Network &n, const Playlist& pl) : Player(px, pl), netwrk(n),
-  networkStatusEffect_(netwrk) {
-  netwrk.add(*this);
-}
-
-NetworkPlayer::~NetworkPlayer() {
-  netwrk.remove(*this);
-}
-
-void NetworkPlayer::showStatus() {
-  play(&networkStatusEffect_, LOW_PRIORITY);
-}
-
-void NetworkPlayer::showStatus(bool v) {
-  if (v) {
-    showStatus();
+  if (lastRenderTime_ < 0) {
+    time_ = 0;
   } else {
-    // do nothing, player will automatically move on to the 
-    // next effect in a few seconds or when user presses anything
+    if (!paused_) {
+      time_ += timeSinceLastRender;
+      overlayTime_ += timeSinceLastRender;
+    }
+    if (currTime - lastFpsProbeTime_ > ONE_SECOND) {
+      fps_ = framesSinceFpsProbe_;
+      lastFpsProbeTime_ = currTime;
+      framesSinceFpsProbe_ = 0;
+    }
+  }
+  lastRenderTime_ = currTime;
+  framesSinceFpsProbe_++;
+
+  Milliseconds brd = ONE_MINUTE / tempo_;
+  Milliseconds timeSinceDownbeat = (currTime - lastDownbeatTime_) % brd;
+
+  Milliseconds currEffectDuration = brd * int(options_.preferredEffectDuration /
+                                    brd);
+
+  if (time_ > currEffectDuration) {
+    rewind(nextidx(track_, 0, options_.playlist->size), 0);
+  }
+
+  BasicOverlay effect(alphaBlend, overlay_,
+                      options_.playlist->items[track_].effect);
+
+  for (Strand* s = options_.strands;
+       s < options_.strands + options_.strandCount; ++s) {
+    render(effect, time_, tempo_, timeSinceDownbeat, metre_, *s->layout,
+           s->renderer);
   }
 }
 
-bool NetworkPlayer::isShowingStatus() const {
-  return !strcmp(effectName(), NetworkStatus::name);
+
+void Player::render(const Effect& effect, Milliseconds time,
+                    BeatsPerMinute tempo, Milliseconds timeSinceDownbeat,
+                    Metre metre, const Layout& layout, Renderer* renderer) {
+  Frame frame;
+  frame.time = time;
+  frame.tempo = tempo;
+  //frame.timeSinceDownbeat = timeSinceDownbeat;
+  frame.metre = metre;
+  frame.pixelCount = layout.pixelCount();
+  frame.origin = layout.bounds().origin;
+  frame.size = layout.bounds().size;
+  frame.context = nullptr;
+
+  uint8_t context[effect.contextSize(frame)];
+  frame.context = context;
+  effect.begin(frame);
+
+  auto pixels = layout.pixels();
+  auto colors = map(pixels, [&](Point pt) -> Color {
+    return effect.color(pt, frame);
+  });
+ 
+  if (renderer) {
+    renderer->render(colors, layout.pixelCount());
+  }
 }
 
-void NetworkPlayer::render() {
-  auto curr_time = timeMillis();
-  const char *name = effectName();
-  if (mode_ == MASTER && name[0] != '_' && (tx_track_ != track() || curr_time - tx_time_ > tx_interval_)) {
-    NetworkFrame fr;
-    fr.pattern = name;
-    fr.timeElapsed = frame().timeElapsed;
-    fr.timeSinceBeat = frame().timeSinceBeat;
-    assert(fr.timeElapsed >= 0);
-    assert(fr.timeSinceBeat >= 0);
-    netwrk.broadcast(fr);
-    tx_track_ = track();
-    tx_time_ = curr_time;
-  }
-
-  Player::render();
+void Player::prev() {
+  play(previdx(track_, 0, options_.playlist->size));
 }
 
-void NetworkPlayer::onReceived(Network&, const NetworkFrame& fr) {
-  int32_t currTime = timeMillis();
-  if (mode_ == SLAVE) {
-    const Effect *ef = playlist_.find(fr.pattern);
-    if (!ef) {
-        info("Can't play unknown effect '%s'", fr.pattern);
-        return;
-    }
-    if (fr.timeElapsed < 0) {
-      info("Ignored packet with negative elapsed time %d", fr.timeElapsed);
-      return;
-    }
-    if (fr.timeSinceBeat < 0) {
-        info("Ignored packet with negative time since beat %d", fr.timeSinceBeat);
-        return;
-    }
-    sync(*ef, LOW_PRIORITY, {fr.timeElapsed, rx_timeout_, fr.timeSinceBeat});
+void Player::next() {
+  play(nextidx(track_, 0, options_.playlist->size));
+}
+
+void Player::play(int index) {
+  if (options_.network) {
+    options_.network->isControllingEffects(true);
   }
-  rx_time_ = currTime;
+  rewind(index % options_.playlist->size, 0);
+}
+
+void Player::rewind(int index, Milliseconds time) {
+  if (track_ != index && index >= 0 && index < options_.playlist->size) {
+    track_ = index;
+    time_ = time;
+    info("Playing effect #%d %s", track_ + 1, effectName());
+  }
+}
+
+void Player::rewind(const char* name, Milliseconds time) {
+  int i = find(*options_.playlist, name);
+  if (i < 0) {
+    warn("Ignored unknown effect %s", name);
+  } else {
+    rewind(i, time);
+  }
+}
+
+void Player::sync() {
+  if (!options_.network) {
+    return;
+  }
+
+  const char* pattern = (overlay_ == &syncTestEffect) ? "sync-test" :
+                        effectName();
+  Milliseconds time = time_;
+  BeatsPerMinute tempo = tempo_;
+  if (options_.network->sync(&pattern, &time, &tempo)) {
+    if (!strcmp(pattern, "sync-test")) {
+      syncTest(time);
+    } else {
+      rewind(pattern, time);
+    }
+  }
+}
+
+void Player::syncTest(Milliseconds ts) {
+  info("Playing sync test");
+  overlay(syncTestEffect);
+  overlayTime_ = ts;
+}
+
+void Player::pause() {
+  if (!paused_) {
+    paused_ = true;
+    info("Paused");
+  }
+}
+
+void Player::resume() {
+  if (paused_) {
+    paused_ = false;
+    info("Resumed");
+  }
+}
+
+const char* Player::effectName() const {
+  return track_ >= 0 ? options_.playlist->items[track_].name : "none";
+}
+
+void Player::overlay(const Effect& ef) {
+  overlay_ = &ef;
+  overlayTime_ = 0;
+}
+
+void Player::clearOverlay() {
+  overlay_ = 0;
 }
 
 

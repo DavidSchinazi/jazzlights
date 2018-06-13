@@ -1,137 +1,125 @@
-#include "unisparks/networks/esp8266wifi.h"
 #ifdef ESP8266
+#include "unisparks/networks/esp8266wifi.hpp"
+#include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
-#include "unisparks/log.h"
-#include "unisparks/timer.h"
+#include "unisparks/util/log.hpp"
+#include "unisparks/util/time.hpp"
 
 namespace unisparks {
 
-Esp8266Network::Esp8266Network(const char* ssid, const char *pass) : creds_{ssid, pass} {
-}
 
-/*
-WL_NO_SHIELD        = 255,   // for compatibility with WiFi Shield library
-    WL_IDLE_STATUS      = 0,
-    WL_NO_SSID_AVAIL    = 1,
-    WL_SCAN_COMPLETED   = 2,
-    WL_CONNECTED        = 3,
-    WL_CONNECT_FAILED   = 4,
-    WL_CONNECTION_LOST  = 5,
-    WL_DISCONNECTED     = 6
-    */
-
-void Esp8266Network::doConnection() {
-  switch(status()) {
-  case Network::beginning:
+NetworkStatus Esp8266WiFi::update(NetworkStatus status) {
+  switch (status) {
+  case INITIALIZING:
     info("Connecting to %s...", creds_.ssid);
-    WiFi.begin(creds_.ssid, creds_.pass);            
-    setStatus(Network::connecting);
-    break;
+    if (staticConf_) {
+      IPAddress ip, gw, snm;
+      ip.fromString(staticConf_->ip);
+      gw.fromString(staticConf_->gateway);
+      snm.fromString(staticConf_->subnetMask);
+      WiFi.config(ip, gw, snm);
+    }
 
-  case Network::connecting:
-    switch(WiFi.status()) {
-      case WL_NO_SHIELD: 
-        error("Connection failed: there's no WiFi shield");
-        setStatus(Network::connection_failed);
-        break;
+    WiFi.begin(creds_.ssid, creds_.pass);
+    return CONNECTING;
 
-      case WL_NO_SSID_AVAIL: 
-        error("Connection failed: SSID not available");
-        setStatus(Network::connection_failed);
-        break;
+  case CONNECTING:
+    switch (WiFi.status()) {
+    case WL_NO_SHIELD:
+      error("Connection to %s failed: there's no WiFi shield", creds_.ssid);
+      return CONNECTION_FAILED;
 
-      case WL_SCAN_COMPLETED: 
-        info("Scan completed, still connecting...");
-        break;
+    case WL_NO_SSID_AVAIL:
+      error("Connection to %s failed: SSID not available", creds_.ssid);
+      return CONNECTION_FAILED;
 
-      case WL_CONNECTED: {
-        IPAddress mcaddr;
-        mcaddr.fromString(multicast_addr);
-        int res = udp_.beginMulticast(WiFi.localIP(), mcaddr, udp_port);
-        if (!res) {
-          error("Can't begin multicast on port %d, multicast group %s", udp_port,
-                multicast_addr);
-          goto err;
-        }
-        IPAddress ip = WiFi.localIP();
-        info("Connected, IP: %d.%d.%d.%d, bound to port %d, multicast group: %s", 
-          ip[0], ip[1], ip[2], ip[3], udp_port, multicast_addr);
-        setStatus(Network::connected);        
-      }
+    case WL_SCAN_COMPLETED:
+      debug("Scan completed, still connecting to %s...", creds_.ssid);
       break;
 
-      case WL_CONNECT_FAILED: 
-        error("Connection failed");
-        setStatus(Network::connection_failed);
-        break;
-
-      case WL_CONNECTION_LOST: 
-        error("Connection lost");
-        setStatus(Network::beginning);
-        break;
-
-      case WL_DISCONNECTED:
-      default: {
-        static int32_t last_t = 0;
-        if (timeMillis() - last_t > 500) {
-          int st = WiFi.status();
-          if (st == WL_DISCONNECTED) {
-            info("Still connecting...");
-          }
-          else {
-            info("Still connecting, unknown status code %d", st);
-          }
-          last_t = timeMillis();
-        }         
+    case WL_CONNECTED: {
+      IPAddress mcaddr;
+      mcaddr.fromString(mcastAddr_);
+      int res = udp_.beginMulticast(WiFi.localIP(), mcaddr, port_);
+      if (!res) {
+        error("Can't begin multicast on port %d, multicast group %s", port_,
+              mcastAddr_);
+        goto err;
       }
+      IPAddress ip = WiFi.localIP();
+      info("Connected to %s, IP: %d.%d.%d.%d, bound to port %d, multicast group: %s",
+           creds_.ssid, ip[0], ip[1], ip[2], ip[3], port_, mcastAddr_);
+      return CONNECTED;
     }
     break;
 
-  case Network::connected:
-  case Network::disconnected:
-  case Network::connection_failed:
+    case WL_CONNECT_FAILED:
+      error("Connection to %s failed", creds_.ssid);
+      return CONNECTION_FAILED;
+
+    case WL_CONNECTION_LOST:
+      error("Connection to %s lost", creds_.ssid);
+      return INITIALIZING;
+
+    case WL_DISCONNECTED:
+    default: {
+      static int32_t last_t = 0;
+      if (timeMillis() - last_t > 500) {
+        int st = WiFi.status();
+        if (st == WL_DISCONNECTED) {
+          debug("Still connecting...");
+        } else {
+          info("Still connecting, unknown status code %d", st);
+        }
+        last_t = timeMillis();
+      }
+    }
+    }
+    break;
+
+  case CONNECTED:
+  case DISCONNECTED:
+  case CONNECTION_FAILED:
     // do nothing
     break;
 
-  case Network::disconnecting:
-    switch(WiFi.status()) {
-      case WL_DISCONNECTED:
-        info("Disconnected from %s", creds_.ssid);
-        setStatus(Network::disconnected);    
-        break;      
-      default:
-        info("Disconnecting...");
-        WiFi.disconnect();
-        break;
+  case DISCONNECTING:
+    switch (WiFi.status()) {
+    case WL_DISCONNECTED:
+      info("Disconnected from %s", creds_.ssid);
+      return DISCONNECTED;
+    default:
+      info("Disconnecting from %s...", creds_.ssid);
+      WiFi.disconnect();
+      break;
     }
     break;
   }
-  return;
+
+  return status;
 
 err:
   error("Connection to %s failed", creds_.ssid);
-  setStatus(Network::connection_failed);
   WiFi.disconnect();
+  return CONNECTION_FAILED;
 }
 
-int Esp8266Network::doReceive(void *buf, size_t bufsize) {
+int Esp8266WiFi::recv(void* buf, size_t bufsize) {
   int cb = udp_.parsePacket();
   if (cb <= 0) {
     return 0;
   }
-  return udp_.read((unsigned char *)buf, bufsize);
+  return udp_.read((unsigned char*)buf, bufsize);
 }
 
-int Esp8266Network::doBroadcast(void *buf, size_t bufsize) {
-  (void)buf;
-  (void)bufsize;
-  // We don't run ESP8266 devices in server mode yet
-  // IPAddress ip(255, 255, 255, 255);
-  // udp.beginPacket(ip, port);
-  // udp.write(buf, bufsize);
-  // udp.endPacket();
-  return 0;
+void Esp8266WiFi::send(void* buf, size_t bufsize) {
+  IPAddress ip;
+  ip.fromString(mcastAddr_);
+  udp_.beginPacket(ip, port_);
+  udp_.write(static_cast<uint8_t*>(buf), bufsize);
+  udp_.endPacket();
 }
+
 
 } // namespace unisparks
 

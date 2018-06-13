@@ -1,38 +1,32 @@
 #include <Adafruit_NeoPixel.h>
 #include <Unisparks.h>
 
-using namespace unisparks; 
-
-char ssid[] = "***";  //  your network SSID (name)
+char ssid[] = "***";  // your network SSID 
 char pass[] = "***";  // your network password
 
-const int STATUS_PIN = 2; // builtin led
+const int STATUS_PIN = 2; // ESP12E builtin led
 const int RING_PIN = 5; // D1
-const int BUTTON_PIN = 13; // D7
+const int BUTTON_PIN = 0; // Builtin button
+const int BUTTON_DOWN = LOW;
 const int NUM_LEDS = 12;
+const int BRIGHTNESS_DIVIDER = 8;
 
 Adafruit_NeoPixel strip(NUM_LEDS, RING_PIN, NEO_GRB + NEO_KHZ800);
 
-void renderPixel(int i, Unisparks_Color color, void*) 
-{
-    strip.setPixelColor(i, color.red, color.green, color.blue);       
+void renderPixel(int i, uint8_t r, uint8_t g, uint8_t b) {
+    strip.setPixelColor(i, r/BRIGHTNESS_DIVIDER, g/BRIGHTNESS_DIVIDER, b/BRIGHTNESS_DIVIDER);       
 }
 
-#ifdef ESP8266
-Esp8266Network network(ssid, pass);
-#else
-ArduinoEthernetNetwork network(MacAddress(0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED));
-#endif
-Unisparks_PixelMatrix pixels(NUM_LEDS, 1, renderPixel);
-Unisparks_Player player(pixels, network);
+Unisparks::Player player;
+Unisparks::Matrix pixels(NUM_LEDS, 1);
+Unisparks::Esp8266WiFi network(ssid, pass);
 
 void setup()
 {
-  logLevel = debugLevel;
-
   Serial.begin(115200);
   Serial.println();
   Serial.println();
+  Serial.println("Starting up...");
 
   // Initialize LED strip
   strip.begin();
@@ -43,26 +37,28 @@ void setup()
   pinMode(STATUS_PIN, OUTPUT);
   pinMode(RING_PIN, OUTPUT);
   pinMode(BUTTON_PIN, INPUT);
+
+  Unisparks::enableVerboseOutput();
+  player.begin(pixels, renderPixel, network);
 }
 
 void loop()
 {
-  static int prevButtonState = LOW;
+  static int prevButtonState = !BUTTON_DOWN;
   static int pressTs = 0; 
   int buttonState = digitalRead(BUTTON_PIN);
-  if (buttonState == HIGH && prevButtonState == LOW) {
+  if (buttonState == BUTTON_DOWN && prevButtonState != BUTTON_DOWN) {
     pressTs = millis();
   }
-  else if (buttonState == LOW && prevButtonState == HIGH) {
+  else if (buttonState != BUTTON_DOWN && prevButtonState == BUTTON_DOWN) {
       if (millis() - pressTs < 500) { // short press
          player.next();     
       }
       else {
-        player.showStatus();
+        ;//player.showStatus();
       }
   } 
   prevButtonState = buttonState;
-  network.poll();
   player.render();
   strip.show();
   delay(10);

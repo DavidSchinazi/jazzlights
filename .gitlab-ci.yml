@@ -1,6 +1,12 @@
-image: unisparks/ubuntu
-
-build:
-  stage: build
+test-arduino:
+  image: ubuntu
   script:
-    - mkdir build && cd build && cmake .. && make test 
+    - ./extras/scripts/setup-arduino.sh
+    - make verify-examples
+
+test-ubuntu:
+  image: ubuntu
+  script:
+    - ./extras/scripts/setup-devenv.sh
+    - make test
+

@@ -1,32 +1,39 @@
-# How to contribute to this project
+# How to contribute?
 
-First of all, thanks for taking the time to help!
+First of all, thanks for your help!
 
-## Makeing code changes
+Everyone is welcome to contribute by submitting bug reports, writing new
+patterns, improving documentation, writing examples, testing on different
+boards, profiling and optimizing, etc.
 
-- It's not a bad idea to discuss your plans first so that we all know what's in the pipeline.
-- Fork the repository.
-- Make and test your changes. Ensure that they work on ESP8266 and Ubuntu PC.
-- Create a pull request.
+If you're planning a big code change, it's a good idea to to open an 
+issue and discuss your plans first. Otherwise, follow the usual process - 
+fork a repo, make the changes, submit pull request.
+
+By contributing your code, you agree to license your contribution under the 
+terms of the Apache License v2.0.
+
+## Setting up development environment
+
+While you can hack on the library using only Arduino IDE (we're targeting 1.8.5), 
+it is much easier to develop on desktop and use the included demo application to 
+test your work.
+
+For this, you will need a reasonably modern C++ compiler (C++14 or better), 
+CMake (3.9+), and GLFW library. On Ubuntu 18.04 LTS this will set you up:
+
+```shell
+apt-get update
+apt-get install -y build-essential cmake git libglfw3-dev
+
+git clone https://github.com/unisparks/unisparks.git
+cd unisparks
+make all
+make demo
+```
+
+## Code style
 
 Follow [Arduino Style Guide for Writing Libraries](https://www.arduino.cc/en/Reference/APIStyleGuide), 
 except for the part that asks you to target users who have no programming expeience - our intended 
 audience are not complete beginners. Keep it simple, but don't dumb it down.
-
-## Adding new effects
-
-### Simple stateless effects
-
-- Add rendering function to src/effects/simple.cpp
-- Register your new effect as a functionalEffect in src/playlists/default.h
-
-### Complicated or stateful effects
-
-- Create header file, e.g. src/unisparks/effects/coolstuff.h
-- Create source file, e.g. src/unisparks/effects/coolstuff.cpp
-- Extend StatfulEffect (or BasicEffect if you're doing something unusual, or Effect
-  if you want to start from scratch)
-- Register your new effect in src/playlists/default.h
-- Add new effect sources to `CMakeLists.txt`
-
-

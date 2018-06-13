@@ -1,8 +1,8 @@
-#include "unisparks/effects/flame.h"
-
+#include "unisparks/effects/flame.hpp"
+#if 0
 #include <assert.h>
-#include "unisparks/color.h"
-#include "unisparks/math.h"
+#include "unisparks/util/color.h"
+#include "unisparks/util/math.h"
 
 namespace unisparks {
 
@@ -47,6 +47,13 @@ RgbaColor heatColor(uint8_t temperature) {
   return RgbaColor(r, g, b);
 }
 
+void flameColor(Frame fr, Point pt) {
+
+
+
+}
+
+
 void renderFlame(Pixels& pixels, const Frame& frame, uint8_t* heat) {
   constexpr int cooling = 120;
 
@@ -89,3 +96,4 @@ void renderFlame(Pixels& pixels, const Frame& frame, uint8_t* heat) {
 }
 
 } // namespace unisparks
+#endif
