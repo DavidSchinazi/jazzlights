@@ -46,16 +46,17 @@ void onKey(GLFWwindow* window, int key, int /*scncode*/, int action,
     player.next();
   } else if (key >= GLFW_KEY_1 && key <= GLFW_KEY_9 && action == GLFW_PRESS
              && !(mods & GLFW_MOD_SHIFT)) {
-    player.play(key - GLFW_KEY_1);
-  } else if (key >= GLFW_KEY_1 && key <= GLFW_KEY_9 && action == GLFW_PRESS
-             && (mods & GLFW_MOD_SHIFT)) {
-    int i = (key - GLFW_KEY_1) % OVERLAYS_CNT;
-    info("Playing overlay #%d", i);
-    player.overlay(*OVERLAYS[i]);
+    player.jump(key - GLFW_KEY_1);
+  // } else if (key >= GLFW_KEY_1 && key <= GLFW_KEY_9 && action == GLFW_PRESS
+  //            && (mods & GLFW_MOD_SHIFT)) {
+  //   int i = (key - GLFW_KEY_1) % OVERLAYS_CNT;
+  //   info("Playing overlay #%d", i);
+  //   player.overlay(*OVERLAYS[i]);
+  } else if (key == GLFW_KEY_F && action == GLFW_PRESS) {
+    player.overlay("flame");
   } else if (key == GLFW_KEY_S && action == GLFW_PRESS) {
-    player.syncTest(0);
+    player.play("synctest");
   } else if (key == GLFW_KEY_0 && action == GLFW_PRESS && (mods & GLFW_MOD_SHIFT)) {
-    info("Clering overlay");
     player.clearOverlay();
   } else if (key == GLFW_KEY_N && action == GLFW_PRESS) {
     if (network.connected()) {

@@ -37,6 +37,10 @@ class Layout {
       return !(*this == other);
     }
 
+    size_t operator-(const Iterator& other) const {
+      return index_ - other.index_;
+    }
+
     Iterator& operator++() {
       index_++;
       return *this;

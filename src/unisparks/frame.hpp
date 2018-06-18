@@ -7,21 +7,40 @@
 
 namespace unisparks {
 
+struct Animation {
+  // size_t pixelCount;
+  Box viewport;
+  void* context;
+};
+
 struct Frame {
+  Animation animation;
   Milliseconds time;
   BeatsPerMinute tempo;
   Metre metre;
-  int pixelCount;
-  Point origin;
-  Dimensions size;
-  void* context;
-  void* animationContext;
 };
 
+struct Pixel {
+  Frame frame;
+  size_t index;
+  Point coord;
+};
+
+
+constexpr Coord width(const Frame& frame) {
+  return frame.animation.viewport.size.width;
+}
+
+constexpr Coord height(const Frame& frame) {
+  return frame.animation.viewport.size.height;
+}
+
 constexpr Point center(const Frame& frame) {
-  return {
-    frame.origin.x + frame.size.width / 2, 
-    frame.origin.y + frame.size.height / 2};
+  return center(frame.animation.viewport);
+}
+
+constexpr Point lefttop(const Frame& frame) {
+  return frame.animation.viewport.origin;
 }
 
 double pulse(const Frame& frame);

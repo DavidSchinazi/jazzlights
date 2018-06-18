@@ -7,12 +7,10 @@ namespace unisparks {
 
 constexpr auto chess = [](Color fgcolor, Color bgcolor) {
   return effect([ = ](const Frame & frame) {
-    int width = frame.size.width;
-    int height = frame.size.height;
-    int cellsz = max(2, max(width, height) / 16);
+    int cellsz = max(2.0, max(width(frame), height(frame)) / 16);
 
-    return [ = ](Point pt) -> Color {
-      return int(pt.x / cellsz) % 2 ^ int(pt.y / cellsz) % 2 ? fgcolor : bgcolor;
+    return [ = ](const Pixel& px) -> Color {
+      return int(px.coord.x / cellsz) % 2 ^ int(px.coord.y / cellsz) % 2 ? fgcolor : bgcolor;
     };
   });
 };

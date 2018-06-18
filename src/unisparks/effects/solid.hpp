@@ -6,7 +6,7 @@ namespace unisparks {
 
 constexpr auto solid = [](Color color) {
   return effect([ = ](const Frame& /*frame*/) {
-    return [ = ](Point /*pt*/) -> Color {
+    return [ = ](const Pixel& /*pt*/) -> Color {
       return color;
     };
   });

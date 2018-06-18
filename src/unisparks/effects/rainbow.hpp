@@ -8,21 +8,12 @@ namespace unisparks {
 constexpr auto rainbow = []() {
   return effect([](const Frame & frame) {
     Milliseconds period = adjustDuration(frame, 8000);
-    int width = frame.size.width;
-    int height = frame.size.height;
-
     uint8_t initial_hue = 255 - 255 * frame.time / period;
-    double maxd = sqrt(width * width + height * height) / 2;
-    int cx = width / 2; // + pulse(frame, -width/8, width/8);
-    int cy = height / 2; // + pulse(frame, -height/8, height/8);
+    double maxd = distance(center(frame), lefttop(frame));
 
-    return [ = ](Point p) -> Color {
-      int dx = p.x - cx;
-      int dy = p.y - cy;
-      double d = sqrt(dx * dx + dy * dy);
-      uint8_t hue =
-      (initial_hue + int32_t(255 * d / maxd)) % 255;
-
+    return [ = ](const Pixel& px) -> Color {
+      double d = distance(px.coord, center(frame));
+      uint8_t hue = (initial_hue + int32_t(255 * d / maxd)) % 255;
       return HslColor(hue, 240, 255);
     };
   });

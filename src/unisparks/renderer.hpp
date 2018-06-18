@@ -13,7 +13,7 @@ class Renderer {
   Renderer() = default;
   virtual ~Renderer() = default;
 
-  virtual void render(InputStream<Color>& pixelColors, size_t pixelCount) = 0;
+  virtual void render(InputStream<Color>& colors) = 0;
 };
 
 

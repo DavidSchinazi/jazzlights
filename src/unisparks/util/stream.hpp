@@ -7,7 +7,12 @@ namespace unisparks {
 template<typename T>
 struct InputStream  {
   virtual bool read(T& v) = 0;
-  virtual void reset() = 0;
+  virtual size_t minSize() const {
+    return 0;
+  }
+  virtual size_t maxSize() const {
+    return SIZE_MAX;
+  }
 
   class Iterator {
    public:
@@ -76,8 +81,12 @@ class RangeInputStream : public
     return true;
   }
 
-  void reset() override {
-    ptr_ = begin_;
+  size_t minSize() const override {
+    return end_ - ptr_;
+  }
+
+  size_t maxSize() const override {
+    return end_ - ptr_;
   }
 
   Iterator begin_;
@@ -99,8 +108,12 @@ struct MappedInputStream : InputStream<RetT> {
     return true;
   }
 
-  void reset() override {
-    s.reset();
+  size_t minSize() const override {
+    return s.minSize();
+  }
+
+  size_t maxSize() const override {
+    return s.maxSize();
   }
 
   StreamT& s;
@@ -111,37 +124,6 @@ template<typename StreamT, typename FuncT>
 MappedInputStream<StreamT, FuncT> map(StreamT& stream, const FuncT& func) {
   return MappedInputStream<StreamT, FuncT>(stream, func);
 }
-
-template<typename Stream1T, typename Stream2T, typename FuncT,
-         typename RetT = typename function_traits<FuncT>::return_type>
-struct CombinedInputStream : InputStream<RetT> {
-  CombinedInputStream(Stream1T& s1, Stream2T& s2,
-                      const FuncT& combinator) : s1(s1), s2(s2), f(combinator) {
-  }
-
-  bool read(RetT& v) override {
-    typename Stream1T::Iterator::value_type v1;
-    typename Stream2T::Iterator::value_type v2;
-    if (!s1.read(v1)) {
-      return false;
-    }
-    if (!s2.read(v2)) {
-      return false;
-    }
-    v = f(v1, v2);
-    return true;
-  }
-
-  void reset() override {
-    s1.reset();
-    s2.reset();
-  }
-
-  Stream1T& s1;
-  Stream2T& s2;
-  FuncT f;
-};
-
 
 } // namespace unisparks
 #endif /* UNISPARKS_STREAM_H */

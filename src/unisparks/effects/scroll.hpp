@@ -23,16 +23,19 @@ struct Scroll : Effect {
     effect.end(tframe(fr));
   }
 
-  Color color(Point pt, const Frame& fr) const override {
+  Color color(const Pixel& px) const override {
     Transform tr = IDENTITY;
-    tr.offset = (-fr.time / 100.0) * speed;
-    return effect.color(tr(pt), tframe(fr));
+    tr.offset = (-px.frame.time / 100.0) * speed;
+    Pixel tpx = px;
+    tpx.coord = tr(px.coord);
+    tpx.frame = tframe(px.frame);
+    return effect.color(tpx);
   }
 
   Frame tframe(Frame fr) const {
     Transform tr = IDENTITY;
     tr.offset = (-fr.time / 100.0) * speed;
-    fr.origin = tr(fr.origin);
+    fr.animation.viewport.origin = tr(fr.animation.viewport.origin);
     return fr;
   }
 

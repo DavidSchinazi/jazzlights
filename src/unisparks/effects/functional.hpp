@@ -6,38 +6,44 @@
 namespace unisparks {
 
 template<typename F>
-class FunctionalEffect : public Effect {
+class FrameFuncEffect : public Effect {
  public:
   using ContextT = typename function_traits<F>::return_type;
 
-  FunctionalEffect(const F& f) : initFrame_(f) {
+  FrameFuncEffect(const F& f) : initFrame_(f) {
   }
 
-  FunctionalEffect(const FunctionalEffect& other) = default;
+  FrameFuncEffect(const FrameFuncEffect& other) = default;
 
-  size_t contextSize(const Frame&) const override {
+  size_t contextSize(const Animation&) const override {
     return sizeof(ContextT);
   }
 
   void begin(const Frame& frame) const override {
-    new(frame.context) ContextT(initFrame_(frame));
+    new(frame.animation.context) ContextT(initFrame_(frame));
   }
 
-  void end(const Frame& frame) const override {
-    static_cast<ContextT*>(frame.context)->~ContextT();
+  void rewind(const Frame& frame) const override {
+    static_cast<ContextT*>(frame.animation.context)->~ContextT();
+    new(frame.animation.context) ContextT(initFrame_(frame));
   }
 
-  Color color(Point pt, const Frame& frame) const override {
-    return (*static_cast<ContextT*>(frame.context))(pt);
+  Color color(const Pixel& pixel) const override {
+    return (*static_cast<ContextT*>(pixel.frame.animation.context))(pixel);
+  }
+
+  void end(const Animation& animation) const override {
+    static_cast<ContextT*>(animation.context)->~ContextT();
   }
 
  private:
   F initFrame_;
 };
 
+
 template<typename F>
-constexpr FunctionalEffect<F> effect(const F& f) {
-  return FunctionalEffect<F>(f);
+constexpr FrameFuncEffect<F> effect(const F& f) {
+  return FrameFuncEffect<F>(f);
 }
 
 

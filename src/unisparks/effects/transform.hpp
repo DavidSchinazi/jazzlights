@@ -4,45 +4,58 @@
 
 namespace unisparks {
 
-
 template<typename T>
 struct Transformed : Effect {
-
-  Transformed(const Transform& tr, const T& ef) : transform(tr), effect(ef) {
+  Transformed(const T& ef) : effect(ef) {
   }
 
-  size_t contextSize(const Frame& fr) const override {
-    return effect.contextSize(fr);
+  size_t contextSize(const Animation& am) const override {
+    return effect.contextSize(am);
   }
 
   void begin(const Frame& fr) const override {
-    Frame tfr = fr;
-    tfr.origin = transform(fr.origin);
-    tfr.size = transform(fr.size);
-    effect.begin(tfr);
+    effect.begin(tframe(fr));
   }
 
-  void end(const Frame& fr) const override {
-    Frame tfr = fr;
-    tfr.origin = transform(fr.origin);
-    tfr.size = transform(fr.size);
-    effect.end(tfr);
+  void rewind(const Frame& fr) const override {
+    effect.rewind(tframe(fr));
   }
 
-  Color color(Point pt, const Frame& fr) const override {
-    Frame tfr = fr;
-    tfr.origin = transform(fr.origin);
-    tfr.size = transform(fr.size);
-    return effect.color(transform(pt), tfr);
+  Color color(const Pixel& px) const override {
+    //auto tpx = tpixel(px);
+    //info(">>> %f,%f -> %f,%f", px.coord.x, px.coord.y, tpx.coord.x, tpx.coord.y);
+    return effect.color(tpixel(px));
   }
 
-  Transform transform;
+  void end(const Animation& am) const override {
+    effect.end(tanim(am));
+  }
+
+  Animation tanim(Animation am) const {
+    am.viewport = transform(am.viewport);
+    return am;
+  }
+
+  Frame tframe(Frame fr) const {
+    fr.animation = tanim(fr.animation);
+    return fr;
+  }
+
+  Pixel tpixel(Pixel px) const {
+    px.frame = tframe(px.frame);
+    px.coord = transform(px.coord);
+    return px;
+  }
+
+  Transform transform = IDENTITY;
   T effect;
 };
 
 template <typename T>
 Transformed<T> transform(Transform tr, const T& ef) {
-  return Transformed<T>(tr, ef);
+  Transformed<T> res(ef);
+  res.transform = tr;
+  return res;
 }
 
 } // namespace unisparks

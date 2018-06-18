@@ -16,7 +16,7 @@ class GLRenderer : public Renderer {
     layout(l) {
   }
 
-  void render(InputStream<Color>& pixelColors, size_t pixelCount) override {
+  void render(InputStream<Color>& pixelColors) override {
     double led_sp = fmin(viewportWidth / layout.bounds().size.width,
                          viewportHeight / layout.bounds().size.height);
     auto pti = layout.begin();

@@ -8,24 +8,24 @@ namespace unisparks {
 constexpr auto treesine = []() {
   return effect([ = ](const Frame & frame) {
     Milliseconds period = adjustDuration(frame, 8000);
-    int width = frame.size.width;
-    int height = frame.size.height;
+    int w = width(frame);
+    int h = height(frame);
 
     uint8_t sineOffset = 256 * frame.time / period;
 
-    return [ = ](Point p) -> Color {
+    return [ = ](const Pixel& px) -> Color {
       using namespace internal;
 
       // Calculate "sine" waves with varying periods
       // sin8 is used for speed; cos8, quadwave8, or triwave8 would also work
       // here
-      double xx = (width > 64 ? 8.0 : 4.0) * p.x / width;
+      double xx = (w > 64 ? 8.0 : 4.0) * px.coord.x / w;
       uint8_t sinDistanceR =
-      qmul8(abs(p.y * (255 / height) - sin8(sineOffset * 9 + xx * 16)), 2);
+      qmul8(abs(px.coord.y * (255 / h) - sin8(sineOffset * 9 + xx * 16)), 2);
       uint8_t sinDistanceG =
-      qmul8(abs(p.y * (255 / height) - sin8(sineOffset * 10 + xx * 16)), 2);
+      qmul8(abs(px.coord.y * (255 / h) - sin8(sineOffset * 10 + xx * 16)), 2);
       uint8_t sinDistanceB =
-      qmul8(abs(p.y * (255 / height) - sin8(sineOffset * 11 + xx * 16)), 2);
+      qmul8(abs(px.coord.y * (255 / h) - sin8(sineOffset * 11 + xx * 16)), 2);
 
       return RgbaColor(255 - sinDistanceR, 255 - sinDistanceG, 255 - sinDistanceB);
     };

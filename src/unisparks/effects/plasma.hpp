@@ -11,9 +11,6 @@ constexpr auto plasma = []() {
     using internal::cos8;
 
     constexpr int32_t speed = 30;
-    int width = frame.size.width;
-    int height = frame.size.height;
-
     uint8_t offset = speed * frame.time / 255;
     int plasVector = offset * 16;
 
@@ -21,9 +18,9 @@ constexpr auto plasma = []() {
     int xOffset = cos8(plasVector / 256);
     int yOffset = sin8(plasVector / 256);
 
-    return [ = ](Point p) -> Color {
-      double xx = 16.0 * p.x / width;
-      double yy = 16.0 * p.y / height;
+    return [ = ](const Pixel& px) -> Color {
+      double xx = 16.0 * px.coord.x / width(px.frame);
+      double yy = 16.0 * px.coord.y / height(px.frame);
       uint8_t hue = sin8(sqrt(square((xx - 7.5) * 10 + xOffset - 127) +
       square((yy - 2) * 10 + yOffset - 127)) +
       offset);

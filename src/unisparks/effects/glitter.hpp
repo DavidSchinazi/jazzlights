@@ -9,7 +9,7 @@ constexpr auto glitter = []() {
   return effect([ = ](const Frame & frame) {
     uint8_t hue = cycleHue(frame);
 
-    return [ = ](Point /*pt*/) -> Color {
+    return [ = ](const Pixel& /*pt*/) -> Color {
       using internal::random8;
       return HslColor(hue, 255, random8(5) * 63);
     };

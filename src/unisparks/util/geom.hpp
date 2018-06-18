@@ -49,6 +49,14 @@ inline double distance(Point a, Point b) {
   return sqrt(square(a.x - b.x) + square(a.y - b.y));
 }
 
+inline Box merge(const Box& a, const Box& b) {
+  Coord left = min(a.origin.x, b.origin.x);
+  Coord top = min(a.origin.y, b.origin.y);
+  Coord right = max(a.origin.x + a.size.width, b.origin.x + b.size.width);
+  Coord bottom = max(a.origin.y + a.size.height, b.origin.y + b.size.height);
+  return {{right-left, bottom-top}, {left, top}};
+}
+
 struct Transform {
 
   Box operator()(const Box& v) const { return {
@@ -57,8 +65,8 @@ struct Transform {
   }
 
   Dimensions operator()(const Dimensions& v) const {
-    return { matrix[0]* v.width + matrix[1]* v.height,
-             matrix[2]* v.width + matrix[3]* v.height};
+    return { abs(matrix[0]* v.width + matrix[1]* v.height),
+             abs(matrix[2]* v.width + matrix[3]* v.height)};
   }
 
   Point operator()(const Point& v) const {

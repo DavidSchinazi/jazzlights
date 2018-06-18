@@ -18,7 +18,7 @@ int main(int, char**) {
   opts.throttleFps = 0;
   opts.preferredEffectDuration = 10*ONE_SECOND;
   player.begin(opts);
-  player.play(8);
+  player.play("crossbars");
   int fps = -1;
   for(;;) {
     player.render();

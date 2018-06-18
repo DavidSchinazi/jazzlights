@@ -1,10 +1,14 @@
 #include "unisparks/effects/flame.hpp"
-#if 0
 #include <assert.h>
-#include "unisparks/util/color.h"
-#include "unisparks/util/math.h"
+#include "unisparks/util/color.hpp"
+#include "unisparks/util/math.hpp"
 
 namespace unisparks {
+using internal::scale8_video;
+using internal::qsub8;
+using internal::random8seed;
+using internal::random8;
+
 
 inline uint8_t random_(uint8_t from = 0, uint8_t to = 255) {
   return from + rand() % (to - from);
@@ -47,53 +51,66 @@ RgbaColor heatColor(uint8_t temperature) {
   return RgbaColor(r, g, b);
 }
 
-void flameColor(Frame fr, Point pt) {
+static constexpr int cooling = 40;
 
+struct Context {
+  Milliseconds t;
+  uint8_t heat[];
+};
 
-
+size_t Flame::contextSize(const Animation& a) const {
+  return sizeof(Context) + a.viewport.size.width * a.viewport.size.height;
 }
 
+void Flame::begin(const Frame& frame) const {
+  Context& ctx = *static_cast<Context*>(frame.animation.context);
+  memset(ctx.heat, 0, width(frame)*height(frame));
+}
 
-void renderFlame(Pixels& pixels, const Frame& frame, uint8_t* heat) {
-  constexpr int cooling = 120;
+void Flame::rewind(const Frame& frame) const {
+  Context& ctx = *static_cast<Context*>(frame.animation.context);
+  auto w = static_cast<int>(width(frame));
+  auto h = static_cast<int>(height(frame));
 
-  int width = pixels.width();
-  int height = pixels.height();
-  int freq = 50;
+  //heat_t += freq;
+  for (int x = 0; x < w; ++x) {
 
-  if (frame.timeElapsed / freq != 0) {
-    for (int x = 0; x < width; ++x) {
-
-      // Step 1.  Cool down every cell a little
-      for (int i = 0; i < height; i++) {
-        heat[i * width + x] = qsub8(
-            heat[i * width + x], random_(0, ((cooling * 10) / height) + 2));
-      }
-
-      // Step 2.  Heat from each cell drifts 'up' and diffuses a little
-      for (int k = height - 3; k > 0; k--) {
-        heat[k * width + x] =
-            (heat[(k - 1) * width + x] + heat[(k - 2) * width + x] +
-             heat[(k - 2) * width + x]) /
-            3;
-      }
-
-      // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
-      // if (random8() < sparkling) {
-      //   int y = random8(min(height, 2));
-      //   heat[y * width + x] = qadd8(heat[y * width + x], random8(160,
-      //   255));
-      // }
-      heat[x] = random_(160, 255);
+    // Step 1.  Cool down every cell a little
+    for (int i = 0; i < h; i++) {
+      ctx.heat[i * w + x] = qsub8(
+                              ctx.heat[i * w + x], random_(0, ((cooling * 10) / h) + 2));
     }
-  }
 
-  // Step 4.  Map from heat cells to LED colors
-  for (int i = 0; i < pixels.count(); ++i) {
-    Point pt = pixels.coords(i);
-    pixels.setColor(i, heatColor(heat[(height - pt.y - 1) * width + pt.x]));
+    // Step 2.  Heat from each cell drifts 'up' and diffuses a little
+    for (int k = h - 3; k > 0; k--) {
+      ctx.heat[k * w + x] =
+        (ctx.heat[(k - 1) * w + x] + ctx.heat[(k - 2) * w + x] +
+         ctx.heat[(k - 2) * w + x]) /
+        3;
+    }
+
+    // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
+    // if (random8() < sparkling) {
+    //   int y = random8(min(h, 2));
+    //   ctx.heat[y * w + x] = qadd8(heat[y * w + x], random8(160,
+    //   255));
+    // }
+    ctx.heat[x] = random_(160, 255);
   }
 }
+
+Color Flame::color(const Pixel& px) const {
+  Context& ctx = *static_cast<Context*>(px.frame.animation.context);
+  auto w = static_cast<int>(width(px.frame));
+  auto h = static_cast<int>(height(px.frame));
+  auto clr = Color(heatColor(ctx.heat[(h - static_cast<int>(px.coord.y)) * w +
+                            static_cast<int>(px.coord.x)])).lightnessToAlpha();
+  return clr;
+}
+
+void Flame::end(const Animation& a) const {
+}
+
+
 
 } // namespace unisparks
-#endif

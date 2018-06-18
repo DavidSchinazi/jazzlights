@@ -109,13 +109,13 @@ class Color {
   constexpr Color(const HslColor& c)
     : space_(HSL), hsl_(c) {}
 
-  constexpr static Color rbg(uint32_t v) {
+  constexpr static Color rgb(uint32_t v) {
     return Color(v);
   }
-  constexpr static Color rbg(uint8_t r, uint8_t g, uint8_t b) {
+  constexpr static Color rgb(uint8_t r, uint8_t g, uint8_t b) {
     return Color(RgbColor(r, g, b));
   }
-  constexpr static Color rbga(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+  constexpr static Color rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
     return Color(RgbaColor(r, g, b, a));
   }
   constexpr static Color hsl(uint8_t h, uint8_t s, uint8_t l) {
@@ -178,6 +178,12 @@ class Color {
     return c;
   }
 
+  RgbaColor lightnessToAlpha() const {
+    HslColor hsl = asHsl();
+    RgbaColor c = asRgba();
+    c.alpha = hsl.lightness;
+    return c;
+  }
 
  private:
   Space space_;

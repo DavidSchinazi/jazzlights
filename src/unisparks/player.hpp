@@ -8,29 +8,19 @@
 
 namespace unisparks {
 
-struct Playlist {
-
-  struct Item {
-    const Effect* effect;
-    const char* name;
-  };
-
-  const Item* items;
-  size_t size;
-};
-
 struct Strand {
   const Layout* layout;
   Renderer* renderer;
 };
 
 struct PlayerOptions {
-  const Playlist* playlist = nullptr;
   Strand* strands = nullptr;
   size_t strandCount = 0;
   Network* network = nullptr;
   Milliseconds preferredEffectDuration = 10 * ONE_SECOND;
   int throttleFps = 30;
+  const EffectInfo* customEffects = nullptr;
+  size_t customEffectCount = 0;  
 };
 
 class Player {
@@ -55,18 +45,40 @@ class Player {
    */
   void render();
 
-  /**
-   *  Play effect with given index
-   */
-  void play(int idx);
 
   /**
-   *  Play previous effect
+   *  Render current frame to all strands
+   */
+  void render(Milliseconds dt);
+
+  /**
+   *  Play effect with given name
+   */
+  void play(const char* name);
+
+  /**
+   *  Overlay given effect on top of currently playing effect.
+   *  If there was another overlay, it will be replaced with the new one.
+   */
+  void overlay(const char* name);
+
+  /**
+   *  Remove overlayed effect if one was set up
+   */
+  void clearOverlay();
+
+  /**
+   *  Play effect with given index in the playlist
+   */
+  void jump(int idx);
+
+  /**
+   *  Play previous effect in the playlist
    */
   void prev();
 
   /**
-   *  Play next effect
+   *  Play next effect in the playlist
    */
   void next();
 
@@ -81,81 +93,101 @@ class Player {
   void resume();
 
   /**
-   *  Overlay given effect on top of currently playing effect.
-   *  If there was another overlay, it will be replaced with the new one.
+   * Returns total number of effects
+   * player can play. This is regardless
+   * of whether the effects are in the 
+   * playlist. 
    */
-  void overlay(const Effect& ef);
+  size_t effectCount() const {
+    return effectCount_;
+  }
 
   /**
-   *  Remove overlayed effect if one was set up
+   * Returns current playlist position 
    */
-  void clearOverlay();
-
-  /**
-   * Play sync test pattern.
-   *
-   * Sync test is an overlay, so it will replace currently playing
-   * overlay pattern if any
-   */
-  void syncTest(Milliseconds t);
-
-  // State info
-  int effectIndex() const {
+  size_t effectIndex() const {
     return track_;
   }
 
-  int effectCount() const {
-    return options_.playlist->size;
-  }
-
+  /**
+   * Returns the name of currently playing effect
+   */
   const char* effectName() const;
 
+  /**
+   * Returns the name of currently playing overlay or "none"
+   * if no overlay is playing.
+   */
+  const char* overlayName() const {
+    return overlayIdx_ < effectCount_ ? effects_[overlayIdx_].name : "none";
+  }
+
+  /**
+   * Returns time elapsed since effect start
+   */
   Milliseconds effectTime() const {
     return time_;
   }
 
-  BeatsPerMinute effectTempo() const {
+  /**
+   * Returns current tempo
+   */
+  BeatsPerMinute tempo() const {
     return tempo_;
   }
 
+  /**
+   * Returns whether playback is paused
+   */
   bool paused() const {
     return paused_;
   }
 
+  /**
+   * Returns whether player is connected to network
+   */
   bool connected() const {
     return options_.network && options_.network->status() == CONNECTED;
   }
 
+  /**
+   * Returns number of frames rendered per second.
+   */
   int fps() const {
     return fps_;
   }
 
-  const Effect* overlay() const {
-    return overlay_;
-  }
-
  private:
-  void logStatus() const;
-  int indexForName(const char* name) const;
-
-  void rewind(const char* name, Milliseconds time);
-  void rewind(int index, Milliseconds time);
-  void sync();
-  void render(const Effect& effect, Milliseconds time, BeatsPerMinute tempo,
-              Milliseconds timeSinceDownbeat, Metre metre, const Layout& layout,
-              Renderer* renderer);
+  void syncToNetwork();
+  bool syncEffectByName(const char* name, Milliseconds time);
+  bool syncEffectByIndex(size_t index, Milliseconds time);
+  bool switchToPlaylistItem(size_t index);
+  void enrollEffect(const EffectInfo& ei);
+  bool findEffect(const char *name, size_t* idx);
+  Frame effectFrame() const;
+  Frame overlayFrame() const;
 
   PlayerOptions options_;
+  Box viewport_;
+  void* effectContext_ = nullptr;
+  void* overlayContext_ = nullptr;
 
-  const Effect* overlay_ = nullptr;
+  EffectInfo effects_[255];
+  size_t effectCount_ = 0;
 
-  int track_ = -1;
+  size_t effectIdx_ = 0;
   Milliseconds time_ = 0;
+
+  size_t overlayIdx_ = 0;
   Milliseconds overlayTime_ = 0;
 
   BeatsPerMinute tempo_ = 120;
   Metre metre_ = SIMPLE_QUADRUPLE;
   Milliseconds lastDownbeatTime_ = 0;
+
+  uint8_t playlist_[255];
+  size_t playlistSize_ = 0;
+  size_t track_ = 0;
 
   bool paused_ = false;
 

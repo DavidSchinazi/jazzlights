@@ -5,15 +5,15 @@ using namespace std;
 
 static auto PULSE = effect([](const Frame& frame) {
   using unisparks::min;
-  int width = frame.size.width;
-  int height = frame.size.height;
+  int w = width(frame);
+  int h = height(frame);
 
   auto cc = center(frame);
-  auto rr = min(width, height);
+  auto rr = min(w, h);
   auto r = rr*(0.2 + 0.2*pulse(frame));
 
-  return [ = ](Point p) -> Color {
-    auto d = distance(p, cc);
+  return [ = ](const Pixel& px) -> Color {
+    auto d = distance(px.coord, cc);
     return d > r ? Color(RgbaColor(0,0,0,128)) : GREEN;
   };
 });

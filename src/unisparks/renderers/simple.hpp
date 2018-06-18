@@ -14,12 +14,12 @@ class SimpleRenderer : public Renderer {
   SimpleRenderer(const SimpleRenderer& other) : render_(other.render_) {
   }
 
-  void render(InputStream<Color>& pixelColors, size_t) override {
+  void render(InputStream<Color>& colors) override {
     if (!render_) {
       return;
     }
     int i=0;
-    for (auto color : pixelColors) {
+    for (auto color : colors) {
       auto rgba = color.asRgba();
       render_(i++, rgba.red, rgba.green, rgba.blue);
     }

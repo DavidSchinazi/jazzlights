@@ -1,21 +1,19 @@
 #ifndef UNISPARKS_EFFECT_FLAME_H
 #define UNISPARKS_EFFECT_FLAME_H
-#include <stdlib.h>
-#include "unisparks/effect.hpp"
+#include "unisparks/effects/functional.hpp"
 namespace unisparks {
 
-#if 0
-void flameColor(Frame fr, Point pt);
-
-constexpr auto flame = []() {
-  return effect([ = ](const Frame & frame) {
-    return [ = ](Point pt) -> Color {
-      return flameColor(fr, pt);
-    };
-  });
+class Flame : public Effect {
+  size_t contextSize(const Animation& a) const override;
+  void begin(const Frame& frame) const override;
+  void rewind(const Frame& f) const override;
+  Color color(const Pixel& px) const override;
+  void end(const Animation& a) const override;
 };
-#endif
 
+inline Flame flame() {
+  return Flame();
+}
 
 } // namespace unisparks
 #endif /* UNISPARKS_EFFECT_FLAME_H */
