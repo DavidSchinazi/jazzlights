@@ -1,18 +1,13 @@
+#if 0
 #ifndef UNISPARKS_GEOM3D_HPP
 #define UNISPARKS_GEOM3D_HPP
 #include <iostream>
 
 namespace unisparks {
 
-struct Point3D {
-  double x;
-  double y;
-  double z;
-};
-
 template<int WIDTH, int HEIGHT, int DEPTH>
 struct MappedMatrix3D {
-  constexpr MappedMatrix3D() {
+  MappedMatrix3D() {
     for(int x=0; x<WIDTH; ++x) {
       for(int y=0; y<HEIGHT; ++y) {
         for(int z=0; z<DEPTH; ++z) {
@@ -36,3 +31,4 @@ inline std::ostream& operator<<(std::ostream& out, const Point3D& v) {
 
 } // namespace unisparks
 #endif /* UNISPARKS_GEOM3D_HPP */
+#endif

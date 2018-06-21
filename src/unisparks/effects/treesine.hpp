@@ -8,8 +8,8 @@ namespace unisparks {
 constexpr auto treesine = []() {
   return effect([ = ](const Frame & frame) {
     Milliseconds period = adjustDuration(frame, 8000);
-    int w = width(frame);
-    int h = height(frame);
+    Coord w = width(frame);
+    Coord h = height(frame);
 
     uint8_t sineOffset = 256 * frame.time / period;
 

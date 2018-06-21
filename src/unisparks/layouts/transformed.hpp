@@ -7,16 +7,11 @@ namespace unisparks {
 template<typename L>
 class Transformed : public Layout {
  public:
-  Transformed(const Transform& t, const L& l) : trans_(t), orig_(l),
-    bounds_(calculateBounds()) {
+  Transformed(const Transform& t, const L& l) : trans_(t), orig_(l) {
   }
 
   int pixelCount() const override {
     return orig_.pixelCount();
-  }
-
-  Box bounds() const override {
-    return bounds_;
   }
 
   Point at(int i) const override {
@@ -26,7 +21,6 @@ class Transformed : public Layout {
  private:
   Transform trans_;
   const L orig_;
-  Box bounds_;
 };
 
 template<typename L>

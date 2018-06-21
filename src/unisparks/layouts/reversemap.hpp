@@ -22,7 +22,6 @@ template<size_t COUNT>
 struct ReverseMap : public PixelMap {
   ReverseMap(const int* map, int w, int h) : PixelMap(COUNT, points, false) {
     makeReverseMap(points, map, w, h, COUNT);
-    bounds_ = calculateBounds();
   }
   Point points[COUNT];
 };

@@ -47,13 +47,13 @@ Slice<EffectInfo> defaultEffects2D() {
     {&synctest, "synctest", false},
     {&eff01, "rainbow", true},
     {&eff02, "treesine", true},
-    {&eff03, "rider", true},
+    {&eff03, "rider", false},
     {&eff04, "glitter", true},
-    {&eff05, "slantbars", true},
+    {&eff05, "slantbars", false},
     {&eff06, "plasma", true},
-    {&eff07, "roboscan", true},
-    {&eff08, "crossbars", true},
-    {&eff09, "flame", true},
+    {&eff07, "roboscan", false},
+    {&eff08, "crossbars", false},
+    {&eff09, "flame", false},
   };
   return Slice<EffectInfo> {effects, sizeof(effects) / sizeof(*effects)};
 }
@@ -61,7 +61,7 @@ Slice<EffectInfo> defaultEffects2D() {
 void render(const Layout& layout, Renderer* renderer, 
             const Effect& effect, Frame effectFrame,
             const Effect* overlay, Frame overlayFrame) {
-  auto pixels = layout.pixels();
+  auto pixels = points(layout);
   auto colors = map(pixels, [&](Point pt) -> Color {
     Pixel px;
     px.coord = pt;
@@ -163,7 +163,9 @@ void Player::begin(PlayerOptions options) {
 
   for (Strand* s = options_.strands;
        s < options_.strands + options_.strandCount; ++s) {
-    viewport_ = merge(viewport_, s->layout->bounds());
+    for(auto pt : *s->layout) {
+      viewport_ = merge(viewport_, pt);
+    }
   }
 
   size_t ctxsz = 0;
@@ -399,6 +401,33 @@ Frame Player::overlayFrame() const {
   frame.animation.context = overlayContext_;
   frame.time = overlayTime_;
   return frame;
+}
+
+const char* Player::command(const char* req) {
+  static char res[256];
+  const size_t MAX_CMD_LEN = 16;
+  bool responded = false;
+  char pattern[16];
+  Milliseconds time;
+
+  if (!strncmp(req, "status?", MAX_CMD_LEN)) {
+    // do nothing
+  } else  if (!strncmp(req, "next", MAX_CMD_LEN)) {
+    next();
+  } else if (!strncmp(req, "prev", MAX_CMD_LEN)) {
+    prev();
+  } else if (sscanf(req, "play %15s %d", pattern, &time) == 2) {
+    play(pattern);
+  } else {
+    snprintf(res, sizeof(res), "! unknown command");
+    responded = true;
+  }
+  if (!responded) {
+    snprintf(res, sizeof(res), "play %s %d", effectName(),
+             effectTime());
+  }
+  debug("[%s] -> [%s]", req, res);
+  return res;
 }
 
 } // namespace unisparks

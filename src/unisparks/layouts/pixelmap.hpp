@@ -7,28 +7,19 @@ namespace unisparks {
 
 class PixelMap : public Layout {
 public:
-  PixelMap(size_t cnt, Point* pts) : PixelMap(cnt, pts, true) {
+  PixelMap(size_t cnt, Point* pts) : count_(cnt), points_(pts) {
+  }
+
+  PixelMap(const PixelMap& other) : count_(other.count_), points_(other.points_) {
   }
 
   int pixelCount() const override {
     return count_;
   }
   
-  Box bounds() const override {
-    return bounds_;
-  }
-  
   Point at(int i) const override {
     return points_[i];
   }
-
-protected:
-  PixelMap(size_t cnt, Point* pts, bool calcb) : count_(cnt), points_(pts) {
-    if (calcb) {
-      bounds_ = calculateBounds();
-    }
-  }
-  Box bounds_;
 
 private:
   size_t count_;

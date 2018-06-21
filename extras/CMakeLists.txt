@@ -8,10 +8,9 @@ set(LIB_SOURCES
 	unisparks/effects/scrolltext.hpp
 	unisparks/networks/udp.cpp
 	unisparks/networks/udp.hpp
-	unisparks/renderers/opengl.hpp
 	unisparks/util/geom3d.hpp
-	unisparks/util/log.cpp
-	unisparks/util/time.cpp
+	unisparks/util/stdlog.cpp
+	unisparks/util/stdtime.cpp
 	../src/unisparks/effect.hpp
 	../src/unisparks/effects/chess.hpp
 	../src/unisparks/effects/flame.cpp
@@ -56,9 +55,15 @@ set(LIB_SOURCES
 )
 
 set(DEMO_SOURCES 
+	demo/glrenderer.cpp
+	demo/glrenderer.hpp
+	demo/gui.cpp
+	demo/gui.hpp
+	demo/cpptoml.hpp
+	demo/loader.cpp
+	demo/loader.hpp
 	demo/main.cpp 
 	demo/overlays.cpp 
-	unisparks/effects/scrolltext.hpp
 )
 
 set(TEST_SOURCES 
@@ -71,19 +76,20 @@ set(BENCH_SOURCES
 )
 
 # LIBRARY
-add_library(unisparks STATIC ${LIB_SOURCES})
-target_include_directories(unisparks PUBLIC ../src .)
+find_package(glfw3 3.2 REQUIRED)
+find_package(OpenGL REQUIRED)
+add_library(unisparks SHARED ${LIB_SOURCES})
+target_include_directories(unisparks PUBLIC ../src . PRIVATE ${GLFW_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR})
+target_link_libraries(unisparks glfw ${OPENGL_gl_LIBRARY})
 set_target_properties(unisparks PROPERTIES COMPILE_OPTIONS "-std=c++11" "-fPIC" "-Wall" "-Wextra" "-Werror")
-install(TARGETS unisparks LIBRARY ARCHIVE DESTINATION lib)
+install(TARGETS unisparks LIBRARY DESTINATION lib)
 install(DIRECTORY src/ COMPONENT "lib" DESTINATION include FILES_MATCHING PATTERN "*.h" PATTERN "Unisparks.h" EXCLUDE)
 install(DIRECTORY extras/unisparks/ COMPONENT "lib" DESTINATION include/unisparks FILES_MATCHING PATTERN "*.h")
 
 # DEMO
-find_package(glfw3 3.2 REQUIRED)
-find_package(OpenGL REQUIRED)
 add_executable(unisparks-demo ${DEMO_SOURCES})
-target_link_libraries(unisparks-demo unisparks glfw ${OPENGL_gl_LIBRARY})
-target_include_directories(unisparks-demo PRIVATE ../src ${GLFW_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR})
+target_link_libraries(unisparks-demo unisparks)
+target_include_directories(unisparks-demo PRIVATE ../src)
 set_target_properties(unisparks-demo PROPERTIES COMPILE_OPTIONS "-std=c++14" "-fPIC" "-Wall" "-Wextra" "-Werror")
 install(TARGETS unisparks-demo DESTINATION bin COMPONENT "demo")
 

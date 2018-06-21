@@ -3,41 +3,62 @@
 #include "unisparks/layout.hpp"
 namespace unisparks {
 
-struct Matrix : public Layout {
-  enum {PROGRESSIVE = 0, ZIGZAG = 1};
-
-  Matrix(int w, int h, int flags = 0) : Matrix(Box{{Coord(w), Coord(h)}, {0, 0}}, flags) {
+class Matrix : public Layout {
+ public:
+  constexpr Matrix(int w, int h) :
+    width_(w), height_(h) {
   }
 
-  Matrix(Coord l, Coord t, int w, int h, int flags = 0)
-    : Matrix(Box{{Coord(w), Coord(h)}, {l, t}}, flags) {
+  Matrix(const Matrix& other) : Layout(), width_(other.width_), height_(other.height_),
+    origin_(other.origin_), resolution_(other.resolution_),
+    flags_(other.flags_) {
   }
 
-  Matrix(const Box& p, int flags = 0) : pos(p), flags(flags) {
+  Matrix& resolution(PixelsPerMeter r) {
+    resolution_ = r;
+    return *this;
   }
 
-  Matrix(const Matrix& other) : pos(other.pos), flags(other.flags) {
+  Matrix& origin(Coord x, Coord y) {
+    origin_ = {x, y};
+    return *this;
   }
 
-  Box bounds() const override {
-    return pos;
+  Matrix& progressive() {
+    flags_ |= PROGRESSIVE;
+    return *this;
+  }
+
+  Matrix& zigzag() {
+    flags_ |= ZIGZAG;
+    return *this;
+  }
+
+  Dimensions size() const {
+    return { width_ / resolution_, height_ / resolution_};
   }
 
   int pixelCount() const override {
-    return pos.size.width * pos.size.height;
+    return width_ * height_;
   }
 
   Point at(int index) const override {
-    int x = (index % static_cast<int>(pos.size.width));
-    int y = (index / static_cast<int>(pos.size.width));
-    if ((flags & ZIGZAG) && y % 2 == 0) {
-      x = pos.size.width - x - 1;
+    int x = (index % width_);
+    int y = (index / width_);
+    if ((flags_ & ZIGZAG) && y % 2 == 0) {
+      x = width_ - x - 1;
     }
-    return {pos.origin.x + x, pos.origin.y + y};
+    return {origin_.x + x / resolution_, origin_.y + y / resolution_};
   }
 
-  Box pos;
-  uint32_t flags = 0;
+ private:
+  enum {PROGRESSIVE = 0, ZIGZAG = 1};
+
+  int width_;
+  int height_;
+  Point origin_ = {0, 0};
+  PixelsPerMeter resolution_ = 60.0;
+  uint32_t flags_ = 0;
 };
 
 } // namespace unisparks

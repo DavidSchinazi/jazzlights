@@ -93,6 +93,11 @@ class Player {
   void resume();
 
   /**
+   * Run text command
+   */
+  const char* command(const char* cmd);
+
+  /**
    * Returns total number of effects
    * player can play. This is regardless
    * of whether the effects are in the 
@@ -157,6 +162,13 @@ class Player {
     return fps_;
   }
 
+  /**
+   * Returns the bounding box of all pixels
+   */
+  const Box& bounds() const {
+    return viewport_;
+  }
+
  private:
   void syncToNetwork();
   bool syncEffectByName(const char* name, Milliseconds time);
@@ -183,7 +195,7 @@ class Player {
 
   BeatsPerMinute tempo_ = 120;
   Metre metre_ = SIMPLE_QUADRUPLE;
-  Milliseconds lastDownbeatTime_ = 0;
+  // Milliseconds lastDownbeatTime_ = 0;
 
   uint8_t playlist_[255];
   size_t playlistSize_ = 0;

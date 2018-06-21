@@ -13,13 +13,21 @@ namespace unisparks {
 // like crap. I may try again if I figure out fast AND decent looking HSL/RGBA 
 // transform...
 using Coord = double;
+using Meters = double;
 
 struct Vector2D {
   Coord x;
   Coord y;
 };
 
+struct Vector3D {
+  Coord x;
+  Coord y;
+  Coord z;
+};
+
 using Point2D = Vector2D;
+using Point3D = Vector3D;
 using Point = Point2D;
 using Origin = Point2D;
 
@@ -32,6 +40,30 @@ struct Box {
   Dimensions size;
   Point origin;
 };
+
+constexpr Coord left(const Box& b) {
+  return b.origin.x;
+}
+
+constexpr Coord top(const Box& b) {
+  return b.origin.y;
+}
+
+constexpr Coord right(const Box& b) {
+  return b.origin.x + b.size.width;
+}
+
+constexpr Coord bottom(const Box& b) {
+  return b.origin.y + b.size.height;
+}
+
+constexpr Coord width(const Box& b) {
+  return b.size.width;
+}
+
+constexpr Coord height(const Box& b) {
+  return b.size.height;
+}
 
 constexpr Point center(Box b) {
   return {b.origin.x + b.size.width/2, b.origin.y + b.size.height/2};
@@ -54,6 +86,14 @@ inline Box merge(const Box& a, const Box& b) {
   Coord top = min(a.origin.y, b.origin.y);
   Coord right = max(a.origin.x + a.size.width, b.origin.x + b.size.width);
   Coord bottom = max(a.origin.y + a.size.height, b.origin.y + b.size.height);
+  return {{right-left, bottom-top}, {left, top}};
+}
+
+inline Box merge(const Box& a, const Point& p) {
+  Coord left = min(a.origin.x, p.x);
+  Coord top = min(a.origin.y, p.y);
+  Coord right = max(a.origin.x + a.size.width, p.x);
+  Coord bottom = max(a.origin.y + a.size.height, p.y);
   return {{right-left, bottom-top}, {left, top}};
 }
 
@@ -82,6 +122,12 @@ static constexpr Transform IDENTITY = {.matrix = {1, 0, 0, 1}, .offset = {0, 0}}
 static constexpr Transform ROTATE_LEFT = {.matrix = {0, 1, -1, 0}, .offset = {0, 0}};
 static constexpr Transform ROTATE_RIGHT = {.matrix = {0, -1, 1, 0}, .offset = {0, 0}};
 static constexpr Transform FLIP_HORIZ = {.matrix = {-1, 0, 0, 1}, .offset = {0, 0}};
+
+template <typename T, typename R>
+R rotateLeft(const T& v) {
+  return transform(ROTATE_LEFT, v);
+}
+
 
 } // namespace unisparks
 #endif /* UNISPARKS_GEOM_H */

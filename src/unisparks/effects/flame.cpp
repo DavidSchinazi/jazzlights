@@ -108,7 +108,7 @@ Color Flame::color(const Pixel& px) const {
   return clr;
 }
 
-void Flame::end(const Animation& a) const {
+void Flame::end(const Animation&) const {
 }
 
 
