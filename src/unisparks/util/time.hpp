@@ -20,6 +20,9 @@ Milliseconds timeMillis();
  */
 void delay(Milliseconds time);
 
+typedef int32_t FramesPerSecond;
+
+
 } // namespace unisparks
 
 #endif /* UNISPARKS_TIME_H */

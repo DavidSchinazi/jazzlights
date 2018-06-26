@@ -4,6 +4,7 @@
 // see https://fuchsia.googlesource.com/zircon/+/master/LICENSE
 #ifndef UNISPARKS_TYPE_SUPPORT_H
 #define UNISPARKS_TYPE_SUPPORT_H
+#include <stddef.h>
 
 namespace unisparks {
 

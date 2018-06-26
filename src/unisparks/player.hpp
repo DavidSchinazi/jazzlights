@@ -5,23 +5,9 @@
 #include "unisparks/network.hpp"
 #include "unisparks/renderer.hpp"
 #include "unisparks/renderers/simple.hpp"
+#include "unisparks/registry.hpp"
 
 namespace unisparks {
-
-struct Strand {
-  const Layout* layout;
-  Renderer* renderer;
-};
-
-struct PlayerOptions {
-  Strand* strands = nullptr;
-  size_t strandCount = 0;
-  Network* network = nullptr;
-  Milliseconds preferredEffectDuration = 10 * ONE_SECOND;
-  int throttleFps = 30;
-  const EffectInfo* customEffects = nullptr;
-  size_t customEffectCount = 0;  
-};
 
 class Player {
  public:
@@ -33,18 +19,44 @@ class Player {
   Player(const Player&) = delete;
   Player& operator=(const Player&) = delete;
 
-  // Initializers
-  void begin(const PlayerOptions options);
+  /**
+   * Reset player to the same state as if it was just constructed
+   */
+  void reset();
+
+  // Constructing the player
+  
+  Player& clearStrands();
+  Player& addStrand(const Layout& l, Renderer& r);
+  Player& addStrand(const Layout& l, SimpleRenderFunc r);
+  Player& addEffect(const char* name, const Effect& effect,
+                    bool autoplay = true);
+  Player& autoplayEffect(const char* name, bool v = true);
+  Player& preferredEffectDuration(Milliseconds v);
+  Player& throttleFps(FramesPerSecond v);
+  Player& connect(Network& n);
+
+  /**
+   * Prepare for rendering
+   *
+   * Call this when you're done adding strands and setting up
+   * player configuration.
+   */
+  void begin();
   void begin(const Layout& layout, Renderer& renderer);
   void begin(const Layout& layout, SimpleRenderFunc renderer);
   void begin(const Layout& layout, Renderer& renderer, Network& network);
   void begin(const Layout& layout, SimpleRenderFunc renderer, Network& network);
 
   /**
+   * Exit rendering mode and cleanup runtime resources
+   */
+  void end();
+
+  /**
    *  Render current frame to all strands
    */
   void render();
-
 
   /**
    *  Render current frame to all strands
@@ -100,15 +112,15 @@ class Player {
   /**
    * Returns total number of effects
    * player can play. This is regardless
-   * of whether the effects are in the 
-   * playlist. 
+   * of whether the effects are in the
+   * playlist.
    */
   size_t effectCount() const {
     return effectCount_;
   }
 
   /**
-   * Returns current playlist position 
+   * Returns current playlist position
    */
   size_t effectIndex() const {
     return track_;
@@ -152,7 +164,7 @@ class Player {
    * Returns whether player is connected to network
    */
   bool connected() const {
-    return options_.network && options_.network->status() == CONNECTED;
+    return network_ && network_->status() == CONNECTED;
   }
 
   /**
@@ -174,45 +186,72 @@ class Player {
   bool syncEffectByName(const char* name, Milliseconds time);
   bool syncEffectByIndex(size_t index, Milliseconds time);
   bool switchToPlaylistItem(size_t index);
-  void enrollEffect(const EffectInfo& ei);
-  bool findEffect(const char *name, size_t* idx);
+  bool findEffect(const char* name, size_t* idx);
   Frame effectFrame() const;
   Frame overlayFrame() const;
 
-  PlayerOptions options_;
+  /**
+   * This is similar to addEffect, but it will not override effects
+   * that were already added, and it also won't fail if the max number
+   * of effects was exceeded.
+   */
+  void addDefaultEffect(const char* name, const Effect& effect,
+                        bool autoplay = true);
+
+  void addDefaultEffects2D();
+
+  bool ready_;
+
+  struct Strand {
+    const Layout* layout;
+    Renderer* renderer;
+  };
+
+  Strand strands_[255];
+  size_t strandCount_;
+
   Box viewport_;
-  void* effectContext_ = nullptr;
-  void* overlayContext_ = nullptr;
+  void* effectContext_;
+  void* overlayContext_;
+
+  struct EffectInfo {
+    const Effect* effect;
+    const char* name;
+    bool autoplay;
+  };
 
   EffectInfo effects_[255];
-  size_t effectCount_ = 0;
+  size_t effectCount_;
+  static constexpr size_t MAX_EFFECTS = sizeof(effects_) / sizeof(*effects_);
 
-  size_t effectIdx_ = 0;
-  Milliseconds time_ = 0;
+  size_t effectIdx_;
+  Milliseconds time_;
 
-  size_t overlayIdx_ = 0;
-  Milliseconds overlayTime_ = 0;
+  size_t overlayIdx_;
+  Milliseconds overlayTime_;
 
-  BeatsPerMinute tempo_ = 120;
-  Metre metre_ = SIMPLE_QUADRUPLE;
-  // Milliseconds lastDownbeatTime_ = 0;
+  BeatsPerMinute tempo_;
+  Metre metre_;
+  // Milliseconds lastDownbeatTime_;
 
   uint8_t playlist_[255];
-  size_t playlistSize_ = 0;
-  size_t track_ = 0;
+  size_t playlistSize_;
+  size_t track_;
 
-  bool paused_ = false;
+  bool paused_;
 
-  Milliseconds lastRenderTime_ = -1;
+  Network* network_;
+
+  Milliseconds preferredEffectDuration_;
+
+  int throttleFps_;
+
+  Milliseconds lastRenderTime_;
 
   // Mutable because it is used for logging
-  mutable int fps_ = -1;
-  mutable Milliseconds lastFpsProbeTime_ = -1;
-  mutable int framesSinceFpsProbe_ = -1;
-
-  // This is to simplify object construction in basic cases
-  Strand firstStrand_;
-  SimpleRenderer basicRenderer_;
+  mutable int fps_;
+  mutable Milliseconds lastFpsProbeTime_;
+  mutable int framesSinceFpsProbe_;
 };
 
 

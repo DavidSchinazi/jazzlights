@@ -17,11 +17,5 @@ class Effect {
   virtual void end(const Animation&) const = 0;
 };
 
-struct EffectInfo {
-  const Effect* effect;
-  const char* name;
-  bool autoplay;
-};
-
 } // namespace unisparks
 #endif /* UNISPARKS_EFFECT_H */

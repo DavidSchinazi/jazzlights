@@ -3,14 +3,6 @@ set(CMAKE_MACOSX_RPATH 1)
 project(Unisparks)
 
 set(LIB_SOURCES 
-	unisparks.hpp
-	unisparks/effects/pixeltest.hpp
-	unisparks/effects/scrolltext.hpp
-	unisparks/networks/udp.cpp
-	unisparks/networks/udp.hpp
-	unisparks/util/geom3d.hpp
-	unisparks/util/stdlog.cpp
-	unisparks/util/stdtime.cpp
 	../src/unisparks/effect.hpp
 	../src/unisparks/effects/chess.hpp
 	../src/unisparks/effects/flame.cpp
@@ -38,6 +30,8 @@ set(LIB_SOURCES
 	../src/unisparks/network.hpp
 	../src/unisparks/player.cpp
 	../src/unisparks/player.hpp
+	../src/unisparks/registry.cpp
+	../src/unisparks/registry.hpp
 	../src/unisparks/renderer.hpp
 	../src/unisparks/renderers/simple.hpp
 	../src/unisparks/util/color.cpp
@@ -47,11 +41,19 @@ set(LIB_SOURCES
 	../src/unisparks/util/log.hpp
 	../src/unisparks/util/math.cpp
 	../src/unisparks/util/math.hpp
+	../src/unisparks/util/memory.hpp
 	../src/unisparks/util/meta.hpp
-	../src/unisparks/util/new.hpp
 	../src/unisparks/util/rhytm.hpp
 	../src/unisparks/util/stream.hpp
 	../src/unisparks/util/time.hpp
+	unisparks.hpp
+	unisparks/effects/pixeltest.hpp
+	unisparks/effects/scrolltext.hpp
+	unisparks/networks/udp.cpp
+	unisparks/networks/udp.hpp
+	unisparks/util/geom3d.hpp
+	unisparks/util/stdlog.cpp
+	unisparks/util/stdtime.cpp
 )
 
 set(DEMO_SOURCES 

@@ -70,11 +70,9 @@ Layout& loadLayout(const cpptoml::table& cfg) {
 Player& loadPlayer(const cpptoml::table& cfg) {
   static Player player;
   static Udp network;
-  static vector<Strand> strands;
 
-  PlayerOptions opts;
-  opts.network = &network;
-  opts.throttleFps = cfg.get_as<int64_t>("throttle-fps").value_or(60);
+  player.connect(network);
+  player.throttleFps(cfg.get_as<int64_t>("throttle-fps").value_or(60));
 
   auto strandscfg = cfg.get_table_array("strand");
   if (!strandscfg) {
@@ -88,12 +86,9 @@ Player& loadPlayer(const cpptoml::table& cfg) {
     }
     Layout& layout = loadLayout(*layoutcfg);
     Renderer& renderer = loadRenderer(layout);
-    strands.push_back({&layout, &renderer});
+    player.addStrand(layout, renderer);
   }
-
-  opts.strands = strands.data();
-  opts.strandCount = strands.size();
-  player.begin(opts);
+  player.begin();
 
   return player;
 }

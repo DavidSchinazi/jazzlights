@@ -50,20 +50,13 @@ TEST_CASE("Sequence", "[player]") {
   // enableVerboseOutput();
 
   auto ef = sequence(1000, solid(RED), 1000, solid(GREEN));
-  EffectInfo efi = {&ef, "seqtest", true};
-
   Matrix layout{1, 1};
   TestRenderer renderer;
-  Strand s = {&layout, &renderer};
-
-  PlayerOptions opts;
-  opts.customEffects = &efi;
-  opts.customEffectCount = 1;
-  opts.strands = &s;
-  opts.strandCount = 1;
 
   Player pl;
-  pl.begin(opts);
+  pl.addEffect("seqtest", ef, true);
+  pl.addStrand(layout, renderer);
+  pl.begin();
   pl.play("seqtest");
 
   pl.render(0);
