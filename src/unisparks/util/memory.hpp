@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "unisparks/util/meta.hpp"
-namespace unisparks {
 
 // <new> header is not available on all boards, so we'll
 // declare placement new/delete operators here
@@ -29,6 +28,7 @@ inline void operator delete[](void*, void*) noexcept {}
     _class_name(const _class_name&) = delete;            \
     _class_name& operator=(const _class_name&) = delete
 
+namespace unisparks {
 
 // This is a simplified version of std::unique_ptr<> that can automatically
 // dispose a pointer when it goes out of scope.

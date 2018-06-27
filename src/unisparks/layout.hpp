@@ -71,6 +71,13 @@ inline RangeInputStream<LayoutIterator> points(const Layout& l) {
   return RangeInputStream<LayoutIterator>(begin(l), end(l));
 }
 
+inline Box bounds(const Layout& layout) {
+  Box bb;
+  for (auto pt : layout) {
+      bb = merge(bb, pt);
+  }
+  return bb;
+}
 
 } // namespace unisparks
 

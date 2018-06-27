@@ -15,13 +15,14 @@ const int WIN_W = 960;
 const int WIN_H = 720;
 
 static Player* player = nullptr;
+static Box viewport;
 
 extern const Effect* OVERLAYS[];
 extern const int OVERLAYS_CNT;
 
 void onResize(GLFWwindow*, int winWidth, int winHeight) {
-  Box vp = player->bounds();
-  double aspect = winHeight*width(vp)/(winWidth*height(vp));
+  const Box& vp = viewport;
+  double aspect = winHeight * width(vp) / (winWidth * height(vp));
 
   glViewport(0, 0, winWidth, winHeight);
   glMatrixMode(GL_PROJECTION);
@@ -43,25 +44,25 @@ void onKey(GLFWwindow* window, int key, int /*scncode*/, int action,
   } else if (key >= GLFW_KEY_1 && key <= GLFW_KEY_9 && action == GLFW_PRESS
              && !(mods & GLFW_MOD_SHIFT)) {
     player->jump(key - GLFW_KEY_1);
-  // } else if (key >= GLFW_KEY_1 && key <= GLFW_KEY_9 && action == GLFW_PRESS
-  //            && (mods & GLFW_MOD_SHIFT)) {
-  //   int i = (key - GLFW_KEY_1) % OVERLAYS_CNT;
-  //   info("Playing overlay #%d", i);
-  //   player->overlay(*OVERLAYS[i]);
+    // } else if (key >= GLFW_KEY_1 && key <= GLFW_KEY_9 && action == GLFW_PRESS
+    //            && (mods & GLFW_MOD_SHIFT)) {
+    //   int i = (key - GLFW_KEY_1) % OVERLAYS_CNT;
+    //   info("Playing overlay #%d", i);
+    //   player->overlay(*OVERLAYS[i]);
   } else if (key == GLFW_KEY_F && action == GLFW_PRESS) {
     player->overlay("flame");
   } else if (key == GLFW_KEY_S && action == GLFW_PRESS) {
     player->play("synctest");
-  } else if (key == GLFW_KEY_0 && action == GLFW_PRESS && (mods & GLFW_MOD_SHIFT)) {
+  } else if (key == GLFW_KEY_0 && action == GLFW_PRESS
+             && (mods & GLFW_MOD_SHIFT)) {
     player->clearOverlay();
-  // } else if (key == GLFW_KEY_N && action == GLFW_PRESS) {
-  //   if (network.connected()) {
-  //     network.disconnect();
-  //   } else {
-  //     network.reconnect();
-  //   }
-  }
-  else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
+    // } else if (key == GLFW_KEY_N && action == GLFW_PRESS) {
+    //   if (network.connected()) {
+    //     network.disconnect();
+    //   } else {
+    //     network.reconnect();
+    //   }
+  } else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
     player->paused() ? player->resume() : player->pause();
   } else if (key == GLFW_KEY_ESCAPE || (key == GLFW_KEY_C
                                         && (mods & GLFW_MOD_CONTROL))) {
@@ -71,12 +72,13 @@ void onKey(GLFWwindow* window, int key, int /*scncode*/, int action,
 
 
 
-int runGui(const char* winTitle, Player& playerRef, bool fullscreen) {
+int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen) {
   player = &playerRef;
+  viewport = vp;
 
-  info("Running GUI, view box is (%0.3f, %0.3f) - (%0.3f, %0.3f) meters", 
-    left(player->bounds()), top(player->bounds()), right(player->bounds()),
-    bottom(player->bounds()));
+  info("Running GUI, view box is (%0.3f, %0.3f) - (%0.3f, %0.3f) meters",
+       left(player->bounds()), top(player->bounds()), right(player->bounds()),
+       bottom(player->bounds()));
 
   if (!glfwInit()) {
     fatal("Can't initialize graphics");
@@ -127,7 +129,7 @@ int runGui(const char* winTitle, Player& playerRef, bool fullscreen) {
           << " | " << (t / 60) << ":" << setw(2) << setfill('0') << (t % 60)
           // " | " << (network.connected() ? network.isControllingEffects() ? "master" :
           //           "slave" : "standalone")
-    ;
+          ;
     glfwSetWindowTitle(window, title.str().c_str());
 
     glfwSwapBuffers(window);

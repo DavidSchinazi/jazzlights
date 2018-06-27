@@ -43,9 +43,29 @@ constexpr Point lefttop(const Frame& frame) {
   return frame.animation.viewport.origin;
 }
 
+inline Dimensions8 size8(const Frame& frame) {
+  auto b = scaleToFit(frame.animation.viewport.size, {255,255});
+  return {(uint8_t)b.width, (uint8_t)b.height};
+}
+
+inline Vec8 pos8(const Pixel& px) {
+  auto v = translateInto(px.coord, px.frame.animation.viewport, {{255,255},{0,0}});
+  return {(uint8_t)v.x, (uint8_t)v.y};
+}
+
+constexpr uint8_t* ucontext(const Frame& frame) {
+  return static_cast<uint8_t*>(frame.animation.context);
+}
+
+template<typename T>
+constexpr T& cast_context(const Frame& frame) {
+  return *static_cast<T*>(frame.animation.context);
+}
+
 double pulse(const Frame& frame);
 
 uint8_t cycleHue(const Frame& frame);
+uint8_t cycleHue(const Frame& frame, Milliseconds periodHint);
 
 Milliseconds adjustDuration(const Frame& f, Milliseconds d);
 

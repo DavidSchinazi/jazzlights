@@ -9,70 +9,82 @@
 #include "unisparks/effects/plasma.hpp"
 #include "unisparks/effects/rainbow.hpp"
 #include "unisparks/effects/rider.hpp"
-// #include "unisparks/effects/scroll.hpp"
 #include "unisparks/effects/sequence.hpp"
 #include "unisparks/effects/slantbars.hpp"
 #include "unisparks/effects/solid.hpp"
 #include "unisparks/effects/transform.hpp"
 #include "unisparks/effects/treesine.hpp"
+#include "unisparks/registry.hpp"
 #include "unisparks/renderers/simple.hpp"
+#include "unisparks/util/containers.hpp"
 #include "unisparks/util/log.hpp"
 #include "unisparks/util/math.hpp"
 #include "unisparks/util/memory.hpp"
 #include "unisparks/util/stream.hpp"
-#include "unisparks/util/containers.hpp"
 #include "unisparks/util/time.hpp"
-#include "unisparks/registry.hpp"
+#include "unisparks/version.hpp"
+// #include "unisparks/effects/scroll.hpp"
 
 namespace unisparks {
 
 using namespace internal;
 void  Player::addDefaultEffects2D() {
-  
-  addDefaultEffect("synctest", clone(
-    loop(100, sequence(1000, solid(RED), 1000, solid(GREEN)))
-    ), false );
+  static auto synctest = effect([ = ](const Frame& frame) {
+      return [ = ](const Pixel& /*pt*/) -> Color {
+        return int(frame.time / 1000) % 2 == 0 ? GREEN : RED;
+      };
+    });
+  // static auto synctest = sequence(1000, solid(RED), 1000, solid(GREEN)); //loop(100, sequence(1000, solid(RED), 1000, solid(GREEN)));
+  // addDefaultEffect("synctest", synctest, true);
+
+  // addDefaultEffect("synctest", clone(
+  //   loop(100, sequence(1000, solid(RED), 1000, solid(GREEN)))
+  //   ), true );
+
+
+  addDefaultEffect("synctest", synctest, false);
 
   addDefaultEffect("rainbow", clone(
-    rainbow()
-    ), true);
-  
+                     rainbow()
+                   ), true);
+
   addDefaultEffect("treesine",
-    clone(treesine()), 
-    true
-  );
-  
+                   clone(treesine()),
+                   true
+                  );
+
   addDefaultEffect("rider",
-    clone(rider()), 
-    false
-  );
-  
+                   clone(rider()),
+                   true
+                  );
+
   addDefaultEffect("glitter",
-    clone(glitter()), 
-    true
-  );
-  
+                   clone(glitter()),
+                   true
+                  );
+
   addDefaultEffect("slantbars",
-    clone(slantbars()), 
-    false
-  );
-  
+                   clone(slantbars()),
+                   true
+                  );
+
   addDefaultEffect("plasma",
-    clone(plasma()), 
-    true
-  );
-  
+                   clone(plasma()),
+                   true
+                  );
+
   addDefaultEffect("roboscan", clone(
-    unisparks::overlay(alphaLightnessBlend, rider(), transform(ROTATE_LEFT, rider()))
-    ), false);
-  
+                     unisparks::overlay(alphaLightnessBlend, rider(), transform(ROTATE_LEFT,
+                                        rider()))
+                   ), true);
+
   addDefaultEffect("crossbars", clone(
-    unisparks::overlay(alphaLightnessBlend, rider(), transform(ROTATE_LEFT, rider()))
+    unisparks::overlay(alphaLightnessBlend, slantbars(), transform(ROTATE_LEFT, slantbars()))
     ), false);
 
-  addDefaultEffect("flame", clone(
-    flame()
-    ), false);
+  // addDefaultEffect("flame", clone(
+  //                    flame()
+  //                  ), false);
 }
 
 void render(const Layout& layout, Renderer* renderer,
@@ -276,9 +288,7 @@ void Player::begin() {
 
   for (Strand* s = strands_;
        s < strands_ + strandCount_; ++s) {
-    for (auto pt : *s->layout) {
-      viewport_ = merge(viewport_, pt);
-    }
+    viewport_ = merge(viewport_, unisparks::bounds(*s->layout));
   }
 
   size_t ctxsz = 0;
@@ -298,7 +308,8 @@ void Player::begin() {
        s < strands_ + strandCount_; ++s) {
     pxcnt += s->layout->pixelCount();
   }
-  info("Starting player; strands: %d%s, pixels: %d, effects: %d (%d in playlist), %s",
+  info("Starting Unisparks player (v%s); strands: %d%s, pixels: %d, effects: %d (%d in playlist), %s",
+       UNISPARKS_VERSION,
        strandCount_,
        strandCount_ < 1 ? " (CONTROLLER ONLY!)" : "",
        pxcnt,
@@ -417,7 +428,8 @@ bool Player::syncEffectByIndex(size_t index, Milliseconds time) {
         effects_[effectIdx_].effect->end(effectFrame().animation);
       }
       effectIdx_ = index;
-      effects_[effectIdx_].effect->begin(effectFrame());
+      Frame fr = effectFrame();
+      effects_[effectIdx_].effect->begin(fr);
       info("Playing effect %s", effectName());
     }
     time_ = time;

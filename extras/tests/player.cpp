@@ -46,9 +46,10 @@ TEST_CASE("Player invariants", "[player]") {
   REQUIRE(pl.effectIndex() == 2);
 }
 
+#if 0
 TEST_CASE("Sequence", "[player]") {
   // enableVerboseOutput();
-
+  info(">>>>> seqtest");
   auto ef = sequence(1000, solid(RED), 1000, solid(GREEN));
   Matrix layout{1, 1};
   TestRenderer renderer;
@@ -68,3 +69,4 @@ TEST_CASE("Sequence", "[player]") {
   pl.render(600);
   REQUIRE(renderer.colors[0] == RgbColor(0x00ff00));
 }
+#endif

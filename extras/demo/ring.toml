@@ -1,6 +1,7 @@
 # Ring of 12 LEDs, radius: 150mm 
 [[strand]]
-layout = {type="pixelmap", coords=[
+layout = {type="matrix", size=[12,1]}
+rlayout = {type="pixelmap", coords=[
      0.000,   0.150,   0.000,
      0.075,   0.130,   0.000,
      0.130,   0.075,   0.000,

@@ -46,6 +46,7 @@ set(LIB_SOURCES
 	../src/unisparks/util/rhytm.hpp
 	../src/unisparks/util/stream.hpp
 	../src/unisparks/util/time.hpp
+	../src/unisparks/version.hpp
 	unisparks.hpp
 	unisparks/effects/pixeltest.hpp
 	unisparks/effects/scrolltext.hpp

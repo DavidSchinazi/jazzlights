@@ -67,11 +67,7 @@ Layout& loadLayout(const cpptoml::table& cfg) {
   throw runtime_error("unknown layout type '" + type + "'");
 }
 
-Player& loadPlayer(const cpptoml::table& cfg) {
-  static Player player;
-  static Udp network;
-
-  player.connect(network);
+void loadPlayer(const cpptoml::table& cfg, Player& player, Box& viewport) {
   player.throttleFps(cfg.get_as<int64_t>("throttle-fps").value_or(60));
 
   auto strandscfg = cfg.get_table_array("strand");
@@ -85,21 +81,21 @@ Player& loadPlayer(const cpptoml::table& cfg) {
       throw runtime_error("strand must specify layout");
     }
     Layout& layout = loadLayout(*layoutcfg);
-    Renderer& renderer = loadRenderer(layout);
+    auto rlayoutcfg = strandcfg->get_table("rlayout");
+    Layout& rlayout = rlayoutcfg ? loadLayout(*rlayoutcfg) : layout;
+    viewport = merge(viewport, bounds(rlayout));
+    Renderer& renderer = loadRenderer(rlayout);
     player.addStrand(layout, renderer);
   }
-  player.begin();
-
-  return player;
 }
 
 
-Player& load(const char* file) {
+void load(const char* file, Player& player, Box& viewport) {
   info("Loading %s...", file);
   try {
     auto config = cpptoml::parse_file(file);
     //cout << (*config) << endl;
-    return loadPlayer(*config);
+    return loadPlayer(*config, player, viewport);
   } catch (const runtime_error& err) {
     fatal("Couldn't parse %s: %s", file, err.what());
   }

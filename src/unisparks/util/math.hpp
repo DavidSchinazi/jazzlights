@@ -40,6 +40,7 @@
  */
 #ifndef UNISPARKS_MATH_H
 #define UNISPARKS_MATH_H
+#define _USE_MATH_DEFINES
 #include <math.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -63,6 +64,21 @@ constexpr const T& clamp(const T& v, const T& lo, const T& hi) {
 template<class T>
 constexpr T square(T x) { 
   return x * x; 
+}
+
+/**
+ * Returns positive reminder
+ */
+inline double amod(double a, double b) {
+  return fabs(fmod(a, b));
+}
+
+/**
+ * Returns triangle wave with the period of 1 and amplitude of 1
+ */
+inline double triwave(double x) {
+  // 1 - 2*abs[mod[2*x+0.5, 2]- 1]
+  return 1 - 2 * fabs(amod(2 * x + 0.5, 2) - 1);
 }
 
 namespace internal {

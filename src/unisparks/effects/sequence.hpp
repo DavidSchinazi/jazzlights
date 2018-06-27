@@ -1,8 +1,28 @@
+// Need to refactor, temporarily disable
+#if 0
 #ifndef UNISPARKS_EFFECTS_SEQUENCE_H
 #define UNISPARKS_EFFECTS_SEQUENCE_H
-#include "unisparks/effect.hpp"
+#include "unisparks/effects/wrapped.hpp"
+
+
+#include <cxxabi.h>
+#define DEBU(x) x
 
 namespace unisparks {
+
+template<typename E>
+struct EffectWithDuration : public WrappedEffect<E> {
+  EffectWithDuration(const E& e, Milliseconds d) : WrappedEffect<E>(e), duration(d) {
+  }
+
+  Milliseconds duration;
+};
+
+template<typename E>
+EffectWithDuration<E> dur(const E& effect, Milliseconds duration) {
+  return EffectWithDuration<E>(effect, duration);
+}
+
 
 template<typename... Effects>
 class Sequence;
@@ -10,12 +30,13 @@ class Sequence;
 template<typename First, typename... Next>
 class Sequence<Milliseconds, First, Next...> : public Effect {
  public:
-  Sequence(Milliseconds d, const First& f,
-           const Next&... s) : firstDuration(d), first(f), next(s...) {
+  Sequence(const First& f, const Next&... s) : first(f), next(s...) {
+    DEBU(printf(">>> creating %s sequence %p of %d element(s)\n", 
+      abi::__cxa_demangle(typeid(this).name(), NULL, NULL, NULL), this, 1+sizeof...(s)/2);)  
   }
 
   Milliseconds duration() const {
-    return firstDuration + next.duration();
+    return first.duration + next.duration;
   }
 
   size_t contextSize(const Animation& a) const override {
@@ -23,33 +44,33 @@ class Sequence<Milliseconds, First, Next...> : public Effect {
   }
 
   void begin(const Frame& frame) const override {
-    Context& ctx = *static_cast<Context*>(frame.animation.context);
-    ctx.isFirst = frame.time < firstDuration;
+    Context& ctx = cast_context<Context>(frame);
+    ctx.isFirst = frame.time < first.duration;
     if (ctx.isFirst) {
-//      info(">>>%p %d begin first", this, frame.time);
+      //info(">>>sequence %p %d begin first", this, frame.time);
       first.begin(firstFrame(frame));
     } else {
-//      info(">>>%p %d begin second", this, frame.time);
+      //info(">>>sequence %p %d begin second", this, frame.time);
       next.begin(nextFrame(frame));
     }
   }
 
   void rewind(const Frame& frame) const override {
     Context& ctx = *static_cast<Context*>(frame.animation.context);
-    bool isFirst = frame.time < firstDuration;
+    bool isFirst = frame.time < first.duration;
     if (isFirst && ctx.isFirst) {
-//      info(">>>%p %d rewind first", this, frame.time);
+      //info(">>>sequence %p %d rewind first", this, frame.time);
       first.rewind(firstFrame(frame));
     } else if (isFirst && !ctx.isFirst) {
-//      info(">>>%p %d end second, begin first", this, frame.time);
+      //info(">>>sequence %p %d end second, begin first", this, frame.time);
       next.end(nextAnim(frame.animation));
       first.begin(firstFrame(frame));
     } else if (!isFirst && ctx.isFirst) {
-//      info(">>>%p %d end first, begin second", this, frame.time);
+      //info(">>>sequence %p %d end first, begin second", this, frame.time);
       first.end(firstAnim(frame.animation));
       next.begin(nextFrame(frame));
     } else {
-//      info(">>>%p %d rewind second", this, frame.time);
+      //info(">>>sequence %p %d rewind second", this, frame.time);
       next.rewind(nextFrame(frame));
     }
     ctx.isFirst = isFirst;
@@ -70,7 +91,7 @@ class Sequence<Milliseconds, First, Next...> : public Effect {
   }
 
   struct Context {
-    bool isFirst;
+    Milliseconds lastTime;
   };
 
   Animation firstAnim(Animation am) const {
@@ -96,7 +117,7 @@ class Sequence<Milliseconds, First, Next...> : public Effect {
 
   Frame nextFrame(Frame fr) const {
     fr.animation = nextAnim(fr.animation);
-    fr.time -= firstDuration;
+    fr.time -= first.duration;
     return fr;
   }
 
@@ -105,7 +126,6 @@ class Sequence<Milliseconds, First, Next...> : public Effect {
     return px;
   }
 
-  Milliseconds firstDuration;
   First first;
   Sequence<Next...> next;
 };
@@ -114,6 +134,11 @@ class Sequence<Milliseconds, First, Next...> : public Effect {
 template<>
 class Sequence<> : public Effect {
  public:
+  Sequence() {
+    DEBU(printf(">>> creating %s sequence %p of 0 element(s)\n", 
+      abi::__cxa_demangle(typeid(this).name(), NULL, NULL, NULL), this);) 
+  }
+
   size_t contextSize(const Animation&) const override {
     return 0;
   }
@@ -195,3 +220,4 @@ Loop<T> loop(int times, const T& seq) {
 
 } // namespace unisparks
 #endif /* UNISPARKS_EFFECTS_SEQUENCE_H */
+#endif

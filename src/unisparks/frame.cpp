@@ -48,6 +48,10 @@ uint8_t cycleHue(const Frame& frame) {
   return 256 * frame.time / (4 * barDuration(frame.tempo, frame.metre));
 }
 
+uint8_t cycleHue(const Frame& frame, Milliseconds periodHint) {
+  return 256 * frame.time / adjustDuration(frame, periodHint);  
+}
+
 
 } // namespace unisparks
 

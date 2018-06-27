@@ -41,6 +41,16 @@ struct Box {
   Point origin;
 };
 
+struct Vec8 {
+  uint8_t x;
+  uint8_t y;
+};
+
+struct Dimensions8 {
+  uint8_t width;
+  uint8_t height;
+};
+
 constexpr Coord left(const Box& b) {
   return b.origin.x;
 }
@@ -95,6 +105,17 @@ inline Box merge(const Box& a, const Point& p) {
   Coord right = max(a.origin.x + a.size.width, p.x);
   Coord bottom = max(a.origin.y + a.size.height, p.y);
   return {{right-left, bottom-top}, {left, top}};
+}
+
+inline Dimensions scaleToFit(const Dimensions& src, const Dimensions& dst) {
+  auto scale = min( dst.width/src.width, dst.height/src.height);
+  return {src.width*scale, src.height*scale};
+}
+
+inline Point translateInto(Point pos, const Box& src, const Box& dst) {
+  auto scale = min( dst.size.width/src.size.width, dst.size.height/src.size.height);
+  return {dst.origin.x + scale*(pos.x - src.origin.x),
+    dst.origin.y + scale*(pos.y - src.origin.y)};
 }
 
 struct Transform {

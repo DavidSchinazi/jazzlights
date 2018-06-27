@@ -3,7 +3,7 @@
 #include "unisparks.hpp"
 namespace unisparks {
 
-int runGui(const char* winTitle, Player& player, bool fullscreen=false);
+int runGui(const char* winTitle, Player& player, Box viewport, bool fullscreen=false);
 
 
 } // namespace unisparks
