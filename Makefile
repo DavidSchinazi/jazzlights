@@ -1,79 +1,46 @@
-.PHONY: all clean very-clean develop run
+.PHONY: all clean debug release-armv7 run 
+SOURCE_DIR:=${CURDIR}
+CARGO:=cargo
+DOCKER=docker
 
+all: debug
 
-SOURCES := \
-	dfplayer/tcl_renderer.cc \
-	dfplayer/visualizer.cc \
-	dfplayer/kinect.cc \
-	dfplayer/utils.cc \
-	dfplayer/renderer_wrap.cxx \
-	src/effects/fishify.cc \
-	src/effects/passthrough.cc \
-	src/effects/rainbow.cc \
-	src/effects/wearable.cc \
-	src/model/effect.cc \
-	src/model/image_source.cc \
-	src/model/projectm_source.cc \
-	src/tcl/tcl_controller.cc \
-	src/tcl/tcl_manager.cc \
-	src/util/input_alsa.cc \
-	src/util/led_layout.cc \
-	src/util/pixels.cc \
-	src/util/time.cc
+run:
+	${CARGO} run -- --config=${SOURCE_DIR}/etc/tglight.toml ${TGLIGHT_FLAGS}
 
-LINK_LIBS := \
-	-lpthread -lm -ldl -lasound -lGL \
-	-lopencv_core -lopencv_imgproc -lopencv_contrib -ldfsparks
+clean: 
+	${CARGO} clean
 
-LINK_DEPS := \
-	dfplayer/libprojectM.so.2 \
-	dfplayer/libkkonnect.so.0.1
+debug: 
+	${CARGO} build
 
-COPTS := \
-	-std=c++0x -Wall -Wextra \
-	-g -ggdb3 -fPIC \
-	-shared \
-	`python-config --includes` \
-	-Isrc \
-	-O1 -fno-omit-frame-pointer \
-	-Wl,-rpath,./dfplayer
+release-armv7:
+	${CARGO} build --target=armv7-unknown-linux-gnueabihf --release
 
-all: develop cpp clips
+setup: 
+	@if [ -z ${TGLIGHT_HOST} ]; then echo "Please set TGLIGHT_HOST environment variable" && exit 255; fi
+	cat ${HOME}/.ssh/id_rsa.pub | ssh pi@${TGLIGHT_HOST} 'sudo mount -o remount,rw / && mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys'
+	ssh pi@${TGLIGHT_HOST} 'sudo mkdir -p /root/.ssh && sudo cp /home/pi/.ssh/authorized_keys /root/.ssh/authorized_keys'
 
-develop: env
-	env/bin/python setup.py develop
+deploy: release-armv7
+	@if [ -z ${TGLIGHT_HOST} ]; then echo "Please set TGLIGHT_HOST environment variable" && exit 255; fi
+	@if [ -z ${CARGO_TARGET_DIR} ]; then echo "Please set CARGO_TARGET_DIR environment variable" && exit -1; fi
+	-ssh root@${TGLIGHT_HOST} "service tglight stop"
+	ssh pi@${TGLIGHT_HOST} "sudo mount -o remount,rw /"
+	ssh root@${TGLIGHT_HOST} "mkdir -p /opt/tglight/bin"	
+	scp ${CARGO_TARGET_DIR}/armv7-unknown-linux-gnueabihf/release/tglight root@${TGLIGHT_HOST}:/opt/tglight/bin/tglight
+	ssh root@${TGLIGHT_HOST} "service tglight restart"
+	-ssh root@${TGLIGHT_HOST} "sudo reboot"
 
-cpp: $(LINK_DEPS)
-	swig -python -c++ `python-config --includes` dfplayer/renderer.i
-	g++ $(COPTS) -o dfplayer/_renderer_cc.so $(SOURCES) $(LINK_LIBS) $(LINK_DEPS)
+docker-build:
+	${DOCKER} build -t tglight .
 
-run: develop cpp
-	env/bin/dfplayer --listen 127.0.0.1:8080
+docker-run: docker-build
+	${DOCKER} run -it --rm -p 8080:8080 tglight
 
-clips: develop
-	-rm -rf env/playlists
-	env/bin/dfprepr clips
+docker-deploy: docker-build
+	@if [ -z ${TGLIGHT_HOST} ]; then echo "Please set TGLIGHT_HOST environment variable" && exit 255; fi
+	${DOCKER} run -it --rm  -e "TGLIGHT_HOST=${TGLIGHT_HOST}" tglight deploy
 
-dfplayer/libprojectM.so.2:
-	./build_cmake.py projectm/src/libprojectM
-	cp projectm/src/libprojectM/build/libprojectM.so dfplayer/libprojectM.so.2
-
-dfplayer/libkkonnect.so.0.1:
-	./build_cmake.py external/kkonnect
-	cp external/kkonnect/build/lib/libkkonnect.so dfplayer/libkkonnect.so.0.1
-
-clean:
-	find . -name '*.pyc' -exec rm -f {} +
-	find . -name '*.pyo' -exec rm -f {} +
-	find . -name '*~' -exec rm -f {} +
-	rm -rf dfplayer.egg-info
-	rm -rf build
-	rm -rf external/kkonnect/build
-	rm -rf env/mpd
-
-very-clean: clean
-	rm -rf env
-
-env:
-	virtualenv env
-
+docker-shell: 
+	${DOCKER} run -it --rm -v${SOURCE_DIR}:/workdir --entrypoint=/bin/bash tglight

@@ -1,13 +1,2 @@
-*.pyc
-*~
+build/
 .DS_Store
-._.DS_Store
-env/
-clips/
-dfplayer/asoundrc
-dfplayer.egg-info/
-dfplayer/_renderer_cc.so
-dfplayer/renderer_cc.py
-dfplayer/renderer_wrap.cxx
-dfplayer/libprojectM.so.2
-dfplayer/libkkonnect.so.0.1

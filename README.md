@@ -1,206 +1,118 @@
-DiscoFish Player
-================
+# TechnoGecko LED Control Software
 
-Media player software for [DiscoFish art car](http://www.discofish.org/).
+## Setting up Raspberry Pi boxes
 
+### Hardware
 
-Computer Setup
---------------
+We're using Raspberry Pi Model 3 B+ as our target platform. For boxes that need displays, 
+[the official 7" touch screen](https://www.raspberrypi.org/products/raspberry-pi-touch-display/) is
+a good choice, and it fits nicely in [Smart Pi Touch Case](https://www.amazon.com/dp/B01HKWAJ6K/?coliid=I36LJJCYT5XK94&colid=1GJJNYQVILRYR&psc=0&ref_=lv_ov_lig_dp_it).
 
-The player runs Ubuntu 14.04. Steps below assume you're on some
-Debian flavour, e.g. Ubuntu. Modify accordingly for other 
-platforms.
+It would be nice to add realtime clock to this configuration, but we haven't tried it yet.
 
-1. Install git:
+### OS configuration
 
-        sudo apt-get install git
+Unfortunately, I don't have all details on how LIGHT01 box was configured, but here are some pointers.
 
-2. Clone this repo:
+Start with the latest [Raspbian Stretch Desktop](https://www.raspberrypi.org/downloads/raspbian/). I'm using 2018-06-27 version 
+on my dev box. Create an SD card.
 
-        git clone https://bitbucket.org/discofish/dfplayer.git dfplayer
-        cd dfplayer
+On Linux, you can do it like this:
 
-2.5 Clone dfsparks repo:
+```shell
+	lsblk
+	# Find the right dev number, e.g. /dev/sdb (or /dev/mmcblk0) with partitions /dev/sdb1 (/dev/mmcblk0p1)
+	# Unmount all partitions: 
+	umount /dev/sdb1
+	umount /dev/sdb2
+	# ...
+	unzip -p 2018-04-18-raspbian-stretch.zip | sudo dd of=/dev/sdX1 bs=4M conv=fsync
 
-        git clone https://bitbucket.org/discofish/dfsparks.git dfsparks
-        cd dfsparks 
+	# Enable ssh
+	touch /media/boot/ssh
+```
 
-2.5.1 Follow instructions in dfsparks README.txt to build and install dfsparks
+You can (and probably should) skip the next step for boxes that don't need WiFi connection (i.e. most of our boxes), but 
+in case you want to set it up, edit `/media/boot/wpa_supplicant.conf` to look like this:
 
-3. Install other required packages:
+```
+# /boot/wpa_supplicant.conf -> /etc/wpa_supplicant/wpa_supplicant.conf 
+ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+country=us
+network={
+	ssid="TechnoGecko"
+	psk="theshiniestlizard"
+	key_mgmt=WPA-PSK
+}
+```
+(LIGHT01 and WTF01 boxes are currently configured to create WiFi network instead. I'm not sure it's a good idea. We don't really need it and
+we'll have a router - and more than enough WiFi noise already - on the playa).
 
-        sudo ./instal-deps.py
+Eject the SD card, insert it into Raspberry Pi, connect ethernet cable, and boot. You should see it under `raspberrypi` name (if not, login into
+router and check DHCP lease table to find it's IP), we'll refer to it as `{TGLIGHT_HOST}`.
 
-4. Disable PulseAudio:
+Then connect to TechnoGecko WiFi (the password is `theshiniestlizard`) and type:
 
-        sudo vi /etc/pulse/client.conf
-            autospawn = no
-            daemon-binary = /bin/true
-        pulseaudio --kill ; rm ~/.config/pulse/client.conf
+```shell
+	# Add your SSH key to the Pi box. The default password for 'pi' user is 'paspberry'
+	cat ${HOME}/.ssh/id_rsa.pub | ssh pi@${TGLIGHT_HOST} 'mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys'
+	ssh pi@raspberrypi "sudo mkdir -p /root/.ssh && sudo cp ~/.ssh/authorized_keys /root/.ssh"
 
-5. Set up sound loopback:
+	# Change pi user password to 'otto' so that we don't get security warnings about default password
+	ssh root@raspberrypi "passwd pi"
 
-        sudo vi /etc/modules
-          Add snd-aloop
-        sudo vi /etc/modprobe.d/sound.conf
-          Add lines:
-            options snd_usb_audio index=10
-            options snd_aloop index=11
+	# Add tglight deploy keys to the box	
+	cat etc/tglight_deploy_id_rsa | ssh root@${TGLIGHT_HOST} 'cat > ~/.ssh/id_rsa'
+	cat etc/tglight_deploy_id_rsa.pub | ssh root@${TGLIGHT_HOST} 'cat > ~/.ssh/id_rsa.pub'
 
-6. Set up UPS daemon (if used):
+	# Edit /etc/hosts and /etc/hostname and rename the box to light01, light02, etc.
+```
 
-        sudo vi /etc/apcupsd/apcupsd.conf
-          Change UPSTYPE and UPSCABLE to usb
-          Comment out DEVICE
-          Set TIMEOUT to 60
-        sudo vi /etc/default/apcupsd
-          Set ISCONFIGURED to yes
-        sudo ln -s /etc/init.d/apcupsd /etc/rc2.d/S20apcupsd
+Then we need to set it to run Chromium in kiosk mode, opening the page http://localhost:80 on boot.
+I did it on my dev box by editing `/home/pi/.config/lxsession/LXDE-pi/autostart`, LIGHT01 is set up 
+differently (the file is `/etc/xdg/openbox/autostart`, but I'm not sure if you need to set up anything else
+for it to work). 
 
-7. Configure Ubuntu
+Turn off mouse pointer (I do it by  `sudo apt-get install -y unclutter`, not sure how it's set on LIGHT01).
 
-        While installing:
-          Use fish / .... as username and password
-          Enable auto-login
-        Install updates
-        Add terminal to quick-launch
-        All Settings / Brightness & Lock
-          Do not turn off the screen
-          Do not lock
-          Do not require password
-        # All Settings / Appearance / Behavior
-        #   Auto-hide the Launcher
-        Click on networking, disable WiFi
-        Click on networking, Edit Connections / Wired Connection 2
-          Verify it is "eth1", go to IPv4 Settings
-            Set Method to Manual
-            Add address: 192.168.60.178 / 255.255.255.0
-            Save
-        Fix diagnose Zotac reboot problems:
-          sudo vi /etc/default/grub
-            GRUB_CMDLINE_LINUX_DEFAULT="reboot=bios"
-          sudo update-grub
-        Allow dfplayer to increase priority:
-          sudo vi /etc/security/limits.conf
-          add:
-            fish            hard    rtprio            10
-            fish            soft    rtprio            10
-        Enable dfplayer to run at startup
-          cp dfplayer.desktop ~/.config/autostart/
+Set it up to mount flash card on boot (via /etc/fstab), and to mount root filesystem as read-only (again, I'm not
+sure how exactly it is set up on LIGHT01, probably via /etc/fstab as well).
 
-8. Reboot
+Then follow the deployment instructions below.
 
+## Making and testing code changes
 
-Physical Setup
---------------
+Most of pattern generaton code now lives in 
+[Unisparks repository on Github](https://github.com/unisparks/unisparks). This repository
+is for the stuff that depends on TechnoGecko hardware.
 
-1. Use a separate USB for DAC
+The easies way to get started is to use Docker. Install Docker (`sudo apt-get install docker.io` on Ubuntu<sup>1</sup>, or download and run installers for [Mac](https://www.docker.com/docker-mac) or [Windows](https://www.docker.com/docker-windows)), then type:
 
-2. Connect UPS, keyboard and mouse through a USB hub
+```shell
+    # check out and build
+	git clone git@gitlab.com:technogecko/tglight.git
+	cd tglight
+	make docker-build
 
-3. Connect "eth1" (central networking port) to router
+	# run
+	make docker-run
+```
 
-4. Configure the router for TCL communication:
+Then open web browser and navigate to http://localhost:8080 - you should see LED control UI.
 
-    1. Use NetGear N300 WNR3500L (or better something that supports DD-WRT)
-    2. Advanced/Setup/Internet Setup:
-       - Connect yellow (NetGear's Internet) port to the Internet
-       - Apply without making changes
-    3. Advanced/Setup/LAN Setup:
-       - Set IP address to 192.168.60.1/255.255.255.0
-       - Set DHCP range as 192.168.60.60-254
-       - Apply
-    4. Advanced/Setup/Wireless Setup:
-       - Set WiFi as FISHLIGHT, with password our password
-       - Apply
-    5. Advanced/Administration/Set Password:
-       - Change admin password to our password
-    (for WGR614 use http://www.routerlogin.com/basicsetting.htm)
+<sup>1</sup> Ubuntu 18.04 LTE or later. If you're using an older version look up the appropriate commands.
 
+## Deploying software updates
 
-Running the Player
-------------------
+Connect to TechnoGecko WiFi (the password is `theshiniestlizard`) and type:
 
-1. Download some videos and audio files, and put them into `clips`
-directory. The script will only look for `mp4` and `m4a` files.
+```shell
+	# update LED control software on light01 box
+	TGLIGHT_HOST=light01 make docker-deploy
+```
 
-2. Run `make develop` to create virtual environment in `env`,
-build and install dependencies, and do the rest of setuptools magic.
-**If it fails the first time try re-running it again** (some upstream
-packages have their dependency checking screwed up??) The whole process
-will take a while.
+## Developing without Docker
 
-        make develop
-
-3. Compile C++ code:
-
-        make cpp
-
-4. Preprocess clips (the results will go into `env/clips`):
-
-        make clips
-
-5. Run the player (without TCL):
-
-        ./start.py --disable-net --mpd
-
-6. If there is no audio, run 'aplay -l' and update
-   MPD_CARD_ID in dfplayer/player.py.
-
-7. Some useful commands:
-
-        git config --global core.editor "vim"
-        git push origin mybranch:master
-        git submodule update --init
-        apcaccess status
-        Refresh IP address by unplugging/plugging the cable and/or:
-          sudo dhclient -r ; sudo dhclient
-          ifconfig
-
-
-After the player is running you can control it via browser UI. Navigate to 
-http://*yourhost*:8080 and enjoy :)
-
-
-Installing OpenKinect (work in progress)
-----------------------------------------
-
-  This should actually not be needed. TODO(igorc): Remove.
-
-  Note that the first command will likely expect sudo password.
-
-  wget -O- http://neuro.debian.net/lists/$(lsb_release -cs).us-nh | sudo tee /etc/apt/sources.list.d/neurodebian.sources.list
-  sudo apt-key adv --recv-keys --keyserver pgp.mit.edu 2649A5A9
-  sudo apt-get update
-  sudo apt-get install freenect
-
-  Copy https://github.com/OpenKinect/libfreenect/blob/master/platform/linux/udev/51-kinect.rules
-    into /etc/udev/rules.d/51-kinect.rules
-  sudo udevadm control --reload-rules
-
-  Or compile:
-    sudo apt-get install git-core cmake freeglut3-dev pkg-config build-essential libxmu-dev libxi-dev libusb-1.0-0-dev
-    git clone https://github.com/OpenKinect/libfreenect.git
-    mkdir build ; cd build ; cmake -L ..
-    make
-
-  You may want to modify examples/glview.c to remove MOTOR subdevice.
-
-  Issues:
-    https://github.com/OpenKinect/libfreenect/issues/402
-
-
-  Update PIP:
-    sudo pip install --upgrade pip
-
-  Installing Raspbian on BananaPi:
-    Download and unzip M1 build from http://www.bananapi.com/index.php/download
-    Insert SD card, look for device name in `sudo fdisk -l` (e.g. 8GB size)
-    sudo dd if=2015-01-31-raspbian-bpi-r1.img of=/dev/sdX bs=1M
-    Boot BananaPi, open `sudo raspi-config`:
-      Extend partion size
-      Change locale to en-US
-      Reboot
-    
-
-Happy hacking!
+To run without Docker (e.g. if you recompile a lot and want better performance, or use native debugger, or something of 
+this sort) - look at the `Dockerfile` and setup your environment in a similar way. You may have to modify commands to 
+work on your system. 
