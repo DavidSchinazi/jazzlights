@@ -3,21 +3,40 @@
 #include "cpptoml.hpp"
 #include "loader.hpp"
 #include "renderers/pixelpusher.hpp"
+#include "renderers/openpixel.hpp"
 #include "unisparks.hpp"
 using namespace std;
 using namespace unisparks;
 
 Renderer& loadRenderer(const cpptoml::table& cfg, int strandidx) {
   static vector<unique_ptr<Renderer>> renderers;
-  auto addrcfg = cfg.get_as<string>("addr");
-  if (!addrcfg) {
-    throw runtime_error("must specify pixelpusher address");
+  auto typecfg = cfg.get_as<string>("type");
+  if (!typecfg) {
+    throw runtime_error("must specify renderer type");
   }
-  auto addr = addrcfg->c_str();
-  auto strip = cfg.get_as<int64_t>("strip").value_or(strandidx);
-  auto port = cfg.get_as<int64_t>("port").value_or(7331);
+  auto type = typecfg->c_str();
 
-  renderers.emplace_back(unique_ptr<Renderer>(new PixelPusher(addr, port, strip)));
+  if (!strcmp(type, "pixelpusher")) {
+    auto addrcfg = cfg.get_as<string>("addr");
+    if (!addrcfg) {
+      throw runtime_error("must specify pixelpusher address");
+    }
+    auto addr = addrcfg->c_str();
+    auto strip = cfg.get_as<int64_t>("strip").value_or(strandidx);
+    auto port = cfg.get_as<int64_t>("port").value_or(7331);
+
+    renderers.emplace_back(unique_ptr<Renderer>(new PixelPusher(addr, port, strip)));    
+  }
+  else if (!strcmp(type, "openpixel")) {
+    auto addrcfg = cfg.get_as<string>("addr");
+    if (!addrcfg) {
+      throw runtime_error("must specify openpixel address");
+    }
+    auto addr = addrcfg->c_str();
+    auto channel = cfg.get_as<int64_t>("channel").value_or(0);
+    auto port = cfg.get_as<int64_t>("port").value_or(5000);
+    renderers.emplace_back(unique_ptr<Renderer>(new OpenPixelWriter(addr, port, channel)));        
+  }
   return *renderers.back();
 }
 

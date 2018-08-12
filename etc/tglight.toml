@@ -1,14 +1,18 @@
 # LED strands
-[[strand]]
-renderers = [{type="pixelpusher", addr="10.1.0.10", port=7331, strip=0}]
-layout = {type="matrix-zigzag", size=[20,20], origin=[0,0]}
+# [[strand]]
+# renderers = [{type="pixelpusher", addr="10.1.0.10", port=7331, strip=0}]
+# layout = {type="matrix-zigzag", size=[20,20], origin=[0,0]}
+
+# [[strand]]
+# renderers = [{type="pixelpusher", addr="10.1.0.10", port=7331, strip=1}]
+# layout = {type="matrix-zigzag", size=[20,20], origin=[0.34,0]}
+
+# [[strand]]
+# renderers = [{type="pixelpusher", addr="10.1.0.10", port=7331, strip=2}]
+# layout = {type="matrix-zigzag", size=[20,20], origin=[0.68,0]}
 
 [[strand]]
-renderers = [{type="pixelpusher", addr="10.1.0.10", port=7331, strip=1}]
-layout = {type="matrix-zigzag", size=[20,20], origin=[0.34,0]}
-
-[[strand]]
-renderers = [{type="pixelpusher", addr="10.1.0.10", port=7331, strip=2}]
+renderers = [{type="openpixel", addr="192.168.60.59", port=5000, channel=0}]
 layout = {type="matrix-zigzag", size=[20,20], origin=[0.68,0]}
 
 # [[strand]]
