@@ -2,6 +2,6 @@
 #define TGPLAYER_LOADER_HPP
 #include "unisparks.hpp"
 
-unisparks::Player& load(const char *file);
+void load(const char *file, unisparks::Player& player);
 
 #endif /* TGPLAYER_LOADER_HPP */

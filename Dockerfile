@@ -33,7 +33,7 @@ RUN chmod 700 /root/.ssh &&\
 RUN mkdir /src
 
 # Download unisparks
-RUN git clone https://github.com/unisparks/unisparks.git  /src/unisparks -b dev
+RUN git clone https://github.com/unisparks/unisparks.git /src/unisparks -b dev
 ENV UNISPARKS_DIR=/src/unisparks
 
 # Download and compile tglight

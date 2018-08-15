@@ -87,4 +87,10 @@ HOR_SPAN=INCH_IN_M*250.0/43
 VER_SPAN=INCH_IN_M*128/10
 
 for (cx, cy) in scoord:
-    print "   %3.2f, %3.2f, %3.2f," % (cx*HOR_SPAN, cy*VER_SPAN, 0)
+    print "   %3.2f, %3.2f, %3.2f," % (23+ cx*HOR_SPAN, cy*VER_SPAN, 0)
+
+
+print "\n\n"
+
+for (cx, cy) in scoord:
+    print "   %3.2f, %3.2f, %3.2f," % (6.5+ -cx*HOR_SPAN, cy*VER_SPAN, 0)
