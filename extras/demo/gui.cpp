@@ -75,10 +75,10 @@ void onKey(GLFWwindow* window, int key, int /*scncode*/, int action,
 int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen) {
   player = &playerRef;
   viewport = vp;
-
-  info("Running GUI, view box is (%0.3f, %0.3f) - (%0.3f, %0.3f) meters",
+  
+  info("Running GUI, view box is (%0.3f, %0.3f) - (%0.3f, %0.3f) meters, using GLFW v.%s",
        left(player->bounds()), top(player->bounds()), right(player->bounds()),
-       bottom(player->bounds()));
+       bottom(player->bounds()), glfwGetVersionString());
 
   if (!glfwInit()) {
     fatal("Can't initialize graphics");

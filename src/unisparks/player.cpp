@@ -316,6 +316,7 @@ void Player::begin() {
        effectCount_,
        playlistSize_,
        network_ ? "networked" : "standalone");
+
   debug("Registered effects:");
   for (size_t i = 0, pli = 0; i < effectCount_; ++i) {
     if (effects_[i].autoplay) {

@@ -3,6 +3,8 @@
 #include "unisparks/layout.hpp"
 namespace unisparks {
 
+using PixelsPerMeter = double;
+
 class Matrix : public Layout {
  public:
   constexpr Matrix(int w, int h) :

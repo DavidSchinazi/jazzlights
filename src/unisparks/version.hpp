@@ -1,3 +1,3 @@
 #ifndef UNISPARKS_VERSION
-#define UNISPARKS_VERSION "0.7.2"
+#define UNISPARKS_VERSION "0.7.4"
 #endif

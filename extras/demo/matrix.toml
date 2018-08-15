@@ -1,2 +1,4 @@
 [[strand]]
 layout = {type="matrix", size=[100,75]}
+renderers = [{type="any"}]
+

@@ -1,7 +1,24 @@
-#include "unisparks.hpp"
-#include "loader.hpp"
+#include "glrenderer.hpp"
 #include "gui.hpp"
+#include "unisparks.hpp"
+#include <vector>
+#include <memory>
 using namespace unisparks;
+using std::vector;
+using std::unique_ptr;
+
+class DemoLoader : public Loader {
+  Renderer& loadRenderer(const Layout& layout, const cpptoml::table&, int strandidx) override {
+    static vector<unique_ptr<Renderer>> renderers;
+    static int laststrandidx = -1;
+    if (laststrandidx == strandidx) {
+      return *renderers.back();
+    }
+    laststrandidx = strandidx;
+    renderers.emplace_back(unique_ptr<Renderer>(new GLRenderer(layout, ledRadius())));
+    return *renderers.back();
+  }
+};
 
 int main(int argn, char** argv) {
   if (argn<2) {
@@ -11,11 +28,12 @@ int main(int argn, char** argv) {
   bool fullscreen = false;
   const char* config = argv[1];
 
-  Box viewport;
   Player player;
   Udp network;
-  player.connect(network);
-  load(config, player, viewport);
 
-  return runGui("Unisparks Demo", player, viewport, fullscreen);
+  DemoLoader().load(config, player);
+  player.connect(network);
+  player.begin();
+
+  return runGui("Unisparks Demo", player, player.bounds(), fullscreen);
 }

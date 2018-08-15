@@ -11,5 +11,6 @@
 #include "unisparks/networks/udp.hpp"
 #include "unisparks/player.hpp"
 #include "unisparks/util/log.hpp"
+#include "unisparks/util/loader.hpp"
 
 #endif /* UNISPARKS_HPP */

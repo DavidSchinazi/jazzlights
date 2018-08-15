@@ -53,6 +53,9 @@ set(LIB_SOURCES
 	unisparks/networks/udp.cpp
 	unisparks/networks/udp.hpp
 	unisparks/util/geom3d.hpp
+	unisparks/util/cpptoml.hpp
+	unisparks/util/loader.cpp
+	unisparks/util/loader.hpp
 	unisparks/util/stdlog.cpp
 	unisparks/util/stdtime.cpp
 )
@@ -62,9 +65,6 @@ set(DEMO_SOURCES
 	demo/glrenderer.hpp
 	demo/gui.cpp
 	demo/gui.hpp
-	demo/cpptoml.hpp
-	demo/loader.cpp
-	demo/loader.hpp
 	demo/main.cpp 
 	demo/overlays.cpp 
 )
