@@ -66,6 +66,7 @@ Then connect to TechnoGecko WiFi (the password is `theshiniestlizard`) and type:
 	cat etc/tglight_deploy_id_rsa.pub | ssh root@${TGLIGHT_HOST} 'cat > ~/.ssh/id_rsa.pub'
 
 	# Edit /etc/hosts and /etc/hostname and rename the box to light01, light02, etc.
+	# Edit /etc/dhcpcd.conf and set static IP to 10.1.0.31 for light01, 10.1.0.32 for light02, etc.
 ```
 
 Then we need to set it to run Chromium in kiosk mode, opening the page http://localhost:80 on boot.

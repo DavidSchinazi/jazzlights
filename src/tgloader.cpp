@@ -49,7 +49,16 @@ Renderer& TGLoader::loadRenderer(const unisparks::Layout&,
 }
 
 void load(const char *file, unisparks::Player& player) {
-  TGLoader().load(file, player);
+  for(;;) {
+    try {
+      info("Loading %s...", file);
+      TGLoader().load(file, player);
+      return;
+    } catch (const runtime_error& err) {
+      error("Couldn't parse %s: %s", file, err.what());
+      delay(2000);
+    }
+  }
 }
 
 // Layout& loadLayout(const cpptoml::table& cfg) {
