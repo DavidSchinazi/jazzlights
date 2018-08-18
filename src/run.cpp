@@ -18,7 +18,6 @@ extern "C" const char* call(const char* cmd) {
 
 extern "C" void run(const char* cfgfile) {
   load(cfgfile, player);
-  //TGLoader().load(cfgfile, player);
   player.begin();
   for (;;) {
     player.render();
