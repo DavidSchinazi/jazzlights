@@ -5,6 +5,8 @@
 using namespace unisparks;
 
 Player player;
+Udp network;
+
 
 extern "C" const char* call(const char* cmd) {
   if (!strcmp(cmd, "shutdown")) {
@@ -16,10 +18,13 @@ extern "C" const char* call(const char* cmd) {
   return player.command(cmd);
 }
 
-extern "C" void run(const char* cfgfile) {
+extern "C" void run(bool verbose, const char* cfgfile) {
+  if (verbose) {
+    enableVerboseOutput();    
+  }
+
   load(cfgfile, player);
-  //TGLoader().load(cfgfile, player);
-  // enableVerboseOutput();
+  player.connect(network);
   player.begin();
   for (;;) {
     player.render();

@@ -20,16 +20,16 @@ mod player {
         use std::os::raw::{c_char};
         extern "C" {
             pub fn call(cmd: *const c_char) -> *const c_char;
-            pub fn run(cfgfile: *const c_char);
+            pub fn run(verbose: u8, cfgfile: *const c_char);
         }    
     }
     pub fn call(cmd: &str) -> String {
         let req = CString::new(cmd).expect("corrupted command").into_raw();
         unsafe {CStr::from_ptr(ffi::call(req))}.to_string_lossy().to_string()
     }
-    pub fn run(cfgfile: &str) {
+    pub fn run(verbose: bool, cfgfile: &str) {
         let cfgfile = CString::new(cfgfile).expect("corrupted config file path").into_raw();
-        unsafe {ffi::run(cfgfile)};
+        unsafe {ffi::run(if verbose { 1 } else { 0 }, cfgfile)};
     }
 }
 
@@ -79,5 +79,5 @@ fn main() {
     thread::spawn(move || {
         webui::run(http_listen);
     });
-    player::run(args.value_of("config").unwrap_or("tglight.toml"));
+    player::run(args.occurrences_of("verbose") > 0, args.value_of("config").unwrap_or("tglight.toml"));
 }

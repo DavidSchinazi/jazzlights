@@ -56,10 +56,10 @@ Then connect to TechnoGecko WiFi (the password is `theshiniestlizard`) and type:
 ```shell
 	# Add your SSH key to the Pi box. The default password for 'pi' user is 'paspberry'
 	cat ${HOME}/.ssh/id_rsa.pub | ssh pi@${TGLIGHT_HOST} 'mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys'
-	ssh pi@raspberrypi "sudo mkdir -p /root/.ssh && sudo cp ~/.ssh/authorized_keys /root/.ssh"
+	ssh pi@${TGLIGHT_HOST} "sudo mkdir -p /root/.ssh && sudo cp ~/.ssh/authorized_keys /root/.ssh"
 
 	# Change pi user password to 'otto' so that we don't get security warnings about default password
-	ssh root@raspberrypi "passwd pi"
+	ssh root@${TGLIGHT_HOST} "passwd pi"
 
 	# Add tglight deploy keys to the box	
 	cat etc/tglight_deploy_id_rsa | ssh root@${TGLIGHT_HOST} 'cat > ~/.ssh/id_rsa'

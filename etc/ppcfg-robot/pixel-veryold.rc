@@ -1,0 +1,75 @@
+# Network Configuration
+ether=10.1.0.10
+netmask=255.0.0.0
+gateway=10.1.0.1
+port=7331
+#artnet_universe=1
+#artnet_channel=7
+#stripsperpacket=2
+
+# Device Organization
+#group=2
+#controller=45
+
+# Global Strip Configuration
+#servo_interval=20000
+#servo_minimum=1000
+blank_strips_on_idle=1
+#servo_multiplier=4
+#update=1
+#turbo_mode=16
+pixels=400
+swap=12345678
+#copy=2345678
+#group=27
+#controller=17
+#ws28delay=7
+#onewire=2
+stripsattached=8
+
+# Strip 1 Configuration
+#strip1=ws2801
+strip1=p9813
+#start1=ff0000
+start1=00ff00
+
+# Strip 2 Configuration
+#strip2=ws2801
+strip2=p9813
+start2=00ff00
+
+# Strip 3 Configuration
+#strip3=ws2801
+strip3=p9813
+#start3=0000ff
+start3=00ff00
+
+# Strip 4 Configuration
+#strip4=ws2801
+strip4=p9813
+#start4=ffff00
+start4=00ff00
+
+# Strip 5 Configuration
+strip1=p9813
+#strip5=ws2801
+#start5=00ffcc
+start5=00ff00
+
+# Strip 6 Configuration
+strip1=p9813
+#strip6=ws2801
+#start6=00ffcc
+start6=00ff00
+
+# Strip 7 Configuration
+strip1=p9813
+#strip7=ws2801
+#start7=00ffcc
+start7=00ff00
+
+# Strip 8 Configuration
+strip1=p9813
+#strip8=ws2801
+#start8=00ffcc
+start8=00ff00
