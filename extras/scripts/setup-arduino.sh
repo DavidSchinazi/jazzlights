@@ -4,7 +4,7 @@ UNISPARKS_HOME="${UNISPARKS_HOME:-$(dirname $(dirname $(dirname "$0")))}"
 
 set -e
 apt-get update
-apt-get install -y zip curl xz-utils build-essential default-jre
+apt-get install -y zip curl xz-utils build-essential default-jre python
 
 echo "Installing Arduino"
 mkdir -p /opt && curl -s ${ARDUINO_DIST} | tar xvJC /opt
