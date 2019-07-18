@@ -6,10 +6,12 @@
 
 namespace unisparks {
 
-struct PixelPusher : Renderer {
+class PixelPusher : public Renderer {
+public:
   PixelPusher(const char* host, int port, int strip, int throttle = 1000 / 30);
   void render(InputStream<Color>& pixelColors) override;
 
+private:
   const char* host;
   int port;
   int strip;
@@ -17,6 +19,7 @@ struct PixelPusher : Renderer {
   int throttle;
   int fd;
   Milliseconds lastTxTime = -1;
+  Milliseconds lastReconnectTime = -1;
 };
 
 

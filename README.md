@@ -141,3 +141,12 @@ To flash image onto card:
 	sudo newfs_msdos -F 16 /dev/diskN
 	sudo dd if=dist/tglight.img of=/dev/diskN
 ```
+
+## Debugging
+
+To watch tglight logs, `ssh` to the box (or attach a keyboard) and run
+
+```shell
+	journalctl -utglight -f 
+```
+	

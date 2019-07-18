@@ -16,6 +16,7 @@
 #include <assert.h>
 
 #include "unisparks/util/log.hpp"
+#include "unisparks/util/time.hpp"
 
 namespace unisparks {
 
@@ -38,7 +39,6 @@ PixelPusher::PixelPusher(const char* h, int p, int s, int t) : host(h),
         (char*)&addr.sin_addr.s_addr, hp->h_length);
   addr.sin_port = htons(port);
 }
-
 
 void PixelPusher::render(InputStream<Color>& pixelColors) {
   assert(fd);

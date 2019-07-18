@@ -1,7 +1,7 @@
 // use std::process::Command;
-use std::ptr;
-use ws::{listen, Handler, Message, Request, Response, Result, Sender, Handshake, util::Token};
 use player;
+use std::ptr;
+use ws::{listen, util::Token, Handler, Handshake, Message, Request, Response, Result, Sender};
 
 const GRATI: Token = Token(1);
 static INDEX_HTML: &'static [u8] = include_bytes!("index.html");
@@ -34,12 +34,14 @@ impl Handler for Server {
 
     fn on_open(&mut self, _: Handshake) -> Result<()> {
         info!("Opened connection to {:?}", self.out.token());
-        self.out.timeout(500, GRATI).unwrap();
+        self.out.timeout(200, GRATI).unwrap();
+        self.out.broadcast(player::call("sysinfo?"));
         self.out.broadcast(player::call("status?"))
     }
 
     fn on_timeout(&mut self, _event: Token) -> Result<()> {
-        self.out.timeout(500, GRATI).unwrap();
+        self.out.timeout(200, GRATI).unwrap();
+        self.out.broadcast(player::call("sysinfo?"));
         self.out.broadcast(player::call("status?"))
     }
 
@@ -48,15 +50,16 @@ impl Handler for Server {
     }
 }
 
-static mut SERVER: * const Server = ptr::null();
+static mut SERVER: *const Server = ptr::null();
 
 pub fn run(bind_addr: String) {
     info!("Starting HTTP server on {}...", bind_addr);
     listen(bind_addr, |out| {
-      let s = Server { out };
-      unsafe {
-        SERVER = &s;
-      }
-      return s;
-    }).unwrap()
+        let s = Server { out };
+        unsafe {
+            SERVER = &s;
+        }
+        return s;
+    })
+    .unwrap()
 }

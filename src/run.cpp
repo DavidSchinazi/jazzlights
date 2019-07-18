@@ -6,6 +6,8 @@ using namespace unisparks;
 
 Player player;
 Udp network;
+const char* sysinfo();
+char version[32];
 
 
 extern "C" const char* call(const char* cmd) {
@@ -15,14 +17,19 @@ extern "C" const char* call(const char* cmd) {
     }
     return "! failed to shut down";
   }
+  if (!strcmp(cmd, "sysinfo?")) {
+    return sysinfo();
+  }
   return player.command(cmd);
 }
 
-extern "C" void run(bool verbose, const char* cfgfile) {
+extern "C" void run(bool verbose, const char* ver, const char* cfgfile) {
   if (verbose) {
     enableVerboseOutput();    
   }
 
+  strcpy(version, ver);
+  info("My %s", sysinfo());
   load(cfgfile, player);
   player.connect(network);
   player.begin();
