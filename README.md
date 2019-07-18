@@ -65,6 +65,7 @@ Then connect to TechnoGecko WiFi (the password is `theshiniestlizard`) and type:
 	cat etc/tglight_deploy_id_rsa | ssh root@${TGLIGHT_HOST} 'cat > ~/.ssh/id_rsa'
 	cat etc/tglight_deploy_id_rsa.pub | ssh root@${TGLIGHT_HOST} 'cat > ~/.ssh/id_rsa.pub'
 
+	# Edit /etc/dhcpcd.conf and set IP address to 10.1.0.1, 10.1.0.2, etc.
 	# Edit /etc/hosts and /etc/hostname and rename the box to light01, light02, etc.
 	# Edit /etc/dhcpcd.conf and set static IP to 10.1.0.31 for light01, 10.1.0.32 for light02, etc.
 ```
@@ -117,3 +118,26 @@ Connect to TechnoGecko WiFi (the password is `theshiniestlizard`) and type:
 To run without Docker (e.g. if you recompile a lot and want better performance, or use native debugger, or something of 
 this sort) - look at the `Dockerfile` and setup your environment in a similar way. You may have to modify commands to 
 work on your system. 
+
+
+## Cloning SD card on Mac
+
+To create master image from card:
+
+```shell
+	diskutil list
+	# Identify SD card
+
+	sudo dd if=/dev/diskN of=dist/tglight.img
+```
+
+To flash image onto card:
+
+```shell
+	diskutil list
+	# Identify SD card
+
+	diskutil unmountDisk /dev/diskN
+	sudo newfs_msdos -F 16 /dev/diskN
+	sudo dd if=dist/tglight.img of=/dev/diskN
+```
