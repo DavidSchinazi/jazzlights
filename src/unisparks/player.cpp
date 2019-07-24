@@ -31,7 +31,8 @@ using namespace internal;
 void  Player::addDefaultEffects2D() {
   static auto synctest = effect([ = ](const Frame& frame) {
       return [ = ](const Pixel& /*pt*/) -> Color {
-        return int(frame.time / 1000) % 2 == 0 ? GREEN : RED;
+        Color colors[] = {0xff0000, 0x00ff00, 0x0000ff, 0xffffff};
+        return colors[int(frame.time / 1000) % 4];
       };
     });
   // static auto synctest = sequence(1000, solid(RED), 1000, solid(GREEN)); //loop(100, sequence(1000, solid(RED), 1000, solid(GREEN)));
