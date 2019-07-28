@@ -7,7 +7,7 @@ DOCKER=docker
 all: debug
 
 run:
-	${CARGO} run -- --config=${SOURCE_DIR}/etc/tglight.toml ${TGLIGHT_FLAGS}
+	${CARGO} run -- --config=${SOURCE_DIR}/etc/robot/tglight.toml ${TGLIGHT_FLAGS}
 
 clean: 
 	${CARGO} clean
@@ -16,7 +16,7 @@ debug:
 	${CARGO} build 
 
 release-armv7:
-	${CARGO} build --offline --target=armv7-unknown-linux-gnueabihf --release 
+	${CARGO} build --target=armv7-unknown-linux-gnueabihf --release 
 
 setup: 
 	@if [ -z ${TGLIGHT_HOST} ]; then echo "Please set TGLIGHT_HOST environment variable" && exit 255; fi
