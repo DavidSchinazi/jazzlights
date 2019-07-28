@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y\
 	curl
 
 # Rust
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+RUN curl https://sh.rustup.rs -sSf | sh -s --  -y
 
 # Raspberry Pi toolchain
 RUN apt-get install -y\

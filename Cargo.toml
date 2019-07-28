@@ -1,6 +1,6 @@
 [package]
 name = "tglight"
-version = "0.3.3"
+version = "0.3.4"
 authors = ["Dmitry Azovtsev <dmitry@azovtsev.com>"]
 
 [dependencies]
@@ -11,7 +11,7 @@ log = { version = "0.4.1", features = ['std'] }
 time = "0.1.40"
 walkdir = "2"
 ws = "0.7.6"
-libc = "*"
+libc = "0.2"
 toml = "0.4"
 
 [build-dependencies]

@@ -1,2 +1,11 @@
 [build]
 target-dir = "build"
+
+[source.crates-io]
+replace-with = "vendored-sources"
+
+[source.vendored-sources]
+directory = "vendor"
+
+[net]
+offline = true # do not access the network, but otherwise try to proceed if possible

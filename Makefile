@@ -1,5 +1,6 @@
-.PHONY: all clean debug release-armv7 run 
+.PHONY: all clean debug release-armv7 run docker-build docker-run docker-deploy
 SOURCE_DIR:=${CURDIR}
+BUILD_DIR:=${CURDIR}/build
 CARGO:=cargo
 DOCKER=docker
 
@@ -12,10 +13,10 @@ clean:
 	${CARGO} clean
 
 debug: 
-	${CARGO} build
+	${CARGO} build 
 
 release-armv7:
-	${CARGO} build --target=armv7-unknown-linux-gnueabihf --release
+	${CARGO} build --offline --target=armv7-unknown-linux-gnueabihf --release 
 
 setup: 
 	@if [ -z ${TGLIGHT_HOST} ]; then echo "Please set TGLIGHT_HOST environment variable" && exit 255; fi
@@ -32,15 +33,20 @@ deploy: release-armv7
 	ssh root@${TGLIGHT_HOST} "service tglight restart"
 	-ssh root@${TGLIGHT_HOST} "sudo reboot"
 
-docker-build:
+docker-image:
 	${DOCKER} build -t tglight .
 
-docker-run: docker-build
-	${DOCKER} run -it --rm -p 8080:8080 tglight
+docker-run: docker-image
+	${DOCKER} run -it --rm -p 8080:8080 -v ${BUILD_DIR}/docker:/build/tglight tglight
 
-docker-deploy: docker-build
+docker-deploy: docker-image
 	@if [ -z ${TGLIGHT_HOST} ]; then echo "Please set TGLIGHT_HOST environment variable" && exit 255; fi
-	${DOCKER} run -it --rm  -e "TGLIGHT_HOST=${TGLIGHT_HOST}" tglight deploy
+	${DOCKER} run -it --rm  -v ${BUILD_DIR}/docker:/build/tglight -e "TGLIGHT_HOST=${TGLIGHT_HOST}" tglight deploy
 
-docker-shell: 
+docker-shell: docker-build-image
 	${DOCKER} run -it --rm -v${SOURCE_DIR}:/workdir --entrypoint=/bin/bash tglight
+
+copy-pp-cards:
+	- cp etc/robot/pixel.rc /Volumes/PP_ROBOT/pixel.rc
+	- cp etc/stage/pixel.rc /Volumes/PP_STAGE/pixel.rc
+	- cp etc/caboose/pixel.rc /Volumes/PP_CABOOSE/pixel.rc	

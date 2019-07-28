@@ -9,7 +9,6 @@ Udp network;
 const char* sysinfo();
 char version[32];
 
-
 extern "C" const char* call(const char* cmd) {
   if (!strcmp(cmd, "shutdown")) {
     if (!system("shutdown -h now")) {
