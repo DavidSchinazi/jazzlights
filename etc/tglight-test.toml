@@ -1,0 +1,41 @@
+
+
+# Caboose left (inside) tail fins
+[[strand]]
+renderers = [{type="pixelpusher", addr="10.1.0.11", port=7331, strip=0}]
+layout = {type="matrix-zigzag", size=[50,50], origin=[14.30, -0.70], resolution=3}
+
+# Caboose right (outside) tail fins
+[[strand]]
+renderers = [{type="pixelpusher", addr="10.1.0.11", port=7331, strip=1}]
+layout = {type="matrix-zigzag", size=[50,50], origin=[14.30, -0.70], resolution=3}
+
+# Caboose outside wall
+[[strand]]
+renderers = [{type="pixelpusher", addr="10.1.0.11", port=7331, strip=2}]
+layout = {type="matrix-zigzag", size=[50,50], origin=[14.30, -0.70], resolution=3}
+
+# Caboose inside wall
+[[strand]]
+renderers = [{type="pixelpusher", addr="10.1.0.11", port=7331, strip=3}]
+layout = {type="matrix-zigzag", size=[50,50], origin=[14.30, -0.70], resolution=3}
+
+# Caboose dorsal fins D1 + D2 + D3
+[[strand]]
+renderers = [{type="pixelpusher", addr="10.1.0.11", port=7331, strip=4}]
+layout = {type="matrix-zigzag", size=[50,50], origin=[14.30, -0.70], resolution=3}
+
+# Caboose dorsal fins D4 + D5 + D6
+[[strand]]
+renderers = [{type="pixelpusher", addr="10.1.0.11", port=7331, strip=5}]
+layout = {type="matrix-zigzag", size=[50,50], origin=[14.30, -0.70], resolution=3}
+
+# Caboose dorsal fins D7 + D8 + D9
+[[strand]]
+renderers = [{type="pixelpusher", addr="10.1.0.11", port=7331, strip=6}]
+layout = {type="matrix-zigzag", size=[50,50], origin=[14.30, -0.70], resolution=3}
+
+# Caboose dorsal fins D10 + D11 + D12
+[[strand]]
+renderers = [{type="pixelpusher", addr="10.1.0.11", port=7331, strip=7}]
+layout = {type="matrix-zigzag", size=[50,50], origin=[14.30, -0.70], resolution=3}
