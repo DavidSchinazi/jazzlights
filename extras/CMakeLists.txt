@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.9)
 set(CMAKE_MACOSX_RPATH 1)
 project(Unisparks)
 
-set(LIB_SOURCES 
+set(LIB_SOURCES
 	../src/unisparks/effect.hpp
 	../src/unisparks/effects/chess.hpp
 	../src/unisparks/effects/flame.cpp
@@ -18,7 +18,7 @@ set(LIB_SOURCES
 	../src/unisparks/effects/slantbars.hpp
 	../src/unisparks/effects/solid.hpp
 	../src/unisparks/effects/transform.hpp
-	../src/unisparks/effects/treesine.hpp
+	../src/unisparks/effects/threesine.hpp
 	../src/unisparks/frame.cpp
 	../src/unisparks/frame.hpp
 	../src/unisparks/layout.hpp
@@ -60,21 +60,21 @@ set(LIB_SOURCES
 	unisparks/util/stdtime.cpp
 )
 
-set(DEMO_SOURCES 
+set(DEMO_SOURCES
 	demo/glrenderer.cpp
 	demo/glrenderer.hpp
 	demo/gui.cpp
 	demo/gui.hpp
-	demo/main.cpp 
-	demo/overlays.cpp 
+	demo/main.cpp
+	demo/overlays.cpp
 )
 
-set(TEST_SOURCES 
+set(TEST_SOURCES
 	tests/main.cpp
 	tests/player.cpp
 )
 
-set(BENCH_SOURCES 
+set(BENCH_SOURCES
 	bench/main.cpp
 )
 
@@ -108,4 +108,3 @@ add_executable(unisparks-bench ${BENCH_SOURCES})
 target_link_libraries(unisparks-bench unisparks)
 set_target_properties(unisparks-bench PROPERTIES COMPILE_OPTIONS "-std=c++11;-fPIC;-Wall;-Wextra;-Werror;-o2")
 install(TARGETS unisparks-bench DESTINATION bin COMPONENT "bench")
-

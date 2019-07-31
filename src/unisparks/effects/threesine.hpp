@@ -1,11 +1,11 @@
-#ifndef UNISPARKS_EFFECTS_TREESINE_H
-#define UNISPARKS_EFFECTS_TREESINE_H
+#ifndef UNISPARKS_EFFECTS_THREESINE_H
+#define UNISPARKS_EFFECTS_THREESINE_H
 #include "unisparks/effects/functional.hpp"
 #include "unisparks/util/math.hpp"
 
 namespace unisparks {
 
-constexpr auto treesine = []() {
+constexpr auto threesine = []() {
   return effect([ = ](const Frame & frame) {
     Milliseconds period = adjustDuration(frame, 8000);
     Coord w = width(frame);
@@ -34,4 +34,4 @@ constexpr auto treesine = []() {
 
 
 } // namespace unisparks
-#endif /* UNISPARKS_EFFECTS_TREESINE_H */
+#endif /* UNISPARKS_EFFECTS_THREESINE_H */

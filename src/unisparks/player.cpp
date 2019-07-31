@@ -13,7 +13,7 @@
 #include "unisparks/effects/slantbars.hpp"
 #include "unisparks/effects/solid.hpp"
 #include "unisparks/effects/transform.hpp"
-#include "unisparks/effects/treesine.hpp"
+#include "unisparks/effects/threesine.hpp"
 #include "unisparks/registry.hpp"
 #include "unisparks/renderers/simple.hpp"
 #include "unisparks/util/containers.hpp"
@@ -49,8 +49,8 @@ void  Player::addDefaultEffects2D() {
                      rainbow()
                    ), true);
 
-  addDefaultEffect("treesine",
-                   clone(treesine()),
+  addDefaultEffect("threesine",
+                   clone(threesine()),
                    true
                   );
 
