@@ -40,14 +40,15 @@ class Network {
   virtual void send(void* buf, size_t bufsize) = 0;
 
   NetworkStatus status_ = INITIALIZING;
-  
+
   Milliseconds lastConnectionAttempt_ = 0;
   Milliseconds minBackoffTimeout_ = 1000;
   Milliseconds maxBackoffTimeout_ = 16000;
   Milliseconds backoffTimeout_ = minBackoffTimeout_;
-  
+
   bool isEffectMaster_ = false;
   char patternBuf_[16] = {0,};
+  char lastSentPattern_[16] = {0,};
 
   Milliseconds effectLastTxTime_ = 0;
   Milliseconds effectLastRxTime_ = 0;

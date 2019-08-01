@@ -32,7 +32,7 @@ constexpr uint32_t htonl(uint32_t n) {
 namespace unisparks {
 
 static constexpr int msgcodeEffectFrame = 0xDF0002;
-static constexpr Milliseconds effectUpdatePeriod = 200;
+static constexpr Milliseconds effectUpdatePeriod = 20000;
 static constexpr Milliseconds maxMissingEffectMasterPeriod = 2000;
 
 struct Message {
@@ -118,10 +118,14 @@ bool Network::sync(const char** pattern, Milliseconds* time,
 
   // Do we need to broadcast?
   if (isEffectMaster_ && (effectLastTxTime_ < 1
-                          || currTime - effectLastTxTime_ > effectUpdatePeriod)) {
+                          || currTime - effectLastTxTime_ > effectUpdatePeriod
+                          || strncmp(*pattern, lastSentPattern_,
+                                     sizeof(lastSentPattern_)) != 0)) {
     packet.msgcode = htonl(msgcodeEffectFrame);
     strncpy(packet.data.frame.pattern, *pattern,
             sizeof(packet.data.frame.pattern));
+    strncpy(lastSentPattern_, *pattern,
+            sizeof(lastSentPattern_));
     packet.data.frame.time = htonl(*time);
     effectLastTxTime_ = currTime;
     send(&packet, sizeof(packet));
@@ -202,4 +206,3 @@ Network& dummyNetwork() {
 }
 
 } // namespace unisparks
-

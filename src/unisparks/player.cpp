@@ -367,11 +367,14 @@ void Player::render(Milliseconds dt) {
     time_ += dt;
     overlayTime_ += dt;
   }
-
+#if 0
   Milliseconds brd = ONE_MINUTE / tempo_;
   //Milliseconds timeSinceDownbeat = (currTime - lastDownbeatTime_) % brd;
 
   Milliseconds currEffectDuration = brd * int(preferredEffectDuration_ / brd);
+#else
+  Milliseconds currEffectDuration = preferredEffectDuration_;
+#endif
 
   if (time_ > currEffectDuration) {
     switchToPlaylistItem(nextidx(track_, 0, playlistSize_));
