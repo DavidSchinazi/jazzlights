@@ -45,34 +45,22 @@ void  Player::addDefaultEffects2D() {
 
   addDefaultEffect("synctest", synctest, false);
 
-  addDefaultEffect("rainbow", clone(
-                     rainbow()
-                   ), true);
 
-  addDefaultEffect("threesine",
-                   clone(threesine()),
-                   true
-                  );
+  addDefaultEffect("rainbow", clone(rainbow()), true);
+  addDefaultEffect("sp-ocean", clone(SpinPlasma(OCPOcean)), true);
+  addDefaultEffect("sp-heat", clone(SpinPlasma(OCPHeat)), true);
+  addDefaultEffect("threesine", clone(threesine()), true);
+  addDefaultEffect("sp-lava", clone(SpinPlasma(OCPLava)), true);
+  addDefaultEffect("sp-rainbow", clone(SpinPlasma(OCPRainbow)), true);
+  addDefaultEffect("glitter", clone(glitter()), true);
+  addDefaultEffect("sp-party", clone(SpinPlasma(OCPParty)), true);
+  addDefaultEffect("sp-cloud", clone(SpinPlasma(OCPCloud)), true);
+  addDefaultEffect("plasma", clone(plasma()), true);
+  addDefaultEffect("sp-forest", clone(SpinPlasma(OCPForest)), true);
 
-  addDefaultEffect("rider",
-                   clone(rider()),
-                   false
-                  );
 
-  addDefaultEffect("glitter",
-                   clone(glitter()),
-                   true
-                  );
-
-  addDefaultEffect("slantbars",
-                   clone(slantbars()),
-                   false
-                  );
-
-  addDefaultEffect("plasma",
-                   clone(plasma()),
-                   true
-                  );
+  addDefaultEffect("rider", clone(rider()), false);
+  addDefaultEffect("slantbars", clone(slantbars()), false);
 
   addDefaultEffect("roboscan", clone(
                      unisparks::overlay(alphaLightnessBlend, rider(), transform(ROTATE_LEFT,
