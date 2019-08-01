@@ -7,7 +7,7 @@ import struct
 PORT = 0xDF0D
 MCADDR = '239.255.223.01'
 MESSAGE = 0xDF0002
-EFFECTS = ('slowblink', 'radiaterainbow', 'rider', 'threesine', 'flame', 'glitter')
+EFFECTS = ('slowblink', 'rainbow', 'rider', 'threesine', 'flame', 'glitter')
 
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 s.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 3)
