@@ -1,5 +1,5 @@
-#ifndef UNISPARKS_EFFECTS_PLASMA_H
-#define UNISPARKS_EFFECTS_PLASMA_H
+#ifndef UNISPARKS_EFFECTS_SCROLLTEXT_H
+#define UNISPARKS_EFFECTS_SCROLLTEXT_H
 #include "unisparks/effects/functional.h"
 
 namespace unisparks {
@@ -30,5 +30,4 @@ namespace unisparks {
 // };
 
 } // namespace unisparks
-#endif /* UNISPARKS_EFFECTS_PLASMA_H */
-
+#endif /* UNISPARKS_EFFECTS_SCROLLTEXT_H */
