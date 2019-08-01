@@ -56,7 +56,7 @@ void  Player::addDefaultEffects2D() {
 
   addDefaultEffect("rider",
                    clone(rider()),
-                   true
+                   false
                   );
 
   addDefaultEffect("glitter",
@@ -66,7 +66,7 @@ void  Player::addDefaultEffects2D() {
 
   addDefaultEffect("slantbars",
                    clone(slantbars()),
-                   true
+                   false
                   );
 
   addDefaultEffect("plasma",
@@ -77,7 +77,7 @@ void  Player::addDefaultEffects2D() {
   addDefaultEffect("roboscan", clone(
                      unisparks::overlay(alphaLightnessBlend, rider(), transform(ROTATE_LEFT,
                                         rider()))
-                   ), true);
+                   ), false);
 
   addDefaultEffect("crossbars", clone(
     unisparks::overlay(alphaLightnessBlend, slantbars(), transform(ROTATE_LEFT, slantbars()))
