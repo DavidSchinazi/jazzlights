@@ -12,8 +12,8 @@ Layout& Loader::loadLayout(const cpptoml::table& cfg) {
   static vector<unique_ptr<Layout>> layouts;
 
   // TODO: Fix this hack
-  // The hack is to reserve a large number of points in order to prevent 
-  // re-allocating vector. We don't want realloc to happen because we're passing 
+  // The hack is to reserve a large number of points in order to prevent
+  // re-allocating vector. We don't want realloc to happen because we're passing
   // pointers to internal vector memory to pixelmap layout.
   pixelcoords.reserve(100000);
 
@@ -34,7 +34,7 @@ Layout& Loader::loadLayout(const cpptoml::table& cfg) {
     for (size_t i = 0; i < coordscfg->size(); i += 3) {
       pixelcoords.push_back({coordscfg->at(i), coordscfg->at(i + 1)});
     }
-    PixelMap* m = new PixelMap(coordscfg->size() / 3, &pixelcoords[begin]);    
+    PixelMap* m = new PixelMap(coordscfg->size() / 3, &pixelcoords[begin]);
     layouts.emplace_back(unique_ptr<Layout>(m));
     return *layouts.back();
   }
@@ -69,7 +69,7 @@ void Loader::loadPlayer(Player& player, const cpptoml::table& cfg) {
   player.throttleFps(cfg.get_as<int64_t>("throttle-fps").value_or(60));
 
   ledr_ = cfg.get_as<Meters>("ledr").value_or(1.0/60.0);
- 
+
   auto strandscfg = cfg.get_table_array("strand");
   if (!strandscfg) {
     throw runtime_error("must define at least one strand");
@@ -95,13 +95,14 @@ void Loader::loadPlayer(Player& player, const cpptoml::table& cfg) {
 }
 
 void Loader::load(const char* file, Player& player) {
-  info("Loading %s...", file);
+  info("unisparks::Loader loading: %s", file);
   try {
     auto config = cpptoml::parse_file(file);
     //cout << (*config) << endl;
-    return loadPlayer(player, *config);
+    loadPlayer(player, *config);
+    Udp network;
+    player.connect(network);
   } catch (const runtime_error& err) {
     fatal("Couldn't parse %s: %s", file, err.what());
   }
 }
-
