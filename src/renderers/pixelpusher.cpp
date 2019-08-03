@@ -20,6 +20,8 @@
 
 namespace unisparks {
 
+static constexpr int HACKY_HARD_CODED_NUM_OF_LEDS=400;
+
 PixelPusher::PixelPusher(const char* h, int p, int s, int t) : host(h),
   port(p), strip(s), throttle(t), fd(0) {
   fd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -66,10 +68,19 @@ void PixelPusher::render(InputStream<Color>& pixelColors) {
     buf.push_back(rgb.green);
     buf.push_back(rgb.blue);
     pxcnt++;
+    if (pxcnt > HACKY_HARD_CODED_NUM_OF_LEDS) {
+      break;
+    }
+  }
+  while (pxcnt < HACKY_HARD_CODED_NUM_OF_LEDS) {
+    buf.push_back(0);
+    buf.push_back(0);
+    buf.push_back(0);
+    pxcnt++;  
   }
 
   if (sendto(fd, buf.data(), buf.size(), 0, (struct sockaddr*)&addr,
-             sizeof(addr)) < 0) {
+             sizeof(addr)) != buf.size()) {
     error("Can't send %d bytes to PixelPusher at %s:%d on socket %d: %s",
           buf.size(),
           host, port, fd, strerror(errno));
