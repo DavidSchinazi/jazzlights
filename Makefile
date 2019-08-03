@@ -43,7 +43,7 @@ docker-deploy: docker-image
 	@if [ -z ${TGLIGHT_HOST} ]; then echo "Please set TGLIGHT_HOST environment variable" && exit 255; fi
 	${DOCKER} run -it --rm  -v ${BUILD_DIR}/docker:/build/tglight -e "TGLIGHT_HOST=${TGLIGHT_HOST}" tglight deploy
 
-docker-shell: docker-build-image
+docker-shell: docker-image
 	${DOCKER} run -it --rm -v${SOURCE_DIR}:/workdir --entrypoint=/bin/bash tglight
 
 copy-pp-cards:
