@@ -47,6 +47,6 @@ docker-shell: docker-build-image
 	${DOCKER} run -it --rm -v${SOURCE_DIR}:/workdir --entrypoint=/bin/bash tglight
 
 copy-pp-cards:
-	- cp etc/robot/pixel.rc /Volumes/PP_ROBOT/pixel.rc
-	- cp etc/stage/pixel.rc /Volumes/PP_STAGE/pixel.rc
-	- cp etc/caboose/pixel.rc /Volumes/PP_CABOOSE/pixel.rc	
+	- cp etc/robot/pixel.rc /Volumes/PP_ROBOT/pixel.rc && ls -la /Volumes/PP_ROBOT/
+	- cp etc/stage/pixel.rc /Volumes/PP_STAGE/pixel.rc && ls -la /Volumes/PP_STAGE/
+	- cp etc/caboose/pixel.rc /Volumes/PP_CABOOSE/pixel.rc && ls -la /Volumes/PP_CABOOSE/
