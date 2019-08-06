@@ -112,7 +112,7 @@ int Udp::recv(void* buf, size_t bufsize) {
     goto err; // error reading
   }
   fromstr = inet_ntoa(fromaddr.sin_addr);
-  debug("Received %d bytes on UDP socket %d from %s:%d", n, fd_, fromstr,
+  info("Received %d bytes on UDP socket %d from %s:%d", n, fd_, fromstr,
         ntohs(fromaddr.sin_port));
   return n;
 err:
@@ -135,7 +135,7 @@ void Udp::send(void* buf, size_t bufsize) {
           strerror(errno));
     return; // -1;
   }
-  debug("Sent %d bytes on UDP socket %d", bufsize, fd_);
+  info("Sent %d bytes on UDP socket %d to %s:%d", bufsize, fd_, mcastAddrStr_, port_);
   //return bufsize;
 }
 

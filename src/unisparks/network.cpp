@@ -129,7 +129,7 @@ bool Network::sync(const char** pattern, Milliseconds* time,
     packet.data.frame.time = htonl(*time);
     effectLastTxTime_ = currTime;
     send(&packet, sizeof(packet));
-    debug("Sent pattern %s, time %d ms", *pattern, *time);
+    info("Sent pattern %s, time %d ms", *pattern, *time);
   }
 
   // Now let's see if we received anything
