@@ -96,6 +96,7 @@ bool Network::sync(const char** pattern, Milliseconds* time,
     status_ = update(status_);
   }
   if (status_ != CONNECTED) {
+    info("No longer effect master because of network disconnection");
     isEffectMaster_ = false;
     effectLastRxTime_ = 0;
     return false;
@@ -133,8 +134,8 @@ bool Network::sync(const char** pattern, Milliseconds* time,
   }
 
   // Now let's see if we received anything
-  size_t n = recv(&packet, sizeof(packet));
-  if (n == 0) {
+  int n = recv(&packet, sizeof(packet));
+  if (n <= 0) {
     return false;
   }
   if (n < sizeof(packet)) {
@@ -151,6 +152,9 @@ bool Network::sync(const char** pattern, Milliseconds* time,
       return false;
     }
 
+    if (isEffectMaster_) {
+      info("No longer effect master because of received packet");
+    }
     isEffectMaster_ = false;
     strncpy(patternBuf_, packet.data.frame.pattern, sizeof(patternBuf_));
     *time = static_cast<Milliseconds>(ntohl(packet.data.frame.time));
@@ -169,6 +173,9 @@ bool Network::isControllingEffects() const {
 }
 
 Network& Network::isControllingEffects(bool v) {
+  if (isEffectMaster_ != v) {
+    info("Now%s controlling effects", (v ? "" : " not"));
+  }
   isEffectMaster_ = v;
   if (v) {
     effectLastTxTime_ = 0;

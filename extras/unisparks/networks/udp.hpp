@@ -4,6 +4,8 @@
 #include "unisparks/network.hpp"
 
 #include <netinet/in.h>
+#include <string>
+#include <unordered_map>
 
 namespace unisparks {
 
@@ -16,12 +18,14 @@ struct Udp : public Network {
   int recv(void* buf, size_t bufsize) override;
   void send(void* buf, size_t bufsize) override;
 private:
+  int setupSocketForInterface(const char* ifName, struct in_addr localAddr);
+  void invalidateSocket(std::string ifName);
   bool setupSockets();
 
   struct in_addr mcastAddr_;
   char mcastAddrStr_[sizeof("255.255.255.255")];
   const uint16_t port_;
-  int fd_;
+  std::unordered_map<std::string, int> sockets_;
 };
 
 } // namespace unisparks
