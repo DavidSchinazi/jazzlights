@@ -138,7 +138,8 @@ bool Udp::setupSockets() {
       // We currently only support IPv4.
       continue;
     }
-    if (strcmp(ifa->ifa_name, "lo0") == 0) {
+    if (strcmp(ifa->ifa_name, "lo0") == 0 ||  // macOS
+        strcmp(ifa->ifa_name, "lo") == 0) {   // Linux
       // Do not use loopback.
       continue;
     }
