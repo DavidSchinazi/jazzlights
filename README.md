@@ -4,7 +4,7 @@
 
 ### Hardware
 
-We're using Raspberry Pi Model 3 B+ as our target platform. For boxes that need displays, 
+We're using Raspberry Pi Model 3 B+ as our target platform. For boxes that need displays,
 [the official 7" touch screen](https://www.raspberrypi.org/products/raspberry-pi-touch-display/) is
 a good choice, and it fits nicely in [Smart Pi Touch Case](https://www.amazon.com/dp/B01HKWAJ6K/?coliid=I36LJJCYT5XK94&colid=1GJJNYQVILRYR&psc=0&ref_=lv_ov_lig_dp_it).
 
@@ -14,7 +14,7 @@ It would be nice to add realtime clock to this configuration, but we haven't tri
 
 Unfortunately, I don't have all details on how LIGHT01 box was configured, but here are some pointers.
 
-Start with the latest [Raspbian Stretch Desktop](https://www.raspberrypi.org/downloads/raspbian/). I'm using 2018-06-27 version 
+Start with the latest [Raspbian Stretch Desktop](https://www.raspberrypi.org/downloads/raspbian/). I'm using 2018-06-27 version
 on my dev box. Create an SD card.
 
 On Linux, you can do it like this:
@@ -22,7 +22,7 @@ On Linux, you can do it like this:
 ```shell
 	lsblk
 	# Find the right dev number, e.g. /dev/sdb (or /dev/mmcblk0) with partitions /dev/sdb1 (/dev/mmcblk0p1)
-	# Unmount all partitions: 
+	# Unmount all partitions:
 	umount /dev/sdb1
 	umount /dev/sdb2
 	# ...
@@ -32,11 +32,11 @@ On Linux, you can do it like this:
 	touch /media/boot/ssh
 ```
 
-You can (and probably should) skip the next step for boxes that don't need WiFi connection (i.e. most of our boxes), but 
+You can (and probably should) skip the next step for boxes that don't need WiFi connection (i.e. most of our boxes), but
 in case you want to set it up, edit `/media/boot/wpa_supplicant.conf` to look like this:
 
 ```
-# /boot/wpa_supplicant.conf -> /etc/wpa_supplicant/wpa_supplicant.conf 
+# /boot/wpa_supplicant.conf -> /etc/wpa_supplicant/wpa_supplicant.conf
 ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
 country=us
 network={
@@ -61,7 +61,7 @@ Then connect to TechnoGecko WiFi (the password is `theshiniestlizard`) and type:
 	# Change pi user password to 'otto' so that we don't get security warnings about default password
 	ssh root@${TGLIGHT_HOST} "passwd pi"
 
-	# Add tglight deploy keys to the box	
+	# Add tglight deploy keys to the box
 	cat etc/tglight_deploy_id_rsa | ssh root@${TGLIGHT_HOST} 'cat > ~/.ssh/id_rsa'
 	cat etc/tglight_deploy_id_rsa.pub | ssh root@${TGLIGHT_HOST} 'cat > ~/.ssh/id_rsa.pub'
 
@@ -71,9 +71,9 @@ Then connect to TechnoGecko WiFi (the password is `theshiniestlizard`) and type:
 ```
 
 Then we need to set it to run Chromium in kiosk mode, opening the page http://localhost:80 on boot.
-I did it on my dev box by editing `/home/pi/.config/lxsession/LXDE-pi/autostart`, LIGHT01 is set up 
+I did it on my dev box by editing `/home/pi/.config/lxsession/LXDE-pi/autostart`, LIGHT01 is set up
 differently (the file is `/etc/xdg/openbox/autostart`, but I'm not sure if you need to set up anything else
-for it to work). 
+for it to work).
 
 Turn off mouse pointer (I do it by  `sudo apt-get install -y unclutter`, not sure how it's set on LIGHT01).
 
@@ -84,7 +84,7 @@ Then follow the deployment instructions below.
 
 ## Making and testing code changes
 
-Most of pattern generaton code now lives in 
+Most of pattern generaton code now lives in
 [Unisparks repository on Github](https://github.com/unisparks/unisparks). This repository
 is for the stuff that depends on TechnoGecko hardware.
 
@@ -115,9 +115,9 @@ Connect to TechnoGecko WiFi (the password is `theshiniestlizard`) and type:
 
 ## Developing without Docker
 
-To run without Docker (e.g. if you recompile a lot and want better performance, or use native debugger, or something of 
-this sort) - look at the `Dockerfile` and setup your environment in a similar way. You may have to modify commands to 
-work on your system. 
+To run without Docker (e.g. if you recompile a lot and want better performance, or use native debugger, or something of
+this sort) - look at the `Dockerfile` and setup your environment in a similar way. You may have to modify commands to
+work on your system.
 
 
 ## Cloning SD card on Mac
@@ -147,6 +147,23 @@ To flash image onto card:
 To watch tglight logs, `ssh` to the box (or attach a keyboard) and run
 
 ```shell
-	journalctl -utglight -f 
+	journalctl -utglight -f
 ```
-	
+
+
+## Strand Map
+
+### Robot
+
+The entire robot is currently powered from one strand
+
+### Caboose
+
+Strand 0 - Caboose left (inside) tail fins
+Strand 1 - Caboose right (outside) tail fins
+Strand 2 - Caboose outside wall
+Strand 3 - Caboose inside wall
+Strand 4 - Caboose dorsal fins D1 + D2 + D3
+Strand 5 - Caboose dorsal fins D4 + D5 + D6
+Strand 6 - Caboose dorsal fins D7 + D8 + D9
+Strand 7 - Caboose dorsal fins D10 + D11 + D12
