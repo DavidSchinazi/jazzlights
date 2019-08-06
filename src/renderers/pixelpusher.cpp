@@ -76,11 +76,11 @@ void PixelPusher::render(InputStream<Color>& pixelColors) {
     buf.push_back(0);
     buf.push_back(0);
     buf.push_back(0);
-    pxcnt++;  
+    pxcnt++;
   }
 
   if (sendto(fd, buf.data(), buf.size(), 0, (struct sockaddr*)&addr,
-             sizeof(addr)) != buf.size()) {
+             sizeof(addr)) != static_cast<ssize_t>(buf.size())) {
     error("Can't send %d bytes to PixelPusher at %s:%d on socket %d: %s",
           buf.size(),
           host, port, fd, strerror(errno));

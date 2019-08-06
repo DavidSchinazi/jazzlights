@@ -19,7 +19,7 @@ private:
   int throttle;
   int fd;
   Milliseconds lastTxTime = -1;
-  Milliseconds lastReconnectTime = -1;
+  // Milliseconds lastReconnectTime = -1;
 };
 
 
