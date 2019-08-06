@@ -159,11 +159,11 @@ The entire robot is currently powered from one strand
 
 ### Caboose
 
-Strand 0 - Caboose left (inside) tail fins
-Strand 1 - Caboose right (outside) tail fins
-Strand 2 - Caboose outside wall
-Strand 3 - Caboose inside wall
-Strand 4 - Caboose dorsal fins D1 + D2 + D3
-Strand 5 - Caboose dorsal fins D4 + D5 + D6
-Strand 6 - Caboose dorsal fins D7 + D8 + D9
-Strand 7 - Caboose dorsal fins D10 + D11 + D12
+* Strand 0 - Caboose left (inside) tail fins
+* Strand 1 - Caboose right (outside) tail fins
+* Strand 2 - Caboose outside wall
+* Strand 3 - Caboose inside wall
+* Strand 4 - Caboose dorsal fins D1 + D2 + D3
+* Strand 5 - Caboose dorsal fins D4 + D5 + D6
+* Strand 6 - Caboose dorsal fins D7 + D8 + D9
+* Strand 7 - Caboose dorsal fins D10 + D11 + D12
