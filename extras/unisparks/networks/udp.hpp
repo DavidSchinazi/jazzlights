@@ -16,6 +16,8 @@ struct Udp : public Network {
   int recv(void* buf, size_t bufsize) override;
   void send(void* buf, size_t bufsize) override;
 private:
+  bool setupSockets();
+
   struct in_addr mcastAddr_;
   char mcastAddrStr_[sizeof("255.255.255.255")];
   const uint16_t port_;

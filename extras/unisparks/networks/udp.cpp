@@ -18,39 +18,30 @@
 
 namespace unisparks {
 
+bool Udp::setupSockets() {
+  int optval, flags;
+  sockaddr_in if_addr;
+  struct ip_mreq mc_group;
 
-Udp::Udp(int p, const char* addr) : port_(static_cast<uint16_t>(p)), fd_(-1) {
-  assert(strnlen(addr, sizeof(mcastAddrStr_) + 1) < sizeof(mcastAddrStr_));
-  strncpy(mcastAddrStr_, addr, sizeof(mcastAddrStr_));
-  int parsed = inet_aton(addr, &mcastAddr_);
-  assert(parsed == 1);
-}
+  assert(fd_ < 0); // must be true if status == connecting
 
-
-NetworkStatus Udp::update(NetworkStatus status) {
-  if (status == INITIALIZING || status == CONNECTING) {
-    int optval, flags;
-    sockaddr_in if_addr;
-    struct ip_mreq mc_group;
-
-    assert(fd_ < 0); // must be true if status == connecting
-
-    fd_ = socket(AF_INET, SOCK_DGRAM, 0);
+  fd_ = socket(AF_INET, SOCK_DGRAM, 0);
+  do {
     if (fd_ < 0) {
       error("Can't create client UDP socket");
-      goto err;
+      break;
     }
 
     optval = 1;
     if (setsockopt(fd_, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0) {
       error("Can't set reuseaddr option on UDP socket %d: %s", fd_, strerror(errno));
-      goto err;
+      break;
     }
 
     flags = fcntl(fd_, F_GETFL) | O_NONBLOCK;
     if (fcntl(fd_, F_SETFL, flags) < 0) {
       error("Can't set UDP socket %d to nonblocking mode: %s", fd_, strerror(errno));
-      goto err;
+      break;
     }
 
     memset((char*)&if_addr, 0, sizeof(if_addr));
@@ -59,7 +50,7 @@ NetworkStatus Udp::update(NetworkStatus status) {
     if_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     if (bind(fd_, (struct sockaddr*)&if_addr, sizeof(if_addr)) < 0) {
       error("Can't bind UDP socket %d to port %d: %s", fd_, port_, strerror(errno));
-      goto err;
+      break;
     }
 
     mc_group.imr_multiaddr = mcastAddr_;
@@ -69,12 +60,34 @@ NetworkStatus Udp::update(NetworkStatus status) {
                    sizeof(mc_group)) < 0) {
       error("Can't add UDP socket %d to multicast group %s: %s", fd_, mcastAddrStr_,
             strerror(errno));
-      goto err;
+      break;
     }
 
     info("Joined multicast group %s, listening on port %d, UDP socket %d",
          mcastAddrStr_, port_, fd_);
-    return CONNECTED;
+    return true;
+  } while (false);
+
+  // Error handling.
+  if (fd_ >= 0) {
+    close(fd_);
+    fd_ = -1;
+  }
+  error("UDP socket connection failed");
+  return false;
+}
+
+Udp::Udp(int p, const char* addr) : port_(static_cast<uint16_t>(p)), fd_(-1) {
+  assert(strnlen(addr, sizeof(mcastAddrStr_) + 1) < sizeof(mcastAddrStr_));
+  strncpy(mcastAddrStr_, addr, sizeof(mcastAddrStr_));
+  int parsed = inet_aton(addr, &mcastAddr_);
+  assert(parsed == 1);
+}
+
+NetworkStatus Udp::update(NetworkStatus status) {
+  if (status == INITIALIZING || status == CONNECTING) {
+    bool success = setupSockets();
+    return success ? CONNECTED : CONNECTION_FAILED;
   } else if (status == DISCONNECTING) {
     close(fd_);
     info("Disconnected UDP socket %d", fd_);
@@ -84,14 +97,6 @@ NetworkStatus Udp::update(NetworkStatus status) {
 
   // Nothing to do
   return status;
-
-err:
-  if (fd_ >= 0) {
-    close(fd_);
-    fd_ = -1;
-  }
-  error("UDP socket connection failed");
-  return CONNECTION_FAILED;
 }
 
 int Udp::recv(void* buf, size_t bufsize) {
@@ -109,14 +114,12 @@ int Udp::recv(void* buf, size_t bufsize) {
       return 0; // no data on nonblocking socket
     }
     error("Can't receive data on UDP socket %d: %s", fd_, strerror(errno));
-    goto err; // error reading
+    return -1; // error reading
   }
   fromstr = inet_ntoa(fromaddr.sin_addr);
   info("Received %d bytes on UDP socket %d from %s:%d", n, fd_, fromstr,
         ntohs(fromaddr.sin_port));
   return n;
-err:
-  return -1;
 }
 
 void Udp::send(void* buf, size_t bufsize) {
@@ -138,7 +141,6 @@ void Udp::send(void* buf, size_t bufsize) {
   info("Sent %d bytes on UDP socket %d to %s:%d", bufsize, fd_, mcastAddrStr_, port_);
   //return bufsize;
 }
-
 
 } // namespace unisparks
 #endif // ARDUINO
