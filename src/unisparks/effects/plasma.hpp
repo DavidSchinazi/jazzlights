@@ -408,7 +408,7 @@ class SpinPlasma : public Effect {
 
   size_t contextSize(const Animation&) const override { return 0; }
   void begin(const Frame&) const override {}
-  void rewind(const Frame& frame) const override {}
+  void rewind(const Frame& /*frame*/) const override {}
   void end(const Animation&) const override {}
 
   OurColorPalette ocp_ = OCPRainbow;

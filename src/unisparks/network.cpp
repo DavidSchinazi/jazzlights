@@ -138,7 +138,7 @@ bool Network::sync(const char** pattern, Milliseconds* time,
   if (n <= 0) {
     return false;
   }
-  if (n < sizeof(packet)) {
+  if (n < static_cast<int>(sizeof(packet))) {
     error("Received packet too short, received %d bytes, expected at least %d bytes",
           n, sizeof(packet));
     return false;

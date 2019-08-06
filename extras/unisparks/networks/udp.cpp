@@ -60,7 +60,7 @@ int Udp::setupSocketForInterface(const char* ifName, struct in_addr localAddr) {
       .sin_family = AF_INET,
       .sin_port = htons(port_),
       // .sin_addr = localAddr,
-      .sin_addr = htonl(INADDR_ANY),
+      .sin_addr = { htonl(INADDR_ANY) },
     };
 
     if (bind(fd, (struct sockaddr*)&sin, sizeof(sin)) < 0) {
@@ -112,7 +112,7 @@ void Udp::invalidateSocket(std::string ifName) {
           ifName.c_str());
     return;
   }
-  int fd = fd = search->second;
+  int fd = search->second;
   if (fd >= 0) {
     close(fd);
   }
