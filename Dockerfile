@@ -33,11 +33,11 @@ RUN chmod 700 /root/.ssh &&\
 RUN mkdir /src
 
 # Download unisparks
-RUN git clone https://github.com/unisparks/unisparks.git /src/unisparks -b dev
+RUN git clone https://github.com/DavidSchinazi/unisparks.git /src/unisparks
 ENV UNISPARKS_DIR=/src/unisparks
 
 # Download and compile tglight
-RUN git clone git@gitlab.com:technogecko/tglight.git  /src/tglight
+RUN git clone https://github.com/DavidSchinazi/tglight.git  /src/tglight
 WORKDIR /src/tglight
 ENV CARGO_TARGET_DIR=/build/tglight
 RUN make debug release-armv7
@@ -47,4 +47,3 @@ ADD . /workdir
 WORKDIR /workdir
 ENTRYPOINT ["/usr/bin/make"]
 CMD ["run"]
-

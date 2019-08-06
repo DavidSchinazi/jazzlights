@@ -85,14 +85,14 @@ Then follow the deployment instructions below.
 ## Making and testing code changes
 
 Most of pattern generaton code now lives in
-[Unisparks repository on Github](https://github.com/unisparks/unisparks). This repository
+[Unisparks repository on Github](https://github.com/DavidSchinazi/unisparks). This repository
 is for the stuff that depends on TechnoGecko hardware.
 
 The easies way to get started is to use Docker. Install Docker (`sudo apt-get install docker.io` on Ubuntu<sup>1</sup>, or download and run installers for [Mac](https://www.docker.com/docker-mac) or [Windows](https://www.docker.com/docker-windows)), then type:
 
 ```shell
     # check out and build
-	git clone git@gitlab.com:technogecko/tglight.git
+	git clone https://github.com/DavidSchinazi/tglight.git
 	cd tglight
 	make docker-build
 
