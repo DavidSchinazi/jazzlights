@@ -163,7 +163,7 @@ RgbColor::RgbColor(HslColor color) {
 #endif
 }
 
-RgbaColor::RgbaColor(HslColor c) : RgbColor(c) {
+RgbaColor::RgbaColor(HslColor c) : RgbColor(c), alpha(0xFF) {
 }
 
 } // namespace unisparks
