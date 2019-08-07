@@ -16,6 +16,10 @@ debug:
 	${CARGO} clean -p tglight
 	${CARGO} build
 
+release:
+	${CARGO} clean -p tglight --release
+	${CARGO} build --release
+
 release-armv7:
 	${CARGO} clean -p tglight --release
 	${CARGO} build --target=armv7-unknown-linux-gnueabihf --release
