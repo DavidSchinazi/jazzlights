@@ -59,9 +59,9 @@ interface eth0
 fallback nodhcp
 
 profile nodhcp
-static ip_address=10.1.0.100/8
-static routers=10.1.0.1/8
-static domain_name_servers=10.1.0.1
+static ip_address=10.1.64.101/20
+static routers=10.1.64.1/20
+static domain_name_servers=8.8.8.8 2001:4860:4860::8888
 
 EOF
 service dhcpcd restart
@@ -74,7 +74,7 @@ ln -s /tmp /home/pi/.local/share/xorg
 
 #
 # Setup readonly filesystem
-# 
+#
 # Given a filename, a regex pattern to match and a replacement string:
 # Replace string if found, else no change.
 # (# $1 = filename, $2 = pattern to match, $3 = replacement)
@@ -169,4 +169,3 @@ replace /etc/fstab "ext4\s*defaults,noatime\s" "ext4    defaults,noatime,ro "
 append1 /etc/fstab "/var/log" "tmpfs /var/log tmpfs nodev,nosuid 0 0"
 append1 /etc/fstab "/var/tmp" "tmpfs /var/tmp tmpfs nodev,nosuid 0 0"
 append1 /etc/fstab "\s/tmp"   "tmpfs /tmp    tmpfs nodev,nosuid 0 0"
-

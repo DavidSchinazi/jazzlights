@@ -3,8 +3,8 @@
 ########################
 
 # Network Configuration
-ether=10.1.0.10
-netmask=255.255.0.0
+ether=10.1.64.102
+netmask=255.255.240.0
 port=7331
 #gateway=10.1.0.1
 #dhcp_timeout=12

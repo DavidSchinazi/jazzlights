@@ -92,7 +92,7 @@ def gen_caboose(left=0, top=0, flipx=False):
 
     print('# Caboose outside wall', file=out)
     print('[[strand]]', file=out)
-    print('renderers = [{type="pixelpusher", addr="10.1.0.11", port=7331, strip=2}]', file=out)
+    print('renderers = [{type="pixelpusher", addr="10.1.64.103", port=7331, strip=2}]', file=out)
     print('layout = {type="pixelmap", coords=[', file=out, end='')
     for (cx, cy) in scoord:
         print("   %3.2f, %3.2f, %3.2f," % (left + (-1 if flipx else 1)*cx*HOR_SPAN, cy*VER_SPAN, 0), file=out, end='')
@@ -100,7 +100,7 @@ def gen_caboose(left=0, top=0, flipx=False):
 
     print('# Caboose inside wall', file=out)
     print('[[strand]]', file=out)
-    print('renderers = [{type="pixelpusher", addr="10.1.0.11", port=7331, strip=3}]', file=out)
+    print('renderers = [{type="pixelpusher", addr="10.1.64.103", port=7331, strip=3}]', file=out)
     print('layout = {type="pixelmap", coords=[', file=out, end='')
     for (cx, cy) in scoord:
         print("   %3.2f, %3.2f, %3.2f," % (left + (-1 if flipx else 1)*cx*HOR_SPAN, cy*VER_SPAN, 0), file=out, end='')
@@ -127,7 +127,7 @@ def gen_dorsal_fins(left=0, top=0):
     for stripn, slc in enumerate([dorsal_poles[i:i + 3] for i in range(0, len(dorsal_poles), 3)]):
         print("# Caboose dorsal fins", ' + '.join([v[0] for v in slc]), file=out)
         print("[[strand]]", file=out)
-        print('renderers = [{type="pixelpusher", addr="10.1.0.11", port=7331, strip=%d}]' % (4+stripn), file=out)
+        print('renderers = [{type="pixelpusher", addr="10.1.64.103", port=7331, strip=%d}]' % (4+stripn), file=out)
         print('layout = {type="pixelmap", coords=[', file=out, end='')
         for (n, leds, feet) in slc:
             leds += 1
@@ -142,7 +142,7 @@ def gen_tail_fins(left=0, top=0):
     left_poles = [
         ('1L', 61, 25),
         ('2L', 50, 20),
-        ('3L', 40, 16), 
+        ('3L', 40, 16),
         ('4L', 38, 14.4),
         ('5L', 35, 13.4),
         ('6L', 37, 14.3),
@@ -154,7 +154,7 @@ def gen_tail_fins(left=0, top=0):
         ('1R', 61, 25),
         ('2R', 50, 20),
         ('3R', 45, 16),
-        ('4R', 38, 16), 
+        ('4R', 38, 16),
         ('5R', 35, 14.4),
         ('6R', 37, 14.2),
         ('7R', 41, 16),
@@ -164,7 +164,7 @@ def gen_tail_fins(left=0, top=0):
     y = top
     print("# Caboose left (inside) tail fins", file=out)
     print("[[strand]]", file=out)
-    print('renderers = [{type="pixelpusher", addr="10.1.0.11", port=7331, strip=0}]', file=out)
+    print('renderers = [{type="pixelpusher", addr="10.1.64.103", port=7331, strip=0}]', file=out)
     print('layout = {type="pixelmap", coords=[', file=out, end='')
     for (name, leds, feet) in left_poles:
         leds = leds+1
@@ -176,7 +176,7 @@ def gen_tail_fins(left=0, top=0):
     y = top
     print("# Caboose right (outside) tail fins", file=out)
     print("[[strand]]", file=out)
-    print('renderers = [{type="pixelpusher", addr="10.1.0.11", port=7331, strip=1}]', file=out)
+    print('renderers = [{type="pixelpusher", addr="10.1.64.103", port=7331, strip=1}]', file=out)
     print('layout = {type="pixelmap", coords=[', file=out, end='')
     for (name, leds, feet) in left_poles:
         leds = leds+1
@@ -189,7 +189,7 @@ def gen_tail_fins(left=0, top=0):
 def gen_robot_head(left=0, top=0):
     print("# Robot head", file=out)
     print("[[strand]]", file=out)
-    print('renderers = [{type="pixelpusher", addr="10.1.0.10", port=7331, strip=1}]', file=out)
+    print('renderers = [{type="pixelpusher", addr="10.1.64.102", port=7331, strip=1}]', file=out)
     print('layout = {type="matrix-zigzag", size=[16,4], origin=[%3.2f, %3.2f], resolution=3}' % (left, top), file=out)
     print('', file=out)
 
@@ -201,8 +201,8 @@ def gen_robot_outside(left=0, top=0):
 
     print('# Robot outside wall', file=out)
     print('[[strand]]', file=out)
-    print('renderers = [{type="pixelpusher", addr="10.1.0.10", port=7331, strip=0}]', file=out)
-    print('layout = {type="pixelmap", coords=[', file=out, end='')   
+    print('renderers = [{type="pixelpusher", addr="10.1.64.102", port=7331, strip=0}]', file=out)
+    print('layout = {type="pixelmap", coords=[', file=out, end='')
     for i in range(0, len(robo_triplets), 3):
         print("   %3.2f, %3.2f, %3.2f," % (left + robo_triplets[i]/FEET_IN_METER, top + robo_triplets[i+1]/3.28084, robo_triplets[i+2]/3.28084), file=out, end='')
         #print("   %3.2f, %3.2f, %3.2f," % (left + robo_triplets[i]/FEET_IN_METER, top + robo_triplets[i+1]/3.28084, robo_triplets[i+2]/3.28084), file=out, end='')
@@ -212,13 +212,13 @@ def gen_robot_outside(left=0, top=0):
 def gen_robot_inside(left=0, top=0):
     print('# Robot inside wall (net #1)', file=out)
     print("[[strand]]", file=out)
-    print('renderers = [{type="pixelpusher", addr="10.1.0.10", port=7331, strip=2}]', file=out)
+    print('renderers = [{type="pixelpusher", addr="10.1.64.102", port=7331, strip=2}]', file=out)
     print('layout = {type="matrix-zigzag", size=[20,20], origin=[%3.2f, %3.2f], resolution=7}' % (left, top), file=out)
     print('', file=out)
 
     print('# Robot inside wall (net #2)', file=out)
     print("[[strand]]", file=out)
-    print('renderers = [{type="pixelpusher", addr="10.1.0.10", port=7331, strip=3}]', file=out)
+    print('renderers = [{type="pixelpusher", addr="10.1.64.102", port=7331, strip=3}]', file=out)
     print('layout = {type="matrix-zigzag", size=[20,20], origin=[%3.2f, %3.2f], resolution=7}' % (left + 3.0, top), file=out)
     print('', file=out)
 

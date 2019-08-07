@@ -1,5 +1,5 @@
 # Network Configuration
-ether=10.1.0.10
+ether=10.1.64.102
 netmask=255.0.0.0
 gateway=10.1.0.1
 port=7331
@@ -45,4 +45,3 @@ start7=ff0000
 # Strip 8 Configuration
 strip8=ws2801
 start8=00ff00
-
