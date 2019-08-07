@@ -61,6 +61,7 @@ int Udp::setupSocketForInterface(const char* ifName, struct in_addr localAddr) {
       .sin_port = htons(port_),
       // .sin_addr = localAddr,
       .sin_addr = { htonl(INADDR_ANY) },
+      .sin_zero = {},
     };
 
     if (bind(fd, (struct sockaddr*)&sin, sizeof(sin)) < 0) {
@@ -218,6 +219,7 @@ void Udp::send(void* buf, size_t bufsize) {
     .sin_family = AF_INET,
     .sin_port = htons(port_),
     .sin_addr = mcastAddr_,
+    .sin_zero = {},
   };
   for (auto pair : sockets_) {
     std::string ifName = pair.first;
