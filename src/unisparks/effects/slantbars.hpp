@@ -5,7 +5,7 @@
 
 namespace unisparks {
 
-constexpr auto slantbars = []() {
+auto slantbars = []() {
   return effect([](const Frame & frame) {
     int32_t mtn_period = adjustDuration(frame, 1000);
     uint8_t slantPos = 256 * frame.time / mtn_period;

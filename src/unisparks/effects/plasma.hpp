@@ -5,7 +5,7 @@
 
 namespace unisparks {
 
-constexpr auto plasma = []() {
+auto plasma = []() {
   return effect([](const Frame & frame) {
     using internal::sin8;
     using internal::cos8;
@@ -416,7 +416,7 @@ public:
   SpinPlasma(OurColorPalette ocp) : ocp_(ocp) {}
 };
 
-constexpr auto spinplasma = []() {
+auto spinplasma = []() {
   return effect([](const Frame & frame) {
     using internal::sin8;
     using internal::cos8;

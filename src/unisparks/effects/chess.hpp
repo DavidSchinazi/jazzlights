@@ -5,7 +5,7 @@
 
 namespace unisparks {
 
-constexpr auto chess = [](Color fgcolor, Color bgcolor) {
+auto chess = [](Color fgcolor, Color bgcolor) {
   return effect([ = ](const Frame & frame) {
     int cellsz = max(2.0, max(width(frame), height(frame)) / 16);
 

@@ -5,7 +5,7 @@
 
 namespace unisparks {
 
-constexpr auto pixeltest = [](Milliseconds each=100) {
+auto pixeltest = [](Milliseconds each=100) {
   return effect([ = ](const Frame & frame) {
     int px = frame.time/each % frame.pixelCount;
     int i = 0;

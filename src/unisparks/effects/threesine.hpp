@@ -5,7 +5,7 @@
 
 namespace unisparks {
 
-constexpr auto threesine = []() {
+auto threesine = []() {
   return effect([ = ](const Frame & frame) {
     Milliseconds period = adjustDuration(frame, 8000);
     Coord w = width(frame);

@@ -4,7 +4,7 @@
 
 namespace unisparks {
 
-constexpr auto solid = [](Color color) {
+auto solid = [](Color color) {
   return effect([ = ](const Frame& /*frame*/) {
     return [ = ](const Pixel& /*pt*/) -> Color {
       return color;

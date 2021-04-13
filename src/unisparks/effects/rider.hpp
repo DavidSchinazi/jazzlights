@@ -6,7 +6,7 @@
 namespace unisparks {
 
 
-constexpr auto rider = []() {
+auto rider = []() {
   return effect([](const Frame & frame) {
     Milliseconds riderPeriod = adjustDuration(frame, 2000);
     Milliseconds huePeriod = adjustDuration(frame, 8000);
@@ -33,7 +33,7 @@ constexpr auto rider = []() {
   });
 };
 
-constexpr auto rider2 = []() {
+auto rider2 = []() {
   return effect([](const Frame & frame) {
     Milliseconds riderPeriod = adjustDuration(frame, 2000);
     uint8_t hue = cycleHue(frame);

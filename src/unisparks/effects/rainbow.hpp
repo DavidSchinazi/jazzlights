@@ -5,7 +5,7 @@
 
 namespace unisparks {
 
-constexpr auto rainbow = []() {
+auto rainbow = []() {
   return effect([](const Frame & frame) {
     Milliseconds period = adjustDuration(frame, 8000);
     uint8_t initial_hue = 255 - 255 * frame.time / period;
