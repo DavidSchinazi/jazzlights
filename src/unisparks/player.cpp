@@ -1,5 +1,6 @@
 #include "unisparks/player.hpp"
 
+#include <cstdio>
 #include <stdlib.h>
 #include <assert.h>
 #include "unisparks/effects/chess.hpp"
