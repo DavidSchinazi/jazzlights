@@ -365,7 +365,7 @@ void Player::render(Milliseconds dt) {
   Milliseconds currEffectDuration = preferredEffectDuration_;
 #endif
 
-  if (time_ > currEffectDuration) {
+  if (time_ > currEffectDuration && !loop_) {
     switchToPlaylistItem(nextidx(track_, 0, playlistSize_));
   }
 
@@ -408,6 +408,7 @@ void Player::play(const char* name) {
 }
 
 bool Player::switchToPlaylistItem(size_t index) {
+  loop_ = false;
   if (track_ != index && index < playlistSize_
       && syncEffectByIndex(playlist_[index], 0)) {
     track_ = index;
@@ -466,6 +467,14 @@ void Player::resume() {
     paused_ = false;
     info("Resumed");
   }
+}
+
+void Player::loopOne() {
+  if (loop_) {
+    return;
+  }
+  info("Looping");
+  loop_ = true;
 }
 
 const char* Player::effectName() const {

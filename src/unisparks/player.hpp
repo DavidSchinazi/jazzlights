@@ -105,6 +105,11 @@ class Player {
   void resume();
 
   /**
+   *  Loop current effect forever.
+   */
+  void loopOne();
+
+  /**
    * Run text command
    */
   const char* command(const char* cmd);
@@ -244,6 +249,7 @@ class Player {
   size_t track_;
 
   bool paused_;
+  bool loop_ = false;
 
   Network* network_;
 

@@ -119,22 +119,23 @@ void nextMode(Player& /*player*/, uint32_t /*currentMillis*/) {
 void modeAct(Player& player, uint32_t /*currentMillis*/) {
   switch (menuMode) {
     case kNext:
+      info("Next button has been hit");
       player.stopSpecial();
       player.next();
-      player.resume();
       break;
     case kPrevious:
+      info("Back button has been hit");
       player.stopSpecial();
       player.prev();
-      player.pause();
-      info("Back button has been hit");
+      player.loopOne();
       break;
     case kBrightness:
+      info("Brightness button has been hit");
       brightnessCursor++;
       pushBrightness();
       break;
     case kSpecial:
-      info("SPECIAL!");
+      info("Special button has been hit");
       player.handleSpecial();
       break;
   };
@@ -399,23 +400,26 @@ void doButtons(Player& player, uint32_t currentMillis) {
   // Check the mode button (for switching between effects)
   switch (btn0) {
     case BTN_RELEASED:
+      info("Next button has been hit");
       player.stopSpecial();
       player.next();
-      player.resume();
       break;
 
     case BTN_LONGPRESS:
+      info("Ignoring next button long press");
       break;
   }
 
   // Check the brightness adjust button
   switch (btn1) {
     case BTN_RELEASED:
+      info("Brightness button has been hit");
       brightnessCursor++;
       pushBrightness();
       break;
 
     case BTN_LONGPRESS: // button was held down for a while
+      info("Brightness button long press");
       brightnessCursor = 0;
       pushBrightness();
       break;
@@ -424,25 +428,26 @@ void doButtons(Player& player, uint32_t currentMillis) {
   // Check the back button
   switch (btn2) {
     case BTN_RELEASED:
+      info("Back button has been hit");
       player.stopSpecial();
       player.prev();
-      player.pause();
-      info("Back button has been hit");
+      player.loopOne();
       break;
 
     case BTN_LONGPRESS:
+      info("Ignoring back button long press");
       break;
   }
 
   // Check the special button
   switch (btn3) {
     case BTN_RELEASED:
-      info("SPECIAL!");
+      info("Special button has been hit");
       player.handleSpecial();
       break;
 
     case BTN_LONGPRESS:
-      info("SPECIAL LONG!");
+      info("Ignoring special button long press");
       break;
   }
 #endif // ESPxx
