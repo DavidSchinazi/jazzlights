@@ -10,6 +10,10 @@ namespace unisparks {
 #  define BUTTON_LOCK 0
 #endif // BUTTON_LOCK
 
+#ifndef START_DIM
+#  define START_DIM 0
+#endif // START_DIM
+
 #ifndef ATOM_MATRIX_SCREEN
 #  ifdef ESP32
 #    define ATOM_MATRIX_SCREEN 1
@@ -70,13 +74,17 @@ static constexpr uint32_t lockDelay = 10000;
 uint8_t brightnessCursor = 0;
 
 #ifndef BRIGHTER
-#define BRIGHTER 1
+#  define BRIGHTER 1
 #endif // BRIGHTER
 
 // this ordering is silly but we need the highest to be last
 // in case it blows the fuse in the USB battery pack
-
-#if BRIGHTER
+#if START_DIM
+#  ifndef FIRST_BRIGHTNESS
+#  define FIRST_BRIGHTNESS 1
+#  endif // FIRST_BRIGHTNESS
+const uint8_t brightnessList[] = { FIRST_BRIGHTNESS, 64, 96, 8, 16, 128};
+#elif BRIGHTER
 #  ifndef FIRST_BRIGHTNESS
 #  define FIRST_BRIGHTNESS 64
 #  endif // FIRST_BRIGHTNESS
@@ -87,7 +95,6 @@ const uint8_t brightnessList[] = {64, 96, 8, 16, 32, 128};
 #  endif // FIRST_BRIGHTNESS
 const uint8_t brightnessList[] = { FIRST_BRIGHTNESS, 64, 96, 8, 16, 128};
 #endif // BRIGHTER
-
 
 #if ATOM_MATRIX_SCREEN
 
