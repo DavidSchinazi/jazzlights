@@ -1,6 +1,10 @@
 #ifndef UNISPARKS_CONFIG_H
 #define UNISPARKS_CONFIG_H
 
+#ifndef WEARABLE
+#  define WEARABLE 0
+#endif // WEARABLE
+
 // Pick which vest to build here.
 #define ORANGE_VEST 1
 // #define CAMP_SIGN 1

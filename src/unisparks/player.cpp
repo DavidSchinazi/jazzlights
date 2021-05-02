@@ -58,7 +58,9 @@ void  Player::addDefaultEffects2D() {
   addDefaultEffect("sp-cloud", clone(SpinPlasma(OCPCloud)), true);
   addDefaultEffect("plasma", clone(plasma()), true);
   addDefaultEffect("sp-forest", clone(SpinPlasma(OCPForest)), true);
-
+#if WEARABLE
+  addDefaultEffect("flame", clone(flame()), true);
+#endif // WEARABLE
 
   addDefaultEffect("rider", clone(rider()), false);
   addDefaultEffect("slantbars", clone(slantbars()), false);
@@ -71,10 +73,6 @@ void  Player::addDefaultEffects2D() {
   addDefaultEffect("crossbars", clone(
     unisparks::overlay(alphaLightnessBlend, slantbars(), transform(ROTATE_LEFT, slantbars()))
     ), false);
-
-  // addDefaultEffect("flame", clone(
-  //                    flame()
-  //                  ), false);
 }
 
 void render(const Layout& layout, Renderer* renderer,

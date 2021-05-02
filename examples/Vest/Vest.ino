@@ -1,3 +1,5 @@
+#define WEARABLE 1
+
 #include "Unisparks.h"
 
 void setup() {
