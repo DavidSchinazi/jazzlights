@@ -1,4 +1,6 @@
-#include "Unisparks.h"
+#include <Unisparks.h>
+
+#ifdef UNISPARKS_PLATFORMIO
 
 void setup() {
   unisparks::vestSetup();
@@ -7,3 +9,5 @@ void setup() {
 void loop() {
   unisparks::vestLoop();
 }
+
+#endif // UNISPARKS_PLATFORMIO

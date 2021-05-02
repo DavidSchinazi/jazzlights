@@ -181,6 +181,11 @@ class Player {
     return viewport_;
   }
 
+  void handleSpecial() {}
+  void stopSpecial() {}
+
+  Network* network() const { return network_; };
+
  private:
   void syncToNetwork();
   bool syncEffectByName(const char* name, Milliseconds time);
