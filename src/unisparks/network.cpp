@@ -96,8 +96,10 @@ bool Network::sync(const char** pattern, Milliseconds* time,
     status_ = update(status_);
   }
   if (status_ != CONNECTED) {
-    info("No longer effect master because of network disconnection");
-    isEffectMaster_ = false;
+    if (isEffectMaster_) {
+      info("No longer effect master because of network disconnection");
+      isEffectMaster_ = false;
+    }
     effectLastRxTime_ = 0;
     return false;
   }
