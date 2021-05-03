@@ -197,9 +197,11 @@ static constexpr Color TRANSPARENT = RgbaColor(0, 0, 0, 0);
 static constexpr Color BLACK = Color(0x0);
 static constexpr Color RED = Color(0xff0000);
 static constexpr Color GREEN = Color(0x00ff00);
+static constexpr Color BLUE = Color(0x0000ff);
 static constexpr Color PURPLE = Color(0x9C27B0);
 static constexpr Color CYAN = Color(0x00BCD4);
 static constexpr Color YELLOW = Color(0xFFFF00);
+static constexpr Color WHITE = Color(0xffffff);
 
 inline Color alphaBlend(Color fg, Color bg) {
   return blend(fg.asRgba(), bg.asRgba());

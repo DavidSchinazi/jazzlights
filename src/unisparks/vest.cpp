@@ -6,7 +6,7 @@
 
 namespace unisparks {
 
-CRGB leds[MATRIX_WIDTH*MATRIX_HEIGHT] = {};
+CRGB leds[LEDNUM] = {};
 
 void renderPixel(int i, uint8_t r, uint8_t g, uint8_t b) {
   leds[i] = CRGB(r, g, b);
@@ -14,7 +14,7 @@ void renderPixel(int i, uint8_t r, uint8_t g, uint8_t b) {
 
 Esp8266WiFi network("FISHLIGHT", "155155155");
 Player player;
-Matrix pixels(LEDNUM, 1);
+ReverseMap<LEDNUM> pixels(pixelMap, MATRIX_WIDTH, MATRIX_HEIGHT);
 
 CLEDController* mainVestController = nullptr;
 

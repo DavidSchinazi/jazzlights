@@ -26,8 +26,8 @@
 #endif
 
 #if ORANGE_VEST
-#  define MATRIX_WIDTH 19
-#  define MATRIX_HEIGHT 20
+#  define MATRIX_WIDTH 20
+#  define MATRIX_HEIGHT 19
 #  define LEDNUM 360
 #endif // ORANGE_VEST
 

@@ -186,8 +186,8 @@ class Player {
     return viewport_;
   }
 
-  void handleSpecial() {}
-  void stopSpecial() {}
+  void handleSpecial();
+  void stopSpecial();
 
   Network* network() const { return network_; };
 
@@ -250,6 +250,7 @@ class Player {
 
   bool paused_;
   bool loop_ = false;
+  uint8_t specialMode_ = 0;
 
   Network* network_;
 

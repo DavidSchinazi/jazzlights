@@ -29,6 +29,43 @@
 namespace unisparks {
 
 using namespace internal;
+
+auto calibration_effect = effect([ = ](const Frame& frame) {
+  const bool blink = ((frame.time % 1000) < 500);
+  return [ = ](const Pixel& pt) -> Color {
+    const int32_t green = 0x00ff00, blue = 0x0000ff, red = 0xff0000;
+    const int32_t yellow = green | red, purple = red | blue, white = 0xffffff;
+    const int32_t orange = 0xffcc00;
+    int32_t yColors[19] = {red, green, blue, yellow,
+      purple, orange, white, blue, yellow,
+      red, purple, green, orange,
+      white, yellow, purple, green, blue, red};
+
+    int32_t col = 0;
+    const int32_t x = pt.coord.x;
+    const int32_t y = pt.coord.y;
+    if (y >= 0 && y < static_cast<int32_t>(sizeof(yColors) / sizeof(yColors[0]))) {
+      col = yColors[y];
+    }
+
+    if (blink) {
+      if (y == 0 &&
+          (x == 0 || x == 6 || x == 14)) {
+        col = 0;
+      } else if (y == 1 &&
+                (x == 5 || x == 13 || x == 19)) {
+        col = 0;
+      }
+    }
+    return Color(col);
+  };
+});
+
+auto black_effect = solid(BLACK);
+auto red_effect = solid(RED);
+auto green_effect = solid(GREEN);
+auto blue_effect = solid(BLUE);
+
 void  Player::addDefaultEffects2D() {
   static auto synctest = effect([ = ](const Frame& frame) {
       return [ = ](const Pixel& /*pt*/) -> Color {
@@ -345,6 +382,22 @@ void Player::render() {
   render(timeSinceLastRender);
 }
 
+void Player::handleSpecial() {
+  specialMode_++;
+  if (specialMode_ > 6) {
+    specialMode_ = 1;
+  }
+  info("Starting special mode %u", specialMode_);
+}
+
+void Player::stopSpecial() {
+  if (specialMode_ == 0) {
+    return;
+  }
+  info("Stopping special mode");
+  specialMode_ = 0;
+}
+
 void Player::render(Milliseconds dt) {
   if (!ready_) {
     begin();
@@ -373,6 +426,25 @@ void Player::render(Milliseconds dt) {
 
   Frame efr = effectFrame();
   Frame ofr = overlayFrame();
+
+  switch (specialMode_) {
+    case 1:
+      effect = &calibration_effect;
+      break;
+    case 2: // TODO Wi-Fi status.
+    case 3:
+      effect = &black_effect;
+      break;
+    case 4:
+      effect = &red_effect;
+      break;
+    case 5:
+      effect = &green_effect;
+      break;
+    case 6:
+      effect = &blue_effect;
+      break;
+  }
 
   effect->rewind(efr);
   if (overlay) {

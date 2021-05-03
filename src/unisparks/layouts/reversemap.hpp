@@ -11,7 +11,7 @@ inline void makeReverseMap(Point* points, const int* map, int w, int h,
   for (int x = 0; x < w; ++x) {
     for (int y = 0; y < h; ++y) {
       int i = map[x + y * w];
-      if (i < count) {
+      if (0 <= i && i < count) {
         points[i] = {static_cast<Coord>(x), static_cast<Coord>(y)};
       }
     }
@@ -20,7 +20,7 @@ inline void makeReverseMap(Point* points, const int* map, int w, int h,
 
 template<size_t COUNT>
 struct ReverseMap : public PixelMap {
-  ReverseMap(const int* map, int w, int h) : PixelMap(COUNT, points, false) {
+  ReverseMap(const int* map, int w, int h) : PixelMap(COUNT, points) {
     makeReverseMap(points, map, w, h, COUNT);
   }
   Point points[COUNT];
