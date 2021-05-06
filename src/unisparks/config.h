@@ -5,6 +5,14 @@
 #  define WEARABLE 0
 #endif // WEARABLE
 
+#ifndef CAMPSIGN
+#  define CAMPSIGN 0
+#endif // CAMPSIGN
+
+#ifndef ROPELIGHT
+#  define ROPELIGHT 0
+#endif // ROPELIGHT
+
 // Pick which vest to build here.
 #define ORANGE_VEST 1
 // #define CAMP_SIGN 1

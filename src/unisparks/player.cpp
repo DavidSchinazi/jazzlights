@@ -87,17 +87,21 @@ void  Player::addDefaultEffects2D() {
   addDefaultEffect("rainbow", clone(rainbow()), true);
   addDefaultEffect("sp-ocean", clone(SpinPlasma(OCPOcean)), true);
   addDefaultEffect("sp-heat", clone(SpinPlasma(OCPHeat)), true);
+#if !CAMPSIGN && !ROPELIGHT
   addDefaultEffect("threesine", clone(threesine()), true);
+#endif // !CAMPSIGN && !ROPELIGHT
   addDefaultEffect("sp-lava", clone(SpinPlasma(OCPLava)), true);
   addDefaultEffect("sp-rainbow", clone(SpinPlasma(OCPRainbow)), true);
+#if !CAMPSIGN
   addDefaultEffect("glitter", clone(glitter()), true);
+#endif // !CAMPSIGN
   addDefaultEffect("sp-party", clone(SpinPlasma(OCPParty)), true);
   addDefaultEffect("sp-cloud", clone(SpinPlasma(OCPCloud)), true);
   addDefaultEffect("plasma", clone(plasma()), true);
   addDefaultEffect("sp-forest", clone(SpinPlasma(OCPForest)), true);
-#if WEARABLE
+#if WEARABLE && !CAMPSIGN && !ROPELIGHT
   addDefaultEffect("flame", clone(flame()), true);
-#endif // WEARABLE
+#endif // WEARABLE && !CAMPSIGN && !ROPELIGHT
 
   addDefaultEffect("rider", clone(rider()), false);
   addDefaultEffect("slantbars", clone(slantbars()), false);
