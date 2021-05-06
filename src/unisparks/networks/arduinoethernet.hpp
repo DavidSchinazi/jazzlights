@@ -1,5 +1,8 @@
 #ifndef UNISPARKS_NETWORK_ARDUINO_ETHERNET_H
 #define UNISPARKS_NETWORK_ARDUINO_ETHERNET_H
+
+#ifdef ESP8266
+
 #include "unisparks/network.hpp"
 #include <SPI.h>
 #include <Ethernet.h>
@@ -22,5 +25,7 @@ struct MacAddress {
 Network& arduinoEthernet(MacAddress mac);
 
 } // namespace unisparks
+
+#endif // ESP8266
 
 #endif /* UNISPARKS_NETWORK_ARDUINO_ETHERNET_H */

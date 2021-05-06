@@ -1,7 +1,7 @@
-#ifdef ESP8266
 #include "unisparks/networks/esp8266wifi.hpp"
-#include <ESP8266WiFi.h>
-#include <WiFiUdp.h>
+
+#if UNISPARKS_ESP8266WIFI
+
 #include "unisparks/util/log.hpp"
 #include "unisparks/util/time.hpp"
 
@@ -40,7 +40,11 @@ NetworkStatus Esp8266WiFi::update(NetworkStatus status) {
     case WL_CONNECTED: {
       IPAddress mcaddr;
       mcaddr.fromString(mcastAddr_);
+#if defined(ESP8266)
       int res = udp_.beginMulticast(WiFi.localIP(), mcaddr, port_);
+#elif defined(ESP32)
+      int res = udp_.beginMulticast(mcaddr, port_);
+#endif
       if (!res) {
         error("Can't begin multicast on port %d, multicast group %s", port_,
               mcastAddr_);
@@ -64,7 +68,7 @@ NetworkStatus Esp8266WiFi::update(NetworkStatus status) {
     case WL_DISCONNECTED:
     default: {
       static int32_t last_t = 0;
-      if (timeMillis() - last_t > 500) {
+      if (timeMillis() - last_t > 5000) {
         int st = WiFi.status();
         if (st == WL_DISCONNECTED) {
           debug("Still connecting...");
@@ -123,4 +127,4 @@ void Esp8266WiFi::send(void* buf, size_t bufsize) {
 
 } // namespace unisparks
 
-#endif /* ESP8266 */
+#endif // UNISPARKS_ESP8266WIFI

@@ -1,9 +1,21 @@
 #ifndef UNISPARKS_NETWORKS_ESP8266_H
 #define UNISPARKS_NETWORKS_ESP8266_H
-#ifdef ESP8266
-#include <ESP8266WiFi.h>
-#include <WiFiUdp.h>
+
 #include "unisparks/network.hpp"
+
+#ifndef UNISPARKS_ESP8266WIFI
+#  define UNISPARKS_ESP8266WIFI (defined(ESP8266) || defined(ESP32))
+#endif // UNISPARKS_ESP8266WIFI
+
+#if UNISPARKS_ESP8266WIFI
+
+#if defined(ESP8266)
+#  include <ESP8266WiFi.h>
+#elif defined(ESP32)
+#  include <WiFi.h>
+#endif
+
+#include <WiFiUdp.h>
 
 namespace unisparks {
 
@@ -38,5 +50,5 @@ class Esp8266WiFi : public Network {
 
 } // namespace unisparks
 
-#endif // ESP8266
-#endif /* UNISPARKS_NETWORKS_ESP8266_H */
+#endif // UNISPARKS_ESP8266WIFI
+#endif // UNISPARKS_NETWORKS_ESP8266_H

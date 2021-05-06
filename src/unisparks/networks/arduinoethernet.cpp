@@ -2,6 +2,8 @@
 #include "unisparks/util/log.hpp"
 #include "unisparks/util/time.hpp"
 
+#ifdef ESP8266
+
 namespace unisparks {
 
 struct ArduinoEthernetNetwork : public Network {
@@ -53,3 +55,5 @@ void ArduinoEthernetNetwork::send(void* buf, size_t bufsize) {
 }
 
 } // namespace unisparks
+
+#endif // ESP8266
