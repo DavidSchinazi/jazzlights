@@ -31,11 +31,13 @@ NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status) {
     udp_.stop();
     return DISCONNECTED;
 
+  case CONNECTING:
   case DISCONNECTED:
   case CONNECTION_FAILED:
     // do nothing
     return status;
   }
+  return status;
 }
 
 int ArduinoEthernetNetwork::recv(void* buf, size_t bufsize) {
