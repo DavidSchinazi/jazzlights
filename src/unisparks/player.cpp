@@ -66,6 +66,47 @@ auto red_effect = solid(RED);
 auto green_effect = solid(GREEN);
 auto blue_effect = solid(BLUE);
 
+auto network_effect = [](NetworkStatus network_status) {
+  return effect([ = ](const Frame& frame) {
+    int32_t color = 0;
+    switch (network_status) {
+      case INITIALIZING:
+        color = 0xff6600;
+        break;
+      case DISCONNECTED:
+        color = 0xff6600;
+        break;
+      case CONNECTING:
+        color = ((frame.time % 500) < 250) ? 0 : 0xff6600;
+        break;
+      case CONNECTED:
+        color = 0x00ff00;
+        break;
+      case DISCONNECTING:
+        color = 0xff6600;
+        break;
+      case CONNECTION_FAILED:
+        color = 0xff0000;
+        break;
+    }
+    return [ = ](const Pixel& pt) -> Color {
+      const int32_t x = pt.coord.x;
+      const int32_t y = pt.coord.y;
+      if ((x % 5) == 1 || (y % 5) == 1) {
+        return Color(0xff00ff); // purple
+      }
+      return Color(color);
+    };
+  });
+};
+
+auto network_effect_initializing = network_effect(INITIALIZING);
+auto network_effect_disconnected = network_effect(DISCONNECTED);
+auto network_effect_connecting = network_effect(CONNECTING);
+auto network_effect_connected = network_effect(CONNECTED);
+auto network_effect_disconnecting = network_effect(DISCONNECTING);
+auto network_effect_connection_failed = network_effect(CONNECTION_FAILED);
+
 void  Player::addDefaultEffects2D() {
   static auto synctest = effect([ = ](const Frame& frame) {
       return [ = ](const Pixel& /*pt*/) -> Color {
@@ -435,7 +476,28 @@ void Player::render(Milliseconds dt) {
     case 1:
       effect = &calibration_effect;
       break;
-    case 2: // TODO Wi-Fi status.
+    case 2:
+      switch (network_->status()) {
+        case INITIALIZING:
+          effect = &network_effect_initializing;
+          break;
+        case DISCONNECTED:
+          effect = &network_effect_disconnected;
+          break;
+        case CONNECTING:
+          effect = &network_effect_connecting;
+          break;
+        case CONNECTED:
+          effect = &network_effect_connected;
+          break;
+        case DISCONNECTING:
+          effect = &network_effect_disconnecting;
+          break;
+        case CONNECTION_FAILED:
+          effect = &network_effect_connection_failed;
+          break;
+      }
+      break;
     case 3:
       effect = &black_effect;
       break;
