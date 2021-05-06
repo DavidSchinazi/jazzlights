@@ -53,13 +53,13 @@ inline Vec8 pos8(const Pixel& px) {
   return {(uint8_t)v.x, (uint8_t)v.y};
 }
 
-constexpr uint8_t* ucontext(const Frame& frame) {
-  return static_cast<uint8_t*>(frame.animation.context);
+inline uint8_t* ucontext(const Frame& frame) {
+  return reinterpret_cast<uint8_t*>(frame.animation.context);
 }
 
 template<typename T>
-constexpr T& cast_context(const Frame& frame) {
-  return *static_cast<T*>(frame.animation.context);
+inline T& cast_context(const Frame& frame) {
+  return *reinterpret_cast<T*>(frame.animation.context);
 }
 
 double pulse(const Frame& frame);
