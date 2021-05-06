@@ -1,6 +1,7 @@
 #ifndef UNISPARKS_GEOM_H
 #define UNISPARKS_GEOM_H
 #include "unisparks/util/math.hpp"
+#include <cmath>
 
 namespace unisparks {
 
@@ -126,16 +127,16 @@ struct Transform {
   }
 
   Dimensions operator()(const Dimensions& v) const {
-    return { abs(matrix[0]* v.width + matrix[1]* v.height),
-             abs(matrix[2]* v.width + matrix[3]* v.height)};
+    return { std::abs(matrix[0] * v.width + matrix[1] * v.height),
+             std::abs(matrix[2] * v.width + matrix[3] * v.height) };
   }
 
   Point operator()(const Point& v) const {
-    return { matrix[0]* v.x + matrix[1]* v.y + offset.x,
-             matrix[2]* v.x + matrix[3]* v.y + offset.y};
+    return { matrix[0] * v.x + matrix[1] * v.y + offset.x,
+             matrix[2] * v.x + matrix[3] * v.y + offset.y };
   }
 
-  int matrix[4];
+  Coord matrix[4];
   Point offset;
 };
 
