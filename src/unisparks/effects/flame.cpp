@@ -51,7 +51,7 @@ RgbaColor heatColor(uint8_t temperature) {
   return RgbaColor(r, g, b);
 }
 
-static constexpr int cooling = 40;
+static constexpr int cooling = 120;
 
 struct Context {
   Milliseconds t;

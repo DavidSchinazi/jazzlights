@@ -7,7 +7,7 @@ namespace unisparks {
 
 auto rainbow = []() {
   return effect([](const Frame & frame) {
-    Milliseconds period = adjustDuration(frame, 8000);
+    Milliseconds period = adjustDuration(frame, 1800);
     uint8_t initial_hue = 255 - 255 * frame.time / period;
     double maxd = distance(center(frame), lefttop(frame));
 
