@@ -10,6 +10,10 @@ namespace unisparks {
 #  define BUTTON_LOCK 0
 #endif // BUTTON_LOCK
 
+#ifndef BUTTONS_DISABLED
+#  define BUTTONS_DISABLED 0
+#endif // BUTTONS_DISABLED
+
 #ifndef START_DIM
 #  define START_DIM 0
 #endif // START_DIM
@@ -293,6 +297,7 @@ void setupButtons() {
 }
 
 void doButtons(Player& player, uint32_t currentMillis) {
+#if !BUTTONS_DISABLED
 #if defined(ESP32)
   const uint8_t btn = buttonStatus(0);
 #if BUTTON_LOCK
@@ -456,6 +461,7 @@ void doButtons(Player& player, uint32_t currentMillis) {
   // than 20 to avoid melting the screen/cover over the LEDs.
   atomMatrixScreenController->showLeds(20);
 #endif // ATOM_MATRIX_SCREEN
+#endif // !BUTTONS_DISABLED
 }
 
 uint8_t brightnessVal = FIRST_BRIGHTNESS;
