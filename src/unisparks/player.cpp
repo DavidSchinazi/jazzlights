@@ -225,7 +225,7 @@ void Player::reset() {
 
   preferredEffectDuration_ = 10 * ONE_SECOND;
 
-  throttleFps_ = 30;
+  throttleFps_ = 0;
 
   lastRenderTime_ = -1;
 

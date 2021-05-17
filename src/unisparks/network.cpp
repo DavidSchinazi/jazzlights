@@ -32,7 +32,7 @@ constexpr uint32_t htonl(uint32_t n) {
 namespace unisparks {
 
 static constexpr int msgcodeEffectFrame = 0xDF0002;
-static constexpr Milliseconds effectUpdatePeriod = 20000;
+static constexpr Milliseconds effectUpdatePeriod = 1000;
 static constexpr Milliseconds maxMissingEffectMasterPeriod = 2000;
 
 struct Message {
@@ -161,7 +161,7 @@ bool Network::sync(const char** pattern, Milliseconds* time,
     strncpy(patternBuf_, packet.data.frame.pattern, sizeof(patternBuf_));
     *time = static_cast<Milliseconds>(ntohl(packet.data.frame.time));
     *pattern = patternBuf_;
-    debug("Received pattern %s, time %d ms", *pattern, *time);
+    info("Received pattern %s, time %d ms", *pattern, *time);
     return true;
   } else {
     error("Received unknown message, code: %d", msgcode);
