@@ -7,6 +7,10 @@
 #include "unisparks/renderers/simple.hpp"
 #include "unisparks/registry.hpp"
 
+#ifndef START_SPECIAL
+#  define START_SPECIAL 0
+#endif // START_SPECIAL
+
 namespace unisparks {
 
 class Player {
@@ -250,7 +254,7 @@ class Player {
 
   bool paused_;
   bool loop_ = false;
-  uint8_t specialMode_ = 0;
+  uint8_t specialMode_ = START_SPECIAL;
 
   Network* network_;
 
