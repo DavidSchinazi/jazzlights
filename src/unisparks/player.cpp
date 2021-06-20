@@ -228,6 +228,7 @@ void Player::reset() {
   throttleFps_ = 0;
 
   lastRenderTime_ = -1;
+  lastLEDWriteTime_ = -1;
 
   fps_ = -1;
   lastFpsProbeTime_ = -1;
@@ -424,7 +425,7 @@ void Player::render() {
   lastRenderTime_ = currTime;
   framesSinceFpsProbe_++;
 
-  render(timeSinceLastRender);
+  render(timeSinceLastRender, currTime);
 }
 
 void Player::handleSpecial() {
@@ -443,7 +444,7 @@ void Player::stopSpecial() {
   specialMode_ = 0;
 }
 
-void Player::render(Milliseconds dt) {
+void Player::render(Milliseconds dt, Milliseconds currentTime) {
   if (!ready_) {
     begin();
   }
@@ -464,6 +465,13 @@ void Player::render(Milliseconds dt) {
   if (time_ > currEffectDuration && !loop_) {
     switchToPlaylistItem(nextidx(track_, 0, playlistSize_));
   }
+
+  static constexpr Milliseconds minLEDWriteTime = 10;
+  if (lastLEDWriteTime_ >= 0 &&
+      currentTime - minLEDWriteTime < lastLEDWriteTime_) {
+    return;
+  }
+  lastLEDWriteTime_ = currentTime;
 
   const Effect* effect = effects_[effectIdx_].effect;
   const Effect* overlay = overlayIdx_ < effectCount_ ?
@@ -562,6 +570,7 @@ bool Player::syncEffectByIndex(size_t index, Milliseconds time) {
       Frame fr = effectFrame();
       effects_[effectIdx_].effect->begin(fr);
       info("Playing effect %s", effectName());
+      lastLEDWriteTime_ = -1;
     }
     time_ = time;
   }
@@ -587,6 +596,7 @@ void Player::syncToNetwork() {
   Milliseconds time = time_;
   BeatsPerMinute tempo = tempo_;
   if (network_->sync(&pattern, &time, &tempo)) {
+    lastLEDWriteTime_ = -1;
     syncEffectByName(pattern, time);
   }
 }

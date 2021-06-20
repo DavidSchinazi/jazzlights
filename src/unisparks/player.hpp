@@ -65,7 +65,7 @@ class Player {
   /**
    *  Render current frame to all strands
    */
-  void render(Milliseconds dt);
+  void render(Milliseconds dt, Milliseconds currentTime);
 
   /**
    *  Play effect with given name
@@ -263,6 +263,8 @@ class Player {
   int throttleFps_;
 
   Milliseconds lastRenderTime_;
+
+  Milliseconds lastLEDWriteTime_;
 
   // Mutable because it is used for logging
   mutable int fps_;
