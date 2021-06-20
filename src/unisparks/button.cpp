@@ -1,5 +1,7 @@
 #include <Unisparks.h>
 
+#if WEARABLE
+
 #include <Arduino.h>
 #include <cstdint>
 
@@ -479,3 +481,5 @@ uint8_t getBrightness() {
 }
 
 } // namespace unisparks
+
+#endif // WEARABLE

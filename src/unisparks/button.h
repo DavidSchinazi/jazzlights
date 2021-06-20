@@ -4,6 +4,8 @@
 #include "unisparks/config.h"
 #include "unisparks/player.hpp"
 
+#if WEARABLE
+
 namespace unisparks {
 
 void setupButtons();
@@ -13,5 +15,7 @@ void pushBrightness(void);
 uint8_t getBrightness();
 
 } // namespace unisparks
+
+#endif // WEARABLE
 
 #endif // UNISPARKS_BUTTON_H

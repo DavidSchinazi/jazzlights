@@ -2,6 +2,10 @@
 #ifndef UNISPARKS_H
 #define UNISPARKS_H
 
+#include "unisparks/config.h"
+
+#if WEARABLE
+
 // Fixes flickering <https://github.com/FastLED/FastLED/issues/306>.
 #define FASTLED_ALLOW_INTERRUPTS 0
 
@@ -15,9 +19,10 @@
 
 #include <FastLED.h>
 
+#endif // WEARABLE
+
 #include "unisparks/board.h"
 #include "unisparks/button.h"
-#include "unisparks/config.h"
 #include "unisparks/layouts/matrix.hpp"
 #include "unisparks/layouts/pixelmap.hpp"
 #include "unisparks/layouts/reversemap.hpp"

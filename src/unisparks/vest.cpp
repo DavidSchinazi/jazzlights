@@ -1,5 +1,7 @@
 #include <Unisparks.h>
 
+#if WEARABLE
+
 #if !defined(ESP8266) && !defined(ESP32)
 #  error "Unexpected board"
 #endif
@@ -40,3 +42,5 @@ void vestLoop(void) {
 }
 
 } // namespace unisparks
+
+#endif // WEARABLE

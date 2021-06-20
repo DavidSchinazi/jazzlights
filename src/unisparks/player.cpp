@@ -30,6 +30,8 @@ namespace unisparks {
 
 using namespace internal;
 
+#if WEARABLE
+
 auto calibration_effect = effect([ = ](const Frame& frame) {
   const bool blink = ((frame.time % 1000) < 500);
   return [ = ](const Pixel& pt) -> Color {
@@ -60,6 +62,8 @@ auto calibration_effect = effect([ = ](const Frame& frame) {
     return Color(col);
   };
 });
+
+#endif // WEARABLE
 
 auto black_effect = solid(BLACK);
 auto red_effect = solid(RED);
@@ -482,7 +486,9 @@ void Player::render(Milliseconds dt, Milliseconds currentTime) {
 
   switch (specialMode_) {
     case 1:
+#if WEARABLE
       effect = &calibration_effect;
+#endif // WEARABLE
       break;
     case 2:
       switch (network_->status()) {
