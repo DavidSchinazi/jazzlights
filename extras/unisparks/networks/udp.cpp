@@ -233,6 +233,11 @@ void Udp::send(void* buf, size_t bufsize) {
       }
       error("Failed to send %d bytes on UDP socket %d ifName %s: %s",
             bufsize, fd, ifName.c_str(), strerror(errno));
+      if (errno == ENETUNREACH) {
+        // Do not invalidate the socket as we would immediately
+        // recreate it and infinite loop.
+        continue;
+      }
       invalidateSocket(ifName);
       setupSockets();
       continue;
