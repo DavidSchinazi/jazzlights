@@ -1,7 +1,14 @@
 #ifndef UNISPARKS_EFFECTS_PLASMA_H
 #define UNISPARKS_EFFECTS_PLASMA_H
+#include "unisparks/config.h"
 #include "unisparks/effects/functional.hpp"
 #include "unisparks/util/math.hpp"
+
+#if WEARABLE
+#  define PLASMA_SPEED 30
+#else //WEARABLE
+#  define PLASMA_SPEED 10
+#endif //WEARABLE
 
 namespace unisparks {
 
@@ -10,7 +17,7 @@ auto plasma = []() {
     using internal::sin8;
     using internal::cos8;
 
-    constexpr int32_t speed = 30;
+    constexpr int32_t speed = PLASMA_SPEED;
     uint8_t offset = speed * frame.time / 255;
     int plasVector = offset * 16;
 
@@ -393,7 +400,7 @@ class SpinPlasma : public Effect {
     using internal::sin8;
     using internal::cos8;
 
-    constexpr int32_t speed = 30;
+    constexpr int32_t speed = PLASMA_SPEED;
     uint8_t offset = speed * pixel.frame.time / 255;
     int plasVector = offset;
 
@@ -423,7 +430,7 @@ auto spinplasma = []() {
 
     OurColorPalette ocp_ = OCPRainbow;
 
-    constexpr int32_t speed = 30;
+    constexpr int32_t speed = PLASMA_SPEED;
     uint8_t offset = speed * frame.time / 255;
     int plasVector = offset;
 
