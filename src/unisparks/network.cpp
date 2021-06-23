@@ -124,6 +124,9 @@ bool Network::sync(const char** pattern, Milliseconds* time,
                           || currTime - effectLastTxTime_ > effectUpdatePeriod
                           || strncmp(*pattern, lastSentPattern_,
                                      sizeof(lastSentPattern_)) != 0)) {
+    memset(&packet, 0, sizeof(packet));
+    packet.data.frame.reserved[6] = 0x33;
+    packet.data.frame.reserved[7] = 0x66;
     packet.msgcode = htonl(msgcodeEffectFrame);
     strncpy(packet.data.frame.pattern, *pattern,
             sizeof(packet.data.frame.pattern));
@@ -147,6 +150,11 @@ bool Network::sync(const char** pattern, Milliseconds* time,
   }
   int32_t msgcode = ntohl(packet.msgcode);
   if (msgcode == msgcodeEffectFrame) {
+    if (packet.data.frame.reserved[6] != 0x33 ||
+        packet.data.frame.reserved[7] != 0x66) {
+      error("Ignoring message with bad reserved");
+      return false;
+    }
     effectLastRxTime_ = currTime;
 
     if (effectLastRxTime_ - effectLastTxTime_ < 50) {
