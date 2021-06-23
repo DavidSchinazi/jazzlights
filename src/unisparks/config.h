@@ -19,6 +19,8 @@
 // #define GUPPY 1
 
 // Choose whether to enable button lock.
-#define BUTTON_LOCK 0
+#ifndef BUTTON_LOCK
+#  define BUTTON_LOCK 0
+#endif // BUTTON_LOCK
 
 #endif // UNISPARKS_CONFIG_H
