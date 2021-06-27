@@ -7,11 +7,6 @@
 
 namespace unisparks {
 
-#ifndef BUTTON_LOCK
-// If you want to modify this, change the value in the config.h header.
-#  define BUTTON_LOCK 0
-#endif // BUTTON_LOCK
-
 #ifndef BUTTONS_DISABLED
 #  define BUTTONS_DISABLED 0
 #endif // BUTTONS_DISABLED
@@ -183,18 +178,15 @@ static const CRGB menuIconSpecial[ATOM_SCREEN_NUM_LEDS] = {
     CRGB::Black, specColor,   CRGB::Black, CRGB::Black, CRGB::Black,
 };
 
-void atomScreenUnlocked(Player& player, uint32_t /*currentMillis*/) {
-  const CRGB* icon = atomScreenLEDs;
-  switch (menuMode) {
-    case kNext: icon = menuIconNext; break;
-    case kPrevious: icon = menuIconPrevious; break;
-    case kBrightness: icon = menuIconBrightness; break;
-    case kSpecial: icon = menuIconSpecial; break;
-  };
-  for (int i = 0; i < ATOM_SCREEN_NUM_LEDS; i++) {
-    atomScreenLEDs[i] = icon[i];
-  }
+CLEDController* atomMatrixScreenController = nullptr;
 
+void atomScreenDisplay() {
+  // M5Stack recommends not setting the atom screen brightness greater
+  // than 20 to avoid melting the screen/cover over the LEDs.
+  atomMatrixScreenController->showLeds(20);
+}
+
+void atomScreenNetwork(Player& player, uint32_t /*currentMillis*/) {
   // Change top-right Atom matrix screen LED based on network status.
   CRGB networkColor = CRGB::Blue;
   Network* network = player.network();
@@ -211,27 +203,41 @@ void atomScreenUnlocked(Player& player, uint32_t /*currentMillis*/) {
   atomScreenLEDs[4] = networkColor;
 }
 
+void atomScreenUnlocked(Player& player, uint32_t currentMillis) {
+  const CRGB* icon = atomScreenLEDs;
+  switch (menuMode) {
+    case kNext: icon = menuIconNext; break;
+    case kPrevious: icon = menuIconPrevious; break;
+    case kBrightness: icon = menuIconBrightness; break;
+    case kSpecial: icon = menuIconSpecial; break;
+  };
+  for (int i = 0; i < ATOM_SCREEN_NUM_LEDS; i++) {
+    atomScreenLEDs[i] = icon[i];
+  }
+  atomScreenNetwork(player, currentMillis);
+}
+
 void atomScreenClear() {
   for (int i = 0; i < ATOM_SCREEN_NUM_LEDS; i++) {
     atomScreenLEDs[i] = CRGB::Black;
   }
 }
 
-void atomScreenLong() {
+void atomScreenLong(Player& player, uint32_t currentMillis) {
   atomScreenClear();
   for (int i : {0,5,10,15,20,21,22}) {
     atomScreenLEDs[i] = CRGB::Gold;
   }
+  atomScreenNetwork(player, currentMillis);
 }
 
-void atomScreenShort() {
+void atomScreenShort(Player& player, uint32_t currentMillis) {
   atomScreenClear();
   for (int i : {2,1,0,5,10,11,12,17,22,21,20}) {
     atomScreenLEDs[i] = CRGB::Gold;
   }
+  atomScreenNetwork(player, currentMillis);
 }
-
-CLEDController* atomMatrixScreenController = nullptr;
 
 #endif // ATOM_MATRIX_SCREEN
 
@@ -301,8 +307,9 @@ void setupButtons() {
 void doButtons(Player& player, uint32_t currentMillis) {
 #if !BUTTONS_DISABLED
 #if defined(ESP32)
-  const uint8_t btn = buttonStatus(0);
+  uint8_t btn = buttonStatus(0);
 #if BUTTON_LOCK
+  // info("doButtons start");
   static uint8_t buttonLockState = 0;
   static uint32_t lastButtonTime = 0;
 
@@ -338,13 +345,17 @@ void doButtons(Player& player, uint32_t currentMillis) {
   if (buttonLockState == 0) {
     atomScreenClear();
   } else if ((buttonLockState % 2) == 1) {
-    atomScreenLong();
+    atomScreenLong(player, currentMillis);
   } else if (buttonLockState == 2) {
-    atomScreenShort();
+    atomScreenShort(player, currentMillis);
   }
 
   if (buttonLockState < 4) {
+    atomScreenDisplay();
     return;
+  } else if (buttonLockState == 4) {
+    buttonLockState = 5;
+    btn = BTN_IDLE;
   }
 #endif // BUTTON_LOCK
 #if ATOM_MATRIX_SCREEN
@@ -364,6 +375,7 @@ void doButtons(Player& player, uint32_t currentMillis) {
   }
 #if ATOM_MATRIX_SCREEN
   atomScreenUnlocked(player, currentMillis);
+  atomScreenDisplay();
 #endif // ATOM_MATRIX_SCREEN
 #elif defined(ESP8266)
   const uint8_t btn0 = buttonStatus(0);
@@ -458,11 +470,6 @@ void doButtons(Player& player, uint32_t currentMillis) {
       break;
   }
 #endif // ESPxx
-#if ATOM_MATRIX_SCREEN
-  // M5Stack recommends not setting the atom screen brightness greater
-  // than 20 to avoid melting the screen/cover over the LEDs.
-  atomMatrixScreenController->showLeds(20);
-#endif // ATOM_MATRIX_SCREEN
 #endif // !BUTTONS_DISABLED
 }
 
