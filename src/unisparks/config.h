@@ -5,6 +5,13 @@
 #  define WEARABLE 0
 #endif // WEARABLE
 
+// Pick which vest to build here.
+#if !defined(CAMPSIGN) && !defined(ROPELIGHT) && !defined(ORANGE_VEST) && !defined(HAMMER) && !defined(GUPPY)
+#  define ORANGE_VEST 1
+// #define CAMP_SIGN 1
+// #define GUPPY 1
+#endif
+
 #ifndef CAMPSIGN
 #  define CAMPSIGN 0
 #endif // CAMPSIGN
@@ -12,13 +19,6 @@
 #ifndef ROPELIGHT
 #  define ROPELIGHT 0
 #endif // ROPELIGHT
-
-// Pick which vest to build here.
-#if !defined(CAMPSIGN) && !defined(ORANGE_VEST) && !defined(HAMMER) && !defined(GUPPY)
-#define ORANGE_VEST 1
-// #define CAMP_SIGN 1
-// #define GUPPY 1
-#endif
 
 // Choose whether to enable button lock.
 #ifndef BUTTON_LOCK
