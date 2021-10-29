@@ -9,6 +9,7 @@ set(LIB_SOURCES
 	../src/unisparks/effects/flame.hpp
 	../src/unisparks/effects/functional.hpp
 	../src/unisparks/effects/glitter.hpp
+	../src/unisparks/effects/glow.hpp
 	../src/unisparks/effects/overlay.hpp
 	../src/unisparks/effects/plasma.hpp
 	../src/unisparks/effects/rainbow.hpp

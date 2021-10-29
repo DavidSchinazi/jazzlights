@@ -18,6 +18,9 @@
 #ifndef GUPPY
 #  define GUPPY 0
 #endif // GUPPY
+#ifndef HAMMER
+#  define HAMMER 0
+#endif // HAMMER
 
 #if defined(ESP32)
 #  define LED_PIN  26
@@ -49,6 +52,13 @@
 #  define MATRIX_HEIGHT 20
 #  define LEDNUM 300
 #endif // GUPPY
+
+#if HAMMER
+#  define FIRST_BRIGHTNESS 255
+#  define MATRIX_WIDTH 1
+#  define MATRIX_HEIGHT 20
+#  define LEDNUM 20
+#endif // HAMMER
 
 extern const int pixelMap[];
 

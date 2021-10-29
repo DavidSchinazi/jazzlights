@@ -14,13 +14,19 @@
 #endif // ROPELIGHT
 
 // Pick which vest to build here.
+#if !defined(CAMPSIGN) && !defined(ORANGE_VEST) && !defined(HAMMER) && !defined(GUPPY)
 #define ORANGE_VEST 1
 // #define CAMP_SIGN 1
 // #define GUPPY 1
+#endif
 
 // Choose whether to enable button lock.
 #ifndef BUTTON_LOCK
 #  define BUTTON_LOCK 0
 #endif // BUTTON_LOCK
+
+#ifndef GLOW_ONLY
+#  define GLOW_ONLY 0
+#endif // GLOW_ONLY
 
 #endif // UNISPARKS_CONFIG_H

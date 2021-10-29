@@ -89,7 +89,7 @@ const uint8_t brightnessList[] = { FIRST_BRIGHTNESS, 64, 96, 8, 16, 128};
 #  ifndef FIRST_BRIGHTNESS
 #  define FIRST_BRIGHTNESS 64
 #  endif // FIRST_BRIGHTNESS
-const uint8_t brightnessList[] = {64, 96, 8, 16, 32, 128};
+const uint8_t brightnessList[] = {FIRST_BRIGHTNESS, 96, 8, 16, 32, 128};
 #else // BRIGHTER
 #  ifndef FIRST_BRIGHTNESS
 #  define FIRST_BRIGHTNESS 32

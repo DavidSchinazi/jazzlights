@@ -6,6 +6,7 @@
 #include "unisparks/effects/chess.hpp"
 #include "unisparks/effects/flame.hpp"
 #include "unisparks/effects/glitter.hpp"
+#include "unisparks/effects/glow.hpp"
 #include "unisparks/effects/overlay.hpp"
 #include "unisparks/effects/plasma.hpp"
 #include "unisparks/effects/rainbow.hpp"
@@ -124,8 +125,9 @@ void  Player::addDefaultEffects2D() {
   // addDefaultEffect("synctest", clone(
   //   loop(100, sequence(1000, solid(RED), 1000, solid(GREEN)))
   //   ), true );
-
-
+#if GLOW_ONLY
+  addDefaultEffect("glow", clone(glow()), true);
+#else // GLOW_ONLY
   addDefaultEffect("synctest", synctest, false);
 
 
@@ -159,6 +161,7 @@ void  Player::addDefaultEffects2D() {
   addDefaultEffect("crossbars", clone(
     unisparks::overlay(alphaLightnessBlend, slantbars(), transform(ROTATE_LEFT, slantbars()))
     ), false);
+#endif // GLOW_ONLY
 }
 
 void render(const Layout& layout, Renderer* renderer,
