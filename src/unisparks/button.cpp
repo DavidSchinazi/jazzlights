@@ -117,26 +117,26 @@ void nextMode(Player& /*player*/, uint32_t /*currentMillis*/) {
   };
 }
 
-void modeAct(Player& player, uint32_t /*currentMillis*/) {
+void modeAct(Player& player, uint32_t currentMillis) {
   switch (menuMode) {
     case kNext:
-      info("Next button has been hit");
+      info("%u Next button has been hit", currentMillis);
       player.stopSpecial();
       player.next();
       break;
     case kPrevious:
-      info("Back button has been hit");
+      info("%u Back button has been hit", currentMillis);
       player.stopSpecial();
       player.prev();
       player.loopOne();
       break;
     case kBrightness:
-      info("Brightness button has been hit");
+      info("%u Brightness button has been hit", currentMillis);
       brightnessCursor++;
       pushBrightness();
       break;
     case kSpecial:
-      info("Special button has been hit");
+      info("%u Special button has been hit", currentMillis);
       player.handleSpecial();
       break;
   };
