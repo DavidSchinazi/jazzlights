@@ -39,37 +39,107 @@ using namespace internal;
 #  define ESP32_BLE_SENDER 0
 #endif // ESP32_BLE_SENDER
 
+using DeviceIdentifier = uint8_t[6];
+using Precedence = uint16_t;
+
+#define KNOWN_PATTERNS \
+  X(0x01, "rainbow") \
+  X(0x02, "sp-ocean") \
+  X(0x03, "sp-heat") \
+  X(0x04, "threesine") \
+  X(0x05, "sp-lava") \
+  X(0x06, "sp-rainbow") \
+  X(0x07, "glitter") \
+  X(0x08, "sp-party") \
+  X(0x09, "sp-cloud") \
+  X(0x0a, "plasma") \
+  X(0x0b, "sp-forest") \
+  X(0x0c, "flame") \
+  X(0x0d, "rider") \
+  X(0x0e, "slantbars") \
+  X(0x0f, "roboscan") \
+  X(0x10, "crossbars") \
+  X(0x11, "glow") \
+  X(0x12, "synctest")
+
+uint32_t encodePattern(const char* patternName) {
+#define X(value, name) \
+  if (strncmp(name, patternName, 16) == 0) { return value; }
+  KNOWN_PATTERNS
+#undef X
+  return 0x00;
+}
+
+void decodePattern(uint32_t encodedPattern, char* patternName) {
+#define X(value, name) \
+  case value: strncpy(patternName, name, 16); return;
+  switch (encodedPattern) {
+    KNOWN_PATTERNS
+  }
+#undef X
+  strncpy(patternName, "rainbow", 16);
+}
+
 #if ESP32_BLE_SENDER
-void SendBle(const char* effectNameToSend,
+void writeUint32(uint8_t* data, uint32_t number) {
+  data[0] = static_cast<uint8_t>((number & 0xFF000000) >> 24);
+  data[1] = static_cast<uint8_t>((number & 0x00FF0000) >> 16);
+  data[2] = static_cast<uint8_t>((number & 0x0000FF00) >> 8);
+  data[3] = static_cast<uint8_t>((number & 0x000000FF));
+}
+
+void writeUint16(uint8_t* data, uint16_t number) {
+  data[0] = static_cast<uint8_t>((number & 0xFF00) >> 8);
+  data[1] = static_cast<uint8_t>((number & 0x00FF));
+}
+
+void SendBle(const DeviceIdentifier& originalSenderId,
+             Precedence originalSenderPrecedence,
+             const char* effectNameToSend,
              Milliseconds elapsedTimeToSend) {
   Milliseconds currentTime = timeMillis();
-  uint8_t blePayload[3 + 16 + 4] = {0xFF, 'L', '0'};
-  strncpy(reinterpret_cast<char*>(&blePayload[3]), effectNameToSend, 16);
+  uint8_t blePayload[3 + 6 + 2 + 4 + 4 + 4] = {0xFF, 'L', '1'};
+  memcpy(&blePayload[3], originalSenderId, 6);
+  writeUint16(&blePayload[3 + 6], originalSenderPrecedence);
+  writeUint32(&blePayload[3 + 6 + 2], encodePattern(effectNameToSend));
+  writeUint32(&blePayload[3 + 6 + 2 + 4], 0); // Next pattern, will be used later.
   Esp32Ble::SetInnerPayload(sizeof(blePayload),
                             blePayload,
-                            3 + 16,
+                            3 + 6 + 2 + 4 + 4,
                             currentTime - elapsedTimeToSend,
                             currentTime);
 }
 #endif // ESP32_BLE_SENDER
 
 #if ESP32_BLE_RECEIVER
+uint32_t readUint32(const uint8_t* data) {
+  return (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | (data[3]);
+}
+
+uint16_t readUint16(const uint8_t* data) {
+  return (data[0] << 8) | (data[1]);
+}
+
 bool ReceiveBle(const Esp32Ble::ScanResult& sr,
                 Milliseconds currentTime,
+                DeviceIdentifier receivedOriginalSenderId,
+                Precedence* receivedOriginalSenderPrecedence,
                 char* receivedEffectName,
                 Milliseconds* receivedElapsedTime) {
-  if (sr.innerPayloadLength < 3 + 16 + 4) {
+  if (sr.innerPayloadLength < 3 + 6 + 2 + 4 + 4 + 4) {
     info("%u Ignoring received BLE with unexpected length %u",
          currentTime, sr.innerPayloadLength);
     return false;
   }
-  static constexpr uint8_t prefix[3] = {0xFF, 'L', '0'};
+  static constexpr uint8_t prefix[3] = {0xFF, 'L', '1'};
   if (memcmp(sr.innerPayload, prefix, sizeof(prefix)) != 0) {
     info("%u Ignoring received BLE with unexpected prefix", currentTime);
     return false;
   }
   Milliseconds receivedTime =
-    Esp32Ble::ReadTimeFromPayload(sr.innerPayloadLength, sr.innerPayload, 3+16);
+    Esp32Ble::ReadTimeFromPayload(sr.innerPayloadLength,
+                                  sr.innerPayload,
+                                  3 + 6 + 2 + 4 + 4);
   if (receivedTime == 0xFFFFFFFF) {
     info("%u Ignoring received BLE with unexpected time", currentTime);
     return false;
@@ -85,7 +155,9 @@ bool ReceiveBle(const Esp32Ble::ScanResult& sr,
     error("%u Unexpected receiptTime %u", currentTime, sr.receiptTime);
     return false;
   }
-  strncpy(receivedEffectName, reinterpret_cast<const char*>(&sr.innerPayload[3]), 16);
+  memcpy(receivedOriginalSenderId, sr.innerPayload, 6);
+  *receivedOriginalSenderPrecedence = readUint16(&sr.innerPayload[3 + 6]);
+  decodePattern(readUint32(&sr.innerPayload[3 + 6 + 2]), receivedEffectName);
   *receivedElapsedTime = receivedTime;
   return true;
 }
@@ -649,7 +721,10 @@ bool Player::syncEffectByIndex(size_t index, Milliseconds time) {
       info("Playing effect %s", effectName());
       lastLEDWriteTime_ = -1;
 #if ESP32_BLE_SENDER
-      SendBle(effectName(), time);
+      DeviceIdentifier localDeviceId;
+      Precedence localPrecedence = 0;
+      Esp32Ble::GetLocalAddress(&localDeviceId);
+      SendBle(localDeviceId, localPrecedence, effectName(), time);
 #endif // ESP32_BLE_SENDER
     }
     time_ = time;
@@ -691,7 +766,14 @@ void Player::syncToNetwork() {
   for (const Esp32Ble::ScanResult& sr : Esp32Ble::GetScanResults()) {
     char receivedPattern[17] = {};
     Milliseconds receivedElapsedTime;
-    if (!ReceiveBle(sr, currentTime, receivedPattern, &receivedElapsedTime)) {
+    DeviceIdentifier receivedDeviceId;
+    Precedence receivedPrecedence;
+    if (!ReceiveBle(sr,
+                    currentTime,
+                    receivedDeviceId,
+                    &receivedPrecedence,
+                    receivedPattern,
+                    &receivedElapsedTime)) {
       continue;
     }
     if (receivedElapsedTime > preferredEffectDuration_ && !loop_) {
