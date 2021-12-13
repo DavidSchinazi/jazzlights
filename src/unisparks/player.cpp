@@ -16,6 +16,7 @@
 #include "unisparks/effects/solid.hpp"
 #include "unisparks/effects/transform.hpp"
 #include "unisparks/effects/threesine.hpp"
+#include "unisparks/networks/esp32_ble.hpp"
 #include "unisparks/registry.hpp"
 #include "unisparks/renderers/simple.hpp"
 #include "unisparks/util/containers.hpp"
@@ -29,6 +30,66 @@
 namespace unisparks {
 
 using namespace internal;
+
+#ifndef ESP32_BLE_RECEIVER
+#  define ESP32_BLE_RECEIVER ESP32_BLE
+#endif // ESP32_BLE_RECEIVER
+
+#ifndef ESP32_BLE_SENDER
+#  define ESP32_BLE_SENDER 0
+#endif // ESP32_BLE_SENDER
+
+#if ESP32_BLE_SENDER
+void SendBle(const char* effectNameToSend,
+             Milliseconds elapsedTimeToSend) {
+  Milliseconds currentTime = timeMillis();
+  uint8_t blePayload[3 + 16 + 4] = {0xFF, 'L', '0'};
+  strncpy(reinterpret_cast<char*>(&blePayload[3]), effectNameToSend, 16);
+  Esp32Ble::SetInnerPayload(sizeof(blePayload),
+                            blePayload,
+                            3 + 16,
+                            currentTime - elapsedTimeToSend,
+                            currentTime);
+}
+#endif // ESP32_BLE_SENDER
+
+#if ESP32_BLE_RECEIVER
+bool ReceiveBle(const Esp32Ble::ScanResult& sr,
+                Milliseconds currentTime,
+                char* receivedEffectName,
+                Milliseconds* receivedElapsedTime) {
+  if (sr.innerPayloadLength < 3 + 16 + 4) {
+    info("%u Ignoring received BLE with unexpected length %u",
+         currentTime, sr.innerPayloadLength);
+    return false;
+  }
+  static constexpr uint8_t prefix[3] = {0xFF, 'L', '0'};
+  if (memcmp(sr.innerPayload, prefix, sizeof(prefix)) != 0) {
+    info("%u Ignoring received BLE with unexpected prefix", currentTime);
+    return false;
+  }
+  Milliseconds receivedTime =
+    Esp32Ble::ReadTimeFromPayload(sr.innerPayloadLength, sr.innerPayload, 3+16);
+  if (receivedTime == 0xFFFFFFFF) {
+    info("%u Ignoring received BLE with unexpected time", currentTime);
+    return false;
+  }
+  if (sr.receiptTime <= currentTime) {
+    const Milliseconds timeSinceReceipt = currentTime - sr.receiptTime;
+    if (receivedTime < 0xFFFFFFFF - timeSinceReceipt) {
+      receivedTime += timeSinceReceipt;
+    } else {
+      receivedTime = 0xFFFFFFFF;
+    }
+  } else {
+    error("%u Unexpected receiptTime %u", currentTime, sr.receiptTime);
+    return false;
+  }
+  strncpy(receivedEffectName, reinterpret_cast<const char*>(&sr.innerPayload[3]), 16);
+  *receivedElapsedTime = receivedTime;
+  return true;
+}
+#endif // ESP32_BLE_RECEIVER
 
 #if WEARABLE
 
@@ -556,6 +617,9 @@ void Player::jump(int index) {
   if (switchToPlaylistItem(index % playlistSize_) && network_) {
     network_->isControllingEffects(true);
   }
+#if ESP32_BLE_SENDER
+  Esp32Ble::TriggerSendAsap(timeMillis());
+#endif // ESP32_BLE_SENDER
 }
 
 void Player::play(const char* name) {
@@ -584,6 +648,9 @@ bool Player::syncEffectByIndex(size_t index, Milliseconds time) {
       effects_[effectIdx_].effect->begin(fr);
       info("Playing effect %s", effectName());
       lastLEDWriteTime_ = -1;
+#if ESP32_BLE_SENDER
+      SendBle(effectName(), time);
+#endif // ESP32_BLE_SENDER
     }
     time_ = time;
   }
@@ -619,6 +686,25 @@ void Player::syncToNetwork() {
     lastLEDWriteTime_ = -1;
     syncEffectByName(pattern, time);
   }
+#if ESP32_BLE_RECEIVER
+  const Milliseconds currentTime = timeMillis();
+  for (const Esp32Ble::ScanResult& sr : Esp32Ble::GetScanResults()) {
+    char receivedPattern[17] = {};
+    Milliseconds receivedElapsedTime;
+    if (!ReceiveBle(sr, currentTime, receivedPattern, &receivedElapsedTime)) {
+      continue;
+    }
+    if (receivedElapsedTime > preferredEffectDuration_ && !loop_) {
+      // Ignore this message because the sender already switched effects.
+      info("%u Ignoring received BLE with time past duration", currentTime);
+      continue;
+    }
+    info("%u Received BLE: switching to pattern %s elapsedTime %u",
+         currentTime, receivedPattern, receivedElapsedTime);
+    lastLEDWriteTime_ = -1;
+    syncEffectByName(receivedPattern, receivedElapsedTime);
+  }
+#endif // ESP32_BLE_RECEIVER
 }
 
 void Player::pause() {
