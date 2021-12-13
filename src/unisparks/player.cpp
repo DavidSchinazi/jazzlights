@@ -36,11 +36,20 @@ using namespace internal;
 #endif // ESP32_BLE_RECEIVER
 
 #ifndef ESP32_BLE_SENDER
-#  define ESP32_BLE_SENDER 0
+#  define ESP32_BLE_SENDER ESP32_BLE
 #endif // ESP32_BLE_SENDER
 
-using DeviceIdentifier = uint8_t[6];
-using Precedence = uint16_t;
+int comparePrecedence(Precedence leftPrecedence,
+                      const DeviceIdentifier& leftDeviceId,
+                      Precedence rightPrecedence,
+                      const DeviceIdentifier& rightDeviceId) {
+  if (leftPrecedence < rightPrecedence) {
+    return -1;
+  } else if (leftPrecedence > rightPrecedence) {
+    return 1;
+  }
+  return memcmp(leftDeviceId, rightDeviceId, sizeof(DeviceIdentifier));
+}
 
 #define KNOWN_PATTERNS \
   X(0x01, "rainbow") \
@@ -96,8 +105,8 @@ void writeUint16(uint8_t* data, uint16_t number) {
 void SendBle(const DeviceIdentifier& originalSenderId,
              Precedence originalSenderPrecedence,
              const char* effectNameToSend,
-             Milliseconds elapsedTimeToSend) {
-  Milliseconds currentTime = timeMillis();
+             Milliseconds elapsedTimeToSend,
+             Milliseconds currentTime) {
   uint8_t blePayload[3 + 6 + 2 + 4 + 4 + 4] = {0xFF, 'L', '1'};
   memcpy(&blePayload[3], originalSenderId, 6);
   writeUint16(&blePayload[3 + 6], originalSenderPrecedence);
@@ -155,7 +164,7 @@ bool ReceiveBle(const Esp32Ble::ScanResult& sr,
     error("%u Unexpected receiptTime %u", currentTime, sr.receiptTime);
     return false;
   }
-  memcpy(receivedOriginalSenderId, sr.innerPayload, 6);
+  memcpy(receivedOriginalSenderId, &sr.innerPayload[3], 6);
   *receivedOriginalSenderPrecedence = readUint16(&sr.innerPayload[3 + 6]);
   decodePattern(readUint32(&sr.innerPayload[3 + 6 + 2]), receivedEffectName);
   *receivedElapsedTime = receivedTime;
@@ -368,6 +377,11 @@ void Player::reset() {
 
   lastRenderTime_ = -1;
   lastLEDWriteTime_ = -1;
+  lastUserInputTime_ = -1;
+  followingLeader_ = false;
+  memset(leaderDeviceId_, 0, sizeof(leaderDeviceId_));
+  leaderPrecedence_ = 0;
+  lastLeaderReceiveTime_ = -1;
 
   fps_ = -1;
   lastFpsProbeTime_ = -1;
@@ -686,6 +700,8 @@ void Player::next() {
 }
 
 void Player::jump(int index) {
+  lastUserInputTime_ = timeMillis();
+  followingLeader_ = false;
   if (switchToPlaylistItem(index % playlistSize_) && network_) {
     network_->isControllingEffects(true);
   }
@@ -709,6 +725,50 @@ bool Player::switchToPlaylistItem(size_t index) {
   return track_ == index;
 }
 
+Precedence GetPrecedenceDepreciation(Milliseconds epochTime,
+                                     Milliseconds currentTime) {
+  if (epochTime >= 0) {
+    Milliseconds timeSinceEpoch;
+    if (epochTime <= currentTime) {
+      timeSinceEpoch = currentTime - epochTime;
+    } else {
+      error("%u Bad precedence depreciation time %u", currentTime, epochTime);
+      timeSinceEpoch = 0;
+    }
+    if (timeSinceEpoch < 5000) {
+      return timeSinceEpoch / 100;
+    } else if (timeSinceEpoch < 30000) {
+      return 50 + (timeSinceEpoch - 5000) / 1000;
+    }
+  }
+  return 50 + 25;
+}
+
+Precedence DepreciatePrecedence(Precedence startPrecedence,
+                                Precedence depreciation) {
+  if (startPrecedence <= depreciation) {
+    return 0;
+  }
+  return startPrecedence - depreciation;
+}
+
+Precedence Player::GetLocalPrecedence(Milliseconds currentTime) {
+  Precedence precedence = 1000;
+  Precedence depreciation = GetPrecedenceDepreciation(lastUserInputTime_,
+                                                      currentTime);
+  precedence = DepreciatePrecedence(precedence, depreciation);
+  return precedence;
+}
+
+Precedence Player::GetLeaderPrecedence(Milliseconds currentTime) {
+  Precedence precedence = leaderPrecedence_;
+  Precedence depreciation = GetPrecedenceDepreciation(lastUserInputTime_,
+                                                      currentTime);
+  precedence = DepreciatePrecedence(precedence, depreciation);
+  precedence = DepreciatePrecedence(precedence, depreciation);
+  return precedence;
+}
+
 bool Player::syncEffectByIndex(size_t index, Milliseconds time) {
   if (index < effectCount_) {
     if (effectIdx_ != index) {
@@ -721,10 +781,22 @@ bool Player::syncEffectByIndex(size_t index, Milliseconds time) {
       info("Playing effect %s", effectName());
       lastLEDWriteTime_ = -1;
 #if ESP32_BLE_SENDER
+      Milliseconds currentTime = timeMillis();
       DeviceIdentifier localDeviceId;
-      Precedence localPrecedence = 0;
-      Esp32Ble::GetLocalAddress(&localDeviceId);
-      SendBle(localDeviceId, localPrecedence, effectName(), time);
+      Precedence followedPrecedence;
+      if (followingLeader_) {
+        memcpy(localDeviceId, leaderDeviceId_, sizeof(localDeviceId));
+        followedPrecedence = GetLeaderPrecedence(currentTime);
+        followedPrecedence = DepreciatePrecedence(followedPrecedence, 100);
+      } else {
+        Esp32Ble::GetLocalAddress(&localDeviceId);
+        followedPrecedence = GetLocalPrecedence(currentTime);
+      }
+      info("%u Sending BLE as %s " DEVICE_ID_FMT " precedence %u",
+           currentTime, (followingLeader_ ? "remote" : "local"),
+           DEVICE_ID_HEX(localDeviceId), followedPrecedence);
+      SendBle(localDeviceId, followedPrecedence,
+              effectName(), time, currentTime);
 #endif // ESP32_BLE_SENDER
     }
     time_ = time;
@@ -776,11 +848,55 @@ void Player::syncToNetwork() {
                     &receivedElapsedTime)) {
       continue;
     }
+    DeviceIdentifier followedDeviceId;
+    Esp32Ble::GetLocalAddress(&followedDeviceId);
+    if (memcmp(receivedDeviceId, followedDeviceId, sizeof(followedDeviceId)) == 0) {
+      info("%u Ignoring received BLE from ourselves " DEVICE_ID_FMT,
+           currentTime, DEVICE_ID_HEX(receivedDeviceId));
+      continue;
+    }
+    Precedence followedPrecedence;
+    if (followingLeader_) {
+      memcpy(followedDeviceId, leaderDeviceId_, sizeof(followedDeviceId));
+      followedPrecedence = GetLeaderPrecedence(currentTime);
+    } else {
+      followedPrecedence = GetLocalPrecedence(currentTime);
+    }
     if (receivedElapsedTime > preferredEffectDuration_ && !loop_) {
       // Ignore this message because the sender already switched effects.
       info("%u Ignoring received BLE with time past duration", currentTime);
       continue;
     }
+    if (comparePrecedence(followedPrecedence, followedDeviceId,
+                          receivedPrecedence, receivedDeviceId) >= 0) {
+      info("%u Ignoring received BLE from " DEVICE_ID_FMT
+           " precedence %u because our %s " DEVICE_ID_FMT " precedence %u is higher",
+           currentTime, DEVICE_ID_HEX(receivedDeviceId), receivedPrecedence,
+           (followingLeader_ ? "remote" : "local"),
+           DEVICE_ID_HEX(followedDeviceId), followedPrecedence);
+      continue;
+    }
+    if (!followingLeader_) {
+      info("%u Switching from local " DEVICE_ID_FMT " to leader"
+           " " DEVICE_ID_FMT " precedence %u prior precedence %u",
+           currentTime, DEVICE_ID_HEX(followedDeviceId),
+           DEVICE_ID_HEX(receivedDeviceId),
+           receivedPrecedence, followedPrecedence);
+    } else if (memcmp(leaderDeviceId_, receivedDeviceId, sizeof(leaderDeviceId_)) != 0) {
+      info("%u Picking new leader " DEVICE_ID_FMT " precedence %u"
+           " over " DEVICE_ID_FMT " precedence %u",
+           currentTime, DEVICE_ID_HEX(receivedDeviceId), receivedPrecedence,
+           DEVICE_ID_HEX(leaderDeviceId_), followedPrecedence);
+    } else {
+      info("%u Keeping leader " DEVICE_ID_FMT " precedence %u"
+           " prior precedence %u",
+           currentTime, DEVICE_ID_HEX(receivedDeviceId), receivedPrecedence,
+           followedPrecedence);
+    }
+    followingLeader_ = true;
+    memcpy(leaderDeviceId_, receivedDeviceId, sizeof(leaderDeviceId_));
+    leaderPrecedence_ = receivedPrecedence;
+    lastLeaderReceiveTime_ = currentTime;
     info("%u Received BLE: switching to pattern %s elapsedTime %u",
          currentTime, receivedPattern, receivedElapsedTime);
     lastLEDWriteTime_ = -1;

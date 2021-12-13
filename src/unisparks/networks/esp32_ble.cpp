@@ -371,8 +371,9 @@ void Esp32Ble::GapCallbackInner(esp_gap_ble_cb_event_t event,
             char advRawData[31 * 2 + 1] = {};
             convertToHex(advRawData, sizeof(advRawData),
                         param->scan_rst.ble_adv, param->scan_rst.adv_data_len);
-            ESP32_BLE_DEBUG("%u Received adv<%u:%s>",
-                  currentTime, param->scan_rst.adv_data_len, advRawData);
+            ESP32_BLE_DEBUG("%u Received adv<%u:%s> from " ESP_BD_ADDR_STR,
+                  currentTime, param->scan_rst.adv_data_len, advRawData,
+                  ESP_BD_ADDR_HEX(param->scan_rst.bda));
           }
           ReceiveAdvertisement(param->scan_rst.bda,
                                param->scan_rst.adv_data_len - 2,
@@ -419,7 +420,7 @@ void Esp32Ble::GapCallbackInner(esp_gap_ble_cb_event_t event,
       ESP32_BLE_DEBUG("%u Advertising has now stopped", currentTime);
       UpdateState(State::kStoppingAdvertising, State::kIdle);
       if (ExtractShouldTriggerSendAsap()) {
-        StartAdvertising(currentTime);
+        StartConfigureAdvertising(currentTime);
       } else {
         StartScanning(currentTime);
       }

@@ -13,6 +13,11 @@
 
 namespace unisparks {
 
+using Precedence = uint16_t;
+using DeviceIdentifier = uint8_t[6];
+#define DEVICE_ID_FMT "%02x:%02x:%02x:%02x:%02x:%02x"
+#define DEVICE_ID_HEX(addr) addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]
+
 class Player {
  public:
 
@@ -214,6 +219,9 @@ class Player {
 
   void addDefaultEffects2D();
 
+  Precedence GetLocalPrecedence(Milliseconds currentTime);
+  Precedence GetLeaderPrecedence(Milliseconds currentTime);
+
   bool ready_;
 
   struct Strand {
@@ -265,6 +273,11 @@ class Player {
   Milliseconds lastRenderTime_;
 
   Milliseconds lastLEDWriteTime_;
+  Milliseconds lastUserInputTime_;
+  bool followingLeader_;
+  DeviceIdentifier leaderDeviceId_;
+  Precedence leaderPrecedence_;
+  Milliseconds lastLeaderReceiveTime_;
 
   // Mutable because it is used for logging
   mutable int fps_;
