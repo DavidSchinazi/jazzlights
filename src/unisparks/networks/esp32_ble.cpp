@@ -431,10 +431,10 @@ void Esp32Ble::GapCallbackInner(esp_gap_ble_cb_event_t event,
 }
 
 void Esp32Ble::Setup() {
-  // Initialize singleton.
-  Get()->Init();
   // Let Arduino BLEDevice handle initialization.
   BLEDevice::init("");
+  // Initialize singleton.
+  Get()->Init();
   // Override callbacks away from BLEDevice back to us.
   ESP_ERROR_CHECK(esp_ble_gap_register_callback(&Esp32Ble::GapCallback));
   // Configure scanning parameters.
@@ -456,7 +456,26 @@ Esp32Ble* Esp32Ble::Get() {
 }
 
 void Esp32Ble::Init() {
+  uint8_t addressType;
+  esp_bd_addr_t localAddress;
+  memset(localAddress, 0, sizeof(localAddress));
+  ESP_ERROR_CHECK(esp_ble_gap_get_local_used_addr(localAddress, &addressType));
+  info("Initialized BLE with local MAC address " ESP_BD_ADDR_STR " (type %u)",
+       ESP_BD_ADDR_HEX(localAddress), addressType);
+  {
+    const std::lock_guard<std::mutex> lock(mutex_);
+    static_assert(sizeof(localDeviceIdentifier_) == sizeof(localAddress), "bad size");
+    memcpy(localDeviceIdentifier_, localAddress, sizeof(localDeviceIdentifier_));
+  }
+}
 
+void Esp32Ble::GetLocalAddressInner(DeviceIdentifier* localAddress) {
+  const std::lock_guard<std::mutex> lock(mutex_);
+  memcpy(localAddress, localDeviceIdentifier_, sizeof(localDeviceIdentifier_));
+}
+
+void Esp32Ble::GetLocalAddress(DeviceIdentifier* localAddress) {
+  Get()->GetLocalAddressInner(localAddress);
 }
 
 void Esp32Ble::Loop(Milliseconds currentTime) {
