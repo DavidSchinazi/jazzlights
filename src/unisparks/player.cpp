@@ -25,7 +25,6 @@
 #include "unisparks/util/stream.hpp"
 #include "unisparks/util/time.hpp"
 #include "unisparks/version.hpp"
-// #include "unisparks/effects/scroll.hpp"
 
 namespace unisparks {
 
@@ -470,6 +469,11 @@ void Player::render(Milliseconds dt, Milliseconds currentTime) {
 #endif
 
   if (time_ > currEffectDuration && !loop_) {
+    info("%u Exceeded effect duration, switching from %s (index %u)"
+         " to next effect %s (index %u)",
+         currentTime, effects_[track_].name, track_,
+         effects_[nextidx(track_, 0, playlistSize_)].name,
+         nextidx(track_, 0, playlistSize_));
     switchToPlaylistItem(nextidx(track_, 0, playlistSize_));
   }
 
@@ -592,6 +596,13 @@ bool Player::syncEffectByName(const char* name, Milliseconds time) {
   if (!findEffect(name, &i)) {
     warn("Ignored unknown effect %s", name);
     return false;
+  }
+  // If effect is in playlist, sync playlist state to it.
+  for (size_t t = 0; t < playlistSize_; t++) {
+    if (playlist_[t] == i) {
+      track_ = t;
+      break;
+    }
   }
   return syncEffectByIndex(i, time);
 }
