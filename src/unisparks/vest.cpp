@@ -23,6 +23,10 @@ CLEDController* mainVestController = nullptr;
 void vestSetup(void) {
   Serial.begin(115200);
 
+#if ESP32_BLE
+  Esp32Ble::Setup();
+#endif // ESP32_BLE
+
   setupButtons();
 
   player.begin(pixels, renderPixel, network);
@@ -34,9 +38,15 @@ void vestSetup(void) {
 }
 
 void vestLoop(void) {
-  uint32_t currentMillis = (uint32_t)millis();
+  Milliseconds currentTime = timeMillis();
+  uint32_t currentMillis = (uint32_t)currentTime;
   updateButtons(currentMillis); // read, debounce, and process the buttons
   doButtons(player, currentMillis); // perform actions based on button state
+
+#if ESP32_BLE
+  Esp32Ble::Loop(currentTime);
+#endif // ESP32_BLE
+
   player.render();
   mainVestController->showLeds(getBrightness());
 }

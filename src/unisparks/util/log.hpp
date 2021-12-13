@@ -10,7 +10,12 @@
 #endif
 
 namespace unisparks {
-extern enum class LogLevel { FATAL, ERROR, WARNING, INFO, DEBUG, MAX } logLevel;
+enum class LogLevel { FATAL, ERROR, WARNING, INFO, DEBUG, MAX };
+extern LogLevel logLevel;
+
+inline bool is_debug_logging_enabled() {
+  return logLevel >= LogLevel::DEBUG;
+}
 
 void log(LogLevel level, const char* fmt, va_list args);
 
