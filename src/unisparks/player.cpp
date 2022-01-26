@@ -269,6 +269,10 @@ void  Player::addDefaultEffects2D() {
 #if GLOW_ONLY
   addDefaultEffect("glow", clone(glow()), true);
 #else // GLOW_ONLY
+
+  // For testing maximum power draw
+  //addDefaultEffect("solid", clone(solid(WHITE)), true);
+
   addDefaultEffect("synctest", synctest, false);
 
 

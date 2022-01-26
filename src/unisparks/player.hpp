@@ -200,6 +200,8 @@ class Player {
 
   Network* network() const { return network_; };
 
+  bool powerlimited;
+
  private:
   void syncToNetwork();
   bool syncEffectByName(const char* name, Milliseconds time);
