@@ -6,15 +6,15 @@
 #endif // WEARABLE
 
 // Pick which vest to build here.
-#if !defined(CAMPSIGN) && !defined(ROPELIGHT) && !defined(ORANGE_VEST) && !defined(HAMMER) && !defined(GUPPY)
+#if !defined(CAMP_SIGN) && !defined(ROPELIGHT) && !defined(ORANGE_VEST) && !defined(HAMMER) && !defined(GUPPY)
 #  define ORANGE_VEST 1
 // #define CAMP_SIGN 1
 // #define GUPPY 1
 #endif
 
-#ifndef CAMPSIGN
-#  define CAMPSIGN 0
-#endif // CAMPSIGN
+#ifndef CAMP_SIGN
+#  define CAMP_SIGN 0
+#endif // CAMP_SIGN
 
 #ifndef ROPELIGHT
 #  define ROPELIGHT 0
