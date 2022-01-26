@@ -29,8 +29,4 @@
 #  define GLOW_ONLY 0
 #endif // GLOW_ONLY
 
-#ifndef MAX_MW
-#  define MAX_MW 9200
-#endif // MAX_MW
-
 #endif // UNISPARKS_CONFIG_H
