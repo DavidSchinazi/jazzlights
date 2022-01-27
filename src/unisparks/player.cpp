@@ -279,21 +279,21 @@ void  Player::addDefaultEffects2D() {
   addDefaultEffect("rainbow", clone(rainbow()), true);
   addDefaultEffect("sp-ocean", clone(SpinPlasma(OCPOcean)), true);
   addDefaultEffect("sp-heat", clone(SpinPlasma(OCPHeat)), true);
-#if !CAMPSIGN && !ROPELIGHT
+#if !CAMP_SIGN && !ROPELIGHT
   addDefaultEffect("threesine", clone(threesine()), true);
-#endif // !CAMPSIGN && !ROPELIGHT
+#endif // !CAMP_SIGN && !ROPELIGHT
   addDefaultEffect("sp-lava", clone(SpinPlasma(OCPLava)), true);
   addDefaultEffect("sp-rainbow", clone(SpinPlasma(OCPRainbow)), true);
-#if !CAMPSIGN
+#if !CAMP_SIGN
   addDefaultEffect("glitter", clone(glitter()), true);
-#endif // !CAMPSIGN
+#endif // !CAMP_SIGN
   addDefaultEffect("sp-party", clone(SpinPlasma(OCPParty)), true);
   addDefaultEffect("sp-cloud", clone(SpinPlasma(OCPCloud)), true);
   addDefaultEffect("plasma", clone(plasma()), true);
   addDefaultEffect("sp-forest", clone(SpinPlasma(OCPForest)), true);
-#if WEARABLE && !CAMPSIGN && !ROPELIGHT
+#if WEARABLE && !CAMP_SIGN && !ROPELIGHT
   addDefaultEffect("flame", clone(flame()), true);
-#endif // WEARABLE && !CAMPSIGN && !ROPELIGHT
+#endif // WEARABLE && !CAMP_SIGN && !ROPELIGHT
 
   addDefaultEffect("rider", clone(rider()), false);
   addDefaultEffect("slantbars", clone(slantbars()), false);
