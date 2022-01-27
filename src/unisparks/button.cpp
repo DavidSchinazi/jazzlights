@@ -164,10 +164,11 @@ static const CRGB menuIconSpecial[ATOM_SCREEN_NUM_LEDS] = {
 
 CLEDController* atomMatrixScreenController = nullptr;
 
-void atomScreenDisplay() {
+void atomScreenDisplay(uint32_t currentMillis) {
   // M5Stack recommends not setting the atom screen brightness greater
   // than 20 to avoid melting the screen/cover over the LEDs.
-  atomMatrixScreenController->showLeds(20);
+  const uint32_t b = (currentMillis >> 6) & 0xF;
+  atomMatrixScreenController->showLeds(b>=8 ? b : 16-b);
 }
 
 void atomScreenNetwork(Player& player, uint32_t /*currentMillis*/) {
@@ -349,7 +350,7 @@ void doButtons(Player& player, uint32_t currentMillis) {
   }
 
   if (buttonLockState < 4) {
-    atomScreenDisplay();
+    atomScreenDisplay(currentMillis);
     return;
   } else if (buttonLockState == 4) {
     buttonLockState = 5;
@@ -373,7 +374,7 @@ void doButtons(Player& player, uint32_t currentMillis) {
   }
 #if ATOM_MATRIX_SCREEN
   atomScreenUnlocked(player, currentMillis);
-  atomScreenDisplay();
+  atomScreenDisplay(currentMillis);
 #endif // ATOM_MATRIX_SCREEN
 #elif defined(ESP8266)
   const uint8_t btn0 = buttonStatus(0);
