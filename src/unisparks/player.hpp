@@ -200,7 +200,7 @@ class Player {
 
   Network* network() const { return network_; };
 
-  bool powerlimited;
+  bool powerLimited;
 
  private:
   void syncToNetwork();

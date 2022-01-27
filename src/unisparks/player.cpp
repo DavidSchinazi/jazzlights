@@ -374,7 +374,7 @@ void Player::reset() {
   paused_ = false;
 
   network_ = nullptr;
-  powerlimited = false;
+  powerLimited = false;
 
   preferredEffectDuration_ = 10 * ONE_SECOND;
 

@@ -48,22 +48,22 @@ void vestLoop(void) {
 #endif // ESP32_BLE
 
   player.render();
-  uint32_t br = getBrightness();        // May be reduced if this exceeds our power budget with the current pattern
+  uint32_t brightness = getBrightness();        // May be reduced if this exceeds our power budget with the current pattern
 
 #if MAX_MILLIWATTS
-  const uint32_t pf = calculate_unscaled_power_mW(mainVestController->leds(), mainVestController->size());
-  const uint32_t pd = pf * br / 256;    // Forecast power at our current desired brightness
-  player.powerlimited = (pd > MAX_MILLIWATTS);
-  if (player.powerlimited) br = br * MAX_MILLIWATTS / pd;
+  const uint32_t powerAtFullBrightness    = calculate_unscaled_power_mW(mainVestController->leds(), mainVestController->size());
+  const uint32_t powerAtDesiredBrightness = powerAtFullBrightness * brightness / 256;         // Forecast power at our current desired brightness
+  player.powerLimited = (powerAtDesiredBrightness > MAX_MILLIWATTS);
+  if (player.powerLimited) { brightness = brightness * MAX_MILLIWATTS / powerAtDesiredBrightness; }
 
   debug("pf%6u    pd%5u    bu%4u    bs%4u    mW%5u    mA%5u%s",
-    pf, pd,                             // Full-brightness power, desired-brightness power
-    getBrightness(), br,                // Desired and selected brightness
-    pf * br / 256, pf * br / 256 / 5,   // Selected power & current
-    player.powerlimited ? " (limited)" : "");
+    powerAtFullBrightness, powerAtDesiredBrightness,                                          // Full-brightness power, desired-brightness power
+    getBrightness(), brightness,                                                              // Desired and selected brightness
+    powerAtFullBrightness * brightness / 256, powerAtFullBrightness * brightness / 256 / 5,   // Selected power & current
+    player.powerLimited ? " (limited)" : "");
 #endif
 
-  mainVestController->showLeds(br);
+  mainVestController->showLeds(brightness);
 }
 
 } // namespace unisparks
