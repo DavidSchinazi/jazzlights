@@ -72,30 +72,15 @@ uint8_t buttonStatuses[NUMBUTTONS];
 
 static constexpr uint32_t lockDelay = 10000;
 
-uint8_t brightnessCursor = 0;
+const uint8_t brightnessList[] = { 2, 4, 8, 16, 32, 64, 128, 255 };
+#define NUM_BRIGHTNESSES (sizeof(brightnessList) / sizeof(brightnessList[0]))
+#define MAX_BRIGHTNESS (NUM_BRIGHTNESSES-1)
 
-#ifndef BRIGHTER
-#  define BRIGHTER 1
-#endif // BRIGHTER
+#  ifndef FIRST_BRIGHTNESS
+#  define FIRST_BRIGHTNESS 3
+#  endif // FIRST_BRIGHTNESS
 
-// this ordering is silly but we need the highest to be last
-// in case it blows the fuse in the USB battery pack
-#if START_DIM
-#  ifndef FIRST_BRIGHTNESS
-#  define FIRST_BRIGHTNESS 1
-#  endif // FIRST_BRIGHTNESS
-const uint8_t brightnessList[] = { FIRST_BRIGHTNESS, 64, 96, 8, 16, 128};
-#elif BRIGHTER
-#  ifndef FIRST_BRIGHTNESS
-#  define FIRST_BRIGHTNESS 64
-#  endif // FIRST_BRIGHTNESS
-const uint8_t brightnessList[] = {FIRST_BRIGHTNESS, 96, 8, 16, 32, 128};
-#else // BRIGHTER
-#  ifndef FIRST_BRIGHTNESS
-#  define FIRST_BRIGHTNESS 32
-#  endif // FIRST_BRIGHTNESS
-const uint8_t brightnessList[] = { FIRST_BRIGHTNESS, 64, 96, 8, 16, 128};
-#endif // BRIGHTER
+uint8_t brightnessCursor = FIRST_BRIGHTNESS;
 
 #if ATOM_MATRIX_SCREEN
 
@@ -131,9 +116,8 @@ void modeAct(Player& player, uint32_t currentMillis) {
       player.loopOne();
       break;
     case kBrightness:
-      info("%u Brightness button has been hit", currentMillis);
-      brightnessCursor++;
-      pushBrightness();
+      brightnessCursor = (brightnessCursor + 1 < NUM_BRIGHTNESSES) ? brightnessCursor + 1 : 0;
+      info("%u Brightness button has been hit %u", currentMillis, brightnessList[brightnessCursor]);
       break;
     case kSpecial:
       info("%u Special button has been hit", currentMillis);
@@ -432,15 +416,13 @@ void doButtons(Player& player, uint32_t currentMillis) {
   // Check the brightness adjust button
   switch (btn1) {
     case BTN_RELEASED:
-      info("Brightness button has been hit");
-      brightnessCursor++;
-      pushBrightness();
+      brightnessCursor = (brightnessCursor + 1 < NUM_BRIGHTNESSES) ? brightnessCursor + 1 : 0;
+      info("Brightness button has been hit %u", brightnessList[brightnessCursor]);
       break;
 
     case BTN_LONGPRESS: // button was held down for a while
-      info("Brightness button long press");
-      brightnessCursor = 0;
-      pushBrightness();
+      brightnessCursor = FIRST_BRIGHTNESS;
+      info("Brightness button long press %u", brightnessList[brightnessCursor]);
       break;
   }
 
@@ -473,18 +455,8 @@ void doButtons(Player& player, uint32_t currentMillis) {
 #endif // !BUTTONS_DISABLED
 }
 
-uint8_t brightnessVal = FIRST_BRIGHTNESS;
-
-void pushBrightness(void) {
-  if (brightnessCursor >= sizeof(brightnessList) / sizeof(brightnessList[0])) {
-    brightnessCursor = 0;
-  }
-  brightnessVal = brightnessList[brightnessCursor];
-  info("Brightness set to %u", brightnessVal);
-}
-
 uint8_t getBrightness() {
-  return brightnessVal;
+  return brightnessList[brightnessCursor];
 }
 
 } // namespace unisparks

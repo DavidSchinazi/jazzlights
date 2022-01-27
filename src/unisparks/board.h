@@ -35,7 +35,7 @@
 #endif // ORANGE_VEST
 
 #if CAMP_SIGN
-#  define FIRST_BRIGHTNESS 255
+#  define FIRST_BRIGHTNESS MAX_BRIGHTNESS
 #  define MATRIX_WIDTH 30
 #  define MATRIX_HEIGHT 30
 #  define LEDNUM 900
@@ -54,7 +54,7 @@
 #endif // GUPPY
 
 #if HAMMER
-#  define FIRST_BRIGHTNESS 255
+#  define FIRST_BRIGHTNESS MAX_BRIGHTNESS
 #  define MATRIX_WIDTH 1
 #  define MATRIX_HEIGHT 20
 #  define LEDNUM 20
