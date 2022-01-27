@@ -76,9 +76,9 @@ const uint8_t brightnessList[] = { 2, 4, 8, 16, 32, 64, 128, 255 };
 #define NUM_BRIGHTNESSES (sizeof(brightnessList) / sizeof(brightnessList[0]))
 #define MAX_BRIGHTNESS (NUM_BRIGHTNESSES-1)
 
-#  ifndef FIRST_BRIGHTNESS
-#  define FIRST_BRIGHTNESS 3
-#  endif // FIRST_BRIGHTNESS
+#ifndef FIRST_BRIGHTNESS
+#define FIRST_BRIGHTNESS 3
+#endif // FIRST_BRIGHTNESS
 
 uint8_t brightnessCursor = FIRST_BRIGHTNESS;
 
