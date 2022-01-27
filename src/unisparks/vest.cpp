@@ -48,7 +48,22 @@ void vestLoop(void) {
 #endif // ESP32_BLE
 
   player.render();
-  mainVestController->showLeds(getBrightness());
+  uint32_t brightness = getBrightness();        // May be reduced if this exceeds our power budget with the current pattern
+
+#if MAX_MILLIWATTS
+  const uint32_t powerAtFullBrightness    = calculate_unscaled_power_mW(mainVestController->leds(), mainVestController->size());
+  const uint32_t powerAtDesiredBrightness = powerAtFullBrightness * brightness / 256;         // Forecast power at our current desired brightness
+  player.powerLimited = (powerAtDesiredBrightness > MAX_MILLIWATTS);
+  if (player.powerLimited) { brightness = brightness * MAX_MILLIWATTS / powerAtDesiredBrightness; }
+
+  debug("pf%6u    pd%5u    bu%4u    bs%4u    mW%5u    mA%5u%s",
+    powerAtFullBrightness, powerAtDesiredBrightness,                                          // Full-brightness power, desired-brightness power
+    getBrightness(), brightness,                                                              // Desired and selected brightness
+    powerAtFullBrightness * brightness / 256, powerAtFullBrightness * brightness / 256 / 5,   // Selected power & current
+    player.powerLimited ? " (limited)" : "");
+#endif
+
+  mainVestController->showLeds(brightness);
 }
 
 } // namespace unisparks
