@@ -174,7 +174,7 @@ bool ReceiveBle(const Esp32Ble::ScanResult& sr,
 
 #if WEARABLE
 
-auto calibration_effect = effect([ = ](const Frame& frame) {
+auto calibration_effect = effect([](const Frame& frame) {
   const bool blink = ((frame.time % 1000) < 500);
   return [ = ](const Pixel& pt) -> Color {
     const int32_t green = 0x00ff00, blue = 0x0000ff, red = 0xff0000;
