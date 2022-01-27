@@ -187,6 +187,13 @@ void atomScreenNetwork(Player& player, uint32_t /*currentMillis*/) {
   atomScreenLEDs[4] = networkColor;
 }
 
+// ATOM Matrix button map looks like this:
+// 00 01 02 03 04
+// 05 06 07 08 09
+// 10 11 12 13 14
+// 15 16 17 18 19
+// 20 21 22 23 24
+
 void atomScreenUnlocked(Player& player, uint32_t currentMillis) {
   const CRGB* icon = atomScreenLEDs;
   switch (menuMode) {
@@ -197,6 +204,13 @@ void atomScreenUnlocked(Player& player, uint32_t currentMillis) {
   };
   for (int i = 0; i < ATOM_SCREEN_NUM_LEDS; i++) {
     atomScreenLEDs[i] = icon[i];
+  }
+  if (menuMode == kBrightness) {
+    for (int i=0; i<8; i++) {
+      static const uint8_t brightnessDial[] = { 06, 07, 12, 17, 16, 15, 10, 05 };
+      if (brightnessCursor < i)     { atomScreenLEDs[brightnessDial[i]] = CRGB::Black; }
+      else if (player.powerLimited) { atomScreenLEDs[brightnessDial[i]] = CRGB::Red;   }
+    }
   }
   atomScreenNetwork(player, currentMillis);
 }
