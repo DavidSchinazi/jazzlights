@@ -33,8 +33,6 @@ void vestSetup(void) {
 
   mainVestController = &FastLED.addLeds<WS2812B, LED_PIN, GRB>(
     leds, sizeof(leds)/sizeof(*leds));
-
-  pushBrightness();
 }
 
 void vestLoop(void) {
