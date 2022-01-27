@@ -50,11 +50,11 @@ void vestLoop(void) {
   player.render();
   uint32_t br = getBrightness();        // May be reduced if this exceeds our power budget with the current pattern
 
-#if MAX_MW
+#if MAX_MILLIWATTS
   const uint32_t pf = calculate_unscaled_power_mW(mainVestController->leds(), mainVestController->size());
-  const uint32_t pd = pf * br / 256;    // Forcast power at our current desired brightness
-  player.powerlimited = (pd > MAX_MW);
-  if (player.powerlimited) br = br * MAX_MW / pd;
+  const uint32_t pd = pf * br / 256;    // Forecast power at our current desired brightness
+  player.powerlimited = (pd > MAX_MILLIWATTS);
+  if (player.powerlimited) br = br * MAX_MILLIWATTS / pd;
 
   debug("pf%6u    pd%5u    bu%4u    bs%4u    mW%5u    mA%5u%s",
     pf, pd,                             // Full-brightness power, desired-brightness power
