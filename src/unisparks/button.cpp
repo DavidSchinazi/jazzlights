@@ -167,8 +167,12 @@ CLEDController* atomMatrixScreenController = nullptr;
 void atomScreenDisplay(uint32_t currentMillis) {
   // M5Stack recommends not setting the atom screen brightness greater
   // than 20 to avoid melting the screen/cover over the LEDs.
-  const uint32_t b = (currentMillis >> 6) & 0xF;
-  atomMatrixScreenController->showLeds(b>=8 ? 4+b : 20-b);
+  // Extract bits 6,7,8,9 from milliseconds timer to get a value that cycles from 0 to 15 every second
+  // For t values 0..7 we subtract that from 20 to get brighness 20..13
+  // For t values 8..15 we add that to 4 to get brighness 12..19
+  // This gives is a brighness that starts at 20, dims to 12, and then brighens back to 20 every second
+  const uint32_t t = (currentMillis >> 6) & 0xF;
+  atomMatrixScreenController->showLeds(t&8 ? 4+t : 20-t);
 }
 
 void atomScreenNetwork(Player& player, uint32_t /*currentMillis*/) {
