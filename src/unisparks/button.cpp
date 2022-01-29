@@ -57,12 +57,34 @@ uint8_t buttonPins[NUMBUTTONS] = {39};
 uint8_t buttonPins[NUMBUTTONS] = {MODEBUTTON, BRIGHTNESSBUTTON, WIFIBUTTON, SPECIALBUTTON};
 #endif // ESPxx
 
+// Button state tranitions:
+// Button starts in BTN_IDLE.
+// BTN_IDLE: When pressed, goes to BTN_DEBOUNCING state for BTN_DEBOUNCETIME (20 ms).
+// BTN_DEBOUNCING: After BTN_DEBOUNCETIME move to BTN_PRESSED state.
+// BTN_PRESSED: If button no longer pressed, go to BTN_RELEASED state
+// else if button still held after BTN_LONGPRESSTIME go to BTN_LONGPRESS state.
+// BTN_RELEASED: After client consumes BTN_RELEASED event, state retuns to BTN_IDLE.
+// BTN_LONGPRESS: After client consumes BTN_LONGPRESS event,
+// if button no longer pressed, return to BTN_IDLE state
+// else if button still held go to BTN_HOLDING state,
+// and if button still held after another BTN_LONGPRESSTIME,
+// set button event time to now and return a BTN_LONGLONGPRESS
+// to the client, remaining in BTN_HOLDING state.
+// This causes the BTN_LONGLONGPRESS events to autorepeat at intervals of
+// BTN_LONGPRESSTIME for as long as the button continues to be held.
+//
+// Note that the BTN_PRESSED state is transitory.
+// The client is not guaranteed to be informed of the BTN_PRESSED state if
+// the button moves quickly to BTN_RELEASED state before the client notices.
+// This is fine, since clients are supposed to act on the BTN_RELEASED state, not BTN_PRESSED.
+
 #define BTN_IDLE 0
 #define BTN_DEBOUNCING 1
 #define BTN_PRESSED 2
 #define BTN_RELEASED 3
 #define BTN_LONGPRESS 4
-#define BTN_LONGPRESSREAD 5
+#define BTN_HOLDING 5
+#define BTN_LONGLONGPRESS 6
 
 #define BTN_DEBOUNCETIME 20
 #define BTN_LONGPRESSTIME 1000
@@ -97,7 +119,7 @@ void nextMode(Player& /*player*/, uint32_t /*currentMillis*/) {
   switch (menuMode) {
     case kNext: menuMode = kPrevious; break;
     case kPrevious: menuMode = kBrightness; break;
-    case kBrightness: menuMode = kSpecial; break;
+    case kBrightness: menuMode = kNext; break;
     case kSpecial: menuMode = kNext; break;
   };
 }
@@ -257,16 +279,15 @@ void updateButtons(uint32_t currentMillis) {
 
       case BTN_DEBOUNCING:
         if (currentMillis - buttonEvents[i] > BTN_DEBOUNCETIME) {
-          if (digitalRead(buttonPins[i]) == LOW) {
-            buttonStatuses[i] = BTN_PRESSED;
+          buttonStatuses[i] = BTN_PRESSED;
           }
-        }
         break;
 
       case BTN_PRESSED:
         if (digitalRead(buttonPins[i]) == HIGH) {
           buttonStatuses[i] = BTN_RELEASED;
         } else if (currentMillis - buttonEvents[i] > BTN_LONGPRESSTIME) {
+          buttonEvents[i] = currentMillis; // Record the time that we decided to count this as a long press
           buttonStatuses[i] = BTN_LONGPRESS;
         }
         break;
@@ -276,12 +297,6 @@ void updateButtons(uint32_t currentMillis) {
 
       case BTN_LONGPRESS:
         break;
-
-      case BTN_LONGPRESSREAD:
-        if (digitalRead(buttonPins[i]) == HIGH) {
-          buttonStatuses[i] = BTN_IDLE;
-        }
-        break;
     }
   }
 }
@@ -290,8 +305,16 @@ uint8_t buttonStatus(uint8_t buttonNum) {
   uint8_t tempStatus = buttonStatuses[buttonNum];
   if (tempStatus == BTN_RELEASED) {
     buttonStatuses[buttonNum] = BTN_IDLE;
-  } else if (tempStatus == BTN_LONGPRESS) {
-    buttonStatuses[buttonNum] = BTN_LONGPRESSREAD;
+  } else if (tempStatus >= BTN_LONGPRESS) {
+    Milliseconds currentMillis = timeMillis();
+    if (digitalRead(buttonPins[buttonNum]) == HIGH) {
+      buttonStatuses[buttonNum] = BTN_IDLE;
+    } else if (currentMillis - buttonEvents[buttonNum] < BTN_LONGPRESSTIME) {
+      buttonStatuses[buttonNum] = BTN_HOLDING;
+    } else {
+      buttonEvents[buttonNum] = currentMillis;
+      tempStatus = BTN_LONGLONGPRESS;
+    }
   }
   return tempStatus;
 }
@@ -373,6 +396,12 @@ void doButtons(Player& player, uint32_t currentMillis) {
     case BTN_LONGPRESS:
 #if ATOM_MATRIX_SCREEN
     nextMode(player, currentMillis);
+#endif // ATOM_MATRIX_SCREEN
+      break;
+
+    case BTN_LONGLONGPRESS:
+#if ATOM_MATRIX_SCREEN
+      menuMode = kSpecial;
 #endif // ATOM_MATRIX_SCREEN
       break;
   }
