@@ -92,7 +92,7 @@ uint8_t buttonPins[NUMBUTTONS] = {MODEBUTTON, BRIGHTNESSBUTTON, WIFIBUTTON, SPEC
 Milliseconds buttonEvents[NUMBUTTONS];
 uint8_t buttonStatuses[NUMBUTTONS];
 
-static constexpr uint32_t lockDelay = 10000;
+static constexpr Milliseconds lockDelay = 10000;    // Ten seconds
 
 const uint8_t brightnessList[] = { 2, 4, 8, 16, 32, 64, 128, 255 };
 #define NUM_BRIGHTNESSES (sizeof(brightnessList) / sizeof(brightnessList[0]))
@@ -339,7 +339,7 @@ void doButtons(Player& player, const Milliseconds currentMillis) {
   static uint8_t buttonLockState = 0;
   static uint32_t lastButtonTime = 0;
 
-  if (buttonLockState != 0 && currentMillis > lastButtonTime + lockDelay) {
+  if (buttonLockState != 0 && currentMillis - lastButtonTime > lockDelay) {
     buttonLockState = 0;
   }
   if (btn == BTN_RELEASED ||  btn == BTN_LONGPRESS) {
@@ -419,7 +419,7 @@ void doButtons(Player& player, const Milliseconds currentMillis) {
   static uint8_t buttonLockState = 0;
   static uint32_t lastUnlockTime = 0;
 
-  if (buttonLockState == 4 && currentMillis > lastUnlockTime + lockDelay) {
+  if (buttonLockState == 4 && currentMillis - lastUnlockTime > lockDelay) {
     buttonLockState = 0;
   }
   
