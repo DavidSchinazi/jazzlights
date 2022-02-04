@@ -86,6 +86,11 @@ uint8_t buttonPins[NUMBUTTONS] = {MODEBUTTON, BRIGHTNESSBUTTON, WIFIBUTTON, SPEC
 #define BTN_HOLDING 5
 #define BTN_LONGLONGPRESS 6
 
+// BTN_IDLE, BTN_DEBOUNCING, BTN_PRESSED, BTN_HOLDING are states, which will be returned continuously for as long as that state remains
+// BTN_RELEASED, BTN_LONGPRESS, BTN_LONGLONGPRESS are one-shot events, which will be delivered just once each time they occur
+#define BTN_STATE(X) ((X) == BTN_IDLE  || (X) == BTN_DEBOUNCING  || (X) == BTN_PRESSED  || (X) == BTN_HOLDING)
+#define BTN_EVENT(X) ((X) == BTN_RELEASED  || (X) == BTN_LONGPRESS  || (X) == BTN_LONGLONGPRESS)
+
 #define BTN_DEBOUNCETIME 20
 #define BTN_LONGPRESSTIME 1000
 
@@ -336,52 +341,46 @@ void doButtons(Player& player, const Milliseconds currentMillis) {
   uint8_t btn = buttonStatus(0, currentMillis);
 #if BUTTON_LOCK
   // info("doButtons start");
+  // 0 Locked and awaiting click; 1 Awaiting long press; 2 Awaiting click; 3 Awaiting long press; 4 Awaiting release; 5 Unlocked
   static uint8_t buttonLockState = 0;
-  static uint32_t lastButtonTime = 0;
+  static Milliseconds lockButtonTime = 0;
 
-  if (buttonLockState != 0 && currentMillis - lastButtonTime > lockDelay) {
+  // If idle-time expired, return to ‘locked’ state
+  if (buttonLockState != 0 && currentMillis - lockButtonTime >= 0) {
     buttonLockState = 0;
   }
-  if (btn == BTN_RELEASED ||  btn == BTN_LONGPRESS) {
-    lastButtonTime = currentMillis;
-
-    if (buttonLockState == 0) {
-      buttonLockState++;
-    } else if (buttonLockState == 1) {
-      if (btn == BTN_LONGPRESS) {
-        buttonLockState++;
-      } else {
+  if (buttonLockState < 5) {
+    if (BTN_EVENT(btn)) {
+      if (btn != ((buttonLockState & 1) ? BTN_LONGPRESS : BTN_RELEASED)) {
         buttonLockState = 0;
-      }
-    } else if (buttonLockState == 2) {
-      if (btn == BTN_RELEASED) {
-        buttonLockState++;
       } else {
-        buttonLockState = 0;
-      }
-    } else if (buttonLockState == 3) {
-      if (btn == BTN_LONGPRESS) {
         buttonLockState++;
-      } else {
-        buttonLockState = 0;
+        // To reject accidental presses, exit unlock sequence if four seconds without progress
+        lockButtonTime = currentMillis + 4000;
       }
     }
-  }
 
-  if (buttonLockState == 0) {
-    atomScreenClear();
-  } else if ((buttonLockState % 2) == 1) {
-    atomScreenLong(player, currentMillis);
-  } else if (buttonLockState == 2) {
-    atomScreenShort(player, currentMillis);
-  }
-
-  if (buttonLockState < 4) {
+    // We show a blank display:
+    // 1. When in fully locked mode, with the button not pressed
+    // 2. When the button has been pressed long enough to register as a long press, and we want to signal the user to let go now
+    // 3. In the final transition from state 4 (awaiting release) to state 5 (unlocked)
+    if ((buttonLockState == 0 && btn == BTN_IDLE) || btn >= BTN_RELEASED || buttonLockState >= 4) {
+      atomScreenClear();
+    } else if ((buttonLockState % 2) == 1) {
+      atomScreenLong(player, currentMillis);
+    } else {
+      atomScreenShort(player, currentMillis);
+    }
     atomScreenDisplay(currentMillis);
-    return;
-  } else if (buttonLockState == 4) {
+
+    // In lock state 4, wait for release of the button, and then move to state 5 (fully unlocked)
+    if (buttonLockState < 4 || btn) {
+      return;
+    }
     buttonLockState = 5;
-    btn = BTN_IDLE;
+    lockButtonTime = currentMillis + lockDelay;
+  } else if (btn) {
+    lockButtonTime = currentMillis + lockDelay;
   }
 #endif // BUTTON_LOCK
 #if ATOM_MATRIX_SCREEN
