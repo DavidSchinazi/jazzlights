@@ -89,10 +89,10 @@ uint8_t buttonPins[NUMBUTTONS] = {MODEBUTTON, BRIGHTNESSBUTTON, WIFIBUTTON, SPEC
 #define BTN_DEBOUNCETIME 20
 #define BTN_LONGPRESSTIME 1000
 
-unsigned long buttonEvents[NUMBUTTONS];
+Milliseconds buttonEvents[NUMBUTTONS];
 uint8_t buttonStatuses[NUMBUTTONS];
 
-static constexpr uint32_t lockDelay = 10000;
+static constexpr Milliseconds lockDelay = 10000;    // Ten seconds
 
 const uint8_t brightnessList[] = { 2, 4, 8, 16, 32, 64, 128, 255 };
 #define NUM_BRIGHTNESSES (sizeof(brightnessList) / sizeof(brightnessList[0]))
@@ -115,7 +115,7 @@ enum atomMenuMode {
 
 atomMenuMode menuMode = kNext;
 
-void nextMode(Player& /*player*/, uint32_t /*currentMillis*/) {
+void nextMode(Player& /*player*/, const Milliseconds /*currentMillis*/) {
   switch (menuMode) {
     case kNext: menuMode = kPrevious; break;
     case kPrevious: menuMode = kBrightness; break;
@@ -124,7 +124,7 @@ void nextMode(Player& /*player*/, uint32_t /*currentMillis*/) {
   };
 }
 
-void modeAct(Player& player, uint32_t currentMillis) {
+void modeAct(Player& player, const Milliseconds currentMillis) {
   switch (menuMode) {
     case kNext:
       info("%u Next button has been hit", currentMillis);
@@ -186,7 +186,7 @@ static const CRGB menuIconSpecial[ATOM_SCREEN_NUM_LEDS] = {
 
 CLEDController* atomMatrixScreenController = nullptr;
 
-void atomScreenDisplay(uint32_t currentMillis) {
+void atomScreenDisplay(const Milliseconds currentMillis) {
   // M5Stack recommends not setting the atom screen brightness greater
   // than 20 to avoid melting the screen/cover over the LEDs.
   // Extract bits 6,7,8,9 from milliseconds timer to get a value that cycles from 0 to 15 every second
@@ -197,7 +197,7 @@ void atomScreenDisplay(uint32_t currentMillis) {
   atomMatrixScreenController->showLeds(t&8 ? 4+t : 20-t);
 }
 
-void atomScreenNetwork(Player& player, uint32_t /*currentMillis*/) {
+void atomScreenNetwork(Player& player, const Milliseconds /*currentMillis*/) {
   // Change top-right Atom matrix screen LED based on network status.
   CRGB networkColor = CRGB::Blue;
   Network* network = player.network();
@@ -221,7 +221,7 @@ void atomScreenNetwork(Player& player, uint32_t /*currentMillis*/) {
 // 15 16 17 18 19
 // 20 21 22 23 24
 
-void atomScreenUnlocked(Player& player, uint32_t currentMillis) {
+void atomScreenUnlocked(Player& player, const Milliseconds currentMillis) {
   const CRGB* icon = atomScreenLEDs;
   switch (menuMode) {
     case kNext: icon = menuIconNext; break;
@@ -248,7 +248,7 @@ void atomScreenClear() {
   }
 }
 
-void atomScreenLong(Player& player, uint32_t currentMillis) {
+void atomScreenLong(Player& player, const Milliseconds currentMillis) {
   atomScreenClear();
   for (int i : {0,5,10,15,20,21,22}) {
     atomScreenLEDs[i] = CRGB::Gold;
@@ -256,7 +256,7 @@ void atomScreenLong(Player& player, uint32_t currentMillis) {
   atomScreenNetwork(player, currentMillis);
 }
 
-void atomScreenShort(Player& player, uint32_t currentMillis) {
+void atomScreenShort(Player& player, const Milliseconds currentMillis) {
   atomScreenClear();
   for (int i : {2,1,0,5,10,11,12,17,22,21,20}) {
     atomScreenLEDs[i] = CRGB::Gold;
@@ -267,7 +267,7 @@ void atomScreenShort(Player& player, uint32_t currentMillis) {
 #endif // ATOM_MATRIX_SCREEN
 
 
-void updateButtons(uint32_t currentMillis) {
+void updateButtons(const Milliseconds currentMillis) {
   for (int i = 0; i < NUMBUTTONS; i++) {
     switch (buttonStatuses[i]) {
       case BTN_IDLE:
@@ -301,12 +301,11 @@ void updateButtons(uint32_t currentMillis) {
   }
 }
 
-uint8_t buttonStatus(uint8_t buttonNum) {
+uint8_t buttonStatus(uint8_t buttonNum, const Milliseconds currentMillis) {
   uint8_t tempStatus = buttonStatuses[buttonNum];
   if (tempStatus == BTN_RELEASED) {
     buttonStatuses[buttonNum] = BTN_IDLE;
   } else if (tempStatus >= BTN_LONGPRESS) {
-    Milliseconds currentMillis = timeMillis();
     if (digitalRead(buttonPins[buttonNum]) == HIGH) {
       buttonStatuses[buttonNum] = BTN_IDLE;
     } else if (currentMillis - buttonEvents[buttonNum] < BTN_LONGPRESSTIME) {
@@ -330,16 +329,17 @@ void setupButtons() {
 #endif // ATOM_MATRIX_SCREEN
 }
 
-void doButtons(Player& player, uint32_t currentMillis) {
+void doButtons(Player& player, const Milliseconds currentMillis) {
+  updateButtons(currentMillis); // Read, debounce, and process the buttons
 #if !BUTTONS_DISABLED
 #if defined(ESP32)
-  uint8_t btn = buttonStatus(0);
+  uint8_t btn = buttonStatus(0, currentMillis);
 #if BUTTON_LOCK
   // info("doButtons start");
   static uint8_t buttonLockState = 0;
   static uint32_t lastButtonTime = 0;
 
-  if (buttonLockState != 0 && currentMillis > lastButtonTime + lockDelay) {
+  if (buttonLockState != 0 && currentMillis - lastButtonTime > lockDelay) {
     buttonLockState = 0;
   }
   if (btn == BTN_RELEASED ||  btn == BTN_LONGPRESS) {
@@ -410,16 +410,16 @@ void doButtons(Player& player, uint32_t currentMillis) {
   atomScreenDisplay(currentMillis);
 #endif // ATOM_MATRIX_SCREEN
 #elif defined(ESP8266)
-  const uint8_t btn0 = buttonStatus(0);
-  const uint8_t btn1 = buttonStatus(1);
-  const uint8_t btn2 = buttonStatus(2);
-  const uint8_t btn3 = buttonStatus(3);
+  const uint8_t btn0 = buttonStatus(0, currentMillis);
+  const uint8_t btn1 = buttonStatus(1, currentMillis);
+  const uint8_t btn2 = buttonStatus(2, currentMillis);
+  const uint8_t btn3 = buttonStatus(3, currentMillis);
 
 #if BUTTON_LOCK
   static uint8_t buttonLockState = 0;
   static uint32_t lastUnlockTime = 0;
 
-  if (buttonLockState == 4 && currentMillis > lastUnlockTime + lockDelay) {
+  if (buttonLockState == 4 && currentMillis - lastUnlockTime > lockDelay) {
     buttonLockState = 0;
   }
   
