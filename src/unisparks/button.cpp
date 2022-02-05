@@ -11,10 +11,6 @@ namespace unisparks {
 #  define BUTTONS_DISABLED 0
 #endif // BUTTONS_DISABLED
 
-#ifndef START_DIM
-#  define START_DIM 0
-#endif // START_DIM
-
 #ifndef ATOM_MATRIX_SCREEN
 #  ifdef ESP32
 #    define ATOM_MATRIX_SCREEN 1
