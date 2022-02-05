@@ -90,6 +90,10 @@ uint8_t buttonPins[NUMBUTTONS] = {MODEBUTTON, BRIGHTNESSBUTTON, WIFIBUTTON, SPEC
 // BTN_RELEASED, BTN_LONGPRESS, BTN_LONGLONGPRESS are one-shot events, which will be delivered just once each time they occur
 #define BTN_STATE(X) ((X) == BTN_IDLE  || (X) == BTN_DEBOUNCING  || (X) == BTN_PRESSED  || (X) == BTN_HOLDING)
 #define BTN_EVENT(X) ((X) == BTN_RELEASED  || (X) == BTN_LONGPRESS  || (X) == BTN_LONGLONGPRESS)
+// BTN_SHORT_PRESS_COMPLETE indicates states where a short press is over -- either
+// because the button was released, or the button is still held and has transitioned
+// into one of the long-press states (BTN_LONGPRESS, BTN_HOLDING, BTN_LONGLONGPRESS)
+#define BTN_SHORT_PRESS_COMPLETE(X) ((X) >= BTN_RELEASED)
 
 #define BTN_DEBOUNCETIME 20
 #define BTN_LONGPRESSTIME 1000
@@ -283,7 +287,7 @@ void updateButtons(const Milliseconds currentMillis) {
         break;
 
       case BTN_DEBOUNCING:
-        if (currentMillis - buttonEvents[i] > BTN_DEBOUNCETIME) {
+        if (currentMillis - buttonEvents[i] >= BTN_DEBOUNCETIME) {
           buttonStatuses[i] = BTN_PRESSED;
           }
         break;
@@ -291,7 +295,7 @@ void updateButtons(const Milliseconds currentMillis) {
       case BTN_PRESSED:
         if (digitalRead(buttonPins[i]) == HIGH) {
           buttonStatuses[i] = BTN_RELEASED;
-        } else if (currentMillis - buttonEvents[i] > BTN_LONGPRESSTIME) {
+        } else if (currentMillis - buttonEvents[i] >= BTN_LONGPRESSTIME) {
           buttonEvents[i] = currentMillis; // Record the time that we decided to count this as a long press
           buttonStatuses[i] = BTN_LONGPRESS;
         }
@@ -339,6 +343,7 @@ void doButtons(Player& player, const Milliseconds currentMillis) {
 #if !BUTTONS_DISABLED
 #if defined(ESP32)
   uint8_t btn = buttonStatus(0, currentMillis);
+
 #if BUTTON_LOCK
   // info("doButtons start");
   // 0 Locked and awaiting click; 1 Awaiting long press; 2 Awaiting click; 3 Awaiting long press; 4 Awaiting release; 5 Unlocked
@@ -349,8 +354,11 @@ void doButtons(Player& player, const Milliseconds currentMillis) {
   if (buttonLockState != 0 && currentMillis - lockButtonTime >= 0) {
     buttonLockState = 0;
   }
+
   if (buttonLockState < 5) {
     if (BTN_EVENT(btn)) {
+    // If we don’t receive the correct button event for the state we’re currently in, return immediately to state 0.
+    // In odd states (1,3) we want a long press; in even states (0,2) we want a brief press-and-release.
       if (btn != ((buttonLockState & 1) ? BTN_LONGPRESS : BTN_RELEASED)) {
         buttonLockState = 0;
       } else {
@@ -364,25 +372,26 @@ void doButtons(Player& player, const Milliseconds currentMillis) {
     // 1. When in fully locked mode, with the button not pressed
     // 2. When the button has been pressed long enough to register as a long press, and we want to signal the user to let go now
     // 3. In the final transition from state 4 (awaiting release) to state 5 (unlocked)
-    if ((buttonLockState == 0 && btn == BTN_IDLE) || btn >= BTN_RELEASED || buttonLockState >= 4) {
+    if ((buttonLockState == 0 && btn == BTN_IDLE) || BTN_SHORT_PRESS_COMPLETE(btn) || buttonLockState >= 4) {
       atomScreenClear();
-    } else if ((buttonLockState % 2) == 1) {
-      atomScreenLong(player, currentMillis);
+    } else if (buttonLockState & 1) {
+      atomScreenLong(player, currentMillis);  // In odd  states (1,3) we show “L”
     } else {
-      atomScreenShort(player, currentMillis);
+      atomScreenShort(player, currentMillis); // In even states (0,2) we show “S”
     }
     atomScreenDisplay(currentMillis);
 
     // In lock state 4, wait for release of the button, and then move to state 5 (fully unlocked)
-    if (buttonLockState < 4 || btn) {
+    if (buttonLockState < 4 || btn != BTN_IDLE) {
       return;
     }
     buttonLockState = 5;
     lockButtonTime = currentMillis + lockDelay;
-  } else if (btn) {
+  } else if (btn != BTN_IDLE) {
     lockButtonTime = currentMillis + lockDelay;
   }
 #endif // BUTTON_LOCK
+
 #if ATOM_MATRIX_SCREEN
 #endif // ATOM_MATRIX_SCREEN
   switch (btn) {
