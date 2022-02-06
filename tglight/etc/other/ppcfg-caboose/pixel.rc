@@ -1,0 +1,47 @@
+# Network Configuration
+ether=10.1.64.103
+netmask=255.0.0.0
+gateway=10.1.0.1
+port=7331
+
+# Device Organization
+group=1
+controller=1
+
+# Global Strip Configuration
+pixels=400
+stripsattached=8
+#swap=12345678
+#blank_strips_on_idle=1
+
+# Strip 1 Configuration
+strip1=p9813
+start1=00ff00
+
+# Strip 2 Configuration
+strip2=p9813
+start2=00ff00
+
+# Strip 3 Configuration
+strip3=p9813
+start3=00ff00
+
+# Strip 4 Configuration
+strip4=p9813
+start4=00ff00
+
+# Strip 5 Configuration
+strip5=p9813
+start5=00ff00
+
+# Strip 6 Configuration
+strip6=p9813
+start6=00ff00
+
+# Strip 7 Configuration
+strip7=p9813
+start7=00ff00
+
+# Strip 8 Configuration
+strip8=p9813
+start8=00ff00
