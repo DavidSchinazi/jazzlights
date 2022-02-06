@@ -23,7 +23,10 @@ fn collect_files(dir: &Path, out: &mut Vec<PathBuf>) -> Result<(), io::Error>{
 
 fn main() {
       let project_dir = canonicalize(PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap())).unwrap();
-      let unisparks_dir = canonicalize(PathBuf::from(env::var("UNISPARKS_DIR").expect("Please set UNISPARKS_DIR environment variable"))).unwrap();
+      let unisparks_dir = canonicalize(match env::var("UNISPARKS_DIR") {
+            Ok(v) => PathBuf::from(v),
+            Err(_e) => project_dir.join("..")
+      }).unwrap();
       // let out_dir = canonicalize(PathBuf::from(env::var("OUT_DIR").unwrap())).unwrap();
       // let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap();
       //env::set_var("PKG_CONFIG_ALLOW_CROSS", "1");
