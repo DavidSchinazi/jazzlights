@@ -525,9 +525,6 @@ bool displayText(const std::string& text,
                  CRGB textColor,
                  CRGB backgroundColor,
                  Milliseconds offsetMillis) {
-  if (text.empty()) {
-   return false;
-  }
   constexpr Milliseconds quantum = 150;
   // Start at 4 to start displaying from right edge of screen.
   size_t columns = 4;
@@ -544,11 +541,11 @@ bool displayText(const std::string& text,
       // This entire character is right of screen, stop.
       break;
     }
-    CharacterPixels cp = getCharacterPixels(text[textIndex]);
-    textIndex++;
     if (textIndex >= text.size()) {
       return false;
     }
+    CharacterPixels cp = getCharacterPixels(text[textIndex]);
+    textIndex++;
     const size_t characterEndColumn = columns + cp.width - 1;
     columns += cp.width + 1; // +1 is for inter-character gap.
     if (characterEndColumn < col0) {
