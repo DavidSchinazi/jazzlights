@@ -3,6 +3,8 @@
 
 #include <Unisparks.h>
 
+#if WEARABLE
+
 namespace unisparks {
 
 #define MATRIX_SIZE 25
@@ -14,5 +16,7 @@ bool displayText(const std::string& text,
                  Milliseconds offsetMillis);
 
 } // namespace unisparks
+
+#endif // WEARABLE
 
 #endif // UNISPARKS_TEXT_H

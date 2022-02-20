@@ -1,5 +1,7 @@
 #include "unisparks/text.h"
 
+#if WEARABLE
+
 namespace unisparks {
 
 struct CharacterPixels {
@@ -523,12 +525,15 @@ bool displayText(const std::string& text,
                  CRGB textColor,
                  CRGB backgroundColor,
                  Milliseconds offsetMillis) {
+  if (text.empty()) {
+   return false;
+  }
   constexpr Milliseconds quantum = 150;
   // Start at 4 to start displaying from right edge of screen.
   size_t columns = 4;
   const size_t col0 = offsetMillis / quantum;
   const size_t col4 = col0 + 4;
-  int32_t textIndex = -1;
+  size_t textIndex = 0;
   CRGB tmpPixels[MATRIX_SIZE];
   for (uint8_t i = 0; i < MATRIX_SIZE; i++) {
     tmpPixels[i] = backgroundColor;
@@ -539,11 +544,11 @@ bool displayText(const std::string& text,
       // This entire character is right of screen, stop.
       break;
     }
+    CharacterPixels cp = getCharacterPixels(text[textIndex]);
     textIndex++;
     if (textIndex >= text.size()) {
       return false;
     }
-    CharacterPixels cp = getCharacterPixels(text[textIndex]);
     const size_t characterEndColumn = columns + cp.width - 1;
     columns += cp.width + 1; // +1 is for inter-character gap.
     if (characterEndColumn < col0) {
@@ -567,3 +572,5 @@ bool displayText(const std::string& text,
 }
 
 } // namespace unisparks
+
+#endif // WEARABLE

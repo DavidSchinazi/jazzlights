@@ -2,12 +2,12 @@
 #define UNISPARKS_NETWORKS_ESP32BLE_H
 
 #ifndef ESP32_BLE
-#  define ESP32_BLE 1
+#  ifdef ESP32
+#    define ESP32_BLE 1
+#  else // ESP32
+#    define ESP32_BLE 0
+#  endif // ESP32
 #endif  // ESP32_BLE
-
-#ifndef ESP32
-#  define ESP32_BLE 0
-#endif // ESP32
 
 #if ESP32_BLE
 

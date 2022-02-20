@@ -4,7 +4,11 @@
 #include "unisparks/network.hpp"
 
 #ifndef UNISPARKS_ESP8266WIFI
-#  define UNISPARKS_ESP8266WIFI (defined(ESP8266) || defined(ESP32))
+#  if defined(ESP8266) || defined(ESP32)
+#    define UNISPARKS_ESP8266WIFI 1
+#  else // defined(ESP8266) || defined(ESP32)
+#    define UNISPARKS_ESP8266WIFI 0
+#  endif  // defined(ESP8266) || defined(ESP32)
 #endif // UNISPARKS_ESP8266WIFI
 
 #if UNISPARKS_ESP8266WIFI
