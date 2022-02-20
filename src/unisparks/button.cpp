@@ -11,15 +11,7 @@ namespace unisparks {
 #  define BUTTONS_DISABLED 0
 #endif // BUTTONS_DISABLED
 
-#ifndef ATOM_MATRIX_SCREEN
-#  ifdef ESP32
-#    define ATOM_MATRIX_SCREEN 1
-#  else // ESP32
-#    define ATOM_MATRIX_SCREEN 0
-#  endif // ESP32
-#endif // ATOM_MATRIX_SCREEN
-
-#ifdef ATOM_MATRIX_SCREEN
+#if ATOM_MATRIX_SCREEN
 #define ATOM_SCREEN_NUM_LEDS 25
 CRGB atomScreenLEDs[ATOM_SCREEN_NUM_LEDS] = {};
 #endif // ATOM_MATRIX_SCREEN
@@ -419,8 +411,6 @@ void doButtons(Player& player, const Milliseconds currentMillis) {
   }
 #endif // BUTTON_LOCK
 
-#if ATOM_MATRIX_SCREEN
-#endif // ATOM_MATRIX_SCREEN
   switch (btn) {
     case BTN_RELEASED:
 #if ATOM_MATRIX_SCREEN

@@ -1,6 +1,6 @@
 #include "unisparks/text.h"
 
-#if WEARABLE
+#if ATOM_MATRIX_SCREEN
 
 namespace unisparks {
 
@@ -570,4 +570,4 @@ bool displayText(const std::string& text,
 
 } // namespace unisparks
 
-#endif // WEARABLE
+#endif // ATOM_MATRIX_SCREEN
