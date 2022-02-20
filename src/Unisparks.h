@@ -32,6 +32,7 @@
 #include "unisparks/player.hpp"
 #include "unisparks/util/log.hpp"
 #include "unisparks/vest.h"
+#include "unisparks/text.h"
 
 namespace Unisparks = unisparks;
 

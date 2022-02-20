@@ -29,4 +29,20 @@
 #  define GLOW_ONLY 0
 #endif // GLOW_ONLY
 
+#ifndef VARIANT
+#  define VARIANT X
+#endif // VARIANT
+
+#ifndef REVISION
+#  define REVISION 1
+#endif // REVISION
+
+// Extra indirection ensures preprocessor expands macros in correct order.
+#define STRINGIFY_INNER(s) #s
+#define STRINGIFY(s) STRINGIFY_INNER(s)
+
+#ifndef BOOT_MESSAGE
+#  define BOOT_MESSAGE STRINGIFY(VARIANT) "-" STRINGIFY(REVISION)
+#endif // BOOT_MESSAGE
+
 #endif // UNISPARKS_CONFIG_H

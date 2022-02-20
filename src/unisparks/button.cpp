@@ -269,6 +269,31 @@ void atomScreenShort(Player& player, const Milliseconds currentMillis) {
   atomScreenNetwork(player, currentMillis);
 }
 
+bool atomScreenMessage(uint8_t btn, const Milliseconds currentMillis) {
+  static bool displayingBootMessage = true;
+  if (!displayingBootMessage) {
+    return false;
+  }
+  if (btn != BTN_IDLE) {
+    displayingBootMessage = false;
+    info("Stopping boot message due to button press");
+    return false;
+  }
+  static Milliseconds bootMessageStartTime = -1;
+  if (bootMessageStartTime < 0) {
+    bootMessageStartTime = currentMillis;
+  }
+  displayingBootMessage = displayText(BOOT_MESSAGE, atomScreenLEDs,
+                                      CRGB::Red, CRGB::Black,
+                                      currentMillis - bootMessageStartTime);
+  if (!displayingBootMessage) {
+    info("Done displaying boot message");
+  } else {
+    atomScreenDisplay(currentMillis);
+  }
+  return displayingBootMessage;
+}
+
 #endif // ATOM_MATRIX_SCREEN
 
 
@@ -339,6 +364,12 @@ void doButtons(Player& player, const Milliseconds currentMillis) {
 #if !BUTTONS_DISABLED
 #if defined(ESP32)
   uint8_t btn = buttonStatus(0, currentMillis);
+
+#if ATOM_MATRIX_SCREEN
+  if (atomScreenMessage(btn, currentMillis)) {
+    return;
+  }
+#endif // ATOM_MATRIX_SCREEN
 
 #if BUTTON_LOCK
   // info("doButtons start");

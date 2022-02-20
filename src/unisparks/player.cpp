@@ -537,7 +537,8 @@ void Player::begin() {
        s < strands_ + strandCount_; ++s) {
     pxcnt += s->layout->pixelCount();
   }
-  info("Starting Unisparks player (v%s); strands: %d%s, pixels: %d, effects: %d (%d in playlist), %s",
+  info("Starting Unisparks player %s (v%s); strands: %d%s, pixels: %d, effects: %d (%d in playlist), %s",
+       BOOT_MESSAGE,
        UNISPARKS_VERSION,
        strandCount_,
        strandCount_ < 1 ? " (CONTROLLER ONLY!)" : "",
