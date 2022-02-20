@@ -11,15 +11,7 @@ namespace unisparks {
 #  define BUTTONS_DISABLED 0
 #endif // BUTTONS_DISABLED
 
-#ifndef ATOM_MATRIX_SCREEN
-#  ifdef ESP32
-#    define ATOM_MATRIX_SCREEN 1
-#  else // ESP32
-#    define ATOM_MATRIX_SCREEN 0
-#  endif // ESP32
-#endif // ATOM_MATRIX_SCREEN
-
-#ifdef ATOM_MATRIX_SCREEN
+#if ATOM_MATRIX_SCREEN
 #define ATOM_SCREEN_NUM_LEDS 25
 CRGB atomScreenLEDs[ATOM_SCREEN_NUM_LEDS] = {};
 #endif // ATOM_MATRIX_SCREEN
@@ -269,6 +261,31 @@ void atomScreenShort(Player& player, const Milliseconds currentMillis) {
   atomScreenNetwork(player, currentMillis);
 }
 
+bool atomScreenMessage(uint8_t btn, const Milliseconds currentMillis) {
+  static bool displayingBootMessage = true;
+  if (!displayingBootMessage) {
+    return false;
+  }
+  if (btn != BTN_IDLE) {
+    displayingBootMessage = false;
+    info("Stopping boot message due to button press");
+    return false;
+  }
+  static Milliseconds bootMessageStartTime = -1;
+  if (bootMessageStartTime < 0) {
+    bootMessageStartTime = currentMillis;
+  }
+  displayingBootMessage = displayText(BOOT_MESSAGE, atomScreenLEDs,
+                                      CRGB::Red, CRGB::Black,
+                                      currentMillis - bootMessageStartTime);
+  if (!displayingBootMessage) {
+    info("Done displaying boot message");
+  } else {
+    atomScreenDisplay(currentMillis);
+  }
+  return displayingBootMessage;
+}
+
 #endif // ATOM_MATRIX_SCREEN
 
 
@@ -340,6 +357,12 @@ void doButtons(Player& player, const Milliseconds currentMillis) {
 #if defined(ESP32)
   uint8_t btn = buttonStatus(0, currentMillis);
 
+#if ATOM_MATRIX_SCREEN
+  if (atomScreenMessage(btn, currentMillis)) {
+    return;
+  }
+#endif // ATOM_MATRIX_SCREEN
+
 #if BUTTON_LOCK
   // info("doButtons start");
   // 0 Locked and awaiting click; 1 Awaiting long press; 2 Awaiting click; 3 Awaiting long press; 4 Awaiting release; 5 Unlocked
@@ -388,8 +411,6 @@ void doButtons(Player& player, const Milliseconds currentMillis) {
   }
 #endif // BUTTON_LOCK
 
-#if ATOM_MATRIX_SCREEN
-#endif // ATOM_MATRIX_SCREEN
   switch (btn) {
     case BTN_RELEASED:
 #if ATOM_MATRIX_SCREEN

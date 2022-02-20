@@ -29,4 +29,28 @@
 #  define GLOW_ONLY 0
 #endif // GLOW_ONLY
 
+#ifndef ATOM_MATRIX_SCREEN
+#  ifdef ESP32
+#    define ATOM_MATRIX_SCREEN 1
+#  else // ESP32
+#    define ATOM_MATRIX_SCREEN 0
+#  endif // ESP32
+#endif // ATOM_MATRIX_SCREEN
+
+#ifndef VARIANT
+#  define VARIANT X
+#endif // VARIANT
+
+#ifndef REVISION
+#  define REVISION 1
+#endif // REVISION
+
+// Extra indirection ensures preprocessor expands macros in correct order.
+#define STRINGIFY_INNER(s) #s
+#define STRINGIFY(s) STRINGIFY_INNER(s)
+
+#ifndef BOOT_MESSAGE
+#  define BOOT_MESSAGE STRINGIFY(VARIANT) "-" STRINGIFY(REVISION)
+#endif // BOOT_MESSAGE
+
 #endif // UNISPARKS_CONFIG_H
