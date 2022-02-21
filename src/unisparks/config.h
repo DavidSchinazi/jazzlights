@@ -22,7 +22,7 @@
 
 // Choose whether to enable button lock.
 #ifndef BUTTON_LOCK
-#  define BUTTON_LOCK 0
+#  define BUTTON_LOCK 1
 #endif // BUTTON_LOCK
 
 #ifndef GLOW_ONLY
@@ -37,9 +37,9 @@
 #  endif // ESP32
 #endif // ATOM_MATRIX_SCREEN
 
-#ifndef VARIANT
-#  define VARIANT X
-#endif // VARIANT
+#ifndef BOOT_NAME
+#  define BOOT_NAME X
+#endif // BOOT_NAME
 
 #ifndef REVISION
 #  define REVISION 1
@@ -50,7 +50,7 @@
 #define STRINGIFY(s) STRINGIFY_INNER(s)
 
 #ifndef BOOT_MESSAGE
-#  define BOOT_MESSAGE STRINGIFY(VARIANT) "-" STRINGIFY(REVISION)
+#  define BOOT_MESSAGE STRINGIFY(BOOT_NAME) "-" STRINGIFY(REVISION)
 #endif // BOOT_MESSAGE
 
 #endif // UNISPARKS_CONFIG_H

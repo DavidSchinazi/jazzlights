@@ -116,21 +116,21 @@ int Esp8266WiFi::recv(void* buf, size_t bufsize) {
   return udp_.read((unsigned char*)buf, bufsize);
 }
 
-#ifndef DISABLE_WIFI_SENDING
-#  define DISABLE_WIFI_SENDING 0
-#endif // DISABLE_WIFI_SENDING
+#ifndef ENABLE_ESP_WIFI_SENDING
+#  define ENABLE_ESP_WIFI_SENDING 0
+#endif // ENABLE_ESP_WIFI_SENDING
 
 void Esp8266WiFi::send(void* buf, size_t bufsize) {
-#if !DISABLE_WIFI_SENDING
+#if ENABLE_ESP_WIFI_SENDING
   IPAddress ip;
   ip.fromString(mcastAddr_);
   udp_.beginPacket(ip, port_);
   udp_.write(static_cast<uint8_t*>(buf), bufsize);
   udp_.endPacket();
-#else // DISABLE_WIFI_SENDING
+#else // ENABLE_ESP_WIFI_SENDING
   (void)buf;
   (void)bufsize;
-#endif // DISABLE_WIFI_SENDING
+#endif // ENABLE_ESP_WIFI_SENDING
 }
 
 
