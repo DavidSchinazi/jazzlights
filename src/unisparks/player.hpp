@@ -73,11 +73,6 @@ class Player {
   void render(Milliseconds dt, Milliseconds currentTime);
 
   /**
-   *  Play effect with given name
-   */
-  void play(const char* name);
-
-  /**
    *  Play effect with given index in the playlist
    */
   void jump(int idx);

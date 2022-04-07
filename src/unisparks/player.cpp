@@ -684,12 +684,6 @@ void Player::jump(int index) {
 #endif // ESP32_BLE_SENDER
 }
 
-void Player::play(const char* name) {
-  if (syncEffectByName(name, 0) && network_) {
-    network_->isControllingEffects(true);
-  }
-}
-
 bool Player::switchToPlaylistItem(size_t index) {
   loop_ = false;
   if (track_ != index && index < playlistSize_
@@ -929,15 +923,11 @@ const char* Player::command(const char* req) {
   static char res[256];
   const size_t MAX_CMD_LEN = 16;
   bool responded = false;
-  char pattern[16];
-  Milliseconds time;
 
   if (!strncmp(req, "status?", MAX_CMD_LEN)) {
     // do nothing
   } else  if (!strncmp(req, "next", MAX_CMD_LEN)) {
     next();
-  } else if (sscanf(req, "play %15s %d", pattern, &time) == 2) {
-    play(pattern);
   } else {
     snprintf(res, sizeof(res), "! unknown command");
     responded = true;

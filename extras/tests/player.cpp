@@ -58,7 +58,6 @@ TEST_CASE("Sequence", "[player]") {
   pl.addEffect("seqtest", ef, true);
   pl.addStrand(layout, renderer);
   pl.begin();
-  pl.play("seqtest");
 
   pl.render(0);
   REQUIRE(renderer.colors[0] == RgbColor(0xff0000));

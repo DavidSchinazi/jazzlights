@@ -16,7 +16,6 @@ int main(int, char**) {
     .preferredEffectDuration(10*ONE_SECOND)
   ;
   player.begin();
-  player.play("crossbars");
   int fps = -1;
   for(;;) {
     player.render();
