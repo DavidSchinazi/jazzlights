@@ -38,7 +38,7 @@ void onKey(GLFWwindow* window, int key, int /*scncode*/, int action,
     // logLevel =
     //     (logLevel == errorLevel ? debugLevel : errorLevel);
   } else if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
-    player->prev();
+    player->loopOne();
   } else if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
     player->next();
   } else if (key >= GLFW_KEY_1 && key <= GLFW_KEY_9 && action == GLFW_PRESS

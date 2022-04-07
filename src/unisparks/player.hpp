@@ -94,11 +94,6 @@ class Player {
   void jump(int idx);
 
   /**
-   *  Play previous effect in the playlist
-   */
-  void prev();
-
-  /**
    *  Play next effect in the playlist
    */
   void next();

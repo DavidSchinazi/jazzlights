@@ -697,10 +697,6 @@ void Player::render(Milliseconds dt, Milliseconds currentTime) {
   }
 }
 
-void Player::prev() {
-  jump(previdx(track_, 0, playlistSize_));
-}
-
 void Player::next() {
   jump(nextidx(track_, 0, playlistSize_));
 }
@@ -993,8 +989,6 @@ const char* Player::command(const char* req) {
     // do nothing
   } else  if (!strncmp(req, "next", MAX_CMD_LEN)) {
     next();
-  } else if (!strncmp(req, "prev", MAX_CMD_LEN)) {
-    prev();
   } else if (sscanf(req, "play %15s %d", pattern, &time) == 2) {
     play(pattern);
   } else {

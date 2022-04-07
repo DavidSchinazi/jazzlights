@@ -131,7 +131,6 @@ void modeAct(Player& player, const Milliseconds currentMillis) {
     case kPrevious:
       info("%u Back button has been hit", currentMillis);
       player.stopSpecial();
-      player.prev();
       player.loopOne();
       break;
     case kBrightness:
@@ -504,7 +503,6 @@ void doButtons(Player& player, const Milliseconds currentMillis) {
     case BTN_RELEASED:
       info("Back button has been hit");
       player.stopSpecial();
-      player.prev();
       player.loopOne();
       break;
 
