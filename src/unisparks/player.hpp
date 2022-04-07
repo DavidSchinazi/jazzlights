@@ -78,17 +78,6 @@ class Player {
   void play(const char* name);
 
   /**
-   *  Overlay given effect on top of currently playing effect.
-   *  If there was another overlay, it will be replaced with the new one.
-   */
-  void overlay(const char* name);
-
-  /**
-   *  Remove overlayed effect if one was set up
-   */
-  void clearOverlay();
-
-  /**
    *  Play effect with given index in the playlist
    */
   void jump(int idx);
@@ -139,14 +128,6 @@ class Player {
    * Returns the name of currently playing effect
    */
   const char* effectName() const;
-
-  /**
-   * Returns the name of currently playing overlay or "none"
-   * if no overlay is playing.
-   */
-  const char* overlayName() const {
-    return overlayIdx_ < effectCount_ ? effects_[overlayIdx_].name : "none";
-  }
 
   /**
    * Returns time elapsed since effect start
@@ -204,7 +185,6 @@ class Player {
   bool switchToPlaylistItem(size_t index);
   bool findEffect(const char* name, size_t* idx);
   Frame effectFrame() const;
-  Frame overlayFrame() const;
 
   /**
    * This is similar to addEffect, but it will not override effects
@@ -231,7 +211,6 @@ class Player {
 
   Box viewport_;
   void* effectContext_;
-  void* overlayContext_;
 
   struct EffectInfo {
     const Effect* effect;
@@ -245,9 +224,6 @@ class Player {
 
   size_t effectIdx_;
   Milliseconds time_;
-
-  size_t overlayIdx_;
-  Milliseconds overlayTime_;
 
   BeatsPerMinute tempo_;
   Metre metre_;

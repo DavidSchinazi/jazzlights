@@ -10,7 +10,6 @@ set(LIB_SOURCES
 	../src/unisparks/effects/functional.hpp
 	../src/unisparks/effects/glitter.hpp
 	../src/unisparks/effects/glow.hpp
-	../src/unisparks/effects/overlay.hpp
 	../src/unisparks/effects/plasma.hpp
 	../src/unisparks/effects/rainbow.hpp
 	../src/unisparks/effects/rider.hpp
@@ -67,7 +66,6 @@ set(DEMO_SOURCES
 	demo/gui.cpp
 	demo/gui.hpp
 	demo/main.cpp
-	demo/overlays.cpp
 )
 
 set(TEST_SOURCES

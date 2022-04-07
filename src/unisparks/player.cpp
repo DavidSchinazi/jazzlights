@@ -7,7 +7,6 @@
 #include "unisparks/effects/flame.hpp"
 #include "unisparks/effects/glitter.hpp"
 #include "unisparks/effects/glow.hpp"
-#include "unisparks/effects/overlay.hpp"
 #include "unisparks/effects/plasma.hpp"
 #include "unisparks/effects/rainbow.hpp"
 #include "unisparks/effects/rider.hpp"
@@ -297,33 +296,17 @@ void  Player::addDefaultEffects2D() {
 
   addDefaultEffect("rider", clone(rider()), false);
   addDefaultEffect("slantbars", clone(slantbars()), false);
-
-  addDefaultEffect("roboscan", clone(
-                     unisparks::overlay(alphaLightnessBlend, rider(), transform(ROTATE_LEFT,
-                                        rider()))
-                   ), false);
-
-  addDefaultEffect("crossbars", clone(
-    unisparks::overlay(alphaLightnessBlend, slantbars(), transform(ROTATE_LEFT, slantbars()))
-    ), false);
 #endif // GLOW_ONLY
 }
 
 void render(const Layout& layout, Renderer* renderer,
-            const Effect& effect, Frame effectFrame,
-            const Effect* overlay, Frame overlayFrame) {
+            const Effect& effect, Frame effectFrame) {
   auto pixels = points(layout);
   auto colors = map(pixels, [&](Point pt) -> Color {
     Pixel px;
     px.coord = pt;
     px.frame = effectFrame;
-    int pxidx = 0;
     Color clr = effect.color(px);
-    if (overlay) {
-      px.frame = overlayFrame;
-      px.index = pxidx++;
-      clr = alphaBlend(overlay->color(px), clr);
-    }
     return clr;
   });
 
@@ -341,7 +324,7 @@ inline int previdx(int i, int first, int size) {
 }
 
 Player::Player() {
-  effectContext_ = overlayContext_ = nullptr;
+  effectContext_ = nullptr;
   reset();
 }
 
@@ -351,8 +334,7 @@ Player::~Player() {
 
 void Player::end() {
   free(effectContext_);
-  free(overlayContext_);
-  effectContext_ = overlayContext_ = nullptr;
+  effectContext_ = nullptr;
 }
 
 void Player::reset() {
@@ -363,8 +345,6 @@ void Player::reset() {
   effectCount_ = 0;
   effectIdx_ = 0;
   time_ = 0;
-  overlayIdx_ = 0;
-  overlayTime_ = 0;
   tempo_ = 120;
   metre_ = SIMPLE_QUADRUPLE;
 
@@ -529,7 +509,6 @@ void Player::begin() {
   }
   if (ctxsz > 0) {
     effectContext_ = malloc(ctxsz);
-    overlayContext_ = malloc(ctxsz);
   }
 
   int pxcnt = 0;
@@ -555,7 +534,7 @@ void Player::begin() {
       debug("      %s", effects_[i].name);
     }
   }
-  effectIdx_ = overlayIdx_ = track_ = effectCount_;
+  effectIdx_ = track_ = effectCount_;
   switchToPlaylistItem(0);
   ready_ = true;
 }
@@ -610,7 +589,6 @@ void Player::render(Milliseconds dt, Milliseconds currentTime) {
 
   if (!paused_) {
     time_ += dt;
-    overlayTime_ += dt;
   }
 #if 0
   Milliseconds brd = ONE_MINUTE / tempo_;
@@ -638,11 +616,8 @@ void Player::render(Milliseconds dt, Milliseconds currentTime) {
   lastLEDWriteTime_ = currentTime;
 
   const Effect* effect = effects_[effectIdx_].effect;
-  const Effect* overlay = overlayIdx_ < effectCount_ ?
-                          effects_[overlayIdx_].effect : nullptr;
 
   Frame efr = effectFrame();
-  Frame ofr = overlayFrame();
 
   switch (specialMode_) {
     case 1:
@@ -687,13 +662,10 @@ void Player::render(Milliseconds dt, Milliseconds currentTime) {
   }
 
   effect->rewind(efr);
-  if (overlay) {
-    overlay->rewind(ofr);
-  }
 
   for (Strand* s = strands_;
        s < strands_ + strandCount_; ++s) {
-    unisparks::render(*s->layout, s->renderer, *effect, efr, overlay, ofr);
+    unisparks::render(*s->layout, s->renderer, *effect, efr);
   }
 }
 
@@ -933,24 +905,6 @@ const char* Player::effectName() const {
   return effects_[effectIdx_].name;
 }
 
-void Player::overlay(const char* name) {
-  size_t idx;
-  if (findEffect(name, &idx)) {
-    if (overlayIdx_ < effectCount_) {
-      effects_[overlayIdx_].effect->end(overlayFrame().animation);
-    }
-    overlayIdx_ = static_cast<int>(idx);
-    overlayTime_ = 0;
-    effects_[overlayIdx_].effect->begin(overlayFrame());
-
-    info("Playing overlay %s", overlayName());
-  }
-}
-
-void Player::clearOverlay() {
-  overlayIdx_ = effectCount_;
-}
-
 bool Player::findEffect(const char* name, size_t* idx) {
   for (size_t i = 0; i < effectCount_; ++i) {
     if (!strcmp(name, effects_[i].name)) {
@@ -968,13 +922,6 @@ Frame Player::effectFrame() const {
   frame.time = time_;
   frame.tempo = tempo_;
   frame.metre = metre_;
-  return frame;
-}
-
-Frame Player::overlayFrame() const {
-  Frame frame = effectFrame();
-  frame.animation.context = overlayContext_;
-  frame.time = overlayTime_;
   return frame;
 }
 
