@@ -70,11 +70,6 @@ class Player {
   void render(Milliseconds dt, Milliseconds currentTime);
 
   /**
-   *  Play effect with given index in the playlist
-   */
-  void jump(int idx);
-
-  /**
    *  Play next effect in the playlist
    */
   void next();
@@ -142,6 +137,7 @@ class Player {
   bool findEffect(const char* name, size_t* idx);
   Frame effectFrame() const;
   const char* effectName() const;
+  void jump(int idx);
 
   /**
    * This is similar to addEffect, but it will not override effects

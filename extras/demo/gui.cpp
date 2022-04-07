@@ -38,9 +38,6 @@ void onKey(GLFWwindow* window, int key, int /*scncode*/, int action,
     player->loopOne();
   } else if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
     player->next();
-  } else if (key >= GLFW_KEY_1 && key <= GLFW_KEY_9 && action == GLFW_PRESS
-             && !(mods & GLFW_MOD_SHIFT)) {
-    player->jump(key - GLFW_KEY_1);
   } else if (key == GLFW_KEY_0 && action == GLFW_PRESS
              && (mods & GLFW_MOD_SHIFT)) {
     // } else if (key == GLFW_KEY_N && action == GLFW_PRESS) {
