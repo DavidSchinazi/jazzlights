@@ -14,7 +14,6 @@ class Effect {
   virtual Color color(const Pixel& px) const = 0;
   virtual void begin(const Frame&) const = 0;
   virtual void rewind(const Frame& frame) const = 0;
-  virtual void end(const Animation&) const = 0;
 };
 
 } // namespace unisparks

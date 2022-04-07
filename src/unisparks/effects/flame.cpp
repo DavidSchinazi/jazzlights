@@ -108,9 +108,6 @@ Color Flame::color(const Pixel& px) const {
   return clr;
 }
 
-void Flame::end(const Animation&) const {
-}
-
 
 
 } // namespace unisparks

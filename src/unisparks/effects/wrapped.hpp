@@ -26,10 +26,6 @@ struct WrappedEffect : Effect {
     return effect.color(transform(px));
   }
 
-  void end(const Animation& am) const override {
-    effect.end(transform(am));
-  }
-
   template<typename P> P transform(const P& v) const {
     return v;
   }

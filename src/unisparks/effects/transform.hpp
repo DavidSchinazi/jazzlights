@@ -27,10 +27,6 @@ struct Transformed : Effect {
     return effect.color(tpixel(px));
   }
 
-  void end(const Animation& am) const override {
-    effect.end(tanim(am));
-  }
-
   Animation tanim(Animation am) const {
     am.viewport = transform(am.viewport);
     return am;

@@ -706,9 +706,6 @@ Precedence Player::GetLeaderPrecedence(Milliseconds currentTime) {
 bool Player::syncEffectByIndex(size_t index, Milliseconds time) {
   if (index < effectCount_) {
     if (effectIdx_ != index) {
-      if (effectIdx_ < effectCount_) {
-        effects_[effectIdx_].effect->end(effectFrame().animation);
-      }
       effectIdx_ = index;
       Frame fr = effectFrame();
       effects_[effectIdx_].effect->begin(fr);

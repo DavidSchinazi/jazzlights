@@ -8,7 +8,6 @@ class Flame : public Effect {
   void begin(const Frame& frame) const override;
   void rewind(const Frame& f) const override;
   Color color(const Pixel& px) const override;
-  void end(const Animation& a) const override;
 };
 
 inline Flame flame() {

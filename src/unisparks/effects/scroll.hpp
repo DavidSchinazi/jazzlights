@@ -19,10 +19,6 @@ struct Scroll : Effect {
     effect.begin(tframe(fr));
   }
 
-  void end(const Frame& fr) const override {
-    effect.end(tframe(fr));
-  }
-
   Color color(const Pixel& px) const override {
     Transform tr = IDENTITY;
     tr.offset = (-px.frame.time / 100.0) * speed;

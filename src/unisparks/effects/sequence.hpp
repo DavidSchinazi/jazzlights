@@ -85,11 +85,6 @@ class Sequence<Milliseconds, First, Next...> : public Effect {
     return res;
   }
 
-  void end(const Animation& a) const override {
-    Context& ctx = *static_cast<Context*>(a.context);
-    ctx.isFirst ? first.end(firstAnim(a)) : next.end(nextAnim(a));
-  }
-
   struct Context {
     Milliseconds lastTime;
   };
@@ -153,9 +148,6 @@ class Sequence<> : public Effect {
     return 0x0;
   }
 
-  void end(const Animation&) const override {
-  }
-
   Milliseconds duration() const {
     return 0;
   }
@@ -189,10 +181,6 @@ struct Loop : Effect {
 
   Color color(const Pixel& px) const override {
     return seq.color(tpixel(px));
-  }
-
-  void end(const Animation& a) const override {
-    seq.end(a);
   }
 
   Milliseconds duration() const {

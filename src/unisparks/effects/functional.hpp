@@ -32,10 +32,6 @@ class FrameFuncEffect : public Effect {
     return (*static_cast<ContextT*>(pixel.frame.animation.context))(pixel);
   }
 
-  void end(const Animation& animation) const override {
-    static_cast<ContextT*>(animation.context)->~ContextT();
-  }
-
  private:
   F initFrame_;
 };
