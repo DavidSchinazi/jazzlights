@@ -38,9 +38,6 @@ class Player {
   Player& clearStrands();
   Player& addStrand(const Layout& l, Renderer& r);
   Player& addStrand(const Layout& l, SimpleRenderFunc r);
-  Player& addEffect(const char* name, const Effect& effect,
-                    bool autoplay = true);
-  Player& autoplayEffect(const char* name, bool v = true);
   Player& preferredEffectDuration(Milliseconds v);
   Player& throttleFps(FramesPerSecond v);
   Player& connect(Network& n);

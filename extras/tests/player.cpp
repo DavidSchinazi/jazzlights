@@ -38,7 +38,6 @@ TEST_CASE("Sequence", "[player]") {
   TestRenderer renderer;
 
   Player pl;
-  pl.addEffect("seqtest", ef, true);
   pl.addStrand(layout, renderer);
   pl.begin();
 

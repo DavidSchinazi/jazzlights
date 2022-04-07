@@ -392,17 +392,6 @@ Player& Player::addStrand(const Layout& l, Renderer& r) {
   return *this;
 }
 
-Player& Player::autoplayEffect(const char* name, bool v) {
-  end();
-  size_t idx;
-  if (!findEffect(name, &idx)) {
-    fatal("Can't set autplay for unknown effect '%s'", name);
-  }
-  effects_[idx].autoplay = v;
-  ready_ = false;
-  return *this;
-}
-
 Player& Player::preferredEffectDuration(Milliseconds v) {
   end();
   preferredEffectDuration_ = v;
@@ -420,21 +409,6 @@ Player& Player::throttleFps(FramesPerSecond v) {
 Player& Player::connect(Network& n) {
   end();
   network_ = &n;
-  ready_ = false;
-  return *this;
-}
-
-Player& Player::addEffect(const char* name, const Effect& effect,
-                          bool autoplay) {
-  end();
-  size_t idx;
-  if (!findEffect(name, &idx)) {
-    if (effectCount_ >= MAX_EFFECTS) {
-      fatal("Trying to add too many effects, max=%d", MAX_EFFECTS);
-    }
-    idx = effectCount_++;
-  }
-  effects_[idx] = {&effect, name, autoplay};
   ready_ = false;
   return *this;
 }
