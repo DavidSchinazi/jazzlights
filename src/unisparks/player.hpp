@@ -103,42 +103,6 @@ class Player {
   const char* command(const char* cmd);
 
   /**
-   * Returns total number of effects
-   * player can play. This is regardless
-   * of whether the effects are in the
-   * playlist.
-   */
-  size_t effectCount() const {
-    return effectCount_;
-  }
-
-  /**
-   * Returns current playlist position
-   */
-  size_t effectIndex() const {
-    return track_;
-  }
-
-  /**
-   * Returns the name of currently playing effect
-   */
-  const char* effectName() const;
-
-  /**
-   * Returns time elapsed since effect start
-   */
-  Milliseconds effectTime() const {
-    return time_;
-  }
-
-  /**
-   * Returns current tempo
-   */
-  BeatsPerMinute tempo() const {
-    return tempo_;
-  }
-
-  /**
    * Returns whether playback is paused
    */
   bool paused() const {
@@ -180,6 +144,7 @@ class Player {
   bool switchToPlaylistItem(size_t index);
   bool findEffect(const char* name, size_t* idx);
   Frame effectFrame() const;
+  const char* effectName() const;
 
   /**
    * This is similar to addEffect, but it will not override effects

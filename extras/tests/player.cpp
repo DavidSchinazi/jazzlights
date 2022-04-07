@@ -23,27 +23,10 @@ TEST_CASE("Player invariants", "[player]") {
   pl.begin(bigPane, dummyrender);
 
   pl.render();
-
-  REQUIRE(pl.effectCount() > 2);
-  REQUIRE(pl.effectIndex() == 0);
-  REQUIRE(!strcmp(pl.effectName(), "rainbow"));
-
   pl.render(); // check that we don't crash
 
   //    pl.begin();    // should do nothing
   //    pl.begin(); // should do nothing
-
-  REQUIRE(pl.effectIndex() == 0);
-  pl.next();
-  REQUIRE(pl.effectIndex() == 1);
-  pl.next();
-  REQUIRE(pl.effectIndex() == 2);
-  pl.prev();
-  REQUIRE(pl.effectIndex() == 1);
-  pl.jump(0);
-  REQUIRE(pl.effectIndex() == 0);
-  pl.jump(2);
-  REQUIRE(pl.effectIndex() == 2);
 }
 
 #if 0

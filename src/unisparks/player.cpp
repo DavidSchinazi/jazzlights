@@ -933,8 +933,7 @@ const char* Player::command(const char* req) {
     responded = true;
   }
   if (!responded) {
-    snprintf(res, sizeof(res), "play %s %d", effectName(),
-             effectTime());
+    snprintf(res, sizeof(res), "play %s %d", effectName(), time_);
   }
   debug("[%s] -> [%s]", req, res);
   return res;

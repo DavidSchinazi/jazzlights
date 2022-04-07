@@ -107,13 +107,10 @@ int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen) {
 
     player->render();
 
-    auto t = player->effectTime() / 1000;
     std::stringstream title;
     using std::setw;
     using std::setfill;
     title << winTitle
-          << " | " << player->effectName()
-          << " | " << (t / 60) << ":" << setw(2) << setfill('0') << (t % 60)
           // " | " << (network.connected() ? network.isControllingEffects() ? "master" :
           //           "slave" : "standalone")
           ;
