@@ -13,7 +13,6 @@ int main(int, char**) {
   player
     .addStrand(pixels, &dummyRender)
     .throttleFps(0)
-    .preferredEffectDuration(10*ONE_SECOND)
   ;
   player.begin();
   int fps = -1;

@@ -356,8 +356,6 @@ void Player::reset() {
   network_ = nullptr;
   powerLimited = false;
 
-  preferredEffectDuration_ = 10 * ONE_SECOND;
-
   throttleFps_ = 0;
 
   lastRenderTime_ = -1;
@@ -389,13 +387,6 @@ Player& Player::addStrand(const Layout& l, Renderer& r) {
     fatal("Trying to add too many strands, max=%d", MAX_STRANDS);
   }
   strands_[strandCount_++] = {&l, &r};
-  return *this;
-}
-
-Player& Player::preferredEffectDuration(Milliseconds v) {
-  end();
-  preferredEffectDuration_ = v;
-  ready_ = false;
   return *this;
 }
 
@@ -555,6 +546,7 @@ void Player::stopSpecial() {
   info("Stopping special mode");
   specialMode_ = 0;
 }
+static constexpr Milliseconds kEffectDuration = 10 * ONE_SECOND;
 
 void Player::render(Milliseconds dt, Milliseconds currentTime) {
   if (!ready_) {
@@ -568,9 +560,9 @@ void Player::render(Milliseconds dt, Milliseconds currentTime) {
   Milliseconds brd = ONE_MINUTE / tempo_;
   //Milliseconds timeSinceDownbeat = (currTime - lastDownbeatTime_) % brd;
 
-  Milliseconds currEffectDuration = brd * int(preferredEffectDuration_ / brd);
+  Milliseconds currEffectDuration = brd * int(kEffectDuration / brd);
 #else
-  Milliseconds currEffectDuration = preferredEffectDuration_;
+  Milliseconds currEffectDuration = kEffectDuration;
 #endif
 
   if (time_ > currEffectDuration && !loop_) {
@@ -804,7 +796,7 @@ void Player::syncToNetwork() {
     } else {
       followedPrecedence = GetLocalPrecedence(currentTime);
     }
-    if (receivedElapsedTime > preferredEffectDuration_ && !loop_) {
+    if (receivedElapsedTime > kEffectDuration && !loop_) {
       // Ignore this message because the sender already switched effects.
       info("%u Ignoring received BLE with time past duration", currentTime);
       continue;

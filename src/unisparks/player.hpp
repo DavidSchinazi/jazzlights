@@ -38,7 +38,6 @@ class Player {
   Player& clearStrands();
   Player& addStrand(const Layout& l, Renderer& r);
   Player& addStrand(const Layout& l, SimpleRenderFunc r);
-  Player& preferredEffectDuration(Milliseconds v);
   Player& throttleFps(FramesPerSecond v);
   Player& connect(Network& n);
 
@@ -191,8 +190,6 @@ class Player {
   uint8_t specialMode_ = START_SPECIAL;
 
   Network* network_;
-
-  Milliseconds preferredEffectDuration_;
 
   int throttleFps_;
 
