@@ -206,33 +206,4 @@ Network& Network::isControllingEffects(bool v) {
   return *this;
 }
 
-
-struct DummyNetwork : public Network {
-  NetworkStatus update(NetworkStatus status) override {
-    switch (status) {
-    case INITIALIZING:
-    case CONNECTING:
-      return CONNECTED;
-
-    case DISCONNECTING:
-      return DISCONNECTED;
-
-    default:
-      return status;
-    }
-  }
-
-  int recv(void* /*buf*/, size_t /*bufsize*/) override {
-    return 0;
-  }
-
-  void send(void* /*buf*/, size_t /*bufsize*/) override {
-  }
-};
-
-Network& dummyNetwork() {
-  static DummyNetwork inst;
-  return inst;
-}
-
 } // namespace unisparks

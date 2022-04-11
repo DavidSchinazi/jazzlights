@@ -68,8 +68,6 @@ class Network {
 static constexpr int DEFAULT_UDP_PORT = 0xDF0D;
 static constexpr const char* const DEFAULT_MULTICAST_ADDR = "239.255.223.01";
 
-Network& dummyNetwork();
-
 } // namespace unisparks
 
 #endif /* UNISPARKS_NETWORK_H */
