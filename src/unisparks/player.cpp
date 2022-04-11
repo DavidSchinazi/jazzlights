@@ -599,7 +599,7 @@ void Player::reactToUserInput(Milliseconds currentTime) {
   lastUserInputTime_ = currentTime;
   followingLeader_ = false;
   if (network_) {
-    network_->isControllingEffects(true);
+    network_->triggerSendAsap(currentTime);
   }
 #if ESP32_BLE_SENDER
   Esp32Ble::TriggerSendAsap(currentTime);

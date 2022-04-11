@@ -96,13 +96,6 @@ class Player {
   }
 
   /**
-   * Returns whether player is connected to network
-   */
-  bool connected() const {
-    return network_ && network_->status() == CONNECTED;
-  }
-
-  /**
    * Returns number of frames rendered per second.
    */
   int fps() const {

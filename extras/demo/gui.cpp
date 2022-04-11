@@ -40,12 +40,6 @@ void onKey(GLFWwindow* window, int key, int /*scncode*/, int action,
     player->next();
   } else if (key == GLFW_KEY_0 && action == GLFW_PRESS
              && (mods & GLFW_MOD_SHIFT)) {
-    // } else if (key == GLFW_KEY_N && action == GLFW_PRESS) {
-    //   if (network.connected()) {
-    //     network.disconnect();
-    //   } else {
-    //     network.reconnect();
-    //   }
   } else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
     player->paused() ? player->resume() : player->pause();
   } else if (key == GLFW_KEY_ESCAPE || (key == GLFW_KEY_C
@@ -107,10 +101,7 @@ int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen) {
     std::stringstream title;
     using std::setw;
     using std::setfill;
-    title << winTitle
-          // " | " << (network.connected() ? network.isControllingEffects() ? "master" :
-          //           "slave" : "standalone")
-          ;
+    title << winTitle;
     glfwSetWindowTitle(window, title.str().c_str());
 
     glfwSwapBuffers(window);

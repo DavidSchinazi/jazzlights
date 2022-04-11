@@ -27,23 +27,18 @@ class Network {
  public:
   virtual ~Network() = default;
 
-  void disconnect();
-  void reconnect();
-
   bool sync(PatternBits* pattern, Milliseconds* time);
 
   NetworkStatus status() const;
+  virtual void triggerSendAsap(Milliseconds currentTime);
 
-  bool connected() const {
-    return status_ == CONNECTED;
-  }
-  bool isControllingEffects() const;
-  Network& isControllingEffects(bool v);
-
- private:
+ protected:
   virtual NetworkStatus update(NetworkStatus s) = 0;
   virtual int recv(void* buf, size_t bufsize) = 0;
   virtual void send(void* buf, size_t bufsize) = 0;
+ private:
+
+  void reconnect();
 
   NetworkStatus status_ = INITIALIZING;
 

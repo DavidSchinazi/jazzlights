@@ -72,30 +72,12 @@ NetworkStatus Network::status() const {
   return status_;
 }
 
-void Network::disconnect() {
-  if (status_ == CONNECTED) {
-    status_ = update(DISCONNECTING);
-  }
-}
-
 void Network::reconnect() {
   if (status_ != CONNECTED) {
     lastConnectionAttempt_ = timeMillis();
     status_ = update(CONNECTING);
   }
 }
-
-// void Network::broadcastEffect(const char *name, Milliseconds time) {
-//     isEffectMaster_ = true;
-//     strncpy(effectName_, name, sizeof(effectName_));
-//     effectStartTime_ = timeMillis() - time;
-//     effectLastTxTime_ = 0;
-//     communicate();
-// }
-
-// void Network::broadcastTempo(BeatsPerMinute /*tempo*/) {
-//   /* not implemented yet */
-// }
 
 bool Network::sync(PatternBits* pattern, Milliseconds* time) {
   Milliseconds currTime = timeMillis();
@@ -191,19 +173,12 @@ bool Network::sync(PatternBits* pattern, Milliseconds* time) {
   return false;
 }
 
-bool Network::isControllingEffects() const {
-  return isEffectMaster_;
-}
-
-Network& Network::isControllingEffects(bool v) {
-  if (isEffectMaster_ != v) {
-    info("Now%s controlling effects", (v ? "" : " not"));
+void Network::triggerSendAsap(Milliseconds currentTime) {
+  if (!isEffectMaster_) {
+    info("%u Now controlling effects", currentTime);
   }
-  isEffectMaster_ = v;
-  if (v) {
-    effectLastTxTime_ = 0;
-  }
-  return *this;
+  isEffectMaster_ = true;
+  effectLastTxTime_ = 0;
 }
 
 } // namespace unisparks
