@@ -39,15 +39,15 @@ using namespace internal;
 #endif // ESP32_BLE_SENDER
 
 int comparePrecedence(Precedence leftPrecedence,
-                      const DeviceIdentifier& leftDeviceId,
+                      const NetworkDeviceId& leftDeviceId,
                       Precedence rightPrecedence,
-                      const DeviceIdentifier& rightDeviceId) {
+                      const NetworkDeviceId& rightDeviceId) {
   if (leftPrecedence < rightPrecedence) {
     return -1;
   } else if (leftPrecedence > rightPrecedence) {
     return 1;
   }
-  return memcmp(leftDeviceId, rightDeviceId, sizeof(DeviceIdentifier));
+  return memcmp(leftDeviceId, rightDeviceId, sizeof(NetworkDeviceId));
 }
 
 #if ESP32_BLE_SENDER
@@ -63,7 +63,7 @@ void writeUint16(uint8_t* data, uint16_t number) {
   data[1] = static_cast<uint8_t>((number & 0x00FF));
 }
 
-void SendBle(const DeviceIdentifier& originalSenderId,
+void SendBle(const NetworkDeviceId& originalSenderId,
              Precedence originalSenderPrecedence,
              PatternBits effectToSend,
              Milliseconds elapsedTimeToSend,
@@ -92,7 +92,7 @@ uint16_t readUint16(const uint8_t* data) {
 
 bool ReceiveBle(const Esp32Ble::ScanResult& sr,
                 Milliseconds currentTime,
-                DeviceIdentifier receivedOriginalSenderId,
+                NetworkDeviceId receivedOriginalSenderId,
                 Precedence* receivedOriginalSenderPrecedence,
                 PatternBits* receivedEffect,
                 Milliseconds* receivedElapsedTime) {
@@ -655,6 +655,26 @@ Precedence Player::GetLeaderPrecedence(Milliseconds currentTime) {
   return precedence;
 }
 
+Precedence Player::GetFollowedPrecedence(Milliseconds currentTime) {
+if (followingLeader_) {
+    return DepreciatePrecedence(GetLeaderPrecedence(currentTime), 100);
+  } else {
+    return GetLocalPrecedence(currentTime);
+  }
+}
+
+void Player::GetFollowedDeviceId(NetworkDeviceId* followedDeviceId) {
+if (followingLeader_) {
+    memcpy(followedDeviceId, leaderDeviceId_, sizeof(*followedDeviceId));
+  } else {
+#if ESP32_BLE_SENDER
+    Esp32Ble::GetLocalAddress(followedDeviceId);
+#else // ESP32_BLE_SENDER
+    memset(followedDeviceId, 0, sizeof(*followedDeviceId)); // TODO
+#endif // ESP32_BLE_SENDER
+  }
+}
+
 void Player::updateToNewPattern(PatternBits newPattern,
                                 Milliseconds elapsedTime,
                                 Milliseconds currentTime) {
@@ -671,20 +691,13 @@ void Player::updateToNewPattern(PatternBits newPattern,
   effect->begin(effectFrame(effect, currentTime));
   lastLEDWriteTime_ = -1;
 #if ESP32_BLE_SENDER
-  DeviceIdentifier localDeviceId;
-  Precedence followedPrecedence;
-  if (followingLeader_) {
-    memcpy(localDeviceId, leaderDeviceId_, sizeof(localDeviceId));
-    followedPrecedence = GetLeaderPrecedence(currentTime);
-    followedPrecedence = DepreciatePrecedence(followedPrecedence, 100);
-  } else {
-    Esp32Ble::GetLocalAddress(&localDeviceId);
-    followedPrecedence = GetLocalPrecedence(currentTime);
-  }
+  NetworkDeviceId followedDeviceId;
+  GetFollowedDeviceId(&followedDeviceId);
+  Precedence followedPrecedence = GetFollowedPrecedence(currentTime);
   info("%u Sending BLE as %s " DEVICE_ID_FMT " precedence %u",
         currentTime, (followingLeader_ ? "remote" : "local"),
-        DEVICE_ID_HEX(localDeviceId), followedPrecedence);
-  SendBle(localDeviceId, followedPrecedence,
+        DEVICE_ID_HEX(followedDeviceId), followedPrecedence);
+  SendBle(followedDeviceId, followedPrecedence,
           currentPattern_, elapsedTime, currentTime);
 #endif // ESP32_BLE_SENDER
 }
@@ -693,18 +706,26 @@ void Player::syncToNetwork(Milliseconds currentTime) {
   if (!network_) {
     return;
   }
-
-  Milliseconds elapsedTime = elapsedTime_;
-  PatternBits pattern = currentPattern_;
-  if (network_->sync(&pattern, &elapsedTime)) {
+  NetworkMessage messageToSend;
+  GetFollowedDeviceId(&messageToSend.originator);
+  messageToSend.currentPattern = currentPattern_;
+  messageToSend.nextPattern = 0; // TODO;
+  messageToSend.elapsedTime = elapsedTime_;
+  messageToSend.precedence = GetFollowedPrecedence(currentTime);
+  network_->setMessageToSend(messageToSend, currentTime);
+  network_->maybeSend(currentTime);
+  std::list<NetworkMessage> receivedMessages = network_->getReceivedMessages(currentTime);
+  for (NetworkMessage receivedMessage : receivedMessages) {
     lastLEDWriteTime_ = -1;
-    updateToNewPattern(pattern, elapsedTime, currentTime);
+    updateToNewPattern(receivedMessage.currentPattern,
+                       receivedMessage.elapsedTime,
+                       currentTime);
   }
 #if ESP32_BLE_RECEIVER
   for (const Esp32Ble::ScanResult& sr : Esp32Ble::GetScanResults()) {
     PatternBits receivedPattern;
     Milliseconds receivedElapsedTime;
-    DeviceIdentifier receivedDeviceId;
+    NetworkDeviceId receivedDeviceId;
     Precedence receivedPrecedence;
     if (!ReceiveBle(sr,
                     currentTime,
@@ -714,7 +735,7 @@ void Player::syncToNetwork(Milliseconds currentTime) {
                     &receivedElapsedTime)) {
       continue;
     }
-    DeviceIdentifier followedDeviceId;
+    NetworkDeviceId followedDeviceId;
     Esp32Ble::GetLocalAddress(&followedDeviceId);
     if (memcmp(receivedDeviceId, followedDeviceId, sizeof(followedDeviceId)) == 0) {
       info("%u Ignoring received BLE from ourselves " DEVICE_ID_FMT,

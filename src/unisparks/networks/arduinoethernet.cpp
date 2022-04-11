@@ -6,7 +6,7 @@
 
 namespace unisparks {
 
-struct ArduinoEthernetNetwork : public Network {
+struct ArduinoEthernetNetwork : public UdpNetwork {
   NetworkStatus update(NetworkStatus st) override;
   int recv(void* buf, size_t bufsize) override;
   void send(void* buf, size_t bufsize) override;

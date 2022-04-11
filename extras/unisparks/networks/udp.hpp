@@ -9,7 +9,8 @@
 
 namespace unisparks {
 
-struct UnixUdpNetwork : public Network {
+class UnixUdpNetwork : public UdpNetwork {
+ public:
   UnixUdpNetwork(int p = DEFAULT_UDP_PORT,
                  const char* addr = DEFAULT_MULTICAST_ADDR);
   UnixUdpNetwork(const UnixUdpNetwork&) = default;

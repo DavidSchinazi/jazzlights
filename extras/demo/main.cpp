@@ -29,7 +29,7 @@ int main(int argn, char** argv) {
   const char* config = argv[1];
 
   Player player;
-  Udp network;
+  UnixUdpNetwork network;
 
   DemoLoader().load(config, player);
   player.connect(network);

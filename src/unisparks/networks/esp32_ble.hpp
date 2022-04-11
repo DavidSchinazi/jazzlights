@@ -17,6 +17,7 @@
 #include <mutex>
 
 #include "unisparks/util/time.hpp"
+#include "unisparks/network.hpp"
 
 namespace unisparks {
 
@@ -25,7 +26,7 @@ namespace unisparks {
 // All calls are thread-safe.
 class Esp32Ble {
 public:
-  using DeviceIdentifier = uint8_t[6];  // Bluetooth MAC address.
+  using DeviceIdentifier = NetworkDeviceId;  // Bluetooth MAC address.
   // 29 is dictated by the BLE standard.
   static constexpr size_t kMaxInnerPayloadLength = 29;
   struct ScanResult {

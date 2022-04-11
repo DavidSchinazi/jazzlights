@@ -24,7 +24,7 @@
 namespace unisparks {
 
 
-class Esp8266WiFi : public Network {
+class Esp8266WiFi : public UdpNetwork {
  public:
   Esp8266WiFi(const char* ssid, const char* pass) : creds_{ssid, pass} {
   }

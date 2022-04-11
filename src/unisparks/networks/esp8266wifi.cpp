@@ -111,6 +111,8 @@ err:
 int Esp8266WiFi::recv(void* buf, size_t bufsize) {
   int cb = udp_.parsePacket();
   if (cb <= 0) {
+    debug("Esp8266WiFi::recv returned %d status = %s",
+          cb, NetworkStatusToString(status()).c_str());
     return 0;
   }
   return udp_.read((unsigned char*)buf, bufsize);

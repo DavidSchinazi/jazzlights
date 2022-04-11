@@ -4,41 +4,66 @@
 #include "unisparks/util/time.hpp"
 #include "unisparks/util/rhytm.hpp"
 
+#include <list>
 #include <string>
 
 namespace unisparks {
 
-using PatternBits = uint32_t;
-
-std::string displayBitsAsBinary(PatternBits p);
-
 class Network;
 
+#define ALL_NETWORK_STATUSES \
+  X(INITIALIZING) \
+  X(DISCONNECTED) \
+  X(CONNECTING) \
+  X(CONNECTED) \
+  X(DISCONNECTING) \
+  X(CONNECTION_FAILED)
+
 enum NetworkStatus {
-  INITIALIZING,
-  DISCONNECTED,
-  CONNECTING,
-  CONNECTED,
-  DISCONNECTING,
-  CONNECTION_FAILED
+#define X(s) s,
+  ALL_NETWORK_STATUSES
+#undef X
 };
+
+std::string NetworkStatusToString(NetworkStatus status);
+
+using PatternBits = uint32_t;
+using Precedence = uint16_t;
+using NetworkDeviceId = uint8_t[6];
+
+#define DEVICE_ID_FMT "%02x:%02x:%02x:%02x:%02x:%02x"
+#define DEVICE_ID_HEX(addr) addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]
+
+struct NetworkMessage {
+  NetworkDeviceId originator;
+  NetworkDeviceId sender;
+  PatternBits currentPattern;
+  PatternBits nextPattern;
+  Milliseconds elapsedTime;
+  Precedence precedence;
+};
+
+std::string displayBitsAsBinary(PatternBits p);
 
 class Network {
  public:
   virtual ~Network() = default;
 
-  bool sync(PatternBits* pattern, Milliseconds* time);
+  virtual void setMessageToSend(const NetworkMessage& messageToSend,
+                                Milliseconds currentTime) = 0;
+  std::list<NetworkMessage> getReceivedMessages(Milliseconds currentTime);
+  void maybeSend(Milliseconds currentTime);
 
   NetworkStatus status() const;
-  virtual void triggerSendAsap(Milliseconds currentTime);
+  virtual void triggerSendAsap(Milliseconds currentTime) = 0;
 
  protected:
   virtual NetworkStatus update(NetworkStatus s) = 0;
-  virtual int recv(void* buf, size_t bufsize) = 0;
-  virtual void send(void* buf, size_t bufsize) = 0;
+  virtual std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds currentTime) = 0;
+  virtual void maybeSendImpl(Milliseconds currentTime) = 0;
  private:
-
-  void reconnect();
+  void checkStatus(Milliseconds currentTime);
+  void reconnect(Milliseconds currentTime);
 
   NetworkStatus status_ = INITIALIZING;
 
@@ -46,17 +71,32 @@ class Network {
   Milliseconds minBackoffTimeout_ = 1000;
   Milliseconds maxBackoffTimeout_ = 16000;
   Milliseconds backoffTimeout_ = minBackoffTimeout_;
+};
+
+class UdpNetwork : public Network {
+ public:
+  UdpNetwork() = default;
+  ~UdpNetwork() = default;
+  UdpNetwork(const UdpNetwork&) = default;
+
+  void setMessageToSend(const NetworkMessage& messageToSend,
+                        Milliseconds currentTime) override;
+  void triggerSendAsap(Milliseconds currentTime) override;
+
+ protected:
+  std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds currentTime) override;
+  void maybeSendImpl(Milliseconds currentTime) override;
+  virtual int recv(void* buf, size_t bufsize) = 0;
+  virtual void send(void* buf, size_t bufsize) = 0;
+ private:
+  bool maybeHandleNotConnected(Milliseconds currentTime);
+  NetworkMessage messageToSend_;
 
   bool isEffectMaster_ = false;
-  PatternBits pattern_ = 0;
   PatternBits lastSentPattern_ = 0;
 
   Milliseconds effectLastTxTime_ = 0;
   Milliseconds effectLastRxTime_ = 0;
-
-  // bool isBeatMaster_ = false;
-  // Milliseconds beatLastTxTime_ = 0;
-  // Milliseconds beatLastRxTime_ = 0;
 };
 
 
