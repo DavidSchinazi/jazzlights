@@ -9,10 +9,10 @@
 
 namespace unisparks {
 
-struct Udp : public Network {
-  Udp(int p = DEFAULT_UDP_PORT,
-      const char* addr = DEFAULT_MULTICAST_ADDR);
-  Udp(const Udp&) = default;
+struct UnixUdpNetwork : public Network {
+  UnixUdpNetwork(int p = DEFAULT_UDP_PORT,
+                 const char* addr = DEFAULT_MULTICAST_ADDR);
+  UnixUdpNetwork(const UnixUdpNetwork&) = default;
 
   NetworkStatus update(NetworkStatus st) override;
   int recv(void* buf, size_t bufsize) override;

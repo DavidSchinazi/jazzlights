@@ -5,7 +5,7 @@
 using namespace unisparks;
 
 Player player;
-Udp network;
+UnixUdpNetwork network;
 const char* sysinfo();
 char version[32];
 

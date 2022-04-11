@@ -19,7 +19,7 @@
 namespace unisparks {
 
 // returns 2 when newly created, 1 when already existing, 0 on failure.
-int Udp::setupSocketForInterface(const char* ifName, struct in_addr localAddr) {
+int UnixUdpNetwork::setupSocketForInterface(const char* ifName, struct in_addr localAddr) {
   int fd = -1;
   auto search = sockets_.find(std::string(ifName));
   if (search != sockets_.end()) {
@@ -105,7 +105,7 @@ int Udp::setupSocketForInterface(const char* ifName, struct in_addr localAddr) {
   return 0;
 }
 
-void Udp::invalidateSocket(std::string ifName) {
+void UnixUdpNetwork::invalidateSocket(std::string ifName) {
   auto search = sockets_.find(ifName);
   if (search == sockets_.end()) {
     // No socket for ifName.
@@ -122,7 +122,7 @@ void Udp::invalidateSocket(std::string ifName) {
        fd, ifName.c_str());
 }
 
-bool Udp::setupSockets() {
+bool UnixUdpNetwork::setupSockets() {
   struct ifaddrs* ifaddr = NULL;
   if (getifaddrs(&ifaddr) == -1) {
     error("getifaddrs failed: %s", strerror(errno));
@@ -158,14 +158,14 @@ bool Udp::setupSockets() {
   return !sockets_.empty();
 }
 
-Udp::Udp(int p, const char* addr) : port_(static_cast<uint16_t>(p)) {
+UnixUdpNetwork::UnixUdpNetwork(int p, const char* addr) : port_(static_cast<uint16_t>(p)) {
   assert(strnlen(addr, sizeof(mcastAddrStr_) + 1) < sizeof(mcastAddrStr_));
   strncpy(mcastAddrStr_, addr, sizeof(mcastAddrStr_));
   int parsed = inet_aton(addr, &mcastAddr_);
   assert(parsed == 1);
 }
 
-NetworkStatus Udp::update(NetworkStatus status) {
+NetworkStatus UnixUdpNetwork::update(NetworkStatus status) {
   if (status == INITIALIZING || status == CONNECTING) {
     setupSockets();
     return CONNECTED;
@@ -184,7 +184,7 @@ NetworkStatus Udp::update(NetworkStatus status) {
   return status;
 }
 
-int Udp::recv(void* buf, size_t bufsize) {
+int UnixUdpNetwork::recv(void* buf, size_t bufsize) {
   for (auto pair : sockets_) {
     std::string ifName = pair.first;
     int fd = pair.second;
@@ -213,7 +213,7 @@ int Udp::recv(void* buf, size_t bufsize) {
   return -1;
 }
 
-void Udp::send(void* buf, size_t bufsize) {
+void UnixUdpNetwork::send(void* buf, size_t bufsize) {
   setupSockets();
   sockaddr_in sin = {
     .sin_family = AF_INET,

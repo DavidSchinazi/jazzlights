@@ -95,7 +95,7 @@ void Loader::loadPlayer(Player& player, const cpptoml::table& cfg) {
   }
 }
 
-static Udp network;
+static UnixUdpNetwork network;
 
 void Loader::load(const char* file, Player& player) {
   info("unisparks::Loader loading: %s", file);
