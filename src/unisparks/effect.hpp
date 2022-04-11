@@ -3,6 +3,9 @@
 #include "unisparks/frame.hpp"
 #include "unisparks/util/color.hpp"
 #include "unisparks/util/geom.hpp"
+#include "unisparks/util/log.hpp"
+
+#include <string>
 
 namespace unisparks {
 
@@ -14,6 +17,7 @@ class Effect {
   virtual Color color(const Pixel& px) const = 0;
   virtual void begin(const Frame&) const = 0;
   virtual void rewind(const Frame& frame) const = 0;
+  virtual std::string name() const = 0;
 };
 
 } // namespace unisparks

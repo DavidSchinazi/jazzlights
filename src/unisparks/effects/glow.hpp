@@ -7,7 +7,7 @@
 namespace unisparks {
 
 auto glow = []() {
-  return effect([ = ](const Frame & frame) {
+  return effect("glow", [ = ](const Frame & frame) {
 		constexpr uint32_t period = 3000;
 		constexpr uint32_t half_low_time = 10;
 		constexpr uint32_t half_high_time = 400;

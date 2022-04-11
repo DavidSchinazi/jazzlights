@@ -37,6 +37,10 @@ struct Transformed : Effect {
     return fr;
   }
 
+  std::string name() const override {
+    return std::string("transform-") + effect.name();
+  }
+
   Pixel tpixel(Pixel px) const {
     px.frame = tframe(px.frame);
     px.coord = transform(px.coord);

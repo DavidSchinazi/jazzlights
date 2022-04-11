@@ -45,7 +45,7 @@ drive some [NeoPixels](https://www.adafruit.com/index.php?main_page=category&cPa
 
     void loop()
     {
-      player.render();
+      player.render(millis());
       strip.show();
       delay(10);
     }

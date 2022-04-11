@@ -61,17 +61,12 @@ class Player {
   /**
    *  Render current frame to all strands
    */
-  void render();
-
-  /**
-   *  Render current frame to all strands
-   */
-  void render(Milliseconds dt, Milliseconds currentTime);
+  void render(Milliseconds currentTime);
 
   /**
    *  Play next effect in the playlist
    */
-  void next();
+  void next(Milliseconds currentTime);
 
   /**
    *  Pause playback
@@ -129,24 +124,13 @@ class Player {
   bool powerLimited;
 
  private:
-  void syncToNetwork();
-  bool syncEffectByName(const char* name, Milliseconds time);
-  bool syncEffectByIndex(size_t index, Milliseconds time);
-  bool switchToPlaylistItem(size_t index);
-  bool findEffect(const char* name, size_t* idx);
-  Frame effectFrame() const;
-  const char* effectName() const;
-  void jump(int idx);
-
-  /**
-   * This is similar to addEffect, but it will not override effects
-   * that were already added, and it also won't fail if the max number
-   * of effects was exceeded.
-   */
-  void addDefaultEffect(const char* name, const Effect& effect,
-                        bool autoplay = true);
-
-  void addDefaultEffects2D();
+  void syncToNetwork(Milliseconds currentTime);
+  void nextInner(Milliseconds currentTime);
+  void reactToUserInput(Milliseconds currentTime);
+  Frame effectFrame(const Effect* effect, Milliseconds currentTime);
+  Effect* currentEffect() const;
+  void updateToNewPattern(PatternBits newPattern, Milliseconds elapsedTime, Milliseconds currentTime);
+  void render(Milliseconds timeSinceLastRender, Milliseconds currentTime);
 
   Precedence GetLocalPrecedence(Milliseconds currentTime);
   Precedence GetLeaderPrecedence(Milliseconds currentTime);
@@ -162,28 +146,15 @@ class Player {
   size_t strandCount_;
 
   Box viewport_;
-  void* effectContext_;
+  void* effectContext_ = nullptr;
+  size_t effectContextSize_ = 0;
 
-  struct EffectInfo {
-    const Effect* effect;
-    const char* name;
-    bool autoplay;
-  };
-
-  EffectInfo effects_[255];
-  size_t effectCount_;
-  static constexpr size_t MAX_EFFECTS = sizeof(effects_) / sizeof(*effects_);
-
-  size_t effectIdx_;
-  Milliseconds time_;
+  Milliseconds elapsedTime_ = 0; // Time since start of this pattern.
+  PatternBits currentPattern_;
 
   BeatsPerMinute tempo_;
   Metre metre_;
   // Milliseconds lastDownbeatTime_;
-
-  uint8_t playlist_[255];
-  size_t playlistSize_;
-  size_t track_;
 
   bool paused_;
   bool loop_ = false;

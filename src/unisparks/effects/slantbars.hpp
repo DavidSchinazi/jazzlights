@@ -6,7 +6,7 @@
 namespace unisparks {
 
 auto slantbars = []() {
-  return effect([](const Frame & frame) {
+  return effect("slantbars", [](const Frame & frame) {
     int32_t mtn_period = adjustDuration(frame, 1000);
     uint8_t slantPos = 256 * frame.time / mtn_period;
     int w = width(frame);

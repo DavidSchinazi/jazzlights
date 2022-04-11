@@ -50,44 +50,6 @@ int comparePrecedence(Precedence leftPrecedence,
   return memcmp(leftDeviceId, rightDeviceId, sizeof(DeviceIdentifier));
 }
 
-#define KNOWN_PATTERNS \
-  X(0x01, "rainbow") \
-  X(0x02, "sp-ocean") \
-  X(0x03, "sp-heat") \
-  X(0x04, "threesine") \
-  X(0x05, "sp-lava") \
-  X(0x06, "sp-rainbow") \
-  X(0x07, "glitter") \
-  X(0x08, "sp-party") \
-  X(0x09, "sp-cloud") \
-  X(0x0a, "plasma") \
-  X(0x0b, "sp-forest") \
-  X(0x0c, "flame") \
-  X(0x0d, "rider") \
-  X(0x0e, "slantbars") \
-  X(0x0f, "roboscan") \
-  X(0x10, "crossbars") \
-  X(0x11, "glow") \
-  X(0x12, "synctest")
-
-uint32_t encodePattern(const char* patternName) {
-#define X(value, name) \
-  if (strncmp(name, patternName, 16) == 0) { return value; }
-  KNOWN_PATTERNS
-#undef X
-  return 0x00;
-}
-
-void decodePattern(uint32_t encodedPattern, char* patternName) {
-#define X(value, name) \
-  case value: strncpy(patternName, name, 16); return;
-  switch (encodedPattern) {
-    KNOWN_PATTERNS
-  }
-#undef X
-  strncpy(patternName, "rainbow", 16);
-}
-
 #if ESP32_BLE_SENDER
 void writeUint32(uint8_t* data, uint32_t number) {
   data[0] = static_cast<uint8_t>((number & 0xFF000000) >> 24);
@@ -103,13 +65,13 @@ void writeUint16(uint8_t* data, uint16_t number) {
 
 void SendBle(const DeviceIdentifier& originalSenderId,
              Precedence originalSenderPrecedence,
-             const char* effectNameToSend,
+             PatternBits effectToSend,
              Milliseconds elapsedTimeToSend,
              Milliseconds currentTime) {
   uint8_t blePayload[3 + 6 + 2 + 4 + 4 + 4] = {0xFF, 'L', '1'};
   memcpy(&blePayload[3], originalSenderId, 6);
   writeUint16(&blePayload[3 + 6], originalSenderPrecedence);
-  writeUint32(&blePayload[3 + 6 + 2], encodePattern(effectNameToSend));
+  writeUint32(&blePayload[3 + 6 + 2], effectToSend);
   writeUint32(&blePayload[3 + 6 + 2 + 4], 0); // Next pattern, will be used later.
   Esp32Ble::SetInnerPayload(sizeof(blePayload),
                             blePayload,
@@ -132,7 +94,7 @@ bool ReceiveBle(const Esp32Ble::ScanResult& sr,
                 Milliseconds currentTime,
                 DeviceIdentifier receivedOriginalSenderId,
                 Precedence* receivedOriginalSenderPrecedence,
-                char* receivedEffectName,
+                PatternBits* receivedEffect,
                 Milliseconds* receivedElapsedTime) {
   if (sr.innerPayloadLength < 3 + 6 + 2 + 4 + 4 + 4) {
     info("%u Ignoring received BLE with unexpected length %u",
@@ -165,7 +127,7 @@ bool ReceiveBle(const Esp32Ble::ScanResult& sr,
   }
   memcpy(receivedOriginalSenderId, &sr.innerPayload[3], 6);
   *receivedOriginalSenderPrecedence = readUint16(&sr.innerPayload[3 + 6]);
-  decodePattern(readUint32(&sr.innerPayload[3 + 6 + 2]), receivedEffectName);
+  *receivedEffect = readUint32(&sr.innerPayload[3 + 6 + 2]);
   *receivedElapsedTime = receivedTime;
   return true;
 }
@@ -173,7 +135,7 @@ bool ReceiveBle(const Esp32Ble::ScanResult& sr,
 
 #if WEARABLE
 
-auto calibration_effect = effect([](const Frame& frame) {
+auto calibration_effect = effect("calibration", [](const Frame& frame) {
   const bool blink = ((frame.time % 1000) < 500);
   return [ = ](const Pixel& pt) -> Color {
     const int32_t green = 0x00ff00, blue = 0x0000ff, red = 0xff0000;
@@ -206,13 +168,13 @@ auto calibration_effect = effect([](const Frame& frame) {
 
 #endif // WEARABLE
 
-auto black_effect = solid(BLACK);
-auto red_effect = solid(RED);
-auto green_effect = solid(GREEN);
-auto blue_effect = solid(BLUE);
+auto black_effect = solid(BLACK, "black");
+auto red_effect = solid(RED, "red");
+auto green_effect = solid(GREEN, "green");
+auto blue_effect = solid(BLUE, "blue");
 
-auto network_effect = [](NetworkStatus network_status) {
-  return effect([ = ](const Frame& frame) {
+auto network_effect = [](NetworkStatus network_status, const std::string& name) {
+  return effect(std::string("network-") + name, [ = ](const Frame& frame) {
     int32_t color = 0;
     switch (network_status) {
       case INITIALIZING:
@@ -245,58 +207,114 @@ auto network_effect = [](NetworkStatus network_status) {
   });
 };
 
-auto network_effect_initializing = network_effect(INITIALIZING);
-auto network_effect_disconnected = network_effect(DISCONNECTED);
-auto network_effect_connecting = network_effect(CONNECTING);
-auto network_effect_connected = network_effect(CONNECTED);
-auto network_effect_disconnecting = network_effect(DISCONNECTING);
-auto network_effect_connection_failed = network_effect(CONNECTION_FAILED);
+auto network_effect_initializing = network_effect(INITIALIZING, "init");
+auto network_effect_disconnected = network_effect(DISCONNECTED, "disconnected");
+auto network_effect_connecting = network_effect(CONNECTING, "connecting");
+auto network_effect_connected = network_effect(CONNECTED, "connected");
+auto network_effect_disconnecting = network_effect(DISCONNECTING, "disconnecting");
+auto network_effect_connection_failed = network_effect(CONNECTION_FAILED, "failed");
+auto synctest = effect("synctest", [](const Frame& frame) {
+    return [ = ](const Pixel& /*pt*/) -> Color {
+      Color colors[] = {0xff0000, 0x00ff00, 0x0000ff, 0xffffff};
+      return colors[int(frame.time / 1000) % 4];
+    };
+  });
 
-void  Player::addDefaultEffects2D() {
-  static auto synctest = effect([ = ](const Frame& frame) {
-      return [ = ](const Pixel& /*pt*/) -> Color {
-        Color colors[] = {0xff0000, 0x00ff00, 0x0000ff, 0xffffff};
-        return colors[int(frame.time / 1000) % 4];
-      };
-    });
-  // static auto synctest = sequence(1000, solid(RED), 1000, solid(GREEN)); //loop(100, sequence(1000, solid(RED), 1000, solid(GREEN)));
-  // addDefaultEffect("synctest", synctest, true);
+constexpr bool patternIsReserved(PatternBits pattern) {
+  // Patterns with lowest byte zero are reserved.
+  return (pattern & 0xFF) == 0;
+}
 
-  // addDefaultEffect("synctest", clone(
-  //   loop(100, sequence(1000, solid(RED), 1000, solid(GREEN)))
-  //   ), true );
-#if GLOW_ONLY
-  addDefaultEffect("glow", clone(glow()), true);
-#else // GLOW_ONLY
+// bitNum is [1-32] starting from the highest bit.
+constexpr bool patternbit(PatternBits pattern, uint8_t bitNum) {
+  return (pattern & (1 << (sizeof(PatternBits) * 8 - bitNum))) != 0;
+}
 
-  // For testing maximum power draw
-  //addDefaultEffect("solid", clone(solid(WHITE)), true);
+PatternBits computeNextPattern(PatternBits pattern) {
+  static_assert(sizeof(PatternBits) == 4, "32bits");
+  // This code is inspired by xorshift, amended to only require 32 bits of
+  // state. This algorithm was informed by 10 minutes of Googling and a half
+  // bottle of Malbec. It is guaranteed to produce numbers.
+	pattern ^= pattern << 13;
+	pattern ^= pattern >> 17;
+	pattern ^= pattern << 5;
+  pattern += 0x1337;
+  // Apparently xorshift doesn't have great entropy in the lower bits, so let's
+  // move those around just because we can.
+  const uint8_t shift_offset = (pattern / 16384) % 32;
+	pattern = (pattern << shift_offset) | (pattern >> (32 - shift_offset));
+  if (pattern == 0) { pattern = 0xDF123456; }
+  while (patternIsReserved(pattern)) {
+    // Skip reserved patterns.
+    pattern = computeNextPattern(pattern);
+  }
+  return pattern;
+}
 
-  addDefaultEffect("synctest", synctest, false);
+auto spin_rainbow_pattern = clone(rainbow());
+auto spin_forest_pattern = clone(SpinPlasma(OCPforest));
+auto spin_party_pattern = clone(SpinPlasma(OCPparty));
+auto spin_cloud_pattern = clone(SpinPlasma(OCPcloud));
+auto spin_ocean_pattern = clone(SpinPlasma(OCPocean));
+auto spin_lava_pattern = clone(SpinPlasma(OCPlava));
+auto spin_heat_pattern = clone(SpinPlasma(OCPheat));
+auto flame_pattern = clone(flame());
+auto glitter_pattern = clone(glitter());
+auto threesine_pattern = clone(threesine());
+auto rainbow_pattern = clone(rainbow());
 
+Effect* patternFromBits(PatternBits pattern) {
+  if (patternIsReserved(pattern)) {
+    return &red_effect;
+  } else {
+    if (patternbit(pattern, 1)) { // spin
+      if (patternbit(pattern, 2)) { // nature
+        if (patternbit(pattern, 3)) { // rainbow
+          return &rainbow_pattern;
+        } else { // frolick
+          if (patternbit(pattern, 4)) { // forest
+            return &spin_forest_pattern;
+          } else { // party
+            return &spin_party_pattern;
+          }
+        }
+      } else { // hot&cold
+        if (patternbit(pattern, 3)) { // cold
+          if (patternbit(pattern, 4)) { // cloud
+            return &spin_cloud_pattern;
+          } else { // ocean
+            return &spin_ocean_pattern;
+          }
+        } else { // hot
+          if (patternbit(pattern, 4)) { // lava
+            return &spin_lava_pattern;
+          } else { // heat
+            return &spin_heat_pattern;
+          }
+        }
+      }
+    } else { // custom
+      if (patternbit(pattern, 2)) { // sparkly
+        if (patternbit(pattern, 3)) { // flame
+          return &flame_pattern;
+        } else { // glitter
+          return &glitter_pattern;
+        }
+      } else { // shiny
+        if (patternbit(pattern, 3)) { // threesine
+          return &threesine_pattern;
+        } else { // rainbow
+          return &rainbow_pattern;
+        }
+      }
+    }
+  }
+  fatal("Failed to pick an effect %s",
+        displayBitsAsBinary(pattern).c_str());
+}
 
-  addDefaultEffect("rainbow", clone(rainbow()), true);
-  addDefaultEffect("sp-ocean", clone(SpinPlasma(OCPOcean)), true);
-  addDefaultEffect("sp-heat", clone(SpinPlasma(OCPHeat)), true);
-#if !CAMP_SIGN && !ROPELIGHT
-  addDefaultEffect("threesine", clone(threesine()), true);
-#endif // !CAMP_SIGN && !ROPELIGHT
-  addDefaultEffect("sp-lava", clone(SpinPlasma(OCPLava)), true);
-  addDefaultEffect("sp-rainbow", clone(SpinPlasma(OCPRainbow)), true);
-#if !CAMP_SIGN
-  addDefaultEffect("glitter", clone(glitter()), true);
-#endif // !CAMP_SIGN
-  addDefaultEffect("sp-party", clone(SpinPlasma(OCPParty)), true);
-  addDefaultEffect("sp-cloud", clone(SpinPlasma(OCPCloud)), true);
-  addDefaultEffect("plasma", clone(plasma()), true);
-  addDefaultEffect("sp-forest", clone(SpinPlasma(OCPForest)), true);
-#if WEARABLE && !CAMP_SIGN && !ROPELIGHT
-  addDefaultEffect("flame", clone(flame()), true);
-#endif // WEARABLE && !CAMP_SIGN && !ROPELIGHT
-
-  addDefaultEffect("rider", clone(rider()), false);
-  addDefaultEffect("slantbars", clone(slantbars()), false);
-#endif // GLOW_ONLY
+Effect* Player::currentEffect() const {
+  return patternFromBits(currentPattern_);
 }
 
 void render(const Layout& layout, Renderer* renderer,
@@ -315,16 +333,7 @@ void render(const Layout& layout, Renderer* renderer,
   }
 }
 
-inline int nextidx(int i, int first, int size) {
-  return i >= size - 1 ? first : i + 1;
-}
-
-inline int previdx(int i, int first, int size) {
-  return i > first ? i - 1 : size - 1;
-}
-
 Player::Player() {
-  effectContext_ = nullptr;
   reset();
 }
 
@@ -335,21 +344,19 @@ Player::~Player() {
 void Player::end() {
   free(effectContext_);
   effectContext_ = nullptr;
+  effectContextSize_ = 0;
 }
 
 void Player::reset() {
   end();
 
   ready_ = false;
+  loop_ = false;
   strandCount_ = 0;
-  effectCount_ = 0;
-  effectIdx_ = 0;
-  time_ = 0;
+  elapsedTime_ = 0;
+  currentPattern_ = 0x12345678;
   tempo_ = 120;
   metre_ = SIMPLE_QUADRUPLE;
-
-  playlistSize_ = 0;
-  track_ = 0;
 
   paused_ = false;
 
@@ -404,14 +411,6 @@ Player& Player::connect(Network& n) {
   return *this;
 }
 
-void Player::addDefaultEffect(const char* name, const Effect& effect,
-                              bool autoplay) {
-  size_t idx;
-  if (!findEffect(name, &idx) && effectCount_ < MAX_EFFECTS) {
-    effects_[effectCount_++] = {&effect, name, autoplay};
-  }
-}
-
 void Player::begin(const Layout& layout, Renderer& renderer,
                    Network& network) {
   reset();
@@ -441,39 +440,9 @@ void Player::begin(const Layout& layout, SimpleRenderFunc renderer) {
 }
 
 void Player::begin() {
-
-  addDefaultEffects2D();
-
-  if (effectCount_ < 1) {
-    fatal("Need at least one effect");
-  }
-
-  // Fill out playlist
-  playlistSize_ = 0;
-  for (size_t i = 0; i < effectCount_; ++i) {
-    if (effects_[i].autoplay) {
-      playlist_[playlistSize_++] = i;
-    }
-  }
-
-  if (playlistSize_ < 1) {
-    fatal("Need at least one autoplay effect");
-  }
-
   for (Strand* s = strands_;
        s < strands_ + strandCount_; ++s) {
     viewport_ = merge(viewport_, unisparks::bounds(*s->layout));
-  }
-
-  size_t ctxsz = 0;
-  for (auto efi : Slice<const EffectInfo> {effects_, effectCount_}) {
-    size_t sz = efi.effect->contextSize({viewport_, nullptr});
-    if (sz > ctxsz) {
-      ctxsz = sz;
-    }
-  }
-  if (ctxsz > 0) {
-    effectContext_ = malloc(ctxsz);
   }
 
   int pxcnt = 0;
@@ -481,54 +450,44 @@ void Player::begin() {
        s < strands_ + strandCount_; ++s) {
     pxcnt += s->layout->pixelCount();
   }
-  info("Starting Unisparks player %s (v%s); strands: %d%s, pixels: %d, effects: %d (%d in playlist), %s",
+  info("Starting Unisparks player %s (v%s); strands: %d%s, pixels: %d, %s",
        BOOT_MESSAGE,
        UNISPARKS_VERSION,
        strandCount_,
        strandCount_ < 1 ? " (CONTROLLER ONLY!)" : "",
        pxcnt,
-       effectCount_,
-       playlistSize_,
        network_ ? "networked" : "standalone");
 
-  debug("Registered effects:");
-  for (size_t i = 0, pli = 0; i < effectCount_; ++i) {
-    if (effects_[i].autoplay) {
-      debug("   %2d %s",  ++pli, effects_[i].name);
-    } else {
-      debug("      %s", effects_[i].name);
-    }
-  }
-  effectIdx_ = track_ = effectCount_;
-  switchToPlaylistItem(0);
   ready_ = true;
+  nextInner(timeMillis());
 }
 
-void Player::render() {
+void Player::render(Milliseconds currentTime) {
   if (!ready_) {
     begin();
   }
 
-  syncToNetwork();
-  Milliseconds currTime = timeMillis();
-  Milliseconds timeSinceLastRender = currTime - lastRenderTime_;
+  syncToNetwork(currentTime);
+  Milliseconds timeSinceLastRender = currentTime - lastRenderTime_;
   if (throttleFps_ > 0
       && timeSinceLastRender > 0
       && timeSinceLastRender < ONE_SECOND / throttleFps_) {
-    delay(ONE_SECOND / throttleFps_ - timeSinceLastRender);
-    currTime = timeMillis();
-    timeSinceLastRender = currTime - lastRenderTime_;
+    const Milliseconds delayDuration = ONE_SECOND / throttleFps_ - timeSinceLastRender;
+    info("%u delaying for %u", currentTime, delayDuration);
+    delay(delayDuration);
+    currentTime = timeMillis();
+    timeSinceLastRender = currentTime - lastRenderTime_;
   }
 
-  if (currTime - lastFpsProbeTime_ > ONE_SECOND) {
+  if (currentTime - lastFpsProbeTime_ > ONE_SECOND) {
     fps_ = framesSinceFpsProbe_;
-    lastFpsProbeTime_ = currTime;
+    lastFpsProbeTime_ = currentTime;
     framesSinceFpsProbe_ = 0;
   }
-  lastRenderTime_ = currTime;
+  lastRenderTime_ = currentTime;
   framesSinceFpsProbe_++;
 
-  render(timeSinceLastRender, currTime);
+  render(timeSinceLastRender, currentTime);
 }
 
 void Player::handleSpecial() {
@@ -548,13 +507,13 @@ void Player::stopSpecial() {
 }
 static constexpr Milliseconds kEffectDuration = 10 * ONE_SECOND;
 
-void Player::render(Milliseconds dt, Milliseconds currentTime) {
+void Player::render(Milliseconds timeSinceLastRender, Milliseconds currentTime) {
   if (!ready_) {
     begin();
   }
 
   if (!paused_) {
-    time_ += dt;
+    elapsedTime_ += timeSinceLastRender;
   }
 #if 0
   Milliseconds brd = ONE_MINUTE / tempo_;
@@ -565,13 +524,10 @@ void Player::render(Milliseconds dt, Milliseconds currentTime) {
   Milliseconds currEffectDuration = kEffectDuration;
 #endif
 
-  if (time_ > currEffectDuration && !loop_) {
-    info("%u Exceeded effect duration, switching from %s (index %u)"
-         " to next effect %s (index %u)",
-         currentTime, effects_[track_].name, track_,
-         effects_[nextidx(track_, 0, playlistSize_)].name,
-         nextidx(track_, 0, playlistSize_));
-    switchToPlaylistItem(nextidx(track_, 0, playlistSize_));
+  if (elapsedTime_ > currEffectDuration && !loop_) {
+    info("%u Exceeded effect duration, switching to next effect",
+         currentTime);
+    nextInner(currentTime);
   }
 
   static constexpr Milliseconds minLEDWriteTime = 10;
@@ -581,9 +537,7 @@ void Player::render(Milliseconds dt, Milliseconds currentTime) {
   }
   lastLEDWriteTime_ = currentTime;
 
-  const Effect* effect = effects_[effectIdx_].effect;
-
-  Frame efr = effectFrame();
+  const Effect* effect = currentEffect();
 
   switch (specialMode_) {
     case 1:
@@ -627,6 +581,7 @@ void Player::render(Milliseconds dt, Milliseconds currentTime) {
       break;
   }
 
+  Frame efr = effectFrame(effect, currentTime);
   effect->rewind(efr);
 
   for (Strand* s = strands_;
@@ -635,28 +590,25 @@ void Player::render(Milliseconds dt, Milliseconds currentTime) {
   }
 }
 
-void Player::next() {
-  jump(nextidx(track_, 0, playlistSize_));
+void Player::nextInner(Milliseconds currentTime) {
+  updateToNewPattern(computeNextPattern(currentPattern_),
+                     /*elapsedTime=*/0, currentTime);
 }
 
-void Player::jump(int index) {
-  lastUserInputTime_ = timeMillis();
+void Player::reactToUserInput(Milliseconds currentTime) {
+  lastUserInputTime_ = currentTime;
   followingLeader_ = false;
-  if (switchToPlaylistItem(index % playlistSize_) && network_) {
+  if (network_) {
     network_->isControllingEffects(true);
   }
 #if ESP32_BLE_SENDER
-  Esp32Ble::TriggerSendAsap(timeMillis());
+  Esp32Ble::TriggerSendAsap(currentTime);
 #endif // ESP32_BLE_SENDER
 }
 
-bool Player::switchToPlaylistItem(size_t index) {
-  loop_ = false;
-  if (track_ != index && index < playlistSize_
-      && syncEffectByIndex(playlist_[index], 0)) {
-    track_ = index;
-  }
-  return track_ == index;
+void Player::next(Milliseconds currentTime) {
+  nextInner(currentTime);
+  reactToUserInput(currentTime);
 }
 
 Precedence GetPrecedenceDepreciation(Milliseconds epochTime,
@@ -703,71 +655,54 @@ Precedence Player::GetLeaderPrecedence(Milliseconds currentTime) {
   return precedence;
 }
 
-bool Player::syncEffectByIndex(size_t index, Milliseconds time) {
-  if (index < effectCount_) {
-    if (effectIdx_ != index) {
-      effectIdx_ = index;
-      Frame fr = effectFrame();
-      effects_[effectIdx_].effect->begin(fr);
-      info("Playing effect %s", effectName());
-      lastLEDWriteTime_ = -1;
+void Player::updateToNewPattern(PatternBits newPattern,
+                                Milliseconds elapsedTime,
+                                Milliseconds currentTime) {
+  elapsedTime_ = elapsedTime;
+  if (newPattern == currentPattern_) {
+    return;
+  }
+  currentPattern_ = newPattern;
+  Effect* effect = currentEffect();
+  info("%u Switching to pattern %s %s",
+       currentTime,
+       effect->name().c_str(),
+       displayBitsAsBinary(currentPattern_).c_str());
+  effect->begin(effectFrame(effect, currentTime));
+  lastLEDWriteTime_ = -1;
 #if ESP32_BLE_SENDER
-      Milliseconds currentTime = timeMillis();
-      DeviceIdentifier localDeviceId;
-      Precedence followedPrecedence;
-      if (followingLeader_) {
-        memcpy(localDeviceId, leaderDeviceId_, sizeof(localDeviceId));
-        followedPrecedence = GetLeaderPrecedence(currentTime);
-        followedPrecedence = DepreciatePrecedence(followedPrecedence, 100);
-      } else {
-        Esp32Ble::GetLocalAddress(&localDeviceId);
-        followedPrecedence = GetLocalPrecedence(currentTime);
-      }
-      info("%u Sending BLE as %s " DEVICE_ID_FMT " precedence %u",
-           currentTime, (followingLeader_ ? "remote" : "local"),
-           DEVICE_ID_HEX(localDeviceId), followedPrecedence);
-      SendBle(localDeviceId, followedPrecedence,
-              effectName(), time, currentTime);
+  DeviceIdentifier localDeviceId;
+  Precedence followedPrecedence;
+  if (followingLeader_) {
+    memcpy(localDeviceId, leaderDeviceId_, sizeof(localDeviceId));
+    followedPrecedence = GetLeaderPrecedence(currentTime);
+    followedPrecedence = DepreciatePrecedence(followedPrecedence, 100);
+  } else {
+    Esp32Ble::GetLocalAddress(&localDeviceId);
+    followedPrecedence = GetLocalPrecedence(currentTime);
+  }
+  info("%u Sending BLE as %s " DEVICE_ID_FMT " precedence %u",
+        currentTime, (followingLeader_ ? "remote" : "local"),
+        DEVICE_ID_HEX(localDeviceId), followedPrecedence);
+  SendBle(localDeviceId, followedPrecedence,
+          currentPattern_, elapsedTime, currentTime);
 #endif // ESP32_BLE_SENDER
-    }
-    time_ = time;
-  }
-  return index == effectIdx_ && time == time_;
 }
 
-
-bool Player::syncEffectByName(const char* name, Milliseconds time) {
-  size_t i;
-  if (!findEffect(name, &i)) {
-    warn("Ignored unknown effect %s", name);
-    return false;
-  }
-  // If effect is in playlist, sync playlist state to it.
-  for (size_t t = 0; t < playlistSize_; t++) {
-    if (playlist_[t] == i) {
-      track_ = t;
-      break;
-    }
-  }
-  return syncEffectByIndex(i, time);
-}
-
-void Player::syncToNetwork() {
+void Player::syncToNetwork(Milliseconds currentTime) {
   if (!network_) {
     return;
   }
 
-  const char* pattern = effectName();
-  Milliseconds time = time_;
-  BeatsPerMinute tempo = tempo_;
-  if (network_->sync(&pattern, &time, &tempo)) {
+  Milliseconds elapsedTime = elapsedTime_;
+  PatternBits pattern = currentPattern_;
+  if (network_->sync(&pattern, &elapsedTime)) {
     lastLEDWriteTime_ = -1;
-    syncEffectByName(pattern, time);
+    updateToNewPattern(pattern, elapsedTime, currentTime);
   }
 #if ESP32_BLE_RECEIVER
-  const Milliseconds currentTime = timeMillis();
   for (const Esp32Ble::ScanResult& sr : Esp32Ble::GetScanResults()) {
-    char receivedPattern[17] = {};
+    PatternBits receivedPattern;
     Milliseconds receivedElapsedTime;
     DeviceIdentifier receivedDeviceId;
     Precedence receivedPrecedence;
@@ -775,7 +710,7 @@ void Player::syncToNetwork() {
                     currentTime,
                     receivedDeviceId,
                     &receivedPrecedence,
-                    receivedPattern,
+                    &receivedPattern,
                     &receivedElapsedTime)) {
       continue;
     }
@@ -795,7 +730,8 @@ void Player::syncToNetwork() {
     }
     if (receivedElapsedTime > kEffectDuration && !loop_) {
       // Ignore this message because the sender already switched effects.
-      info("%u Ignoring received BLE with time past duration", currentTime);
+      info("%u Ignoring received BLE with time %u past duration %u",
+           currentTime, receivedElapsedTime, kEffectDuration);
       continue;
     }
     if (comparePrecedence(followedPrecedence, followedDeviceId,
@@ -828,10 +764,12 @@ void Player::syncToNetwork() {
     memcpy(leaderDeviceId_, receivedDeviceId, sizeof(leaderDeviceId_));
     leaderPrecedence_ = receivedPrecedence;
     lastLeaderReceiveTime_ = currentTime;
-    info("%u Received BLE: switching to pattern %s elapsedTime %u",
-         currentTime, receivedPattern, receivedElapsedTime);
+    info("%u Received BLE: switching to pattern %s %s elapsedTime %u",
+         currentTime, patternFromBits(receivedPattern)->name().c_str(),
+         displayBitsAsBinary(receivedPattern).c_str(),
+         receivedElapsedTime);
     lastLEDWriteTime_ = -1;
-    syncEffectByName(receivedPattern, receivedElapsedTime);
+    updateToNewPattern(receivedPattern, receivedElapsedTime, currentTime);
   }
 #endif // ESP32_BLE_RECEIVER
 }
@@ -858,25 +796,20 @@ void Player::loopOne() {
   loop_ = true;
 }
 
-const char* Player::effectName() const {
-  return effects_[effectIdx_].name;
-}
-
-bool Player::findEffect(const char* name, size_t* idx) {
-  for (size_t i = 0; i < effectCount_; ++i) {
-    if (!strcmp(name, effects_[i].name)) {
-      *idx = i;
-      return true;
-    }
+Frame Player::effectFrame(const Effect* effect, Milliseconds currentTime) {
+  // Ensure effectContext_ is big enough for this effect.
+  const size_t effectContextSize = effect->contextSize({viewport_, nullptr});
+  if (effectContextSize > effectContextSize_) {
+    info("%u realloc context from %zu to %zu",
+         currentTime, effectContextSize_, effectContextSize);
+    effectContextSize_ = effectContextSize;
+    effectContext_ = realloc(effectContext_, effectContextSize_);
   }
-  return false;
-}
 
-Frame Player::effectFrame() const {
   Frame frame;
   frame.animation.viewport = viewport_;
   frame.animation.context = effectContext_;
-  frame.time = time_;
+  frame.time = elapsedTime_;
   frame.tempo = tempo_;
   frame.metre = metre_;
   return frame;
@@ -890,13 +823,14 @@ const char* Player::command(const char* req) {
   if (!strncmp(req, "status?", MAX_CMD_LEN)) {
     // do nothing
   } else  if (!strncmp(req, "next", MAX_CMD_LEN)) {
-    next();
+    next(timeMillis());
   } else {
     snprintf(res, sizeof(res), "! unknown command");
     responded = true;
   }
   if (!responded) {
-    snprintf(res, sizeof(res), "play %s %d", effectName(), time_);
+    snprintf(res, sizeof(res), "play %s %d",
+             currentEffect()->name().c_str(), elapsedTime_);
   }
   debug("[%s] -> [%s]", req, res);
   return res;

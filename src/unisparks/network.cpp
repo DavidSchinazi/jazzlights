@@ -31,6 +31,19 @@ constexpr uint32_t htonl(uint32_t n) {
 
 namespace unisparks {
 
+std::string displayBitsAsBinary(PatternBits p) {
+  static_assert(sizeof(p) == 4, "32bits");
+  char bits[33] = {};
+  for (int b = 0; b < 32; b++) {
+    if ((p >> b) & 1) {
+      bits[b] = '.';
+    } else {
+      bits[b] = '_';
+    }
+  }
+  return std::string(bits);
+}
+
 static constexpr int msgcodeEffectFrame = 0xDF0002;
 static constexpr Milliseconds effectUpdatePeriod = 1000;
 static constexpr Milliseconds maxMissingEffectMasterPeriod = 2000;
@@ -41,7 +54,7 @@ struct Message {
     struct Frame {
       int32_t sequence;
       char reserved[8];
-      char pattern[16];
+      PatternBits pattern;
       int32_t time;
       int32_t reserved1;
       uint16_t reserved2;
@@ -84,8 +97,7 @@ void Network::reconnect() {
 //   /* not implemented yet */
 // }
 
-bool Network::sync(const char** pattern, Milliseconds* time,
-                   BeatsPerMinute* /*tempo*/) {
+bool Network::sync(PatternBits* pattern, Milliseconds* time) {
   Milliseconds currTime = timeMillis();
   if (status_ == CONNECTION_FAILED) {
     backoffTimeout_ = min(maxBackoffTimeout_, backoffTimeout_ * 2);
@@ -97,7 +109,8 @@ bool Network::sync(const char** pattern, Milliseconds* time,
   }
   if (status_ != CONNECTED) {
     if (isEffectMaster_) {
-      info("No longer effect master because of network disconnection");
+      info("%u No longer effect master because of network disconnection",
+           currTime);
       isEffectMaster_ = false;
     }
     effectLastRxTime_ = 0;
@@ -113,7 +126,8 @@ bool Network::sync(const char** pattern, Milliseconds* time,
 
   if (!isEffectMaster_
       && currTime - effectLastRxTime_ > maxMissingEffectMasterPeriod) {
-    info("Haven't heard from effect master for a while, taking over");
+    info("%u Haven't heard from effect master for a while, taking over",
+         currTime);
     isEffectMaster_ = true;
   }
 
@@ -122,20 +136,18 @@ bool Network::sync(const char** pattern, Milliseconds* time,
   // Do we need to broadcast?
   if (isEffectMaster_ && (effectLastTxTime_ < 1
                           || currTime - effectLastTxTime_ > effectUpdatePeriod
-                          || strncmp(*pattern, lastSentPattern_,
-                                     sizeof(lastSentPattern_)) != 0)) {
+                          || *pattern != lastSentPattern_)) {
     memset(&packet, 0, sizeof(packet));
     packet.data.frame.reserved[6] = 0x33;
-    packet.data.frame.reserved[7] = 0x66;
+    packet.data.frame.reserved[7] = 0x77;
     packet.msgcode = htonl(msgcodeEffectFrame);
-    strncpy(packet.data.frame.pattern, *pattern,
-            sizeof(packet.data.frame.pattern));
-    strncpy(lastSentPattern_, *pattern,
-            sizeof(lastSentPattern_));
+    packet.data.frame.pattern = *pattern;
+    lastSentPattern_ = *pattern;
     packet.data.frame.time = htonl(*time);
     effectLastTxTime_ = currTime;
     send(&packet, sizeof(packet));
-    info("Sent pattern %s, time %d ms", *pattern, *time);
+    info("%u Sent pattern %s, time %d ms",
+         currTime, displayBitsAsBinary(*pattern).c_str(), *time);
   }
 
   // Now let's see if we received anything
@@ -144,35 +156,36 @@ bool Network::sync(const char** pattern, Milliseconds* time,
     return false;
   }
   if (n < static_cast<int>(sizeof(packet))) {
-    error("Received packet too short, received %d bytes, expected at least %d bytes",
-          n, sizeof(packet));
+    error("%u Received packet too short, received %d bytes, expected at least %d bytes",
+          currTime, n, sizeof(packet));
     return false;
   }
   int32_t msgcode = ntohl(packet.msgcode);
   if (msgcode == msgcodeEffectFrame) {
     if (packet.data.frame.reserved[6] != 0x33 ||
-        packet.data.frame.reserved[7] != 0x66) {
-      error("Ignoring message with bad reserved");
+        packet.data.frame.reserved[7] != 0x77) {
+      error("%u Ignoring message with bad reserved", currTime);
       return false;
     }
     effectLastRxTime_ = currTime;
 
     if (effectLastRxTime_ - effectLastTxTime_ < 50) {
-      debug("This must be my own packet, ignoring");
+      debug("%u This must be my own packet, ignoring", currTime);
       return false;
     }
 
     if (isEffectMaster_) {
-      info("No longer effect master because of received packet");
+      info("%u No longer effect master because of received packet", currTime);
     }
     isEffectMaster_ = false;
-    strncpy(patternBuf_, packet.data.frame.pattern, sizeof(patternBuf_));
+    pattern_ = packet.data.frame.pattern;
     *time = static_cast<Milliseconds>(ntohl(packet.data.frame.time));
-    *pattern = patternBuf_;
-    info("Received pattern %s, time %d ms", *pattern, *time);
+    *pattern = pattern_;
+    info("%u Received pattern %s, time %d ms",
+         currTime, displayBitsAsBinary(*pattern).c_str(), *time);
     return true;
   } else {
-    error("Received unknown message, code: %d", msgcode);
+    error("%u Received unknown message, code: %d", currTime, msgcode);
     return false;
   }
   return false;

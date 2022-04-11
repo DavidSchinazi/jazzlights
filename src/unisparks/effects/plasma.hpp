@@ -13,7 +13,7 @@
 namespace unisparks {
 
 auto plasma = []() {
-  return effect([](const Frame & frame) {
+  return effect("plasma", [](const Frame & frame) {
     using internal::sin8;
     using internal::cos8;
 
@@ -227,7 +227,7 @@ struct CRGB {
   };
 };
 
-extern const TProgmemRGBPalette16 CloudColors_p FL_PROGMEM =
+extern const TProgmemRGBPalette16 cloudColors_p FL_PROGMEM =
 {
     CRGB::Blue,
     CRGB::DarkBlue,
@@ -250,7 +250,7 @@ extern const TProgmemRGBPalette16 CloudColors_p FL_PROGMEM =
     CRGB::SkyBlue
 };
 
-extern const TProgmemRGBPalette16 LavaColors_p FL_PROGMEM =
+extern const TProgmemRGBPalette16 lavaColors_p FL_PROGMEM =
 {
     CRGB::Black,
     CRGB::Maroon,
@@ -273,7 +273,7 @@ extern const TProgmemRGBPalette16 LavaColors_p FL_PROGMEM =
 };
 
 
-extern const TProgmemRGBPalette16 OceanColors_p FL_PROGMEM =
+extern const TProgmemRGBPalette16 oceanColors_p FL_PROGMEM =
 {
     CRGB::MidnightBlue,
     CRGB::DarkBlue,
@@ -296,7 +296,7 @@ extern const TProgmemRGBPalette16 OceanColors_p FL_PROGMEM =
     CRGB::LightSkyBlue
 };
 
-extern const TProgmemRGBPalette16 ForestColors_p FL_PROGMEM =
+extern const TProgmemRGBPalette16 forestColors_p FL_PROGMEM =
 {
     CRGB::DarkGreen,
     CRGB::DarkGreen,
@@ -320,7 +320,7 @@ extern const TProgmemRGBPalette16 ForestColors_p FL_PROGMEM =
 };
 
 /// HSV Rainbow
-extern const TProgmemRGBPalette16 RainbowColors_p FL_PROGMEM =
+extern const TProgmemRGBPalette16 rainbowColors_p FL_PROGMEM =
 {
     0xFF0000, 0xD52A00, 0xAB5500, 0xAB7F00,
     0xABAB00, 0x56D500, 0x00FF00, 0x00D52A,
@@ -330,7 +330,7 @@ extern const TProgmemRGBPalette16 RainbowColors_p FL_PROGMEM =
 
 /// HSV Rainbow colors with alternatating stripes of black
 #define RainbowStripesColors_p RainbowStripeColors_p
-extern const TProgmemRGBPalette16 RainbowStripeColors_p FL_PROGMEM =
+extern const TProgmemRGBPalette16 rainbowStripeColors_p FL_PROGMEM =
 {
     0xFF0000, 0x000000, 0xAB5500, 0x000000,
     0xABAB00, 0x000000, 0x00FF00, 0x000000,
@@ -342,7 +342,7 @@ extern const TProgmemRGBPalette16 RainbowStripeColors_p FL_PROGMEM =
 /// Basically, everything but the greens, which tend to make
 /// people's skin look unhealthy.  This palette is good for
 /// lighting at a club or party, where it'll be shining on people.
-extern const TProgmemRGBPalette16 PartyColors_p FL_PROGMEM =
+extern const TProgmemRGBPalette16 partyColors_p FL_PROGMEM =
 {
     0x5500AB, 0x84007C, 0xB5004B, 0xE5001B,
     0xE81700, 0xB84700, 0xAB7700, 0xABAB00,
@@ -356,7 +356,7 @@ extern const TProgmemRGBPalette16 PartyColors_p FL_PROGMEM =
 /// the usual 0-255, as the last 15 colors will be
 /// 'wrapping around' from the hot end to the cold end,
 /// which looks wrong.
-extern const TProgmemRGBPalette16 HeatColors_p FL_PROGMEM =
+extern const TProgmemRGBPalette16 heatColors_p FL_PROGMEM =
 {
     0x000000,
     0x330000, 0x660000, 0x990000, 0xCC0000, 0xFF0000,
@@ -368,30 +368,30 @@ static inline RgbaColor flToDf(CRGB ori) {
   return RgbaColor(ori.r, ori.g, ori.b);
 }
 
+#define ALL_COLORS \
+  X(cloud) \
+  X(lava) \
+  X(ocean) \
+  X(forest) \
+  X(rainbow) \
+  X(party) \
+  X(heat)
+
+
 enum OurColorPalette {
-  OCPCloud = 0,
-  OCPLava = 1,
-  OCPOcean = 2,
-  OCPForest = 3,
-  OCPRainbow = 4,
-  OCPParty = 5,
-  OCPHeat = 6,
+#define X(c) OCP##c,
+  ALL_COLORS
+#undef X
 };
 
 static inline RgbaColor colorFromOurPalette(OurColorPalette ocp, uint8_t color) {
 #define RET_COLOR(c) return flToDf(c##Colors_p[color >> 4])
-#define CASE_RET_COLOR(c) case OCP##c: RET_COLOR(c)
+#define X(c) case OCP##c: RET_COLOR(c);
   switch (ocp) {
-    CASE_RET_COLOR(Cloud);
-    CASE_RET_COLOR(Lava);
-    CASE_RET_COLOR(Ocean);
-    CASE_RET_COLOR(Forest);
-    CASE_RET_COLOR(Rainbow);
-    CASE_RET_COLOR(Party);
-    CASE_RET_COLOR(Heat);
+    ALL_COLORS
   }
-  RET_COLOR(Rainbow);
-#undef CASE_RET_COLOR
+  RET_COLOR(rainbow);
+#undef X
 #undef RET_COLOR
 }
 
@@ -417,17 +417,25 @@ class SpinPlasma : public Effect {
   void begin(const Frame&) const override {}
   void rewind(const Frame& /*frame*/) const override {}
 
-  OurColorPalette ocp_ = OCPRainbow;
+  OurColorPalette ocp_ = OCPrainbow;
 public:
   SpinPlasma(OurColorPalette ocp) : ocp_(ocp) {}
+  std::string name() const override {
+    switch(ocp_) {
+#define X(c) case OCP##c: return "sp-" #c;
+  ALL_COLORS
+#undef X
+    }
+    return "sp-unknown";
+  }
 };
 
 auto spinplasma = []() {
-  return effect([](const Frame & frame) {
+  return effect("spinplasma", [](const Frame & frame) {
     using internal::sin8;
     using internal::cos8;
 
-    OurColorPalette ocp_ = OCPRainbow;
+    OurColorPalette ocp_ = OCPrainbow;
 
     constexpr int32_t speed = PLASMA_SPEED;
     uint8_t offset = speed * frame.time / 255;

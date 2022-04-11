@@ -4,7 +4,13 @@
 #include "unisparks/util/time.hpp"
 #include "unisparks/util/rhytm.hpp"
 
+#include <string>
+
 namespace unisparks {
+
+using PatternBits = uint32_t;
+
+std::string displayBitsAsBinary(PatternBits p);
 
 class Network;
 
@@ -24,7 +30,7 @@ class Network {
   void disconnect();
   void reconnect();
 
-  bool sync(const char** pattern, Milliseconds* time, BeatsPerMinute* tempo);
+  bool sync(PatternBits* pattern, Milliseconds* time);
 
   NetworkStatus status() const;
 
@@ -47,8 +53,8 @@ class Network {
   Milliseconds backoffTimeout_ = minBackoffTimeout_;
 
   bool isEffectMaster_ = false;
-  char patternBuf_[16] = {0,};
-  char lastSentPattern_[16] = {0,};
+  PatternBits pattern_ = 0;
+  PatternBits lastSentPattern_ = 0;
 
   Milliseconds effectLastTxTime_ = 0;
   Milliseconds effectLastRxTime_ = 0;

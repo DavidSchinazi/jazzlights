@@ -26,6 +26,10 @@ struct WrappedEffect : Effect {
     return effect.color(transform(px));
   }
 
+  std::string name() const override {
+    return std::string("wrapped-") + effect.name();
+  }
+
   template<typename P> P transform(const P& v) const {
     return v;
   }

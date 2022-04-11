@@ -102,7 +102,7 @@ int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen) {
   while (!glfwWindowShouldClose(window)) {
     glClear(GL_COLOR_BUFFER_BIT);
 
-    player->render();
+    player->render(timeMillis());
 
     std::stringstream title;
     using std::setw;

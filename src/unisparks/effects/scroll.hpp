@@ -28,6 +28,10 @@ struct Scroll : Effect {
     return effect.color(tpx);
   }
 
+  std::string name() const override {
+    return "scroll";
+  }
+
   Frame tframe(Frame fr) const {
     Transform tr = IDENTITY;
     tr.offset = (-fr.time / 100.0) * speed;

@@ -6,7 +6,7 @@
 namespace unisparks {
 
 auto glitter = []() {
-  return effect([ = ](const Frame & frame) {
+  return effect("glitter", [ = ](const Frame & frame) {
     uint8_t hue = cycleHue(frame);
 
     return [ = ](const Pixel& /*pt*/) -> Color {

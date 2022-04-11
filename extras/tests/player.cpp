@@ -22,8 +22,8 @@ TEST_CASE("Player invariants", "[player]") {
 
   pl.begin(bigPane, dummyrender);
 
-  pl.render();
-  pl.render(); // check that we don't crash
+  pl.render(timeMillis());
+  pl.render(timeMillis()); // check that we don't crash
 
   //    pl.begin();    // should do nothing
   //    pl.begin(); // should do nothing

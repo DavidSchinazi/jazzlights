@@ -4,8 +4,8 @@
 
 namespace unisparks {
 
-auto solid = [](Color color) {
-  return effect([ = ](const Frame& /*frame*/) {
+auto solid = [](Color color, const std::string& name) {
+  return effect(name, [ = ](const Frame& /*frame*/) {
     return [ = ](const Pixel& /*pt*/) -> Color {
       return color;
     };

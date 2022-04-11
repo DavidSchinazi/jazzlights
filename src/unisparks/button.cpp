@@ -126,7 +126,7 @@ void modeAct(Player& player, const Milliseconds currentMillis) {
     case kNext:
       info("%u Next button has been hit", currentMillis);
       player.stopSpecial();
-      player.next();
+      player.next(currentMillis);
       break;
     case kPrevious:
       info("%u Back button has been hit", currentMillis);
@@ -477,7 +477,7 @@ void doButtons(Player& player, const Milliseconds currentMillis) {
     case BTN_RELEASED:
       info("Next button has been hit");
       player.stopSpecial();
-      player.next();
+      player.next(currentMillis);
       break;
 
     case BTN_LONGPRESS:

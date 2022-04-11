@@ -17,7 +17,7 @@ int main(int, char**) {
   player.begin();
   int fps = -1;
   for(;;) {
-    player.render();
+    player.render(millis());
     if (player.fps() != fps) {
       info("FPS: %d", fps);
       fps = player.fps();

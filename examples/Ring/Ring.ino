@@ -59,7 +59,7 @@ void loop()
       }
   } 
   prevButtonState = buttonState;
-  player.render();
+  player.render(millis());
   strip.show();
   delay(10);
 }

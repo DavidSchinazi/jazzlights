@@ -7,7 +7,7 @@ namespace unisparks {
 
 
 auto rider = []() {
-  return effect([](const Frame & frame) {
+  return effect("rider", [](const Frame & frame) {
     Milliseconds riderPeriod = adjustDuration(frame, 2000);
     Milliseconds huePeriod = adjustDuration(frame, 8000);
 
@@ -34,7 +34,7 @@ auto rider = []() {
 };
 
 auto rider2 = []() {
-  return effect([](const Frame & frame) {
+  return effect("rider2", [](const Frame & frame) {
     Milliseconds riderPeriod = adjustDuration(frame, 2000);
     uint8_t hue = cycleHue(frame);
     Coord riderWidth = width(frame) / 4;

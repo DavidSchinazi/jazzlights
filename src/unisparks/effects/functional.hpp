@@ -10,8 +10,8 @@ class FrameFuncEffect : public Effect {
  public:
   using ContextT = typename function_traits<F>::return_type;
 
-  FrameFuncEffect(const F& f) : initFrame_(f) {
-  }
+  FrameFuncEffect(const std::string& name, const F& f) :
+    name_(name), initFrame_(f) {}
 
   FrameFuncEffect(const FrameFuncEffect& other) = default;
 
@@ -32,14 +32,19 @@ class FrameFuncEffect : public Effect {
     return (*static_cast<ContextT*>(pixel.frame.animation.context))(pixel);
   }
 
+  std::string name() const override {
+    return name_;
+  }
+
  private:
+  std::string name_;
   F initFrame_;
 };
 
 
 template<typename F>
-constexpr FrameFuncEffect<F> effect(const F& f) {
-  return FrameFuncEffect<F>(f);
+constexpr FrameFuncEffect<F> effect(const std::string& name, const F& f) {
+  return FrameFuncEffect<F>(name, f);
 }
 
 
