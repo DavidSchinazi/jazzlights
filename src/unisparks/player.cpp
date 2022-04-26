@@ -47,91 +47,8 @@ int comparePrecedence(Precedence leftPrecedence,
   } else if (leftPrecedence > rightPrecedence) {
     return 1;
   }
-  return memcmp(leftDeviceId, rightDeviceId, sizeof(NetworkDeviceId));
+  return leftDeviceId.compare(rightDeviceId);
 }
-
-#if ESP32_BLE_SENDER
-void writeUint32(uint8_t* data, uint32_t number) {
-  data[0] = static_cast<uint8_t>((number & 0xFF000000) >> 24);
-  data[1] = static_cast<uint8_t>((number & 0x00FF0000) >> 16);
-  data[2] = static_cast<uint8_t>((number & 0x0000FF00) >> 8);
-  data[3] = static_cast<uint8_t>((number & 0x000000FF));
-}
-
-void writeUint16(uint8_t* data, uint16_t number) {
-  data[0] = static_cast<uint8_t>((number & 0xFF00) >> 8);
-  data[1] = static_cast<uint8_t>((number & 0x00FF));
-}
-
-void SendBle(const NetworkDeviceId& originalSenderId,
-             Precedence originalSenderPrecedence,
-             PatternBits effectToSend,
-             Milliseconds elapsedTimeToSend,
-             Milliseconds currentTime) {
-  uint8_t blePayload[3 + 6 + 2 + 4 + 4 + 4] = {0xFF, 'L', '1'};
-  memcpy(&blePayload[3], originalSenderId, 6);
-  writeUint16(&blePayload[3 + 6], originalSenderPrecedence);
-  writeUint32(&blePayload[3 + 6 + 2], effectToSend);
-  writeUint32(&blePayload[3 + 6 + 2 + 4], 0); // Next pattern, will be used later.
-  Esp32Ble::SetInnerPayload(sizeof(blePayload),
-                            blePayload,
-                            3 + 6 + 2 + 4 + 4,
-                            currentTime - elapsedTimeToSend,
-                            currentTime);
-}
-#endif // ESP32_BLE_SENDER
-
-#if ESP32_BLE_RECEIVER
-uint32_t readUint32(const uint8_t* data) {
-  return (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | (data[3]);
-}
-
-uint16_t readUint16(const uint8_t* data) {
-  return (data[0] << 8) | (data[1]);
-}
-
-bool ReceiveBle(const Esp32Ble::ScanResult& sr,
-                Milliseconds currentTime,
-                NetworkDeviceId receivedOriginalSenderId,
-                Precedence* receivedOriginalSenderPrecedence,
-                PatternBits* receivedEffect,
-                Milliseconds* receivedElapsedTime) {
-  if (sr.innerPayloadLength < 3 + 6 + 2 + 4 + 4 + 4) {
-    info("%u Ignoring received BLE with unexpected length %u",
-         currentTime, sr.innerPayloadLength);
-    return false;
-  }
-  static constexpr uint8_t prefix[3] = {0xFF, 'L', '1'};
-  if (memcmp(sr.innerPayload, prefix, sizeof(prefix)) != 0) {
-    info("%u Ignoring received BLE with unexpected prefix", currentTime);
-    return false;
-  }
-  Milliseconds receivedTime =
-    Esp32Ble::ReadTimeFromPayload(sr.innerPayloadLength,
-                                  sr.innerPayload,
-                                  3 + 6 + 2 + 4 + 4);
-  if (receivedTime == 0xFFFFFFFF) {
-    info("%u Ignoring received BLE with unexpected time", currentTime);
-    return false;
-  }
-  if (sr.receiptTime <= currentTime) {
-    const Milliseconds timeSinceReceipt = currentTime - sr.receiptTime;
-    if (receivedTime < 0xFFFFFFFF - timeSinceReceipt) {
-      receivedTime += timeSinceReceipt;
-    } else {
-      receivedTime = 0xFFFFFFFF;
-    }
-  } else {
-    error("%u Unexpected receiptTime %u", currentTime, sr.receiptTime);
-    return false;
-  }
-  memcpy(receivedOriginalSenderId, &sr.innerPayload[3], 6);
-  *receivedOriginalSenderPrecedence = readUint16(&sr.innerPayload[3 + 6]);
-  *receivedEffect = readUint32(&sr.innerPayload[3 + 6 + 2]);
-  *receivedElapsedTime = receivedTime;
-  return true;
-}
-#endif // ESP32_BLE_RECEIVER
 
 #if WEARABLE
 
@@ -369,7 +286,7 @@ void Player::reset() {
   lastLEDWriteTime_ = -1;
   lastUserInputTime_ = -1;
   followingLeader_ = false;
-  memset(leaderDeviceId_, 0, sizeof(leaderDeviceId_));
+  leaderDeviceId_ = NetworkDeviceId();
   leaderPrecedence_ = 0;
   lastLeaderReceiveTime_ = -1;
 
@@ -602,7 +519,7 @@ void Player::reactToUserInput(Milliseconds currentTime) {
     network_->triggerSendAsap(currentTime);
   }
 #if ESP32_BLE_SENDER
-  Esp32Ble::TriggerSendAsap(currentTime);
+  Esp32Ble::Get()->triggerSendAsap(currentTime);
 #endif // ESP32_BLE_SENDER
 }
 
@@ -664,13 +581,13 @@ if (followingLeader_) {
 }
 
 void Player::GetFollowedDeviceId(NetworkDeviceId* followedDeviceId) {
-if (followingLeader_) {
-    memcpy(followedDeviceId, leaderDeviceId_, sizeof(*followedDeviceId));
+  if (followingLeader_) {
+    *followedDeviceId = leaderDeviceId_;
   } else {
 #if ESP32_BLE_SENDER
     Esp32Ble::GetLocalAddress(followedDeviceId);
 #else // ESP32_BLE_SENDER
-    memset(followedDeviceId, 0, sizeof(*followedDeviceId)); // TODO
+    *followedDeviceId = NetworkDeviceId(); // TODO
 #endif // ESP32_BLE_SENDER
   }
 }
@@ -691,14 +608,17 @@ void Player::updateToNewPattern(PatternBits newPattern,
   effect->begin(effectFrame(effect, currentTime));
   lastLEDWriteTime_ = -1;
 #if ESP32_BLE_SENDER
-  NetworkDeviceId followedDeviceId;
-  GetFollowedDeviceId(&followedDeviceId);
-  Precedence followedPrecedence = GetFollowedPrecedence(currentTime);
+  NetworkMessage message;
+  GetFollowedDeviceId(&message.originator);
+  // TODO message.sender;
+  message.currentPattern = currentPattern_;
+  // TODO message.nextPattern;
+  message.elapsedTime = elapsedTime;
+  message.precedence = GetFollowedPrecedence(currentTime);
   info("%u Sending BLE as %s " DEVICE_ID_FMT " precedence %u",
         currentTime, (followingLeader_ ? "remote" : "local"),
-        DEVICE_ID_HEX(followedDeviceId), followedPrecedence);
-  SendBle(followedDeviceId, followedPrecedence,
-          currentPattern_, elapsedTime, currentTime);
+        DEVICE_ID_HEX(message.originator), message.precedence);
+  Esp32Ble::Get()->setMessageToSend(message, currentTime);
 #endif // ESP32_BLE_SENDER
 }
 
@@ -722,44 +642,39 @@ void Player::syncToNetwork(Milliseconds currentTime) {
                        currentTime);
   }
 #if ESP32_BLE_RECEIVER
-  for (const Esp32Ble::ScanResult& sr : Esp32Ble::GetScanResults()) {
-    PatternBits receivedPattern;
-    Milliseconds receivedElapsedTime;
-    NetworkDeviceId receivedDeviceId;
-    Precedence receivedPrecedence;
-    if (!ReceiveBle(sr,
-                    currentTime,
-                    receivedDeviceId,
-                    &receivedPrecedence,
-                    &receivedPattern,
-                    &receivedElapsedTime)) {
-      continue;
+  for (NetworkMessage message :
+    Esp32Ble::Get()->getReceivedMessages(currentTime)) {
+    const Milliseconds timeSinceReceipt = currentTime - message.receiptTime;
+    if (message.elapsedTime < 0xFFFFFFFF - timeSinceReceipt) {
+      message.elapsedTime += timeSinceReceipt;
+    } else {
+      message.elapsedTime = 0xFFFFFFFF;
     }
     NetworkDeviceId followedDeviceId;
     Esp32Ble::GetLocalAddress(&followedDeviceId);
-    if (memcmp(receivedDeviceId, followedDeviceId, sizeof(followedDeviceId)) == 0) {
+    if (message.originator == followedDeviceId) {
       info("%u Ignoring received BLE from ourselves " DEVICE_ID_FMT,
-           currentTime, DEVICE_ID_HEX(receivedDeviceId));
+           currentTime, DEVICE_ID_HEX(message.originator));
       continue;
     }
     Precedence followedPrecedence;
     if (followingLeader_) {
-      memcpy(followedDeviceId, leaderDeviceId_, sizeof(followedDeviceId));
+      followedDeviceId = leaderDeviceId_;
       followedPrecedence = GetLeaderPrecedence(currentTime);
     } else {
       followedPrecedence = GetLocalPrecedence(currentTime);
     }
-    if (receivedElapsedTime > kEffectDuration && !loop_) {
+    if (message.elapsedTime > kEffectDuration && !loop_) {
       // Ignore this message because the sender already switched effects.
       info("%u Ignoring received BLE with time %u past duration %u",
-           currentTime, receivedElapsedTime, kEffectDuration);
+           currentTime, message.elapsedTime, kEffectDuration);
       continue;
     }
     if (comparePrecedence(followedPrecedence, followedDeviceId,
-                          receivedPrecedence, receivedDeviceId) >= 0) {
+                          message.precedence, message.originator) >= 0) {
       info("%u Ignoring received BLE from " DEVICE_ID_FMT
            " precedence %u because our %s " DEVICE_ID_FMT " precedence %u is higher",
-           currentTime, DEVICE_ID_HEX(receivedDeviceId), receivedPrecedence,
+           currentTime, DEVICE_ID_HEX(message.originator), message.precedence,
            (followingLeader_ ? "remote" : "local"),
            DEVICE_ID_HEX(followedDeviceId), followedPrecedence);
       continue;
@@ -768,29 +683,29 @@ void Player::syncToNetwork(Milliseconds currentTime) {
       info("%u Switching from local " DEVICE_ID_FMT " to leader"
            " " DEVICE_ID_FMT " precedence %u prior precedence %u",
            currentTime, DEVICE_ID_HEX(followedDeviceId),
-           DEVICE_ID_HEX(receivedDeviceId),
-           receivedPrecedence, followedPrecedence);
-    } else if (memcmp(leaderDeviceId_, receivedDeviceId, sizeof(leaderDeviceId_)) != 0) {
+           DEVICE_ID_HEX(message.originator),
+           message.precedence, followedPrecedence);
+    } else if (leaderDeviceId_ != message.originator) {
       info("%u Picking new leader " DEVICE_ID_FMT " precedence %u"
            " over " DEVICE_ID_FMT " precedence %u",
-           currentTime, DEVICE_ID_HEX(receivedDeviceId), receivedPrecedence,
+           currentTime, DEVICE_ID_HEX(message.originator), message.precedence,
            DEVICE_ID_HEX(leaderDeviceId_), followedPrecedence);
     } else {
       info("%u Keeping leader " DEVICE_ID_FMT " precedence %u"
            " prior precedence %u",
-           currentTime, DEVICE_ID_HEX(receivedDeviceId), receivedPrecedence,
+           currentTime, DEVICE_ID_HEX(message.originator), message.precedence,
            followedPrecedence);
     }
     followingLeader_ = true;
-    memcpy(leaderDeviceId_, receivedDeviceId, sizeof(leaderDeviceId_));
-    leaderPrecedence_ = receivedPrecedence;
+    leaderDeviceId_ = message.originator;
+    leaderPrecedence_ = message.precedence;
     lastLeaderReceiveTime_ = currentTime;
     info("%u Received BLE: switching to pattern %s %s elapsedTime %u",
-         currentTime, patternFromBits(receivedPattern)->name().c_str(),
-         displayBitsAsBinary(receivedPattern).c_str(),
-         receivedElapsedTime);
+         currentTime, patternFromBits(message.currentPattern)->name().c_str(),
+         displayBitsAsBinary(message.currentPattern).c_str(),
+         message.elapsedTime);
     lastLEDWriteTime_ = -1;
-    updateToNewPattern(receivedPattern, receivedElapsedTime, currentTime);
+    updateToNewPattern(message.currentPattern, message.elapsedTime, currentTime);
   }
 #endif // ESP32_BLE_RECEIVER
 }

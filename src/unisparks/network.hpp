@@ -29,18 +29,51 @@ std::string NetworkStatusToString(NetworkStatus status);
 
 using PatternBits = uint32_t;
 using Precedence = uint16_t;
-using NetworkDeviceId = uint8_t[6];
+
+class NetworkDeviceId {
+ public:
+  NetworkDeviceId() { memset(data_, 0, sizeof(data_)); }
+  NetworkDeviceId(const uint8_t* data) {
+    memcpy(data_, data, sizeof(data_));
+  }
+  NetworkDeviceId(const NetworkDeviceId& other) {
+    NetworkDeviceId(other.data_);
+  }
+  NetworkDeviceId& operator= (const NetworkDeviceId& other) {
+    return operator=(other.data_);
+  }
+  NetworkDeviceId& operator= (const uint8_t* data) {
+    memcpy(data_, data, sizeof(data_));
+    return *this;
+  }
+  uint8_t operator()(uint8_t i) const {
+    return data_[i];
+  }
+  int compare(const NetworkDeviceId& other) const {
+    return memcmp(data_, other.data_, sizeof(data_));
+  }
+  void writeTo(uint8_t* data) const { memcpy(data, data_, sizeof(data_)); }
+  bool operator==(const NetworkDeviceId& other) const { return compare(other) == 0; }
+  bool operator!=(const NetworkDeviceId& other) const { return compare(other) != 0; }
+  bool operator< (const NetworkDeviceId& other) const { return compare(other) <  0; }
+  bool operator<=(const NetworkDeviceId& other) const { return compare(other) <= 0; }
+  bool operator> (const NetworkDeviceId& other) const { return compare(other) >  0; }
+  bool operator>=(const NetworkDeviceId& other) const { return compare(other) >= 0; }
+ private:
+  uint8_t data_[6];
+};
 
 #define DEVICE_ID_FMT "%02x:%02x:%02x:%02x:%02x:%02x"
-#define DEVICE_ID_HEX(addr) addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]
+#define DEVICE_ID_HEX(addr) addr(0), addr(1), addr(2), addr(3), addr(4), addr(5)
 
 struct NetworkMessage {
-  NetworkDeviceId originator;
-  NetworkDeviceId sender;
-  PatternBits currentPattern;
-  PatternBits nextPattern;
-  Milliseconds elapsedTime;
-  Precedence precedence;
+  NetworkDeviceId originator = NetworkDeviceId();
+  NetworkDeviceId sender = NetworkDeviceId();
+  PatternBits currentPattern = 0;
+  PatternBits nextPattern = 0;
+  Milliseconds elapsedTime = 0;
+  Precedence precedence = 0;
+  Milliseconds receiptTime = 0;
 };
 
 std::string displayBitsAsBinary(PatternBits p);

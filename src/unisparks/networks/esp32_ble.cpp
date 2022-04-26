@@ -32,8 +32,17 @@ void writeUint32(uint8_t* data, uint32_t number) {
   data[3] = static_cast<uint8_t>((number & 0x000000FF));
 }
 
+void writeUint16(uint8_t* data, uint16_t number) {
+  data[0] = static_cast<uint8_t>((number & 0xFF00) >> 8);
+  data[1] = static_cast<uint8_t>((number & 0x00FF));
+}
+
 uint32_t readUint32(const uint8_t* data) {
   return (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | (data[3]);
+}
+
+uint16_t readUint16(const uint8_t* data) {
+  return (data[0] << 8) | (data[1]);
 }
 
 void convertToHex(char* target, size_t targetLength,
@@ -148,31 +157,23 @@ void Esp32Ble::StopScanningIn(Milliseconds duration) {
   timeToStopScanning_ = millis() + duration;
 }
 
-std::list<Esp32Ble::ScanResult> Esp32Ble::GetScanResultsInner() {
-  std::list<ScanResult> results;
+std::list<NetworkMessage> Esp32Ble::getReceivedMessages(Milliseconds currentTime) {
+  std::list<NetworkMessage> results;
   {
     const std::lock_guard<std::mutex> lock(mutex_);
-    results = std::move(scanResults_);
-    scanResults_.clear();
+    results = std::move(receivedMessages_);
+    receivedMessages_.clear();
   }
   return results;
 }
 
-std::list<Esp32Ble::ScanResult> Esp32Ble::GetScanResults() {
-  return Get()->GetScanResultsInner();
-}
-
-void Esp32Ble::TriggerSendAsapInner(Milliseconds currentTime) {
+void Esp32Ble::triggerSendAsap(Milliseconds currentTime) {
   ESP32_BLE_DEBUG("%u TriggerSendAsap", currentTime);
   {
     const std::lock_guard<std::mutex> lock(mutex_);
     numUrgentSends_ = 10;
   }
   MaybeUpdateAdvertisingState(currentTime);
-}
-
-void Esp32Ble::TriggerSendAsap(Milliseconds currentTime) {
-  Get()->TriggerSendAsapInner(currentTime);
 }
 
 void Esp32Ble::DisableSendingInner(Milliseconds currentTime) {
@@ -187,81 +188,85 @@ void Esp32Ble::DisableSending(Milliseconds currentTime) {
   Get()->DisableSendingInner(currentTime);
 }
 
-void Esp32Ble::SetInnerPayloadInner(uint8_t innerPayloadLength,
-                                    uint8_t* innerPayload,
-                                    uint8_t timeByteOffset,
-                                    Milliseconds timeSubtract,
-                                    Milliseconds currentTime) {
-  if (innerPayloadLength > kMaxInnerPayloadLength) {
-    error("%u Refusing to set advertising payload length %u",
-          currentTime, innerPayloadLength);
-    return;
-  }
-  const std::lock_guard<std::mutex> lock(mutex_);
-  shouldSend_ = true;
-  innerPayloadLength_ = innerPayloadLength;
-  if (innerPayloadLength > 0) {
-    memcpy(innerPayload_, innerPayload, innerPayloadLength);
-  }
-  timeByteOffset_ = timeByteOffset;
-  timeSubtract_ = timeSubtract;
-  if (ESP32_BLE_DEBUG_ENABLED()) {
-    char advRawData[kMaxInnerPayloadLength * 2 + 1] = {};
-    convertToHex(advRawData, sizeof(advRawData),
-                innerPayload_, innerPayloadLength);
-    ESP32_BLE_DEBUG("%u Setting inner payload to <%u:%s>",
-          currentTime, innerPayloadLength, advRawData);
+void Esp32Ble::setMessageToSend(const NetworkMessage& messageToSend,
+                        Milliseconds currentTime) {
+  uint8_t blePayload[3 + 6 + 2 + 4 + 4 + 4] = {0xFF, 'L', '1'};
+  static_assert(sizeof(blePayload) <= kMaxInnerPayloadLength, "bad size");
+  messageToSend.originator.writeTo(&blePayload[3]);
+  writeUint16(&blePayload[3 + 6], messageToSend.precedence);
+  writeUint32(&blePayload[3 + 6 + 2], messageToSend.currentPattern);
+  writeUint32(&blePayload[3 + 6 + 2 + 4], messageToSend.nextPattern);
+  constexpr uint8_t kTimeByteOffset = 3 + 6 + 2 + 4 + 4;
+  Milliseconds timeSubtract = currentTime - messageToSend.elapsedTime;
+  {
+    const std::lock_guard<std::mutex> lock(mutex_);
+    shouldSend_ = true;
+    innerPayloadLength_ = sizeof(blePayload);
+    memcpy(innerPayload_, blePayload, sizeof(blePayload));
+    timeByteOffset_ = kTimeByteOffset;
+    timeSubtract_ = timeSubtract;
+    if (ESP32_BLE_DEBUG_ENABLED()) {
+      char advRawData[sizeof(blePayload) * 2 + 1] = {};
+      convertToHex(advRawData, sizeof(advRawData),
+                  innerPayload_, sizeof(blePayload));
+      ESP32_BLE_DEBUG("%u Setting inner payload to <%u:%s>",
+            currentTime, sizeof(blePayload), advRawData);
+    }
   }
 }
-
-void Esp32Ble::SetInnerPayload(uint8_t innerPayloadLength,
-                               uint8_t* innerPayload,
-                               uint8_t timeByteOffset,
-                               Milliseconds timeSubtract,
-                               Milliseconds currentTime) {
-  Get()->SetInnerPayloadInner(innerPayloadLength,
-                              innerPayload,
-                              timeByteOffset,
-                              timeSubtract,
-                              currentTime);
-}
-
-
 
 void Esp32Ble::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifier,
                                     uint8_t innerPayloadLength,
                                     const uint8_t* innerPayload,
-                                    int rssi,
-                                    Milliseconds receiptTime) {
+                                    int /*rssi*/,
+                                    Milliseconds currentTime) {
   if (innerPayloadLength > kMaxInnerPayloadLength) {
     error("%u Received advertisement with unexpected length %u",
-          receiptTime, innerPayloadLength);
+          currentTime, innerPayloadLength);
     return;
   }
-  ScanResult scanResult;
-  memcpy(scanResult.deviceIdentifier, deviceIdentifier, sizeof(deviceIdentifier));
-  scanResult.innerPayloadLength = innerPayloadLength;
-  memcpy(scanResult.innerPayload, innerPayload, innerPayloadLength);
-  scanResult.rssi = rssi;
-  scanResult.receiptTime = receiptTime;
+  if (innerPayloadLength < 3 + 6 + 2 + 4 + 4 + 4) {
+    info("%u Ignoring received BLE with unexpected length %u",
+         currentTime, innerPayloadLength);
+    return;
+  }
+  static constexpr uint8_t prefix[3] = {0xFF, 'L', '1'};
+  if (memcmp(innerPayload, prefix, sizeof(prefix)) != 0) {
+    info("%u Ignoring received BLE with unexpected prefix", currentTime);
+    return;
+  }
+  NetworkMessage message;
+  message.sender = deviceIdentifier;
+  message.originator = &innerPayload[3];
+  message.precedence = readUint16(&innerPayload[3 + 6]);
+  message.currentPattern = readUint32(&innerPayload[3 + 6 + 2]);
+  message.receiptTime = currentTime;
+  message.elapsedTime =
+    Esp32Ble::ReadTimeFromPayload(innerPayloadLength,
+                                  innerPayload,
+                                  3 + 6 + 2 + 4 + 4);
+  if (message.elapsedTime == 0xFFFFFFFF) {
+    info("%u Ignoring received BLE with unexpected time", currentTime);
+    return;
+  }
 
   // Empirical measurements with the ATOM Matrix show a RTT of 50ms,
   // so we offset the one way transmission time by half that.
   constexpr Milliseconds transmissionOffset = 25;
-  if (scanResult.receiptTime > transmissionOffset) {
-    scanResult.receiptTime -= transmissionOffset;
+  if (message.receiptTime > transmissionOffset) {
+    message.receiptTime -= transmissionOffset;
   } else {
-    scanResult.receiptTime = 0;
+    message.receiptTime = 0;
   }
 
   {
     const std::lock_guard<std::mutex> lock(mutex_);
-    if (scanResults_.size() > 100) {
+    if (receivedMessages_.size() > 100) {
       // Make sure we do not run out of memory if no one is
       // periodically calling GetScanResults().
-      scanResults_.clear();
+      receivedMessages_.clear();
     }
-    scanResults_.push_back(scanResult);
+    receivedMessages_.push_back(message);
   }
 }
 
@@ -444,7 +449,7 @@ void Esp32Ble::setup() {
   {
     const std::lock_guard<std::mutex> lock(mutex_);
     static_assert(sizeof(localDeviceIdentifier_) == sizeof(localAddress), "bad size");
-    memcpy(localDeviceIdentifier_, localAddress, sizeof(localDeviceIdentifier_));
+    localDeviceIdentifier_ = localAddress;
   }
   // Override callbacks away from BLEDevice back to us.
   ESP_ERROR_CHECK(esp_ble_gap_register_callback(&Esp32Ble::GapCallback));
@@ -471,7 +476,7 @@ void Esp32Ble::Init() {
 
 void Esp32Ble::GetLocalAddressInner(NetworkDeviceId* localAddress) {
   const std::lock_guard<std::mutex> lock(mutex_);
-  memcpy(localAddress, localDeviceIdentifier_, sizeof(localDeviceIdentifier_));
+  *localAddress = localDeviceIdentifier_;
 }
 
 void Esp32Ble::GetLocalAddress(NetworkDeviceId* localAddress) {

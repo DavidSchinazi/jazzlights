@@ -26,15 +26,6 @@ namespace unisparks {
 // All calls are thread-safe.
 class Esp32Ble {
 public:
-  // 29 is dictated by the BLE standard.
-  static constexpr size_t kMaxInnerPayloadLength = 29;
-  struct ScanResult {
-    NetworkDeviceId deviceIdentifier;
-    uint8_t innerPayloadLength;
-    uint8_t innerPayload[kMaxInnerPayloadLength];
-    int rssi;
-    Milliseconds receiptTime;
-  };
   static Esp32Ble* Get();
 
   // Needs to be called once during setup.
@@ -43,22 +34,16 @@ public:
   // Needs to be called during every Arduino loop.
   void runLoop(Milliseconds currentTime);
 
-  // Copies list of scan results since last call.
-  static std::list<ScanResult> GetScanResults();
+  void setMessageToSend(const NetworkMessage& messageToSend,
+                        Milliseconds currentTime);
 
-  // Configures payload to send when the next sending opportunity arises.
-  // The current time, minus |timeSubtract|, will be written to the payload
-  // right before sending at |timeByteOffset|.
-  static void SetInnerPayload(uint8_t innerPayloadLength,
-                              uint8_t* innerPayload,
-                              uint8_t timeByteOffset,
-                              Milliseconds timeSubtract,
-                              Milliseconds currentTime);
+  // Copies list of scan results since last call.
+  std::list<NetworkMessage> getReceivedMessages(Milliseconds currentTime);
 
   // Request an immediate send.
-  static void TriggerSendAsap(Milliseconds currentTime);
+  void triggerSendAsap(Milliseconds currentTime);
 
-  // Disable any future sending until SetInnerPayload is called.
+  // Disable any future sending until setMessageToSend is called.
   static void DisableSending(Milliseconds currentTime);
 
   // Extract time from a received payload.
@@ -85,6 +70,8 @@ private:
     kStoppingAdvertising,
   };
   std::string StateToString(State state);
+  // 29 is dictated by the BLE standard.
+  static constexpr size_t kMaxInnerPayloadLength = 29;
 
   Esp32Ble();
   void Init();
@@ -101,13 +88,6 @@ private:
                             const uint8_t* innerPayload,
                             int rssi,
                             Milliseconds receiptTime);
-  std::list<ScanResult> GetScanResultsInner();
-  void SetInnerPayloadInner(uint8_t innerPayloadLength,
-                            uint8_t* innerPayload,
-                            uint8_t timeByteOffset,
-                            Milliseconds timeSubtract,
-                            Milliseconds currentTime);
-  void TriggerSendAsapInner(Milliseconds currentTime);
   void DisableSendingInner(Milliseconds currentTime);
   uint8_t GetNextInnerPayloadToSend(uint8_t* innerPayload,
                                     uint8_t maxInnerPayloadLength,
@@ -130,7 +110,7 @@ private:
   uint8_t innerPayload_[kMaxInnerPayloadLength];
   uint8_t timeByteOffset_ = kMaxInnerPayloadLength;
   Milliseconds timeSubtract_ = 0;
-  std::list<ScanResult> scanResults_;
+  std::list<NetworkMessage> receivedMessages_;
   Milliseconds timeToStopAdvertising_ = 0;
   Milliseconds timeToStopScanning_ = 0;
   NetworkDeviceId localDeviceIdentifier_;
