@@ -36,12 +36,13 @@ public:
     int rssi;
     Milliseconds receiptTime;
   };
+  static Esp32Ble* Get();
 
   // Needs to be called once during setup.
-  static void Setup();
+  void setup();
 
   // Needs to be called during every Arduino loop.
-  static void Loop(Milliseconds currentTime);
+  void runLoop(Milliseconds currentTime);
 
   // Copies list of scan results since last call.
   static std::list<ScanResult> GetScanResults();
@@ -121,7 +122,6 @@ private:
                     
   static void GapCallback(esp_gap_ble_cb_event_t event,
                           esp_ble_gap_cb_param_t *param);
-  static Esp32Ble* Get();
 
   // All these variables are protected by mutex_.
   State state_ = State::kIdle;

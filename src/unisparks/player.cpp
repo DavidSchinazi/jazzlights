@@ -713,7 +713,7 @@ void Player::syncToNetwork(Milliseconds currentTime) {
   messageToSend.elapsedTime = elapsedTime_;
   messageToSend.precedence = GetFollowedPrecedence(currentTime);
   network_->setMessageToSend(messageToSend, currentTime);
-  network_->maybeSend(currentTime);
+  network_->runLoop(currentTime);
   std::list<NetworkMessage> receivedMessages = network_->getReceivedMessages(currentTime);
   for (NetworkMessage receivedMessage : receivedMessages) {
     lastLEDWriteTime_ = -1;

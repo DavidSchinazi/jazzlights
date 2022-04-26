@@ -196,9 +196,9 @@ void Network::checkStatus(Milliseconds currentTime) {
 }
 
 
-void Network::maybeSend(Milliseconds currentTime) {
+void Network::runLoop(Milliseconds currentTime) {
   checkStatus(currentTime);
-  maybeSendImpl(currentTime);
+  runLoopImpl(currentTime);
 }
 
 bool UdpNetwork::maybeHandleNotConnected(Milliseconds currentTime) {
@@ -214,7 +214,7 @@ bool UdpNetwork::maybeHandleNotConnected(Milliseconds currentTime) {
   return false;
 }
 
-void UdpNetwork::maybeSendImpl(Milliseconds currentTime) {
+void UdpNetwork::runLoopImpl(Milliseconds currentTime) {
   if (!maybeHandleNotConnected(currentTime)) {
     return;
   }

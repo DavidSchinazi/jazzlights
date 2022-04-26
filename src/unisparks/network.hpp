@@ -52,15 +52,16 @@ class Network {
   virtual void setMessageToSend(const NetworkMessage& messageToSend,
                                 Milliseconds currentTime) = 0;
   std::list<NetworkMessage> getReceivedMessages(Milliseconds currentTime);
-  void maybeSend(Milliseconds currentTime);
+  void runLoop(Milliseconds currentTime);
 
   NetworkStatus status() const;
   virtual void triggerSendAsap(Milliseconds currentTime) = 0;
+  virtual void setup() = 0;
 
  protected:
   virtual NetworkStatus update(NetworkStatus s) = 0;
   virtual std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds currentTime) = 0;
-  virtual void maybeSendImpl(Milliseconds currentTime) = 0;
+  virtual void runLoopImpl(Milliseconds currentTime) = 0;
  private:
   void checkStatus(Milliseconds currentTime);
   void reconnect(Milliseconds currentTime);
@@ -82,10 +83,11 @@ class UdpNetwork : public Network {
   void setMessageToSend(const NetworkMessage& messageToSend,
                         Milliseconds currentTime) override;
   void triggerSendAsap(Milliseconds currentTime) override;
+  void setup() override {}
 
  protected:
   std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds currentTime) override;
-  void maybeSendImpl(Milliseconds currentTime) override;
+  void runLoopImpl(Milliseconds currentTime) override;
   virtual int recv(void* buf, size_t bufsize) = 0;
   virtual void send(void* buf, size_t bufsize) = 0;
  private:
