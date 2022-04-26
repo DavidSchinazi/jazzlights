@@ -26,11 +26,10 @@ namespace unisparks {
 // All calls are thread-safe.
 class Esp32Ble {
 public:
-  using DeviceIdentifier = NetworkDeviceId;  // Bluetooth MAC address.
   // 29 is dictated by the BLE standard.
   static constexpr size_t kMaxInnerPayloadLength = 29;
   struct ScanResult {
-    DeviceIdentifier deviceIdentifier;
+    NetworkDeviceId deviceIdentifier;
     uint8_t innerPayloadLength;
     uint8_t innerPayload[kMaxInnerPayloadLength];
     int rssi;
@@ -68,7 +67,7 @@ public:
                                           uint8_t timeByteOffset);
 
   // Get this device's BLE MAC address.
-  static void GetLocalAddress(DeviceIdentifier* localAddress);
+  static void GetLocalAddress(NetworkDeviceId* localAddress);
 
 private:
   // All public calls in this class are static, but internally they are backed by a
@@ -97,7 +96,7 @@ private:
   void MaybeUpdateAdvertisingState(Milliseconds currentTime);
   void StopAdvertisingIn(Milliseconds duration);
   void StopScanningIn(Milliseconds duration);
-  void ReceiveAdvertisement(const DeviceIdentifier& deviceIdentifier,
+  void ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifier,
                             uint8_t innerPayloadLength,
                             const uint8_t* innerPayload,
                             int rssi,
@@ -115,7 +114,7 @@ private:
                                     Milliseconds currentTime);
   void UpdateState(State expectedCurrentState, State newState);
   bool ExtractShouldTriggerSendAsap();
-  void GetLocalAddressInner(DeviceIdentifier* localAddress);
+  void GetLocalAddressInner(NetworkDeviceId* localAddress);
   void GapCallbackInner(esp_gap_ble_cb_event_t event,
                         esp_ble_gap_cb_param_t *param,
                         Milliseconds currentTime);
@@ -134,7 +133,7 @@ private:
   std::list<ScanResult> scanResults_;
   Milliseconds timeToStopAdvertising_ = 0;
   Milliseconds timeToStopScanning_ = 0;
-  DeviceIdentifier localDeviceIdentifier_;
+  NetworkDeviceId localDeviceIdentifier_;
   std::mutex mutex_;
 };
 

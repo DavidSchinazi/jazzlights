@@ -228,7 +228,7 @@ void Esp32Ble::SetInnerPayload(uint8_t innerPayloadLength,
 
 
 
-void Esp32Ble::ReceiveAdvertisement(const DeviceIdentifier& deviceIdentifier,
+void Esp32Ble::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifier,
                                     uint8_t innerPayloadLength,
                                     const uint8_t* innerPayload,
                                     int rssi,
@@ -469,12 +469,12 @@ Esp32Ble* Esp32Ble::Get() {
 void Esp32Ble::Init() {
 }
 
-void Esp32Ble::GetLocalAddressInner(DeviceIdentifier* localAddress) {
+void Esp32Ble::GetLocalAddressInner(NetworkDeviceId* localAddress) {
   const std::lock_guard<std::mutex> lock(mutex_);
   memcpy(localAddress, localDeviceIdentifier_, sizeof(localDeviceIdentifier_));
 }
 
-void Esp32Ble::GetLocalAddress(DeviceIdentifier* localAddress) {
+void Esp32Ble::GetLocalAddress(NetworkDeviceId* localAddress) {
   Get()->GetLocalAddressInner(localAddress);
 }
 
