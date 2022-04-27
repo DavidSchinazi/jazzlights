@@ -176,16 +176,12 @@ void Esp32Ble::triggerSendAsap(Milliseconds currentTime) {
   MaybeUpdateAdvertisingState(currentTime);
 }
 
-void Esp32Ble::DisableSendingInner(Milliseconds currentTime) {
-  ESP32_BLE_DEBUG("%u DisableSending", currentTime);
+void Esp32Ble::disableSending(Milliseconds currentTime) {
+  ESP32_BLE_DEBUG("%u disableSending", currentTime);
   {
     const std::lock_guard<std::mutex> lock(mutex_);
     shouldSend_ = false;
   }
-}
-
-void Esp32Ble::DisableSending(Milliseconds currentTime) {
-  Get()->DisableSendingInner(currentTime);
 }
 
 void Esp32Ble::setMessageToSend(const NetworkMessage& messageToSend,

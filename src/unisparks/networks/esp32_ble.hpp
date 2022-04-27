@@ -44,7 +44,7 @@ public:
   void triggerSendAsap(Milliseconds currentTime);
 
   // Disable any future sending until setMessageToSend is called.
-  static void DisableSending(Milliseconds currentTime);
+  void disableSending(Milliseconds currentTime);
 
   // Extract time from a received payload.
   static Milliseconds ReadTimeFromPayload(uint8_t innerPayloadLength,
@@ -88,7 +88,6 @@ private:
                             const uint8_t* innerPayload,
                             int rssi,
                             Milliseconds receiptTime);
-  void DisableSendingInner(Milliseconds currentTime);
   uint8_t GetNextInnerPayloadToSend(uint8_t* innerPayload,
                                     uint8_t maxInnerPayloadLength,
                                     Milliseconds currentTime);
