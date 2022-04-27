@@ -60,15 +60,6 @@ void convertToHex(char* target, size_t targetLength,
 
 } // namespace
 
-Milliseconds Esp32Ble::ReadTimeFromPayload(uint8_t innerPayloadLength,
-                                           const uint8_t* innerPayload,
-                                           uint8_t timeByteOffset) {
-  if (innerPayloadLength < 4 || timeByteOffset > innerPayloadLength - 4) {
-    return 0xFFFFFFFF;
-  }
-  return readUint32(&innerPayload[timeByteOffset]);
-}
-
 void Esp32Ble::UpdateState(Esp32Ble::State expectedCurrentState,
                            Esp32Ble::State newState) {
   const std::lock_guard<std::mutex> lock(mutex_);
@@ -237,14 +228,7 @@ void Esp32Ble::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifier,
   message.precedence = readUint16(&innerPayload[3 + 6]);
   message.currentPattern = readUint32(&innerPayload[3 + 6 + 2]);
   message.receiptTime = currentTime;
-  message.elapsedTime =
-    Esp32Ble::ReadTimeFromPayload(innerPayloadLength,
-                                  innerPayload,
-                                  3 + 6 + 2 + 4 + 4);
-  if (message.elapsedTime == 0xFFFFFFFF) {
-    info("%u Ignoring received BLE with unexpected time", currentTime);
-    return;
-  }
+  message.elapsedTime = readUint32(&innerPayload[3 + 6 + 2 + 4 + 4]);
 
   // Empirical measurements with the ATOM Matrix show a RTT of 50ms,
   // so we offset the one way transmission time by half that.
@@ -470,13 +454,9 @@ Esp32Ble* Esp32Ble::Get() {
 void Esp32Ble::Init() {
 }
 
-void Esp32Ble::GetLocalAddressInner(NetworkDeviceId* localAddress) {
+NetworkDeviceId Esp32Ble::getLocalAddress() {
   const std::lock_guard<std::mutex> lock(mutex_);
-  *localAddress = localDeviceIdentifier_;
-}
-
-void Esp32Ble::GetLocalAddress(NetworkDeviceId* localAddress) {
-  Get()->GetLocalAddressInner(localAddress);
+  return localDeviceIdentifier_;
 }
 
 void Esp32Ble::runLoop(Milliseconds currentTime) {

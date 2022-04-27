@@ -123,7 +123,7 @@ class Player {
   Precedence GetLocalPrecedence(Milliseconds currentTime);
   Precedence GetLeaderPrecedence(Milliseconds currentTime);
   Precedence GetFollowedPrecedence(Milliseconds currentTime);
-  void GetFollowedDeviceId(NetworkDeviceId* followedDeviceId);
+  NetworkDeviceId GetFollowedDeviceId();
 
   bool ready_;
 

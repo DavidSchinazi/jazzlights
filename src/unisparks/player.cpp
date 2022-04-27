@@ -580,14 +580,14 @@ if (followingLeader_) {
   }
 }
 
-void Player::GetFollowedDeviceId(NetworkDeviceId* followedDeviceId) {
+NetworkDeviceId Player::GetFollowedDeviceId() {
   if (followingLeader_) {
-    *followedDeviceId = leaderDeviceId_;
+    return leaderDeviceId_;
   } else {
 #if ESP32_BLE_SENDER
-    Esp32Ble::GetLocalAddress(followedDeviceId);
+    return Esp32Ble::Get()->getLocalAddress();
 #else // ESP32_BLE_SENDER
-    *followedDeviceId = NetworkDeviceId(); // TODO
+    return NetworkDeviceId(); // TODO
 #endif // ESP32_BLE_SENDER
   }
 }
@@ -609,7 +609,7 @@ void Player::updateToNewPattern(PatternBits newPattern,
   lastLEDWriteTime_ = -1;
 #if ESP32_BLE_SENDER
   NetworkMessage message;
-  GetFollowedDeviceId(&message.originator);
+  message.originator = GetFollowedDeviceId();
   // TODO message.sender;
   message.currentPattern = currentPattern_;
   // TODO message.nextPattern;
@@ -627,7 +627,7 @@ void Player::syncToNetwork(Milliseconds currentTime) {
     return;
   }
   NetworkMessage messageToSend;
-  GetFollowedDeviceId(&messageToSend.originator);
+  messageToSend.originator = GetFollowedDeviceId();
   messageToSend.currentPattern = currentPattern_;
   messageToSend.nextPattern = 0; // TODO;
   messageToSend.elapsedTime = elapsedTime_;
@@ -650,8 +650,7 @@ void Player::syncToNetwork(Milliseconds currentTime) {
     } else {
       message.elapsedTime = 0xFFFFFFFF;
     }
-    NetworkDeviceId followedDeviceId;
-    Esp32Ble::GetLocalAddress(&followedDeviceId);
+    NetworkDeviceId followedDeviceId = Esp32Ble::Get()->getLocalAddress();
     if (message.originator == followedDeviceId) {
       info("%u Ignoring received BLE from ourselves " DEVICE_ID_FMT,
            currentTime, DEVICE_ID_HEX(message.originator));

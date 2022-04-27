@@ -46,13 +46,8 @@ public:
   // Disable any future sending until setMessageToSend is called.
   void disableSending(Milliseconds currentTime);
 
-  // Extract time from a received payload.
-  static Milliseconds ReadTimeFromPayload(uint8_t innerPayloadLength,
-                                          const uint8_t* innerPayload,
-                                          uint8_t timeByteOffset);
-
   // Get this device's BLE MAC address.
-  static void GetLocalAddress(NetworkDeviceId* localAddress);
+  NetworkDeviceId getLocalAddress();
 
 private:
   // All public calls in this class are static, but internally they are backed by a
@@ -93,7 +88,6 @@ private:
                                     Milliseconds currentTime);
   void UpdateState(State expectedCurrentState, State newState);
   bool ExtractShouldTriggerSendAsap();
-  void GetLocalAddressInner(NetworkDeviceId* localAddress);
   void GapCallbackInner(esp_gap_ble_cb_event_t event,
                         esp_ble_gap_cb_param_t *param,
                         Milliseconds currentTime);
