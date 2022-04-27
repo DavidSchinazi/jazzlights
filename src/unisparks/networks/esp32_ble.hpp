@@ -69,7 +69,6 @@ private:
   static constexpr size_t kMaxInnerPayloadLength = 29;
 
   Esp32Ble();
-  void Init();
   void StartScanning(Milliseconds currentTime);
   void StopScanning(Milliseconds currentTime);
   void StartAdvertising(Milliseconds currentTime);

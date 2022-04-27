@@ -451,9 +451,6 @@ Esp32Ble* Esp32Ble::Get() {
   return &static_instance;
 }
 
-void Esp32Ble::Init() {
-}
-
 NetworkDeviceId Esp32Ble::getLocalAddress() {
   const std::lock_guard<std::mutex> lock(mutex_);
   return localDeviceIdentifier_;
