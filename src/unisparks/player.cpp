@@ -735,8 +735,9 @@ Frame Player::effectFrame(const Effect* effect, Milliseconds currentTime) {
   // Ensure effectContext_ is big enough for this effect.
   const size_t effectContextSize = effect->contextSize({viewport_, nullptr});
   if (effectContextSize > effectContextSize_) {
-    info("%u realloc context from %zu to %zu",
-         currentTime, effectContextSize_, effectContextSize);
+    info("%u realloc context size from %zu to %zu (%s w %f h %f)",
+         currentTime, effectContextSize_, effectContextSize,
+         effect->name().c_str(), viewport_.size.width * viewport_.size.height);
     effectContextSize_ = effectContextSize;
     effectContext_ = realloc(effectContext_, effectContextSize_);
   }
