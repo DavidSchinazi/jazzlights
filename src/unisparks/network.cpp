@@ -176,6 +176,8 @@ std::list<NetworkMessage> UdpNetwork::getReceivedMessagesImpl(Milliseconds curre
     receivedMessage.nextPattern = readUint32(&udpPayload[3 + 6 + 6 + 2 + 4]);
     receivedMessage.elapsedTime = readUint32(&udpPayload[3 + 6 + 6 + 2 + 4 + 4]);
     receivedMessage.receiptTime = currentTime;
+    debug("%u %s received %s",
+          currentTime, name(), networkMessageToString(receivedMessage).c_str());
     receivedMessages.push_back(receivedMessage);
   }
   return receivedMessages;
@@ -224,23 +226,22 @@ void UdpNetwork::runLoopImpl(Milliseconds currentTime) {
          messageToSend_.currentPattern != lastSentPattern_)) {
     effectLastTxTime_ = currentTime;
     lastSentPattern_ = messageToSend_.currentPattern;
+    NetworkMessage messageToSend = messageToSend_;
+    if (timeSubtract_ <= currentTime) {
+      messageToSend.elapsedTime = currentTime - timeSubtract_;
+    } else {
+      messageToSend.elapsedTime = 0xFFFFFFFF;
+    }
     info("%u %s sending %s",
-         currentTime, name(), networkMessageToString(messageToSend_).c_str());
-
+         currentTime, name(), networkMessageToString(messageToSend).c_str());
 
     uint8_t udpPayload[3 + 6 + 6 + 2 + 4 + 4 + 4] = {0xFF, 'L', '1'};
-    messageToSend_.originator.writeTo(&udpPayload[3]);
-    messageToSend_.sender.writeTo(&udpPayload[3 + 6]);
-    writeUint16(&udpPayload[3 + 6 + 6], messageToSend_.precedence);
-    writeUint32(&udpPayload[3 + 6 + 6 + 2], messageToSend_.currentPattern);
-    writeUint32(&udpPayload[3 + 6 + 6 + 2 + 4], messageToSend_.nextPattern);
-    Milliseconds timeToSend;
-    if (timeSubtract_ <= currentTime) {
-      timeToSend = currentTime - timeSubtract_;
-    } else {
-      timeToSend = 0xFFFFFFFF;
-    }
-    writeUint32(&udpPayload[3 + 6 + 6 + 2 + 4 + 4], timeToSend);
+    messageToSend.originator.writeTo(&udpPayload[3]);
+    messageToSend.sender.writeTo(&udpPayload[3 + 6]);
+    writeUint16(&udpPayload[3 + 6 + 6], messageToSend.precedence);
+    writeUint32(&udpPayload[3 + 6 + 6 + 2], messageToSend.currentPattern);
+    writeUint32(&udpPayload[3 + 6 + 6 + 2 + 4], messageToSend.nextPattern);
+    writeUint32(&udpPayload[3 + 6 + 6 + 2 + 4 + 4], messageToSend.elapsedTime);
     send(&udpPayload[0], sizeof(udpPayload));
   }
 }

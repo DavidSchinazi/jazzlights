@@ -618,12 +618,12 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
   }
   NetworkDeviceId followedDeviceId = getLocalDeviceId(currentTime);
   if (message.sender == followedDeviceId) {
-    info("%u Ignoring received message that we sent %s",
+    debug("%u Ignoring received message that we sent %s",
           currentTime, networkMessageToString(message).c_str());
     return;
   }
   if (message.originator == followedDeviceId) {
-    info("%u Ignoring received message that we originated %s",
+    debug("%u Ignoring received message that we originated %s",
           currentTime, networkMessageToString(message).c_str());
     return;
   }
@@ -665,10 +665,6 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
   leaderDeviceId_ = message.originator;
   leaderPrecedence_ = message.precedence;
   lastLeaderReceiveTime_ = currentTime;
-  info("%u Received message: switching to pattern %s %s elapsedTime %u",
-        currentTime, patternFromBits(message.currentPattern)->name().c_str(),
-        displayBitsAsBinary(message.currentPattern).c_str(),
-        message.elapsedTime);
   lastLEDWriteTime_ = -1;
   updateToNewPattern(message.currentPattern, message.elapsedTime, currentTime);
 }

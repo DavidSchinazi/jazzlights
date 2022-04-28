@@ -233,8 +233,8 @@ int UnixUdpNetwork::recv(void* buf, size_t bufsize) {
       continue; // error reading
     }
     fromstr = inet_ntoa(fromaddr.sin_addr);
-    info("Received %d bytes on UDP socket %d ifName %s from %s:%d",
-         n, fd, ifName.c_str(), fromstr, ntohs(fromaddr.sin_port));
+    debug("Received %d bytes on UDP socket %d ifName %s from %s:%d",
+          n, fd, ifName.c_str(), fromstr, ntohs(fromaddr.sin_port));
     return n;
   }
   return -1;
@@ -277,8 +277,8 @@ void UnixUdpNetwork::send(void* buf, size_t bufsize) {
       setupSockets();
       continue;
     }
-    info("Sent %d bytes on UDP socket %d ifName %s to %s:%d",
-         bufsize, fd, ifName.c_str(), mcastAddrStr_, port_);
+    debug("Sent %d bytes on UDP socket %d ifName %s to %s:%d",
+          bufsize, fd, ifName.c_str(), mcastAddrStr_, port_);
   }
 }
 
