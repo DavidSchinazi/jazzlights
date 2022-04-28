@@ -277,7 +277,7 @@ void Player::reset() {
 
   paused_ = false;
 
-  network_ = nullptr;
+  networks_.clear();
   powerLimited = false;
 
   throttleFps_ = 0;
@@ -328,7 +328,7 @@ Player& Player::throttleFps(FramesPerSecond v) {
 
 Player& Player::connect(Network& n) {
   end();
-  network_ = &n;
+  networks_.push_back(&n);
   ready_ = false;
   return *this;
 }
@@ -378,7 +378,7 @@ void Player::begin() {
        strandCount_,
        strandCount_ < 1 ? " (CONTROLLER ONLY!)" : "",
        pxcnt,
-       network_ ? "networked" : "standalone",
+       !networks_.empty() ? "networked" : "standalone",
        viewport_.size.width * viewport_.size.height);
 
   ready_ = true;
@@ -521,8 +521,9 @@ void Player::nextInner(Milliseconds currentTime) {
 void Player::reactToUserInput(Milliseconds currentTime) {
   lastUserInputTime_ = currentTime;
   followingLeader_ = false;
-  if (network_) {
-    network_->triggerSendAsap(currentTime);
+
+  for (Network* network : networks_) {
+    network->triggerSendAsap(currentTime);
   }
 #if ESP32_BLE_SENDER
   Esp32BleNetwork::get()->triggerSendAsap(currentTime);
@@ -629,7 +630,7 @@ void Player::updateToNewPattern(PatternBits newPattern,
 }
 
 void Player::syncToNetwork(Milliseconds currentTime) {
-  if (!network_) {
+  if (networks_.empty()) {
     return;
   }
   NetworkMessage messageToSend;
@@ -638,14 +639,16 @@ void Player::syncToNetwork(Milliseconds currentTime) {
   messageToSend.nextPattern = 0; // TODO;
   messageToSend.elapsedTime = elapsedTime_;
   messageToSend.precedence = GetFollowedPrecedence(currentTime);
-  network_->setMessageToSend(messageToSend, currentTime);
-  network_->runLoop(currentTime);
-  std::list<NetworkMessage> receivedMessages = network_->getReceivedMessages(currentTime);
-  for (NetworkMessage receivedMessage : receivedMessages) {
-    lastLEDWriteTime_ = -1;
-    updateToNewPattern(receivedMessage.currentPattern,
-                       receivedMessage.elapsedTime,
-                       currentTime);
+  for (Network* network : networks_) {
+    network->setMessageToSend(messageToSend, currentTime);
+    network->runLoop(currentTime);
+    std::list<NetworkMessage> receivedMessages = network->getReceivedMessages(currentTime);
+    for (NetworkMessage receivedMessage : receivedMessages) {
+      lastLEDWriteTime_ = -1;
+      updateToNewPattern(receivedMessage.currentPattern,
+                        receivedMessage.elapsedTime,
+                        currentTime);
+    }
   }
 #if ESP32_BLE_RECEIVER
   for (NetworkMessage message :

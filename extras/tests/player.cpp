@@ -22,8 +22,8 @@ TEST_CASE("Player invariants", "[player]") {
 
   pl.begin(bigPane, dummyrender);
 
-  pl.render(timeMillis());
-  pl.render(timeMillis()); // check that we don't crash
+  pl.render(DISCONNECTED, timeMillis());
+  pl.render(DISCONNECTED, timeMillis()); // check that we don't crash
 
   //    pl.begin();    // should do nothing
   //    pl.begin(); // should do nothing
@@ -41,13 +41,13 @@ TEST_CASE("Sequence", "[player]") {
   pl.addStrand(layout, renderer);
   pl.begin();
 
-  pl.render(0);
+  pl.render(DISCONNECTED, 0);
   REQUIRE(renderer.colors[0] == RgbColor(0xff0000));
 
-  pl.render(500);
+  pl.render(DISCONNECTED, 500);
   REQUIRE(renderer.colors[0] == RgbColor(0xff0000));
 
-  pl.render(600);
+  pl.render(DISCONNECTED, 600);
   REQUIRE(renderer.colors[0] == RgbColor(0x00ff00));
 }
 #endif

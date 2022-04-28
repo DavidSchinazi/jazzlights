@@ -7,6 +7,8 @@
 #include "unisparks/renderers/simple.hpp"
 #include "unisparks/registry.hpp"
 
+#include <vector>
+
 #ifndef START_SPECIAL
 #  define START_SPECIAL 0
 #endif // START_SPECIAL
@@ -148,7 +150,7 @@ class Player {
   bool loop_ = false;
   uint8_t specialMode_ = START_SPECIAL;
 
-  Network* network_;
+  std::vector<Network*> networks_;
 
   int throttleFps_;
 
