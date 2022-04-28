@@ -26,7 +26,7 @@ void vestSetup(void) {
   network.setup();
 
 #if ESP32_BLE
-  Esp32Ble::Get()->setup();
+  Esp32BleNetwork::get()->setup();
 #endif // ESP32_BLE
 
   setupButtons();
@@ -42,7 +42,7 @@ void vestLoop(void) {
   doButtons(player, currentTime); // Read, debounce, and process the buttons, and perform actions based on button state
 
 #if ESP32_BLE
-  Esp32Ble::Get()->runLoop(currentTime);
+  Esp32BleNetwork::get()->runLoop(currentTime);
 #endif // ESP32_BLE
 
   player.render(currentTime);

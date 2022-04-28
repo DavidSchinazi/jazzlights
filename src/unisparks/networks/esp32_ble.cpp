@@ -60,8 +60,8 @@ void convertToHex(char* target, size_t targetLength,
 
 } // namespace
 
-void Esp32Ble::UpdateState(Esp32Ble::State expectedCurrentState,
-                           Esp32Ble::State newState) {
+void Esp32BleNetwork::UpdateState(Esp32BleNetwork::State expectedCurrentState,
+                                  Esp32BleNetwork::State newState) {
   const std::lock_guard<std::mutex> lock(mutex_);
   if (state_ != expectedCurrentState) {
     error("Unexpected state %s updating from %s to %s",
@@ -72,7 +72,7 @@ void Esp32Ble::UpdateState(Esp32Ble::State expectedCurrentState,
   state_ = newState;
 }
 
-void Esp32Ble::StartScanning(Milliseconds currentTime) {
+void Esp32BleNetwork::StartScanning(Milliseconds currentTime) {
   ESP32_BLE_DEBUG("%u Starting scan...", currentTime);
   UpdateState(State::kIdle, State::kStartingScan);
   // Set scan duration to one hour so it never stops unless we request it to.
@@ -81,13 +81,13 @@ void Esp32Ble::StartScanning(Milliseconds currentTime) {
   ESP_ERROR_CHECK(esp_ble_gap_start_scanning(kScanDurationSeconds));
 }
 
-void Esp32Ble::StopScanning(Milliseconds currentTime) {
+void Esp32BleNetwork::StopScanning(Milliseconds currentTime) {
   ESP32_BLE_DEBUG("%u Stopping scan...", currentTime);
   UpdateState(State::kScanning, State::kStoppingScan);
   ESP_ERROR_CHECK(esp_ble_gap_stop_scanning());
 }
 
-void Esp32Ble::StartAdvertising(Milliseconds currentTime) {
+void Esp32BleNetwork::StartAdvertising(Milliseconds currentTime) {
   ESP32_BLE_DEBUG("%u StartAdvertising", currentTime);
   UpdateState(State::kConfiguringAdvertising, State::kStartingAdvertising);
   esp_ble_adv_params_t advParams = {};
@@ -101,15 +101,15 @@ void Esp32Ble::StartAdvertising(Milliseconds currentTime) {
   ESP_ERROR_CHECK(esp_ble_gap_start_advertising(&advParams));
 }
 
-void Esp32Ble::StopAdvertising(Milliseconds currentTime) {
+void Esp32BleNetwork::StopAdvertising(Milliseconds currentTime) {
   ESP32_BLE_DEBUG("%u StopAdvertising", currentTime);
   UpdateState(State::kAdvertising, State::kStoppingAdvertising);
   ESP_ERROR_CHECK(esp_ble_gap_stop_advertising());
 }
 
-constexpr size_t Esp32Ble::kMaxInnerPayloadLength;
+constexpr size_t Esp32BleNetwork::kMaxInnerPayloadLength;
 
-void Esp32Ble::MaybeUpdateAdvertisingState(Milliseconds currentTime) {
+void Esp32BleNetwork::MaybeUpdateAdvertisingState(Milliseconds currentTime) {
   bool shouldStopAdvertising = false;
   bool shouldStopScanning = false;
   {
@@ -138,17 +138,17 @@ void Esp32Ble::MaybeUpdateAdvertisingState(Milliseconds currentTime) {
   }
 }
 
-void Esp32Ble::StopAdvertisingIn(Milliseconds duration) {
+void Esp32BleNetwork::StopAdvertisingIn(Milliseconds duration) {
   const std::lock_guard<std::mutex> lock(mutex_);
   timeToStopAdvertising_ = millis() + duration;
 }
 
-void Esp32Ble::StopScanningIn(Milliseconds duration) {
+void Esp32BleNetwork::StopScanningIn(Milliseconds duration) {
   const std::lock_guard<std::mutex> lock(mutex_);
   timeToStopScanning_ = millis() + duration;
 }
 
-std::list<NetworkMessage> Esp32Ble::getReceivedMessages(Milliseconds currentTime) {
+std::list<NetworkMessage> Esp32BleNetwork::getReceivedMessagesImpl(Milliseconds currentTime) {
   std::list<NetworkMessage> results;
   {
     const std::lock_guard<std::mutex> lock(mutex_);
@@ -158,7 +158,7 @@ std::list<NetworkMessage> Esp32Ble::getReceivedMessages(Milliseconds currentTime
   return results;
 }
 
-void Esp32Ble::triggerSendAsap(Milliseconds currentTime) {
+void Esp32BleNetwork::triggerSendAsap(Milliseconds currentTime) {
   ESP32_BLE_DEBUG("%u TriggerSendAsap", currentTime);
   {
     const std::lock_guard<std::mutex> lock(mutex_);
@@ -167,15 +167,7 @@ void Esp32Ble::triggerSendAsap(Milliseconds currentTime) {
   MaybeUpdateAdvertisingState(currentTime);
 }
 
-void Esp32Ble::disableSending(Milliseconds currentTime) {
-  ESP32_BLE_DEBUG("%u disableSending", currentTime);
-  {
-    const std::lock_guard<std::mutex> lock(mutex_);
-    shouldSend_ = false;
-  }
-}
-
-void Esp32Ble::setMessageToSend(const NetworkMessage& messageToSend,
+void Esp32BleNetwork::setMessageToSend(const NetworkMessage& messageToSend,
                         Milliseconds currentTime) {
   uint8_t blePayload[3 + 6 + 2 + 4 + 4 + 4] = {0xFF, 'L', '1'};
   static_assert(sizeof(blePayload) <= kMaxInnerPayloadLength, "bad size");
@@ -202,7 +194,7 @@ void Esp32Ble::setMessageToSend(const NetworkMessage& messageToSend,
   }
 }
 
-void Esp32Ble::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifier,
+void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifier,
                                     uint8_t innerPayloadLength,
                                     const uint8_t* innerPayload,
                                     int /*rssi*/,
@@ -250,7 +242,7 @@ void Esp32Ble::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifier,
   }
 }
 
-uint8_t Esp32Ble::GetNextInnerPayloadToSend(uint8_t* innerPayload,
+uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload,
                                             uint8_t maxInnerPayloadLength,
                                             Milliseconds currentTime) {
   const std::lock_guard<std::mutex> lock(mutex_);
@@ -276,7 +268,7 @@ uint8_t Esp32Ble::GetNextInnerPayloadToSend(uint8_t* innerPayload,
   return innerPayloadLength_;
 }
 
-bool Esp32Ble::ExtractShouldTriggerSendAsap() {
+bool Esp32BleNetwork::ExtractShouldTriggerSendAsap() {
   bool shouldTriggerSendAsap;
   {
     const std::lock_guard<std::mutex> lock(mutex_);
@@ -290,7 +282,7 @@ bool Esp32Ble::ExtractShouldTriggerSendAsap() {
   return shouldTriggerSendAsap;
 }
 
-void Esp32Ble::StartConfigureAdvertising(Milliseconds currentTime) {
+void Esp32BleNetwork::StartConfigureAdvertising(Milliseconds currentTime) {
   ESP32_BLE_DEBUG("%u StartConfigureAdvertising", currentTime);
   UpdateState(State::kIdle, State::kConfiguringAdvertising);
   uint8_t advPayload[kMaxInnerPayloadLength + 2];
@@ -314,11 +306,11 @@ void Esp32Ble::StartConfigureAdvertising(Milliseconds currentTime) {
   ESP_ERROR_CHECK(esp_ble_gap_config_adv_data_raw(advPayload, 2 + innerPayloadSize));
 }
 
-void Esp32Ble::GapCallback(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param) {
-  Get()->GapCallbackInner(event, param, timeMillis());
+void Esp32BleNetwork::GapCallback(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param) {
+  get()->GapCallbackInner(event, param, timeMillis());
 }
 
-void Esp32Ble::GapCallbackInner(esp_gap_ble_cb_event_t event,
+void Esp32BleNetwork::GapCallbackInner(esp_gap_ble_cb_event_t event,
                                 esp_ble_gap_cb_param_t *param,
                                 Milliseconds currentTime) {
   switch (event) {
@@ -416,7 +408,7 @@ void Esp32Ble::GapCallbackInner(esp_gap_ble_cb_event_t event,
   }
 }
 
-void Esp32Ble::setup() {
+void Esp32BleNetwork::setup() {
   // Let Arduino BLEDevice handle initialization.
   BLEDevice::init("");
   // Initialize localDeviceIdentifier_.
@@ -432,7 +424,7 @@ void Esp32Ble::setup() {
     localDeviceIdentifier_ = localAddress;
   }
   // Override callbacks away from BLEDevice back to us.
-  ESP_ERROR_CHECK(esp_ble_gap_register_callback(&Esp32Ble::GapCallback));
+  ESP_ERROR_CHECK(esp_ble_gap_register_callback(&Esp32BleNetwork::GapCallback));
   // Configure scanning parameters.
   esp_ble_scan_params_t scanParams = {};
   scanParams.scan_type          = BLE_SCAN_TYPE_PASSIVE;
@@ -444,23 +436,35 @@ void Esp32Ble::setup() {
   ESP_ERROR_CHECK(esp_ble_gap_set_scan_params(&scanParams));
 }
 
-Esp32Ble::Esp32Ble() {}
+NetworkStatus Esp32BleNetwork::update(NetworkStatus status) {
+  if (status == INITIALIZING || status == CONNECTING) {
+    return CONNECTED;
+  } else if (status == DISCONNECTING) {
+    const std::lock_guard<std::mutex> lock(mutex_);
+    shouldSend_ = false;
+    return DISCONNECTED;
+  } else {
+    return status;
+  }
+}
 
-Esp32Ble* Esp32Ble::Get() {
-  static Esp32Ble static_instance;
+Esp32BleNetwork::Esp32BleNetwork() {}
+
+Esp32BleNetwork* Esp32BleNetwork::get() {
+  static Esp32BleNetwork static_instance;
   return &static_instance;
 }
 
-NetworkDeviceId Esp32Ble::getLocalAddress() {
+NetworkDeviceId Esp32BleNetwork::getLocalAddress() {
   const std::lock_guard<std::mutex> lock(mutex_);
   return localDeviceIdentifier_;
 }
 
-void Esp32Ble::runLoop(Milliseconds currentTime) {
+void Esp32BleNetwork::runLoopImpl(Milliseconds currentTime) {
   MaybeUpdateAdvertisingState(currentTime);
 }
 
-std::string Esp32Ble::StateToString(Esp32Ble::State state) {
+std::string Esp32BleNetwork::StateToString(Esp32BleNetwork::State state) {
 #define CASE_STATE_RETURN_STRING(_case) \
   case State::k ## _case: return #_case
   switch (state) {

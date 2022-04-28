@@ -82,6 +82,8 @@ class Network {
  public:
   virtual ~Network() = default;
 
+  virtual void setup() = 0;
+
   virtual void setMessageToSend(const NetworkMessage& messageToSend,
                                 Milliseconds currentTime) = 0;
   std::list<NetworkMessage> getReceivedMessages(Milliseconds currentTime);
@@ -89,10 +91,10 @@ class Network {
 
   NetworkStatus status() const;
   virtual void triggerSendAsap(Milliseconds currentTime) = 0;
-  virtual void setup() = 0;
 
  protected:
-  virtual NetworkStatus update(NetworkStatus s) = 0;
+  Network() = default;
+  virtual NetworkStatus update(NetworkStatus status) = 0;
   virtual std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds currentTime) = 0;
   virtual void runLoopImpl(Milliseconds currentTime) = 0;
  private:

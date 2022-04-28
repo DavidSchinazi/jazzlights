@@ -519,7 +519,7 @@ void Player::reactToUserInput(Milliseconds currentTime) {
     network_->triggerSendAsap(currentTime);
   }
 #if ESP32_BLE_SENDER
-  Esp32Ble::Get()->triggerSendAsap(currentTime);
+  Esp32BleNetwork::get()->triggerSendAsap(currentTime);
 #endif // ESP32_BLE_SENDER
 }
 
@@ -585,7 +585,7 @@ NetworkDeviceId Player::GetFollowedDeviceId() {
     return leaderDeviceId_;
   } else {
 #if ESP32_BLE_SENDER
-    return Esp32Ble::Get()->getLocalAddress();
+    return Esp32BleNetwork::get()->getLocalAddress();
 #else // ESP32_BLE_SENDER
     return NetworkDeviceId(); // TODO
 #endif // ESP32_BLE_SENDER
@@ -618,7 +618,7 @@ void Player::updateToNewPattern(PatternBits newPattern,
   info("%u Sending BLE as %s " DEVICE_ID_FMT " precedence %u",
         currentTime, (followingLeader_ ? "remote" : "local"),
         DEVICE_ID_HEX(message.originator), message.precedence);
-  Esp32Ble::Get()->setMessageToSend(message, currentTime);
+  Esp32BleNetwork::get()->setMessageToSend(message, currentTime);
 #endif // ESP32_BLE_SENDER
 }
 
@@ -643,14 +643,14 @@ void Player::syncToNetwork(Milliseconds currentTime) {
   }
 #if ESP32_BLE_RECEIVER
   for (NetworkMessage message :
-    Esp32Ble::Get()->getReceivedMessages(currentTime)) {
+    Esp32BleNetwork::get()->getReceivedMessages(currentTime)) {
     const Milliseconds timeSinceReceipt = currentTime - message.receiptTime;
     if (message.elapsedTime < 0xFFFFFFFF - timeSinceReceipt) {
       message.elapsedTime += timeSinceReceipt;
     } else {
       message.elapsedTime = 0xFFFFFFFF;
     }
-    NetworkDeviceId followedDeviceId = Esp32Ble::Get()->getLocalAddress();
+    NetworkDeviceId followedDeviceId = Esp32BleNetwork::get()->getLocalAddress();
     if (message.originator == followedDeviceId) {
       info("%u Ignoring received BLE from ourselves " DEVICE_ID_FMT,
            currentTime, DEVICE_ID_HEX(message.originator));

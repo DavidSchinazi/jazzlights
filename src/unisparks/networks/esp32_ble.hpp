@@ -24,27 +24,26 @@ namespace unisparks {
 // This class interfaces with the ESP32 Bluetooth Low Energy module. It is
 // designed to allow both sending and receiving by alternating between the two.
 // All calls are thread-safe.
-class Esp32Ble {
+class Esp32BleNetwork : public Network {
 public:
-  static Esp32Ble* Get();
+  static Esp32BleNetwork* get();
 
   // Needs to be called once during setup.
-  void setup();
+  void setup() override;
 
   // Needs to be called during every Arduino loop.
-  void runLoop(Milliseconds currentTime);
+  void runLoopImpl(Milliseconds currentTime) override;
 
   void setMessageToSend(const NetworkMessage& messageToSend,
-                        Milliseconds currentTime);
+                        Milliseconds currentTime) override;
 
   // Copies list of scan results since last call.
-  std::list<NetworkMessage> getReceivedMessages(Milliseconds currentTime);
+  std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds currentTime) override;
 
   // Request an immediate send.
-  void triggerSendAsap(Milliseconds currentTime);
+  void triggerSendAsap(Milliseconds currentTime) override;
 
-  // Disable any future sending until setMessageToSend is called.
-  void disableSending(Milliseconds currentTime);
+  NetworkStatus update(NetworkStatus status) override;
 
   // Get this device's BLE MAC address.
   NetworkDeviceId getLocalAddress();
@@ -68,7 +67,7 @@ private:
   // 29 is dictated by the BLE standard.
   static constexpr size_t kMaxInnerPayloadLength = 29;
 
-  Esp32Ble();
+  Esp32BleNetwork();
   void StartScanning(Milliseconds currentTime);
   void StopScanning(Milliseconds currentTime);
   void StartAdvertising(Milliseconds currentTime);
