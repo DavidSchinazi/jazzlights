@@ -293,6 +293,11 @@ void Player::reset() {
   fps_ = -1;
   lastFpsProbeTime_ = -1;
   framesSinceFpsProbe_ = -1;
+
+  viewport_.origin.x = 0;
+  viewport_.origin.y = 0;
+  viewport_.size.height = 1;
+  viewport_.size.width = 1;
 }
 
 Player& Player::clearStrands() {
