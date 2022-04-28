@@ -30,7 +30,7 @@ extern "C" void run(bool verbose, const char* ver, const char* cfgfile) {
   strcpy(version, ver);
   info("My %s", sysinfo());
   load(cfgfile, player);
-  player.connect(network);
+  player.connect(&network);
   player.begin();
   for (;;) {
     player.render(network.status(), timeMillis());

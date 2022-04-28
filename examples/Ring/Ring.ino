@@ -39,7 +39,9 @@ void setup()
   pinMode(BUTTON_PIN, INPUT);
 
   Unisparks::enableVerboseOutput();
-  player.begin(pixels, renderPixel, network);
+  player.connect(&network);
+  player.addStrand(pixels, renderPixel);
+  player.begin();
 }
 
 void loop()

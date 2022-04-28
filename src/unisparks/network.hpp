@@ -6,6 +6,7 @@
 
 #include <list>
 #include <string>
+#include <stdio.h>
 
 namespace unisparks {
 
@@ -29,6 +30,9 @@ std::string NetworkStatusToString(NetworkStatus status);
 
 using PatternBits = uint32_t;
 using Precedence = uint16_t;
+
+#define DEVICE_ID_FMT "%02x:%02x:%02x:%02x:%02x:%02x"
+#define DEVICE_ID_HEX(addr) (addr)(0), (addr)(1), (addr)(2), (addr)(3), (addr)(4), (addr)(5)
 
 class NetworkDeviceId {
  public:
@@ -57,13 +61,15 @@ class NetworkDeviceId {
   bool operator<=(const NetworkDeviceId& other) const { return compare(other) <= 0; }
   bool operator> (const NetworkDeviceId& other) const { return compare(other) >  0; }
   bool operator>=(const NetworkDeviceId& other) const { return compare(other) >= 0; }
+  std::string toString() const {
+    char result[2*6+5+1] = {};
+    snprintf(result, sizeof(result), DEVICE_ID_FMT, DEVICE_ID_HEX(*this));
+    return result;
+  }
  private:
   static constexpr size_t kNetworkDeviceIdSize = 6;
   uint8_t data_[kNetworkDeviceIdSize];
 };
-
-#define DEVICE_ID_FMT "%02x:%02x:%02x:%02x:%02x:%02x"
-#define DEVICE_ID_HEX(addr) addr(0), addr(1), addr(2), addr(3), addr(4), addr(5)
 
 struct NetworkMessage {
   NetworkDeviceId originator = NetworkDeviceId();
@@ -73,9 +79,11 @@ struct NetworkMessage {
   Milliseconds elapsedTime = 0;
   Precedence precedence = 0;
   Milliseconds receiptTime = 0;
+  // TODO save which network a message was received on to avoid repeating on Wi-Fi
 };
 
 std::string displayBitsAsBinary(PatternBits p);
+std::string networkMessageToString(const NetworkMessage& message);
 
 class Network {
  public:
@@ -84,6 +92,9 @@ class Network {
   // Set message to send during next send opportunity.
   virtual void setMessageToSend(const NetworkMessage& messageToSend,
                                 Milliseconds currentTime) = 0;
+
+  // Disables sending until the next call to setMessageToSend.
+  virtual void disableSending(Milliseconds currentTime) = 0;
 
   // Gets list of received messages since last call.
   std::list<NetworkMessage> getReceivedMessages(Milliseconds currentTime);
@@ -99,6 +110,8 @@ class Network {
 
   // Returns this device's unique ID, often using its MAC address.
   virtual NetworkDeviceId getLocalDeviceId() = 0;
+
+  virtual const char* name() const = 0;
 
  protected:
   Network() = default;
@@ -128,6 +141,7 @@ class UdpNetwork : public Network {
 
   void setMessageToSend(const NetworkMessage& messageToSend,
                         Milliseconds currentTime) override;
+  void disableSending(Milliseconds currentTime) override;
   void triggerSendAsap(Milliseconds currentTime) override;
 
  protected:
@@ -137,9 +151,10 @@ class UdpNetwork : public Network {
   virtual void send(void* buf, size_t bufsize) = 0;
  private:
   bool maybeHandleNotConnected(Milliseconds currentTime);
+  bool hasDataToSend_ = false;
   NetworkMessage messageToSend_;
+  Milliseconds timeSubtract_ = 0;
 
-  bool isEffectMaster_ = false;
   PatternBits lastSentPattern_ = 0;
 
   Milliseconds effectLastTxTime_ = 0;
@@ -149,6 +164,11 @@ class UdpNetwork : public Network {
 
 static constexpr int DEFAULT_UDP_PORT = 0xDF0D;
 static constexpr const char* const DEFAULT_MULTICAST_ADDR = "239.255.223.01";
+
+void writeUint32(uint8_t* data, uint32_t number);
+void writeUint16(uint8_t* data, uint16_t number);
+uint32_t readUint32(const uint8_t* data);
+uint16_t readUint16(const uint8_t* data);
 
 } // namespace unisparks
 

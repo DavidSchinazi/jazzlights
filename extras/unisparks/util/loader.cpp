@@ -95,15 +95,12 @@ void Loader::loadPlayer(Player& player, const cpptoml::table& cfg) {
   }
 }
 
-static UnixUdpNetwork network;
-
 void Loader::load(const char* file, Player& player) {
   info("unisparks::Loader loading: %s", file);
   try {
     auto config = cpptoml::parse_file(file);
     //cout << (*config) << endl;
     loadPlayer(player, *config);
-    player.connect(network);
   } catch (const runtime_error& err) {
     fatal("Couldn't parse %s: %s", file, err.what());
   }

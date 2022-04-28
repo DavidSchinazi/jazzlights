@@ -34,6 +34,9 @@ class Esp8266WiFi : public UdpNetwork {
   NetworkDeviceId getLocalDeviceId() override {
     return localDeviceId_;
   }
+  const char* name() const override {
+    return "ESP8266WiFi";
+  }
 
   struct Credentials {
     const char* ssid;

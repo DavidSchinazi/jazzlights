@@ -15,7 +15,6 @@
 #include "unisparks/effects/solid.hpp"
 #include "unisparks/effects/transform.hpp"
 #include "unisparks/effects/threesine.hpp"
-#include "unisparks/networks/esp32_ble.hpp"
 #include "unisparks/registry.hpp"
 #include "unisparks/renderers/simple.hpp"
 #include "unisparks/util/containers.hpp"
@@ -29,14 +28,6 @@
 namespace unisparks {
 
 using namespace internal;
-
-#ifndef ESP32_BLE_RECEIVER
-#  define ESP32_BLE_RECEIVER ESP32_BLE
-#endif // ESP32_BLE_RECEIVER
-
-#ifndef ESP32_BLE_SENDER
-#  define ESP32_BLE_SENDER ESP32_BLE
-#endif // ESP32_BLE_SENDER
 
 int comparePrecedence(Precedence leftPrecedence,
                       const NetworkDeviceId& leftDeviceId,
@@ -326,39 +317,12 @@ Player& Player::throttleFps(FramesPerSecond v) {
   return *this;
 }
 
-Player& Player::connect(Network& n) {
+Player& Player::connect(Network* n) {
   end();
-  networks_.push_back(&n);
+  info("Connecting network %s", n->name());
+  networks_.push_back(n);
   ready_ = false;
   return *this;
-}
-
-void Player::begin(const Layout& layout, Renderer& renderer,
-                   Network& network) {
-  reset();
-  addStrand(layout, renderer);
-  connect(network);
-  begin();
-}
-
-void Player::begin(const Layout& layout, Renderer& renderer) {
-  reset();
-  addStrand(layout, renderer);
-  begin();
-}
-
-void Player::begin(const Layout& layout, SimpleRenderFunc renderer,
-                   Network& network) {
-  reset();
-  addStrand(layout, renderer);
-  connect(network);
-  begin();
-}
-
-void Player::begin(const Layout& layout, SimpleRenderFunc renderer) {
-  reset();
-  addStrand(layout, renderer);
-  begin();
 }
 
 void Player::begin() {
@@ -525,9 +489,6 @@ void Player::reactToUserInput(Milliseconds currentTime) {
   for (Network* network : networks_) {
     network->triggerSendAsap(currentTime);
   }
-#if ESP32_BLE_SENDER
-  Esp32BleNetwork::get()->triggerSendAsap(currentTime);
-#endif // ESP32_BLE_SENDER
 }
 
 void Player::next(Milliseconds currentTime) {
@@ -535,7 +496,7 @@ void Player::next(Milliseconds currentTime) {
   reactToUserInput(currentTime);
 }
 
-Precedence GetPrecedenceDepreciation(Milliseconds epochTime,
+Precedence getPrecedenceDepreciation(Milliseconds epochTime,
                                      Milliseconds currentTime) {
   if (epochTime >= 0) {
     Milliseconds timeSinceEpoch;
@@ -554,7 +515,7 @@ Precedence GetPrecedenceDepreciation(Milliseconds epochTime,
   return 50 + 25;
 }
 
-Precedence DepreciatePrecedence(Precedence startPrecedence,
+Precedence depreciatePrecedence(Precedence startPrecedence,
                                 Precedence depreciation) {
   if (startPrecedence <= depreciation) {
     return 0;
@@ -562,40 +523,50 @@ Precedence DepreciatePrecedence(Precedence startPrecedence,
   return startPrecedence - depreciation;
 }
 
-Precedence Player::GetLocalPrecedence(Milliseconds currentTime) {
+Precedence Player::getLocalPrecedence(Milliseconds currentTime) {
   Precedence precedence = 1000;
-  Precedence depreciation = GetPrecedenceDepreciation(lastUserInputTime_,
+  Precedence depreciation = getPrecedenceDepreciation(lastUserInputTime_,
                                                       currentTime);
-  precedence = DepreciatePrecedence(precedence, depreciation);
+  precedence = depreciatePrecedence(precedence, depreciation);
   return precedence;
 }
 
-Precedence Player::GetLeaderPrecedence(Milliseconds currentTime) {
+Precedence Player::getLeaderPrecedence(Milliseconds currentTime) {
   Precedence precedence = leaderPrecedence_;
-  Precedence depreciation = GetPrecedenceDepreciation(lastUserInputTime_,
+  Precedence depreciation = getPrecedenceDepreciation(lastUserInputTime_,
                                                       currentTime);
-  precedence = DepreciatePrecedence(precedence, depreciation);
-  precedence = DepreciatePrecedence(precedence, depreciation);
+  precedence = depreciatePrecedence(precedence, depreciation);
+  precedence = depreciatePrecedence(precedence, depreciation);
   return precedence;
 }
 
-Precedence Player::GetFollowedPrecedence(Milliseconds currentTime) {
+Precedence Player::getFollowedPrecedence(Milliseconds currentTime) {
 if (followingLeader_) {
-    return DepreciatePrecedence(GetLeaderPrecedence(currentTime), 100);
+    return depreciatePrecedence(getLeaderPrecedence(currentTime), 100);
   } else {
-    return GetLocalPrecedence(currentTime);
+    return getLocalPrecedence(currentTime);
   }
 }
 
-NetworkDeviceId Player::GetFollowedDeviceId() {
+NetworkDeviceId Player::getLocalDeviceId(Milliseconds currentTime) {
+  for (Network* network : networks_) {
+    NetworkDeviceId localDeviceId = network->getLocalDeviceId();
+    if (localDeviceId != NetworkDeviceId()) {
+      return localDeviceId;
+    }
+  }
+  return NetworkDeviceId();
+}
+
+NetworkDeviceId Player::getLeaderDeviceId(Milliseconds currentTime) {
+  return leaderDeviceId_;
+}
+
+NetworkDeviceId Player::getFollowedDeviceId(Milliseconds currentTime) {
   if (followingLeader_) {
-    return leaderDeviceId_;
+    return getLeaderDeviceId(currentTime);
   } else {
-#if ESP32_BLE_SENDER
-    return Esp32BleNetwork::get()->getLocalDeviceId();
-#else // ESP32_BLE_SENDER
-    return NetworkDeviceId(); // TODO
-#endif // ESP32_BLE_SENDER
+    return getLocalDeviceId(currentTime);
   }
 }
 
@@ -614,108 +585,100 @@ void Player::updateToNewPattern(PatternBits newPattern,
        displayBitsAsBinary(currentPattern_).c_str());
   effect->begin(effectFrame(effect, currentTime));
   lastLEDWriteTime_ = -1;
-#if ESP32_BLE_SENDER
-  NetworkMessage message;
-  message.originator = GetFollowedDeviceId();
-  // TODO message.sender;
-  message.currentPattern = currentPattern_;
-  // TODO message.nextPattern;
-  message.elapsedTime = elapsedTime;
-  message.precedence = GetFollowedPrecedence(currentTime);
-  info("%u Sending BLE as %s " DEVICE_ID_FMT " precedence %u",
-        currentTime, (followingLeader_ ? "remote" : "local"),
-        DEVICE_ID_HEX(message.originator), message.precedence);
-  Esp32BleNetwork::get()->setMessageToSend(message, currentTime);
-#endif // ESP32_BLE_SENDER
-}
-
-void Player::syncToNetwork(Milliseconds currentTime) {
   if (networks_.empty()) {
+    info("%u not setting messageToSend without networks", currentTime);
     return;
   }
   NetworkMessage messageToSend;
-  messageToSend.originator = GetFollowedDeviceId();
+  messageToSend.originator = getFollowedDeviceId(currentTime);
+  messageToSend.sender = getLocalDeviceId(currentTime);
+  if (messageToSend.sender == NetworkDeviceId()) {
+    info("%u not setting messageToSend without localDeviceId", currentTime);
+    return;
+  }
   messageToSend.currentPattern = currentPattern_;
   messageToSend.nextPattern = 0; // TODO;
   messageToSend.elapsedTime = elapsedTime_;
-  messageToSend.precedence = GetFollowedPrecedence(currentTime);
+  messageToSend.precedence = getFollowedPrecedence(currentTime);
   for (Network* network : networks_) {
+    info("%u Setting messageToSend for %s as %s to %s ",
+          currentTime, network->name(), (followingLeader_ ? "remote" : "local"),
+          networkMessageToString(messageToSend).c_str());
     network->setMessageToSend(messageToSend, currentTime);
+  }
+}
+
+void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentTime) {
+  const Milliseconds timeSinceReceipt = currentTime - message.receiptTime;
+  if (message.elapsedTime < 0xFFFFFFFF - timeSinceReceipt) {
+    message.elapsedTime += timeSinceReceipt;
+  } else {
+    message.elapsedTime = 0xFFFFFFFF;
+  }
+  NetworkDeviceId followedDeviceId = getLocalDeviceId(currentTime);
+  if (message.originator == followedDeviceId) {
+    info("%u Ignoring received message from ourselves %s",
+          currentTime, networkMessageToString(message).c_str());
+    return;
+  }
+  Precedence followedPrecedence;
+  if (followingLeader_) {
+    followedDeviceId = leaderDeviceId_;
+    followedPrecedence = getLeaderPrecedence(currentTime);
+  } else {
+    followedPrecedence = getLocalPrecedence(currentTime);
+  }
+  if (message.elapsedTime > kEffectDuration && !loop_) {
+    // Ignore this message because the sender already switched effects.
+    info("%u Ignoring received message %s past duration %u",
+         currentTime, networkMessageToString(message).c_str(), kEffectDuration);
+    return;
+  }
+  if (comparePrecedence(followedPrecedence, followedDeviceId,
+                        message.precedence, message.originator) >= 0) {
+    info("%u Ignoring received message %s because our %s " DEVICE_ID_FMT " precedence %u is higher",
+          currentTime, networkMessageToString(message).c_str(),
+          (followingLeader_ ? "remote" : "local"),
+          DEVICE_ID_HEX(followedDeviceId), followedPrecedence);
+    return;
+  }
+  if (!followingLeader_) {
+    info("%u Switching from local " DEVICE_ID_FMT " precedence %u to new leader %s",
+         currentTime, DEVICE_ID_HEX(followedDeviceId), followedPrecedence,
+         networkMessageToString(message).c_str());
+  } else if (leaderDeviceId_ != message.originator) {
+    info("%u Switching from prior leader " DEVICE_ID_FMT " precedence %u to new leader %s",
+         currentTime, DEVICE_ID_HEX(leaderDeviceId_), followedPrecedence,
+         networkMessageToString(message).c_str());
+  } else {
+    info("%u Keeping leader precedence %u via %s",
+         currentTime, followedPrecedence,
+         networkMessageToString(message).c_str());
+  }
+  followingLeader_ = true;
+  leaderDeviceId_ = message.originator;
+  leaderPrecedence_ = message.precedence;
+  lastLeaderReceiveTime_ = currentTime;
+  info("%u Received message: switching to pattern %s %s elapsedTime %u",
+        currentTime, patternFromBits(message.currentPattern)->name().c_str(),
+        displayBitsAsBinary(message.currentPattern).c_str(),
+        message.elapsedTime);
+  lastLEDWriteTime_ = -1;
+  updateToNewPattern(message.currentPattern, message.elapsedTime, currentTime);
+}
+
+void Player::syncToNetwork(Milliseconds currentTime) {
+  // First listen on all networks.
+  for (Network* network : networks_) {
+    for (NetworkMessage receivedMessage :
+        network->getReceivedMessages(currentTime)) {
+      handleReceivedMessage(receivedMessage, currentTime);
+    }
+  }
+  // Then give all networks the opportunity to send.
+  for (Network* network : networks_) {
     network->runLoop(currentTime);
-    std::list<NetworkMessage> receivedMessages = network->getReceivedMessages(currentTime);
-    for (NetworkMessage receivedMessage : receivedMessages) {
-      lastLEDWriteTime_ = -1;
-      updateToNewPattern(receivedMessage.currentPattern,
-                        receivedMessage.elapsedTime,
-                        currentTime);
-    }
   }
-#if ESP32_BLE_RECEIVER
-  for (NetworkMessage message :
-    Esp32BleNetwork::get()->getReceivedMessages(currentTime)) {
-    const Milliseconds timeSinceReceipt = currentTime - message.receiptTime;
-    if (message.elapsedTime < 0xFFFFFFFF - timeSinceReceipt) {
-      message.elapsedTime += timeSinceReceipt;
-    } else {
-      message.elapsedTime = 0xFFFFFFFF;
-    }
-    NetworkDeviceId followedDeviceId = Esp32BleNetwork::get()->getLocalDeviceId();
-    if (message.originator == followedDeviceId) {
-      info("%u Ignoring received BLE from ourselves " DEVICE_ID_FMT,
-           currentTime, DEVICE_ID_HEX(message.originator));
-      continue;
-    }
-    Precedence followedPrecedence;
-    if (followingLeader_) {
-      followedDeviceId = leaderDeviceId_;
-      followedPrecedence = GetLeaderPrecedence(currentTime);
-    } else {
-      followedPrecedence = GetLocalPrecedence(currentTime);
-    }
-    if (message.elapsedTime > kEffectDuration && !loop_) {
-      // Ignore this message because the sender already switched effects.
-      info("%u Ignoring received BLE with time %u past duration %u",
-           currentTime, message.elapsedTime, kEffectDuration);
-      continue;
-    }
-    if (comparePrecedence(followedPrecedence, followedDeviceId,
-                          message.precedence, message.originator) >= 0) {
-      info("%u Ignoring received BLE from " DEVICE_ID_FMT
-           " precedence %u because our %s " DEVICE_ID_FMT " precedence %u is higher",
-           currentTime, DEVICE_ID_HEX(message.originator), message.precedence,
-           (followingLeader_ ? "remote" : "local"),
-           DEVICE_ID_HEX(followedDeviceId), followedPrecedence);
-      continue;
-    }
-    if (!followingLeader_) {
-      info("%u Switching from local " DEVICE_ID_FMT " to leader"
-           " " DEVICE_ID_FMT " precedence %u prior precedence %u",
-           currentTime, DEVICE_ID_HEX(followedDeviceId),
-           DEVICE_ID_HEX(message.originator),
-           message.precedence, followedPrecedence);
-    } else if (leaderDeviceId_ != message.originator) {
-      info("%u Picking new leader " DEVICE_ID_FMT " precedence %u"
-           " over " DEVICE_ID_FMT " precedence %u",
-           currentTime, DEVICE_ID_HEX(message.originator), message.precedence,
-           DEVICE_ID_HEX(leaderDeviceId_), followedPrecedence);
-    } else {
-      info("%u Keeping leader " DEVICE_ID_FMT " precedence %u"
-           " prior precedence %u",
-           currentTime, DEVICE_ID_HEX(message.originator), message.precedence,
-           followedPrecedence);
-    }
-    followingLeader_ = true;
-    leaderDeviceId_ = message.originator;
-    leaderPrecedence_ = message.precedence;
-    lastLeaderReceiveTime_ = currentTime;
-    info("%u Received BLE: switching to pattern %s %s elapsedTime %u",
-         currentTime, patternFromBits(message.currentPattern)->name().c_str(),
-         displayBitsAsBinary(message.currentPattern).c_str(),
-         message.elapsedTime);
-    lastLEDWriteTime_ = -1;
-    updateToNewPattern(message.currentPattern, message.elapsedTime, currentTime);
-  }
-#endif // ESP32_BLE_RECEIVER
 }
 
 void Player::pause() {

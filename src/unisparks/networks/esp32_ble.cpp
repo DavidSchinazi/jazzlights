@@ -25,26 +25,6 @@ namespace {
 
 constexpr uint8_t kAdvType = 0xDF;
 
-void writeUint32(uint8_t* data, uint32_t number) {
-  data[0] = static_cast<uint8_t>((number & 0xFF000000) >> 24);
-  data[1] = static_cast<uint8_t>((number & 0x00FF0000) >> 16);
-  data[2] = static_cast<uint8_t>((number & 0x0000FF00) >> 8);
-  data[3] = static_cast<uint8_t>((number & 0x000000FF));
-}
-
-void writeUint16(uint8_t* data, uint16_t number) {
-  data[0] = static_cast<uint8_t>((number & 0xFF00) >> 8);
-  data[1] = static_cast<uint8_t>((number & 0x00FF));
-}
-
-uint32_t readUint32(const uint8_t* data) {
-  return (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | (data[3]);
-}
-
-uint16_t readUint16(const uint8_t* data) {
-  return (data[0] << 8) | (data[1]);
-}
-
 void convertToHex(char* target, size_t targetLength,
                   const uint8_t* source, uint8_t sourceLength) {
   if (targetLength <= sourceLength * 2) {
@@ -194,6 +174,11 @@ void Esp32BleNetwork::setMessageToSend(const NetworkMessage& messageToSend,
   }
 }
 
+void Esp32BleNetwork::disableSending(Milliseconds currentTime) {
+  const std::lock_guard<std::mutex> lock(mutex_);
+  hasDataToSend_ = false;
+}
+
 void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifier,
                                     uint8_t innerPayloadLength,
                                     const uint8_t* innerPayload,
@@ -256,7 +241,6 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload,
   }
   memcpy(innerPayload, innerPayload_, innerPayloadLength_);
   if (timeByteOffset_ + sizeof(uint32_t) <= innerPayloadLength_) {
-    Milliseconds currentTime = millis();
     Milliseconds timeToSend;
     if (timeSubtract_ <= currentTime) {
       timeToSend = currentTime - timeSubtract_;

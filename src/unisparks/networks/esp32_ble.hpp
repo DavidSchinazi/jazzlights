@@ -30,11 +30,15 @@ class Esp32BleNetwork : public Network {
 
   void setMessageToSend(const NetworkMessage& messageToSend,
                         Milliseconds currentTime) override;
+  void disableSending(Milliseconds currentTime) override;
   void triggerSendAsap(Milliseconds currentTime) override;
 
   // Get this device's BLE MAC address.
   NetworkDeviceId getLocalDeviceId() override {
     return localDeviceId_;
+  }
+  const char* name() const override {
+    return "ESP32BLE";
   }
  protected:
   void runLoopImpl(Milliseconds currentTime) override;

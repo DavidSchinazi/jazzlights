@@ -38,7 +38,9 @@ drive some [NeoPixels](https://www.adafruit.com/index.php?main_page=category&cPa
     {
       Serial.begin(115200);
       strip.begin();
-      player.begin(pixels, renderPixel, network);
+      player.connect(&network);
+      player.addStrand(pixels, renderPixel);
+      player.begin();
  
       pinMode(LED_PIN, OUTPUT);
     }

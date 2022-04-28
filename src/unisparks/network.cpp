@@ -31,6 +31,26 @@ constexpr uint32_t htonl(uint32_t n) {
 
 namespace unisparks {
 
+void writeUint32(uint8_t* data, uint32_t number) {
+  data[0] = static_cast<uint8_t>((number & 0xFF000000) >> 24);
+  data[1] = static_cast<uint8_t>((number & 0x00FF0000) >> 16);
+  data[2] = static_cast<uint8_t>((number & 0x0000FF00) >> 8);
+  data[3] = static_cast<uint8_t>((number & 0x000000FF));
+}
+
+void writeUint16(uint8_t* data, uint16_t number) {
+  data[0] = static_cast<uint8_t>((number & 0xFF00) >> 8);
+  data[1] = static_cast<uint8_t>((number & 0x00FF));
+}
+
+uint32_t readUint32(const uint8_t* data) {
+  return (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | (data[3]);
+}
+
+uint16_t readUint16(const uint8_t* data) {
+  return (data[0] << 8) | (data[1]);
+}
+
 std::string NetworkStatusToString(NetworkStatus status) {
   switch (status) {
 #define X(s) case s: return #s;
@@ -52,6 +72,25 @@ std::string displayBitsAsBinary(PatternBits p) {
   }
   return std::string(bits);
 }
+
+std::string networkMessageToString(const NetworkMessage& message) {
+  char str[sizeof(", t=4294967296, p=65536, rt=4294967296}")] = {};
+  snprintf(str, sizeof(str), ", t=%u, p=%u, rt=%u}",
+           message.elapsedTime, message.precedence, message.receiptTime);
+  return "{o=" + message.originator.toString() +
+         ", s=" + message.sender.toString() +
+         ", c=" + displayBitsAsBinary(message.currentPattern) +
+         ", n=" + displayBitsAsBinary(message.nextPattern) +
+         str;
+}
+
+  NetworkDeviceId originator = NetworkDeviceId();
+  NetworkDeviceId sender = NetworkDeviceId();
+  PatternBits currentPattern = 0;
+  PatternBits nextPattern = 0;
+  Milliseconds elapsedTime = 0;
+  Precedence precedence = 0;
+  Milliseconds receiptTime = 0;
 
 static constexpr int msgcodeEffectFrame = 0xDF0002;
 static constexpr Milliseconds effectUpdatePeriod = 1000;
@@ -84,22 +123,24 @@ NetworkStatus Network::status() const {
 void Network::reconnect(Milliseconds currentTime) {
   if (status_ != CONNECTED) {
     lastConnectionAttempt_ = currentTime;
-    info("%u Network Reconnecting", currentTime);
+    info("%u %s Network Reconnecting", currentTime, name());
     status_ = update(CONNECTING, currentTime);
   }
 }
 
 void UdpNetwork::triggerSendAsap(Milliseconds currentTime) {
-  if (!isEffectMaster_) {
-    info("%u Now controlling effects", currentTime);
-  }
-  isEffectMaster_ = true;
   effectLastTxTime_ = 0;
 }
 
 void UdpNetwork::setMessageToSend(const NetworkMessage& messageToSend,
                                   Milliseconds currentTime) {
+  hasDataToSend_ = true;
   messageToSend_ = messageToSend;
+  timeSubtract_ = currentTime - messageToSend.elapsedTime;
+}
+
+void UdpNetwork::disableSending(Milliseconds currentTime) {
+  hasDataToSend_ = false;
 }
 
 std::list<NetworkMessage> Network::getReceivedMessages(Milliseconds currentTime) {
@@ -113,64 +154,31 @@ std::list<NetworkMessage> UdpNetwork::getReceivedMessagesImpl(Milliseconds curre
     return receivedMessages;
   }
   while (true) {
-    Message packet;
-
-    // Now let's see if we received anything
-    int n = recv(&packet, sizeof(packet));
+    uint8_t udpPayload[2000] = {};
+    ssize_t n = recv(&udpPayload[0], sizeof(udpPayload));
     if (n <= 0) {
       break;
     }
-    if (n < static_cast<int>(sizeof(packet))) {
-      error("%u Received packet too short, received %d bytes, expected at least %d bytes",
-            currentTime, n, sizeof(packet));
+    if (n < 3 + 6 + 6 + 2 + 4 + 4 + 4) {
+      info("%u %s Received packet too short, received %d bytes, expected at least %d bytes",
+           currentTime, name(), n, 3 + 6 + 6 + 2 + 4 + 4 + 4);
       continue;
     }
-    int32_t msgcode = ntohl(packet.msgcode);
-    if (msgcode == msgcodeEffectFrame) {
-      if (packet.data.frame.reserved[6] != 0x33 ||
-          packet.data.frame.reserved[7] != 0x77) {
-        error("%u Ignoring message with bad reserved", currentTime);
-        continue;;
-      }
-      effectLastRxTime_ = currentTime;
-
-      if (effectLastRxTime_ - effectLastTxTime_ < 50) {
-        debug("%u This must be my own packet, ignoring", currentTime);
-        continue;
-      }
-
-      if (isEffectMaster_) {
-        info("%u No longer effect master because of received packet", currentTime);
-      }
-      isEffectMaster_ = false;
-      NetworkMessage receivedMessage;
-      // TODO: receivedMessage.originator;
-      receivedMessage.currentPattern = packet.data.frame.pattern;
-      receivedMessage.nextPattern = 0; // TODO;
-      receivedMessage.elapsedTime = static_cast<Milliseconds>(ntohl(packet.data.frame.time));;
-      receivedMessage.precedence = 0; // TODO
-
-      info("%u Received pattern %s, time %d ms",
-          currentTime, displayBitsAsBinary(receivedMessage.currentPattern).c_str(),
-          receivedMessage.elapsedTime);
-      receivedMessages.push_back(receivedMessage);
-      continue;
-    } else {
-      error("%u Received unknown message, code: %d", currentTime, msgcode);
+    uint8_t prefix[3] = {0xFF, 'L', '1'};
+    if (memcmp(&prefix[0], &udpPayload[0], sizeof(prefix)) != 0) {
+      info("%u %s Received packet with bad prefix",
+           currentTime, name());
       continue;
     }
-  }
-  if (!receivedMessages.empty()) {
-    if (effectLastRxTime_ < 1) {
-      effectLastRxTime_ = currentTime;
-    }
-
-    if (!isEffectMaster_
-        && currentTime - effectLastRxTime_ > maxMissingEffectMasterPeriod) {
-      info("%u Haven't heard from effect master for a while, taking over",
-          currentTime);
-      isEffectMaster_ = true;
-    }
+    NetworkMessage receivedMessage;
+    receivedMessage.originator = NetworkDeviceId(&udpPayload[3]);
+    receivedMessage.sender = NetworkDeviceId(&udpPayload[3 + 6]);
+    receivedMessage.precedence = readUint16(&udpPayload[3 + 6 + 6]);
+    receivedMessage.currentPattern = readUint32(&udpPayload[3 + 6 + 6 + 2]);
+    receivedMessage.nextPattern = readUint32(&udpPayload[3 + 6 + 6 + 2 + 4]);
+    receivedMessage.elapsedTime = readUint32(&udpPayload[3 + 6 + 6 + 2 + 4 + 4]);
+    receivedMessage.receiptTime = currentTime;
+    receivedMessages.push_back(receivedMessage);
   }
   return receivedMessages;
 }
@@ -185,9 +193,10 @@ void Network::checkStatus(Milliseconds currentTime) {
     const NetworkStatus previousStatus = status_;
     status_ = update(status_, currentTime);
     if (status_ != previousStatus) {
-      info("Network updated status from %s to %s",
-            NetworkStatusToString(previousStatus).c_str(),
-            NetworkStatusToString(status_).c_str());
+      info("%s updated status from %s to %s",
+           name(),
+           NetworkStatusToString(previousStatus).c_str(),
+           NetworkStatusToString(status_).c_str());
     }
   }
   if (status_ == CONNECTED) {
@@ -202,16 +211,7 @@ void Network::runLoop(Milliseconds currentTime) {
 }
 
 bool UdpNetwork::maybeHandleNotConnected(Milliseconds currentTime) {
-  if (status() == CONNECTED) {
-    return true;
-  }
-  if (isEffectMaster_) {
-    info("%u No longer effect master because of network disconnection",
-          currentTime);
-    isEffectMaster_ = false;
-  }
-  effectLastRxTime_ = 0;
-  return false;
+  return status() == CONNECTED;
 }
 
 void UdpNetwork::runLoopImpl(Milliseconds currentTime) {
@@ -220,22 +220,30 @@ void UdpNetwork::runLoopImpl(Milliseconds currentTime) {
   }
 
   // Do we need to broadcast?
-  if (isEffectMaster_ && (effectLastTxTime_ < 1
-                          || currentTime - effectLastTxTime_ > effectUpdatePeriod
-                          || messageToSend_.currentPattern != lastSentPattern_)) {
-    Message packet;
-    memset(&packet, 0, sizeof(packet));
-    packet.data.frame.reserved[6] = 0x33;
-    packet.data.frame.reserved[7] = 0x77;
-    packet.msgcode = htonl(msgcodeEffectFrame);
-    packet.data.frame.pattern = messageToSend_.currentPattern;
-    lastSentPattern_ = messageToSend_.currentPattern;
-    packet.data.frame.time = htonl(messageToSend_.elapsedTime);
+  if (hasDataToSend_ &&
+      (effectLastTxTime_ < 1 ||
+         currentTime - effectLastTxTime_ > effectUpdatePeriod ||
+         messageToSend_.currentPattern != lastSentPattern_)) {
     effectLastTxTime_ = currentTime;
-    send(&packet, sizeof(packet));
-    info("%u Sent pattern %s, time %d ms",
-         currentTime, displayBitsAsBinary(messageToSend_.currentPattern).c_str(),
-         messageToSend_.elapsedTime);
+    lastSentPattern_ = messageToSend_.currentPattern;
+    info("%u %s sending %s",
+         currentTime, name(), networkMessageToString(messageToSend_).c_str());
+
+
+    uint8_t udpPayload[3 + 6 + 6 + 2 + 4 + 4 + 4] = {0xFF, 'L', '1'};
+    messageToSend_.originator.writeTo(&udpPayload[3]);
+    messageToSend_.sender.writeTo(&udpPayload[3 + 6]);
+    writeUint16(&udpPayload[3 + 6 + 6], messageToSend_.precedence);
+    writeUint32(&udpPayload[3 + 6 + 6 + 2], messageToSend_.currentPattern);
+    writeUint32(&udpPayload[3 + 6 + 6 + 2 + 4], messageToSend_.nextPattern);
+    Milliseconds timeToSend;
+    if (timeSubtract_ <= currentTime) {
+      timeToSend = currentTime - timeSubtract_;
+    } else {
+      timeToSend = 0xFFFFFFFF;
+    }
+    writeUint32(&udpPayload[3 + 6 + 6 + 2 + 4 + 4], timeToSend);
+    send(&udpPayload[0], sizeof(udpPayload));
   }
 }
 

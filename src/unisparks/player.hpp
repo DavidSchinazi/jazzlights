@@ -36,7 +36,7 @@ class Player {
   Player& addStrand(const Layout& l, Renderer& r);
   Player& addStrand(const Layout& l, SimpleRenderFunc r);
   Player& throttleFps(FramesPerSecond v);
-  Player& connect(Network& n);
+  Player& connect(Network* n);
 
   /**
    * Prepare for rendering
@@ -45,10 +45,6 @@ class Player {
    * player configuration.
    */
   void begin();
-  void begin(const Layout& layout, Renderer& renderer);
-  void begin(const Layout& layout, SimpleRenderFunc renderer);
-  void begin(const Layout& layout, Renderer& renderer, Network& network);
-  void begin(const Layout& layout, SimpleRenderFunc renderer, Network& network);
 
   /**
    * Exit rendering mode and cleanup runtime resources
@@ -119,11 +115,14 @@ class Player {
   Effect* currentEffect() const;
   void updateToNewPattern(PatternBits newPattern, Milliseconds elapsedTime, Milliseconds currentTime);
   void render(NetworkStatus networkStatus, Milliseconds timeSinceLastRender, Milliseconds currentTime);
+  void handleReceivedMessage(NetworkMessage message, Milliseconds currentTime);
 
-  Precedence GetLocalPrecedence(Milliseconds currentTime);
-  Precedence GetLeaderPrecedence(Milliseconds currentTime);
-  Precedence GetFollowedPrecedence(Milliseconds currentTime);
-  NetworkDeviceId GetFollowedDeviceId();
+  Precedence getLocalPrecedence(Milliseconds currentTime);
+  Precedence getLeaderPrecedence(Milliseconds currentTime);
+  Precedence getFollowedPrecedence(Milliseconds currentTime);
+  NetworkDeviceId getLocalDeviceId(Milliseconds currentTime);
+  NetworkDeviceId getLeaderDeviceId(Milliseconds currentTime);
+  NetworkDeviceId getFollowedDeviceId(Milliseconds currentTime);
 
   bool ready_;
 

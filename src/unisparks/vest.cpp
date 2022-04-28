@@ -23,15 +23,14 @@ CLEDController* mainVestController = nullptr;
 void vestSetup(void) {
   Serial.begin(115200);
 
+  setupButtons();
+  player.addStrand(pixels, renderPixel);
 
 #if ESP32_BLE
-  // Make sure BLE is properly setup by constructor.
-  (void)Esp32BleNetwork::get();
+  player.connect(Esp32BleNetwork::get());
 #endif // ESP32_BLE
-
-  setupButtons();
-
-  player.begin(pixels, renderPixel, network);
+  player.connect(&network);
+  player.begin();
 
   mainVestController = &FastLED.addLeds<WS2812B, LED_PIN, GRB>(
     leds, sizeof(leds)/sizeof(*leds));
