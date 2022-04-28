@@ -27,6 +27,7 @@ release-armv7:
 install:
 	${CARGO} clean -p tglight --release
 	${CARGO} build --release
+	service tglight stop
 	mkdir -p /opt/tglight/bin
 	cp ${BUILD_DIR}/release/tglight /opt/tglight/bin/tglight
 	mkdir -p /opt/tglight/etc
