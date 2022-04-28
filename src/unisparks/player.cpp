@@ -585,7 +585,7 @@ NetworkDeviceId Player::GetFollowedDeviceId() {
     return leaderDeviceId_;
   } else {
 #if ESP32_BLE_SENDER
-    return Esp32BleNetwork::get()->getLocalAddress();
+    return Esp32BleNetwork::get()->getLocalDeviceId();
 #else // ESP32_BLE_SENDER
     return NetworkDeviceId(); // TODO
 #endif // ESP32_BLE_SENDER
@@ -650,7 +650,7 @@ void Player::syncToNetwork(Milliseconds currentTime) {
     } else {
       message.elapsedTime = 0xFFFFFFFF;
     }
-    NetworkDeviceId followedDeviceId = Esp32BleNetwork::get()->getLocalAddress();
+    NetworkDeviceId followedDeviceId = Esp32BleNetwork::get()->getLocalDeviceId();
     if (message.originator == followedDeviceId) {
       info("%u Ignoring received BLE from ourselves " DEVICE_ID_FMT,
            currentTime, DEVICE_ID_HEX(message.originator));

@@ -97,6 +97,9 @@ class Network {
   // Request an immediate send.
   virtual void triggerSendAsap(Milliseconds currentTime) = 0;
 
+  // Returns this device's unique ID, often using its MAC address.
+  virtual NetworkDeviceId getLocalDeviceId() = 0;
+
  protected:
   Network() = default;
   // Perform any work necessary to switch to requested state.

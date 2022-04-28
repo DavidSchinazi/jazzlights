@@ -7,11 +7,13 @@
 
 namespace unisparks {
 
-
 NetworkStatus Esp8266WiFi::update(NetworkStatus status, Milliseconds currentTime) {
   switch (status) {
-  case INITIALIZING:
-    info("%u Connecting to %s...", currentTime, creds_.ssid);
+  case INITIALIZING: {
+    uint8_t macAddress[6] = {};
+    localDeviceId_ = NetworkDeviceId(WiFi.macAddress(&macAddress[0]));
+    info("%u Wi-Fi MAC is " DEVICE_ID_FMT ", connecting to %s...",
+         currentTime, DEVICE_ID_HEX(localDeviceId_), creds_.ssid);
     if (staticConf_) {
       IPAddress ip, gw, snm;
       ip.fromString(staticConf_->ip);
@@ -22,8 +24,8 @@ NetworkStatus Esp8266WiFi::update(NetworkStatus status, Milliseconds currentTime
 
     WiFi.begin(creds_.ssid, creds_.pass);
     return CONNECTING;
-
-  case CONNECTING:
+  } break;
+  case CONNECTING: {
     switch (WiFi.status()) {
     case WL_NO_SHIELD:
       error("%u Connection to %s failed: there's no WiFi shield",
@@ -82,7 +84,7 @@ NetworkStatus Esp8266WiFi::update(NetworkStatus status, Milliseconds currentTime
       }
     }
     }
-    break;
+  } break;
 
   case CONNECTED:
   case DISCONNECTED:
@@ -90,7 +92,7 @@ NetworkStatus Esp8266WiFi::update(NetworkStatus status, Milliseconds currentTime
     // do nothing
     break;
 
-  case DISCONNECTING:
+  case DISCONNECTING: {
     switch (WiFi.status()) {
     case WL_DISCONNECTED:
       info("%u Disconnected from %s", currentTime, creds_.ssid);
@@ -100,7 +102,7 @@ NetworkStatus Esp8266WiFi::update(NetworkStatus status, Milliseconds currentTime
       WiFi.disconnect();
       break;
     }
-    break;
+  } break;
   }
 
   return status;

@@ -33,7 +33,9 @@ class Esp32BleNetwork : public Network {
   void triggerSendAsap(Milliseconds currentTime) override;
 
   // Get this device's BLE MAC address.
-  NetworkDeviceId getLocalAddress();
+  NetworkDeviceId getLocalDeviceId() override {
+    return localDeviceId_;
+  }
  protected:
   void runLoopImpl(Milliseconds currentTime) override;
   NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
@@ -84,7 +86,8 @@ class Esp32BleNetwork : public Network {
   static void GapCallback(esp_gap_ble_cb_event_t event,
                           esp_ble_gap_cb_param_t *param);
 
-  // All these variables are protected by mutex_.
+  NetworkDeviceId localDeviceId_;
+  // All the variables below are protected by mutex_.
   State state_ = State::kIdle;
   bool isSendingEnabled_ = false;
   bool hasDataToSend_ = false;
@@ -96,7 +99,6 @@ class Esp32BleNetwork : public Network {
   std::list<NetworkMessage> receivedMessages_;
   Milliseconds timeToStopAdvertising_ = 0;
   Milliseconds timeToStopScanning_ = 0;
-  NetworkDeviceId localDeviceIdentifier_;
   std::mutex mutex_;
 };
 

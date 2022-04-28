@@ -16,6 +16,9 @@ class UnixUdpNetwork : public UdpNetwork {
   UnixUdpNetwork(const UnixUdpNetwork&) = default;
 
   NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
+  NetworkDeviceId getLocalDeviceId() override {
+    return localDeviceId_;
+  }
   int recv(void* buf, size_t bufsize) override;
   void send(void* buf, size_t bufsize) override;
 private:
@@ -23,6 +26,7 @@ private:
   void invalidateSocket(std::string ifName);
   bool setupSockets();
 
+  NetworkDeviceId localDeviceId_;
   struct in_addr mcastAddr_;
   char mcastAddrStr_[sizeof("255.255.255.255")];
   const uint16_t port_;

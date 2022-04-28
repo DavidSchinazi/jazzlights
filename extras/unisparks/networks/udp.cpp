@@ -13,6 +13,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <assert.h>
+#ifdef __APPLE__
+#  include <net/if_dl.h>
+#endif // __APPLE__
 
 #include "unisparks/util/log.hpp"
 
@@ -134,6 +137,28 @@ bool UnixUdpNetwork::setupSockets() {
     if (ifa->ifa_addr == NULL) {
       error("Skipping interface without data \"%s\"", ifa->ifa_name);
       continue;
+    }
+    if (localDeviceId_ == NetworkDeviceId()) {
+      // Fill in localDeviceId_.
+#if defined(__APPLE__)
+      if (ifa->ifa_addr->sa_family != AF_LINK) {
+        continue;
+      }
+      struct sockaddr_dl* dlAddress = reinterpret_cast<struct sockaddr_dl*>(ifa->ifa_addr); 
+      NetworkDeviceId localAddress(reinterpret_cast<const uint8_t*>(&dlAddress->sdl_data[dlAddress->sdl_nlen]));
+#elif defined(linux)
+      if (ifa->ifa_addr->sa_family != AF_PACKET) {
+        continue;
+      }
+      NetworkDeviceId localAddress((reinterpret_cast<struct sockaddr_ll*>(ifa->ifa_addr)->sll_addr);
+#else
+#  error "Unsupported platform"
+#endif
+      if (localAddress != NetworkDeviceId()) {
+        info("Choosing local MAC address " DEVICE_ID_FMT " from interface %s",
+             DEVICE_ID_HEX(localAddress), ifa->ifa_name);
+        localDeviceId_ = localAddress;
+      }
     }
     if (ifa->ifa_addr->sa_family != AF_INET) {
       // We currently only support IPv4.

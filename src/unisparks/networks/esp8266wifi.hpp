@@ -26,12 +26,14 @@ namespace unisparks {
 
 class Esp8266WiFi : public UdpNetwork {
  public:
-  Esp8266WiFi(const char* ssid, const char* pass) : creds_{ssid, pass} {
-  }
+  Esp8266WiFi(const char* ssid, const char* pass) : creds_{ssid, pass} {}
 
   NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
   int recv(void* buf, size_t bufsize) override;
   void send(void* buf, size_t bufsize) override;
+  NetworkDeviceId getLocalDeviceId() override {
+    return localDeviceId_;
+  }
 
   struct Credentials {
     const char* ssid;
@@ -50,6 +52,7 @@ class Esp8266WiFi : public UdpNetwork {
   WiFiUDP udp_;
   Credentials creds_;
   StaticConf* staticConf_ = nullptr;
+  NetworkDeviceId localDeviceId_;
 };
 
 } // namespace unisparks

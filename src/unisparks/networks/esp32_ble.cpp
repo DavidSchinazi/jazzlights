@@ -425,18 +425,14 @@ NetworkStatus Esp32BleNetwork::update(NetworkStatus status, Milliseconds current
 Esp32BleNetwork::Esp32BleNetwork() {
   // Let Arduino BLEDevice handle initialization.
   BLEDevice::init("");
-  // Initialize localDeviceIdentifier_.
+  // Initialize localDeviceId_.
   uint8_t addressType;
   esp_bd_addr_t localAddress;
   memset(localAddress, 0, sizeof(localAddress));
   ESP_ERROR_CHECK(esp_ble_gap_get_local_used_addr(localAddress, &addressType));
   info("Initialized BLE with local MAC address " ESP_BD_ADDR_STR " (type %u)",
        ESP_BD_ADDR_HEX(localAddress), addressType);
-  {
-    const std::lock_guard<std::mutex> lock(mutex_);
-    static_assert(sizeof(localDeviceIdentifier_) == sizeof(localAddress), "bad size");
-    localDeviceIdentifier_ = NetworkDeviceId(localAddress);
-  }
+  localDeviceId_ = NetworkDeviceId(localAddress);
   // Override callbacks away from BLEDevice back to us.
   ESP_ERROR_CHECK(esp_ble_gap_register_callback(&Esp32BleNetwork::GapCallback));
   // Configure scanning parameters.
@@ -453,11 +449,6 @@ Esp32BleNetwork::Esp32BleNetwork() {
 Esp32BleNetwork* Esp32BleNetwork::get() {
   static Esp32BleNetwork static_instance;
   return &static_instance;
-}
-
-NetworkDeviceId Esp32BleNetwork::getLocalAddress() {
-  const std::lock_guard<std::mutex> lock(mutex_);
-  return localDeviceIdentifier_;
 }
 
 void Esp32BleNetwork::runLoopImpl(Milliseconds currentTime) {
