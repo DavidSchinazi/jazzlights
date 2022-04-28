@@ -15,6 +15,8 @@
 #include <assert.h>
 #ifdef __APPLE__
 #  include <net/if_dl.h>
+#elif defined(linux) || defined(__linux) || defined(__linux__)
+#  include <linux/if_packet.h>
 #endif // __APPLE__
 
 #include "unisparks/util/log.hpp"
@@ -146,11 +148,11 @@ bool UnixUdpNetwork::setupSockets() {
       }
       struct sockaddr_dl* dlAddress = reinterpret_cast<struct sockaddr_dl*>(ifa->ifa_addr); 
       NetworkDeviceId localAddress(reinterpret_cast<const uint8_t*>(&dlAddress->sdl_data[dlAddress->sdl_nlen]));
-#elif defined(linux)
+#elif defined(linux) || defined(__linux) || defined(__linux__)
       if (ifa->ifa_addr->sa_family != AF_PACKET) {
         continue;
       }
-      NetworkDeviceId localAddress((reinterpret_cast<struct sockaddr_ll*>(ifa->ifa_addr)->sll_addr);
+      NetworkDeviceId localAddress((reinterpret_cast<struct sockaddr_ll*>(ifa->ifa_addr)->sll_addr));
 #else
 #  error "Unsupported platform"
 #endif
