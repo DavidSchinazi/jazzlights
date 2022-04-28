@@ -24,6 +24,15 @@ release-armv7:
 	${CARGO} clean -p tglight --release
 	${CARGO} build --target=armv7-unknown-linux-gnueabihf --release
 
+install:
+	${CARGO} clean -p tglight --release
+	${CARGO} build --release
+	mkdir -p /opt/tglight/bin
+	cp ${BUILD_DIR}/release/tglight /opt/tglight/bin/tglight
+	mkdir -p /opt/tglight/etc
+	cp ${SOURCE_DIR}/etc/robot/tglight.toml /opt/tglight/etc/tglight.toml
+	service tglight restart
+
 setup:
 	@if [ -z ${TGLIGHT_HOST} ]; then echo "Please set TGLIGHT_HOST environment variable" && exit 255; fi
 	cat ${HOME}/.ssh/id_rsa.pub | ssh pi@${TGLIGHT_HOST} 'sudo mount -o remount,rw / && mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys'
