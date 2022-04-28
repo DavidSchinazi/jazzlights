@@ -107,8 +107,6 @@ class Player {
   void handleSpecial();
   void stopSpecial();
 
-  Network* network() const { return network_; };
-
   bool powerLimited;
 
  private:

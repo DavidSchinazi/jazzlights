@@ -193,19 +193,16 @@ void atomScreenDisplay(const Milliseconds currentMillis) {
   atomMatrixScreenController->showLeds(t&8 ? 4+t : 20-t);
 }
 
-void atomScreenNetwork(Player& player, const Milliseconds /*currentMillis*/) {
+void atomScreenNetwork(Player& /*player*/, NetworkStatus networkStatus, const Milliseconds /*currentMillis*/) {
   // Change top-right Atom matrix screen LED based on network status.
   CRGB networkColor = CRGB::Blue;
-  Network* network = player.network();
-  if (network != nullptr) {
-    switch (player.network()->status()) {
-      case INITIALIZING: networkColor = CRGB::Pink; break;
-      case DISCONNECTED: networkColor = CRGB::Purple; break;
-      case CONNECTING: networkColor = CRGB::Yellow; break;
-      case CONNECTED: networkColor = CRGB::Green; break;
-      case DISCONNECTING: networkColor = CRGB::Orange; break;
-      case CONNECTION_FAILED: networkColor = CRGB::Red; break;
-    }
+  switch (networkStatus) {
+    case INITIALIZING: networkColor = CRGB::Pink; break;
+    case DISCONNECTED: networkColor = CRGB::Purple; break;
+    case CONNECTING: networkColor = CRGB::Yellow; break;
+    case CONNECTED: networkColor = CRGB::Green; break;
+    case DISCONNECTING: networkColor = CRGB::Orange; break;
+    case CONNECTION_FAILED: networkColor = CRGB::Red; break;
   }
   atomScreenLEDs[4] = networkColor;
 }
@@ -217,7 +214,7 @@ void atomScreenNetwork(Player& player, const Milliseconds /*currentMillis*/) {
 // 15 16 17 18 19
 // 20 21 22 23 24
 
-void atomScreenUnlocked(Player& player, const Milliseconds currentMillis) {
+void atomScreenUnlocked(Player& player, NetworkStatus networkStatus, const Milliseconds currentMillis) {
   const CRGB* icon = atomScreenLEDs;
   switch (menuMode) {
     case kNext: icon = menuIconNext; break;
@@ -235,7 +232,7 @@ void atomScreenUnlocked(Player& player, const Milliseconds currentMillis) {
       else if (player.powerLimited) { atomScreenLEDs[brightnessDial[i]] = CRGB::Red;   }
     }
   }
-  atomScreenNetwork(player, currentMillis);
+  atomScreenNetwork(player, networkStatus, currentMillis);
 }
 
 void atomScreenClear() {
@@ -244,20 +241,20 @@ void atomScreenClear() {
   }
 }
 
-void atomScreenLong(Player& player, const Milliseconds currentMillis) {
+void atomScreenLong(Player& player, NetworkStatus networkStatus, const Milliseconds currentMillis) {
   atomScreenClear();
   for (int i : {0,5,10,15,20,21,22}) {
     atomScreenLEDs[i] = CRGB::Gold;
   }
-  atomScreenNetwork(player, currentMillis);
+  atomScreenNetwork(player, networkStatus, currentMillis);
 }
 
-void atomScreenShort(Player& player, const Milliseconds currentMillis) {
+void atomScreenShort(Player& player, NetworkStatus networkStatus, const Milliseconds currentMillis) {
   atomScreenClear();
   for (int i : {2,1,0,5,10,11,12,17,22,21,20}) {
     atomScreenLEDs[i] = CRGB::Gold;
   }
-  atomScreenNetwork(player, currentMillis);
+  atomScreenNetwork(player, networkStatus, currentMillis);
 }
 
 bool atomScreenMessage(uint8_t btn, const Milliseconds currentMillis) {
@@ -350,7 +347,7 @@ void setupButtons() {
 #endif // ATOM_MATRIX_SCREEN
 }
 
-void doButtons(Player& player, const Milliseconds currentMillis) {
+void doButtons(Player& player, NetworkStatus networkStatus, const Milliseconds currentMillis) {
   updateButtons(currentMillis); // Read, debounce, and process the buttons
 #if !BUTTONS_DISABLED
 #if defined(ESP32)
@@ -430,7 +427,7 @@ void doButtons(Player& player, const Milliseconds currentMillis) {
       break;
   }
 #if ATOM_MATRIX_SCREEN
-  atomScreenUnlocked(player, currentMillis);
+  atomScreenUnlocked(player, networkStatus, currentMillis);
   atomScreenDisplay(currentMillis);
 #endif // ATOM_MATRIX_SCREEN
 #elif defined(ESP8266)

@@ -9,7 +9,7 @@
 namespace unisparks {
 
 void setupButtons();
-void doButtons(Player& player, const Milliseconds currentMillis);
+void doButtons(Player& player, NetworkStatus networkStatus, const Milliseconds currentMillis);
 uint8_t getBrightness();
 
 } // namespace unisparks
