@@ -32,27 +32,28 @@ using Precedence = uint16_t;
 
 class NetworkDeviceId {
  public:
-  NetworkDeviceId() { memset(data_, 0, sizeof(data_)); }
+  NetworkDeviceId() {
+    memset(&data_[0], 0, kNetworkDeviceIdSize);
+  }
   NetworkDeviceId(const uint8_t* data) {
-    memcpy(data_, data, sizeof(data_));
+    memcpy(&data_[0], data, kNetworkDeviceIdSize);
   }
-  NetworkDeviceId(const NetworkDeviceId& other) {
-    NetworkDeviceId(other.data_);
-  }
+  NetworkDeviceId(const NetworkDeviceId& other) :
+    NetworkDeviceId(&other.data_[0]) {}
   NetworkDeviceId& operator= (const NetworkDeviceId& other) {
-    return operator=(other.data_);
+    return operator=(&other.data_[0]);
   }
   NetworkDeviceId& operator= (const uint8_t* data) {
-    memcpy(data_, data, sizeof(data_));
+    memcpy(&data_[0], data, kNetworkDeviceIdSize);
     return *this;
   }
   uint8_t operator()(uint8_t i) const {
     return data_[i];
   }
   int compare(const NetworkDeviceId& other) const {
-    return memcmp(data_, other.data_, sizeof(data_));
+    return memcmp(&data_[0], &other.data_[0], kNetworkDeviceIdSize);
   }
-  void writeTo(uint8_t* data) const { memcpy(data, data_, sizeof(data_)); }
+  void writeTo(uint8_t* data) const { memcpy(data, &data_[0], kNetworkDeviceIdSize); }
   bool operator==(const NetworkDeviceId& other) const { return compare(other) == 0; }
   bool operator!=(const NetworkDeviceId& other) const { return compare(other) != 0; }
   bool operator< (const NetworkDeviceId& other) const { return compare(other) <  0; }
@@ -60,7 +61,8 @@ class NetworkDeviceId {
   bool operator> (const NetworkDeviceId& other) const { return compare(other) >  0; }
   bool operator>=(const NetworkDeviceId& other) const { return compare(other) >= 0; }
  private:
-  uint8_t data_[6];
+  static constexpr size_t kNetworkDeviceIdSize = 6;
+  uint8_t data_[kNetworkDeviceIdSize];
 };
 
 #define DEVICE_ID_FMT "%02x:%02x:%02x:%02x:%02x:%02x"
