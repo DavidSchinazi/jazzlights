@@ -25,6 +25,7 @@ release-armv7:
 	${CARGO} build --target=armv7-unknown-linux-gnueabihf --release
 
 install:
+	mount -o remount,rw /
 	${CARGO} clean -p tglight --release
 	${CARGO} build --release
 	service tglight stop
