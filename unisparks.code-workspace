@@ -51,7 +51,10 @@
 			"cinttypes": "cpp",
 			"utility": "cpp",
 			"typeinfo": "cpp",
-			"string": "cpp"
+			"string": "cpp",
+			"bitset": "cpp",
+			"optional": "cpp",
+			"regex": "cpp"
 		}
 	}
 }

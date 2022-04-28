@@ -92,9 +92,7 @@ std::string networkMessageToString(const NetworkMessage& message) {
   Precedence precedence = 0;
   Milliseconds receiptTime = 0;
 
-static constexpr int msgcodeEffectFrame = 0xDF0002;
 static constexpr Milliseconds effectUpdatePeriod = 1000;
-static constexpr Milliseconds maxMissingEffectMasterPeriod = 2000;
 
 struct Message {
   int32_t msgcode;
@@ -128,7 +126,7 @@ void Network::reconnect(Milliseconds currentTime) {
   }
 }
 
-void UdpNetwork::triggerSendAsap(Milliseconds currentTime) {
+void UdpNetwork::triggerSendAsap(Milliseconds /*currentTime*/) {
   effectLastTxTime_ = 0;
 }
 
@@ -139,7 +137,7 @@ void UdpNetwork::setMessageToSend(const NetworkMessage& messageToSend,
   timeSubtract_ = currentTime - messageToSend.elapsedTime;
 }
 
-void UdpNetwork::disableSending(Milliseconds currentTime) {
+void UdpNetwork::disableSending(Milliseconds /*currentTime*/) {
   hasDataToSend_ = false;
 }
 
@@ -210,7 +208,7 @@ void Network::runLoop(Milliseconds currentTime) {
   runLoopImpl(currentTime);
 }
 
-bool UdpNetwork::maybeHandleNotConnected(Milliseconds currentTime) {
+bool UdpNetwork::maybeHandleNotConnected(Milliseconds /*currentTime*/) {
   return status() == CONNECTED;
 }
 

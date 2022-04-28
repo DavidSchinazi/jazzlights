@@ -390,9 +390,9 @@ void doButtons(Player& player, NetworkStatus networkStatus, const Milliseconds c
     if ((buttonLockState == 0 && btn == BTN_IDLE) || BTN_SHORT_PRESS_COMPLETE(btn) || buttonLockState >= 4) {
       atomScreenClear();
     } else if (buttonLockState & 1) {
-      atomScreenLong(player, currentMillis);  // In odd  states (1,3) we show “L”
+      atomScreenLong(player, networkStatus, currentMillis);  // In odd  states (1,3) we show “L”
     } else {
-      atomScreenShort(player, currentMillis); // In even states (0,2) we show “S”
+      atomScreenShort(player, networkStatus, currentMillis); // In even states (0,2) we show “S”
     }
     atomScreenDisplay(currentMillis);
 
@@ -485,7 +485,10 @@ void doButtons(Player& player, NetworkStatus networkStatus, const Milliseconds c
   // Check the brightness adjust button
   switch (btn1) {
     case BTN_RELEASED:
-      brightnessCursor = (brightnessCursor + 1 < NUM_BRIGHTNESSES) ? brightnessCursor + 1 : 0;
+      brightnessCursor++;
+      if (brightnessCursor >= NUM_BRIGHTNESSES) {
+        brightnessCursor = 0;
+      }
       info("Brightness button has been hit %u", brightnessList[brightnessCursor]);
       break;
 

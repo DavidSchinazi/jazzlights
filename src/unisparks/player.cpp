@@ -1,6 +1,7 @@
 #include "unisparks/player.hpp"
 
 #include <cstdio>
+#include <limits>
 #include <stdlib.h>
 #include <assert.h>
 #include "unisparks/effects/chess.hpp"
@@ -548,7 +549,7 @@ if (followingLeader_) {
   }
 }
 
-NetworkDeviceId Player::getLocalDeviceId(Milliseconds currentTime) {
+NetworkDeviceId Player::getLocalDeviceId(Milliseconds /*currentTime*/) {
   for (Network* network : networks_) {
     NetworkDeviceId localDeviceId = network->getLocalDeviceId();
     if (localDeviceId != NetworkDeviceId()) {
@@ -558,7 +559,7 @@ NetworkDeviceId Player::getLocalDeviceId(Milliseconds currentTime) {
   return NetworkDeviceId();
 }
 
-NetworkDeviceId Player::getLeaderDeviceId(Milliseconds currentTime) {
+NetworkDeviceId Player::getLeaderDeviceId(Milliseconds /*currentTime*/) {
   return leaderDeviceId_;
 }
 
@@ -610,10 +611,10 @@ void Player::updateToNewPattern(PatternBits newPattern,
 
 void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentTime) {
   const Milliseconds timeSinceReceipt = currentTime - message.receiptTime;
-  if (message.elapsedTime < 0xFFFFFFFF - timeSinceReceipt) {
+  if (message.elapsedTime < std::numeric_limits<Milliseconds>::max() - timeSinceReceipt) {
     message.elapsedTime += timeSinceReceipt;
   } else {
-    message.elapsedTime = 0xFFFFFFFF;
+    message.elapsedTime = std::numeric_limits<Milliseconds>::max();
   }
   NetworkDeviceId followedDeviceId = getLocalDeviceId(currentTime);
   if (message.sender == followedDeviceId) {

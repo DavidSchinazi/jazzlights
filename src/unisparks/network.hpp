@@ -158,7 +158,6 @@ class UdpNetwork : public Network {
   PatternBits lastSentPattern_ = 0;
 
   Milliseconds effectLastTxTime_ = 0;
-  Milliseconds effectLastRxTime_ = 0;
 };
 
 

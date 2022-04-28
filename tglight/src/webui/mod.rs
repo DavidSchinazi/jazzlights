@@ -28,20 +28,20 @@ impl Handler for Server {
 
     // Handle messages recieved in the websocket (in this case, only on /ws)
     fn on_message(&mut self, msg: Message) -> Result<()> {
-        self.out.broadcast(player::call(msg.as_text().unwrap()));
+        self.out.broadcast(player::call(msg.as_text().unwrap())).unwrap();
         Ok(())
     }
 
     fn on_open(&mut self, _: Handshake) -> Result<()> {
         info!("Opened connection to {:?}", self.out.token());
         self.out.timeout(200, GRATI).unwrap();
-        self.out.broadcast(player::call("sysinfo?"));
+        self.out.broadcast(player::call("sysinfo?")).unwrap();
         self.out.broadcast(player::call("status?"))
     }
 
     fn on_timeout(&mut self, _event: Token) -> Result<()> {
         self.out.timeout(200, GRATI).unwrap();
-        self.out.broadcast(player::call("sysinfo?"));
+        self.out.broadcast(player::call("sysinfo?")).unwrap();
         self.out.broadcast(player::call("status?"))
     }
 
