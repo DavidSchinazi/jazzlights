@@ -367,13 +367,14 @@ void Player::begin() {
        s < strands_ + strandCount_; ++s) {
     pxcnt += s->layout->pixelCount();
   }
-  info("Starting Unisparks player %s (v%s); strands: %d%s, pixels: %d, %s",
+  info("Starting Unisparks player %s (v%s); strands: %d%s, pixels: %d, %s w %f h %f",
        BOOT_MESSAGE,
        UNISPARKS_VERSION,
        strandCount_,
        strandCount_ < 1 ? " (CONTROLLER ONLY!)" : "",
        pxcnt,
-       network_ ? "networked" : "standalone");
+       network_ ? "networked" : "standalone",
+       viewport_.size.width * viewport_.size.height);
 
   ready_ = true;
   nextInner(timeMillis());
