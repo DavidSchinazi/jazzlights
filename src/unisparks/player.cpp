@@ -542,7 +542,7 @@ Precedence Player::getLeaderPrecedence(Milliseconds currentTime) {
 }
 
 Precedence Player::getFollowedPrecedence(Milliseconds currentTime) {
-if (followingLeader_) {
+  if (followingLeader_) {
     return depreciatePrecedence(getLeaderPrecedence(currentTime), 100);
   } else {
     return getLocalPrecedence(currentTime);
