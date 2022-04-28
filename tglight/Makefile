@@ -9,6 +9,9 @@ all: debug
 run:
 	${CARGO} run -- --config=${SOURCE_DIR}/etc/robot/tglight.toml ${TGLIGHT_FLAGS}
 
+run-release:
+	${CARGO} run --release -- --config=${SOURCE_DIR}/etc/robot/tglight.toml ${TGLIGHT_FLAGS}
+
 clean:
 	${CARGO} clean
 
