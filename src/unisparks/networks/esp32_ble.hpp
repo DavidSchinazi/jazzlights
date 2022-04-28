@@ -25,30 +25,21 @@ namespace unisparks {
 // designed to allow both sending and receiving by alternating between the two.
 // All calls are thread-safe.
 class Esp32BleNetwork : public Network {
-public:
+ public:
   static Esp32BleNetwork* get();
-
-  // Needs to be called once during setup.
-  void setup() override;
-
-  // Needs to be called during every Arduino loop.
-  void runLoopImpl(Milliseconds currentTime) override;
 
   void setMessageToSend(const NetworkMessage& messageToSend,
                         Milliseconds currentTime) override;
-
-  // Copies list of scan results since last call.
-  std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds currentTime) override;
-
-  // Request an immediate send.
   void triggerSendAsap(Milliseconds currentTime) override;
-
-  NetworkStatus update(NetworkStatus status) override;
 
   // Get this device's BLE MAC address.
   NetworkDeviceId getLocalAddress();
+ protected:
+  void runLoopImpl(Milliseconds currentTime) override;
+  NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
+  std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds currentTime) override;
 
-private:
+ private:
   // All public calls in this class are static, but internally they are backed by a
   // singleton which keeps state and uses a mutex to allow safe access from callers
   // and the internal BLE thread.
@@ -67,7 +58,7 @@ private:
   // 29 is dictated by the BLE standard.
   static constexpr size_t kMaxInnerPayloadLength = 29;
 
-  Esp32BleNetwork();
+  explicit Esp32BleNetwork();
   void StartScanning(Milliseconds currentTime);
   void StopScanning(Milliseconds currentTime);
   void StartAdvertising(Milliseconds currentTime);
@@ -95,7 +86,8 @@ private:
 
   // All these variables are protected by mutex_.
   State state_ = State::kIdle;
-  bool shouldSend_ = false;
+  bool isSendingEnabled_ = false;
+  bool hasDataToSend_ = false;
   uint8_t numUrgentSends_ = 0;
   uint8_t innerPayloadLength_ = 0;
   uint8_t innerPayload_[kMaxInnerPayloadLength];

@@ -119,7 +119,7 @@ void Esp32BleNetwork::MaybeUpdateAdvertisingState(Milliseconds currentTime) {
         currentTime >= timeToStopAdvertising_) {
       timeToStopAdvertising_ = 0;
       shouldStopAdvertising = true;
-    } else if (state_ == State::kScanning && shouldSend_ &&
+    } else if (state_ == State::kScanning && isSendingEnabled_ && hasDataToSend_ &&
                (numUrgentSends_ > 0 ||
                  (timeToStopScanning_ > 0 &&
                   currentTime >= timeToStopScanning_))) {
@@ -179,7 +179,7 @@ void Esp32BleNetwork::setMessageToSend(const NetworkMessage& messageToSend,
   Milliseconds timeSubtract = currentTime - messageToSend.elapsedTime;
   {
     const std::lock_guard<std::mutex> lock(mutex_);
-    shouldSend_ = true;
+    hasDataToSend_ = true;
     innerPayloadLength_ = sizeof(blePayload);
     memcpy(innerPayload_, blePayload, sizeof(blePayload));
     timeByteOffset_ = kTimeByteOffset;
@@ -408,7 +408,21 @@ void Esp32BleNetwork::GapCallbackInner(esp_gap_ble_cb_event_t event,
   }
 }
 
-void Esp32BleNetwork::setup() {
+NetworkStatus Esp32BleNetwork::update(NetworkStatus status, Milliseconds currentTime) {
+  if (status == INITIALIZING || status == CONNECTING) {
+    const std::lock_guard<std::mutex> lock(mutex_);
+    isSendingEnabled_ = true;
+    return CONNECTED;
+  } else if (status == DISCONNECTING) {
+    const std::lock_guard<std::mutex> lock(mutex_);
+    isSendingEnabled_ = false;
+    return DISCONNECTED;
+  } else {
+    return status;
+  }
+}
+
+Esp32BleNetwork::Esp32BleNetwork() {
   // Let Arduino BLEDevice handle initialization.
   BLEDevice::init("");
   // Initialize localDeviceIdentifier_.
@@ -435,20 +449,6 @@ void Esp32BleNetwork::setup() {
 	scanParams.scan_duplicate     = BLE_SCAN_DUPLICATE_DISABLE;
   ESP_ERROR_CHECK(esp_ble_gap_set_scan_params(&scanParams));
 }
-
-NetworkStatus Esp32BleNetwork::update(NetworkStatus status) {
-  if (status == INITIALIZING || status == CONNECTING) {
-    return CONNECTED;
-  } else if (status == DISCONNECTING) {
-    const std::lock_guard<std::mutex> lock(mutex_);
-    shouldSend_ = false;
-    return DISCONNECTED;
-  } else {
-    return status;
-  }
-}
-
-Esp32BleNetwork::Esp32BleNetwork() {}
 
 Esp32BleNetwork* Esp32BleNetwork::get() {
   static Esp32BleNetwork static_instance;

@@ -165,7 +165,7 @@ UnixUdpNetwork::UnixUdpNetwork(int p, const char* addr) : port_(static_cast<uint
   assert(parsed == 1);
 }
 
-NetworkStatus UnixUdpNetwork::update(NetworkStatus status) {
+NetworkStatus UnixUdpNetwork::update(NetworkStatus status, Milliseconds /*currentTime*/) {
   if (status == INITIALIZING || status == CONNECTING) {
     setupSockets();
     return CONNECTED;

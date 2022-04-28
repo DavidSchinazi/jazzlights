@@ -8,10 +8,10 @@
 namespace unisparks {
 
 
-NetworkStatus Esp8266WiFi::update(NetworkStatus status) {
+NetworkStatus Esp8266WiFi::update(NetworkStatus status, Milliseconds currentTime) {
   switch (status) {
   case INITIALIZING:
-    info("Connecting to %s...", creds_.ssid);
+    info("%u Connecting to %s...", currentTime, creds_.ssid);
     if (staticConf_) {
       IPAddress ip, gw, snm;
       ip.fromString(staticConf_->ip);
@@ -26,15 +26,18 @@ NetworkStatus Esp8266WiFi::update(NetworkStatus status) {
   case CONNECTING:
     switch (WiFi.status()) {
     case WL_NO_SHIELD:
-      error("Connection to %s failed: there's no WiFi shield", creds_.ssid);
+      error("%u Connection to %s failed: there's no WiFi shield",
+            currentTime, creds_.ssid);
       return CONNECTION_FAILED;
 
     case WL_NO_SSID_AVAIL:
-      error("Connection to %s failed: SSID not available", creds_.ssid);
+      error("%u Connection to %s failed: SSID not available",
+            currentTime, creds_.ssid);
       return CONNECTION_FAILED;
 
     case WL_SCAN_COMPLETED:
-      debug("Scan completed, still connecting to %s...", creds_.ssid);
+      debug("%u Scan completed, still connecting to %s...",
+            currentTime, creds_.ssid);
       break;
 
     case WL_CONNECTED: {
@@ -46,36 +49,36 @@ NetworkStatus Esp8266WiFi::update(NetworkStatus status) {
       int res = udp_.beginMulticast(mcaddr, port_);
 #endif
       if (!res) {
-        error("Can't begin multicast on port %d, multicast group %s", port_,
-              mcastAddr_);
+        error("%u Can't begin multicast on port %d, multicast group %s",
+              currentTime, port_, mcastAddr_);
         goto err;
       }
       IPAddress ip = WiFi.localIP();
-      info("Connected to %s, IP: %d.%d.%d.%d, bound to port %d, multicast group: %s",
-           creds_.ssid, ip[0], ip[1], ip[2], ip[3], port_, mcastAddr_);
+      info("%u Connected to %s, IP: %d.%d.%d.%d, bound to port %d, multicast group: %s",
+           currentTime, creds_.ssid, ip[0], ip[1], ip[2], ip[3], port_, mcastAddr_);
       return CONNECTED;
     }
     break;
 
     case WL_CONNECT_FAILED:
-      error("Connection to %s failed", creds_.ssid);
+      error("%u Connection to %s failed", currentTime, creds_.ssid);
       return CONNECTION_FAILED;
 
     case WL_CONNECTION_LOST:
-      error("Connection to %s lost", creds_.ssid);
+      error("%u Connection to %s lost", currentTime, creds_.ssid);
       return INITIALIZING;
 
     case WL_DISCONNECTED:
     default: {
       static int32_t last_t = 0;
-      if (timeMillis() - last_t > 5000) {
+      if (currentTime - last_t > 5000) {
         int st = WiFi.status();
         if (st == WL_DISCONNECTED) {
-          debug("Still connecting...");
+          debug("%u Still connecting...", currentTime);
         } else {
-          info("Still connecting, unknown status code %d", st);
+          info("%u Still connecting, unknown status code %d", currentTime, st);
         }
-        last_t = timeMillis();
+        last_t = currentTime;
       }
     }
     }
@@ -90,10 +93,10 @@ NetworkStatus Esp8266WiFi::update(NetworkStatus status) {
   case DISCONNECTING:
     switch (WiFi.status()) {
     case WL_DISCONNECTED:
-      info("Disconnected from %s", creds_.ssid);
+      info("%u Disconnected from %s", currentTime, creds_.ssid);
       return DISCONNECTED;
     default:
-      info("Disconnecting from %s...", creds_.ssid);
+      info("%u Disconnecting from %s...", currentTime, creds_.ssid);
       WiFi.disconnect();
       break;
     }
@@ -103,7 +106,7 @@ NetworkStatus Esp8266WiFi::update(NetworkStatus status) {
   return status;
 
 err:
-  error("Connection to %s failed", creds_.ssid);
+  error("%u Connection to %s failed", currentTime, creds_.ssid);
   WiFi.disconnect();
   return CONNECTION_FAILED;
 }

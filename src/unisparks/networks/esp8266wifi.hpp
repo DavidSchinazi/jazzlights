@@ -29,7 +29,7 @@ class Esp8266WiFi : public UdpNetwork {
   Esp8266WiFi(const char* ssid, const char* pass) : creds_{ssid, pass} {
   }
 
-  NetworkStatus update(NetworkStatus st) override;
+  NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
   int recv(void* buf, size_t bufsize) override;
   void send(void* buf, size_t bufsize) override;
 

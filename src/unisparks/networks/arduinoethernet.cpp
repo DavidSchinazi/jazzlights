@@ -7,7 +7,7 @@
 namespace unisparks {
 
 struct ArduinoEthernetNetwork : public UdpNetwork {
-  NetworkStatus update(NetworkStatus st) override;
+  NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
   int recv(void* buf, size_t bufsize) override;
   void send(void* buf, size_t bufsize) override;
 
@@ -16,7 +16,7 @@ struct ArduinoEthernetNetwork : public UdpNetwork {
   EthernetUDP udp_;
 };
 
-NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status) {
+NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status, Milliseconds /*currentTime*/) {
   switch (status) {
   case INITIALIZING:
     Ethernet.begin(mac_.bytes);

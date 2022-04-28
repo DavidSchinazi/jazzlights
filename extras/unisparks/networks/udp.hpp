@@ -15,7 +15,7 @@ class UnixUdpNetwork : public UdpNetwork {
                  const char* addr = DEFAULT_MULTICAST_ADDR);
   UnixUdpNetwork(const UnixUdpNetwork&) = default;
 
-  NetworkStatus update(NetworkStatus st) override;
+  NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
   int recv(void* buf, size_t bufsize) override;
   void send(void* buf, size_t bufsize) override;
 private:

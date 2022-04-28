@@ -85,7 +85,7 @@ void Network::reconnect(Milliseconds currentTime) {
   if (status_ != CONNECTED) {
     lastConnectionAttempt_ = currentTime;
     info("%u Network Reconnecting", currentTime);
-    status_ = update(CONNECTING);
+    status_ = update(CONNECTING, currentTime);
   }
 }
 
@@ -183,7 +183,7 @@ void Network::checkStatus(Milliseconds currentTime) {
     }
   } else {
     const NetworkStatus previousStatus = status_;
-    status_ = update(status_);
+    status_ = update(status_, currentTime);
     if (status_ != previousStatus) {
       info("Network updated status from %s to %s",
             NetworkStatusToString(previousStatus).c_str(),

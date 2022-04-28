@@ -82,20 +82,29 @@ class Network {
  public:
   virtual ~Network() = default;
 
-  virtual void setup() = 0;
-
+  // Set message to send during next send opportunity.
   virtual void setMessageToSend(const NetworkMessage& messageToSend,
                                 Milliseconds currentTime) = 0;
+
+  // Gets list of received messages since last call.
   std::list<NetworkMessage> getReceivedMessages(Milliseconds currentTime);
+
+  // Called once per Arduino loop.
   void runLoop(Milliseconds currentTime);
 
+  // Get current network status.
   NetworkStatus status() const;
+
+  // Request an immediate send.
   virtual void triggerSendAsap(Milliseconds currentTime) = 0;
 
  protected:
   Network() = default;
-  virtual NetworkStatus update(NetworkStatus status) = 0;
+  // Perform any work necessary to switch to requested state.
+  virtual NetworkStatus update(NetworkStatus status, Milliseconds currentTime) = 0;
+  // Gets list of received messages since last call.
   virtual std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds currentTime) = 0;
+  // Called once per Arduino loop.
   virtual void runLoopImpl(Milliseconds currentTime) = 0;
  private:
   void checkStatus(Milliseconds currentTime);
@@ -118,7 +127,6 @@ class UdpNetwork : public Network {
   void setMessageToSend(const NetworkMessage& messageToSend,
                         Milliseconds currentTime) override;
   void triggerSendAsap(Milliseconds currentTime) override;
-  void setup() override {}
 
  protected:
   std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds currentTime) override;

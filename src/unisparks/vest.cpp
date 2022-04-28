@@ -23,10 +23,10 @@ CLEDController* mainVestController = nullptr;
 void vestSetup(void) {
   Serial.begin(115200);
 
-  network.setup();
 
 #if ESP32_BLE
-  Esp32BleNetwork::get()->setup();
+  // Make sure BLE is properly setup by constructor.
+  (void)Esp32BleNetwork::get();
 #endif // ESP32_BLE
 
   setupButtons();
