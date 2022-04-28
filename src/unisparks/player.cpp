@@ -385,7 +385,7 @@ void Player::begin() {
   nextInner(timeMillis());
 }
 
-void Player::render(Milliseconds currentTime) {
+void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
   if (!ready_) {
     begin();
   }
@@ -410,7 +410,7 @@ void Player::render(Milliseconds currentTime) {
   lastRenderTime_ = currentTime;
   framesSinceFpsProbe_++;
 
-  render(timeSinceLastRender, currentTime);
+  render(networkStatus, timeSinceLastRender, currentTime);
 }
 
 void Player::handleSpecial() {
@@ -430,7 +430,7 @@ void Player::stopSpecial() {
 }
 static constexpr Milliseconds kEffectDuration = 10 * ONE_SECOND;
 
-void Player::render(Milliseconds timeSinceLastRender, Milliseconds currentTime) {
+void Player::render(NetworkStatus networkStatus, Milliseconds timeSinceLastRender, Milliseconds currentTime) {
   if (!ready_) {
     begin();
   }
@@ -469,7 +469,7 @@ void Player::render(Milliseconds timeSinceLastRender, Milliseconds currentTime) 
 #endif // WEARABLE
       break;
     case 2:
-      switch (network_->status()) {
+      switch (networkStatus) {
         case INITIALIZING:
           effect = &network_effect_initializing;
           break;

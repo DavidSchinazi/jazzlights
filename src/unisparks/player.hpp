@@ -56,7 +56,7 @@ class Player {
   /**
    *  Render current frame to all strands
    */
-  void render(Milliseconds currentTime);
+  void render(NetworkStatus networkStatus, Milliseconds currentTime);
 
   /**
    *  Play next effect in the playlist
@@ -116,7 +116,7 @@ class Player {
   Frame effectFrame(const Effect* effect, Milliseconds currentTime);
   Effect* currentEffect() const;
   void updateToNewPattern(PatternBits newPattern, Milliseconds elapsedTime, Milliseconds currentTime);
-  void render(Milliseconds timeSinceLastRender, Milliseconds currentTime);
+  void render(NetworkStatus networkStatus, Milliseconds timeSinceLastRender, Milliseconds currentTime);
 
   Precedence GetLocalPrecedence(Milliseconds currentTime);
   Precedence GetLeaderPrecedence(Milliseconds currentTime);
