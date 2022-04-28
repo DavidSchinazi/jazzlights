@@ -616,8 +616,13 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
     message.elapsedTime = 0xFFFFFFFF;
   }
   NetworkDeviceId followedDeviceId = getLocalDeviceId(currentTime);
+  if (message.sender == followedDeviceId) {
+    info("%u Ignoring received message that we sent %s",
+          currentTime, networkMessageToString(message).c_str());
+    return;
+  }
   if (message.originator == followedDeviceId) {
-    info("%u Ignoring received message from ourselves %s",
+    info("%u Ignoring received message that we originated %s",
           currentTime, networkMessageToString(message).c_str());
     return;
   }
