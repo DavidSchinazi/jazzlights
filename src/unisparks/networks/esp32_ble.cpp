@@ -216,7 +216,7 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
   }
   NetworkMessage message;
   message.sender = deviceIdentifier;
-  message.originator = &innerPayload[3];
+  message.originator = NetworkDeviceId(&innerPayload[3]);
   message.precedence = readUint16(&innerPayload[3 + 6]);
   message.currentPattern = readUint32(&innerPayload[3 + 6 + 2]);
   message.receiptTime = currentTime;
@@ -352,7 +352,7 @@ void Esp32BleNetwork::GapCallbackInner(esp_gap_ble_cb_event_t event,
                   currentTime, param->scan_rst.adv_data_len, advRawData,
                   ESP_BD_ADDR_HEX(param->scan_rst.bda));
           }
-          ReceiveAdvertisement(param->scan_rst.bda,
+          ReceiveAdvertisement(NetworkDeviceId(param->scan_rst.bda),
                                param->scan_rst.adv_data_len - 2,
                                &param->scan_rst.ble_adv[2],
                                param->scan_rst.rssi,
@@ -435,7 +435,7 @@ Esp32BleNetwork::Esp32BleNetwork() {
   {
     const std::lock_guard<std::mutex> lock(mutex_);
     static_assert(sizeof(localDeviceIdentifier_) == sizeof(localAddress), "bad size");
-    localDeviceIdentifier_ = localAddress;
+    localDeviceIdentifier_ = NetworkDeviceId(localAddress);
   }
   // Override callbacks away from BLEDevice back to us.
   ESP_ERROR_CHECK(esp_ble_gap_register_callback(&Esp32BleNetwork::GapCallback));

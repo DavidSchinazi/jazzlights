@@ -32,19 +32,16 @@ using Precedence = uint16_t;
 
 class NetworkDeviceId {
  public:
-  NetworkDeviceId() {
+  explicit NetworkDeviceId() {
     memset(&data_[0], 0, kNetworkDeviceIdSize);
   }
-  NetworkDeviceId(const uint8_t* data) {
+  explicit NetworkDeviceId(const uint8_t* data) {
     memcpy(&data_[0], data, kNetworkDeviceIdSize);
   }
   NetworkDeviceId(const NetworkDeviceId& other) :
     NetworkDeviceId(&other.data_[0]) {}
-  NetworkDeviceId& operator= (const NetworkDeviceId& other) {
-    return operator=(&other.data_[0]);
-  }
-  NetworkDeviceId& operator= (const uint8_t* data) {
-    memcpy(&data_[0], data, kNetworkDeviceIdSize);
+  NetworkDeviceId& operator=(const NetworkDeviceId& other) {
+    memcpy(&data_[0], &other.data_[0], kNetworkDeviceIdSize);
     return *this;
   }
   uint8_t operator()(uint8_t i) const {
