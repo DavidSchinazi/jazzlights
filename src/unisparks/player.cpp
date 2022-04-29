@@ -264,6 +264,7 @@ void Player::reset() {
   strandCount_ = 0;
   elapsedTime_ = 0;
   currentPattern_ = 0x12345678;
+  nextPattern_ = computeNextPattern(currentPattern_);
   tempo_ = 120;
   metre_ = SIMPLE_QUADRUPLE;
 
@@ -479,7 +480,7 @@ void Player::render(NetworkStatus networkStatus, Milliseconds timeSinceLastRende
 }
 
 void Player::nextInner(Milliseconds currentTime) {
-  updateToNewPattern(computeNextPattern(currentPattern_),
+  updateToNewPattern(nextPattern_, computeNextPattern(nextPattern_),
                      /*elapsedTime=*/0, currentTime);
 }
 
@@ -571,21 +572,22 @@ NetworkDeviceId Player::getFollowedDeviceId(Milliseconds currentTime) {
   }
 }
 
-void Player::updateToNewPattern(PatternBits newPattern,
+void Player::updateToNewPattern(PatternBits newCurrentPattern,
+                                PatternBits newNextPattern,
                                 Milliseconds elapsedTime,
                                 Milliseconds currentTime) {
   elapsedTime_ = elapsedTime;
-  if (newPattern == currentPattern_) {
-    return;
+  nextPattern_ = newNextPattern;
+  if (newCurrentPattern != currentPattern_) {
+    currentPattern_ = newCurrentPattern;
+    Effect* effect = currentEffect();
+    info("%u Switching to pattern %s %s",
+        currentTime,
+        effect->name().c_str(),
+        displayBitsAsBinary(currentPattern_).c_str());
+    effect->begin(effectFrame(effect, currentTime));
+    lastLEDWriteTime_ = -1;
   }
-  currentPattern_ = newPattern;
-  Effect* effect = currentEffect();
-  info("%u Switching to pattern %s %s",
-       currentTime,
-       effect->name().c_str(),
-       displayBitsAsBinary(currentPattern_).c_str());
-  effect->begin(effectFrame(effect, currentTime));
-  lastLEDWriteTime_ = -1;
   if (networks_.empty()) {
     info("%u not setting messageToSend without networks", currentTime);
     return;
@@ -598,7 +600,7 @@ void Player::updateToNewPattern(PatternBits newPattern,
     return;
   }
   messageToSend.currentPattern = currentPattern_;
-  messageToSend.nextPattern = 0; // TODO;
+  messageToSend.nextPattern = nextPattern_;
   messageToSend.elapsedTime = elapsedTime_;
   messageToSend.precedence = getFollowedPrecedence(currentTime);
   for (Network* network : networks_) {
@@ -666,7 +668,8 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
   leaderPrecedence_ = message.precedence;
   lastLeaderReceiveTime_ = currentTime;
   lastLEDWriteTime_ = -1;
-  updateToNewPattern(message.currentPattern, message.elapsedTime, currentTime);
+  updateToNewPattern(message.currentPattern, message.nextPattern,
+                     message.elapsedTime, currentTime);
 }
 
 void Player::syncToNetwork(Milliseconds currentTime) {

@@ -113,7 +113,10 @@ class Player {
   void reactToUserInput(Milliseconds currentTime);
   Frame effectFrame(const Effect* effect, Milliseconds currentTime);
   Effect* currentEffect() const;
-  void updateToNewPattern(PatternBits newPattern, Milliseconds elapsedTime, Milliseconds currentTime);
+  void updateToNewPattern(PatternBits newCurrentPattern,
+                          PatternBits newNextPattern,
+                          Milliseconds elapsedTime,
+                          Milliseconds currentTime);
   void render(NetworkStatus networkStatus, Milliseconds timeSinceLastRender, Milliseconds currentTime);
   void handleReceivedMessage(NetworkMessage message, Milliseconds currentTime);
 
@@ -140,6 +143,7 @@ class Player {
 
   Milliseconds elapsedTime_ = 0; // Time since start of this pattern.
   PatternBits currentPattern_;
+  PatternBits nextPattern_;
 
   BeatsPerMinute tempo_;
   Metre metre_;
