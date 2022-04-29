@@ -149,13 +149,13 @@ void Esp32BleNetwork::triggerSendAsap(Milliseconds currentTime) {
 
 void Esp32BleNetwork::setMessageToSend(const NetworkMessage& messageToSend,
                         Milliseconds currentTime) {
-  uint8_t blePayload[3 + 6 + 2 + 4 + 4 + 4] = {0xFF, 'L', '1'};
+  uint8_t blePayload[1 + 6 + 2 + 4 + 4 + 4] = {};
   static_assert(sizeof(blePayload) <= kMaxInnerPayloadLength, "bad size");
-  messageToSend.originator.writeTo(&blePayload[3]);
-  writeUint16(&blePayload[3 + 6], messageToSend.precedence);
-  writeUint32(&blePayload[3 + 6 + 2], messageToSend.currentPattern);
-  writeUint32(&blePayload[3 + 6 + 2 + 4], messageToSend.nextPattern);
-  constexpr uint8_t kTimeByteOffset = 3 + 6 + 2 + 4 + 4;
+  messageToSend.originator.writeTo(&blePayload[1]);
+  writeUint16(&blePayload[1 + 6], messageToSend.precedence);
+  writeUint32(&blePayload[1 + 6 + 2], messageToSend.currentPattern);
+  writeUint32(&blePayload[1 + 6 + 2 + 4], messageToSend.nextPattern);
+  constexpr uint8_t kTimeByteOffset = 1 + 6 + 2 + 4 + 4;
   Milliseconds timeSubtract = currentTime - messageToSend.elapsedTime;
   {
     const std::lock_guard<std::mutex> lock(mutex_);
@@ -189,23 +189,23 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
           currentTime, innerPayloadLength);
     return;
   }
-  if (innerPayloadLength < 3 + 6 + 2 + 4 + 4 + 4) {
+  if (innerPayloadLength < 1 + 6 + 2 + 4 + 4 + 4) {
     info("%u Ignoring received BLE with unexpected length %u",
          currentTime, innerPayloadLength);
     return;
   }
-  static constexpr uint8_t prefix[3] = {0xFF, 'L', '1'};
-  if (memcmp(innerPayload, prefix, sizeof(prefix)) != 0) {
-    info("%u Ignoring received BLE with unexpected prefix", currentTime);
+  if ((innerPayload[0] & 0xF0) != 0) {
+    info("%u Ignoring received BLE with unexpected prefix %02x",
+         currentTime, innerPayload[0]);
     return;
   }
   NetworkMessage message;
   message.sender = deviceIdentifier;
-  message.originator = NetworkDeviceId(&innerPayload[3]);
-  message.precedence = readUint16(&innerPayload[3 + 6]);
-  message.currentPattern = readUint32(&innerPayload[3 + 6 + 2]);
+  message.originator = NetworkDeviceId(&innerPayload[1]);
+  message.precedence = readUint16(&innerPayload[1 + 6]);
+  message.currentPattern = readUint32(&innerPayload[1 + 6 + 2]);
   message.receiptTime = currentTime;
-  message.elapsedTime = readUint32(&innerPayload[3 + 6 + 2 + 4 + 4]);
+  message.elapsedTime = readUint32(&innerPayload[1 + 6 + 2 + 4 + 4]);
 
   // Empirical measurements with the ATOM Matrix show a RTT of 50ms,
   // so we offset the one way transmission time by half that.

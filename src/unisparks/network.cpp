@@ -166,24 +166,23 @@ std::list<NetworkMessage> UdpNetwork::getReceivedMessagesImpl(Milliseconds curre
     if (n <= 0) {
       break;
     }
-    if (n < 3 + 6 + 6 + 2 + 4 + 4 + 4) {
+    if (n < 1 + 6 + 6 + 2 + 4 + 4 + 4) {
       info("%u %s Received packet too short, received %d bytes, expected at least %d bytes",
-           currentTime, name(), n, 3 + 6 + 6 + 2 + 4 + 4 + 4);
+           currentTime, name(), n, 1 + 6 + 6 + 2 + 4 + 4 + 4);
       continue;
     }
-    uint8_t prefix[3] = {0xFF, 'L', '1'};
-    if (memcmp(&prefix[0], &udpPayload[0], sizeof(prefix)) != 0) {
-      info("%u %s Received packet with bad prefix",
-           currentTime, name());
+    if ((udpPayload[0] & 0xF0) != 0) {
+      info("%u %s Received packet with unexpected prefix %02x",
+           currentTime, name(), udpPayload[0]);
       continue;
     }
     NetworkMessage receivedMessage;
-    receivedMessage.originator = NetworkDeviceId(&udpPayload[3]);
-    receivedMessage.sender = NetworkDeviceId(&udpPayload[3 + 6]);
-    receivedMessage.precedence = readUint16(&udpPayload[3 + 6 + 6]);
-    receivedMessage.currentPattern = readUint32(&udpPayload[3 + 6 + 6 + 2]);
-    receivedMessage.nextPattern = readUint32(&udpPayload[3 + 6 + 6 + 2 + 4]);
-    receivedMessage.elapsedTime = readUint32(&udpPayload[3 + 6 + 6 + 2 + 4 + 4]);
+    receivedMessage.originator = NetworkDeviceId(&udpPayload[1]);
+    receivedMessage.sender = NetworkDeviceId(&udpPayload[1 + 6]);
+    receivedMessage.precedence = readUint16(&udpPayload[1 + 6 + 6]);
+    receivedMessage.currentPattern = readUint32(&udpPayload[1 + 6 + 6 + 2]);
+    receivedMessage.nextPattern = readUint32(&udpPayload[1 + 6 + 6 + 2 + 4]);
+    receivedMessage.elapsedTime = readUint32(&udpPayload[1 + 6 + 6 + 2 + 4 + 4]);
     receivedMessage.receiptTime = currentTime;
     debug("%u %s received %s",
           currentTime, name(), networkMessageToString(receivedMessage).c_str());
@@ -244,13 +243,13 @@ void UdpNetwork::runLoopImpl(Milliseconds currentTime) {
     debug("%u %s sending %s",
           currentTime, name(), networkMessageToString(messageToSend).c_str());
 
-    uint8_t udpPayload[3 + 6 + 6 + 2 + 4 + 4 + 4] = {0xFF, 'L', '1'};
-    messageToSend.originator.writeTo(&udpPayload[3]);
-    messageToSend.sender.writeTo(&udpPayload[3 + 6]);
-    writeUint16(&udpPayload[3 + 6 + 6], messageToSend.precedence);
-    writeUint32(&udpPayload[3 + 6 + 6 + 2], messageToSend.currentPattern);
-    writeUint32(&udpPayload[3 + 6 + 6 + 2 + 4], messageToSend.nextPattern);
-    writeUint32(&udpPayload[3 + 6 + 6 + 2 + 4 + 4], messageToSend.elapsedTime);
+    uint8_t udpPayload[1 + 6 + 6 + 2 + 4 + 4 + 4] = {};
+    messageToSend.originator.writeTo(&udpPayload[1]);
+    messageToSend.sender.writeTo(&udpPayload[1 + 6]);
+    writeUint16(&udpPayload[1 + 6 + 6], messageToSend.precedence);
+    writeUint32(&udpPayload[1 + 6 + 6 + 2], messageToSend.currentPattern);
+    writeUint32(&udpPayload[1 + 6 + 6 + 2 + 4], messageToSend.nextPattern);
+    writeUint32(&udpPayload[1 + 6 + 6 + 2 + 4 + 4], messageToSend.elapsedTime);
     send(&udpPayload[0], sizeof(udpPayload));
   }
 }
