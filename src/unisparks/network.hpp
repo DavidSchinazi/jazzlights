@@ -113,7 +113,11 @@ class Network {
   // Returns this device's unique ID, often using its MAC address.
   virtual NetworkDeviceId getLocalDeviceId() = 0;
 
+  // A static name for this network class suitable for logging.
   virtual const char* name() const = 0;
+
+  // Whether we should advertise patterns on this network if that's where we received them.
+  virtual bool shouldEcho() const = 0;
 
  protected:
   Network() = default;
@@ -145,6 +149,7 @@ class UdpNetwork : public Network {
                         Milliseconds currentTime) override;
   void disableSending(Milliseconds currentTime) override;
   void triggerSendAsap(Milliseconds currentTime) override;
+  bool shouldEcho() const override { return false; }
 
  protected:
   std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds currentTime) override;

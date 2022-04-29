@@ -279,6 +279,7 @@ void Player::reset() {
   lastLEDWriteTime_ = -1;
   lastUserInputTime_ = -1;
   followingLeader_ = false;
+  followedNetwork_ = nullptr;
   leaderDeviceId_ = NetworkDeviceId();
   leaderPrecedence_ = 0;
   lastLeaderReceiveTime_ = -1;
@@ -487,6 +488,7 @@ void Player::nextInner(Milliseconds currentTime) {
 void Player::reactToUserInput(Milliseconds currentTime) {
   lastUserInputTime_ = currentTime;
   followingLeader_ = false;
+  followedNetwork_ = nullptr;
 
   for (Network* network : networks_) {
     network->triggerSendAsap(currentTime);
@@ -604,6 +606,13 @@ void Player::updateToNewPattern(PatternBits newCurrentPattern,
   messageToSend.elapsedTime = elapsedTime_;
   messageToSend.precedence = getFollowedPrecedence(currentTime);
   for (Network* network : networks_) {
+    if (!network->shouldEcho() && followedNetwork_ == network) {
+      info("%u Not echoing for %s as %s to %s ",
+           currentTime, network->name(), (followingLeader_ ? "remote" : "local"),
+           networkMessageToString(messageToSend).c_str());
+      network->disableSending(currentTime);
+      continue;
+    }
     info("%u Setting messageToSend for %s as %s to %s ",
           currentTime, network->name(), (followingLeader_ ? "remote" : "local"),
           networkMessageToString(messageToSend).c_str());
@@ -664,6 +673,7 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
          networkMessageToString(message).c_str());
   }
   followingLeader_ = true;
+  followedNetwork_ = message.receiptNetwork;
   leaderDeviceId_ = message.originator;
   leaderPrecedence_ = message.precedence;
   lastLeaderReceiveTime_ = currentTime;

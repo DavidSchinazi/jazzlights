@@ -162,6 +162,7 @@ class Player {
   Milliseconds lastLEDWriteTime_;
   Milliseconds lastUserInputTime_;
   bool followingLeader_;
+  Network* followedNetwork_;
   NetworkDeviceId leaderDeviceId_;
   Precedence leaderPrecedence_;
   Milliseconds lastLeaderReceiveTime_;

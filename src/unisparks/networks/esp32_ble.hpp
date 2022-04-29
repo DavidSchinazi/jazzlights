@@ -40,6 +40,7 @@ class Esp32BleNetwork : public Network {
   const char* name() const override {
     return "ESP32BLE";
   }
+  bool shouldEcho() const override { return true; }
  protected:
   void runLoopImpl(Milliseconds currentTime) override;
   NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;

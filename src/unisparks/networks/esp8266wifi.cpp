@@ -124,7 +124,7 @@ int Esp8266WiFi::recv(void* buf, size_t bufsize) {
 }
 
 #ifndef ENABLE_ESP_WIFI_SENDING
-#  define ENABLE_ESP_WIFI_SENDING 0
+#  define ENABLE_ESP_WIFI_SENDING 1
 #endif // ENABLE_ESP_WIFI_SENDING
 
 void Esp8266WiFi::send(void* buf, size_t bufsize) {
