@@ -25,6 +25,9 @@ void vestSetup(void) {
 
   setupButtons();
   player.addStrand(pixels, renderPixel);
+  player.setBasePrecedence(1000);
+  player.setIncomingPrecedenceGain(10000);
+  player.setOutgoingPrecedenceGain(1000);
 
 #if ESP32_BLE
   player.connect(Esp32BleNetwork::get());

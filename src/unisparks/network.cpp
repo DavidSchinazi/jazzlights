@@ -241,8 +241,8 @@ void UdpNetwork::runLoopImpl(Milliseconds currentTime) {
     } else {
       messageToSend.elapsedTime = 0xFFFFFFFF;
     }
-    info("%u %s sending %s",
-         currentTime, name(), networkMessageToString(messageToSend).c_str());
+    debug("%u %s sending %s",
+          currentTime, name(), networkMessageToString(messageToSend).c_str());
 
     uint8_t udpPayload[3 + 6 + 6 + 2 + 4 + 4 + 4] = {0xFF, 'L', '1'};
     messageToSend.originator.writeTo(&udpPayload[3]);

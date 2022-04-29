@@ -485,38 +485,47 @@ void Player::nextInner(Milliseconds currentTime) {
                      /*elapsedTime=*/0, currentTime);
 }
 
-void Player::reactToUserInput(Milliseconds currentTime) {
-  lastUserInputTime_ = currentTime;
+void Player::abandonLeader(Milliseconds currentTime) {
   followingLeader_ = false;
   followedNetwork_ = nullptr;
+}
 
+void Player::next(Milliseconds currentTime) {
+  lastUserInputTime_ = currentTime;
+  if (followingLeader_) {
+    info("%u abandoning leader due to pressing next", currentTime);
+  }
+  abandonLeader(currentTime);
+  nextInner(currentTime);
   for (Network* network : networks_) {
     network->triggerSendAsap(currentTime);
   }
 }
 
-void Player::next(Milliseconds currentTime) {
-  nextInner(currentTime);
-  reactToUserInput(currentTime);
+Precedence getPrecedenceGain(Milliseconds epochTime,
+                             Milliseconds currentTime,
+                             Milliseconds duration,
+                             Precedence maxGain) {
+  if (epochTime < 0) {
+    return 0;
+  } else if (currentTime < epochTime) {
+    return maxGain;
+  } else if (currentTime - epochTime > duration) {
+    return 0;
+  }
+  const Milliseconds timeDelta = currentTime - epochTime;
+  if (timeDelta < duration / 10) {
+    return maxGain;
+  }
+  return static_cast<uint64_t>(duration - timeDelta) * maxGain / duration;
 }
 
-Precedence getPrecedenceDepreciation(Milliseconds epochTime,
-                                     Milliseconds currentTime) {
-  if (epochTime >= 0) {
-    Milliseconds timeSinceEpoch;
-    if (epochTime <= currentTime) {
-      timeSinceEpoch = currentTime - epochTime;
-    } else {
-      error("%u Bad precedence depreciation time %u", currentTime, epochTime);
-      timeSinceEpoch = 0;
-    }
-    if (timeSinceEpoch < 5000) {
-      return timeSinceEpoch / 100;
-    } else if (timeSinceEpoch < 30000) {
-      return 50 + (timeSinceEpoch - 5000) / 1000;
-    }
+Precedence addPrecedenceGain(Precedence startPrecedence,
+                             Precedence gain) {
+  if (startPrecedence >= std::numeric_limits<Precedence>::max() - gain) {
+    return std::numeric_limits<Precedence>::max();
   }
-  return 50 + 25;
+  return startPrecedence + gain;
 }
 
 Precedence depreciatePrecedence(Precedence startPrecedence,
@@ -527,36 +536,41 @@ Precedence depreciatePrecedence(Precedence startPrecedence,
   return startPrecedence - depreciation;
 }
 
-Precedence Player::getLocalPrecedence(Milliseconds currentTime) {
-  Precedence precedence = 1000;
-  Precedence depreciation = getPrecedenceDepreciation(lastUserInputTime_,
-                                                      currentTime);
-  precedence = depreciatePrecedence(precedence, depreciation);
-  return precedence;
+static constexpr Milliseconds kInputDuration = 10 * 60 * 1000;  // 10min.
+
+Precedence Player::getOutgoingLocalPrecedence(Milliseconds currentTime) {
+  return addPrecedenceGain(basePrecedence_,
+                           getPrecedenceGain(lastUserInputTime_, currentTime,
+                                             kInputDuration/2, outgoingPrecedenceGain_));
 }
 
-Precedence Player::getLeaderPrecedence(Milliseconds currentTime) {
-  Precedence precedence = leaderPrecedence_;
-  Precedence depreciation = getPrecedenceDepreciation(lastUserInputTime_,
-                                                      currentTime);
-  precedence = depreciatePrecedence(precedence, depreciation);
-  precedence = depreciatePrecedence(precedence, depreciation);
-  return precedence;
+Precedence Player::getOutgoingLeaderPrecedence(Milliseconds currentTime) {
+ return depreciatePrecedence(leaderPrecedence_, 100);
 }
 
 Precedence Player::getOutgoingPrecedence(Milliseconds currentTime) {
   if (followingLeader_) {
-    return depreciatePrecedence(getLeaderPrecedence(currentTime), 100);
+    return getOutgoingLeaderPrecedence(currentTime);
   } else {
-    return getLocalPrecedence(currentTime);
+    return getOutgoingLocalPrecedence(currentTime);
   }
+}
+
+Precedence Player::getIncomingLocalPrecedence(Milliseconds currentTime) {
+  return addPrecedenceGain(basePrecedence_,
+                            getPrecedenceGain(lastUserInputTime_, currentTime,
+                                              kInputDuration, incomingPrecedenceGain_));
+}
+
+Precedence Player::getIncomingLeaderPrecedence(Milliseconds currentTime) {
+  return leaderPrecedence_;
 }
 
 Precedence Player::getIncomingPrecedence(Milliseconds currentTime) {
   if (followingLeader_) {
-    return getLeaderPrecedence(currentTime);
+    return getIncomingLeaderPrecedence(currentTime);
   } else {
-    return getLocalPrecedence(currentTime);
+    return getIncomingLocalPrecedence(currentTime);
   }
 }
 
@@ -615,13 +629,13 @@ void Player::updateToNewPattern(PatternBits newCurrentPattern,
   messageToSend.precedence = getOutgoingPrecedence(currentTime);
   for (Network* network : networks_) {
     if (!network->shouldEcho() && followedNetwork_ == network) {
-      info("%u Not echoing for %s as %s to %s ",
-           currentTime, network->name(), (followingLeader_ ? "remote" : "local"),
-           networkMessageToString(messageToSend).c_str());
+      debug("%u Not echoing for %s as %s to %s ",
+            currentTime, network->name(), (followingLeader_ ? "remote" : "local"),
+            networkMessageToString(messageToSend).c_str());
       network->disableSending(currentTime);
       continue;
     }
-    info("%u Setting messageToSend for %s as %s to %s ",
+    debug("%u Setting messageToSend for %s as %s to %s ",
           currentTime, network->name(), (followingLeader_ ? "remote" : "local"),
           networkMessageToString(messageToSend).c_str());
     network->setMessageToSend(messageToSend, currentTime);
@@ -629,6 +643,11 @@ void Player::updateToNewPattern(PatternBits newCurrentPattern,
 }
 
 void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentTime) {
+  if (lastUserInputTime_ >= 0 && lastUserInputTime_ < currentTime && currentTime - lastUserInputTime_ < kInputDuration) {
+    info("%u Ignoring received message because of recent user input %s",
+          currentTime, networkMessageToString(message).c_str());
+    return;
+  }
   const Milliseconds timeSinceReceipt = currentTime - message.receiptTime;
   if (message.elapsedTime < std::numeric_limits<Milliseconds>::max() - timeSinceReceipt) {
     message.elapsedTime += timeSinceReceipt;
@@ -654,7 +673,8 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
     return;
   }
   if (comparePrecedence(incomingPrecedence, followedDeviceId,
-                        message.precedence, message.originator) >= 0) {
+                        message.precedence, message.originator) >= 0 &&
+      followedDeviceId != message.originator) {
     info("%u Ignoring received message %s because our %s " DEVICE_ID_FMT " precedence %u is higher",
           currentTime, networkMessageToString(message).c_str(),
           (followingLeader_ ? "remote" : "local"),
@@ -691,6 +711,11 @@ void Player::syncToNetwork(Milliseconds currentTime) {
         network->getReceivedMessages(currentTime)) {
       handleReceivedMessage(receivedMessage, currentTime);
     }
+  }
+  if (followingLeader_ && currentTime > kInputDuration && currentTime - kInputDuration > lastLeaderReceiveTime_) {
+    info("%u abandoning leader due to inactivity",
+         currentTime);
+    abandonLeader(currentTime);
   }
   // Then give all networks the opportunity to send.
   for (Network* network : networks_) {

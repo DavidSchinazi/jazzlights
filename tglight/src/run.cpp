@@ -27,10 +27,12 @@ extern "C" void run(bool verbose, const char* ver, const char* cfgfile) {
     enableVerboseOutput();    
   }
 
-  // strcpy(version, ver);
   snprintf(version, sizeof(version) - 1, "%s_%s", ver, BOOT_MESSAGE);
   info("My %s", sysinfo());
   load(cfgfile, player);
+  player.setBasePrecedence(20000);
+  player.setIncomingPrecedenceGain(20000);
+  player.setOutgoingPrecedenceGain(10000);
   player.connect(&network);
   player.begin();
   for (;;) {
