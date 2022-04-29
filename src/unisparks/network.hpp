@@ -71,6 +71,8 @@ class NetworkDeviceId {
   uint8_t data_[kNetworkDeviceIdSize];
 };
 
+class Network;
+
 struct NetworkMessage {
   NetworkDeviceId originator = NetworkDeviceId();
   NetworkDeviceId sender = NetworkDeviceId();
@@ -79,7 +81,7 @@ struct NetworkMessage {
   Milliseconds elapsedTime = 0;
   Precedence precedence = 0;
   Milliseconds receiptTime = 0;
-  // TODO save which network a message was received on to avoid repeating on Wi-Fi
+  Network* receiptNetwork = nullptr;
 };
 
 std::string displayBitsAsBinary(PatternBits p);

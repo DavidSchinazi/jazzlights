@@ -77,11 +77,16 @@ std::string networkMessageToString(const NetworkMessage& message) {
   char str[sizeof(", t=4294967296, p=65536, rt=4294967296}")] = {};
   snprintf(str, sizeof(str), ", t=%u, p=%u, rt=%u}",
            message.elapsedTime, message.precedence, message.receiptTime);
-  return "{o=" + message.originator.toString() +
-         ", s=" + message.sender.toString() +
-         ", c=" + displayBitsAsBinary(message.currentPattern) +
-         ", n=" + displayBitsAsBinary(message.nextPattern) +
-         str;
+  std::string rv = "{o=" + message.originator.toString() +
+                   ", s=" + message.sender.toString() +
+                   ", c=" + displayBitsAsBinary(message.currentPattern) +
+                   ", n=" + displayBitsAsBinary(message.nextPattern);
+  if (message.receiptNetwork != nullptr) {
+    rv += ", ";
+    rv += message.receiptNetwork->name();
+  }
+  rv += str;
+  return rv;
 }
 
   NetworkDeviceId originator = NetworkDeviceId();
@@ -143,7 +148,11 @@ void UdpNetwork::disableSending(Milliseconds /*currentTime*/) {
 
 std::list<NetworkMessage> Network::getReceivedMessages(Milliseconds currentTime) {
   checkStatus(currentTime);
-  return getReceivedMessagesImpl(currentTime);
+  std::list<NetworkMessage> receivedMessages = getReceivedMessagesImpl(currentTime);
+  for (NetworkMessage& message : receivedMessages) {
+    message.receiptNetwork = this;
+  }
+  return receivedMessages;
 }
 
 std::list<NetworkMessage> UdpNetwork::getReceivedMessagesImpl(Milliseconds currentTime) {
