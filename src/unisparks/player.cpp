@@ -544,9 +544,17 @@ Precedence Player::getLeaderPrecedence(Milliseconds currentTime) {
   return precedence;
 }
 
-Precedence Player::getFollowedPrecedence(Milliseconds currentTime) {
+Precedence Player::getOutgoingPrecedence(Milliseconds currentTime) {
   if (followingLeader_) {
     return depreciatePrecedence(getLeaderPrecedence(currentTime), 100);
+  } else {
+    return getLocalPrecedence(currentTime);
+  }
+}
+
+Precedence Player::getIncomingPrecedence(Milliseconds currentTime) {
+  if (followingLeader_) {
+    return getLeaderPrecedence(currentTime);
   } else {
     return getLocalPrecedence(currentTime);
   }
@@ -604,7 +612,7 @@ void Player::updateToNewPattern(PatternBits newCurrentPattern,
   messageToSend.currentPattern = currentPattern_;
   messageToSend.nextPattern = nextPattern_;
   messageToSend.elapsedTime = elapsedTime_;
-  messageToSend.precedence = getFollowedPrecedence(currentTime);
+  messageToSend.precedence = getOutgoingPrecedence(currentTime);
   for (Network* network : networks_) {
     if (!network->shouldEcho() && followedNetwork_ == network) {
       info("%u Not echoing for %s as %s to %s ",
@@ -627,49 +635,43 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
   } else {
     message.elapsedTime = std::numeric_limits<Milliseconds>::max();
   }
-  NetworkDeviceId followedDeviceId = getLocalDeviceId(currentTime);
-  if (message.sender == followedDeviceId) {
+  if (message.sender == getLocalDeviceId(currentTime)) {
     debug("%u Ignoring received message that we sent %s",
           currentTime, networkMessageToString(message).c_str());
     return;
   }
-  if (message.originator == followedDeviceId) {
+  if (message.originator == getLocalDeviceId(currentTime)) {
     debug("%u Ignoring received message that we originated %s",
           currentTime, networkMessageToString(message).c_str());
     return;
   }
-  Precedence followedPrecedence;
-  if (followingLeader_) {
-    followedDeviceId = leaderDeviceId_;
-    followedPrecedence = getLeaderPrecedence(currentTime);
-  } else {
-    followedPrecedence = getLocalPrecedence(currentTime);
-  }
+  Precedence incomingPrecedence = getIncomingPrecedence(currentTime);
+  NetworkDeviceId followedDeviceId = getFollowedDeviceId(currentTime);
   if (message.elapsedTime > kEffectDuration && !loop_) {
     // Ignore this message because the sender already switched effects.
     info("%u Ignoring received message %s past duration %u",
          currentTime, networkMessageToString(message).c_str(), kEffectDuration);
     return;
   }
-  if (comparePrecedence(followedPrecedence, followedDeviceId,
+  if (comparePrecedence(incomingPrecedence, followedDeviceId,
                         message.precedence, message.originator) >= 0) {
     info("%u Ignoring received message %s because our %s " DEVICE_ID_FMT " precedence %u is higher",
           currentTime, networkMessageToString(message).c_str(),
           (followingLeader_ ? "remote" : "local"),
-          DEVICE_ID_HEX(followedDeviceId), followedPrecedence);
+          DEVICE_ID_HEX(followedDeviceId), incomingPrecedence);
     return;
   }
   if (!followingLeader_) {
     info("%u Switching from local " DEVICE_ID_FMT " precedence %u to new leader %s",
-         currentTime, DEVICE_ID_HEX(followedDeviceId), followedPrecedence,
+         currentTime, DEVICE_ID_HEX(followedDeviceId), incomingPrecedence,
          networkMessageToString(message).c_str());
   } else if (leaderDeviceId_ != message.originator) {
     info("%u Switching from prior leader " DEVICE_ID_FMT " precedence %u to new leader %s",
-         currentTime, DEVICE_ID_HEX(leaderDeviceId_), followedPrecedence,
+         currentTime, DEVICE_ID_HEX(leaderDeviceId_), incomingPrecedence,
          networkMessageToString(message).c_str());
   } else {
     info("%u Keeping leader precedence %u via %s",
-         currentTime, followedPrecedence,
+         currentTime, incomingPrecedence,
          networkMessageToString(message).c_str());
   }
   followingLeader_ = true;

@@ -122,7 +122,8 @@ class Player {
 
   Precedence getLocalPrecedence(Milliseconds currentTime);
   Precedence getLeaderPrecedence(Milliseconds currentTime);
-  Precedence getFollowedPrecedence(Milliseconds currentTime);
+  Precedence getOutgoingPrecedence(Milliseconds currentTime);
+  Precedence getIncomingPrecedence(Milliseconds currentTime);
   NetworkDeviceId getLocalDeviceId(Milliseconds currentTime);
   NetworkDeviceId getLeaderDeviceId(Milliseconds currentTime);
   NetworkDeviceId getFollowedDeviceId(Milliseconds currentTime);
