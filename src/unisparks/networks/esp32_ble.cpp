@@ -204,8 +204,9 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
   message.originator = NetworkDeviceId(&innerPayload[1]);
   message.precedence = readUint16(&innerPayload[1 + 6]);
   message.currentPattern = readUint32(&innerPayload[1 + 6 + 2]);
-  message.receiptTime = currentTime;
+  message.nextPattern = readUint32(&innerPayload[1 + 6 + 2 + 4]);
   message.elapsedTime = readUint32(&innerPayload[1 + 6 + 2 + 4 + 4]);
+  message.receiptTime = currentTime;
 
   // Empirical measurements with the ATOM Matrix show a RTT of 50ms,
   // so we offset the one way transmission time by half that.
