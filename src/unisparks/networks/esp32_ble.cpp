@@ -149,7 +149,7 @@ void Esp32BleNetwork::triggerSendAsap(Milliseconds currentTime) {
 
 void Esp32BleNetwork::setMessageToSend(const NetworkMessage& messageToSend,
                         Milliseconds currentTime) {
-  uint8_t blePayload[1 + 6 + 2 + 4 + 4 + 4] = {};
+  uint8_t blePayload[1 + 6 + 2 + 4 + 4 + 2] = {};
   static_assert(sizeof(blePayload) <= kMaxInnerPayloadLength, "bad size");
   messageToSend.originator.writeTo(&blePayload[1]);
   writeUint16(&blePayload[1 + 6], messageToSend.precedence);
