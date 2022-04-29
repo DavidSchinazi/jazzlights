@@ -156,11 +156,11 @@ static const CRGB menuIconNext[ATOM_SCREEN_NUM_LEDS] = {
 
 static const CRGB prevColor = CRGB::Red;
 static const CRGB menuIconPrevious[ATOM_SCREEN_NUM_LEDS] = {
-    CRGB::Black, CRGB::Black, prevColor, CRGB::Black, CRGB::Black,
-    CRGB::Black, prevColor,   prevColor, CRGB::Black, CRGB::Black,
-    prevColor,   prevColor,   prevColor, CRGB::Black, CRGB::Black,
-    CRGB::Black, prevColor,   prevColor, CRGB::Black, CRGB::Black,
-    CRGB::Black, CRGB::Black, prevColor, CRGB::Black, CRGB::Black,
+    CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black,
+    CRGB::Black, prevColor,   CRGB::Black, prevColor,   CRGB::Black,
+    CRGB::Black, prevColor,   CRGB::Black, prevColor,   CRGB::Black,
+    CRGB::Black, prevColor,   CRGB::Black, prevColor,   CRGB::Black,
+    CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black,
 };
 
 static const CRGB menuIconBrightness[ATOM_SCREEN_NUM_LEDS] = {
