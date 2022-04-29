@@ -2,6 +2,7 @@
 #ifndef UNISPARKS_HPP
 #define UNISPARKS_HPP
 
+#include "unisparks/config.h"
 #include "unisparks/effects/sequence.hpp"
 #include "unisparks/effects/solid.hpp"
 #include "unisparks/layouts/matrix.hpp"

@@ -1,6 +1,6 @@
 [package]
 name = "tglight"
-version = "0.3.6-ds"
+version = "1.0.0-ds"
 authors = ["Dmitry Azovtsev <dmitry@azovtsev.com>"]
 
 [dependencies]

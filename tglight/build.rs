@@ -48,6 +48,7 @@ fn main() {
             .cpp(true)
             .warnings(true) // "-Wall -Wextra for GCC/Clang, /Wall for MSVC"
             .flag("-std=c++14")
+            .flag("-DBOOT_NAME=TGLIGHT")
             .include(project_dir.join("src"))
             .include(unisparks_dir.join("src"))
             .include(unisparks_dir.join("extras"))

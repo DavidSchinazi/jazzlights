@@ -7,7 +7,7 @@ using namespace unisparks;
 Player player;
 UnixUdpNetwork network;
 const char* sysinfo();
-char version[32];
+char version[256] = {};
 
 extern "C" const char* call(const char* cmd) {
   if (!strcmp(cmd, "shutdown")) {
@@ -27,7 +27,8 @@ extern "C" void run(bool verbose, const char* ver, const char* cfgfile) {
     enableVerboseOutput();    
   }
 
-  strcpy(version, ver);
+  // strcpy(version, ver);
+  snprintf(version, sizeof(version) - 1, "%s_%s", ver, BOOT_MESSAGE);
   info("My %s", sysinfo());
   load(cfgfile, player);
   player.connect(&network);
