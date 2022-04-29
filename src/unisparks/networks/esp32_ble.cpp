@@ -189,7 +189,7 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
           currentTime, innerPayloadLength);
     return;
   }
-  if (innerPayloadLength < 1 + 6 + 2 + 4 + 4 + 4) {
+  if (innerPayloadLength < 1 + 6 + 2 + 4 + 4 + 2) {
     info("%u Ignoring received BLE with unexpected length %u",
          currentTime, innerPayloadLength);
     return;
@@ -205,7 +205,7 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
   message.precedence = readUint16(&innerPayload[1 + 6]);
   message.currentPattern = readUint32(&innerPayload[1 + 6 + 2]);
   message.nextPattern = readUint32(&innerPayload[1 + 6 + 2 + 4]);
-  message.elapsedTime = readUint32(&innerPayload[1 + 6 + 2 + 4 + 4]);
+  message.elapsedTime = readUint16(&innerPayload[1 + 6 + 2 + 4 + 4]);
   message.receiptTime = currentTime;
 
   // Empirical measurements with the ATOM Matrix show a RTT of 50ms,
@@ -242,13 +242,13 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload,
   }
   memcpy(innerPayload, innerPayload_, innerPayloadLength_);
   if (timeByteOffset_ + sizeof(uint32_t) <= innerPayloadLength_) {
-    Milliseconds timeToSend;
-    if (timeSubtract_ <= currentTime) {
+    uint16_t timeToSend;
+    if (timeSubtract_ <= currentTime && currentTime - timeSubtract_ <= 0xFFFF) {
       timeToSend = currentTime - timeSubtract_;
     } else {
-      timeToSend = 0xFFFFFFFF;
+      timeToSend = 0xFFFF;
     }
-    writeUint32(&innerPayload[timeByteOffset_], timeToSend);
+    writeUint16(&innerPayload[timeByteOffset_], timeToSend);
   }
   return innerPayloadLength_;
 }
