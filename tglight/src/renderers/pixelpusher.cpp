@@ -28,7 +28,9 @@ struct PixelPusherDiscoveryResult {
   Milliseconds lastSeenTime = -1;
   PixelPusherDiscoveryResult() {
     addressAndPort.sin_family = AF_INET;
+#ifdef __APPLE__
     addressAndPort.sin_len = sizeof(addressAndPort);
+#endif // __APPLE__
   }
 };
 
@@ -57,7 +59,9 @@ class PixelPusherDiscovery {
       fatal("Failed to fcntl F_SETFL PixelPusherDiscovery socket: %s", strerror(errno));
     }
     struct sockaddr_in localAddr = {};
+#ifdef __APPLE__
     localAddr.sin_len = sizeof(localAddr);
+#endif // __APPLE__
     localAddr.sin_family = AF_INET;
     localAddr.sin_port = htons(7331);
     if (bind(fd_, reinterpret_cast<struct sockaddr*>(&localAddr), sizeof(localAddr)) < 0) {
