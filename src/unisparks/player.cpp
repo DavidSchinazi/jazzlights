@@ -485,7 +485,7 @@ void Player::nextInner(Milliseconds currentTime) {
                      /*elapsedTime=*/0, currentTime);
 }
 
-void Player::abandonLeader(Milliseconds currentTime) {
+void Player::abandonLeader(Milliseconds /*currentTime*/) {
   followingLeader_ = false;
   followedNetwork_ = nullptr;
 }
@@ -544,7 +544,7 @@ Precedence Player::getOutgoingLocalPrecedence(Milliseconds currentTime) {
                                              kInputDuration/2, outgoingPrecedenceGain_));
 }
 
-Precedence Player::getOutgoingLeaderPrecedence(Milliseconds currentTime) {
+Precedence Player::getOutgoingLeaderPrecedence(Milliseconds /*currentTime*/) {
  return depreciatePrecedence(leaderPrecedence_, 100);
 }
 
@@ -562,7 +562,7 @@ Precedence Player::getIncomingLocalPrecedence(Milliseconds currentTime) {
                                               kInputDuration, incomingPrecedenceGain_));
 }
 
-Precedence Player::getIncomingLeaderPrecedence(Milliseconds currentTime) {
+Precedence Player::getIncomingLeaderPrecedence(Milliseconds /*currentTime*/) {
   return leaderPrecedence_;
 }
 
