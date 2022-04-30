@@ -10,7 +10,7 @@ public:
   PixelMap(size_t cnt, Point* pts) : count_(cnt), points_(pts) {
   }
 
-  PixelMap(const PixelMap& other) : count_(other.count_), points_(other.points_) {
+  PixelMap(const PixelMap& other) : Layout(), count_(other.count_), points_(other.points_) {
   }
 
   int pixelCount() const override {
