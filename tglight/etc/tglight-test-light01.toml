@@ -2,15 +2,15 @@
 
 # Caboose left (inside) tail fins
 [[strand]]
-renderers = [{type="pixelpusher", addr="10.24.21.200", port=7331, strip=0}]
+renderers = [{type="pixelpusher", addr="10.24.21.200", controller=10200, group=10001, port=7331, strip=0}]
 layout = {type="matrix-zigzag", size=[50,50], origin=[14.30, -0.70], resolution=3}
 
 # Caboose right (outside) tail fins
 [[strand]]
-renderers = [{type="pixelpusher", addr="10.24.21.200", port=7331, strip=1}]
+renderers = [{type="pixelpusher", addr="10.24.21.200", controller=10200, group=10001, port=7331, strip=1}]
 layout = {type="matrix-zigzag", size=[50,50], origin=[14.30, -0.70], resolution=3}
 
 # Caboose outside wall
 [[strand]]
-renderers = [{type="pixelpusher", addr="10.24.21.200", port=7331, strip=2}]
+renderers = [{type="pixelpusher", addr="10.24.21.200", controller=10200, group=10001, port=7331, strip=2}]
 layout = {type="matrix-zigzag", size=[50,50], origin=[14.30, -0.70], resolution=3}

@@ -31,9 +31,12 @@ Renderer& TGLoader::loadRenderer(const unisparks::Layout&,
     auto addr = addrcfg->c_str();
     auto strip = cfg.get_as<int64_t>("strip").value_or(strandidx);
     auto port = cfg.get_as<int64_t>("port").value_or(7331);
+    auto throttle = cfg.get_as<int64_t>("throttle").value_or(1000 / 30);
+    auto controller = cfg.get_as<int64_t>("controller").value_or(0);
+    auto group = cfg.get_as<int64_t>("group").value_or(0);
  
     renderers.emplace_back(unique_ptr<Renderer>(new PixelPusher(strdup(addr), port,
-                           strip)));
+                           strip, throttle, controller, group)));
   } else if (!strcmp(type, "openpixel")) {
     auto addrcfg = cfg.get_as<string>("addr");
     if (!addrcfg) {
