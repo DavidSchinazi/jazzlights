@@ -27,7 +27,7 @@ release-armv7:
 	${CARGO} clean -p tglight --release
 	${CARGO} build --target=armv7-unknown-linux-gnueabihf --release
 
-install:
+install-on-robot:
 	mount -o remount,rw /
 	${CARGO} clean -p tglight --release
 	${CARGO} build --release
@@ -36,6 +36,17 @@ install:
 	cp ${BUILD_DIR}/release/tglight /opt/tglight/bin/tglight
 	mkdir -p /opt/tglight/etc
 	cp ${SOURCE_DIR}/etc/robot/tglight.toml /opt/tglight/etc/tglight.toml
+	service tglight restart
+
+install-on-stage:
+	mount -o remount,rw /
+	${CARGO} clean -p tglight --release
+	${CARGO} build --release
+	service tglight stop
+	mkdir -p /opt/tglight/bin
+	cp ${BUILD_DIR}/release/tglight /opt/tglight/bin/tglight
+	mkdir -p /opt/tglight/etc
+	cp ${SOURCE_DIR}/etc/stage/tglight.toml /opt/tglight/etc/tglight.toml
 	service tglight restart
 
 setup:
