@@ -5,7 +5,7 @@
 # Network Configuration
 #ether=10.2.0.10
 #netmask=255.255.0.0
-dhcp_timeout=12
+dhcp_timeout=4
 port=7331
 
 # Device Organization
