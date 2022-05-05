@@ -205,7 +205,12 @@ Effect* patternFromBits(PatternBits pattern) {
     } else { // custom
       if (patternbit(pattern, 2)) { // sparkly
         if (patternbit(pattern, 3)) { // flame
+#if WEARABLE
           return &flame_pattern;
+#else  // WEARABLE
+          // TODO figure out why flame does not work on vehicles.
+          return &spin_lava_pattern;
+#endif  // WEARABLE
         } else { // glitter
           return &glitter_pattern;
         }
