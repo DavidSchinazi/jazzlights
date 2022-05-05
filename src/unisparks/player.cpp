@@ -81,6 +81,18 @@ auto black_effect = solid(BLACK, "black");
 auto red_effect = solid(RED, "red");
 auto green_effect = solid(GREEN, "green");
 auto blue_effect = solid(BLUE, "blue");
+auto purple_effect = solid(PURPLE, "purple");
+auto cyan_effect = solid(CYAN, "cyan");
+auto yellow_effect = solid(YELLOW, "yellow");
+auto white_effect = solid(WHITE, "white");
+
+auto red_glow_effect = glow(RED, "glow-red");
+auto green_glow_effect = glow(GREEN, "glow-green");
+auto blue_glow_effect = glow(BLUE, "glow-blue");
+auto purple_glow_effect = solid(PURPLE, "glow-purple");
+auto cyan_glow_effect = solid(CYAN, "glow-cyan");
+auto yellow_glow_effect = solid(YELLOW, "glow-yellow");
+auto white_glow_effect = solid(WHITE, "glow-white");
 
 auto network_effect = [](NetworkStatus network_status, const std::string& name) {
   return effect(std::string("network-") + name, [ = ](const Frame& frame) {
@@ -122,6 +134,19 @@ auto network_effect_connecting = network_effect(CONNECTING, "connecting");
 auto network_effect_connected = network_effect(CONNECTED, "connected");
 auto network_effect_disconnecting = network_effect(DISCONNECTING, "disconnecting");
 auto network_effect_connection_failed = network_effect(CONNECTION_FAILED, "failed");
+
+Effect* get_network_effect(NetworkStatus networkStatus) {
+  switch (networkStatus) {
+    case INITIALIZING: return &network_effect_initializing;
+    case DISCONNECTED: return &network_effect_disconnected;
+    case CONNECTING: return &network_effect_connecting;
+    case CONNECTED: return &network_effect_connected;
+    case DISCONNECTING: return &network_effect_disconnecting;
+    case CONNECTION_FAILED: return &network_effect_connection_failed;
+  }
+  return &network_effect_connection_failed;
+}
+
 auto synctest = effect("synctest", [](const Frame& frame) {
     return [ = ](const Pixel& /*pt*/) -> Color {
       Color colors[] = {0xff0000, 0x00ff00, 0x0000ff, 0xffffff};
@@ -174,6 +199,32 @@ auto rainbow_pattern = clone(rainbow());
 
 Effect* patternFromBits(PatternBits pattern) {
   if (patternIsReserved(pattern)) {
+    const uint8_t byte1 = (pattern >> 24) & 0xFF;
+    const uint8_t byte2 = (pattern >> 16) & 0xFF;
+    const uint8_t byte3 = (pattern >>  8) & 0xFF;
+    if (byte1 == 0 && byte2 == 0) {
+      switch (byte3) {
+        case 0: return &black_effect;
+        case 1: return &red_effect;
+        case 2: return &green_effect;
+        case 3: return &blue_effect;
+        case 4: return &purple_effect;
+        case 5: return &cyan_effect;
+        case 6: return &yellow_effect;
+        case 7: return &white_effect;
+        case 8: return &red_glow_effect;
+        case 9: return &green_glow_effect;
+        case 10: return &blue_glow_effect;
+        case 11: return &purple_glow_effect;
+        case 12: return &cyan_glow_effect;
+        case 13: return &yellow_glow_effect;
+        case 14: return &white_glow_effect;
+        case 15: return &synctest;
+#if WEARABLE
+        case 16: return &calibration_effect;
+#endif  // WEARABLE
+      }
+    }
     return &red_effect;
   } else {
     if (patternbit(pattern, 1)) { // spin
@@ -441,26 +492,7 @@ void Player::render(NetworkStatus networkStatus, Milliseconds timeSinceLastRende
 #endif // WEARABLE
       break;
     case 2:
-      switch (networkStatus) {
-        case INITIALIZING:
-          effect = &network_effect_initializing;
-          break;
-        case DISCONNECTED:
-          effect = &network_effect_disconnected;
-          break;
-        case CONNECTING:
-          effect = &network_effect_connecting;
-          break;
-        case CONNECTED:
-          effect = &network_effect_connected;
-          break;
-        case DISCONNECTING:
-          effect = &network_effect_disconnecting;
-          break;
-        case CONNECTION_FAILED:
-          effect = &network_effect_connection_failed;
-          break;
-      }
+      effect = get_network_effect(networkStatus);
       break;
     case 3:
       effect = &black_effect;
@@ -717,10 +749,17 @@ void Player::syncToNetwork(Milliseconds currentTime) {
       handleReceivedMessage(receivedMessage, currentTime);
     }
   }
-  if (followingLeader_ && currentTime > kInputDuration && currentTime - kInputDuration > lastLeaderReceiveTime_) {
-    info("%u abandoning leader due to inactivity",
-         currentTime);
-    abandonLeader(currentTime);
+  if (followingLeader_) {
+    if (currentTime > kInputDuration && currentTime - kInputDuration > lastLeaderReceiveTime_) {
+      info("%u abandoning leader due to inactivity",
+          currentTime);
+      abandonLeader(currentTime);
+    } else if (getIncomingPrecedence(currentTime) == 0) {
+      // TODO abandon leader once its precedence is lower than ours.
+      info("%u abandoning leader due to low precedence",
+          currentTime);
+      abandonLeader(currentTime);
+    }
   }
   // Then give all networks the opportunity to send.
   for (Network* network : networks_) {
