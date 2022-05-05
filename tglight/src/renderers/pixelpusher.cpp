@@ -136,21 +136,38 @@ class PixelPusherDiscovery {
         6 + 4 + 1 + 1 + 2 + 2 + 2 + 2 + 4 + 1 + 1 + 2 + 4 + 4 + 4;
       static constexpr size_t kGroupOffset =
         6 + 4 + 1 + 1 + 2 + 2 + 2 + 2 + 4 + 1 + 1 + 2 + 4 + 4 + 4 + 4;
-      debug("PixelPusherDiscovery: %02x:%02x:%02x:%02x:%02x:%02x %u.%u.%u.%u:%u c%u g%u",
+      char srcAddrStr[INET_ADDRSTRLEN] = {};
+      inet_ntop(AF_INET, &(srcAddr.sin_addr), srcAddrStr, sizeof(srcAddrStr));
+      debug("PixelPusherDiscovery: %02x:%02x:%02x:%02x:%02x:%02x %u.%u.%u.%u:%u c%u g%u from %s:%u",
             buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5],
             buffer[6], buffer[7], buffer[8], buffer[9],
             readUint16LE(&buffer[kPortOffset]),
             readUint32LE(&buffer[kControllerOffset]),
-            readUint32LE(&buffer[kGroupOffset]));
-      PixelPusherDiscoveryResult result;
-      memcpy(&result.addressAndPort.sin_addr,
-             &buffer[kIpAddressOffset],
-             sizeof(result.addressAndPort.sin_addr));
-      result.addressAndPort.sin_port = htons(readUint16LE(&buffer[kPortOffset]));
-      result.controller = readUint32LE(&buffer[kControllerOffset]);
-      result.group = readUint32LE(&buffer[kGroupOffset]);
-      result.lastSeenTime = currentTime;
-      saveResult(result);
+            readUint32LE(&buffer[kGroupOffset]),
+            srcAddrStr, ntohs(srcAddr.sin_port));
+      {
+        // Save first result from IP they think they have.
+        PixelPusherDiscoveryResult result;
+        memcpy(&result.addressAndPort.sin_addr,
+              &buffer[kIpAddressOffset],
+              sizeof(result.addressAndPort.sin_addr));
+        result.addressAndPort.sin_port = htons(readUint16LE(&buffer[kPortOffset]));
+        result.controller = readUint32LE(&buffer[kControllerOffset]);
+        result.group = readUint32LE(&buffer[kGroupOffset]);
+        result.lastSeenTime = currentTime;
+        saveResult(result);
+      }{
+        // Save another result from the IP we actually heard from.
+        PixelPusherDiscoveryResult result2;
+        memcpy(&result2.addressAndPort.sin_addr,
+              &(srcAddr.sin_addr),
+              sizeof(result2.addressAndPort.sin_addr));
+        result2.addressAndPort.sin_port = htons(readUint16LE(&buffer[kPortOffset]));
+        result2.controller = readUint32LE(&buffer[kControllerOffset]);
+        result2.group = readUint32LE(&buffer[kGroupOffset]);
+        result2.lastSeenTime = currentTime;
+        saveResult(result2);
+      }
     }
   }
   void pruneResults(Milliseconds currentTime) {
@@ -344,6 +361,9 @@ void PixelPusher::render(InputStream<Color>& pixelColors) {
 	0x0060:  0000 0000 0000 0000 0000 0000 0c00 0000
 	0x0070:  0000 0000 0000 0000 0000 0000 0000       30 unexpected bytes
 */
+
+// 7331 = 0x a31c or 1ca3
+// 5078 = 0x d613 or 13d6
 
 // https://sites.google.com/a/heroicrobot.com/pixelpusher/pixelpusher-documentation/pixelpusher-hardware-configuration-guide
 // https://sites.google.com/a/heroicrobot.com/pixelpusher/pixelpusher-documentation/pixelpusher-hardware-configuration-guide/software-getting-started-guide?authuser=0
