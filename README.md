@@ -12,47 +12,6 @@ that synchronizes with our art cars - this is the library to use. This document 
 
 ![Image](extras/docs/discofish.jpg)
 
-## Quickstart
-
-Here is an example of how to use the library to 
-drive some [NeoPixels](https://www.adafruit.com/index.php?main_page=category&cPath=168) with ESP8266 board:
-
-```c++
-    #include <Unisparks.h>
-    #include <Adafruit_NeoPixel.h>
-
-    const int NUM_LEDS = 12;
-    const int LED_PIN = 5; 
- 
-    Adafruit_NeoPixel strip(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
-
-    void renderPixel(int i, uint8_t r, uint8_t g, uint8_t b) {
-        strip.setPixelColor(i, r, g, b);       
-    }
-
-    Unisparks::Player player;
-    Unisparks::Matrix pixels(NUM_LEDS, 1);
-    Unisparks::Esp8266WiFi network("myssid", "mypassword");
-
-    void setup()
-    {
-      Serial.begin(115200);
-      strip.begin();
-      player.connect(&network);
-      player.addStrand(pixels, renderPixel);
-      player.begin();
- 
-      pinMode(LED_PIN, OUTPUT);
-    }
-
-    void loop()
-    {
-      player.render(DISCONNECTED, millis());
-      strip.show();
-      delay(10);
-    }
-```
-
 ## Installation
 
 ### Arduino
