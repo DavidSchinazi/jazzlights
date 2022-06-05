@@ -89,36 +89,6 @@ std::string networkMessageToString(const NetworkMessage& message) {
   return rv;
 }
 
-  NetworkDeviceId originator = NetworkDeviceId();
-  NetworkDeviceId sender = NetworkDeviceId();
-  PatternBits currentPattern = 0;
-  PatternBits nextPattern = 0;
-  Milliseconds elapsedTime = 0;
-  Precedence precedence = 0;
-  Milliseconds receiptTime = 0;
-
-static constexpr Milliseconds effectUpdatePeriod = 1000;
-
-struct Message {
-  int32_t msgcode;
-  union {
-    struct Frame {
-      int32_t sequence;
-      char reserved[8];
-      PatternBits pattern;
-      int32_t time;
-      int32_t reserved1;
-      uint16_t reserved2;
-    } __attribute__((__packed__)) frame;
-    // struct Beat {
-    //   int32_t sequence;
-    //   int16_t tempo;
-    // } __attribute__((__packed__)) beat;
-  } __attribute__((__packed__)) data;
-} __attribute__((__packed__));
-
-
-
 NetworkStatus Network::status() const {
   return status_;
 }
@@ -227,10 +197,11 @@ void UdpNetwork::runLoopImpl(Milliseconds currentTime) {
     return;
   }
 
-  // Do we need to broadcast?
+  // Do we need to send?
+  static constexpr Milliseconds kMinTimeBetweenUdpSends = 1000;
   if (hasDataToSend_ &&
       (effectLastTxTime_ < 1 ||
-         currentTime - effectLastTxTime_ > effectUpdatePeriod ||
+         currentTime - effectLastTxTime_ > kMinTimeBetweenUdpSends ||
          messageToSend_.currentPattern != lastSentPattern_)) {
     effectLastTxTime_ = currentTime;
     lastSentPattern_ = messageToSend_.currentPattern;
