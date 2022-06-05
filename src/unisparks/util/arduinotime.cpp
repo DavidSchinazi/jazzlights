@@ -15,10 +15,6 @@ Milliseconds timeMillis() {
   return static_cast<Milliseconds>(unsignedTime);
 }
 
-void delay(Milliseconds duration) {
-  ::delay(duration);
-}
-
 } // namespace unisparks
 
 

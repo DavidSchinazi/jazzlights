@@ -15,11 +15,6 @@ constexpr Milliseconds MAX_TIME =  2147483647;
  */
 Milliseconds timeMillis();
 
-/**
- * Pauses the program for the given amount of time
- */
-void delay(Milliseconds time);
-
 typedef int32_t FramesPerSecond;
 
 

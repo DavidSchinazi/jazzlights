@@ -1,5 +1,6 @@
 #include <vector>
 #include <sstream>
+#include <unistd.h>
 #include "tgloader.hpp"
 #include "renderers/pixelpusher.hpp"
 #include "renderers/openpixel.hpp"
@@ -59,7 +60,7 @@ void load(const char *file, unisparks::Player& player) {
       return;
     } catch (const runtime_error& err) {
       error("Couldn't parse %s: %s", file, err.what());
-      delay(2000);
+      sleep(2);
     }
   }
 }

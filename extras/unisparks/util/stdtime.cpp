@@ -10,10 +10,6 @@ Milliseconds timeMillis() {
          .count();
 }
 
-void delay(Milliseconds duration) {
-  std::this_thread::sleep_for(std::chrono::milliseconds(duration));
-}
-
 } // namespace unisparks
 
 
