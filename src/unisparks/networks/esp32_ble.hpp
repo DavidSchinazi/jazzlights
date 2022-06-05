@@ -78,7 +78,7 @@ class Esp32BleNetwork : public Network {
                             uint8_t innerPayloadLength,
                             const uint8_t* innerPayload,
                             int rssi,
-                            Milliseconds receiptTime);
+                            Milliseconds currentTime);
   uint8_t GetNextInnerPayloadToSend(uint8_t* innerPayload,
                                     uint8_t maxInnerPayloadLength,
                                     Milliseconds currentTime);
@@ -100,7 +100,7 @@ class Esp32BleNetwork : public Network {
   uint8_t innerPayloadLength_ = 0;
   uint8_t innerPayload_[kMaxInnerPayloadLength];
   uint8_t timeByteOffset_ = kMaxInnerPayloadLength;
-  Milliseconds timeSubtract_ = 0;
+  Milliseconds currentPatternStartTime_ = 0;
   std::list<NetworkMessage> receivedMessages_;
   Milliseconds timeToStopAdvertising_ = 0;
   Milliseconds timeToStopScanning_ = 0;

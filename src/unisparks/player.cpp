@@ -477,7 +477,7 @@ void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
 
 void Player::nextInner(Milliseconds currentTime) {
   updateToNewPattern(nextPattern_, computeNextPattern(nextPattern_),
-                     /*elapsedTime=*/0, currentTime);
+                     /*newCurrentPatternStartTime=*/currentTime, currentTime);
 }
 
 void Player::abandonLeader(Milliseconds /*currentTime*/) {
@@ -593,9 +593,9 @@ NetworkDeviceId Player::getFollowedDeviceId(Milliseconds currentTime) {
 
 void Player::updateToNewPattern(PatternBits newCurrentPattern,
                                 PatternBits newNextPattern,
-                                Milliseconds elapsedTime,
+                                Milliseconds newCurrentPatternStartTime,
                                 Milliseconds currentTime) {
-  currentPatternStartTime_ = currentTime - elapsedTime;
+  currentPatternStartTime_ = newCurrentPatternStartTime;
   nextPattern_ = newNextPattern;
   if (newCurrentPattern != currentPattern_) {
     currentPattern_ = newCurrentPattern;
@@ -620,19 +620,19 @@ void Player::updateToNewPattern(PatternBits newCurrentPattern,
   }
   messageToSend.currentPattern = currentPattern_;
   messageToSend.nextPattern = nextPattern_;
-  messageToSend.elapsedTime = currentTime - currentPatternStartTime_;
+  messageToSend.currentPatternStartTime = currentPatternStartTime_;
   messageToSend.precedence = getOutgoingPrecedence(currentTime);
   for (Network* network : networks_) {
     if (!network->shouldEcho() && followedNetwork_ == network) {
       debug("%u Not echoing for %s as %s to %s ",
             currentTime, network->name(), (followingLeader_ ? "remote" : "local"),
-            networkMessageToString(messageToSend).c_str());
+            networkMessageToString(messageToSend, currentTime).c_str());
       network->disableSending(currentTime);
       continue;
     }
     debug("%u Setting messageToSend for %s as %s to %s ",
           currentTime, network->name(), (followingLeader_ ? "remote" : "local"),
-          networkMessageToString(messageToSend).c_str());
+          networkMessageToString(messageToSend, currentTime).c_str());
     network->setMessageToSend(messageToSend, currentTime);
   }
 }
@@ -640,38 +640,32 @@ void Player::updateToNewPattern(PatternBits newCurrentPattern,
 void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentTime) {
   if (lastUserInputTime_ >= 0 && lastUserInputTime_ < currentTime && currentTime - lastUserInputTime_ < kInputDuration) {
     info("%u Ignoring received message because of recent user input %s",
-          currentTime, networkMessageToString(message).c_str());
+          currentTime, networkMessageToString(message, currentTime).c_str());
     return;
-  }
-  const Milliseconds timeSinceReceipt = currentTime - message.receiptTime;
-  if (message.elapsedTime < std::numeric_limits<Milliseconds>::max() - timeSinceReceipt) {
-    message.elapsedTime += timeSinceReceipt;
-  } else {
-    message.elapsedTime = std::numeric_limits<Milliseconds>::max();
   }
   if (message.sender == getLocalDeviceId(currentTime)) {
     debug("%u Ignoring received message that we sent %s",
-          currentTime, networkMessageToString(message).c_str());
+          currentTime, networkMessageToString(message, currentTime).c_str());
     return;
   }
   if (message.originator == getLocalDeviceId(currentTime)) {
     debug("%u Ignoring received message that we originated %s",
-          currentTime, networkMessageToString(message).c_str());
+          currentTime, networkMessageToString(message, currentTime).c_str());
     return;
   }
   Precedence incomingPrecedence = getIncomingPrecedence(currentTime);
   NetworkDeviceId followedDeviceId = getFollowedDeviceId(currentTime);
-  if (message.elapsedTime > kEffectDuration && !loop_) {
+  if (currentTime - message.currentPatternStartTime > kEffectDuration && !loop_) {
     // Ignore this message because the sender already switched effects.
     info("%u Ignoring received message %s past duration %u",
-         currentTime, networkMessageToString(message).c_str(), kEffectDuration);
+         currentTime, networkMessageToString(message, currentTime).c_str(), kEffectDuration);
     return;
   }
   if (comparePrecedence(incomingPrecedence, followedDeviceId,
                         message.precedence, message.originator) >= 0 &&
       followedDeviceId != message.originator) {
     info("%u Ignoring received message %s because our %s " DEVICE_ID_FMT " precedence %u is higher",
-          currentTime, networkMessageToString(message).c_str(),
+          currentTime, networkMessageToString(message, currentTime).c_str(),
           (followingLeader_ ? "remote" : "local"),
           DEVICE_ID_HEX(followedDeviceId), incomingPrecedence);
     return;
@@ -679,15 +673,15 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
   if (!followingLeader_) {
     info("%u Switching from local " DEVICE_ID_FMT " precedence %u to new leader %s",
          currentTime, DEVICE_ID_HEX(followedDeviceId), incomingPrecedence,
-         networkMessageToString(message).c_str());
+         networkMessageToString(message, currentTime).c_str());
   } else if (leaderDeviceId_ != message.originator) {
     info("%u Switching from prior leader " DEVICE_ID_FMT " precedence %u to new leader %s",
          currentTime, DEVICE_ID_HEX(leaderDeviceId_), incomingPrecedence,
-         networkMessageToString(message).c_str());
+         networkMessageToString(message, currentTime).c_str());
   } else {
     info("%u Keeping leader precedence %u via %s",
          currentTime, incomingPrecedence,
-         networkMessageToString(message).c_str());
+         networkMessageToString(message, currentTime).c_str());
   }
   followingLeader_ = true;
   followedNetwork_ = message.receiptNetwork;
@@ -696,7 +690,7 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
   lastLeaderReceiveTime_ = currentTime;
   lastLEDWriteTime_ = -1;
   updateToNewPattern(message.currentPattern, message.nextPattern,
-                     message.elapsedTime, currentTime);
+                     message.currentPatternStartTime, currentTime);
 }
 
 void Player::syncToNetwork(Milliseconds currentTime) {

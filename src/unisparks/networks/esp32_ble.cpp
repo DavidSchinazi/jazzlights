@@ -156,14 +156,14 @@ void Esp32BleNetwork::setMessageToSend(const NetworkMessage& messageToSend,
   writeUint32(&blePayload[1 + 6 + 2], messageToSend.currentPattern);
   writeUint32(&blePayload[1 + 6 + 2 + 4], messageToSend.nextPattern);
   constexpr uint8_t kTimeByteOffset = 1 + 6 + 2 + 4 + 4;
-  Milliseconds timeSubtract = currentTime - messageToSend.elapsedTime;
+  Milliseconds currentPatternStartTime = messageToSend.currentPatternStartTime;
   {
     const std::lock_guard<std::mutex> lock(mutex_);
     hasDataToSend_ = true;
     innerPayloadLength_ = sizeof(blePayload);
     memcpy(innerPayload_, blePayload, sizeof(blePayload));
     timeByteOffset_ = kTimeByteOffset;
-    timeSubtract_ = timeSubtract;
+    currentPatternStartTime_ = currentPatternStartTime;
     if (ESP32_BLE_DEBUG_ENABLED()) {
       char advRawData[sizeof(blePayload) * 2 + 1] = {};
       convertToHex(advRawData, sizeof(advRawData),
@@ -205,16 +205,21 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
   message.precedence = readUint16(&innerPayload[1 + 6]);
   message.currentPattern = readUint32(&innerPayload[1 + 6 + 2]);
   message.nextPattern = readUint32(&innerPayload[1 + 6 + 2 + 4]);
-  message.elapsedTime = readUint16(&innerPayload[1 + 6 + 2 + 4 + 4]);
-  message.receiptTime = currentTime;
+  Milliseconds elapsedTime = readUint16(&innerPayload[1 + 6 + 2 + 4 + 4]);
 
   // Empirical measurements with the ATOM Matrix show a RTT of 50ms,
   // so we offset the one way transmission time by half that.
   constexpr Milliseconds transmissionOffset = 25;
-  if (message.receiptTime > transmissionOffset) {
-    message.receiptTime -= transmissionOffset;
+  Milliseconds receiptTime;
+  if (currentTime > transmissionOffset) {
+    receiptTime = currentTime - transmissionOffset;
   } else {
-    message.receiptTime = 0;
+    receiptTime = 0;
+  }
+  if (receiptTime >= elapsedTime) {
+    message.currentPatternStartTime = receiptTime - elapsedTime;
+  } else {
+    message.currentPatternStartTime = 0;
   }
 
   {
@@ -242,13 +247,14 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload,
   }
   memcpy(innerPayload, innerPayload_, innerPayloadLength_);
   if (timeByteOffset_ + sizeof(uint32_t) <= innerPayloadLength_) {
-    uint16_t timeToSend;
-    if (timeSubtract_ <= currentTime && currentTime - timeSubtract_ <= 0xFFFF) {
-      timeToSend = currentTime - timeSubtract_;
+    uint16_t elapsedTime;
+    if (currentPatternStartTime_ <= currentTime &&
+        currentTime - currentPatternStartTime_ <= 0xFFFF) {
+      elapsedTime = currentTime - currentPatternStartTime_;
     } else {
-      timeToSend = 0xFFFF;
+      elapsedTime = 0xFFFF;
     }
-    writeUint16(&innerPayload[timeByteOffset_], timeToSend);
+    writeUint16(&innerPayload[timeByteOffset_], elapsedTime);
   }
   return innerPayloadLength_;
 }

@@ -73,10 +73,11 @@ std::string displayBitsAsBinary(PatternBits p) {
   return std::string(bits);
 }
 
-std::string networkMessageToString(const NetworkMessage& message) {
-  char str[sizeof(", t=4294967296, p=65536, rt=4294967296}")] = {};
-  snprintf(str, sizeof(str), ", t=%u, p=%u, rt=%u}",
-           message.elapsedTime, message.precedence, message.receiptTime);
+std::string networkMessageToString(const NetworkMessage& message, Milliseconds currentTime) {
+  char str[sizeof(", t=4294967296, p=65536}")] = {};
+  snprintf(str, sizeof(str), ", t=%u, p=%u}",
+           currentTime - message.currentPatternStartTime,
+           message.precedence);
   std::string rv = "{o=" + message.originator.toString() +
                    ", s=" + message.sender.toString() +
                    ", c=" + displayBitsAsBinary(message.currentPattern) +
@@ -109,7 +110,6 @@ void UdpNetwork::setMessageToSend(const NetworkMessage& messageToSend,
                                   Milliseconds currentTime) {
   hasDataToSend_ = true;
   messageToSend_ = messageToSend;
-  timeSubtract_ = currentTime - messageToSend.elapsedTime;
 }
 
 void UdpNetwork::disableSending(Milliseconds /*currentTime*/) {
@@ -152,10 +152,11 @@ std::list<NetworkMessage> UdpNetwork::getReceivedMessagesImpl(Milliseconds curre
     receivedMessage.precedence = readUint16(&udpPayload[1 + 6 + 6]);
     receivedMessage.currentPattern = readUint32(&udpPayload[1 + 6 + 6 + 2]);
     receivedMessage.nextPattern = readUint32(&udpPayload[1 + 6 + 6 + 2 + 4]);
-    receivedMessage.elapsedTime = readUint16(&udpPayload[1 + 6 + 6 + 2 + 4 + 4]);
-    receivedMessage.receiptTime = currentTime;
+    Milliseconds elapsedTime = readUint16(&udpPayload[1 + 6 + 6 + 2 + 4 + 4]);
+    receivedMessage.currentPatternStartTime = currentTime - elapsedTime;
     debug("%u %s received %s",
-          currentTime, name(), networkMessageToString(receivedMessage).c_str());
+          currentTime, name(),
+          networkMessageToString(receivedMessage, currentTime).c_str());
     receivedMessages.push_back(receivedMessage);
   }
   return receivedMessages;
@@ -205,22 +206,24 @@ void UdpNetwork::runLoopImpl(Milliseconds currentTime) {
          messageToSend_.currentPattern != lastSentPattern_)) {
     effectLastTxTime_ = currentTime;
     lastSentPattern_ = messageToSend_.currentPattern;
-    NetworkMessage messageToSend = messageToSend_;
-    if (timeSubtract_ <= currentTime && currentTime - timeSubtract_ <= 0xFFFF) {
-      messageToSend.elapsedTime = currentTime - timeSubtract_;
+    Milliseconds elapsedTime;
+    if (messageToSend_.currentPatternStartTime <= currentTime &&
+        currentTime - messageToSend_.currentPatternStartTime <= 0xFFFF) {
+      elapsedTime = currentTime - messageToSend_.currentPatternStartTime;
     } else {
-      messageToSend.elapsedTime = 0xFFFF;
+      elapsedTime = 0xFFFF;
     }
     debug("%u %s sending %s",
-          currentTime, name(), networkMessageToString(messageToSend).c_str());
+          currentTime, name(),
+          networkMessageToString(messageToSend_, currentTime).c_str());
 
     uint8_t udpPayload[1 + 6 + 6 + 2 + 4 + 4 + 2] = {};
-    messageToSend.originator.writeTo(&udpPayload[1]);
-    messageToSend.sender.writeTo(&udpPayload[1 + 6]);
-    writeUint16(&udpPayload[1 + 6 + 6], messageToSend.precedence);
-    writeUint32(&udpPayload[1 + 6 + 6 + 2], messageToSend.currentPattern);
-    writeUint32(&udpPayload[1 + 6 + 6 + 2 + 4], messageToSend.nextPattern);
-    writeUint16(&udpPayload[1 + 6 + 6 + 2 + 4 + 4], messageToSend.elapsedTime);
+    messageToSend_.originator.writeTo(&udpPayload[1]);
+    messageToSend_.sender.writeTo(&udpPayload[1 + 6]);
+    writeUint16(&udpPayload[1 + 6 + 6], messageToSend_.precedence);
+    writeUint32(&udpPayload[1 + 6 + 6 + 2], messageToSend_.currentPattern);
+    writeUint32(&udpPayload[1 + 6 + 6 + 2 + 4], messageToSend_.nextPattern);
+    writeUint16(&udpPayload[1 + 6 + 6 + 2 + 4 + 4], elapsedTime);
     send(&udpPayload[0], sizeof(udpPayload));
   }
 }

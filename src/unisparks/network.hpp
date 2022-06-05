@@ -74,18 +74,20 @@ class NetworkDeviceId {
 class Network;
 
 struct NetworkMessage {
-  NetworkDeviceId originator = NetworkDeviceId();
   NetworkDeviceId sender = NetworkDeviceId();
+  NetworkDeviceId originator = NetworkDeviceId();
+  Precedence precedence = 0;
   PatternBits currentPattern = 0;
   PatternBits nextPattern = 0;
-  Milliseconds elapsedTime = 0;
-  Precedence precedence = 0;
-  Milliseconds receiptTime = 0;
+  // Times are sent over the wire as time since that event.
+  Milliseconds currentPatternStartTime = 0;
+  // Receipt values are not sent over the wire.
   Network* receiptNetwork = nullptr;
 };
 
 std::string displayBitsAsBinary(PatternBits p);
-std::string networkMessageToString(const NetworkMessage& message);
+std::string networkMessageToString(const NetworkMessage& message,
+                                   Milliseconds currentTime);
 
 class Network {
  public:
@@ -160,7 +162,6 @@ class UdpNetwork : public Network {
   bool maybeHandleNotConnected(Milliseconds currentTime);
   bool hasDataToSend_ = false;
   NetworkMessage messageToSend_;
-  Milliseconds timeSubtract_ = 0;
 
   PatternBits lastSentPattern_ = 0;
 

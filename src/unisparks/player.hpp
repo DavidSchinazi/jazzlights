@@ -101,7 +101,7 @@ class Player {
   Effect* currentEffect() const;
   void updateToNewPattern(PatternBits newCurrentPattern,
                           PatternBits newNextPattern,
-                          Milliseconds elapsedTime,
+                          Milliseconds newCurrentPatternStartTime,
                           Milliseconds currentTime);
   void handleReceivedMessage(NetworkMessage message, Milliseconds currentTime);
 
