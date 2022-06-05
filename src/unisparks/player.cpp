@@ -318,7 +318,7 @@ void Player::reset() {
   ready_ = false;
   loop_ = false;
   strandCount_ = 0;
-  elapsedTime_ = 0;
+  currentPatternStartTime_ = 0;
   currentPattern_ = 0x12345678;
   nextPattern_ = computeNextPattern(currentPattern_);
   tempo_ = 120;
@@ -327,7 +327,6 @@ void Player::reset() {
   networks_.clear();
   powerLimited = false;
 
-  lastRenderTime_ = -1;
   lastLEDWriteTime_ = -1;
   lastUserInputTime_ = -1;
   followingLeader_ = false;
@@ -397,25 +396,6 @@ void Player::begin() {
   nextInner(timeMillis());
 }
 
-void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
-  if (!ready_) {
-    begin();
-  }
-
-  syncToNetwork(currentTime);
-  Milliseconds timeSinceLastRender = currentTime - lastRenderTime_;
-
-  if (currentTime - lastFpsProbeTime_ > ONE_SECOND) {
-    fps_ = framesSinceFpsProbe_;
-    lastFpsProbeTime_ = currentTime;
-    framesSinceFpsProbe_ = 0;
-  }
-  lastRenderTime_ = currentTime;
-  framesSinceFpsProbe_++;
-
-  render(networkStatus, timeSinceLastRender, currentTime);
-}
-
 void Player::handleSpecial() {
   specialMode_++;
   if (specialMode_ > 6) {
@@ -431,14 +411,23 @@ void Player::stopSpecial() {
   info("Stopping special mode");
   specialMode_ = 0;
 }
+
 static constexpr Milliseconds kEffectDuration = 10 * ONE_SECOND;
 
-void Player::render(NetworkStatus networkStatus, Milliseconds timeSinceLastRender, Milliseconds currentTime) {
+void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
   if (!ready_) {
     begin();
   }
 
-  elapsedTime_ += timeSinceLastRender;
+  syncToNetwork(currentTime);
+
+  if (currentTime - lastFpsProbeTime_ > ONE_SECOND) {
+    fps_ = framesSinceFpsProbe_;
+    lastFpsProbeTime_ = currentTime;
+    framesSinceFpsProbe_ = 0;
+  }
+  framesSinceFpsProbe_++;
+
 #if 0
   Milliseconds brd = ONE_MINUTE / tempo_;
   //Milliseconds timeSinceDownbeat = (currTime - lastDownbeatTime_) % brd;
@@ -448,7 +437,7 @@ void Player::render(NetworkStatus networkStatus, Milliseconds timeSinceLastRende
   Milliseconds currEffectDuration = kEffectDuration;
 #endif
 
-  if (elapsedTime_ > currEffectDuration && !loop_) {
+  if (currentTime - currentPatternStartTime_ > currEffectDuration && !loop_) {
     info("%u Exceeded effect duration, switching to next effect",
          currentTime);
     nextInner(currentTime);
@@ -615,7 +604,7 @@ void Player::updateToNewPattern(PatternBits newCurrentPattern,
                                 PatternBits newNextPattern,
                                 Milliseconds elapsedTime,
                                 Milliseconds currentTime) {
-  elapsedTime_ = elapsedTime;
+  currentPatternStartTime_ = currentTime - elapsedTime;
   nextPattern_ = newNextPattern;
   if (newCurrentPattern != currentPattern_) {
     currentPattern_ = newCurrentPattern;
@@ -640,7 +629,7 @@ void Player::updateToNewPattern(PatternBits newCurrentPattern,
   }
   messageToSend.currentPattern = currentPattern_;
   messageToSend.nextPattern = nextPattern_;
-  messageToSend.elapsedTime = elapsedTime_;
+  messageToSend.elapsedTime = currentTime - currentPatternStartTime_;
   messageToSend.precedence = getOutgoingPrecedence(currentTime);
   for (Network* network : networks_) {
     if (!network->shouldEcho() && followedNetwork_ == network) {
@@ -767,7 +756,7 @@ Frame Player::effectFrame(const Effect* effect, Milliseconds currentTime) {
   Frame frame;
   frame.animation.viewport = viewport_;
   frame.animation.context = effectContext_;
-  frame.time = elapsedTime_;
+  frame.time = currentTime - currentPatternStartTime_;
   frame.tempo = tempo_;
   frame.metre = metre_;
   return frame;
@@ -788,7 +777,7 @@ const char* Player::command(const char* req) {
   }
   if (!responded) {
     snprintf(res, sizeof(res), "play %s %d",
-             currentEffect()->name().c_str(), elapsedTime_);
+             currentEffect()->name().c_str(), timeMillis() - currentPatternStartTime_);
   }
   debug("[%s] -> [%s]", req, res);
   return res;

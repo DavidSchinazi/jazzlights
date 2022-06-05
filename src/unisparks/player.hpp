@@ -103,7 +103,6 @@ class Player {
                           PatternBits newNextPattern,
                           Milliseconds elapsedTime,
                           Milliseconds currentTime);
-  void render(NetworkStatus networkStatus, Milliseconds timeSinceLastRender, Milliseconds currentTime);
   void handleReceivedMessage(NetworkMessage message, Milliseconds currentTime);
 
   Precedence getLocalPrecedence(Milliseconds currentTime);
@@ -133,7 +132,7 @@ class Player {
   void* effectContext_ = nullptr;
   size_t effectContextSize_ = 0;
 
-  Milliseconds elapsedTime_ = 0; // Time since start of this pattern.
+  Milliseconds currentPatternStartTime_;
   PatternBits currentPattern_;
   PatternBits nextPattern_;
 
@@ -145,8 +144,6 @@ class Player {
   uint8_t specialMode_ = START_SPECIAL;
 
   std::vector<Network*> networks_;
-
-  Milliseconds lastRenderTime_;
 
   Milliseconds lastLEDWriteTime_;
   Milliseconds lastUserInputTime_;
