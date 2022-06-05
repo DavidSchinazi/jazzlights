@@ -62,16 +62,6 @@ class Player {
   void next(Milliseconds currentTime);
 
   /**
-   *  Pause playback
-   */
-  void pause();
-
-  /**
-   *  Resume playback
-   */
-  void resume();
-
-  /**
    *  Loop current effect forever.
    */
   void loopOne();
@@ -80,13 +70,6 @@ class Player {
    * Run text command
    */
   const char* command(const char* cmd);
-
-  /**
-   * Returns whether playback is paused
-   */
-  bool paused() const {
-    return paused_;
-  }
 
   /**
    * Returns number of frames rendered per second.
@@ -159,7 +142,6 @@ class Player {
   Metre metre_;
   // Milliseconds lastDownbeatTime_;
 
-  bool paused_;
   bool loop_ = false;
   uint8_t specialMode_ = START_SPECIAL;
 

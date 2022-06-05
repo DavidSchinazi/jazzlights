@@ -324,8 +324,6 @@ void Player::reset() {
   tempo_ = 120;
   metre_ = SIMPLE_QUADRUPLE;
 
-  paused_ = false;
-
   networks_.clear();
   powerLimited = false;
 
@@ -458,9 +456,7 @@ void Player::render(NetworkStatus networkStatus, Milliseconds timeSinceLastRende
     begin();
   }
 
-  if (!paused_) {
-    elapsedTime_ += timeSinceLastRender;
-  }
+  elapsedTime_ += timeSinceLastRender;
 #if 0
   Milliseconds brd = ONE_MINUTE / tempo_;
   //Milliseconds timeSinceDownbeat = (currTime - lastDownbeatTime_) % brd;
@@ -764,20 +760,6 @@ void Player::syncToNetwork(Milliseconds currentTime) {
   // Then give all networks the opportunity to send.
   for (Network* network : networks_) {
     network->runLoop(currentTime);
-  }
-}
-
-void Player::pause() {
-  if (!paused_) {
-    paused_ = true;
-    info("Paused");
-  }
-}
-
-void Player::resume() {
-  if (paused_) {
-    paused_ = false;
-    info("Resumed");
   }
 }
 

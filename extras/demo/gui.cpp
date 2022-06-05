@@ -40,8 +40,6 @@ void onKey(GLFWwindow* window, int key, int /*scncode*/, int action,
     player->next();
   } else if (key == GLFW_KEY_0 && action == GLFW_PRESS
              && (mods & GLFW_MOD_SHIFT)) {
-  } else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
-    player->paused() ? player->resume() : player->pause();
   } else if (key == GLFW_KEY_ESCAPE || (key == GLFW_KEY_C
                                         && (mods & GLFW_MOD_CONTROL))) {
     glfwSetWindowShouldClose(window, GL_TRUE);
