@@ -107,7 +107,7 @@ void UdpNetwork::triggerSendAsap(Milliseconds /*currentTime*/) {
 }
 
 void UdpNetwork::setMessageToSend(const NetworkMessage& messageToSend,
-                                  Milliseconds currentTime) {
+                                  Milliseconds /*currentTime*/) {
   hasDataToSend_ = true;
   messageToSend_ = messageToSend;
 }
@@ -199,7 +199,7 @@ void UdpNetwork::runLoopImpl(Milliseconds currentTime) {
   }
 
   // Do we need to send?
-  static constexpr Milliseconds kMinTimeBetweenUdpSends = 1000;
+  static constexpr Milliseconds kMinTimeBetweenUdpSends = 100;
   if (hasDataToSend_ &&
       (effectLastTxTime_ < 1 ||
          currentTime - effectLastTxTime_ > kMinTimeBetweenUdpSends ||
