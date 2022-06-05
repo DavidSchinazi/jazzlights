@@ -428,16 +428,7 @@ void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
   }
   framesSinceFpsProbe_++;
 
-#if 0
-  Milliseconds brd = ONE_MINUTE / tempo_;
-  //Milliseconds timeSinceDownbeat = (currTime - lastDownbeatTime_) % brd;
-
-  Milliseconds currEffectDuration = brd * int(kEffectDuration / brd);
-#else
-  Milliseconds currEffectDuration = kEffectDuration;
-#endif
-
-  if (currentTime - currentPatternStartTime_ > currEffectDuration && !loop_) {
+  if (currentTime - currentPatternStartTime_ > kEffectDuration && !loop_) {
     info("%u Exceeded effect duration, switching to next effect",
          currentTime);
     nextInner(currentTime);
