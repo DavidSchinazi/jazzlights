@@ -327,8 +327,6 @@ void Player::reset() {
   networks_.clear();
   powerLimited = false;
 
-  throttleFps_ = 0;
-
   lastRenderTime_ = -1;
   lastLEDWriteTime_ = -1;
   lastUserInputTime_ = -1;
@@ -364,13 +362,6 @@ Player& Player::addStrand(const Layout& l, Renderer& r) {
     fatal("Trying to add too many strands, max=%d", MAX_STRANDS);
   }
   strands_[strandCount_++] = {&l, &r};
-  return *this;
-}
-
-Player& Player::throttleFps(FramesPerSecond v) {
-  end();
-  throttleFps_ = v;
-  ready_ = false;
   return *this;
 }
 
@@ -413,15 +404,6 @@ void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
 
   syncToNetwork(currentTime);
   Milliseconds timeSinceLastRender = currentTime - lastRenderTime_;
-  if (throttleFps_ > 0
-      && timeSinceLastRender > 0
-      && timeSinceLastRender < ONE_SECOND / throttleFps_) {
-    const Milliseconds delayDuration = ONE_SECOND / throttleFps_ - timeSinceLastRender;
-    info("%u delaying for %u", currentTime, delayDuration);
-    delay(delayDuration);
-    currentTime = timeMillis();
-    timeSinceLastRender = currentTime - lastRenderTime_;
-  }
 
   if (currentTime - lastFpsProbeTime_ > ONE_SECOND) {
     fps_ = framesSinceFpsProbe_;

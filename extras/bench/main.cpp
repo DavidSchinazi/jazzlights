@@ -10,10 +10,7 @@ void dummyRender(int, uint8_t, uint8_t, uint8_t) {
 }
 
 int main(int, char**) {
-  player
-    .addStrand(pixels, &dummyRender)
-    .throttleFps(0)
-  ;
+  player.addStrand(pixels, &dummyRender);
   player.begin();
   int fps = -1;
   for(;;) {

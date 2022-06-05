@@ -67,8 +67,6 @@ Layout& Loader::loadLayout(const cpptoml::table& cfg) {
 
 
 void Loader::loadPlayer(Player& player, const cpptoml::table& cfg) {
-  player.throttleFps(cfg.get_as<int64_t>("throttle-fps").value_or(0));
-
   ledr_ = cfg.get_as<Meters>("ledr").value_or(1.0/60.0);
 
   auto strandscfg = cfg.get_table_array("strand");

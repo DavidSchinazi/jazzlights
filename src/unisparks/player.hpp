@@ -35,7 +35,6 @@ class Player {
   Player& clearStrands();
   Player& addStrand(const Layout& l, Renderer& r);
   Player& addStrand(const Layout& l, SimpleRenderFunc r);
-  Player& throttleFps(FramesPerSecond v);
   Player& connect(Network* n);
 
   /**
@@ -146,8 +145,6 @@ class Player {
   uint8_t specialMode_ = START_SPECIAL;
 
   std::vector<Network*> networks_;
-
-  int throttleFps_;
 
   Milliseconds lastRenderTime_;
 
