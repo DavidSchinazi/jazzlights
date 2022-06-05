@@ -46,9 +46,6 @@ xcodeproj: clean
 
 makeproj: clean ${CMAKE_BUILD_DIR}
 
-verify-examples:
-	${ARDUINO} --verify --board ${ARDUINO_BOARD} examples/Ring/Ring.ino
-
 ${CMAKE_BUILD_DIR}:
 	${CMAKE} -E make_directory $@
 	cd $@ && ${CMAKE} ${CMAKE_MAKEPROJ_FLAGS} ${SOURCE_DIR}/extras
