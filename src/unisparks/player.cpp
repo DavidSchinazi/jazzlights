@@ -467,6 +467,10 @@ void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
   }
 
   Frame efr = effectFrame(effect, currentTime);
+  if (effect != lastBegunEffect_) {
+    lastBegunEffect_ = effect;
+    effect->begin(efr);
+  }
   effect->rewind(efr);
 
   for (Strand* s = strands_;
@@ -593,9 +597,6 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
         currentTime,
         effect->name().c_str(),
         displayBitsAsBinary(currentPattern_).c_str());
-    // TODO we're going to have to duplicate this if we have a mode where we run the next pattern.
-    // or maybe a better option is to remove begin altogether
-    effect->begin(effectFrame(effect, currentTime));
     lastLEDWriteTime_ = -1;
   }
   if (networks_.empty()) {
