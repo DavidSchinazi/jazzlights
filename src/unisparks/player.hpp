@@ -92,10 +92,6 @@ class Player {
   void nextInner(Milliseconds currentTime);
   Frame effectFrame(const Effect* effect, Milliseconds currentTime);
   Effect* currentEffect() const;
-  void updateToNewPattern(PatternBits newCurrentPattern,
-                          PatternBits newNextPattern,
-                          Milliseconds newCurrentPatternStartTime,
-                          Milliseconds currentTime);
   void handleReceivedMessage(NetworkMessage message, Milliseconds currentTime);
 
   Precedence getLocalPrecedence(Milliseconds currentTime);
@@ -115,7 +111,7 @@ class Player {
   };
 
   OriginatorEntry* getOriginatorEntry(NetworkDeviceId originator, Milliseconds currentTime);
-  NetworkDeviceId pickLeader(Milliseconds currentTime);
+  void checkLeaderAndPattern(Milliseconds currentTime);
 
   bool ready_ = false;
 

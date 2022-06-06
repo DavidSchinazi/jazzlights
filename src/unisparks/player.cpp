@@ -449,8 +449,12 @@ void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
 }
 
 void Player::nextInner(Milliseconds currentTime) {
-  updateToNewPattern(nextPattern_, computeNextPattern(nextPattern_),
-                     /*newCurrentPatternStartTime=*/currentTime, currentTime);
+  currentPattern_ = nextPattern_;
+  nextPattern_ = computeNextPattern(nextPattern_);
+  // TODO In theory we should do the following when it's caused by passage of time
+  // currentPatternStartTime_ += kEffectDuration;
+  currentPatternStartTime_ = currentTime;
+  checkLeaderAndPattern(currentTime);
 }
 
 void Player::next(Milliseconds currentTime) {
@@ -505,52 +509,6 @@ NetworkDeviceId Player::getLocalDeviceId(Milliseconds /*currentTime*/) {
   return NetworkDeviceId();
 }
 
-void Player::updateToNewPattern(PatternBits newCurrentPattern,
-                                PatternBits newNextPattern,
-                                Milliseconds newCurrentPatternStartTime,
-                                Milliseconds currentTime) {
-  currentPatternStartTime_ = newCurrentPatternStartTime;
-  nextPattern_ = newNextPattern;
-  if (newCurrentPattern != currentPattern_) {
-    currentPattern_ = newCurrentPattern;
-    Effect* effect = currentEffect();
-    info("%u Switching to pattern %s %s",
-        currentTime,
-        effect->name().c_str(),
-        displayBitsAsBinary(currentPattern_).c_str());
-    effect->begin(effectFrame(effect, currentTime));
-    lastLEDWriteTime_ = -1;
-  }
-  if (networks_.empty()) {
-    info("%u not setting messageToSend without networks", currentTime);
-    return;
-  }
-  NetworkMessage messageToSend;
-  messageToSend.originator = getFollowedDeviceId(currentTime);
-  messageToSend.sender = getLocalDeviceId(currentTime);
-  if (messageToSend.sender == NetworkDeviceId()) {
-    info("%u not setting messageToSend without localDeviceId", currentTime);
-    return;
-  }
-  messageToSend.currentPattern = currentPattern_;
-  messageToSend.nextPattern = nextPattern_;
-  messageToSend.currentPatternStartTime = currentPatternStartTime_;
-  messageToSend.precedence = getOutgoingPrecedence(currentTime);
-  for (Network* network : networks_) {
-    if (!network->shouldEcho() && followedNetwork_ == network) {
-      debug("%u Not echoing for %s to %s ",
-            currentTime, network->name(),
-            networkMessageToString(messageToSend, currentTime).c_str());
-      network->disableSending(currentTime);
-      continue;
-    }
-    debug("%u Setting messageToSend for %s to %s ",
-          currentTime, network->name(),
-          networkMessageToString(messageToSend, currentTime).c_str());
-    network->setMessageToSend(messageToSend, currentTime);
-  }
-}
-
 Player::OriginatorEntry* Player::getOriginatorEntry(NetworkDeviceId originator,
                                                     Milliseconds /*currentTime*/) {
   OriginatorEntry* entry = nullptr;
@@ -572,35 +530,87 @@ static_assert(kOriginationTimeDiscard < kEffectDuration,
   "Inverting these can lead to keeping an originator "
   "past the end of its intended next pattern.");
 
-NetworkDeviceId Player::pickLeader(Milliseconds currentTime) {
-  // TODO remove outgoing vs incoming precendence and remove depreciation across hops.
+void Player::checkLeaderAndPattern(Milliseconds currentTime) {
   Precedence precedence = getLocalPrecedence(currentTime);
-  NetworkDeviceId originator = getLocalDeviceId(currentTime);
-  if (lastUserInputTime_ >= 0 &&
+  const NetworkDeviceId localDeviceId = getLocalDeviceId(currentTime);
+  NetworkDeviceId originator = localDeviceId;
+  PatternBits currentPattern = currentPattern_;
+  PatternBits nextPattern = nextPattern_;
+  Milliseconds currentPatternStartTime = currentPatternStartTime_;
+  Network* nextHopNetwork = nullptr;
+
+  const bool hadRecentUserInput =
+    (lastUserInputTime_ < 0 &&
       lastUserInputTime_ < currentTime &&
-      currentTime - lastUserInputTime_ < kInputDuration) {
-    // Pick ourselves as leader when there's been recent user input.
-    return originator;
+      currentTime - lastUserInputTime_ < kInputDuration);
+  if (!hadRecentUserInput) {
+    for (const OriginatorEntry& e : originatorEntries_) {
+      if (e.retracted) {
+        continue;
+      }
+      if (currentTime > e.lastOriginationTime + kOriginationTimeDiscard) {
+        // TODO figure out what we're sending when we're in the next pattern
+        continue;
+      }
+      if (currentTime > e.currentPatternStartTime + 2 * kEffectDuration) {
+        continue;
+      }
+      if (comparePrecedence(e.precedence, e.originator,
+                            precedence, originator) <= 0) {
+        continue;
+      }
+      precedence = e.precedence;
+      originator = e.originator;
+      currentPattern = e.currentPattern;
+      nextPattern = e.nextPattern;
+      currentPatternStartTime = e.currentPatternStartTime;
+      nextHopNetwork = e.nextHopNetwork;
+    }
   }
-  for (const OriginatorEntry& e : originatorEntries_) {
-    if (e.retracted) {
+
+  currentPatternStartTime_ = currentPatternStartTime;
+  nextPattern_ = nextPattern;
+  if (currentPattern != currentPattern_) {
+    currentPattern_ = currentPattern;
+    Effect* effect = currentEffect();
+    info("%u Switching to pattern %s %s",
+        currentTime,
+        effect->name().c_str(),
+        displayBitsAsBinary(currentPattern_).c_str());
+    // TODO we're going to have to duplicate this if we have a mode where we run the next pattern.
+    // or maybe a better option is to remove begin altogether
+    effect->begin(effectFrame(effect, currentTime));
+    lastLEDWriteTime_ = -1;
+  }
+  if (networks_.empty()) {
+    debug("%u not setting messageToSend without networks", currentTime);
+    return;
+  }
+  NetworkMessage messageToSend;
+  messageToSend.originator = originator;
+  messageToSend.sender = localDeviceId;
+  if (messageToSend.sender == NetworkDeviceId()) {
+    // TODO just compute localDeviceId during begin() and then save it to a local variable. 
+    error("%u not setting messageToSend without localDeviceId", currentTime);
+    return;
+  }
+  messageToSend.currentPattern = currentPattern_;
+  messageToSend.nextPattern = nextPattern_;
+  messageToSend.currentPatternStartTime = currentPatternStartTime_;
+  messageToSend.precedence = precedence;
+  for (Network* network : networks_) {
+    if (!network->shouldEcho() && nextHopNetwork == network) {
+      debug("%u Not echoing for %s to %s ",
+            currentTime, network->name(),
+            networkMessageToString(messageToSend, currentTime).c_str());
+      network->disableSending(currentTime);
       continue;
     }
-     if (currentTime > e.lastOriginationTime + kOriginationTimeDiscard) {
-       // TODO figure out what we're sending when we're in the next pattern
-       continue;
-     }
-     if (currentTime > e.currentPatternStartTime + 2 * kEffectDuration) {
-       continue;
-     }
-     if (comparePrecedence(e.precedence, e.originator,
-                           precedence, originator) <= 0) {
-       continue;
-     }
-     precedence = e.precedence;
-     originator = e.originator;
+    debug("%u Setting messageToSend for %s to %s ",
+          currentTime, network->name(),
+          networkMessageToString(messageToSend, currentTime).c_str());
+    network->setMessageToSend(messageToSend, currentTime);
   }
-  return originator;
 }
 
 void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentTime) {
@@ -681,16 +691,8 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
     }
   }
 
-  Precedence incomingPrecedence = getIncomingPrecedence(currentTime);
-  if (currentTime - message.currentPatternStartTime > kEffectDuration && !loop_) {
-    // Ignore this message because the sender already switched effects.
-    info("%u Ignoring received message %s past duration %u",
-         currentTime, networkMessageToString(message, currentTime).c_str(), kEffectDuration);
-    return;
-  }
   lastLEDWriteTime_ = -1;
-  updateToNewPattern(message.currentPattern, message.nextPattern,
-                     message.currentPatternStartTime, currentTime);
+  checkLeaderAndPattern(currentTime);
 }
 
 void Player::syncToNetwork(Milliseconds currentTime) {
