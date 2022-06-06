@@ -482,17 +482,11 @@ void Player::nextInner(Milliseconds currentTime) {
                      /*newCurrentPatternStartTime=*/currentTime, currentTime);
 }
 
-void Player::abandonLeader(Milliseconds /*currentTime*/) {
-  followingLeader_ = false;
-  followedNetwork_ = nullptr;
-}
-
 void Player::next(Milliseconds currentTime) {
   lastUserInputTime_ = currentTime;
   if (followingLeader_) {
     info("%u abandoning leader due to pressing next", currentTime);
   }
-  abandonLeader(currentTime);
   nextInner(currentTime);
   for (Network* network : networks_) {
     network->triggerSendAsap(currentTime);
@@ -777,18 +771,6 @@ void Player::syncToNetwork(Milliseconds currentTime) {
     for (NetworkMessage receivedMessage :
         network->getReceivedMessages(currentTime)) {
       handleReceivedMessage(receivedMessage, currentTime);
-    }
-  }
-  if (followingLeader_) {
-    if (currentTime > kInputDuration && currentTime - kInputDuration > lastLeaderReceiveTime_) {
-      info("%u abandoning leader due to inactivity",
-          currentTime);
-      abandonLeader(currentTime);
-    } else if (getIncomingPrecedence(currentTime) == 0) {
-      // TODO abandon leader once its precedence is lower than ours.
-      info("%u abandoning leader due to low precedence",
-          currentTime);
-      abandonLeader(currentTime);
     }
   }
   // Then give all networks the opportunity to send.

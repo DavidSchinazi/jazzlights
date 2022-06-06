@@ -108,7 +108,6 @@ class Player {
   NetworkDeviceId getLocalDeviceId(Milliseconds currentTime);
   NetworkDeviceId getLeaderDeviceId(Milliseconds currentTime);
   NetworkDeviceId getFollowedDeviceId(Milliseconds currentTime);
-  void abandonLeader(Milliseconds currentTime);
 
   struct OriginatorEntry {
     NetworkDeviceId originator = NetworkDeviceId();
