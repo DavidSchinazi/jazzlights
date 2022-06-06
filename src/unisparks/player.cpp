@@ -26,6 +26,10 @@
 #include "unisparks/util/time.hpp"
 #include "unisparks/version.hpp"
 
+#ifdef ESP32
+#include "esp_system.h"
+#endif
+
 namespace unisparks {
 
 using namespace internal;
@@ -356,6 +360,29 @@ void Player::begin() {
        s < strands_ + strandCount_; ++s) {
     pxcnt += s->layout->pixelCount();
   }
+
+  // Figure out localDeviceId_.
+  for (Network* network : networks_) {
+    NetworkDeviceId localDeviceId = network->getLocalDeviceId();
+    if (localDeviceId != NetworkDeviceId()) {
+      localDeviceId_ = localDeviceId;
+      break;
+    }
+  }
+  while (localDeviceId_ == NetworkDeviceId()) {
+    // If no interfaces have a localDeviceId, generate one randomly.
+    uint8_t deviceIdBytes[6] = {};
+#ifdef ESP32
+    const uint32_t randomOne = esp_random();
+    const uint32_t randomTwo = esp_random();
+    memcpy(&deviceIdBytes[0], &randomOne, 3);
+    memcpy(&deviceIdBytes[3], &randomTwo, 3);
+#else
+    arc4random_buf(deviceIdBytes, sizeof(deviceIdBytes));
+    // TODO figure out a source of randomness for Linux and ESP8266.
+#endif
+    localDeviceId_ = NetworkDeviceId(deviceIdBytes);
+  }
   info("Starting Unisparks player %s (v%s); strands: %d%s, pixels: %d, %s w %f h %f",
        BOOT_MESSAGE,
        UNISPARKS_VERSION,
@@ -499,16 +526,6 @@ Precedence Player::getLocalPrecedence(Milliseconds currentTime) {
                                              kInputDuration, precedenceGain_));
 }
 
-NetworkDeviceId Player::getLocalDeviceId(Milliseconds /*currentTime*/) {
-  for (Network* network : networks_) {
-    NetworkDeviceId localDeviceId = network->getLocalDeviceId();
-    if (localDeviceId != NetworkDeviceId()) {
-      return localDeviceId;
-    }
-  }
-  return NetworkDeviceId();
-}
-
 Player::OriginatorEntry* Player::getOriginatorEntry(NetworkDeviceId originator,
                                                     Milliseconds /*currentTime*/) {
   OriginatorEntry* entry = nullptr;
@@ -532,8 +549,7 @@ static_assert(kOriginationTimeDiscard < kEffectDuration,
 
 void Player::checkLeaderAndPattern(Milliseconds currentTime) {
   Precedence precedence = getLocalPrecedence(currentTime);
-  const NetworkDeviceId localDeviceId = getLocalDeviceId(currentTime);
-  NetworkDeviceId originator = localDeviceId;
+  NetworkDeviceId originator = localDeviceId_;
   PatternBits currentPattern = currentPattern_;
   PatternBits nextPattern = nextPattern_;
   Milliseconds currentPatternStartTime = currentPatternStartTime_;
@@ -588,12 +604,7 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
   }
   NetworkMessage messageToSend;
   messageToSend.originator = originator;
-  messageToSend.sender = localDeviceId;
-  if (messageToSend.sender == NetworkDeviceId()) {
-    // TODO just compute localDeviceId during begin() and then save it to a local variable. 
-    error("%u not setting messageToSend without localDeviceId", currentTime);
-    return;
-  }
+  messageToSend.sender = localDeviceId_;
   messageToSend.currentPattern = currentPattern_;
   messageToSend.nextPattern = nextPattern_;
   messageToSend.currentPatternStartTime = currentPatternStartTime_;
@@ -614,12 +625,12 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
 }
 
 void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentTime) {
-  if (message.sender == getLocalDeviceId(currentTime)) {
+  if (message.sender == localDeviceId_) {
     debug("%u Ignoring received message that we sent %s",
           currentTime, networkMessageToString(message, currentTime).c_str());
     return;
   }
-  if (message.originator == getLocalDeviceId(currentTime)) {
+  if (message.originator == localDeviceId_) {
     debug("%u Ignoring received message that we originated %s",
           currentTime, networkMessageToString(message, currentTime).c_str());
     return;

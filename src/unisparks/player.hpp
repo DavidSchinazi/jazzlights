@@ -95,7 +95,6 @@ class Player {
   void handleReceivedMessage(NetworkMessage message, Milliseconds currentTime);
 
   Precedence getLocalPrecedence(Milliseconds currentTime);
-  NetworkDeviceId getLocalDeviceId(Milliseconds currentTime);
 
   struct OriginatorEntry {
     NetworkDeviceId originator = NetworkDeviceId();
@@ -141,6 +140,7 @@ class Player {
   Milliseconds lastUserInputTime_ = -1;
   Precedence basePrecedence_ = 0;
   Precedence precedenceGain_ = 0;
+  NetworkDeviceId localDeviceId_ = NetworkDeviceId();
 
   // Mutable because it is used for logging
   mutable int fps_ = -1;

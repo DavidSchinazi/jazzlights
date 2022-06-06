@@ -190,6 +190,8 @@ UnixUdpNetwork::UnixUdpNetwork(int p, const char* addr) : port_(static_cast<uint
   strncpy(mcastAddrStr_, addr, sizeof(mcastAddrStr_));
   int parsed = inet_aton(addr, &mcastAddr_);
   assert(parsed == 1);
+  // Make sure localDeviceId_ is filled in.
+  setupSockets();
 }
 
 NetworkStatus UnixUdpNetwork::update(NetworkStatus status, Milliseconds /*currentTime*/) {
