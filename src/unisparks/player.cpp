@@ -525,50 +525,12 @@ Precedence addPrecedenceGain(Precedence startPrecedence,
   return startPrecedence + gain;
 }
 
-Precedence depreciatePrecedence(Precedence startPrecedence,
-                                Precedence depreciation) {
-  if (startPrecedence <= depreciation) {
-    return 0;
-  }
-  return startPrecedence - depreciation;
-}
-
 static constexpr Milliseconds kInputDuration = 10 * 60 * 1000;  // 10min.
 
-Precedence Player::getOutgoingLocalPrecedence(Milliseconds currentTime) {
+Precedence Player::getLocalPrecedence(Milliseconds currentTime) {
   return addPrecedenceGain(basePrecedence_,
                            getPrecedenceGain(lastUserInputTime_, currentTime,
-                                             kInputDuration/2, outgoingPrecedenceGain_));
-}
-
-Precedence Player::getOutgoingLeaderPrecedence(Milliseconds /*currentTime*/) {
- return depreciatePrecedence(leaderPrecedence_, 100);
-}
-
-Precedence Player::getOutgoingPrecedence(Milliseconds currentTime) {
-  if (followingLeader_) {
-    return getOutgoingLeaderPrecedence(currentTime);
-  } else {
-    return getOutgoingLocalPrecedence(currentTime);
-  }
-}
-
-Precedence Player::getIncomingLocalPrecedence(Milliseconds currentTime) {
-  return addPrecedenceGain(basePrecedence_,
-                            getPrecedenceGain(lastUserInputTime_, currentTime,
-                                              kInputDuration, incomingPrecedenceGain_));
-}
-
-Precedence Player::getIncomingLeaderPrecedence(Milliseconds /*currentTime*/) {
-  return leaderPrecedence_;
-}
-
-Precedence Player::getIncomingPrecedence(Milliseconds currentTime) {
-  if (followingLeader_) {
-    return getIncomingLeaderPrecedence(currentTime);
-  } else {
-    return getIncomingLocalPrecedence(currentTime);
-  }
+                                             kInputDuration, precedenceGain_));
 }
 
 NetworkDeviceId Player::getLocalDeviceId(Milliseconds /*currentTime*/) {
@@ -662,8 +624,14 @@ static_assert(kOriginationTimeDiscard < kEffectDuration,
 
 NetworkDeviceId Player::pickLeader(Milliseconds currentTime) {
   // TODO remove outgoing vs incoming precendence and remove depreciation across hops.
-  Precedence precedence = getOutgoingLocalPrecedence(currentTime);
+  Precedence precedence = getLocalPrecedence(currentTime);
   NetworkDeviceId originator = getLocalDeviceId(currentTime);
+  if (lastUserInputTime_ >= 0 &&
+      lastUserInputTime_ < currentTime &&
+      currentTime - lastUserInputTime_ < kInputDuration) {
+    // Pick ourselves as leader when there's been recent user input.
+    return originator;
+  }
   for (const OriginatorEntry& e : originatorEntries_) {
     if (e.retracted) {
       continue;
@@ -763,11 +731,6 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
     }
   }
 
-  if (lastUserInputTime_ >= 0 && lastUserInputTime_ < currentTime && currentTime - lastUserInputTime_ < kInputDuration) {
-    info("%u Ignoring received message because of recent user input %s",
-          currentTime, networkMessageToString(message, currentTime).c_str());
-    return;
-  }
   Precedence incomingPrecedence = getIncomingPrecedence(currentTime);
   NetworkDeviceId followedDeviceId = getFollowedDeviceId(currentTime);
   if (currentTime - message.currentPatternStartTime > kEffectDuration && !loop_) {

@@ -91,8 +91,7 @@ class Player {
 
 
   void setBasePrecedence(Precedence basePrecedence) {basePrecedence_ = basePrecedence; }
-  void setIncomingPrecedenceGain(Precedence precedenceGain) {incomingPrecedenceGain_ = precedenceGain; }
-  void setOutgoingPrecedenceGain(Precedence precedenceGain) {outgoingPrecedenceGain_ = precedenceGain; }
+  void setPrecedenceGain(Precedence precedenceGain) {precedenceGain_ = precedenceGain; }
 
  private:
   void syncToNetwork(Milliseconds currentTime);
@@ -106,13 +105,6 @@ class Player {
   void handleReceivedMessage(NetworkMessage message, Milliseconds currentTime);
 
   Precedence getLocalPrecedence(Milliseconds currentTime);
-  Precedence getLeaderPrecedence(Milliseconds currentTime);
-  Precedence getOutgoingLocalPrecedence(Milliseconds currentTime);
-  Precedence getOutgoingLeaderPrecedence(Milliseconds currentTime);
-  Precedence getOutgoingPrecedence(Milliseconds currentTime);
-  Precedence getIncomingLocalPrecedence(Milliseconds currentTime);
-  Precedence getIncomingLeaderPrecedence(Milliseconds currentTime);
-  Precedence getIncomingPrecedence(Milliseconds currentTime);
   NetworkDeviceId getLocalDeviceId(Milliseconds currentTime);
   NetworkDeviceId getLeaderDeviceId(Milliseconds currentTime);
   NetworkDeviceId getFollowedDeviceId(Milliseconds currentTime);
@@ -169,8 +161,7 @@ class Player {
   Precedence leaderPrecedence_;
   Milliseconds lastLeaderReceiveTime_;
   Precedence basePrecedence_ = 0;
-  Precedence incomingPrecedenceGain_ = 0;
-  Precedence outgoingPrecedenceGain_ = 0;
+  Precedence precedenceGain_ = 0;
 
   // Mutable because it is used for logging
   mutable int fps_;
