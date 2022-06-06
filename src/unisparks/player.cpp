@@ -415,14 +415,13 @@ void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
     begin();
   }
 
-  syncToNetwork(currentTime);
-
-  if (currentTime - lastFpsProbeTime_ > ONE_SECOND) {
-    fps_ = framesSinceFpsProbe_;
-    lastFpsProbeTime_ = currentTime;
-    framesSinceFpsProbe_ = 0;
+  // First listen on all networks.
+  for (Network* network : networks_) {
+    for (NetworkMessage receivedMessage :
+        network->getReceivedMessages(currentTime)) {
+      handleReceivedMessage(receivedMessage, currentTime);
+    }
   }
-  framesSinceFpsProbe_++;
 
   if (currentTime - currentPatternStartTime_ > kEffectDuration && !loop_) {
     info("%u Exceeded effect duration, switching to next effect",
@@ -430,6 +429,20 @@ void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
     nextInner(currentTime);
   }
 
+  // Then give all networks the opportunity to send.
+  for (Network* network : networks_) {
+    network->runLoop(currentTime);
+  }
+
+  // Keep track of how many FPS we might be able to get.
+  if (currentTime - lastFpsProbeTime_ > ONE_SECOND) {
+    fps_ = framesSinceFpsProbe_;
+    lastFpsProbeTime_ = currentTime;
+    framesSinceFpsProbe_ = 0;
+  }
+  framesSinceFpsProbe_++;
+
+  // Do not send data to LEDs faster than 100Hz.
   static constexpr Milliseconds minLEDWriteTime = 10;
   if (lastLEDWriteTime_ >= 0 &&
       currentTime - minLEDWriteTime < lastLEDWriteTime_) {
@@ -700,20 +713,6 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
 
   lastLEDWriteTime_ = -1;
   checkLeaderAndPattern(currentTime);
-}
-
-void Player::syncToNetwork(Milliseconds currentTime) {
-  // First listen on all networks.
-  for (Network* network : networks_) {
-    for (NetworkMessage receivedMessage :
-        network->getReceivedMessages(currentTime)) {
-      handleReceivedMessage(receivedMessage, currentTime);
-    }
-  }
-  // Then give all networks the opportunity to send.
-  for (Network* network : networks_) {
-    network->runLoop(currentTime);
-  }
 }
 
 void Player::loopOne() {
