@@ -653,6 +653,13 @@ Player::OriginatorEntry* Player::getOriginatorEntry(NetworkDeviceId originator,
 static constexpr Milliseconds kOriginationTimeOverride = 6000;
 static constexpr Milliseconds kOriginationTimeDiscard = 9000;
 
+static_assert(kOriginationTimeOverride < kOriginationTimeDiscard,
+  "Inverting these can lead to retracting an originator "
+  "while disallowing picking a replacement.");
+static_assert(kOriginationTimeDiscard < kEffectDuration,
+  "Inverting these can lead to keeping an originator "
+  "past the end of its intended next pattern.");
+
 NetworkDeviceId Player::pickLeader(Milliseconds currentTime) {
   // TODO remove outgoing vs incoming precendence and remove depreciation across hops.
   Precedence precedence = getOutgoingLocalPrecedence(currentTime);
@@ -662,9 +669,7 @@ NetworkDeviceId Player::pickLeader(Milliseconds currentTime) {
       continue;
     }
      if (currentTime > e.lastOriginationTime + kOriginationTimeDiscard) {
-       // TODO don't do this and only do the currentPatternStartTime check below
-       // though that'll require having the player not advance its state when the
-       // time passes from current pattern to new pattern
+       // TODO figure out what we're sending when we're in the next pattern
        continue;
      }
      if (currentTime > e.currentPatternStartTime + 2 * kEffectDuration) {
@@ -704,6 +709,7 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
     entry->nextHopDevice = message.sender;
     entry->nextHopNetwork = message.receiptNetwork;
     entry->numHops = message.numHops;
+    entry->retracted = false;
   } else {
     // The concept behind this is that we build a tree rooted at each originator
     // using a variant of the Bellman-Ford algorithm. We then only ever listen
@@ -741,6 +747,7 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
       entry->nextPattern = message.nextPattern;
       entry->currentPatternStartTime = message.currentPatternStartTime;
       entry->lastOriginationTime = message.lastOriginationTime;
+      entry->retracted = false;
     }
   }
   // If this sender is following another originator from what we previously heard,
