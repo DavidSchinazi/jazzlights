@@ -299,7 +299,13 @@ void render(const Layout& layout, Renderer* renderer,
 }
 
 Player::Player() {
-  reset();
+  currentPattern_ = 0x12345678;
+  nextPattern_ = computeNextPattern(currentPattern_);
+
+  viewport_.origin.x = 0;
+  viewport_.origin.y = 0;
+  viewport_.size.height = 1;
+  viewport_.size.width = 1;
 }
 
 Player::~Player() {
@@ -310,36 +316,6 @@ void Player::end() {
   free(effectContext_);
   effectContext_ = nullptr;
   effectContextSize_ = 0;
-}
-
-void Player::reset() {
-  end();
-
-  ready_ = false;
-  loop_ = false;
-  strandCount_ = 0;
-  currentPatternStartTime_ = 0;
-  currentPattern_ = 0x12345678;
-  nextPattern_ = computeNextPattern(currentPattern_);
-  tempo_ = 120;
-  metre_ = SIMPLE_QUADRUPLE;
-
-  networks_.clear();
-  powerLimited = false;
-
-  lastLEDWriteTime_ = -1;
-  lastUserInputTime_ = -1;
-
-  fps_ = -1;
-  lastFpsProbeTime_ = -1;
-  framesSinceFpsProbe_ = -1;
-
-  viewport_.origin.x = 0;
-  viewport_.origin.y = 0;
-  viewport_.size.height = 1;
-  viewport_.size.width = 1;
-
-  originatorEntries_.clear();
 }
 
 Player& Player::clearStrands() {
@@ -754,8 +730,8 @@ Frame Player::effectFrame(const Effect* effect, Milliseconds currentTime) {
   frame.animation.viewport = viewport_;
   frame.animation.context = effectContext_;
   frame.time = currentTime - currentPatternStartTime_;
-  frame.tempo = tempo_;
-  frame.metre = metre_;
+  frame.tempo = 120;
+  frame.metre = SIMPLE_QUADRUPLE;
   return frame;
 }
 

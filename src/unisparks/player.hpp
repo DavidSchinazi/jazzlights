@@ -25,13 +25,7 @@ class Player {
   Player(const Player&) = delete;
   Player& operator=(const Player&) = delete;
 
-  /**
-   * Reset player to the same state as if it was just constructed
-   */
-  void reset();
-
   // Constructing the player
-  
   Player& clearStrands();
   Player& addStrand(const Layout& l, Renderer& r);
   Player& addStrand(const Layout& l, SimpleRenderFunc r);
@@ -87,7 +81,7 @@ class Player {
   void handleSpecial();
   void stopSpecial();
 
-  bool powerLimited;
+  bool powerLimited = false;
 
 
   void setBasePrecedence(Precedence basePrecedence) {basePrecedence_ = basePrecedence; }
@@ -123,7 +117,7 @@ class Player {
   OriginatorEntry* getOriginatorEntry(NetworkDeviceId originator, Milliseconds currentTime);
   NetworkDeviceId pickLeader(Milliseconds currentTime);
 
-  bool ready_;
+  bool ready_ = false;
 
   struct Strand {
     const Layout* layout;
@@ -131,13 +125,13 @@ class Player {
   };
 
   Strand strands_[255];
-  size_t strandCount_;
+  size_t strandCount_ = 0;
 
   Box viewport_;
   void* effectContext_ = nullptr;
   size_t effectContextSize_ = 0;
 
-  Milliseconds currentPatternStartTime_;
+  Milliseconds currentPatternStartTime_ = 0;
   PatternBits currentPattern_;
   PatternBits nextPattern_;
 
@@ -147,15 +141,15 @@ class Player {
   std::vector<Network*> networks_;
   std::list<OriginatorEntry> originatorEntries_;
 
-  Milliseconds lastLEDWriteTime_;
-  Milliseconds lastUserInputTime_;
+  Milliseconds lastLEDWriteTime_ = -1;
+  Milliseconds lastUserInputTime_ = -1;
   Precedence basePrecedence_ = 0;
   Precedence precedenceGain_ = 0;
 
   // Mutable because it is used for logging
-  mutable int fps_;
-  mutable Milliseconds lastFpsProbeTime_;
-  mutable int framesSinceFpsProbe_;
+  mutable int fps_ = -1;
+  mutable Milliseconds lastFpsProbeTime_ = -1;
+  mutable int framesSinceFpsProbe_ = -1;
 };
 
 
