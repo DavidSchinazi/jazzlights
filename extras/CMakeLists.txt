@@ -14,10 +14,8 @@ set(LIB_SOURCES
 	../src/unisparks/effects/rainbow.hpp
 	../src/unisparks/effects/rider.hpp
 	../src/unisparks/effects/scroll.hpp
-	../src/unisparks/effects/sequence.hpp
 	../src/unisparks/effects/slantbars.hpp
 	../src/unisparks/effects/solid.hpp
-	../src/unisparks/effects/transform.hpp
 	../src/unisparks/effects/threesine.hpp
 	../src/unisparks/frame.cpp
 	../src/unisparks/frame.hpp
@@ -25,7 +23,6 @@ set(LIB_SOURCES
 	../src/unisparks/layouts/matrix.hpp
 	../src/unisparks/layouts/pixelmap.hpp
 	../src/unisparks/layouts/reversemap.hpp
-	../src/unisparks/layouts/transformed.hpp
 	../src/unisparks/network.cpp
 	../src/unisparks/network.hpp
 	../src/unisparks/player.cpp
