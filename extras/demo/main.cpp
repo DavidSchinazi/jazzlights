@@ -33,7 +33,7 @@ int main(int argn, char** argv) {
 
   DemoLoader().load(config, player);
   player.connect(network);
-  player.begin();
+  player.begin(millis());
 
   return runGui("Unisparks Demo", player, player.bounds(), fullscreen);
 }

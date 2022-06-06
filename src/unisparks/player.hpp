@@ -34,15 +34,10 @@ class Player {
   /**
    * Prepare for rendering
    *
-   * Call this when you're done adding strands and setting up
-   * player configuration.
+   * Call this when you're done adding strands, setting up
+   * player configuration and connecting networks.
    */
-  void begin();
-
-  /**
-   * Exit rendering mode and cleanup runtime resources
-   */
-  void end();
+  void begin(Milliseconds currentTime);
 
   /**
    *  Render current frame to all strands
@@ -88,7 +83,6 @@ class Player {
   void setPrecedenceGain(Precedence precedenceGain) {precedenceGain_ = precedenceGain; }
 
  private:
-  void syncToNetwork(Milliseconds currentTime);
   void nextInner(Milliseconds currentTime);
   Frame effectFrame(const Effect* effect, Milliseconds currentTime);
   void handleReceivedMessage(NetworkMessage message, Milliseconds currentTime);

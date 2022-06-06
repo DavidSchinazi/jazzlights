@@ -32,7 +32,7 @@ void vestSetup(void) {
   player.connect(Esp32BleNetwork::get());
 #endif // ESP32_BLE
   player.connect(&network);
-  player.begin();
+  player.begin(timeMillis());
 
   mainVestController = &FastLED.addLeds<WS2812B, LED_PIN, GRB>(
     leds, sizeof(leds)/sizeof(*leds));

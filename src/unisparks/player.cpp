@@ -307,10 +307,6 @@ Player::Player() {
 }
 
 Player::~Player() {
-  end();
-}
-
-void Player::end() {
   free(effectContext_);
   effectContext_ = nullptr;
   effectContextSize_ = 0;
@@ -326,7 +322,6 @@ Player& Player::addStrand(const Layout& l, SimpleRenderFunc r) {
 }
 
 Player& Player::addStrand(const Layout& l, Renderer& r) {
-  end();
   constexpr size_t MAX_STRANDS = sizeof(strands_) / sizeof(*strands_);
   if (strandCount_ >= MAX_STRANDS) {
     fatal("Trying to add too many strands, max=%d", MAX_STRANDS);
@@ -336,14 +331,13 @@ Player& Player::addStrand(const Layout& l, Renderer& r) {
 }
 
 Player& Player::connect(Network* n) {
-  end();
   info("Connecting network %s", n->name());
   networks_.push_back(n);
   ready_ = false;
   return *this;
 }
 
-void Player::begin() {
+void Player::begin(Milliseconds currentTime) {
   for (Strand* s = strands_;
        s < strands_ + strandCount_; ++s) {
     viewport_ = merge(viewport_, unisparks::bounds(*s->layout));
@@ -377,8 +371,9 @@ void Player::begin() {
 #endif
     localDeviceId_ = NetworkDeviceId(deviceIdBytes);
   }
-  info("Starting Unisparks player %s (v%s); strands: %d%s, "
+  info("%u Starting Unisparks player %s (v%s); strands: %d%s, "
        "pixels: %d, %s " DEVICE_ID_FMT " w %f h %f",
+       currentTime,
        BOOT_MESSAGE,
        UNISPARKS_VERSION,
        strandCount_,
@@ -389,7 +384,7 @@ void Player::begin() {
        viewport_.size.width * viewport_.size.height);
 
   ready_ = true;
-  nextInner(timeMillis());
+  nextInner(currentTime);
 }
 
 void Player::handleSpecial() {
@@ -412,7 +407,7 @@ static constexpr Milliseconds kEffectDuration = 10 * ONE_SECOND;
 
 void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
   if (!ready_) {
-    begin();
+    begin(currentTime);
   }
 
   // First listen on all networks.

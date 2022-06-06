@@ -33,7 +33,7 @@ extern "C" void run(bool verbose, const char* ver, const char* cfgfile) {
   player.setBasePrecedence(20000);
   player.setPrecedenceGain(10000);
   player.connect(&network);
-  player.begin();
+  player.begin(timeMillis());
   for (;;) {
     player.render(network.status(), timeMillis());
   }
