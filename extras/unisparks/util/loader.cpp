@@ -12,7 +12,7 @@ Layout& Loader::loadLayout(const cpptoml::table& cfg) {
   static vector<Point> pixelcoords;
   static vector<unique_ptr<Layout>> layouts;
 
-  // TODO: Fix this hack
+  // We should fix this hack
   // The hack is to reserve a large number of points in order to prevent
   // re-allocating vector. We don't want realloc to happen because we're passing
   // pointers to internal vector memory to pixelmap layout.

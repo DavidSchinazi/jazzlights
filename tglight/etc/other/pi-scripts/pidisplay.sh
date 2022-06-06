@@ -32,7 +32,6 @@ set -x
 OPERATOR="pi"
 # Operator password. Ensure this is encoded with crypt via "openssl passwd -crypt PASSWORD"
 # The Default password is built from "NuvationBMS!"
-#TODO Script this process
 #OPERATOR_PASS="playachino" 
 
 #BEGIN AUTOMATED PROCESS
@@ -69,7 +68,6 @@ echo "Setting hostname to ${hostname_input}"
 HOSTNAME=${hostname_input}
 
 # WiFi variables
-#TODO automatically read wlan0 mac address and set WIFI_SSID to that value
 WIFI_SSID=""
 
 WIFI_PASS=""
@@ -179,7 +177,6 @@ cat >> /boot/cmdline.txt <<EOT
 logo.nologo vt.global_cursor_default=0
 EOT
 # Enable WiFi AP mode
-#TODO This entire section desperately needs comments
 apt-get install -y dnsmasq hostapd
 systemctl stop dnsmasq
 systemctl stop hostapd

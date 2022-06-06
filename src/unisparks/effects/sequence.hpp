@@ -125,7 +125,6 @@ class Sequence<Milliseconds, First, Next...> : public Effect {
   Sequence<Next...> next;
 };
 
-// TODO: Replace it with specialization of just one item
 template<>
 class Sequence<> : public Effect {
  public:

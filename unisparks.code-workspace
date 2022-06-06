@@ -55,7 +55,8 @@
 			"bitset": "cpp",
 			"optional": "cpp",
 			"regex": "cpp",
-			"thread": "cpp"
+			"thread": "cpp",
+			"random": "cpp"
 		}
 	}
 }
