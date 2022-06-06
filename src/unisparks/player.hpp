@@ -91,7 +91,6 @@ class Player {
   void syncToNetwork(Milliseconds currentTime);
   void nextInner(Milliseconds currentTime);
   Frame effectFrame(const Effect* effect, Milliseconds currentTime);
-  Effect* currentEffect() const;
   void handleReceivedMessage(NetworkMessage message, Milliseconds currentTime);
 
   Precedence getLocalPrecedence(Milliseconds currentTime);

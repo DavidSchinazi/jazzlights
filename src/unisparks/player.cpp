@@ -280,10 +280,6 @@ Effect* patternFromBits(PatternBits pattern) {
         displayBitsAsBinary(pattern).c_str());
 }
 
-Effect* Player::currentEffect() const {
-  return patternFromBits(currentPattern_);
-}
-
 void render(const Layout& layout, Renderer* renderer,
             const Effect& effect, Frame effectFrame) {
   auto pixels = points(layout);
@@ -441,7 +437,7 @@ void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
   }
   lastLEDWriteTime_ = currentTime;
 
-  const Effect* effect = currentEffect();
+  const Effect* effect = patternFromBits(currentPattern_);
 
   switch (specialMode_) {
     case 1:
@@ -592,10 +588,9 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
   nextPattern_ = nextPattern;
   if (currentPattern != currentPattern_) {
     currentPattern_ = currentPattern;
-    Effect* effect = currentEffect();
-    info("%u Switching to pattern %s %s",
+    info("%u Switching currentPattern to %s %s",
         currentTime,
-        effect->name().c_str(),
+        patternFromBits(currentPattern_)->name().c_str(),
         displayBitsAsBinary(currentPattern_).c_str());
     lastLEDWriteTime_ = -1;
   }
@@ -763,8 +758,9 @@ const char* Player::command(const char* req) {
     responded = true;
   }
   if (!responded) {
+    // This is used by the WebUI to display the current pattern name.
     snprintf(res, sizeof(res), "playing %s",
-             currentEffect()->name().c_str());
+             lastBegunEffect_->name().c_str());
   }
   debug("[%s] -> [%s]", req, res);
   return res;
