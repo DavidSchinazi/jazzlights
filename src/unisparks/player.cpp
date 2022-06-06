@@ -297,9 +297,6 @@ void render(const Layout& layout, Renderer* renderer,
 }
 
 Player::Player() {
-  currentPattern_ = 0x12345678;
-  nextPattern_ = computeNextPattern(currentPattern_);
-
   viewport_.origin.x = 0;
   viewport_.origin.y = 0;
   viewport_.size.height = 1;
@@ -384,7 +381,10 @@ void Player::begin(Milliseconds currentTime) {
        viewport_.size.width * viewport_.size.height);
 
   ready_ = true;
-  nextInner(currentTime);
+
+  currentPatternStartTime_ = currentTime;
+  currentPattern_ = 0x12345678;
+  nextPattern_ = computeNextPattern(currentPattern_);
 }
 
 void Player::handleSpecial() {
@@ -421,7 +421,11 @@ void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
   if (currentTime - currentPatternStartTime_ > kEffectDuration && !loop_) {
     info("%u Exceeded effect duration, switching to next effect",
          currentTime);
-    nextInner(currentTime);
+    currentPattern_ = nextPattern_;
+    nextPattern_ = computeNextPattern(nextPattern_);
+    // TODO make this a while loop?
+    currentPatternStartTime_ += kEffectDuration;
+    checkLeaderAndPattern(currentTime);
   }
 
   // Then give all networks the opportunity to send.
@@ -483,18 +487,13 @@ void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
   }
 }
 
-void Player::nextInner(Milliseconds currentTime) {
-  currentPattern_ = nextPattern_;
-  nextPattern_ = computeNextPattern(nextPattern_);
-  // TODO In theory we should do the following when it's caused by passage of time
-  // currentPatternStartTime_ += kEffectDuration;
-  currentPatternStartTime_ = currentTime;
-  checkLeaderAndPattern(currentTime);
-}
-
 void Player::next(Milliseconds currentTime) {
   lastUserInputTime_ = currentTime;
-  nextInner(currentTime);
+  currentPatternStartTime_ = currentTime;
+  currentPattern_ = nextPattern_;
+  nextPattern_ = computeNextPattern(nextPattern_);
+  checkLeaderAndPattern(currentTime);
+
   for (Network* network : networks_) {
     network->triggerSendAsap(currentTime);
   }
