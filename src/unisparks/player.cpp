@@ -383,13 +383,15 @@ void Player::begin() {
 #endif
     localDeviceId_ = NetworkDeviceId(deviceIdBytes);
   }
-  info("Starting Unisparks player %s (v%s); strands: %d%s, pixels: %d, %s w %f h %f",
+  info("Starting Unisparks player %s (v%s); strands: %d%s, "
+       "pixels: %d, %s " DEVICE_ID_FMT " w %f h %f",
        BOOT_MESSAGE,
        UNISPARKS_VERSION,
        strandCount_,
        strandCount_ < 1 ? " (CONTROLLER ONLY!)" : "",
        pxcnt,
        !networks_.empty() ? "networked" : "standalone",
+       DEVICE_ID_HEX(localDeviceId_),
        viewport_.size.width * viewport_.size.height);
 
   ready_ = true;
