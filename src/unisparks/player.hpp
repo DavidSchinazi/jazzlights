@@ -118,6 +118,22 @@ class Player {
   NetworkDeviceId getFollowedDeviceId(Milliseconds currentTime);
   void abandonLeader(Milliseconds currentTime);
 
+  struct OriginatorEntry {
+    NetworkDeviceId originator = NetworkDeviceId();
+    Precedence precedence = 0;
+    PatternBits currentPattern = 0;
+    PatternBits nextPattern = 0;
+    Milliseconds currentPatternStartTime = 0;
+    Milliseconds lastOriginationTime = 0;
+    NetworkDeviceId nextHopDevice = NetworkDeviceId();
+    Network* nextHopNetwork = nullptr;
+    NumHops numHops = 0;
+    bool retracted = false;
+  };
+
+  OriginatorEntry* getOriginatorEntry(NetworkDeviceId originator, Milliseconds currentTime);
+  NetworkDeviceId pickLeader(Milliseconds currentTime);
+
   bool ready_;
 
   struct Strand {
@@ -160,6 +176,7 @@ class Player {
   mutable int fps_;
   mutable Milliseconds lastFpsProbeTime_;
   mutable int framesSinceFpsProbe_;
+  std::list<OriginatorEntry> originatorEntries_;
 };
 
 

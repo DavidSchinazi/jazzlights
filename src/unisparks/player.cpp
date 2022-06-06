@@ -343,6 +343,8 @@ void Player::reset() {
   viewport_.origin.y = 0;
   viewport_.size.height = 1;
   viewport_.size.width = 1;
+
+  originatorEntries_.clear();
 }
 
 Player& Player::clearStrands() {
@@ -637,12 +639,48 @@ void Player::updateToNewPattern(PatternBits newCurrentPattern,
   }
 }
 
-void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentTime) {
-  if (lastUserInputTime_ >= 0 && lastUserInputTime_ < currentTime && currentTime - lastUserInputTime_ < kInputDuration) {
-    info("%u Ignoring received message because of recent user input %s",
-          currentTime, networkMessageToString(message, currentTime).c_str());
-    return;
+Player::OriginatorEntry* Player::getOriginatorEntry(NetworkDeviceId originator,
+                                                    Milliseconds /*currentTime*/) {
+  OriginatorEntry* entry = nullptr;
+  for (OriginatorEntry& e : originatorEntries_) {
+    if (e.originator == originator) {
+      return &e;
+    }
   }
+  return entry;
+}
+
+static constexpr Milliseconds kOriginationTimeOverride = 6000;
+static constexpr Milliseconds kOriginationTimeDiscard = 9000;
+
+NetworkDeviceId Player::pickLeader(Milliseconds currentTime) {
+  // TODO remove outgoing vs incoming precendence and remove depreciation across hops.
+  Precedence precedence = getOutgoingLocalPrecedence(currentTime);
+  NetworkDeviceId originator = getLocalDeviceId(currentTime);
+  for (const OriginatorEntry& e : originatorEntries_) {
+    if (e.retracted) {
+      continue;
+    }
+     if (currentTime > e.lastOriginationTime + kOriginationTimeDiscard) {
+       // TODO don't do this and only do the currentPatternStartTime check below
+       // though that'll require having the player not advance its state when the
+       // time passes from current pattern to new pattern
+       continue;
+     }
+     if (currentTime > e.currentPatternStartTime + 2 * kEffectDuration) {
+       continue;
+     }
+     if (comparePrecedence(e.precedence, e.originator,
+                           precedence, originator) <= 0) {
+       continue;
+     }
+     precedence = e.precedence;
+     originator = e.originator;
+  }
+  return originator;
+}
+
+void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentTime) {
   if (message.sender == getLocalDeviceId(currentTime)) {
     debug("%u Ignoring received message that we sent %s",
           currentTime, networkMessageToString(message, currentTime).c_str());
@@ -650,6 +688,76 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
   }
   if (message.originator == getLocalDeviceId(currentTime)) {
     debug("%u Ignoring received message that we originated %s",
+          currentTime, networkMessageToString(message, currentTime).c_str());
+    return;
+  }
+  OriginatorEntry* entry = getOriginatorEntry(message.originator, currentTime);
+  if (entry == nullptr) {
+    originatorEntries_.push_back(OriginatorEntry());
+    entry = &originatorEntries_.back();
+    entry->originator = message.originator;
+    entry->precedence = message.precedence;
+    entry->currentPattern = message.currentPattern;
+    entry->nextPattern = message.nextPattern;
+    entry->currentPatternStartTime = message.currentPatternStartTime;
+    entry->lastOriginationTime = message.lastOriginationTime;
+    entry->nextHopDevice = message.sender;
+    entry->nextHopNetwork = message.receiptNetwork;
+    entry->numHops = message.numHops;
+  } else {
+    // The concept behind this is that we build a tree rooted at each originator
+    // using a variant of the Bellman-Ford algorithm. We then only ever listen
+    // to our next hop on the way to the originator to avoid oscillating between
+    // neighbors. To avoid loops in this tree, we ignore any update that has same
+    // or more hops than our currently saved one. To allow us to recover from
+    // situations where the originator has moved further away in the network, we
+    // accept those updates if they're more recent by kOriginationTimeOverride
+    // than what we've seen so far. This is based on the theoretical points made
+    // in Section 2 of RFC 8966 - we can say that while much simpler and less
+    // powerful, this is inspired by the Babel Routing Protocol.
+    if (entry->nextHopDevice != message.sender ||
+        entry->nextHopNetwork != message.receiptNetwork) {
+      bool changeNextHop = false;
+      if (message.numHops < entry->numHops) {
+        info("%u Switching to better nextHop due to numHops",
+             currentTime);
+        changeNextHop = true;
+      } else if (message.lastOriginationTime > entry->lastOriginationTime + kOriginationTimeOverride) {
+        info("%u Switching to better nextHop due to originationTime",
+             currentTime);
+        changeNextHop = true;
+      }
+      if (changeNextHop) {
+        entry->nextHopDevice = message.sender;
+        entry->nextHopNetwork = message.receiptNetwork;
+        entry->numHops = message.numHops;
+      }
+    }
+
+    if (entry->nextHopDevice == message.sender &&
+        entry->nextHopNetwork == message.receiptNetwork) {
+      entry->precedence = message.precedence;
+      entry->currentPattern = message.currentPattern;
+      entry->nextPattern = message.nextPattern;
+      entry->currentPatternStartTime = message.currentPatternStartTime;
+      entry->lastOriginationTime = message.lastOriginationTime;
+    }
+  }
+  // If this sender is following another originator from what we previously heard,
+  // retract any previous entries from them.
+  for (OriginatorEntry& e : originatorEntries_) {
+    if (e.nextHopDevice == message.sender &&
+        e.nextHopNetwork == message.receiptNetwork &&
+        e.originator != message.originator &&
+        !e.retracted) {
+      e.retracted = true;
+      info("%u Retracting entry for originator",
+             currentTime);
+    }
+  }
+
+  if (lastUserInputTime_ >= 0 && lastUserInputTime_ < currentTime && currentTime - lastUserInputTime_ < kInputDuration) {
+    info("%u Ignoring received message because of recent user input %s",
           currentTime, networkMessageToString(message, currentTime).c_str());
     return;
   }

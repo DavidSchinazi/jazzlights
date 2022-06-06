@@ -30,6 +30,7 @@ std::string NetworkStatusToString(NetworkStatus status);
 
 using PatternBits = uint32_t;
 using Precedence = uint16_t;
+using NumHops = uint8_t;
 
 #define DEVICE_ID_FMT "%02x:%02x:%02x:%02x:%02x:%02x"
 #define DEVICE_ID_HEX(addr) (addr)(0), (addr)(1), (addr)(2), (addr)(3), (addr)(4), (addr)(5)
@@ -79,10 +80,13 @@ struct NetworkMessage {
   Precedence precedence = 0;
   PatternBits currentPattern = 0;
   PatternBits nextPattern = 0;
+  NumHops numHops = 0;
   // Times are sent over the wire as time since that event.
   Milliseconds currentPatternStartTime = 0;
+  Milliseconds lastOriginationTime = 0;
   // Receipt values are not sent over the wire.
   Network* receiptNetwork = nullptr;
+  // TODO actually send and parse the new fields.
 };
 
 std::string displayBitsAsBinary(PatternBits p);
