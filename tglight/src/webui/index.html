@@ -145,7 +145,7 @@
 
         function onmessage(event) {
           let argv = event.data.split(" ");
-          if (argv[0] == "play") {
+          if (argv[0] == "playing") {
             document.getElementById("status").innerText = 'Playing ' + argv[1] + '...';
           }
           else if (argv[0] == "sysinfo") {
