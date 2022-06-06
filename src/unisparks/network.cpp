@@ -102,8 +102,9 @@ void Network::reconnect(Milliseconds currentTime) {
   }
 }
 
-void UdpNetwork::triggerSendAsap(Milliseconds /*currentTime*/) {
+void UdpNetwork::triggerSendAsap(Milliseconds currentTime) {
   effectLastTxTime_ = 0;
+  runLoop(currentTime);
 }
 
 void UdpNetwork::setMessageToSend(const NetworkMessage& messageToSend,
