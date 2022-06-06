@@ -141,10 +141,6 @@ class Player {
   PatternBits currentPattern_;
   PatternBits nextPattern_;
 
-  BeatsPerMinute tempo_;
-  Metre metre_;
-  // Milliseconds lastDownbeatTime_;
-
   bool loop_ = false;
   uint8_t specialMode_ = START_SPECIAL;
 
