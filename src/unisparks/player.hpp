@@ -106,8 +106,6 @@ class Player {
 
   Precedence getLocalPrecedence(Milliseconds currentTime);
   NetworkDeviceId getLocalDeviceId(Milliseconds currentTime);
-  NetworkDeviceId getLeaderDeviceId(Milliseconds currentTime);
-  NetworkDeviceId getFollowedDeviceId(Milliseconds currentTime);
 
   struct OriginatorEntry {
     NetworkDeviceId originator = NetworkDeviceId();
@@ -151,14 +149,10 @@ class Player {
   uint8_t specialMode_ = START_SPECIAL;
 
   std::vector<Network*> networks_;
+  std::list<OriginatorEntry> originatorEntries_;
 
   Milliseconds lastLEDWriteTime_;
   Milliseconds lastUserInputTime_;
-  bool followingLeader_;
-  Network* followedNetwork_;
-  NetworkDeviceId leaderDeviceId_;
-  Precedence leaderPrecedence_;
-  Milliseconds lastLeaderReceiveTime_;
   Precedence basePrecedence_ = 0;
   Precedence precedenceGain_ = 0;
 
@@ -166,7 +160,6 @@ class Player {
   mutable int fps_;
   mutable Milliseconds lastFpsProbeTime_;
   mutable int framesSinceFpsProbe_;
-  std::list<OriginatorEntry> originatorEntries_;
 };
 
 

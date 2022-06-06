@@ -329,11 +329,6 @@ void Player::reset() {
 
   lastLEDWriteTime_ = -1;
   lastUserInputTime_ = -1;
-  followingLeader_ = false;
-  followedNetwork_ = nullptr;
-  leaderDeviceId_ = NetworkDeviceId();
-  leaderPrecedence_ = 0;
-  lastLeaderReceiveTime_ = -1;
 
   fps_ = -1;
   lastFpsProbeTime_ = -1;
@@ -484,9 +479,6 @@ void Player::nextInner(Milliseconds currentTime) {
 
 void Player::next(Milliseconds currentTime) {
   lastUserInputTime_ = currentTime;
-  if (followingLeader_) {
-    info("%u abandoning leader due to pressing next", currentTime);
-  }
   nextInner(currentTime);
   for (Network* network : networks_) {
     network->triggerSendAsap(currentTime);
@@ -537,18 +529,6 @@ NetworkDeviceId Player::getLocalDeviceId(Milliseconds /*currentTime*/) {
   return NetworkDeviceId();
 }
 
-NetworkDeviceId Player::getLeaderDeviceId(Milliseconds /*currentTime*/) {
-  return leaderDeviceId_;
-}
-
-NetworkDeviceId Player::getFollowedDeviceId(Milliseconds currentTime) {
-  if (followingLeader_) {
-    return getLeaderDeviceId(currentTime);
-  } else {
-    return getLocalDeviceId(currentTime);
-  }
-}
-
 void Player::updateToNewPattern(PatternBits newCurrentPattern,
                                 PatternBits newNextPattern,
                                 Milliseconds newCurrentPatternStartTime,
@@ -582,14 +562,14 @@ void Player::updateToNewPattern(PatternBits newCurrentPattern,
   messageToSend.precedence = getOutgoingPrecedence(currentTime);
   for (Network* network : networks_) {
     if (!network->shouldEcho() && followedNetwork_ == network) {
-      debug("%u Not echoing for %s as %s to %s ",
-            currentTime, network->name(), (followingLeader_ ? "remote" : "local"),
+      debug("%u Not echoing for %s to %s ",
+            currentTime, network->name(),
             networkMessageToString(messageToSend, currentTime).c_str());
       network->disableSending(currentTime);
       continue;
     }
-    debug("%u Setting messageToSend for %s as %s to %s ",
-          currentTime, network->name(), (followingLeader_ ? "remote" : "local"),
+    debug("%u Setting messageToSend for %s to %s ",
+          currentTime, network->name(),
           networkMessageToString(messageToSend, currentTime).c_str());
     network->setMessageToSend(messageToSend, currentTime);
   }
@@ -726,40 +706,12 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
   }
 
   Precedence incomingPrecedence = getIncomingPrecedence(currentTime);
-  NetworkDeviceId followedDeviceId = getFollowedDeviceId(currentTime);
   if (currentTime - message.currentPatternStartTime > kEffectDuration && !loop_) {
     // Ignore this message because the sender already switched effects.
     info("%u Ignoring received message %s past duration %u",
          currentTime, networkMessageToString(message, currentTime).c_str(), kEffectDuration);
     return;
   }
-  if (comparePrecedence(incomingPrecedence, followedDeviceId,
-                        message.precedence, message.originator) >= 0 &&
-      followedDeviceId != message.originator) {
-    info("%u Ignoring received message %s because our %s " DEVICE_ID_FMT " precedence %u is higher",
-          currentTime, networkMessageToString(message, currentTime).c_str(),
-          (followingLeader_ ? "remote" : "local"),
-          DEVICE_ID_HEX(followedDeviceId), incomingPrecedence);
-    return;
-  }
-  if (!followingLeader_) {
-    info("%u Switching from local " DEVICE_ID_FMT " precedence %u to new leader %s",
-         currentTime, DEVICE_ID_HEX(followedDeviceId), incomingPrecedence,
-         networkMessageToString(message, currentTime).c_str());
-  } else if (leaderDeviceId_ != message.originator) {
-    info("%u Switching from prior leader " DEVICE_ID_FMT " precedence %u to new leader %s",
-         currentTime, DEVICE_ID_HEX(leaderDeviceId_), incomingPrecedence,
-         networkMessageToString(message, currentTime).c_str());
-  } else {
-    info("%u Keeping leader precedence %u via %s",
-         currentTime, incomingPrecedence,
-         networkMessageToString(message, currentTime).c_str());
-  }
-  followingLeader_ = true;
-  followedNetwork_ = message.receiptNetwork;
-  leaderDeviceId_ = message.originator;
-  leaderPrecedence_ = message.precedence;
-  lastLeaderReceiveTime_ = currentTime;
   lastLEDWriteTime_ = -1;
   updateToNewPattern(message.currentPattern, message.nextPattern,
                      message.currentPatternStartTime, currentTime);
