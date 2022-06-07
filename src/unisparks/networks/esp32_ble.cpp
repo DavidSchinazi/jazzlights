@@ -163,6 +163,7 @@ constexpr uint8_t kVersion = 0x10;
 constexpr uint8_t kVersionOffset = 0;
 constexpr uint8_t kOriginatorOffset = kVersionOffset + 1;
 constexpr uint8_t kPrecedenceOffset = kOriginatorOffset + 6;
+// TODO optimize encoding to use fewer bits.
 constexpr uint8_t kNumHopsOffset = kPrecedenceOffset + 2;
 constexpr uint8_t kOriginationTimeOffset = kNumHopsOffset + 1;
 constexpr uint8_t kCurrentPatternOffset = kOriginationTimeOffset + 2;
