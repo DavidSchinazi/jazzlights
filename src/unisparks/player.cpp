@@ -418,6 +418,7 @@ void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
     }
   }
 
+  // Then react to any received packets.
   checkLeaderAndPattern(currentTime);
 
   // Then give all networks the opportunity to send.
@@ -438,6 +439,7 @@ void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
     frame.time = currentTime - currentPatternStartTime_;
   }
 
+  // TODO have special effects modify currentPattern so they sync to neighbors.
   switch (specialMode_) {
     case 1:
 #if WEARABLE
@@ -597,12 +599,16 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
     }
   }
 
+  NumHops numHops;
+  Milliseconds lastOriginationTime;
   Network* nextHopNetwork = nullptr;
   if (entry != nullptr) {
     // Update our state based on entry from leader.
     nextPattern_ = entry->nextPattern;
     currentPatternStartTime_ = entry->currentPatternStartTime;
     nextHopNetwork = entry->nextHopNetwork;
+    numHops = entry->numHops;
+    lastOriginationTime = entry->lastOriginationTime;
     if (currentPattern_ != entry->currentPattern) {
       currentPattern_ = entry->currentPattern;
       info("%u Switching currentPattern to %s %s",
@@ -613,6 +619,8 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
     }
   } else {
     // We are currently leading.
+    numHops = 0;
+    lastOriginationTime = currentTime;
     while (currentTime - currentPatternStartTime_ > kEffectDuration) {
       currentPatternStartTime_ += kEffectDuration;
       if (loop_) {
@@ -637,6 +645,8 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
   messageToSend.nextPattern = nextPattern_;
   messageToSend.currentPatternStartTime = currentPatternStartTime_;
   messageToSend.precedence = precedence;
+  messageToSend.lastOriginationTime = lastOriginationTime;
+  messageToSend.numHops = numHops;
   for (Network* network : networks_) {
     if (!network->shouldEcho() && nextHopNetwork == network) {
       debug("%u Not echoing for %s to %s ",
@@ -663,6 +673,12 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
           currentTime, networkMessageToString(message, currentTime).c_str());
     return;
   }
+  if (message.numHops >= 255) {
+    // This avoids overflow when incrementing below.
+    debug("%u Ignoring received message with high numHops %s",
+          currentTime, networkMessageToString(message, currentTime).c_str());
+    return;
+  }
   OriginatorEntry* entry = getOriginatorEntry(message.originator, currentTime);
   if (entry == nullptr) {
     originatorEntries_.push_back(OriginatorEntry());
@@ -675,7 +691,7 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
     entry->lastOriginationTime = message.lastOriginationTime;
     entry->nextHopDevice = message.sender;
     entry->nextHopNetwork = message.receiptNetwork;
-    entry->numHops = message.numHops;
+    entry->numHops = message.numHops + 1;
     entry->retracted = false;
   } else {
     // The concept behind this is that we build a tree rooted at each originator
@@ -691,7 +707,7 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
     if (entry->nextHopDevice != message.sender ||
         entry->nextHopNetwork != message.receiptNetwork) {
       bool changeNextHop = false;
-      if (message.numHops < entry->numHops) {
+      if (message.numHops + 1 < entry->numHops) {
         info("%u Switching to better nextHop due to numHops",
              currentTime);
         changeNextHop = true;
@@ -703,7 +719,7 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
       if (changeNextHop) {
         entry->nextHopDevice = message.sender;
         entry->nextHopNetwork = message.receiptNetwork;
-        entry->numHops = message.numHops;
+        entry->numHops = message.numHops + 1;
       }
     }
 
