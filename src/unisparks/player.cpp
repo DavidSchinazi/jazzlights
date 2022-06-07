@@ -418,22 +418,25 @@ void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
     }
   }
 
-  if (currentTime - currentPatternStartTime_ > kEffectDuration && !loop_) {
-    info("%u Exceeded effect duration, switching to next effect",
-         currentTime);
-    currentPattern_ = nextPattern_;
-    nextPattern_ = computeNextPattern(nextPattern_);
-    // TODO make this a while loop?
-    currentPatternStartTime_ += kEffectDuration;
-    checkLeaderAndPattern(currentTime);
-  }
+  checkLeaderAndPattern(currentTime);
 
   // Then give all networks the opportunity to send.
   for (Network* network : networks_) {
     network->runLoop(currentTime);
   }
 
-  const Effect* effect = patternFromBits(currentPattern_);
+  const Effect* effect;
+  Frame frame;
+  frame.animation.viewport = viewport_;
+  frame.tempo = 120;
+  frame.metre = SIMPLE_QUADRUPLE;
+  if (currentTime - currentPatternStartTime_ > kEffectDuration) {
+    effect = patternFromBits(nextPattern_);
+    frame.time = currentTime - currentPatternStartTime_ - kEffectDuration;
+  } else {
+    effect = patternFromBits(currentPattern_);
+    frame.time = currentTime - currentPatternStartTime_;
+  }
 
   switch (specialMode_) {
     case 1:
@@ -458,10 +461,20 @@ void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
       break;
   }
 
-  Frame efr = effectFrame(effect, currentTime);
+  // Ensure effectContext_ is big enough for this effect.
+  const size_t effectContextSize = effect->contextSize({viewport_, nullptr});
+  if (effectContextSize > effectContextSize_) {
+    info("%u realloc context size from %zu to %zu (%s w %f h %f)",
+         currentTime, effectContextSize_, effectContextSize,
+         effect->name().c_str(), viewport_.size.width * viewport_.size.height);
+    effectContextSize_ = effectContextSize;
+    effectContext_ = realloc(effectContext_, effectContextSize_);
+  }
+  frame.animation.context = effectContext_;
+
   if (effect != lastBegunEffect_) {
     lastBegunEffect_ = effect;
-    effect->begin(efr);
+    effect->begin(frame);
     lastLEDWriteTime_ =1;
   }
 
@@ -482,10 +495,10 @@ void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
   lastLEDWriteTime_ = currentTime;
 
   // Actually render the pixels.
-  effect->rewind(efr);
+  effect->rewind(frame);
   for (Strand* s = strands_;
        s < strands_ + strandCount_; ++s) {
-    unisparks::render(*s->layout, s->renderer, *effect, efr);
+    unisparks::render(*s->layout, s->renderer, *effect, frame);
   }
 }
 
@@ -559,11 +572,7 @@ static_assert(kOriginationTimeDiscard < kEffectDuration,
 void Player::checkLeaderAndPattern(Milliseconds currentTime) {
   Precedence precedence = getLocalPrecedence(currentTime);
   NetworkDeviceId originator = localDeviceId_;
-  PatternBits currentPattern = currentPattern_;
-  PatternBits nextPattern = nextPattern_;
-  Milliseconds currentPatternStartTime = currentPatternStartTime_;
-  Network* nextHopNetwork = nullptr;
-
+  OriginatorEntry* entry = nullptr;
   const bool hadRecentUserInput =
     (lastUserInputTime_ < 0 &&
       lastUserInputTime_ < currentTime &&
@@ -574,7 +583,6 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
         continue;
       }
       if (currentTime > e.lastOriginationTime + kOriginationTimeDiscard) {
-        // TODO figure out what we're sending when we're in the next pattern
         continue;
       }
       if (currentTime > e.currentPatternStartTime + 2 * kEffectDuration) {
@@ -586,23 +594,38 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
       }
       precedence = e.precedence;
       originator = e.originator;
-      currentPattern = e.currentPattern;
-      nextPattern = e.nextPattern;
-      currentPatternStartTime = e.currentPatternStartTime;
-      nextHopNetwork = e.nextHopNetwork;
     }
   }
 
-  currentPatternStartTime_ = currentPatternStartTime;
-  nextPattern_ = nextPattern;
-  if (currentPattern != currentPattern_) {
-    currentPattern_ = currentPattern;
-    info("%u Switching currentPattern to %s %s",
-        currentTime,
-        patternFromBits(currentPattern_)->name().c_str(),
-        displayBitsAsBinary(currentPattern_).c_str());
-    lastLEDWriteTime_ = -1;
+  Network* nextHopNetwork = nullptr;
+  if (entry != nullptr) {
+    // Update our state based on entry from leader.
+    nextPattern_ = entry->nextPattern;
+    currentPatternStartTime_ = entry->currentPatternStartTime;
+    nextHopNetwork = entry->nextHopNetwork;
+    if (currentPattern_ != entry->currentPattern) {
+      currentPattern_ = entry->currentPattern;
+      info("%u Switching currentPattern to %s %s",
+          currentTime,
+          patternFromBits(currentPattern_)->name().c_str(),
+          displayBitsAsBinary(currentPattern_).c_str());
+      lastLEDWriteTime_ = -1;
+    }
+  } else {
+    // We are currently leading.
+    while (currentTime - currentPatternStartTime_ > kEffectDuration) {
+      currentPatternStartTime_ += kEffectDuration;
+      if (loop_) {
+        nextPattern_ = currentPattern_;
+      } else {
+        currentPattern_ = nextPattern_;
+        nextPattern_ = computeNextPattern(nextPattern_);
+      }
+      info("%u Exceeded effect duration, switching currentPattern to %s",
+          currentTime, patternFromBits(currentPattern_)->name().c_str());
+    }
   }
+
   if (networks_.empty()) {
     debug("%u not setting messageToSend without networks", currentTime);
     return;
@@ -708,7 +731,6 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
   }
 
   lastLEDWriteTime_ = -1;
-  checkLeaderAndPattern(currentTime);
 }
 
 void Player::loopOne() {
@@ -717,26 +739,6 @@ void Player::loopOne() {
   }
   info("Looping");
   loop_ = true;
-}
-
-Frame Player::effectFrame(const Effect* effect, Milliseconds currentTime) {
-  // Ensure effectContext_ is big enough for this effect.
-  const size_t effectContextSize = effect->contextSize({viewport_, nullptr});
-  if (effectContextSize > effectContextSize_) {
-    info("%u realloc context size from %zu to %zu (%s w %f h %f)",
-         currentTime, effectContextSize_, effectContextSize,
-         effect->name().c_str(), viewport_.size.width * viewport_.size.height);
-    effectContextSize_ = effectContextSize;
-    effectContext_ = realloc(effectContext_, effectContextSize_);
-  }
-
-  Frame frame;
-  frame.animation.viewport = viewport_;
-  frame.animation.context = effectContext_;
-  frame.time = currentTime - currentPatternStartTime_;
-  frame.tempo = 120;
-  frame.metre = SIMPLE_QUADRUPLE;
-  return frame;
 }
 
 const char* Player::command(const char* req) {

@@ -83,7 +83,6 @@ class Player {
   void setPrecedenceGain(Precedence precedenceGain) {precedenceGain_ = precedenceGain; }
 
  private:
-  Frame effectFrame(const Effect* effect, Milliseconds currentTime);
   void handleReceivedMessage(NetworkMessage message, Milliseconds currentTime);
 
   Precedence getLocalPrecedence(Milliseconds currentTime);
