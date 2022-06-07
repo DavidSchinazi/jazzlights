@@ -148,30 +148,10 @@ void Esp32BleNetwork::triggerSendAsap(Milliseconds currentTime) {
 }
 
 void Esp32BleNetwork::setMessageToSend(const NetworkMessage& messageToSend,
-                        Milliseconds currentTime) {
-  uint8_t blePayload[1 + 6 + 2 + 4 + 4 + 2] = {};
-  static_assert(sizeof(blePayload) <= kMaxInnerPayloadLength, "bad size");
-  messageToSend.originator.writeTo(&blePayload[1]);
-  writeUint16(&blePayload[1 + 6], messageToSend.precedence);
-  writeUint32(&blePayload[1 + 6 + 2], messageToSend.currentPattern);
-  writeUint32(&blePayload[1 + 6 + 2 + 4], messageToSend.nextPattern);
-  constexpr uint8_t kTimeByteOffset = 1 + 6 + 2 + 4 + 4;
-  Milliseconds currentPatternStartTime = messageToSend.currentPatternStartTime;
-  {
-    const std::lock_guard<std::mutex> lock(mutex_);
-    hasDataToSend_ = true;
-    innerPayloadLength_ = sizeof(blePayload);
-    memcpy(innerPayload_, blePayload, sizeof(blePayload));
-    timeByteOffset_ = kTimeByteOffset;
-    currentPatternStartTime_ = currentPatternStartTime;
-    if (ESP32_BLE_DEBUG_ENABLED()) {
-      char advRawData[sizeof(blePayload) * 2 + 1] = {};
-      convertToHex(advRawData, sizeof(advRawData),
-                  innerPayload_, sizeof(blePayload));
-      ESP32_BLE_DEBUG("%u Setting inner payload to <%u:%s>",
-            currentTime, sizeof(blePayload), advRawData);
-    }
-  }
+                                       Milliseconds currentTime) {
+  const std::lock_guard<std::mutex> lock(mutex_);
+  hasDataToSend_ = true;
+  messageToSend_ = messageToSend;
 }
 
 void Esp32BleNetwork::disableSending(Milliseconds currentTime) {
@@ -237,26 +217,36 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload,
                                             uint8_t maxInnerPayloadLength,
                                             Milliseconds currentTime) {
   const std::lock_guard<std::mutex> lock(mutex_);
-  if (innerPayloadLength_ == 0) {
-    return 0;
-  }
-  if (innerPayloadLength_ > maxInnerPayloadLength) {
+  constexpr uint8_t payloadLength = 1 + 6 + 2 + 4 + 4 + 2;
+  static_assert(payloadLength <= kMaxInnerPayloadLength, "bad size");
+  if (payloadLength > maxInnerPayloadLength) {
     error("%u GetNextInnerPayloadToSend nonsense %u > %u",
-          currentTime, innerPayloadLength_, maxInnerPayloadLength);
+          currentTime, payloadLength, maxInnerPayloadLength);
     return 0;
   }
-  memcpy(innerPayload, innerPayload_, innerPayloadLength_);
-  if (timeByteOffset_ + sizeof(uint32_t) <= innerPayloadLength_) {
-    uint16_t elapsedTime;
-    if (currentPatternStartTime_ <= currentTime &&
-        currentTime - currentPatternStartTime_ <= 0xFFFF) {
-      elapsedTime = currentTime - currentPatternStartTime_;
-    } else {
-      elapsedTime = 0xFFFF;
-    }
-    writeUint16(&innerPayload[timeByteOffset_], elapsedTime);
+
+  uint16_t elapsedTime;
+  if (messageToSend_.currentPatternStartTime <= currentTime &&
+      currentTime - messageToSend_.currentPatternStartTime <= 0xFFFF) {
+    elapsedTime = currentTime - messageToSend_.currentPatternStartTime;
+  } else {
+    elapsedTime = 0xFFFF;
   }
-  return innerPayloadLength_;
+
+  messageToSend_.originator.writeTo(&innerPayload[1]);
+  writeUint16(&innerPayload[1 + 6], messageToSend_.precedence);
+  writeUint32(&innerPayload[1 + 6 + 2], messageToSend_.currentPattern);
+  writeUint32(&innerPayload[1 + 6 + 2 + 4], messageToSend_.nextPattern);
+  writeUint16(&innerPayload[1 + 6 + 2 + 4 + 4], elapsedTime);
+
+  if (ESP32_BLE_DEBUG_ENABLED()) {
+    char advRawData[payloadLength * 2 + 1] = {};
+    convertToHex(advRawData, sizeof(advRawData),
+                innerPayload, payloadLength);
+    ESP32_BLE_DEBUG("%u Setting inner payload to <%u:%s>",
+                    currentTime, payloadLength, advRawData);
+  }
+  return payloadLength;
 }
 
 bool Esp32BleNetwork::ExtractShouldTriggerSendAsap() {
