@@ -86,7 +86,6 @@ struct NetworkMessage {
   Milliseconds lastOriginationTime = 0;
   // Receipt values are not sent over the wire.
   Network* receiptNetwork = nullptr;
-  // TODO actually send and parse the new fields.
 };
 
 std::string displayBitsAsBinary(PatternBits p);

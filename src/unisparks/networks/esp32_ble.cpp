@@ -159,6 +159,7 @@ void Esp32BleNetwork::disableSending(Milliseconds currentTime) {
   hasDataToSend_ = false;
 }
 
+constexpr uint8_t kVersion = 0x10;
 constexpr uint8_t kVersionOffset = 0;
 constexpr uint8_t kOriginatorOffset = kVersionOffset + 1;
 constexpr uint8_t kPrecedenceOffset = kOriginatorOffset + 6;
@@ -184,9 +185,9 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
                     currentTime, innerPayloadLength);
     return;
   }
-  if ((innerPayload[kVersionOffset] & 0xF0) != 0x10) {
+  if ((innerPayload[kVersionOffset] & 0xF0) != kVersion) {
     ESP32_BLE_DEBUG("%u Ignoring received BLE with unexpected prefix %02x",
-                    currentTime, innerPayload[0]);
+                    currentTime, innerPayload[kVersionOffset]);
     return;
   }
   NetworkMessage message;
@@ -201,10 +202,10 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
 
   // Empirical measurements with the ATOM Matrix show a RTT of 50ms,
   // so we offset the one way transmission time by half that.
-  constexpr Milliseconds transmissionOffset = 25;
+  constexpr Milliseconds kTransmissionOffset = 25;
   Milliseconds receiptTime;
-  if (currentTime > transmissionOffset) {
-    receiptTime = currentTime - transmissionOffset;
+  if (currentTime > kTransmissionOffset) {
+    receiptTime = currentTime - kTransmissionOffset;
   } else {
     receiptTime = 0;
   }
@@ -256,7 +257,7 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload,
     patternTimeDelta = 0xFFFF;
   }
 
-  innerPayload[kVersionOffset] = 0x10;
+  innerPayload[kVersionOffset] = kVersion;
   messageToSend_.originator.writeTo(&innerPayload[kOriginatorOffset]);
   writeUint16(&innerPayload[kPrecedenceOffset], messageToSend_.precedence);
   innerPayload[kNumHopsOffset] = messageToSend_.numHops;
