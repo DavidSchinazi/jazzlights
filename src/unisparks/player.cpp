@@ -433,22 +433,6 @@ void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
     network->runLoop(currentTime);
   }
 
-  // Keep track of how many FPS we might be able to get.
-  if (currentTime - lastFpsProbeTime_ > ONE_SECOND) {
-    fps_ = framesSinceFpsProbe_;
-    lastFpsProbeTime_ = currentTime;
-    framesSinceFpsProbe_ = 0;
-  }
-  framesSinceFpsProbe_++;
-
-  // Do not send data to LEDs faster than 100Hz.
-  static constexpr Milliseconds minLEDWriteTime = 10;
-  if (lastLEDWriteTime_ >= 0 &&
-      currentTime - minLEDWriteTime < lastLEDWriteTime_) {
-    return;
-  }
-  lastLEDWriteTime_ = currentTime;
-
   const Effect* effect = patternFromBits(currentPattern_);
 
   switch (specialMode_) {
@@ -478,9 +462,27 @@ void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
   if (effect != lastBegunEffect_) {
     lastBegunEffect_ = effect;
     effect->begin(efr);
+    lastLEDWriteTime_ =1;
   }
-  effect->rewind(efr);
 
+  // Keep track of how many FPS we might be able to get.
+  if (currentTime - lastFpsProbeTime_ > ONE_SECOND) {
+    fps_ = framesSinceFpsProbe_;
+    lastFpsProbeTime_ = currentTime;
+    framesSinceFpsProbe_ = 0;
+  }
+  framesSinceFpsProbe_++;
+
+  // Do not send data to LEDs faster than 100Hz.
+  static constexpr Milliseconds minLEDWriteTime = 10;
+  if (lastLEDWriteTime_ >= 0 &&
+      currentTime - minLEDWriteTime < lastLEDWriteTime_) {
+    return;
+  }
+  lastLEDWriteTime_ = currentTime;
+
+  // Actually render the pixels.
+  effect->rewind(efr);
   for (Strand* s = strands_;
        s < strands_ + strandCount_; ++s) {
     unisparks::render(*s->layout, s->renderer, *effect, efr);
