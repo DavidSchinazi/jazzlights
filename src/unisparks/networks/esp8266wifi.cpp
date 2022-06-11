@@ -25,6 +25,7 @@ NetworkStatus Esp8266WiFi::update(NetworkStatus status, Milliseconds currentTime
       WiFi.config(ip, gw, snm);
     }
 
+    // TODO figure out why first connection fails with missing Wi-Fi shield.
     WiFi.begin(creds_.ssid, creds_.pass);
     return CONNECTING;
   } break;
