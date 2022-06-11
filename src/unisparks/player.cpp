@@ -587,7 +587,8 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
     (lastUserInputTime_ < 0 &&
       lastUserInputTime_ < currentTime &&
       currentTime - lastUserInputTime_ < kInputDuration);
-  if (!hadRecentUserInput) {
+  // Keep ourselves as leader if there was recent user button input or if we are looping.
+  if (!hadRecentUserInput && !loop_) {
     for (const OriginatorEntry& e : originatorEntries_) {
       if (e.retracted) {
         continue;
