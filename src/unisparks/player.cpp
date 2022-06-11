@@ -24,8 +24,10 @@
 #include "unisparks/util/time.hpp"
 #include "unisparks/version.hpp"
 
-#ifdef ESP32
-#include "esp_system.h"
+#if defined(linux) || defined(__linux) || defined(__linux__)
+#  include <sys/random.h>
+#elif defined(ESP32)
+#  include "esp_system.h"
 #endif
 
 namespace unisparks {
@@ -357,14 +359,20 @@ void Player::begin(Milliseconds currentTime) {
   while (localDeviceId_ == NetworkDeviceId()) {
     // If no interfaces have a localDeviceId, generate one randomly.
     uint8_t deviceIdBytes[6] = {};
-#ifdef ESP32
+#if defined(__APPLE___)
+    arc4random_buf(deviceIdBytes, sizeof(deviceIdBytes));
+#elif defined(linux) || defined(__linux) || defined(__linux__)
+    (void)getrandom(&deviceIdBytes[0], sizeof(deviceIdBytes), /*flags=*/0);
+#else
+#  if defined(ESP32)
     const uint32_t randomOne = esp_random();
     const uint32_t randomTwo = esp_random();
+#  else
+    const uint32_t randomOne = rand();
+    const uint32_t randomTwo = rand();
+#  endif
     memcpy(&deviceIdBytes[0], &randomOne, 3);
     memcpy(&deviceIdBytes[3], &randomTwo, 3);
-#else
-    arc4random_buf(deviceIdBytes, sizeof(deviceIdBytes));
-    // TODO figure out a source of randomness for Linux and ESP8266.
 #endif
     localDeviceId_ = NetworkDeviceId(deviceIdBytes);
   }
