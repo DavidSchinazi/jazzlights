@@ -1,5 +1,6 @@
 #include "unisparks/util/log.hpp"
 #include <Arduino.h>
+#include <string>
 
 namespace unisparks {
 
