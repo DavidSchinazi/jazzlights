@@ -133,6 +133,7 @@ class Player {
   Precedence basePrecedence_ = 0;
   Precedence precedenceGain_ = 0;
   NetworkDeviceId localDeviceId_ = NetworkDeviceId();
+  NetworkDeviceId currentLeader_ = NetworkDeviceId();
 
   // Mutable because it is used for logging
   mutable int fps_ = -1;

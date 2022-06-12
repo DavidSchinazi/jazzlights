@@ -376,6 +376,7 @@ void Player::begin(Milliseconds currentTime) {
 #endif
     localDeviceId_ = NetworkDeviceId(deviceIdBytes);
   }
+  currentLeader_ = localDeviceId_;
   info("%u Starting Unisparks player %s (v%s); strands: %d%s, "
        "pixels: %d, %s " DEVICE_ID_FMT " w %f h %f",
        currentTime,
@@ -580,32 +581,66 @@ static_assert(kOriginationTimeDiscard < kEffectDuration,
   "past the end of its intended next pattern.");
 
 void Player::checkLeaderAndPattern(Milliseconds currentTime) {
+  // Remove elements that have aged out.
+  originatorEntries_.remove_if([currentTime](const OriginatorEntry& e){
+    if (currentTime > e.lastOriginationTime + kOriginationTimeDiscard) {
+      // info("%u ignoring " DEVICE_ID_FMT " due to origination time",
+      //       currentTime, DEVICE_ID_HEX(e.originator));
+      return true;
+    }
+    if (currentTime > e.currentPatternStartTime + 2 * kEffectDuration) {
+      // info("%u ignoring " DEVICE_ID_FMT " due to effect duration",
+      //       currentTime, DEVICE_ID_HEX(e.originator));
+      return true;
+    }
+    return false;
+  });
   Precedence precedence = getLocalPrecedence(currentTime);
   NetworkDeviceId originator = localDeviceId_;
-  OriginatorEntry* entry = nullptr;
+  const OriginatorEntry* entry = nullptr;
   const bool hadRecentUserInput =
-    (lastUserInputTime_ < 0 &&
+    (lastUserInputTime_ >= 0 &&
       lastUserInputTime_ < currentTime &&
       currentTime - lastUserInputTime_ < kInputDuration);
   // Keep ourselves as leader if there was recent user button input or if we are looping.
   if (!hadRecentUserInput && !loop_) {
     for (const OriginatorEntry& e : originatorEntries_) {
       if (e.retracted) {
+        info("%u ignoring " DEVICE_ID_FMT " due to retracted",
+             currentTime, DEVICE_ID_HEX(e.originator));
         continue;
       }
       if (currentTime > e.lastOriginationTime + kOriginationTimeDiscard) {
+        info("%u ignoring " DEVICE_ID_FMT " due to origination time",
+             currentTime, DEVICE_ID_HEX(e.originator));
         continue;
       }
       if (currentTime > e.currentPatternStartTime + 2 * kEffectDuration) {
+        info("%u ignoring " DEVICE_ID_FMT " due to effect duration",
+             currentTime, DEVICE_ID_HEX(e.originator));
         continue;
       }
       if (comparePrecedence(e.precedence, e.originator,
                             precedence, originator) <= 0) {
+        info("%u ignoring " DEVICE_ID_FMT " due to precedence",
+             currentTime, DEVICE_ID_HEX(e.originator));
         continue;
       }
       precedence = e.precedence;
       originator = e.originator;
+      entry = &e;
     }
+  } else {
+    info("%u ignoring others due to %s, luit=%d",
+         currentTime, (hadRecentUserInput ? "user input" : "loop"),
+         lastUserInputTime_);
+  }
+
+  if (currentLeader_ != originator) {
+    info("%u Switching leader from " DEVICE_ID_FMT " to " DEVICE_ID_FMT,
+         currentTime, DEVICE_ID_HEX(currentLeader_),
+         DEVICE_ID_HEX(originator));
+    currentLeader_ = originator;
   }
 
   NumHops numHops;
@@ -672,20 +707,23 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
 }
 
 void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentTime) {
+  info("%u handleReceivedMessage %s",
+        currentTime,
+        networkMessageToString(message, currentTime).c_str());
   if (message.sender == localDeviceId_) {
-    debug("%u Ignoring received message that we sent %s",
-          currentTime, networkMessageToString(message, currentTime).c_str());
+    info("%u Ignoring received message that we sent %s",
+         currentTime, networkMessageToString(message, currentTime).c_str());
     return;
   }
   if (message.originator == localDeviceId_) {
-    debug("%u Ignoring received message that we originated %s",
-          currentTime, networkMessageToString(message, currentTime).c_str());
+    info("%u Ignoring received message that we originated %s",
+         currentTime, networkMessageToString(message, currentTime).c_str());
     return;
   }
-  if (message.numHops >= 255) {
+  if (message.numHops == std::numeric_limits<NumHops>::max()) {
     // This avoids overflow when incrementing below.
-    debug("%u Ignoring received message with high numHops %s",
-          currentTime, networkMessageToString(message, currentTime).c_str());
+    info("%u Ignoring received message with high numHops %s",
+         currentTime, networkMessageToString(message, currentTime).c_str());
     return;
   }
   OriginatorEntry* entry = getOriginatorEntry(message.originator, currentTime);
@@ -702,6 +740,10 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
     entry->nextHopNetwork = message.receiptNetwork;
     entry->numHops = message.numHops + 1;
     entry->retracted = false;
+    info("%u Adding originator " DEVICE_ID_FMT " to list: p=%u "
+         "s=" DEVICE_ID_FMT " nh=%u",
+         currentTime, DEVICE_ID_HEX(entry->originator), entry->precedence,
+         DEVICE_ID_HEX(entry->nextHopDevice), entry->numHops);
   } else {
     // The concept behind this is that we build a tree rooted at each originator
     // using a variant of the Bellman-Ford algorithm. We then only ever listen
@@ -734,12 +776,17 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
 
     if (entry->nextHopDevice == message.sender &&
         entry->nextHopNetwork == message.receiptNetwork) {
+      info("%u Accepting update from " DEVICE_ID_FMT,
+           currentTime, DEVICE_ID_HEX(entry->originator));
       entry->precedence = message.precedence;
       entry->currentPattern = message.currentPattern;
       entry->nextPattern = message.nextPattern;
       entry->currentPatternStartTime = message.currentPatternStartTime;
       entry->lastOriginationTime = message.lastOriginationTime;
       entry->retracted = false;
+    } else {
+      info("%u Rejecting update from " DEVICE_ID_FMT,
+           currentTime, DEVICE_ID_HEX(entry->originator));
     }
   }
   // If this sender is following another originator from what we previously heard,
@@ -750,8 +797,12 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
         e.originator != message.originator &&
         !e.retracted) {
       e.retracted = true;
-      info("%u Retracting entry for originator",
-             currentTime);
+      info("%u Retracting entry for originator " DEVICE_ID_FMT
+           " due to abandonment from " DEVICE_ID_FMT
+           " in favor of " DEVICE_ID_FMT,
+           currentTime, DEVICE_ID_HEX(e.originator),
+           DEVICE_ID_HEX(message.sender),
+           DEVICE_ID_HEX(message.originator));
     }
   }
 

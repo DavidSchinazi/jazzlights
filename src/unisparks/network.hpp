@@ -86,6 +86,24 @@ struct NetworkMessage {
   Milliseconds lastOriginationTime = 0;
   // Receipt values are not sent over the wire.
   Network* receiptNetwork = nullptr;
+
+  bool isEqualExceptOriginationTime(const NetworkMessage& other) const {
+    return sender == other.sender &&
+           originator == other.originator &&
+           precedence == other.precedence &&
+           currentPattern == other.currentPattern &&
+           nextPattern == other.nextPattern &&
+           numHops == other.numHops &&
+           currentPatternStartTime == other.currentPatternStartTime &&
+           receiptNetwork == other.receiptNetwork;
+  }
+  bool operator==(const NetworkMessage& other) const {
+    return isEqualExceptOriginationTime(other) &&
+           lastOriginationTime == other.lastOriginationTime;
+  }
+  bool operator!=(const NetworkMessage& other) const {
+    return !(*this == other);
+  }
 };
 
 std::string displayBitsAsBinary(PatternBits p);

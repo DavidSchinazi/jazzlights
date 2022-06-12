@@ -150,6 +150,14 @@ void Esp32BleNetwork::triggerSendAsap(Milliseconds currentTime) {
 void Esp32BleNetwork::setMessageToSend(const NetworkMessage& messageToSend,
                                        Milliseconds currentTime) {
   const std::lock_guard<std::mutex> lock(mutex_);
+  if (!hasDataToSend_ || !messageToSend_.isEqualExceptOriginationTime(messageToSend)) {
+    ESP32_BLE_DEBUG("%u Setting messageToSend %s",
+                    currentTime,
+                    networkMessageToString(messageToSend, currentTime).c_str());
+    ESP32_BLE_DEBUG("%u Old messageToSend was %s",
+                    currentTime,
+                    networkMessageToString(messageToSend_, currentTime).c_str());
+  }
   hasDataToSend_ = true;
   messageToSend_ = messageToSend;
 }
@@ -219,6 +227,9 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
   } else {
     message.lastOriginationTime = 0;
   }
+
+  ESP32_BLE_DEBUG("%u Received %s",
+                  currentTime, networkMessageToString(message, currentTime).c_str());
 
   {
     const std::lock_guard<std::mutex> lock(mutex_);

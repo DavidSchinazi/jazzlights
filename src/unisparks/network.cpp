@@ -74,10 +74,11 @@ std::string displayBitsAsBinary(PatternBits p) {
 }
 
 std::string networkMessageToString(const NetworkMessage& message, Milliseconds currentTime) {
-  char str[sizeof(", t=4294967296, p=65536}")] = {};
-  snprintf(str, sizeof(str), ", t=%u, p=%u}",
+  char str[sizeof(", t=4294967296, p=65536, nh=255, ot=4294967296}")] = {};
+  snprintf(str, sizeof(str), ", t=%u, p=%u, nh=%u, ot=%u}",
            currentTime - message.currentPatternStartTime,
-           message.precedence);
+           message.precedence, message.numHops,
+           currentTime - message.lastOriginationTime);
   std::string rv = "{o=" + message.originator.toString() +
                    ", s=" + message.sender.toString() +
                    ", c=" + displayBitsAsBinary(message.currentPattern) +
