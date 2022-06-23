@@ -584,13 +584,13 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
   // Remove elements that have aged out.
   originatorEntries_.remove_if([currentTime](const OriginatorEntry& e){
     if (currentTime > e.lastOriginationTime + kOriginationTimeDiscard) {
-      // info("%u ignoring " DEVICE_ID_FMT " due to origination time",
-      //       currentTime, DEVICE_ID_HEX(e.originator));
+       info("%u Removing " DEVICE_ID_FMT "p%u entry due to origination time",
+             currentTime, DEVICE_ID_HEX(e.originator), e.precedence);
       return true;
     }
     if (currentTime > e.currentPatternStartTime + 2 * kEffectDuration) {
-      // info("%u ignoring " DEVICE_ID_FMT " due to effect duration",
-      //       currentTime, DEVICE_ID_HEX(e.originator));
+       info("%u Removing " DEVICE_ID_FMT "p%u entry due to effect duration",
+             currentTime, DEVICE_ID_HEX(e.originator), e.precedence);
       return true;
     }
     return false;
@@ -622,8 +622,9 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
       }
       if (comparePrecedence(e.precedence, e.originator,
                             precedence, originator) <= 0) {
-        info("%u ignoring " DEVICE_ID_FMT " due to precedence",
-             currentTime, DEVICE_ID_HEX(e.originator));
+        info("%u ignoring " DEVICE_ID_FMT "p%u due to better " DEVICE_ID_FMT "p%u",
+             currentTime, DEVICE_ID_HEX(e.originator), e.precedence,
+             DEVICE_ID_HEX(originator), precedence);
         continue;
       }
       precedence = e.precedence;
@@ -655,10 +656,9 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
     lastOriginationTime = entry->lastOriginationTime;
     if (currentPattern_ != entry->currentPattern) {
       currentPattern_ = entry->currentPattern;
-      info("%u Switching currentPattern to %s %s",
-          currentTime,
-          patternFromBits(currentPattern_)->name().c_str(),
-          displayBitsAsBinary(currentPattern_).c_str());
+      info("%u Following " DEVICE_ID_FMT "p%u nh=%u %s new currentPattern %s",
+          currentTime, DEVICE_ID_HEX(originator), precedence, numHops, nextHopNetwork->name(),
+          patternFromBits(currentPattern_)->name().c_str());
       lastLEDWriteTime_ = -1;
     }
   } else {
@@ -673,8 +673,10 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
         currentPattern_ = nextPattern_;
         nextPattern_ = computeNextPattern(nextPattern_);
       }
-      info("%u Exceeded effect duration, switching currentPattern to %s",
-          currentTime, patternFromBits(currentPattern_)->name().c_str());
+      info("%u We (" DEVICE_ID_FMT "p%u) are leading, new currentPattern %s",
+          currentTime, DEVICE_ID_HEX(localDeviceId_), precedence,
+          patternFromBits(currentPattern_)->name().c_str());
+      lastLEDWriteTime_ = -1;
     }
   }
 
@@ -740,8 +742,7 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
     entry->nextHopNetwork = message.receiptNetwork;
     entry->numHops = message.numHops + 1;
     entry->retracted = false;
-    info("%u Adding originator " DEVICE_ID_FMT " to list: p=%u "
-         "s=" DEVICE_ID_FMT " nh=%u",
+    info("%u Adding " DEVICE_ID_FMT "p%u entry s=" DEVICE_ID_FMT " nh=%u",
          currentTime, DEVICE_ID_HEX(entry->originator), entry->precedence,
          DEVICE_ID_HEX(entry->nextHopDevice), entry->numHops);
   } else {
@@ -776,8 +777,9 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
 
     if (entry->nextHopDevice == message.sender &&
         entry->nextHopNetwork == message.receiptNetwork) {
-      info("%u Accepting update from " DEVICE_ID_FMT,
-           currentTime, DEVICE_ID_HEX(entry->originator));
+      info("%u Accepting update from " DEVICE_ID_FMT " via " DEVICE_ID_FMT ".%s",
+           currentTime, DEVICE_ID_HEX(entry->originator),
+           DEVICE_ID_HEX(entry->nextHopDevice), entry->nextHopNetwork->name());
       entry->precedence = message.precedence;
       entry->currentPattern = message.currentPattern;
       entry->nextPattern = message.nextPattern;
@@ -785,8 +787,11 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
       entry->lastOriginationTime = message.lastOriginationTime;
       entry->retracted = false;
     } else {
-      info("%u Rejecting update from " DEVICE_ID_FMT,
-           currentTime, DEVICE_ID_HEX(entry->originator));
+      info("%u Rejecting update from " DEVICE_ID_FMT " via "
+           DEVICE_ID_FMT ".%s because we are following " DEVICE_ID_FMT ".%s",
+           currentTime, DEVICE_ID_HEX(entry->originator),
+           DEVICE_ID_HEX(message.sender), message.receiptNetwork->name(),
+           DEVICE_ID_HEX(entry->nextHopDevice), entry->nextHopNetwork->name());
     }
   }
   // If this sender is following another originator from what we previously heard,
