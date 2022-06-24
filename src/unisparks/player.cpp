@@ -731,6 +731,16 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
          currentTime, networkMessageToString(message, currentTime).c_str());
     return;
   }
+  if (currentTime > message.lastOriginationTime + kOriginationTimeDiscard) {
+    info("%u Ignoring received message due to origination time %s",
+          currentTime, networkMessageToString(message, currentTime).c_str());
+    return;
+  }
+  if (currentTime > message.currentPatternStartTime + 2 * kEffectDuration) {
+      info("%u Ignoring received message due to effect duration %s",
+            currentTime, networkMessageToString(message, currentTime).c_str());
+    return;
+  }
   OriginatorEntry* entry = getOriginatorEntry(message.originator, currentTime);
   if (entry == nullptr) {
     originatorEntries_.push_back(OriginatorEntry());
@@ -746,9 +756,13 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
     entry->numHops = message.numHops + 1;
     entry->retracted = false;
     entry->patternStartTimeMovementCounter = 0;
-    info("%u Adding " DEVICE_ID_FMT "p%u entry s=" DEVICE_ID_FMT " nh=%u",
+    info("%u Adding " DEVICE_ID_FMT "p%u entry via " DEVICE_ID_FMT ".%s nh %u ot %u current %s next %s elapsed %u",
          currentTime, DEVICE_ID_HEX(entry->originator), entry->precedence,
-         DEVICE_ID_HEX(entry->nextHopDevice), entry->numHops);
+         DEVICE_ID_HEX(entry->nextHopDevice), entry->nextHopNetwork->name(),
+         entry->numHops, currentTime - entry->lastOriginationTime,
+         patternFromBits(entry->currentPattern)->name().c_str(),
+         patternFromBits(entry->nextPattern)->name().c_str(),
+         currentTime - entry->currentPatternStartTime);
   } else {
     // The concept behind this is that we build a tree rooted at each originator
     // using a variant of the Bellman-Ford algorithm. We then only ever listen
@@ -764,12 +778,22 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
         entry->nextHopNetwork != message.receiptNetwork) {
       bool changeNextHop = false;
       if (message.numHops + 1 < entry->numHops) {
-        info("%u Switching to better nextHop due to numHops",
-             currentTime);
+        info("%u Switching " DEVICE_ID_FMT "p%u entry via " DEVICE_ID_FMT ".%s "
+             "nh %u ot %u to better nextHop " DEVICE_ID_FMT ".%s due nh %u ot %u due to nextHops",
+             currentTime, DEVICE_ID_HEX(entry->originator), entry->precedence,
+             DEVICE_ID_HEX(entry->nextHopDevice), entry->nextHopNetwork->name(),
+             entry->numHops, currentTime - entry->lastOriginationTime,
+             DEVICE_ID_HEX(message.sender), message.receiptNetwork->name(),
+             message.numHops, currentTime - message.lastOriginationTime);
         changeNextHop = true;
       } else if (message.lastOriginationTime > entry->lastOriginationTime + kOriginationTimeOverride) {
-        info("%u Switching to better nextHop due to originationTime",
-             currentTime);
+        info("%u Switching " DEVICE_ID_FMT "p%u entry via " DEVICE_ID_FMT ".%s "
+             "nh %u ot %u to better nextHop " DEVICE_ID_FMT ".%s due nh %u ot %u due to originationTime",
+             currentTime, DEVICE_ID_HEX(entry->originator), entry->precedence,
+             DEVICE_ID_HEX(entry->nextHopDevice), entry->nextHopNetwork->name(),
+             entry->numHops, currentTime - entry->lastOriginationTime,
+             DEVICE_ID_HEX(message.sender), message.receiptNetwork->name(),
+             message.numHops, currentTime - message.lastOriginationTime);
         changeNextHop = true;
       }
       if (changeNextHop) {
@@ -899,12 +923,12 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
         e.originator != message.originator &&
         !e.retracted) {
       e.retracted = true;
-      info("%u Retracting entry for originator " DEVICE_ID_FMT
-           " due to abandonment from " DEVICE_ID_FMT
-           " in favor of " DEVICE_ID_FMT,
-           currentTime, DEVICE_ID_HEX(e.originator),
-           DEVICE_ID_HEX(message.sender),
-           DEVICE_ID_HEX(message.originator));
+      info("%u Retracting entry for originator " DEVICE_ID_FMT "p%u"
+           " due to abandonment from " DEVICE_ID_FMT ".%s"
+           " in favor of " DEVICE_ID_FMT "p%u",
+           currentTime, DEVICE_ID_HEX(e.originator), e.precedence,
+           DEVICE_ID_HEX(message.sender), message.receiptNetwork->name(),
+           DEVICE_ID_HEX(message.originator), message.precedence);
     }
   }
 
