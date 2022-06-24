@@ -799,9 +799,7 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
       }
       if (entry->lastOriginationTime > message.lastOriginationTime) {
         changes << ", originationTime -= " << entry->lastOriginationTime - message.lastOriginationTime;
-      } else if (entry->lastOriginationTime < message.lastOriginationTime) {
-        changes << ", originationTime += " << message.lastOriginationTime - entry->lastOriginationTime;
-      }
+      } // Do not log increases to origination time since all originated messages cause it.
       if (entry->retracted) {
         changes << ", unretracted";
       }
