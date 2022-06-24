@@ -26,14 +26,13 @@ void vestSetup(void) {
   setupButtons();
   player.addStrand(pixels, renderPixel);
   player.setBasePrecedence(1000);
-  player.setIncomingPrecedenceGain(10000);
-  player.setOutgoingPrecedenceGain(1000);
+  player.setPrecedenceGain(1000);
 
 #if ESP32_BLE
   player.connect(Esp32BleNetwork::get());
 #endif // ESP32_BLE
   player.connect(&network);
-  player.begin();
+  player.begin(timeMillis());
 
   // Note to self for future reference: we were able to get the 2018 Gecko Robot scales to light
   // up correctly with the M5Stack ATOM Matrix without any level shifters by connecting:

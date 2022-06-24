@@ -25,13 +25,7 @@ class Player {
   Player(const Player&) = delete;
   Player& operator=(const Player&) = delete;
 
-  /**
-   * Reset player to the same state as if it was just constructed
-   */
-  void reset();
-
   // Constructing the player
-  
   Player& clearStrands();
   Player& addStrand(const Layout& l, Renderer& r);
   Player& addStrand(const Layout& l, SimpleRenderFunc r);
@@ -40,15 +34,10 @@ class Player {
   /**
    * Prepare for rendering
    *
-   * Call this when you're done adding strands and setting up
-   * player configuration.
+   * Call this when you're done adding strands, setting up
+   * player configuration and connecting networks.
    */
-  void begin();
-
-  /**
-   * Exit rendering mode and cleanup runtime resources
-   */
-  void end();
+  void begin(Milliseconds currentTime);
 
   /**
    *  Render current frame to all strands
@@ -87,38 +76,35 @@ class Player {
   void handleSpecial();
   void stopSpecial();
 
-  bool powerLimited;
+  bool powerLimited = false;
 
 
   void setBasePrecedence(Precedence basePrecedence) {basePrecedence_ = basePrecedence; }
-  void setIncomingPrecedenceGain(Precedence precedenceGain) {incomingPrecedenceGain_ = precedenceGain; }
-  void setOutgoingPrecedenceGain(Precedence precedenceGain) {outgoingPrecedenceGain_ = precedenceGain; }
+  void setPrecedenceGain(Precedence precedenceGain) {precedenceGain_ = precedenceGain; }
 
  private:
-  void syncToNetwork(Milliseconds currentTime);
-  void nextInner(Milliseconds currentTime);
-  Frame effectFrame(const Effect* effect, Milliseconds currentTime);
-  Effect* currentEffect() const;
-  void updateToNewPattern(PatternBits newCurrentPattern,
-                          PatternBits newNextPattern,
-                          Milliseconds newCurrentPatternStartTime,
-                          Milliseconds currentTime);
   void handleReceivedMessage(NetworkMessage message, Milliseconds currentTime);
 
   Precedence getLocalPrecedence(Milliseconds currentTime);
-  Precedence getLeaderPrecedence(Milliseconds currentTime);
-  Precedence getOutgoingLocalPrecedence(Milliseconds currentTime);
-  Precedence getOutgoingLeaderPrecedence(Milliseconds currentTime);
-  Precedence getOutgoingPrecedence(Milliseconds currentTime);
-  Precedence getIncomingLocalPrecedence(Milliseconds currentTime);
-  Precedence getIncomingLeaderPrecedence(Milliseconds currentTime);
-  Precedence getIncomingPrecedence(Milliseconds currentTime);
-  NetworkDeviceId getLocalDeviceId(Milliseconds currentTime);
-  NetworkDeviceId getLeaderDeviceId(Milliseconds currentTime);
-  NetworkDeviceId getFollowedDeviceId(Milliseconds currentTime);
-  void abandonLeader(Milliseconds currentTime);
 
-  bool ready_;
+  struct OriginatorEntry {
+    NetworkDeviceId originator = NetworkDeviceId();
+    Precedence precedence = 0;
+    PatternBits currentPattern = 0;
+    PatternBits nextPattern = 0;
+    Milliseconds currentPatternStartTime = 0;
+    Milliseconds lastOriginationTime = 0;
+    NetworkDeviceId nextHopDevice = NetworkDeviceId();
+    Network* nextHopNetwork = nullptr;
+    NumHops numHops = 0;
+    bool retracted = false;
+    int8_t patternStartTimeMovementCounter = 0;
+  };
+
+  OriginatorEntry* getOriginatorEntry(NetworkDeviceId originator, Milliseconds currentTime);
+  void checkLeaderAndPattern(Milliseconds currentTime);
+
+  bool ready_ = false;
 
   struct Strand {
     const Layout* layout;
@@ -126,40 +112,34 @@ class Player {
   };
 
   Strand strands_[255];
-  size_t strandCount_;
+  size_t strandCount_ = 0;
 
   Box viewport_;
   void* effectContext_ = nullptr;
   size_t effectContextSize_ = 0;
 
-  Milliseconds currentPatternStartTime_;
+  Milliseconds currentPatternStartTime_ = 0;
   PatternBits currentPattern_;
   PatternBits nextPattern_;
-
-  BeatsPerMinute tempo_;
-  Metre metre_;
-  // Milliseconds lastDownbeatTime_;
+  const Effect* lastBegunEffect_ = nullptr;
 
   bool loop_ = false;
   uint8_t specialMode_ = START_SPECIAL;
 
   std::vector<Network*> networks_;
+  std::list<OriginatorEntry> originatorEntries_;
 
-  Milliseconds lastLEDWriteTime_;
-  Milliseconds lastUserInputTime_;
-  bool followingLeader_;
-  Network* followedNetwork_;
-  NetworkDeviceId leaderDeviceId_;
-  Precedence leaderPrecedence_;
-  Milliseconds lastLeaderReceiveTime_;
+  Milliseconds lastLEDWriteTime_ = -1;
+  Milliseconds lastUserInputTime_ = -1;
   Precedence basePrecedence_ = 0;
-  Precedence incomingPrecedenceGain_ = 0;
-  Precedence outgoingPrecedenceGain_ = 0;
+  Precedence precedenceGain_ = 0;
+  NetworkDeviceId localDeviceId_ = NetworkDeviceId();
+  NetworkDeviceId currentLeader_ = NetworkDeviceId();
 
   // Mutable because it is used for logging
-  mutable int fps_;
-  mutable Milliseconds lastFpsProbeTime_;
-  mutable int framesSinceFpsProbe_;
+  mutable int fps_ = -1;
+  mutable Milliseconds lastFpsProbeTime_ = -1;
+  mutable int framesSinceFpsProbe_ = -1;
 };
 
 

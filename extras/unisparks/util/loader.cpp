@@ -1,7 +1,6 @@
 #include "unisparks/util/loader.hpp"
 #include "unisparks/layouts/matrix.hpp"
 #include "unisparks/layouts/pixelmap.hpp"
-#include "unisparks/layouts/transformed.hpp"
 #include "unisparks/networks/udp.hpp"
 #include <vector>
 #include <sstream>
@@ -12,7 +11,7 @@ Layout& Loader::loadLayout(const cpptoml::table& cfg) {
   static vector<Point> pixelcoords;
   static vector<unique_ptr<Layout>> layouts;
 
-  // TODO: Fix this hack
+  // We should fix this hack
   // The hack is to reserve a large number of points in order to prevent
   // re-allocating vector. We don't want realloc to happen because we're passing
   // pointers to internal vector memory to pixelmap layout.

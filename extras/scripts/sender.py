@@ -12,13 +12,15 @@ MCADDR = '239.255.223.01'
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 s.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 3)
 
-# 1 byte set to 0
+# 1 byte set to 0x10
 # 6 byte originator MAC address
 # 6 byte sender MAC address
 # 2 byte precedence
+# 1 byte number of hops
+# 2 bytes time delta since last origination
 # 4 byte current pattern
 # 4 byte next pattern
-# 2 byte elapsed time
+# 2 byte time delta since start of current pattern
 
 BLACK = 0 * 256
 RED = 1
@@ -38,16 +40,21 @@ GLOWWHITE = 14 * 256
 SYNCTEST = 15 * 256
 CALIBRATION = 16 * 256
 
-typeByte = 0
+versionByte = 0x10
 thisDeviceMacAddress = b'\xFF\xFF\x01\x02\x03\x04'
 precedence = 3000
+numHops = 0
 currentPattern = PURPLE
 nextPattern = currentPattern
 startTime = time.time()
 
 while True:
-    elapsedTime = int((time.time() - startTime) * 1000) % 10000
-    messageToSend = struct.pack('!B6s6sHIIH', typeByte, thisDeviceMacAddress, thisDeviceMacAddress, precedence, currentPattern, nextPattern, elapsedTime)
+    timeDeltaSinceOrigination = 0
+    timeDeltaSinceStartOfCurrentPattern = int((time.time() - startTime) * 1000) % 10000
+    messageToSend = struct.pack('!B6s6sHBHIIH',
+                                versionByte, thisDeviceMacAddress, thisDeviceMacAddress,
+                                precedence, numHops, timeDeltaSinceOrigination,
+                                currentPattern, nextPattern, timeDeltaSinceStartOfCurrentPattern)
     # print(messageToSend)
     s.sendto(messageToSend, (MCADDR, PORT))
     time.sleep(0.1)

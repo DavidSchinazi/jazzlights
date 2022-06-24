@@ -92,19 +92,16 @@ class Esp32BleNetwork : public Network {
                           esp_ble_gap_cb_param_t *param);
 
   NetworkDeviceId localDeviceId_;
+  std::mutex mutex_;
   // All the variables below are protected by mutex_.
   State state_ = State::kIdle;
   bool isSendingEnabled_ = false;
   bool hasDataToSend_ = false;
+  NetworkMessage messageToSend_;
   uint8_t numUrgentSends_ = 0;
-  uint8_t innerPayloadLength_ = 0;
-  uint8_t innerPayload_[kMaxInnerPayloadLength];
-  uint8_t timeByteOffset_ = kMaxInnerPayloadLength;
-  Milliseconds currentPatternStartTime_ = 0;
   std::list<NetworkMessage> receivedMessages_;
   Milliseconds timeToStopAdvertising_ = 0;
   Milliseconds timeToStopScanning_ = 0;
-  std::mutex mutex_;
 };
 
 }  // namespace unisparks

@@ -74,10 +74,11 @@ std::string displayBitsAsBinary(PatternBits p) {
 }
 
 std::string networkMessageToString(const NetworkMessage& message, Milliseconds currentTime) {
-  char str[sizeof(", t=4294967296, p=65536}")] = {};
-  snprintf(str, sizeof(str), ", t=%u, p=%u}",
+  char str[sizeof(", t=4294967296, p=65536, nh=255, ot=4294967296}")] = {};
+  snprintf(str, sizeof(str), ", t=%u, p=%u, nh=%u, ot=%u}",
            currentTime - message.currentPatternStartTime,
-           message.precedence);
+           message.precedence, message.numHops,
+           currentTime - message.lastOriginationTime);
   std::string rv = "{o=" + message.originator.toString() +
                    ", s=" + message.sender.toString() +
                    ", c=" + displayBitsAsBinary(message.currentPattern) +
@@ -102,8 +103,9 @@ void Network::reconnect(Milliseconds currentTime) {
   }
 }
 
-void UdpNetwork::triggerSendAsap(Milliseconds /*currentTime*/) {
+void UdpNetwork::triggerSendAsap(Milliseconds currentTime) {
   effectLastTxTime_ = 0;
+  runLoop(currentTime);
 }
 
 void UdpNetwork::setMessageToSend(const NetworkMessage& messageToSend,
@@ -125,6 +127,18 @@ std::list<NetworkMessage> Network::getReceivedMessages(Milliseconds currentTime)
   return receivedMessages;
 }
 
+constexpr uint8_t kVersion = 0x10;
+constexpr uint8_t kVersionOffset = 0;
+constexpr uint8_t kOriginatorOffset = kVersionOffset + 1;
+constexpr uint8_t kSenderOffset = kOriginatorOffset + 6;
+constexpr uint8_t kPrecedenceOffset = kSenderOffset + 6;
+constexpr uint8_t kNumHopsOffset = kPrecedenceOffset + 2;
+constexpr uint8_t kOriginationTimeOffset = kNumHopsOffset + 1;
+constexpr uint8_t kCurrentPatternOffset = kOriginationTimeOffset + 2;
+constexpr uint8_t kNextPatternOffset = kCurrentPatternOffset + 4;
+constexpr uint8_t kPatternTimeOffset = kNextPatternOffset + 4;
+constexpr uint8_t kPayloadLength = kPatternTimeOffset + 2;
+
 std::list<NetworkMessage> UdpNetwork::getReceivedMessagesImpl(Milliseconds currentTime) {
   std::list<NetworkMessage> receivedMessages;
   if (!maybeHandleNotConnected(currentTime)) {
@@ -136,24 +150,45 @@ std::list<NetworkMessage> UdpNetwork::getReceivedMessagesImpl(Milliseconds curre
     if (n <= 0) {
       break;
     }
-    if (n < 1 + 6 + 6 + 2 + 4 + 4 + 2) {
+    if (n < kPayloadLength) {
       info("%u %s Received packet too short, received %d bytes, expected at least %d bytes",
-           currentTime, name(), n, 1 + 6 + 6 + 2 + 4 + 4 + 2);
+           currentTime, name(), n, kPayloadLength);
       continue;
     }
-    if ((udpPayload[0] & 0xF0) != 0) {
+    if ((udpPayload[kVersionOffset] & 0xF0) != kVersion) {
       info("%u %s Received packet with unexpected prefix %02x",
-           currentTime, name(), udpPayload[0]);
+           currentTime, name(), udpPayload[kVersionOffset]);
       continue;
     }
     NetworkMessage receivedMessage;
-    receivedMessage.originator = NetworkDeviceId(&udpPayload[1]);
-    receivedMessage.sender = NetworkDeviceId(&udpPayload[1 + 6]);
-    receivedMessage.precedence = readUint16(&udpPayload[1 + 6 + 6]);
-    receivedMessage.currentPattern = readUint32(&udpPayload[1 + 6 + 6 + 2]);
-    receivedMessage.nextPattern = readUint32(&udpPayload[1 + 6 + 6 + 2 + 4]);
-    Milliseconds elapsedTime = readUint16(&udpPayload[1 + 6 + 6 + 2 + 4 + 4]);
-    receivedMessage.currentPatternStartTime = currentTime - elapsedTime;
+    receivedMessage.originator = NetworkDeviceId(&udpPayload[kOriginatorOffset]);
+    receivedMessage.sender = NetworkDeviceId(&udpPayload[kSenderOffset]);
+    receivedMessage.precedence = readUint16(&udpPayload[kPrecedenceOffset]);
+    receivedMessage.numHops = udpPayload[kNumHopsOffset];
+    Milliseconds originationTimeDelta = readUint16(&udpPayload[kOriginationTimeOffset]);
+    receivedMessage.currentPattern = readUint32(&udpPayload[kCurrentPatternOffset]);
+    receivedMessage.nextPattern = readUint32(&udpPayload[kNextPatternOffset]);
+    Milliseconds patternTimeDelta = readUint16(&udpPayload[kPatternTimeOffset]);
+
+    // TODO measure transmission offset over Wi-Fi.
+    constexpr Milliseconds kTransmissionOffset = 5;
+    Milliseconds receiptTime;
+    if (currentTime > kTransmissionOffset) {
+      receiptTime = currentTime - kTransmissionOffset;
+    } else {
+      receiptTime = 0;
+    }
+    if (receiptTime >= patternTimeDelta) {
+      receivedMessage.currentPatternStartTime = receiptTime - patternTimeDelta;
+    } else {
+      receivedMessage.currentPatternStartTime = 0;
+    }
+    if (receiptTime >= originationTimeDelta) {
+      receivedMessage.lastOriginationTime = receiptTime - originationTimeDelta;
+    } else {
+      receivedMessage.lastOriginationTime = 0;
+    }
+
     debug("%u %s received %s",
           currentTime, name(),
           networkMessageToString(receivedMessage, currentTime).c_str());
@@ -206,24 +241,34 @@ void UdpNetwork::runLoopImpl(Milliseconds currentTime) {
          messageToSend_.currentPattern != lastSentPattern_)) {
     effectLastTxTime_ = currentTime;
     lastSentPattern_ = messageToSend_.currentPattern;
-    Milliseconds elapsedTime;
+    Milliseconds originationTimeDelta;
+    if (messageToSend_.lastOriginationTime <= currentTime &&
+        currentTime - messageToSend_.lastOriginationTime <= 0xFFFF) {
+      originationTimeDelta = currentTime - messageToSend_.lastOriginationTime;
+    } else {
+      originationTimeDelta = 0xFFFF;
+    }
+    Milliseconds patternTime;
     if (messageToSend_.currentPatternStartTime <= currentTime &&
         currentTime - messageToSend_.currentPatternStartTime <= 0xFFFF) {
-      elapsedTime = currentTime - messageToSend_.currentPatternStartTime;
+      patternTime = currentTime - messageToSend_.currentPatternStartTime;
     } else {
-      elapsedTime = 0xFFFF;
+      patternTime = 0xFFFF;
     }
     debug("%u %s sending %s",
           currentTime, name(),
           networkMessageToString(messageToSend_, currentTime).c_str());
 
-    uint8_t udpPayload[1 + 6 + 6 + 2 + 4 + 4 + 2] = {};
-    messageToSend_.originator.writeTo(&udpPayload[1]);
-    messageToSend_.sender.writeTo(&udpPayload[1 + 6]);
-    writeUint16(&udpPayload[1 + 6 + 6], messageToSend_.precedence);
-    writeUint32(&udpPayload[1 + 6 + 6 + 2], messageToSend_.currentPattern);
-    writeUint32(&udpPayload[1 + 6 + 6 + 2 + 4], messageToSend_.nextPattern);
-    writeUint16(&udpPayload[1 + 6 + 6 + 2 + 4 + 4], elapsedTime);
+    uint8_t udpPayload[kPayloadLength] = {};
+    udpPayload[kVersionOffset] = kVersion;
+    messageToSend_.originator.writeTo(&udpPayload[kOriginatorOffset]);
+    messageToSend_.sender.writeTo(&udpPayload[kSenderOffset]);
+    writeUint16(&udpPayload[kPrecedenceOffset], messageToSend_.precedence);
+    udpPayload[kNumHopsOffset] = messageToSend_.numHops;
+    writeUint16(&udpPayload[kOriginationTimeOffset], originationTimeDelta);
+    writeUint32(&udpPayload[kCurrentPatternOffset], messageToSend_.currentPattern);
+    writeUint32(&udpPayload[kNextPatternOffset], messageToSend_.nextPattern);
+    writeUint16(&udpPayload[kPatternTimeOffset], patternTime);
     send(&udpPayload[0], sizeof(udpPayload));
   }
 }

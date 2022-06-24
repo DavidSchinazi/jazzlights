@@ -31,10 +31,9 @@ extern "C" void run(bool verbose, const char* ver, const char* cfgfile) {
   info("My %s", sysinfo());
   load(cfgfile, player);
   player.setBasePrecedence(20000);
-  player.setIncomingPrecedenceGain(20000);
-  player.setOutgoingPrecedenceGain(10000);
+  player.setPrecedenceGain(10000);
   player.connect(&network);
-  player.begin();
+  player.begin(timeMillis());
   for (;;) {
     player.render(network.status(), timeMillis());
   }

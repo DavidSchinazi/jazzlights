@@ -6,7 +6,11 @@
 namespace unisparks {
 
 const char* level_str[] = {"FATAL", "ERROR", "WARNING", "INFO", "DEBUG"};
+#if 0
+LogLevel logLevel = LogLevel::DEBUG;
+#else
 LogLevel logLevel = LogLevel::INFO;
+#endif
 
 void defaultHandler(const LogMessage& msg);
 LogHandler logHandler = defaultHandler;

@@ -4,6 +4,7 @@
 #include <limits>
 #include <stdlib.h>
 #include <assert.h>
+#include <sstream>
 #include "unisparks/effects/chess.hpp"
 #include "unisparks/effects/flame.hpp"
 #include "unisparks/effects/glitter.hpp"
@@ -11,10 +12,8 @@
 #include "unisparks/effects/plasma.hpp"
 #include "unisparks/effects/rainbow.hpp"
 #include "unisparks/effects/rider.hpp"
-#include "unisparks/effects/sequence.hpp"
 #include "unisparks/effects/slantbars.hpp"
 #include "unisparks/effects/solid.hpp"
-#include "unisparks/effects/transform.hpp"
 #include "unisparks/effects/threesine.hpp"
 #include "unisparks/registry.hpp"
 #include "unisparks/renderers/simple.hpp"
@@ -25,6 +24,12 @@
 #include "unisparks/util/stream.hpp"
 #include "unisparks/util/time.hpp"
 #include "unisparks/version.hpp"
+
+#if defined(linux) || defined(__linux) || defined(__linux__)
+#  include <sys/random.h>
+#elif defined(ESP32)
+#  include "esp_system.h"
+#endif
 
 namespace unisparks {
 
@@ -278,10 +283,6 @@ Effect* patternFromBits(PatternBits pattern) {
         displayBitsAsBinary(pattern).c_str());
 }
 
-Effect* Player::currentEffect() const {
-  return patternFromBits(currentPattern_);
-}
-
 void render(const Layout& layout, Renderer* renderer,
             const Effect& effect, Frame effectFrame) {
   auto pixels = points(layout);
@@ -299,50 +300,16 @@ void render(const Layout& layout, Renderer* renderer,
 }
 
 Player::Player() {
-  reset();
-}
-
-Player::~Player() {
-  end();
-}
-
-void Player::end() {
-  free(effectContext_);
-  effectContext_ = nullptr;
-  effectContextSize_ = 0;
-}
-
-void Player::reset() {
-  end();
-
-  ready_ = false;
-  loop_ = false;
-  strandCount_ = 0;
-  currentPatternStartTime_ = 0;
-  currentPattern_ = 0x12345678;
-  nextPattern_ = computeNextPattern(currentPattern_);
-  tempo_ = 120;
-  metre_ = SIMPLE_QUADRUPLE;
-
-  networks_.clear();
-  powerLimited = false;
-
-  lastLEDWriteTime_ = -1;
-  lastUserInputTime_ = -1;
-  followingLeader_ = false;
-  followedNetwork_ = nullptr;
-  leaderDeviceId_ = NetworkDeviceId();
-  leaderPrecedence_ = 0;
-  lastLeaderReceiveTime_ = -1;
-
-  fps_ = -1;
-  lastFpsProbeTime_ = -1;
-  framesSinceFpsProbe_ = -1;
-
   viewport_.origin.x = 0;
   viewport_.origin.y = 0;
   viewport_.size.height = 1;
   viewport_.size.width = 1;
+}
+
+Player::~Player() {
+  free(effectContext_);
+  effectContext_ = nullptr;
+  effectContextSize_ = 0;
 }
 
 Player& Player::clearStrands() {
@@ -355,7 +322,6 @@ Player& Player::addStrand(const Layout& l, SimpleRenderFunc r) {
 }
 
 Player& Player::addStrand(const Layout& l, Renderer& r) {
-  end();
   constexpr size_t MAX_STRANDS = sizeof(strands_) / sizeof(*strands_);
   if (strandCount_ >= MAX_STRANDS) {
     fatal("Trying to add too many strands, max=%d", MAX_STRANDS);
@@ -365,14 +331,13 @@ Player& Player::addStrand(const Layout& l, Renderer& r) {
 }
 
 Player& Player::connect(Network* n) {
-  end();
   info("Connecting network %s", n->name());
   networks_.push_back(n);
   ready_ = false;
   return *this;
 }
 
-void Player::begin() {
+void Player::begin(Milliseconds currentTime) {
   for (Strand* s = strands_;
        s < strands_ + strandCount_; ++s) {
     viewport_ = merge(viewport_, unisparks::bounds(*s->layout));
@@ -383,17 +348,53 @@ void Player::begin() {
        s < strands_ + strandCount_; ++s) {
     pxcnt += s->layout->pixelCount();
   }
-  info("Starting Unisparks player %s (v%s); strands: %d%s, pixels: %d, %s w %f h %f",
+
+  // Figure out localDeviceId_.
+  for (Network* network : networks_) {
+    NetworkDeviceId localDeviceId = network->getLocalDeviceId();
+    if (localDeviceId != NetworkDeviceId()) {
+      localDeviceId_ = localDeviceId;
+      break;
+    }
+  }
+  while (localDeviceId_ == NetworkDeviceId()) {
+    // If no interfaces have a localDeviceId, generate one randomly.
+    uint8_t deviceIdBytes[6] = {};
+#if defined(__APPLE___)
+    arc4random_buf(deviceIdBytes, sizeof(deviceIdBytes));
+#elif defined(linux) || defined(__linux) || defined(__linux__)
+    (void)getrandom(&deviceIdBytes[0], sizeof(deviceIdBytes), /*flags=*/0);
+#else
+#  if defined(ESP32)
+    const uint32_t randomOne = esp_random();
+    const uint32_t randomTwo = esp_random();
+#  else
+    const uint32_t randomOne = rand();
+    const uint32_t randomTwo = rand();
+#  endif
+    memcpy(&deviceIdBytes[0], &randomOne, 3);
+    memcpy(&deviceIdBytes[3], &randomTwo, 3);
+#endif
+    localDeviceId_ = NetworkDeviceId(deviceIdBytes);
+  }
+  currentLeader_ = localDeviceId_;
+  info("%u Starting Unisparks player %s (v%s); strands: %d%s, "
+       "pixels: %d, %s " DEVICE_ID_FMT " w %f h %f",
+       currentTime,
        BOOT_MESSAGE,
        UNISPARKS_VERSION,
        strandCount_,
        strandCount_ < 1 ? " (CONTROLLER ONLY!)" : "",
        pxcnt,
        !networks_.empty() ? "networked" : "standalone",
+       DEVICE_ID_HEX(localDeviceId_),
        viewport_.size.width * viewport_.size.height);
 
   ready_ = true;
-  nextInner(timeMillis());
+
+  currentPatternStartTime_ = currentTime;
+  currentPattern_ = 0x12345678;
+  nextPattern_ = computeNextPattern(currentPattern_);
 }
 
 void Player::handleSpecial() {
@@ -416,33 +417,39 @@ static constexpr Milliseconds kEffectDuration = 10 * ONE_SECOND;
 
 void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
   if (!ready_) {
-    begin();
+    begin(currentTime);
   }
 
-  syncToNetwork(currentTime);
-
-  if (currentTime - lastFpsProbeTime_ > ONE_SECOND) {
-    fps_ = framesSinceFpsProbe_;
-    lastFpsProbeTime_ = currentTime;
-    framesSinceFpsProbe_ = 0;
-  }
-  framesSinceFpsProbe_++;
-
-  if (currentTime - currentPatternStartTime_ > kEffectDuration && !loop_) {
-    info("%u Exceeded effect duration, switching to next effect",
-         currentTime);
-    nextInner(currentTime);
+  // First listen on all networks.
+  for (Network* network : networks_) {
+    for (NetworkMessage receivedMessage :
+        network->getReceivedMessages(currentTime)) {
+      handleReceivedMessage(receivedMessage, currentTime);
+    }
   }
 
-  static constexpr Milliseconds minLEDWriteTime = 10;
-  if (lastLEDWriteTime_ >= 0 &&
-      currentTime - minLEDWriteTime < lastLEDWriteTime_) {
-    return;
+  // Then react to any received packets.
+  checkLeaderAndPattern(currentTime);
+
+  // Then give all networks the opportunity to send.
+  for (Network* network : networks_) {
+    network->runLoop(currentTime);
   }
-  lastLEDWriteTime_ = currentTime;
 
-  const Effect* effect = currentEffect();
+  const Effect* effect;
+  Frame frame;
+  frame.animation.viewport = viewport_;
+  frame.tempo = 120;
+  frame.metre = SIMPLE_QUADRUPLE;
+  if (currentTime - currentPatternStartTime_ > kEffectDuration) {
+    effect = patternFromBits(nextPattern_);
+    frame.time = currentTime - currentPatternStartTime_ - kEffectDuration;
+  } else {
+    effect = patternFromBits(currentPattern_);
+    frame.time = currentTime - currentPatternStartTime_;
+  }
 
+  // TODO have special effects modify currentPattern so they sync to neighbors.
   switch (specialMode_) {
     case 1:
 #if WEARABLE
@@ -466,32 +473,60 @@ void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
       break;
   }
 
-  Frame efr = effectFrame(effect, currentTime);
-  effect->rewind(efr);
+  // Ensure effectContext_ is big enough for this effect.
+  const size_t effectContextSize = effect->contextSize({viewport_, nullptr});
+  if (effectContextSize > effectContextSize_) {
+    info("%u realloc context size from %zu to %zu (%s w %f h %f)",
+         currentTime, effectContextSize_, effectContextSize,
+         effect->name().c_str(), viewport_.size.width * viewport_.size.height);
+    effectContextSize_ = effectContextSize;
+    effectContext_ = realloc(effectContext_, effectContextSize_);
+  }
+  frame.animation.context = effectContext_;
 
+  if (effect != lastBegunEffect_) {
+    lastBegunEffect_ = effect;
+    effect->begin(frame);
+    lastLEDWriteTime_ =1;
+  }
+
+  // Keep track of how many FPS we might be able to get.
+  if (currentTime - lastFpsProbeTime_ > ONE_SECOND) {
+    fps_ = framesSinceFpsProbe_;
+    lastFpsProbeTime_ = currentTime;
+    framesSinceFpsProbe_ = 0;
+  }
+  framesSinceFpsProbe_++;
+
+  // Do not send data to LEDs faster than 100Hz.
+  static constexpr Milliseconds minLEDWriteTime = 10;
+  if (lastLEDWriteTime_ >= 0 &&
+      currentTime - minLEDWriteTime < lastLEDWriteTime_) {
+    return;
+  }
+  lastLEDWriteTime_ = currentTime;
+
+  // Actually render the pixels.
+  effect->rewind(frame);
   for (Strand* s = strands_;
        s < strands_ + strandCount_; ++s) {
-    unisparks::render(*s->layout, s->renderer, *effect, efr);
+    unisparks::render(*s->layout, s->renderer, *effect, frame);
   }
-}
-
-void Player::nextInner(Milliseconds currentTime) {
-  updateToNewPattern(nextPattern_, computeNextPattern(nextPattern_),
-                     /*newCurrentPatternStartTime=*/currentTime, currentTime);
-}
-
-void Player::abandonLeader(Milliseconds /*currentTime*/) {
-  followingLeader_ = false;
-  followedNetwork_ = nullptr;
 }
 
 void Player::next(Milliseconds currentTime) {
+  info("%u next command received: switching from %s to %s, currentLeader=" DEVICE_ID_FMT,
+        currentTime, patternFromBits(currentPattern_)->name().c_str(), patternFromBits(nextPattern_)->name().c_str(),
+        DEVICE_ID_HEX(currentLeader_));
   lastUserInputTime_ = currentTime;
-  if (followingLeader_) {
-    info("%u abandoning leader due to pressing next", currentTime);
-  }
-  abandonLeader(currentTime);
-  nextInner(currentTime);
+  currentPatternStartTime_ = currentTime;
+  currentPattern_ = nextPattern_;
+  nextPattern_ = computeNextPattern(nextPattern_);
+  checkLeaderAndPattern(currentTime);
+  info("%u next command processed: now current %s next %s, currentLeader=" DEVICE_ID_FMT,
+        currentTime, patternFromBits(currentPattern_)->name().c_str(), patternFromBits(nextPattern_)->name().c_str(),
+        DEVICE_ID_HEX(currentLeader_));
+
   for (Network* network : networks_) {
     network->triggerSendAsap(currentTime);
   }
@@ -523,200 +558,381 @@ Precedence addPrecedenceGain(Precedence startPrecedence,
   return startPrecedence + gain;
 }
 
-Precedence depreciatePrecedence(Precedence startPrecedence,
-                                Precedence depreciation) {
-  if (startPrecedence <= depreciation) {
-    return 0;
-  }
-  return startPrecedence - depreciation;
-}
-
 static constexpr Milliseconds kInputDuration = 10 * 60 * 1000;  // 10min.
 
-Precedence Player::getOutgoingLocalPrecedence(Milliseconds currentTime) {
+Precedence Player::getLocalPrecedence(Milliseconds currentTime) {
   return addPrecedenceGain(basePrecedence_,
                            getPrecedenceGain(lastUserInputTime_, currentTime,
-                                             kInputDuration/2, outgoingPrecedenceGain_));
+                                             kInputDuration, precedenceGain_));
 }
 
-Precedence Player::getOutgoingLeaderPrecedence(Milliseconds /*currentTime*/) {
- return depreciatePrecedence(leaderPrecedence_, 100);
-}
-
-Precedence Player::getOutgoingPrecedence(Milliseconds currentTime) {
-  if (followingLeader_) {
-    return getOutgoingLeaderPrecedence(currentTime);
-  } else {
-    return getOutgoingLocalPrecedence(currentTime);
-  }
-}
-
-Precedence Player::getIncomingLocalPrecedence(Milliseconds currentTime) {
-  return addPrecedenceGain(basePrecedence_,
-                            getPrecedenceGain(lastUserInputTime_, currentTime,
-                                              kInputDuration, incomingPrecedenceGain_));
-}
-
-Precedence Player::getIncomingLeaderPrecedence(Milliseconds /*currentTime*/) {
-  return leaderPrecedence_;
-}
-
-Precedence Player::getIncomingPrecedence(Milliseconds currentTime) {
-  if (followingLeader_) {
-    return getIncomingLeaderPrecedence(currentTime);
-  } else {
-    return getIncomingLocalPrecedence(currentTime);
-  }
-}
-
-NetworkDeviceId Player::getLocalDeviceId(Milliseconds /*currentTime*/) {
-  for (Network* network : networks_) {
-    NetworkDeviceId localDeviceId = network->getLocalDeviceId();
-    if (localDeviceId != NetworkDeviceId()) {
-      return localDeviceId;
+Player::OriginatorEntry* Player::getOriginatorEntry(NetworkDeviceId originator,
+                                                    Milliseconds /*currentTime*/) {
+  OriginatorEntry* entry = nullptr;
+  for (OriginatorEntry& e : originatorEntries_) {
+    if (e.originator == originator) {
+      return &e;
     }
   }
-  return NetworkDeviceId();
+  return entry;
 }
 
-NetworkDeviceId Player::getLeaderDeviceId(Milliseconds /*currentTime*/) {
-  return leaderDeviceId_;
-}
+static constexpr Milliseconds kOriginationTimeOverride = 6000;
+static constexpr Milliseconds kOriginationTimeDiscard = 9000;
 
-NetworkDeviceId Player::getFollowedDeviceId(Milliseconds currentTime) {
-  if (followingLeader_) {
-    return getLeaderDeviceId(currentTime);
+static_assert(kOriginationTimeOverride < kOriginationTimeDiscard,
+  "Inverting these can lead to retracting an originator "
+  "while disallowing picking a replacement.");
+static_assert(kOriginationTimeDiscard < kEffectDuration,
+  "Inverting these can lead to keeping an originator "
+  "past the end of its intended next pattern.");
+
+void Player::checkLeaderAndPattern(Milliseconds currentTime) {
+  // Remove elements that have aged out.
+  originatorEntries_.remove_if([currentTime](const OriginatorEntry& e){
+    if (currentTime > e.lastOriginationTime + kOriginationTimeDiscard) {
+       info("%u Removing " DEVICE_ID_FMT "p%u entry due to origination time",
+             currentTime, DEVICE_ID_HEX(e.originator), e.precedence);
+      return true;
+    }
+    if (currentTime > e.currentPatternStartTime + 2 * kEffectDuration) {
+       info("%u Removing " DEVICE_ID_FMT "p%u entry due to effect duration",
+             currentTime, DEVICE_ID_HEX(e.originator), e.precedence);
+      return true;
+    }
+    return false;
+  });
+  Precedence precedence = getLocalPrecedence(currentTime);
+  NetworkDeviceId originator = localDeviceId_;
+  const OriginatorEntry* entry = nullptr;
+  const bool hadRecentUserInput =
+    (lastUserInputTime_ >= 0 &&
+      lastUserInputTime_ <= currentTime &&
+      currentTime - lastUserInputTime_ < kInputDuration);
+  // Keep ourselves as leader if there was recent user button input or if we are looping.
+  if (!hadRecentUserInput && !loop_) {
+    for (const OriginatorEntry& e : originatorEntries_) {
+      if (e.retracted) {
+        debug("%u ignoring " DEVICE_ID_FMT " due to retracted",
+              currentTime, DEVICE_ID_HEX(e.originator));
+        continue;
+      }
+      if (currentTime > e.lastOriginationTime + kOriginationTimeDiscard) {
+        debug("%u ignoring " DEVICE_ID_FMT " due to origination time",
+              currentTime, DEVICE_ID_HEX(e.originator));
+        continue;
+      }
+      if (currentTime > e.currentPatternStartTime + 2 * kEffectDuration) {
+        debug("%u ignoring " DEVICE_ID_FMT " due to effect duration",
+              currentTime, DEVICE_ID_HEX(e.originator));
+        continue;
+      }
+      if (comparePrecedence(e.precedence, e.originator,
+                            precedence, originator) <= 0) {
+        debug("%u ignoring " DEVICE_ID_FMT "p%u due to better " DEVICE_ID_FMT "p%u",
+              currentTime, DEVICE_ID_HEX(e.originator), e.precedence,
+              DEVICE_ID_HEX(originator), precedence);
+        continue;
+      }
+      precedence = e.precedence;
+      originator = e.originator;
+      entry = &e;
+    }
+  }
+
+  if (currentLeader_ != originator) {
+    info("%u Switching leader from " DEVICE_ID_FMT " to " DEVICE_ID_FMT,
+         currentTime, DEVICE_ID_HEX(currentLeader_),
+         DEVICE_ID_HEX(originator));
+    currentLeader_ = originator;
+  }
+
+  NumHops numHops;
+  Milliseconds lastOriginationTime;
+  Network* nextHopNetwork = nullptr;
+  if (entry != nullptr) {
+    // Update our state based on entry from leader.
+    nextPattern_ = entry->nextPattern;
+    currentPatternStartTime_ = entry->currentPatternStartTime;
+    nextHopNetwork = entry->nextHopNetwork;
+    numHops = entry->numHops;
+    lastOriginationTime = entry->lastOriginationTime;
+    if (currentPattern_ != entry->currentPattern) {
+      currentPattern_ = entry->currentPattern;
+      info("%u Following " DEVICE_ID_FMT "p%u nh=%u %s new currentPattern %s",
+          currentTime, DEVICE_ID_HEX(originator), precedence, numHops, nextHopNetwork->name(),
+          patternFromBits(currentPattern_)->name().c_str());
+      lastLEDWriteTime_ = -1;
+    }
   } else {
-    return getLocalDeviceId(currentTime);
+    // We are currently leading.
+    numHops = 0;
+    lastOriginationTime = currentTime;
+    while (currentTime - currentPatternStartTime_ > kEffectDuration) {
+      currentPatternStartTime_ += kEffectDuration;
+      if (loop_) {
+        nextPattern_ = currentPattern_;
+      } else {
+        currentPattern_ = nextPattern_;
+        nextPattern_ = computeNextPattern(nextPattern_);
+      }
+      info("%u We (" DEVICE_ID_FMT "p%u) are leading, new currentPattern %s",
+          currentTime, DEVICE_ID_HEX(localDeviceId_), precedence,
+          patternFromBits(currentPattern_)->name().c_str());
+      lastLEDWriteTime_ = -1;
+    }
   }
-}
 
-void Player::updateToNewPattern(PatternBits newCurrentPattern,
-                                PatternBits newNextPattern,
-                                Milliseconds newCurrentPatternStartTime,
-                                Milliseconds currentTime) {
-  currentPatternStartTime_ = newCurrentPatternStartTime;
-  nextPattern_ = newNextPattern;
-  if (newCurrentPattern != currentPattern_) {
-    currentPattern_ = newCurrentPattern;
-    Effect* effect = currentEffect();
-    info("%u Switching to pattern %s %s",
-        currentTime,
-        effect->name().c_str(),
-        displayBitsAsBinary(currentPattern_).c_str());
-    effect->begin(effectFrame(effect, currentTime));
-    lastLEDWriteTime_ = -1;
-  }
   if (networks_.empty()) {
-    info("%u not setting messageToSend without networks", currentTime);
+    debug("%u not setting messageToSend without networks", currentTime);
     return;
   }
   NetworkMessage messageToSend;
-  messageToSend.originator = getFollowedDeviceId(currentTime);
-  messageToSend.sender = getLocalDeviceId(currentTime);
-  if (messageToSend.sender == NetworkDeviceId()) {
-    info("%u not setting messageToSend without localDeviceId", currentTime);
-    return;
-  }
+  messageToSend.originator = originator;
+  messageToSend.sender = localDeviceId_;
   messageToSend.currentPattern = currentPattern_;
   messageToSend.nextPattern = nextPattern_;
   messageToSend.currentPatternStartTime = currentPatternStartTime_;
-  messageToSend.precedence = getOutgoingPrecedence(currentTime);
+  messageToSend.precedence = precedence;
+  messageToSend.lastOriginationTime = lastOriginationTime;
+  messageToSend.numHops = numHops;
   for (Network* network : networks_) {
-    if (!network->shouldEcho() && followedNetwork_ == network) {
-      debug("%u Not echoing for %s as %s to %s ",
-            currentTime, network->name(), (followingLeader_ ? "remote" : "local"),
+    if (!network->shouldEcho() && nextHopNetwork == network) {
+      debug("%u Not echoing for %s to %s ",
+            currentTime, network->name(),
             networkMessageToString(messageToSend, currentTime).c_str());
       network->disableSending(currentTime);
       continue;
     }
-    debug("%u Setting messageToSend for %s as %s to %s ",
-          currentTime, network->name(), (followingLeader_ ? "remote" : "local"),
+    debug("%u Setting messageToSend for %s to %s ",
+          currentTime, network->name(),
           networkMessageToString(messageToSend, currentTime).c_str());
     network->setMessageToSend(messageToSend, currentTime);
   }
 }
 
 void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentTime) {
-  if (lastUserInputTime_ >= 0 && lastUserInputTime_ < currentTime && currentTime - lastUserInputTime_ < kInputDuration) {
-    info("%u Ignoring received message because of recent user input %s",
-          currentTime, networkMessageToString(message, currentTime).c_str());
-    return;
-  }
-  if (message.sender == getLocalDeviceId(currentTime)) {
+  debug("%u handleReceivedMessage %s",
+        currentTime,
+        networkMessageToString(message, currentTime).c_str());
+  if (message.sender == localDeviceId_) {
     debug("%u Ignoring received message that we sent %s",
           currentTime, networkMessageToString(message, currentTime).c_str());
     return;
   }
-  if (message.originator == getLocalDeviceId(currentTime)) {
+  if (message.originator == localDeviceId_) {
     debug("%u Ignoring received message that we originated %s",
           currentTime, networkMessageToString(message, currentTime).c_str());
     return;
   }
-  Precedence incomingPrecedence = getIncomingPrecedence(currentTime);
-  NetworkDeviceId followedDeviceId = getFollowedDeviceId(currentTime);
-  if (currentTime - message.currentPatternStartTime > kEffectDuration && !loop_) {
-    // Ignore this message because the sender already switched effects.
-    info("%u Ignoring received message %s past duration %u",
-         currentTime, networkMessageToString(message, currentTime).c_str(), kEffectDuration);
+  if (message.numHops == std::numeric_limits<NumHops>::max()) {
+    // This avoids overflow when incrementing below.
+    info("%u Ignoring received message with high numHops %s",
+         currentTime, networkMessageToString(message, currentTime).c_str());
     return;
   }
-  if (comparePrecedence(incomingPrecedence, followedDeviceId,
-                        message.precedence, message.originator) >= 0 &&
-      followedDeviceId != message.originator) {
-    info("%u Ignoring received message %s because our %s " DEVICE_ID_FMT " precedence %u is higher",
-          currentTime, networkMessageToString(message, currentTime).c_str(),
-          (followingLeader_ ? "remote" : "local"),
-          DEVICE_ID_HEX(followedDeviceId), incomingPrecedence);
+  if (currentTime > message.lastOriginationTime + kOriginationTimeDiscard) {
+    info("%u Ignoring received message due to origination time %s",
+          currentTime, networkMessageToString(message, currentTime).c_str());
     return;
   }
-  if (!followingLeader_) {
-    info("%u Switching from local " DEVICE_ID_FMT " precedence %u to new leader %s",
-         currentTime, DEVICE_ID_HEX(followedDeviceId), incomingPrecedence,
-         networkMessageToString(message, currentTime).c_str());
-  } else if (leaderDeviceId_ != message.originator) {
-    info("%u Switching from prior leader " DEVICE_ID_FMT " precedence %u to new leader %s",
-         currentTime, DEVICE_ID_HEX(leaderDeviceId_), incomingPrecedence,
-         networkMessageToString(message, currentTime).c_str());
+  if (currentTime > message.currentPatternStartTime + 2 * kEffectDuration) {
+      info("%u Ignoring received message due to effect duration %s",
+            currentTime, networkMessageToString(message, currentTime).c_str());
+    return;
+  }
+  OriginatorEntry* entry = getOriginatorEntry(message.originator, currentTime);
+  if (entry == nullptr) {
+    originatorEntries_.push_back(OriginatorEntry());
+    entry = &originatorEntries_.back();
+    entry->originator = message.originator;
+    entry->precedence = message.precedence;
+    entry->currentPattern = message.currentPattern;
+    entry->nextPattern = message.nextPattern;
+    entry->currentPatternStartTime = message.currentPatternStartTime;
+    entry->lastOriginationTime = message.lastOriginationTime;
+    entry->nextHopDevice = message.sender;
+    entry->nextHopNetwork = message.receiptNetwork;
+    entry->numHops = message.numHops + 1;
+    entry->retracted = false;
+    entry->patternStartTimeMovementCounter = 0;
+    info("%u Adding " DEVICE_ID_FMT "p%u entry via " DEVICE_ID_FMT ".%s nh %u ot %u current %s next %s elapsed %u",
+         currentTime, DEVICE_ID_HEX(entry->originator), entry->precedence,
+         DEVICE_ID_HEX(entry->nextHopDevice), entry->nextHopNetwork->name(),
+         entry->numHops, currentTime - entry->lastOriginationTime,
+         patternFromBits(entry->currentPattern)->name().c_str(),
+         patternFromBits(entry->nextPattern)->name().c_str(),
+         currentTime - entry->currentPatternStartTime);
   } else {
-    info("%u Keeping leader precedence %u via %s",
-         currentTime, incomingPrecedence,
-         networkMessageToString(message, currentTime).c_str());
-  }
-  followingLeader_ = true;
-  followedNetwork_ = message.receiptNetwork;
-  leaderDeviceId_ = message.originator;
-  leaderPrecedence_ = message.precedence;
-  lastLeaderReceiveTime_ = currentTime;
-  lastLEDWriteTime_ = -1;
-  updateToNewPattern(message.currentPattern, message.nextPattern,
-                     message.currentPatternStartTime, currentTime);
-}
+    // The concept behind this is that we build a tree rooted at each originator
+    // using a variant of the Bellman-Ford algorithm. We then only ever listen
+    // to our next hop on the way to the originator to avoid oscillating between
+    // neighbors. To avoid loops in this tree, we ignore any update that has same
+    // or more hops than our currently saved one. To allow us to recover from
+    // situations where the originator has moved further away in the network, we
+    // accept those updates if they're more recent by kOriginationTimeOverride
+    // than what we've seen so far. This is based on the theoretical points made
+    // in Section 2 of RFC 8966 - we can say that while much simpler and less
+    // powerful, this is inspired by the Babel Routing Protocol.
+    if (entry->nextHopDevice != message.sender ||
+        entry->nextHopNetwork != message.receiptNetwork) {
+      bool changeNextHop = false;
+      if (message.numHops + 1 < entry->numHops) {
+        info("%u Switching " DEVICE_ID_FMT "p%u entry via " DEVICE_ID_FMT ".%s "
+             "nh %u ot %u to better nextHop " DEVICE_ID_FMT ".%s due nh %u ot %u due to nextHops",
+             currentTime, DEVICE_ID_HEX(entry->originator), entry->precedence,
+             DEVICE_ID_HEX(entry->nextHopDevice), entry->nextHopNetwork->name(),
+             entry->numHops, currentTime - entry->lastOriginationTime,
+             DEVICE_ID_HEX(message.sender), message.receiptNetwork->name(),
+             message.numHops, currentTime - message.lastOriginationTime);
+        changeNextHop = true;
+      } else if (message.lastOriginationTime > entry->lastOriginationTime + kOriginationTimeOverride) {
+        info("%u Switching " DEVICE_ID_FMT "p%u entry via " DEVICE_ID_FMT ".%s "
+             "nh %u ot %u to better nextHop " DEVICE_ID_FMT ".%s due nh %u ot %u due to originationTime",
+             currentTime, DEVICE_ID_HEX(entry->originator), entry->precedence,
+             DEVICE_ID_HEX(entry->nextHopDevice), entry->nextHopNetwork->name(),
+             entry->numHops, currentTime - entry->lastOriginationTime,
+             DEVICE_ID_HEX(message.sender), message.receiptNetwork->name(),
+             message.numHops, currentTime - message.lastOriginationTime);
+        changeNextHop = true;
+      }
+      if (changeNextHop) {
+        entry->nextHopDevice = message.sender;
+        entry->nextHopNetwork = message.receiptNetwork;
+        entry->numHops = message.numHops + 1;
+      }
+    }
 
-void Player::syncToNetwork(Milliseconds currentTime) {
-  // First listen on all networks.
-  for (Network* network : networks_) {
-    for (NetworkMessage receivedMessage :
-        network->getReceivedMessages(currentTime)) {
-      handleReceivedMessage(receivedMessage, currentTime);
+    if (entry->nextHopDevice == message.sender &&
+        entry->nextHopNetwork == message.receiptNetwork) {
+      bool shouldUpdateStartTime = false;
+      std::ostringstream changes;
+      if (entry->precedence != message.precedence) {
+        changes << ", precedence " << entry->precedence << " to " << message.precedence;
+      }
+      if (entry->currentPattern != message.currentPattern) {
+        shouldUpdateStartTime = true;
+        changes << ", currentPattern " << patternFromBits(entry->currentPattern)->name()
+                << " to " << patternFromBits(message.currentPattern)->name();
+      }
+      if (entry->nextPattern != message.nextPattern) {
+        shouldUpdateStartTime = true;
+        changes << ", nextPattern " << patternFromBits(entry->nextPattern)->name()
+                << " to " << patternFromBits(message.nextPattern)->name();
+      }
+      // Debounce incoming updates to currentPatternStartTime to avoid visual jitter in the presence
+      // of network jitter.
+      static constexpr Milliseconds kPatternStartTimeDeltaMin = 100;
+      static constexpr Milliseconds kPatternStartTimeDeltaMax = 500;
+      static constexpr int8_t kPatternStartTimeMovementThreshold = 5;
+      if (entry->currentPatternStartTime > message.currentPatternStartTime) {
+        const Milliseconds timeDelta = entry->currentPatternStartTime - message.currentPatternStartTime;
+        if (shouldUpdateStartTime || timeDelta >= kPatternStartTimeDeltaMax) {
+          changes << ", elapsedTime -= " << timeDelta;
+          shouldUpdateStartTime = true;
+        } else if (timeDelta < kPatternStartTimeDeltaMin) {
+          if (is_debug_logging_enabled()) {
+            changes << ", elapsedTime !-= " << timeDelta;
+          }
+          entry->patternStartTimeMovementCounter = 0;
+        } else {
+          if (entry->patternStartTimeMovementCounter <= 1) {
+            entry->patternStartTimeMovementCounter--;
+            if (entry->patternStartTimeMovementCounter <= -kPatternStartTimeMovementThreshold) {
+              changes << ", elapsedTime -= " << timeDelta;
+              shouldUpdateStartTime = true;
+            } else {
+              if (is_debug_logging_enabled()) {
+                changes << ", elapsedTime ~-= " << timeDelta
+                        << " (movement " << static_cast<int>(-entry->patternStartTimeMovementCounter) << ")";
+              }
+            }
+          } else {
+            entry->patternStartTimeMovementCounter = 0;
+            if (is_debug_logging_enabled()) {
+              changes << ", elapsedTime ~-= " << timeDelta << " (flip)";
+            }
+          }
+        }
+      } else if (entry->currentPatternStartTime < message.currentPatternStartTime) {
+        const Milliseconds timeDelta = message.currentPatternStartTime - entry->currentPatternStartTime;
+        if (shouldUpdateStartTime || timeDelta >= kPatternStartTimeDeltaMax) {
+          changes << ", elapsedTime += " << timeDelta;
+          shouldUpdateStartTime = true;
+        } else if (timeDelta < kPatternStartTimeDeltaMin) {
+          if (is_debug_logging_enabled()) {
+            changes << ", elapsedTime !+= " << timeDelta;
+          }
+          entry->patternStartTimeMovementCounter = 0;
+        } else {
+          if (entry->patternStartTimeMovementCounter >= -1) {
+            entry->patternStartTimeMovementCounter++;
+            if (entry->patternStartTimeMovementCounter >= kPatternStartTimeMovementThreshold) {
+              changes << ", elapsedTime += " << timeDelta;
+              shouldUpdateStartTime = true;
+            } else {
+              if (is_debug_logging_enabled()) {
+                changes << ", elapsedTime ~+= " << timeDelta
+                        << " (movement " << static_cast<int>(entry->patternStartTimeMovementCounter) << ")";
+              }
+            }
+          } else {
+            entry->patternStartTimeMovementCounter = 0;
+            if (is_debug_logging_enabled()) {
+              changes << ", elapsedTime ~+= " << timeDelta << " (flip)";
+            }
+          }
+        }
+      }
+      if (entry->lastOriginationTime > message.lastOriginationTime) {
+        changes << ", originationTime -= " << entry->lastOriginationTime - message.lastOriginationTime;
+      } // Do not log increases to origination time since all originated messages cause it.
+      if (entry->retracted) {
+        changes << ", unretracted";
+      }
+      entry->precedence = message.precedence;
+      entry->currentPattern = message.currentPattern;
+      entry->nextPattern = message.nextPattern;
+      entry->lastOriginationTime = message.lastOriginationTime;
+      entry->retracted = false;
+      if (shouldUpdateStartTime) {
+        entry->currentPatternStartTime = message.currentPatternStartTime;
+        entry->patternStartTimeMovementCounter = 0;
+      }
+      std::string changesStr = changes.str();
+      if (!changesStr.empty()) {
+        info("%u Accepting %s update from " DEVICE_ID_FMT "p%u via " DEVICE_ID_FMT ".%s%s",
+            currentTime, (entry->originator == currentLeader_ ? "followed" : "ignored"),
+            DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(entry->nextHopDevice),
+            entry->nextHopNetwork->name(), changesStr.c_str());
+      }
+    } else {
+      debug("%u Rejecting %s update from " DEVICE_ID_FMT "p%u via "
+            DEVICE_ID_FMT ".%s because we are following " DEVICE_ID_FMT ".%s",
+            currentTime, (entry->originator == currentLeader_ ? "followed" : "ignored"),
+            DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(message.sender),
+            message.receiptNetwork->name(), DEVICE_ID_HEX(entry->nextHopDevice),
+            entry->nextHopNetwork->name());
     }
   }
-  if (followingLeader_) {
-    if (currentTime > kInputDuration && currentTime - kInputDuration > lastLeaderReceiveTime_) {
-      info("%u abandoning leader due to inactivity",
-          currentTime);
-      abandonLeader(currentTime);
-    } else if (getIncomingPrecedence(currentTime) == 0) {
-      // TODO abandon leader once its precedence is lower than ours.
-      info("%u abandoning leader due to low precedence",
-          currentTime);
-      abandonLeader(currentTime);
+  // If this sender is following another originator from what we previously heard,
+  // retract any previous entries from them.
+  for (OriginatorEntry& e : originatorEntries_) {
+    if (e.nextHopDevice == message.sender &&
+        e.nextHopNetwork == message.receiptNetwork &&
+        e.originator != message.originator &&
+        !e.retracted) {
+      e.retracted = true;
+      info("%u Retracting entry for originator " DEVICE_ID_FMT "p%u"
+           " due to abandonment from " DEVICE_ID_FMT ".%s"
+           " in favor of " DEVICE_ID_FMT "p%u",
+           currentTime, DEVICE_ID_HEX(e.originator), e.precedence,
+           DEVICE_ID_HEX(message.sender), message.receiptNetwork->name(),
+           DEVICE_ID_HEX(message.originator), message.precedence);
     }
   }
-  // Then give all networks the opportunity to send.
-  for (Network* network : networks_) {
-    network->runLoop(currentTime);
-  }
+
+  lastLEDWriteTime_ = -1;
 }
 
 void Player::loopOne() {
@@ -725,26 +941,6 @@ void Player::loopOne() {
   }
   info("Looping");
   loop_ = true;
-}
-
-Frame Player::effectFrame(const Effect* effect, Milliseconds currentTime) {
-  // Ensure effectContext_ is big enough for this effect.
-  const size_t effectContextSize = effect->contextSize({viewport_, nullptr});
-  if (effectContextSize > effectContextSize_) {
-    info("%u realloc context size from %zu to %zu (%s w %f h %f)",
-         currentTime, effectContextSize_, effectContextSize,
-         effect->name().c_str(), viewport_.size.width * viewport_.size.height);
-    effectContextSize_ = effectContextSize;
-    effectContext_ = realloc(effectContext_, effectContextSize_);
-  }
-
-  Frame frame;
-  frame.animation.viewport = viewport_;
-  frame.animation.context = effectContext_;
-  frame.time = currentTime - currentPatternStartTime_;
-  frame.tempo = tempo_;
-  frame.metre = metre_;
-  return frame;
 }
 
 const char* Player::command(const char* req) {
@@ -761,8 +957,9 @@ const char* Player::command(const char* req) {
     responded = true;
   }
   if (!responded) {
-    snprintf(res, sizeof(res), "play %s %d",
-             currentEffect()->name().c_str(), timeMillis() - currentPatternStartTime_);
+    // This is used by the WebUI to display the current pattern name.
+    snprintf(res, sizeof(res), "playing %s",
+             lastBegunEffect_->name().c_str());
   }
   debug("[%s] -> [%s]", req, res);
   return res;
