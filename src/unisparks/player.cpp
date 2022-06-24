@@ -613,25 +613,25 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
   if (!hadRecentUserInput && !loop_) {
     for (const OriginatorEntry& e : originatorEntries_) {
       if (e.retracted) {
-        info("%u ignoring " DEVICE_ID_FMT " due to retracted",
-             currentTime, DEVICE_ID_HEX(e.originator));
+        debug("%u ignoring " DEVICE_ID_FMT " due to retracted",
+              currentTime, DEVICE_ID_HEX(e.originator));
         continue;
       }
       if (currentTime > e.lastOriginationTime + kOriginationTimeDiscard) {
-        info("%u ignoring " DEVICE_ID_FMT " due to origination time",
-             currentTime, DEVICE_ID_HEX(e.originator));
+        debug("%u ignoring " DEVICE_ID_FMT " due to origination time",
+              currentTime, DEVICE_ID_HEX(e.originator));
         continue;
       }
       if (currentTime > e.currentPatternStartTime + 2 * kEffectDuration) {
-        info("%u ignoring " DEVICE_ID_FMT " due to effect duration",
-             currentTime, DEVICE_ID_HEX(e.originator));
+        debug("%u ignoring " DEVICE_ID_FMT " due to effect duration",
+              currentTime, DEVICE_ID_HEX(e.originator));
         continue;
       }
       if (comparePrecedence(e.precedence, e.originator,
                             precedence, originator) <= 0) {
-        info("%u ignoring " DEVICE_ID_FMT "p%u due to better " DEVICE_ID_FMT "p%u",
-             currentTime, DEVICE_ID_HEX(e.originator), e.precedence,
-             DEVICE_ID_HEX(originator), precedence);
+        debug("%u ignoring " DEVICE_ID_FMT "p%u due to better " DEVICE_ID_FMT "p%u",
+              currentTime, DEVICE_ID_HEX(e.originator), e.precedence,
+              DEVICE_ID_HEX(originator), precedence);
         continue;
       }
       precedence = e.precedence;
@@ -745,6 +745,7 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
     entry->nextHopNetwork = message.receiptNetwork;
     entry->numHops = message.numHops + 1;
     entry->retracted = false;
+    entry->patternStartTimeMovementCounter = 0;
     info("%u Adding " DEVICE_ID_FMT "p%u entry s=" DEVICE_ID_FMT " nh=%u",
          currentTime, DEVICE_ID_HEX(entry->originator), entry->precedence,
          DEVICE_ID_HEX(entry->nextHopDevice), entry->numHops);
@@ -780,22 +781,84 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
 
     if (entry->nextHopDevice == message.sender &&
         entry->nextHopNetwork == message.receiptNetwork) {
+      bool shouldUpdateStartTime = false;
       std::ostringstream changes;
       if (entry->precedence != message.precedence) {
         changes << ", precedence " << entry->precedence << " to " << message.precedence;
       }
       if (entry->currentPattern != message.currentPattern) {
+        shouldUpdateStartTime = true;
         changes << ", currentPattern " << patternFromBits(entry->currentPattern)->name()
                 << " to " << patternFromBits(message.currentPattern)->name();
       }
       if (entry->nextPattern != message.nextPattern) {
+        shouldUpdateStartTime = true;
         changes << ", nextPattern " << patternFromBits(entry->nextPattern)->name()
                 << " to " << patternFromBits(message.nextPattern)->name();
       }
+      // Debounce incoming updates to currentPatternStartTime to avoid visual jitter in the presence
+      // of network jitter.
+      static constexpr Milliseconds kPatternStartTimeDeltaMin = 100;
+      static constexpr Milliseconds kPatternStartTimeDeltaMax = 500;
+      static constexpr int8_t kPatternStartTimeMovementThreshold = 5;
       if (entry->currentPatternStartTime > message.currentPatternStartTime) {
-        changes << ", elapsedTime -= " << entry->currentPatternStartTime - message.currentPatternStartTime;
+        const Milliseconds timeDelta = entry->currentPatternStartTime - message.currentPatternStartTime;
+        if (shouldUpdateStartTime || timeDelta >= kPatternStartTimeDeltaMax) {
+          changes << ", elapsedTime -= " << timeDelta;
+          shouldUpdateStartTime = true;
+        } else if (timeDelta < kPatternStartTimeDeltaMin) {
+          if (is_debug_logging_enabled()) {
+            changes << ", elapsedTime !-= " << timeDelta;
+          }
+          entry->patternStartTimeMovementCounter = 0;
+        } else {
+          if (entry->patternStartTimeMovementCounter <= 1) {
+            entry->patternStartTimeMovementCounter--;
+            if (entry->patternStartTimeMovementCounter <= -kPatternStartTimeMovementThreshold) {
+              changes << ", elapsedTime -= " << timeDelta;
+              shouldUpdateStartTime = true;
+            } else {
+              if (is_debug_logging_enabled()) {
+                changes << ", elapsedTime ~-= " << timeDelta
+                        << " (movement " << static_cast<int>(-entry->patternStartTimeMovementCounter) << ")";
+              }
+            }
+          } else {
+            entry->patternStartTimeMovementCounter = 0;
+            if (is_debug_logging_enabled()) {
+              changes << ", elapsedTime ~-= " << timeDelta << " (flip)";
+            }
+          }
+        }
       } else if (entry->currentPatternStartTime < message.currentPatternStartTime) {
-        changes << ", elapsedTime += " << message.currentPatternStartTime - entry->currentPatternStartTime;
+        const Milliseconds timeDelta = message.currentPatternStartTime - entry->currentPatternStartTime;
+        if (shouldUpdateStartTime || timeDelta >= kPatternStartTimeDeltaMax) {
+          changes << ", elapsedTime += " << timeDelta;
+          shouldUpdateStartTime = true;
+        } else if (timeDelta < kPatternStartTimeDeltaMin) {
+          if (is_debug_logging_enabled()) {
+            changes << ", elapsedTime !+= " << timeDelta;
+          }
+          entry->patternStartTimeMovementCounter = 0;
+        } else {
+          if (entry->patternStartTimeMovementCounter >= -1) {
+            entry->patternStartTimeMovementCounter++;
+            if (entry->patternStartTimeMovementCounter >= kPatternStartTimeMovementThreshold) {
+              changes << ", elapsedTime += " << timeDelta;
+              shouldUpdateStartTime = true;
+            } else {
+              if (is_debug_logging_enabled()) {
+                changes << ", elapsedTime ~+= " << timeDelta
+                        << " (movement " << static_cast<int>(entry->patternStartTimeMovementCounter) << ")";
+              }
+            }
+          } else {
+            entry->patternStartTimeMovementCounter = 0;
+            if (is_debug_logging_enabled()) {
+              changes << ", elapsedTime ~+= " << timeDelta << " (flip)";
+            }
+          }
+        }
       }
       if (entry->lastOriginationTime > message.lastOriginationTime) {
         changes << ", originationTime -= " << entry->lastOriginationTime - message.lastOriginationTime;
@@ -806,10 +869,12 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
       entry->precedence = message.precedence;
       entry->currentPattern = message.currentPattern;
       entry->nextPattern = message.nextPattern;
-      // TODO if we're only off by a small amount of ms don't update because that makes the patterns look jerky
-      entry->currentPatternStartTime = message.currentPatternStartTime;
       entry->lastOriginationTime = message.lastOriginationTime;
       entry->retracted = false;
+      if (shouldUpdateStartTime) {
+        entry->currentPatternStartTime = message.currentPatternStartTime;
+        entry->patternStartTimeMovementCounter = 0;
+      }
       std::string changesStr = changes.str();
       if (!changesStr.empty()) {
         info("%u Accepting %s update from " DEVICE_ID_FMT "p%u via " DEVICE_ID_FMT ".%s%s",
@@ -818,12 +883,12 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
             entry->nextHopNetwork->name(), changesStr.c_str());
       }
     } else {
-      info("%u Rejecting %s update from " DEVICE_ID_FMT "p%u via "
-           DEVICE_ID_FMT ".%s because we are following " DEVICE_ID_FMT ".%s",
-           currentTime, (entry->originator == currentLeader_ ? "followed" : "ignored"),
-           DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(message.sender),
-           message.receiptNetwork->name(), DEVICE_ID_HEX(entry->nextHopDevice),
-           entry->nextHopNetwork->name());
+      debug("%u Rejecting %s update from " DEVICE_ID_FMT "p%u via "
+            DEVICE_ID_FMT ".%s because we are following " DEVICE_ID_FMT ".%s",
+            currentTime, (entry->originator == currentLeader_ ? "followed" : "ignored"),
+            DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(message.sender),
+            message.receiptNetwork->name(), DEVICE_ID_HEX(entry->nextHopDevice),
+            entry->nextHopNetwork->name());
     }
   }
   // If this sender is following another originator from what we previously heard,

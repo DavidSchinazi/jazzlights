@@ -98,6 +98,7 @@ class Player {
     Network* nextHopNetwork = nullptr;
     NumHops numHops = 0;
     bool retracted = false;
+    int8_t patternStartTimeMovementCounter = 0;
   };
 
   OriginatorEntry* getOriginatorEntry(NetworkDeviceId originator, Milliseconds currentTime);
