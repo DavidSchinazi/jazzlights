@@ -91,6 +91,7 @@ auto cyan_effect = solid(CYAN, "cyan");
 auto yellow_effect = solid(YELLOW, "yellow");
 auto white_effect = solid(WHITE, "white");
 
+// TODO figure out why glow effects don't look right.
 auto red_glow_effect = glow(RED, "glow-red");
 auto green_glow_effect = glow(GREEN, "glow-green");
 auto blue_glow_effect = glow(BLUE, "glow-blue");
