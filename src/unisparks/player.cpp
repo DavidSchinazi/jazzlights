@@ -4,6 +4,7 @@
 #include <limits>
 #include <stdlib.h>
 #include <assert.h>
+#include <sstream>
 #include "unisparks/effects/chess.hpp"
 #include "unisparks/effects/flame.hpp"
 #include "unisparks/effects/glitter.hpp"
@@ -514,11 +515,17 @@ void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
 }
 
 void Player::next(Milliseconds currentTime) {
+  info("%u next command received: switching from %s to %s, currentLeader=" DEVICE_ID_FMT,
+        currentTime, patternFromBits(currentPattern_)->name().c_str(), patternFromBits(nextPattern_)->name().c_str(),
+        DEVICE_ID_HEX(currentLeader_));
   lastUserInputTime_ = currentTime;
   currentPatternStartTime_ = currentTime;
   currentPattern_ = nextPattern_;
   nextPattern_ = computeNextPattern(nextPattern_);
   checkLeaderAndPattern(currentTime);
+  info("%u next command processed: now current %s next %s, currentLeader=" DEVICE_ID_FMT,
+        currentTime, patternFromBits(currentPattern_)->name().c_str(), patternFromBits(nextPattern_)->name().c_str(),
+        DEVICE_ID_HEX(currentLeader_));
 
   for (Network* network : networks_) {
     network->triggerSendAsap(currentTime);
@@ -600,7 +607,7 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
   const OriginatorEntry* entry = nullptr;
   const bool hadRecentUserInput =
     (lastUserInputTime_ >= 0 &&
-      lastUserInputTime_ < currentTime &&
+      lastUserInputTime_ <= currentTime &&
       currentTime - lastUserInputTime_ < kInputDuration);
   // Keep ourselves as leader if there was recent user button input or if we are looping.
   if (!hadRecentUserInput && !loop_) {
@@ -631,10 +638,6 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
       originator = e.originator;
       entry = &e;
     }
-  } else {
-    info("%u ignoring others due to %s, luit=%d",
-         currentTime, (hadRecentUserInput ? "user input" : "loop"),
-         lastUserInputTime_);
   }
 
   if (currentLeader_ != originator) {
@@ -709,17 +712,17 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
 }
 
 void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentTime) {
-  info("%u handleReceivedMessage %s",
+  debug("%u handleReceivedMessage %s",
         currentTime,
         networkMessageToString(message, currentTime).c_str());
   if (message.sender == localDeviceId_) {
-    info("%u Ignoring received message that we sent %s",
-         currentTime, networkMessageToString(message, currentTime).c_str());
+    debug("%u Ignoring received message that we sent %s",
+          currentTime, networkMessageToString(message, currentTime).c_str());
     return;
   }
   if (message.originator == localDeviceId_) {
-    info("%u Ignoring received message that we originated %s",
-         currentTime, networkMessageToString(message, currentTime).c_str());
+    debug("%u Ignoring received message that we originated %s",
+          currentTime, networkMessageToString(message, currentTime).c_str());
     return;
   }
   if (message.numHops == std::numeric_limits<NumHops>::max()) {
@@ -777,21 +780,52 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
 
     if (entry->nextHopDevice == message.sender &&
         entry->nextHopNetwork == message.receiptNetwork) {
-      info("%u Accepting update from " DEVICE_ID_FMT " via " DEVICE_ID_FMT ".%s",
-           currentTime, DEVICE_ID_HEX(entry->originator),
-           DEVICE_ID_HEX(entry->nextHopDevice), entry->nextHopNetwork->name());
+      std::ostringstream changes;
+      if (entry->precedence != message.precedence) {
+        changes << ", precedence " << entry->precedence << " to " << message.precedence;
+      }
+      if (entry->currentPattern != message.currentPattern) {
+        changes << ", currentPattern " << patternFromBits(entry->currentPattern)->name()
+                << " to " << patternFromBits(message.currentPattern)->name();
+      }
+      if (entry->nextPattern != message.nextPattern) {
+        changes << ", nextPattern " << patternFromBits(entry->nextPattern)->name()
+                << " to " << patternFromBits(message.nextPattern)->name();
+      }
+      if (entry->currentPatternStartTime > message.currentPatternStartTime) {
+        changes << ", elapsedTime -= " << entry->currentPatternStartTime - message.currentPatternStartTime;
+      } else if (entry->currentPatternStartTime < message.currentPatternStartTime) {
+        changes << ", elapsedTime += " << message.currentPatternStartTime - entry->currentPatternStartTime;
+      }
+      if (entry->lastOriginationTime > message.lastOriginationTime) {
+        changes << ", originationTime -= " << entry->lastOriginationTime - message.lastOriginationTime;
+      } else if (entry->lastOriginationTime < message.lastOriginationTime) {
+        changes << ", originationTime += " << message.lastOriginationTime - entry->lastOriginationTime;
+      }
+      if (entry->retracted) {
+        changes << ", unretracted";
+      }
       entry->precedence = message.precedence;
       entry->currentPattern = message.currentPattern;
       entry->nextPattern = message.nextPattern;
+      // TODO if we're only off by a small amount of ms don't update because that makes the patterns look jerky
       entry->currentPatternStartTime = message.currentPatternStartTime;
       entry->lastOriginationTime = message.lastOriginationTime;
       entry->retracted = false;
+      std::string changesStr = changes.str();
+      if (!changesStr.empty()) {
+        info("%u Accepting %s update from " DEVICE_ID_FMT "p%u via " DEVICE_ID_FMT ".%s%s",
+            currentTime, (entry->originator == currentLeader_ ? "followed" : "ignored"),
+            DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(entry->nextHopDevice),
+            entry->nextHopNetwork->name(), changesStr.c_str());
+      }
     } else {
-      info("%u Rejecting update from " DEVICE_ID_FMT " via "
+      info("%u Rejecting %s update from " DEVICE_ID_FMT "p%u via "
            DEVICE_ID_FMT ".%s because we are following " DEVICE_ID_FMT ".%s",
-           currentTime, DEVICE_ID_HEX(entry->originator),
-           DEVICE_ID_HEX(message.sender), message.receiptNetwork->name(),
-           DEVICE_ID_HEX(entry->nextHopDevice), entry->nextHopNetwork->name());
+           currentTime, (entry->originator == currentLeader_ ? "followed" : "ignored"),
+           DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(message.sender),
+           message.receiptNetwork->name(), DEVICE_ID_HEX(entry->nextHopDevice),
+           entry->nextHopNetwork->name());
     }
   }
   // If this sender is following another originator from what we previously heard,
