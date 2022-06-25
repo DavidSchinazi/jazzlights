@@ -26,6 +26,7 @@ NetworkStatus Esp8266WiFi::update(NetworkStatus status, Milliseconds currentTime
     }
 
     // TODO figure out why first connection fails with missing Wi-Fi shield.
+    // TODO add support for IPv4 link-local addresses when there is no DHCP server.
     WiFi.begin(creds_.ssid, creds_.pass);
     return CONNECTING;
   } break;
