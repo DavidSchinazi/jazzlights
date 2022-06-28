@@ -14,6 +14,7 @@ struct Animation {
 };
 
 struct Frame {
+  // TODO add effect pattern bits to frame and use it from effects.
   Animation animation;
   Milliseconds time;
   BeatsPerMinute tempo;
