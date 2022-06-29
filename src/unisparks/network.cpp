@@ -207,8 +207,8 @@ void Network::checkStatus(Milliseconds currentTime) {
     const NetworkStatus previousStatus = status_;
     status_ = update(status_, currentTime);
     if (status_ != previousStatus) {
-      info("%s updated status from %s to %s",
-           name(),
+      info("%u %s updated status from %s to %s",
+           currentTime, name(),
            NetworkStatusToString(previousStatus).c_str(),
            NetworkStatusToString(status_).c_str());
     }

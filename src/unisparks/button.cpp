@@ -264,7 +264,7 @@ bool atomScreenMessage(uint8_t btn, const Milliseconds currentMillis) {
   }
   if (btn != BTN_IDLE) {
     displayingBootMessage = false;
-    info("Stopping boot message due to button press");
+    info("%u Stopping boot message due to button press", currentMillis);
     return false;
   }
   static Milliseconds bootMessageStartTime = -1;
@@ -275,7 +275,7 @@ bool atomScreenMessage(uint8_t btn, const Milliseconds currentMillis) {
                                       CRGB::Red, CRGB::Black,
                                       currentMillis - bootMessageStartTime);
   if (!displayingBootMessage) {
-    info("Done displaying boot message");
+    info("%u Done displaying boot message", currentMillis);
   } else {
     atomScreenDisplay(currentMillis);
   }

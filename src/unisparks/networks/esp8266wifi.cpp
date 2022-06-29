@@ -2,10 +2,29 @@
 
 #if UNISPARKS_ESP8266WIFI
 
+#include <sstream>
+
 #include "unisparks/util/log.hpp"
 #include "unisparks/util/time.hpp"
 
 namespace unisparks {
+
+std::string Esp8266WiFi::WiFiStatusToString(wl_status_t status) {
+  if (status == kUninitialized) { return "UNINITIALIZED"; }
+  switch (status) {
+    case WL_NO_SHIELD: return "WL_NO_SHIELD";
+    case WL_IDLE_STATUS: return "WL_IDLE_STATUS";
+    case WL_NO_SSID_AVAIL: return "WL_NO_SSID_AVAIL";
+    case WL_SCAN_COMPLETED: return "WL_SCAN_COMPLETED";
+    case WL_CONNECTED: return "WL_CONNECTED";
+    case WL_CONNECT_FAILED: return "WL_CONNECT_FAILED";
+    case WL_CONNECTION_LOST: return "WL_CONNECTION_LOST";
+    case WL_DISCONNECTED: return "WL_DISCONNECTED";
+  }
+  std::ostringstream s;
+  s << "UNKNOWN(" << static_cast<int>(status) << ")";
+  return s.str();
+}
 
 Esp8266WiFi::Esp8266WiFi(const char* ssid, const char* pass) : creds_{ssid, pass} {
   uint8_t macAddress[6] = {};
@@ -14,6 +33,13 @@ Esp8266WiFi::Esp8266WiFi(const char* ssid, const char* pass) : creds_{ssid, pass
 }
 
 NetworkStatus Esp8266WiFi::update(NetworkStatus status, Milliseconds currentTime) {
+  const wl_status_t newWiFiStatus = WiFi.status();
+  if (newWiFiStatus != currentWiFiStatus_) {
+    info("%u %s Wi-Fi status changing from %s to %s",
+          currentTime, name(), WiFiStatusToString(currentWiFiStatus_).c_str(),
+          WiFiStatusToString(newWiFiStatus).c_str());
+    currentWiFiStatus_ = newWiFiStatus;
+  }
   switch (status) {
   case INITIALIZING: {
   info("%u %s Wi-Fi connecting to %s...", currentTime, name(), creds_.ssid);
@@ -25,13 +51,14 @@ NetworkStatus Esp8266WiFi::update(NetworkStatus status, Milliseconds currentTime
       WiFi.config(ip, gw, snm);
     }
 
-    // TODO figure out why first connection fails with missing Wi-Fi shield.
     // TODO add support for IPv4 link-local addresses when there is no DHCP server.
-    WiFi.begin(creds_.ssid, creds_.pass);
+    wl_status_t beginWiFiStatus = WiFi.begin(creds_.ssid, creds_.pass);
+    info("%u %s Wi-Fi begin to %s returned %s",
+         currentTime, name(), creds_.ssid, WiFiStatusToString(beginWiFiStatus).c_str());
     return CONNECTING;
   } break;
   case CONNECTING: {
-    switch (WiFi.status()) {
+    switch (newWiFiStatus) {
     case WL_NO_SHIELD:
       error("%u %s connection to %s failed: there's no WiFi shield",
             currentTime, name(), creds_.ssid);
@@ -79,11 +106,11 @@ NetworkStatus Esp8266WiFi::update(NetworkStatus status, Milliseconds currentTime
     default: {
       static int32_t last_t = 0;
       if (currentTime - last_t > 5000) {
-        int st = WiFi.status();
-        if (st == WL_DISCONNECTED) {
+        if (newWiFiStatus == WL_DISCONNECTED) {
           debug("%u %s still connecting...", currentTime, name());
         } else {
-          info("%u %s still connecting, unknown status code %d", currentTime, name(), st);
+          info("%u %s still connecting, unexpected status code %s",
+               currentTime, name(), WiFiStatusToString(newWiFiStatus).c_str());
         }
         last_t = currentTime;
       }
@@ -98,7 +125,7 @@ NetworkStatus Esp8266WiFi::update(NetworkStatus status, Milliseconds currentTime
     break;
 
   case DISCONNECTING: {
-    switch (WiFi.status()) {
+    switch (newWiFiStatus) {
     case WL_DISCONNECTED:
       info("%u %s disconnected from %s", currentTime, name(), creds_.ssid);
       return DISCONNECTED;

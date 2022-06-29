@@ -50,12 +50,15 @@ class Esp8266WiFi : public UdpNetwork {
   };
 
  private:
+  static constexpr wl_status_t kUninitialized = static_cast<wl_status_t>(123);
+  static std::string WiFiStatusToString(wl_status_t status);
   int port_ = DEFAULT_UDP_PORT;
   const char* mcastAddr_ = DEFAULT_MULTICAST_ADDR;
   WiFiUDP udp_;
   Credentials creds_;
   StaticConf* staticConf_ = nullptr;
   NetworkDeviceId localDeviceId_;
+  wl_status_t currentWiFiStatus_ = kUninitialized;
 };
 
 } // namespace unisparks
