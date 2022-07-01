@@ -86,6 +86,7 @@ struct NetworkMessage {
   Milliseconds lastOriginationTime = 0;
   // Receipt values are not sent over the wire.
   Network* receiptNetwork = nullptr;
+  std::string receiptDetails;
 
   bool isEqualExceptOriginationTime(const NetworkMessage& other) const {
     return sender == other.sender &&
@@ -177,7 +178,7 @@ class UdpNetwork : public Network {
  protected:
   std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds currentTime) override;
   void runLoopImpl(Milliseconds currentTime) override;
-  virtual int recv(void* buf, size_t bufsize) = 0;
+  virtual int recv(void* buf, size_t bufsize, std::string* details) = 0;
   virtual void send(void* buf, size_t bufsize) = 0;
  private:
   bool maybeHandleNotConnected(Milliseconds currentTime);

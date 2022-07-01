@@ -39,6 +39,45 @@ NetworkStatus Esp8266WiFi::update(NetworkStatus status, Milliseconds currentTime
           currentTime, name(), WiFiStatusToString(currentWiFiStatus_).c_str(),
           WiFiStatusToString(newWiFiStatus).c_str());
     currentWiFiStatus_ = newWiFiStatus;
+    timeOfLastWiFiStatusTransition_ = currentTime;
+  }
+  static constexpr Milliseconds kDhcpTimeout = 5000;  // 5s.
+  static constexpr Milliseconds kDhcpRetryTime = 600000;  // 10min.
+  if (staticConf_ == nullptr &&
+      attemptingDhcp_ &&
+      currentWiFiStatus_ == WL_IDLE_STATUS &&
+      timeOfLastWiFiStatusTransition_ >= 0 &&
+      currentTime - timeOfLastWiFiStatusTransition_ > kDhcpTimeout) {
+    attemptingDhcp_ = false;
+    uint8_t ipByteC, ipByteD;
+    do {
+#ifdef ESP32
+      const uint32_t randNum = esp_random();
+#else
+      const uint32_t randNum = rand();
+#endif
+      ipByteC = randNum & 0xFF;
+      ipByteD = (randNum >> 8) & 0xFF;
+    } while (ipByteC == 0 || ipByteC == 255);
+    IPAddress ip, gw, snm;
+    ip[0] = 169;
+    ip[1] = 254;
+    ip[2] = ipByteC;
+    ip[3] = ipByteD;
+    gw.fromString("169.254.0.0");
+    snm.fromString("255.255.0.0");
+    info("%u %s Wi-Fi giving up on DHCP, using %u.%u.%u.%u",
+         currentTime, name(), ip[0], ip[1], ip[2], ip[3]);
+    WiFi.config(ip, gw, snm);
+  } else if (staticConf_ == nullptr &&
+      !attemptingDhcp_ &&
+      timeOfLastWiFiStatusTransition_ >= 0 &&
+      currentTime - timeOfLastWiFiStatusTransition_ > kDhcpRetryTime) {
+    attemptingDhcp_ = true;
+    info("%u %s Wi-Fi going back to another DHCP attempt",
+         currentTime, name());
+    WiFi.config(IPAddress(), IPAddress(), IPAddress());
+    WiFi.reconnect();
   }
   switch (status) {
   case INITIALIZING: {
@@ -51,7 +90,6 @@ NetworkStatus Esp8266WiFi::update(NetworkStatus status, Milliseconds currentTime
       WiFi.config(ip, gw, snm);
     }
 
-    // TODO add support for IPv4 link-local addresses when there is no DHCP server.
     wl_status_t beginWiFiStatus = WiFi.begin(creds_.ssid, creds_.pass);
     info("%u %s Wi-Fi begin to %s returned %s",
          currentTime, name(), creds_.ssid, WiFiStatusToString(beginWiFiStatus).c_str());
@@ -145,13 +183,16 @@ err:
   return CONNECTION_FAILED;
 }
 
-int Esp8266WiFi::recv(void* buf, size_t bufsize) {
+int Esp8266WiFi::recv(void* buf, size_t bufsize, std::string* details) {
   int cb = udp_.parsePacket();
   if (cb <= 0) {
     debug("Esp8266WiFi::recv returned %d status = %s",
           cb, NetworkStatusToString(status()).c_str());
     return 0;
   }
+  std::ostringstream s;
+  s << " (from " << udp_.remoteIP().toString().c_str() << ":" << udp_.remotePort() << ")";
+  *details = s.str();
   return udp_.read((unsigned char*)buf, bufsize);
 }
 

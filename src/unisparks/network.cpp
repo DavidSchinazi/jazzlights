@@ -146,7 +146,8 @@ std::list<NetworkMessage> UdpNetwork::getReceivedMessagesImpl(Milliseconds curre
   }
   while (true) {
     uint8_t udpPayload[2000] = {};
-    ssize_t n = recv(&udpPayload[0], sizeof(udpPayload));
+    std::string receiptDetails;
+    ssize_t n = recv(&udpPayload[0], sizeof(udpPayload), &receiptDetails);
     if (n <= 0) {
       break;
     }
@@ -169,6 +170,7 @@ std::list<NetworkMessage> UdpNetwork::getReceivedMessagesImpl(Milliseconds curre
     receivedMessage.currentPattern = readUint32(&udpPayload[kCurrentPatternOffset]);
     receivedMessage.nextPattern = readUint32(&udpPayload[kNextPatternOffset]);
     Milliseconds patternTimeDelta = readUint16(&udpPayload[kPatternTimeOffset]);
+    receivedMessage.receiptDetails = receiptDetails;
 
     // TODO measure transmission offset over Wi-Fi.
     constexpr Milliseconds kTransmissionOffset = 5;

@@ -29,7 +29,7 @@ class Esp8266WiFi : public UdpNetwork {
   Esp8266WiFi(const char* ssid, const char* pass);
 
   NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
-  int recv(void* buf, size_t bufsize) override;
+  int recv(void* buf, size_t bufsize, std::string* details) override;
   void send(void* buf, size_t bufsize) override;
   NetworkDeviceId getLocalDeviceId() override {
     return localDeviceId_;
@@ -59,6 +59,8 @@ class Esp8266WiFi : public UdpNetwork {
   StaticConf* staticConf_ = nullptr;
   NetworkDeviceId localDeviceId_;
   wl_status_t currentWiFiStatus_ = kUninitialized;
+  Milliseconds timeOfLastWiFiStatusTransition_ = -1;
+  bool attemptingDhcp_ = true;
 };
 
 } // namespace unisparks

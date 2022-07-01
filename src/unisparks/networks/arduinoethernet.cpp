@@ -8,7 +8,7 @@ namespace unisparks {
 
 struct ArduinoEthernetNetwork : public UdpNetwork {
   NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
-  int recv(void* buf, size_t bufsize) override;
+  int recv(void* buf, size_t bufsize, std::string* details) override;
   void send(void* buf, size_t bufsize) override;
   const char* name() const override {
     return "ArduinoEthernet";
@@ -43,7 +43,7 @@ NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status, Milliseconds 
   return status;
 }
 
-int ArduinoEthernetNetwork::recv(void* buf, size_t bufsize) {
+int ArduinoEthernetNetwork::recv(void* buf, size_t bufsize, std::string* /*details*/) {
   int cb = udp_.parsePacket();
   if (cb <= 0) {
     return 0;

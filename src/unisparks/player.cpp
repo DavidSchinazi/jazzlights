@@ -732,6 +732,7 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
          currentTime, networkMessageToString(message, currentTime).c_str());
     return;
   }
+  NumHops receiptNumHops = message.numHops + 1;
   if (currentTime > message.lastOriginationTime + kOriginationTimeDiscard) {
     info("%u Ignoring received message due to origination time %s",
           currentTime, networkMessageToString(message, currentTime).c_str());
@@ -754,7 +755,7 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
     entry->lastOriginationTime = message.lastOriginationTime;
     entry->nextHopDevice = message.sender;
     entry->nextHopNetwork = message.receiptNetwork;
-    entry->numHops = message.numHops + 1;
+    entry->numHops = receiptNumHops;
     entry->retracted = false;
     entry->patternStartTimeMovementCounter = 0;
     info("%u Adding " DEVICE_ID_FMT "p%u entry via " DEVICE_ID_FMT ".%s nh %u ot %u current %s next %s elapsed %u",
@@ -778,29 +779,29 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
     if (entry->nextHopDevice != message.sender ||
         entry->nextHopNetwork != message.receiptNetwork) {
       bool changeNextHop = false;
-      if (message.numHops + 1 < entry->numHops) {
+      if (receiptNumHops < entry->numHops) {
         info("%u Switching " DEVICE_ID_FMT "p%u entry via " DEVICE_ID_FMT ".%s "
-             "nh %u ot %u to better nextHop " DEVICE_ID_FMT ".%s due nh %u ot %u due to nextHops",
+             "nh %u ot %u to better nextHop " DEVICE_ID_FMT ".%s nh %u ot %u due to nextHops",
              currentTime, DEVICE_ID_HEX(entry->originator), entry->precedence,
              DEVICE_ID_HEX(entry->nextHopDevice), entry->nextHopNetwork->name(),
              entry->numHops, currentTime - entry->lastOriginationTime,
              DEVICE_ID_HEX(message.sender), message.receiptNetwork->name(),
-             message.numHops, currentTime - message.lastOriginationTime);
+             receiptNumHops, currentTime - message.lastOriginationTime);
         changeNextHop = true;
       } else if (message.lastOriginationTime > entry->lastOriginationTime + kOriginationTimeOverride) {
         info("%u Switching " DEVICE_ID_FMT "p%u entry via " DEVICE_ID_FMT ".%s "
-             "nh %u ot %u to better nextHop " DEVICE_ID_FMT ".%s due nh %u ot %u due to originationTime",
+             "nh %u ot %u to better nextHop " DEVICE_ID_FMT ".%s nh %u ot %u due to originationTime",
              currentTime, DEVICE_ID_HEX(entry->originator), entry->precedence,
              DEVICE_ID_HEX(entry->nextHopDevice), entry->nextHopNetwork->name(),
              entry->numHops, currentTime - entry->lastOriginationTime,
              DEVICE_ID_HEX(message.sender), message.receiptNetwork->name(),
-             message.numHops, currentTime - message.lastOriginationTime);
+             receiptNumHops, currentTime - message.lastOriginationTime);
         changeNextHop = true;
       }
       if (changeNextHop) {
         entry->nextHopDevice = message.sender;
         entry->nextHopNetwork = message.receiptNetwork;
-        entry->numHops = message.numHops + 1;
+        entry->numHops = receiptNumHops;
       }
     }
 
@@ -902,10 +903,10 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
       }
       std::string changesStr = changes.str();
       if (!changesStr.empty()) {
-        info("%u Accepting %s update from " DEVICE_ID_FMT "p%u via " DEVICE_ID_FMT ".%s%s",
+        info("%u Accepting %s update from " DEVICE_ID_FMT "p%u via " DEVICE_ID_FMT ".%s%s%s",
             currentTime, (entry->originator == currentLeader_ ? "followed" : "ignored"),
             DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(entry->nextHopDevice),
-            entry->nextHopNetwork->name(), changesStr.c_str());
+            entry->nextHopNetwork->name(), changesStr.c_str(), message.receiptDetails.c_str());
       }
     } else {
       debug("%u Rejecting %s update from " DEVICE_ID_FMT "p%u via "
