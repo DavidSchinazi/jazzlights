@@ -22,7 +22,7 @@ pio run -e atom_matrix_dev -t upload && pio device monitor -e atom_matrix_dev
 
 Run from `unisparks/tglight`:
 ```
-make && ./build/debug/tglight --timestamp --config ./etc/tglight-test.toml
+cargo run -- --timestamp --config ./etc/tglight-from-robot.toml
 ```
 
 # DS33 dual devices
