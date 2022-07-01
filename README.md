@@ -16,9 +16,11 @@ To install the software on an M5Stack ATOM Matrix
 ([available for purchase here](https://shop.m5stack.com/collections/m5-atom/products/atom-matrix-esp32-development-kit)),
 you can run: `pio run -e atom_matrix -t upload`
 
+This project focuses on the M5Stack ATOM Matrix but other ESP32 and ESP8266 boards should also be supported.
+
 In theory this project also works with the Arduino IDE (look for `Vest.ino`) but that has not been tested in a while.
 
-## Installation on Raspberry Pi fir vehicles
+## Installation on Raspberry Pi for vehicles
 
 First [install the rust/cargo toolchain](https://www.rust-lang.org/tools/install),
 then from the `unisparks/tglight` directory you can run
