@@ -28,6 +28,7 @@
 #include "unisparks/layouts/reversemap.hpp"
 #include "unisparks/networks/esp32_ble.hpp"
 #include "unisparks/networks/esp8266wifi.hpp"
+#include "unisparks/networks/arduinoethernet.hpp"
 #include "unisparks/player.hpp"
 #include "unisparks/util/log.hpp"
 #include "unisparks/vest.h"

@@ -67,6 +67,8 @@ class NetworkDeviceId {
     snprintf(result, sizeof(result), DEVICE_ID_FMT, DEVICE_ID_HEX(*this));
     return result;
   }
+  const uint8_t* data() const { return &data_[0]; }
+  uint8_t* data() { return &data_[0]; }
  private:
   static constexpr size_t kNetworkDeviceIdSize = 6;
   uint8_t data_[kNetworkDeviceIdSize];

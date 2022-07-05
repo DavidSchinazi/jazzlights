@@ -1,31 +1,40 @@
 #ifndef UNISPARKS_NETWORK_ARDUINO_ETHERNET_H
 #define UNISPARKS_NETWORK_ARDUINO_ETHERNET_H
 
-#ifdef ESP8266
+#ifndef UNISPARKS_ARDUINO_ETHERNET
+#  define UNISPARKS_ARDUINO_ETHERNET 0
+#endif // UNISPARKS_ARDUINO_ETHERNET
+
+#if UNISPARKS_ARDUINO_ETHERNET
 
 #include "unisparks/network.hpp"
 #include <SPI.h>
 #include <Ethernet.h>
-#include <EthernetUdp.h>
 
 namespace unisparks {
 
-struct MacAddress {
-  MacAddress(uint8_t* b) {
-    memcpy(bytes, b, sizeof(bytes));
+class ArduinoEthernetNetwork : public UdpNetwork {
+ public:
+  explicit ArduinoEthernetNetwork(NetworkDeviceId localDeviceId);
+
+  NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
+  int recv(void* buf, size_t bufsize, std::string* details) override;
+  void send(void* buf, size_t bufsize) override;
+  NetworkDeviceId getLocalDeviceId() override {
+    return localDeviceId_;
   }
-
-  MacAddress(uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4, uint8_t b5,
-             uint8_t b6) :
-    bytes{b1, b2, b3, b4, b5, b6} {}
-
-  uint8_t bytes[6];
+  const char* name() const override {
+    return "ArduinoEthernet";
+  }
+ private:
+  NetworkDeviceId localDeviceId_;
+  uint16_t port_ = DEFAULT_UDP_PORT;
+  const char* mcastAddr_ = DEFAULT_MULTICAST_ADDR;
+  EthernetUDP udp_;
 };
-
-Network& arduinoEthernet(MacAddress mac);
 
 } // namespace unisparks
 
-#endif // ESP8266
+#endif // UNISPARKS_ARDUINO_ETHERNET
 
-#endif /* UNISPARKS_NETWORK_ARDUINO_ETHERNET_H */
+#endif // UNISPARKS_NETWORK_ARDUINO_ETHERNET_H

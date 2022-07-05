@@ -29,7 +29,6 @@ std::string Esp8266WiFi::WiFiStatusToString(wl_status_t status) {
 Esp8266WiFi::Esp8266WiFi(const char* ssid, const char* pass) : creds_{ssid, pass} {
   uint8_t macAddress[6] = {};
   localDeviceId_ = NetworkDeviceId(WiFi.macAddress(&macAddress[0]));
-  info("%s Wi-Fi MAC is " DEVICE_ID_FMT, name(), DEVICE_ID_HEX(localDeviceId_));
 }
 
 NetworkStatus Esp8266WiFi::update(NetworkStatus status, Milliseconds currentTime) {
@@ -81,7 +80,8 @@ NetworkStatus Esp8266WiFi::update(NetworkStatus status, Milliseconds currentTime
   }
   switch (status) {
   case INITIALIZING: {
-  info("%u %s Wi-Fi connecting to %s...", currentTime, name(), creds_.ssid);
+    info("%u %s Wi-Fi " DEVICE_ID_FMT " connecting to %s...",
+         currentTime, name(), DEVICE_ID_HEX(localDeviceId_), creds_.ssid);
     if (staticConf_) {
       IPAddress ip, gw, snm;
       ip.fromString(staticConf_->ip);

@@ -15,6 +15,29 @@ void renderPixel(int i, uint8_t r, uint8_t g, uint8_t b) {
 }
 
 Esp8266WiFi network("FISHLIGHT", "155155155");
+#if UNISPARKS_ARDUINO_ETHERNET
+NetworkDeviceId GetEthernetDeviceId() {
+  NetworkDeviceId deviceId = network.getLocalDeviceId();
+  deviceId.data()[5]++;
+  if (deviceId.data()[5] == 0) {
+    deviceId.data()[4]++;
+    if (deviceId.data()[4] == 0) {
+      deviceId.data()[3]++;
+      if (deviceId.data()[3] == 0) {
+        deviceId.data()[2]++;
+        if (deviceId.data()[2] == 0) {
+          deviceId.data()[1]++;
+          if (deviceId.data()[1] == 0) {
+            deviceId.data()[0]++;
+          }
+        }
+      }
+    }
+  }
+  return deviceId;
+}
+ArduinoEthernetNetwork ethernetNetwork(GetEthernetDeviceId());
+#endif  // UNISPARKS_ARDUINO_ETHERNET
 Player player;
 ReverseMap<LEDNUM> pixels(pixelMap, MATRIX_WIDTH, MATRIX_HEIGHT);
 
@@ -32,6 +55,9 @@ void vestSetup(void) {
   player.connect(Esp32BleNetwork::get());
 #endif // ESP32_BLE
   player.connect(&network);
+#if UNISPARKS_ARDUINO_ETHERNET
+  player.connect(&ethernetNetwork);
+#endif  // UNISPARKS_ARDUINO_ETHERNET
   player.begin(timeMillis());
 
   // Note to self for future reference: we were able to get the 2018 Gecko Robot scales to light
