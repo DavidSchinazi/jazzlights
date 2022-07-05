@@ -68,7 +68,7 @@ void vestSetup(void) {
   // M5 white wire - G32 - clock - scale pigtail blue
   // 12VDC power supply - scale pigtail brown
   // FastLED.addLeds</*CHIPSET=*/WS2801, /*DATA_PIN=*/26, /*CLOCK_PIN=*/32, /*RGB_ORDER=*/GBR>
-  // TODO: refactor this comment into a PlatformIO environment.
+  // TODO refactor this comment into a PlatformIO environment.
 
   mainVestController = &FastLED.addLeds<WS2812B, LED_PIN, GRB>(
     leds, sizeof(leds)/sizeof(*leds));

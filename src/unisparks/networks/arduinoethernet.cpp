@@ -69,7 +69,7 @@ NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status, Milliseconds 
       int beginRes = Ethernet.begin(localDeviceId_.data(), kDhcpTimeoutMs, kResponseTimeoutMs);
       if (beginRes == 0) {
         error("%u %s Ethernet DHCP failed", currentTime, name());
-        // TODO add support for IPv4 link-local
+        // TODO add support for IPv4 link-local addresses.
         return CONNECTION_FAILED;
       }
       IPAddress ip = Ethernet.localIP();

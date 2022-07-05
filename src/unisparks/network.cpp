@@ -172,7 +172,7 @@ std::list<NetworkMessage> UdpNetwork::getReceivedMessagesImpl(Milliseconds curre
     Milliseconds patternTimeDelta = readUint16(&udpPayload[kPatternTimeOffset]);
     receivedMessage.receiptDetails = receiptDetails;
 
-    // TODO measure transmission offset over Wi-Fi.
+    // TODO measure transmission offset over various underlying UDP networks like Wi-Fi and Ethernet.
     constexpr Milliseconds kTransmissionOffset = 5;
     Milliseconds receiptTime;
     if (currentTime > kTransmissionOffset) {
