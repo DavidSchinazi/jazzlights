@@ -210,24 +210,24 @@ Effect* patternFromBits(PatternBits pattern) {
     const uint8_t byte3 = (pattern >>  8) & 0xFF;
     if (byte1 == 0 && byte2 == 0) {
       switch (byte3) {
-        case 0: return &black_effect;
-        case 1: return &red_effect;
-        case 2: return &green_effect;
-        case 3: return &blue_effect;
-        case 4: return &purple_effect;
-        case 5: return &cyan_effect;
-        case 6: return &yellow_effect;
-        case 7: return &white_effect;
-        case 8: return &red_glow_effect;
-        case 9: return &green_glow_effect;
-        case 10: return &blue_glow_effect;
-        case 11: return &purple_glow_effect;
-        case 12: return &cyan_glow_effect;
-        case 13: return &yellow_glow_effect;
-        case 14: return &white_glow_effect;
-        case 15: return &synctest;
+        case 0x00: return &black_effect;
+        case 0x01: return &red_effect;
+        case 0x02: return &green_effect;
+        case 0x03: return &blue_effect;
+        case 0x04: return &purple_effect;
+        case 0x05: return &cyan_effect;
+        case 0x06: return &yellow_effect;
+        case 0x07: return &white_effect;
+        case 0x08: return &red_glow_effect;
+        case 0x09: return &green_glow_effect;
+        case 0x0A: return &blue_glow_effect;
+        case 0x0B: return &purple_glow_effect;
+        case 0x0C: return &cyan_glow_effect;
+        case 0x0D: return &yellow_glow_effect;
+        case 0x0E: return &white_glow_effect;
+        case 0x0F: return &synctest;
 #if WEARABLE
-        case 16: return &calibration_effect;
+        case 0x10: return &calibration_effect;
 #endif  // WEARABLE
       }
     }
@@ -399,10 +399,22 @@ void Player::begin(Milliseconds currentTime) {
 }
 
 void Player::handleSpecial() {
+    static constexpr PatternBits kSpecialPatternBits[] = {
+#if WEARABLE
+    0x00001000,  // calibration.
+#endif  // WEARABLE
+    0x00000000,  // black.
+    0x00000100,  // red.
+    0x00000200,  // green.
+    0x00000300,  // blue.
+  };
   specialMode_++;
-  if (specialMode_ > 6) {
+  if (specialMode_ > sizeof(kSpecialPatternBits) / sizeof(kSpecialPatternBits[0])) {
     specialMode_ = 1;
   }
+  currentPattern_ = kSpecialPatternBits[specialMode_ - 1];
+  nextPattern_ = currentPattern_;
+  loop_ = true;
   info("Starting special mode %u", specialMode_);
 }
 
@@ -412,6 +424,9 @@ void Player::stopSpecial() {
   }
   info("Stopping special mode");
   specialMode_ = 0;
+  loop_ = false;
+  currentPattern_ = computeNextPattern(currentPattern_);
+  nextPattern_ = computeNextPattern(currentPattern_);
 }
 
 static constexpr Milliseconds kEffectDuration = 10 * ONE_SECOND;
@@ -448,30 +463,6 @@ void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
   } else {
     effect = patternFromBits(currentPattern_);
     frame.time = currentTime - currentPatternStartTime_;
-  }
-
-  // TODO have special effects modify currentPattern so they sync to neighbors.
-  switch (specialMode_) {
-    case 1:
-#if WEARABLE
-      effect = &calibration_effect;
-#endif // WEARABLE
-      break;
-    case 2:
-      effect = get_network_effect(networkStatus);
-      break;
-    case 3:
-      effect = &black_effect;
-      break;
-    case 4:
-      effect = &red_effect;
-      break;
-    case 5:
-      effect = &green_effect;
-      break;
-    case 6:
-      effect = &blue_effect;
-      break;
   }
 
   // Ensure effectContext_ is big enough for this effect.

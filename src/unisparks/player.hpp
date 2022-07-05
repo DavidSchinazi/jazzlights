@@ -124,7 +124,7 @@ class Player {
   const Effect* lastBegunEffect_ = nullptr;
 
   bool loop_ = false;
-  uint8_t specialMode_ = START_SPECIAL;
+  size_t specialMode_ = START_SPECIAL;
 
   std::vector<Network*> networks_;
   std::list<OriginatorEntry> originatorEntries_;
