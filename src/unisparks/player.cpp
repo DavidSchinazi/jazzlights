@@ -934,6 +934,7 @@ void Player::loopOne() {
   }
   info("Looping");
   loop_ = true;
+  nextPattern_ = currentPattern_;
 }
 
 const char* Player::command(const char* req) {
