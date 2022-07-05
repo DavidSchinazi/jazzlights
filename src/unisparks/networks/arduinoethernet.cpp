@@ -64,6 +64,8 @@ NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status, Milliseconds 
       }
       constexpr unsigned long kDhcpTimeoutMs = 5000;
       constexpr unsigned long kResponseTimeoutMs = 1000;
+      // TODO move Ethernet.begin() call to its own thread because it performs DHCP synchronously
+      // and currently blocks our main thread while waiting for a DHCP response.
       int beginRes = Ethernet.begin(localDeviceId_.data(), kDhcpTimeoutMs, kResponseTimeoutMs);
       if (beginRes == 0) {
         error("%u %s Ethernet DHCP failed", currentTime, name());
