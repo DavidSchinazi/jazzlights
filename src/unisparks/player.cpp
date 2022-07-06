@@ -406,6 +406,7 @@ void Player::handleSpecial() {
     0x00000100,  // red.
     0x00000200,  // green.
     0x00000300,  // blue.
+    0x00000700,  // white.
   };
   specialMode_++;
   if (specialMode_ > sizeof(kSpecialPatternBits) / sizeof(kSpecialPatternBits[0])) {
