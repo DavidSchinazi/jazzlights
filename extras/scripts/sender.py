@@ -23,7 +23,7 @@ s.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 3)
 # 2 byte time delta since start of current pattern
 
 BLACK = 0 * 256
-RED = 1
+RED = 1 * 256
 GREEN = 2 * 256
 BLUE = 3 * 256
 PURPLE = 4 * 256
@@ -44,7 +44,7 @@ versionByte = 0x10
 thisDeviceMacAddress = b'\xFF\xFF\x01\x02\x03\x04'
 precedence = 3000
 numHops = 0
-currentPattern = PURPLE
+currentPattern = GLOWRED
 nextPattern = currentPattern
 startTime = time.time()
 

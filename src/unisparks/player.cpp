@@ -91,14 +91,13 @@ auto cyan_effect = solid(CYAN, "cyan");
 auto yellow_effect = solid(YELLOW, "yellow");
 auto white_effect = solid(WHITE, "white");
 
-// TODO figure out why glow effects don't look right.
 auto red_glow_effect = glow(RED, "glow-red");
 auto green_glow_effect = glow(GREEN, "glow-green");
 auto blue_glow_effect = glow(BLUE, "glow-blue");
-auto purple_glow_effect = solid(PURPLE, "glow-purple");
-auto cyan_glow_effect = solid(CYAN, "glow-cyan");
-auto yellow_glow_effect = solid(YELLOW, "glow-yellow");
-auto white_glow_effect = solid(WHITE, "glow-white");
+auto purple_glow_effect = glow(PURPLE, "glow-purple");
+auto cyan_glow_effect = glow(CYAN, "glow-cyan");
+auto yellow_glow_effect = glow(YELLOW, "glow-yellow");
+auto white_glow_effect = glow(WHITE, "glow-white");
 
 auto network_effect = [](NetworkStatus network_status, const std::string& name) {
   return effect(std::string("network-") + name, [ = ](const Frame& frame) {
