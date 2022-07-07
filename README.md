@@ -33,3 +33,8 @@ See [DEBUGGING.md](DEBUGGING.md).
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Acknowledgements
+
+This repository is a heavily modified fork of the original
+[unisparks](https://github.com/unisparks/unisparks) by Dmitry Azovtsev and Igor Chernyshev.
