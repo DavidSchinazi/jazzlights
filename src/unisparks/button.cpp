@@ -172,6 +172,7 @@ static const CRGB menuIconBrightness[ATOM_SCREEN_NUM_LEDS] = {
 };
 
 static const CRGB specColor = CRGB::Green;
+// TODO change color of special icon to match player special color.
 static const CRGB menuIconSpecial[ATOM_SCREEN_NUM_LEDS] = {
     specColor,   specColor,   specColor,   CRGB::Black, CRGB::Black,
     CRGB::Black, CRGB::Black, specColor,   CRGB::Black, CRGB::Black,
