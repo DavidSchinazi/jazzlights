@@ -4,38 +4,7 @@
 #include "unisparks/effects/functional.hpp"
 #include "unisparks/util/math.hpp"
 
-#if WEARABLE
-#  define PLASMA_SPEED 30
-#else //WEARABLE
-#  define PLASMA_SPEED 10
-#endif //WEARABLE
-
 namespace unisparks {
-
-auto plasma = []() {
-  return effect("plasma", [](const Frame & frame) {
-    using internal::sin8;
-    using internal::cos8;
-
-    constexpr int32_t speed = PLASMA_SPEED;
-    uint8_t offset = speed * frame.time / 255;
-    int plasVector = offset * 16;
-
-    // Calculate current center of plasma pattern (can be offscreen)
-    int xOffset = cos8(plasVector / 256);
-    int yOffset = sin8(plasVector / 256);
-
-    return [ = ](const Pixel& px) -> Color {
-      double xx = 16.0 * px.coord.x / width(px.frame);
-      double yy = 16.0 * px.coord.y / height(px.frame);
-      uint8_t hue = sin8(sqrt(square((xx - 7.5) * 10 + xOffset - 127) +
-                              square((yy - 2) * 10 + yOffset - 127)) +
-                         offset);
-
-      return HslColor(hue, 255, 255);
-    };
-  });
-};
 
 // Most of the code here comes from FastLED
 // https://github.com/FastLED/FastLED
@@ -400,7 +369,11 @@ class SpinPlasma : public Effect {
     using internal::sin8;
     using internal::cos8;
 
-    constexpr int32_t speed = PLASMA_SPEED;
+#if WEARABLE
+    constexpr int32_t speed = 30;
+#else  // WEARABLE
+    constexpr int32_t speed = 10;
+#endif  // WEARABLE
     uint8_t offset = speed * pixel.frame.time / 255;
     int plasVector = offset;
 
@@ -428,29 +401,6 @@ public:
     }
     return "sp-unknown";
   }
-};
-
-auto spinplasma = []() {
-  return effect("spinplasma", [](const Frame & frame) {
-    using internal::sin8;
-    using internal::cos8;
-
-    OurColorPalette ocp_ = OCPrainbow;
-
-    constexpr int32_t speed = PLASMA_SPEED;
-    uint8_t offset = speed * frame.time / 255;
-    int plasVector = offset;
-
-    // Calculate current center of plasma pattern (can be offscreen)
-    int xOffset = (cos8(plasVector)-127)/2;
-    int yOffset = (sin8(plasVector)-127)/2;
-
-    return [ = ](const Pixel& px) -> Color {
-      uint8_t color = sin8(sqrt(square(((float)px.coord.x - 7.5) * 12 + xOffset) +
-                                square(((float)px.coord.y - 2) * 12 + yOffset)) + offset);
-      return colorFromOurPalette(ocp_, color);
-    };
-  });
 };
 
 } // namespace unisparks

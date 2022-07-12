@@ -46,7 +46,6 @@ set(LIB_SOURCES
 	../src/unisparks/version.hpp
 	unisparks.hpp
 	unisparks/effects/pixeltest.hpp
-	unisparks/effects/scrolltext.hpp
 	unisparks/networks/udp.cpp
 	unisparks/networks/udp.hpp
 	unisparks/util/geom3d.hpp
