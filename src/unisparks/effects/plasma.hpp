@@ -29,8 +29,8 @@ auto plasma = []() {
       double xx = 16.0 * px.coord.x / width(px.frame);
       double yy = 16.0 * px.coord.y / height(px.frame);
       uint8_t hue = sin8(sqrt(square((xx - 7.5) * 10 + xOffset - 127) +
-      square((yy - 2) * 10 + yOffset - 127)) +
-      offset);
+                              square((yy - 2) * 10 + yOffset - 127)) +
+                         offset);
 
       return HslColor(hue, 255, 255);
     };
