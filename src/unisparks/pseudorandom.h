@@ -10,7 +10,7 @@ namespace unisparks {
 // Shared implementation, only meant to be used by subclasses.
 class Random {
  public:
-  virtual uint8_t GetRandomByte();
+  virtual uint8_t GetRandomByte() = 0;
   virtual uint32_t GetRandom32bits() = 0;
   virtual void GetRandomBytes(void* buffer, size_t length) = 0;
   uint32_t GetRandomNumberBetween(uint32_t min, uint32_t max);

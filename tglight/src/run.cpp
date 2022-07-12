@@ -35,7 +35,7 @@ extern "C" void run(bool verbose, const char* ver, const char* cfgfile) {
   player.connect(&network);
   player.begin(timeMillis());
   for (;;) {
-    player.render(network.status(), timeMillis());
+    player.render(timeMillis());
   }
   // runGui("TechnoGecko LED control", player, fullscreen);
 }

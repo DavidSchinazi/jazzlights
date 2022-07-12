@@ -43,7 +43,7 @@ class Player {
   /**
    *  Render current frame to all strands
    */
-  void render(NetworkStatus networkStatus, Milliseconds currentTime);
+  void render(Milliseconds currentTime);
 
   /**
    *  Play next effect in the playlist

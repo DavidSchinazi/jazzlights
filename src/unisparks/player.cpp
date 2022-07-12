@@ -94,59 +94,6 @@ auto cyan_glow_effect = glow(CYAN, "glow-cyan");
 auto yellow_glow_effect = glow(YELLOW, "glow-yellow");
 auto white_glow_effect = glow(WHITE, "glow-white");
 
-auto network_effect = [](NetworkStatus network_status, const std::string& name) {
-  return effect(std::string("network-") + name, [ = ](const Frame& frame) {
-    int32_t color = 0;
-    switch (network_status) {
-      case INITIALIZING:
-        color = 0xff6600;
-        break;
-      case DISCONNECTED:
-        color = 0xff6600;
-        break;
-      case CONNECTING:
-        color = ((frame.time % 500) < 250) ? 0 : 0xff6600;
-        break;
-      case CONNECTED:
-        color = 0x00ff00;
-        break;
-      case DISCONNECTING:
-        color = 0xff6600;
-        break;
-      case CONNECTION_FAILED:
-        color = 0xff0000;
-        break;
-    }
-    return [ = ](const Pixel& pt) -> Color {
-      const int32_t x = pt.coord.x;
-      const int32_t y = pt.coord.y;
-      if ((x % 5) == 1 || (y % 5) == 1) {
-        return Color(0xff00ff); // purple
-      }
-      return Color(color);
-    };
-  });
-};
-
-auto network_effect_initializing = network_effect(INITIALIZING, "init");
-auto network_effect_disconnected = network_effect(DISCONNECTED, "disconnected");
-auto network_effect_connecting = network_effect(CONNECTING, "connecting");
-auto network_effect_connected = network_effect(CONNECTED, "connected");
-auto network_effect_disconnecting = network_effect(DISCONNECTING, "disconnecting");
-auto network_effect_connection_failed = network_effect(CONNECTION_FAILED, "failed");
-
-Effect* get_network_effect(NetworkStatus networkStatus) {
-  switch (networkStatus) {
-    case INITIALIZING: return &network_effect_initializing;
-    case DISCONNECTED: return &network_effect_disconnected;
-    case CONNECTING: return &network_effect_connecting;
-    case CONNECTED: return &network_effect_connected;
-    case DISCONNECTING: return &network_effect_disconnecting;
-    case CONNECTION_FAILED: return &network_effect_connection_failed;
-  }
-  return &network_effect_connection_failed;
-}
-
 auto synctest = effect("synctest", [](const Frame& frame) {
     return [ = ](const Pixel& /*pt*/) -> Color {
       Color colors[] = {0xff0000, 0x00ff00, 0x0000ff, 0xffffff};
@@ -415,7 +362,7 @@ void Player::stopSpecial() {
 
 static constexpr Milliseconds kEffectDuration = 10 * ONE_SECOND;
 
-void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
+void Player::render(Milliseconds currentTime) {
   if (!ready_) {
     begin(currentTime);
   }

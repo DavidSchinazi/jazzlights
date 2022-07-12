@@ -117,7 +117,7 @@ uint8_t UnpredictableRandom::GetRandomByte() {
 }
 
 uint32_t UnpredictableRandom::GetRandom32bits() {
-#if defined(__APPLE___) || defined(linux) || defined(__linux) || defined(__linux__)
+#if defined(__APPLE__) || defined(linux) || defined(__linux) || defined(__linux__)
   uint32_t result;
   GetRandomBytes(&result, sizeof(result));
   return result;
@@ -133,7 +133,7 @@ uint32_t UnpredictableRandom::GetRandom32bits() {
 }
 
 void UnpredictableRandom::GetRandomBytes(void* buffer, size_t length) {
-#if defined(__APPLE___)
+#if defined(__APPLE__)
   arc4random_buf(buffer, length);
 #elif defined(linux) || defined(__linux) || defined(__linux__)
   (void)getrandom(buffer, length, /*flags=*/0);
@@ -154,7 +154,7 @@ void UnpredictableRandom::GetRandomBytes(void* buffer, size_t length) {
 
 // static
 uint8_t UnpredictableRandom::GetByte() {
-  return UnpredictableRandom().GetByte();
+  return UnpredictableRandom().GetRandomByte();
 }
 
 // static
