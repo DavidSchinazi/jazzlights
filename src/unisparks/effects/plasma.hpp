@@ -227,6 +227,7 @@ extern const TProgmemRGBPalette16 lavaColors_p FL_PROGMEM =
     CRGB::Maroon,
 
     CRGB::DarkRed,
+    CRGB::DarkRed,
     CRGB::Maroon,
     CRGB::DarkRed,
 
