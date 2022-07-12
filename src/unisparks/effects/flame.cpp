@@ -1,18 +1,14 @@
 #include "unisparks/effects/flame.hpp"
+
 #include <assert.h>
+
+#include "unisparks/player.hpp"
 #include "unisparks/util/color.hpp"
 #include "unisparks/util/math.hpp"
 
 namespace unisparks {
 using internal::scale8_video;
 using internal::qsub8;
-using internal::random8seed;
-using internal::random8;
-
-
-inline uint8_t random_(uint8_t from = 0, uint8_t to = 255) {
-  return from + rand() % (to - from);
-}
 
 RgbaColor heatColor(uint8_t temperature) {
   uint8_t r, g, b;
@@ -72,13 +68,15 @@ void Flame::rewind(const Frame& frame) const {
   auto w = static_cast<int>(width(frame));
   auto h = static_cast<int>(height(frame));
 
+  PredictableRandom& predictableRandom = frame.player->predictableRandom();
+
   //heat_t += freq;
   for (int x = 0; x < w; ++x) {
 
     // Step 1.  Cool down every cell a little
     for (int i = 0; i < h; i++) {
       ctx.heat[i * w + x] = qsub8(
-                              ctx.heat[i * w + x], random_(0, ((cooling * 10) / h) + 2));
+                              ctx.heat[i * w + x], predictableRandom.GetRandomNumberBetween(0, ((cooling * 10) / h) + 2));
     }
 
     // Step 2.  Heat from each cell drifts 'up' and diffuses a little
@@ -95,7 +93,7 @@ void Flame::rewind(const Frame& frame) const {
     //   ctx.heat[y * w + x] = qadd8(heat[y * w + x], random8(160,
     //   255));
     // }
-    ctx.heat[x] = random_(160, 255);
+    ctx.heat[x] = predictableRandom.GetRandomNumberBetween(160, 255);
   }
 }
 

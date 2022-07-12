@@ -228,10 +228,6 @@ inline uint8_t qsub8(uint8_t i, uint8_t j) {
   return t;
 }
 
-extern void random8seed(uint16_t v);
-extern uint8_t random8();
-extern uint8_t random8(uint8_t lim);
-extern uint8_t random8(uint8_t min, uint8_t lim);
 extern uint8_t sqrt16(uint16_t x);
 
 /**
