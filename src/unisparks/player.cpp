@@ -856,11 +856,11 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
   lastLEDWriteTime_ = -1;
 }
 
-void Player::loopOne() {
+void Player::loopOne(Milliseconds currentTime) {
   if (loop_) {
     return;
   }
-  info("Looping");
+  info("%u Looping", currentTime);
   loop_ = true;
   nextPattern_ = currentPattern_;
 }
@@ -874,6 +874,8 @@ const char* Player::command(const char* req) {
     // do nothing
   } else  if (!strncmp(req, "next", MAX_CMD_LEN)) {
     next(timeMillis());
+  } else  if (!strncmp(req, "prev", MAX_CMD_LEN)) {
+    loopOne(timeMillis());
   } else {
     snprintf(res, sizeof(res), "! unknown command");
     responded = true;

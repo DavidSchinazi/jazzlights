@@ -131,7 +131,7 @@ void modeAct(Player& player, const Milliseconds currentMillis) {
     case kPrevious:
       info("%u Back button has been hit", currentMillis);
       player.stopSpecial();
-      player.loopOne();
+      player.loopOne(currentMillis);
       break;
     case kBrightness:
       brightnessCursor = (brightnessCursor + 1 < NUM_BRIGHTNESSES) ? brightnessCursor + 1 : 0;
@@ -504,7 +504,7 @@ void doButtons(Player& player, NetworkStatus networkStatus, const Milliseconds c
     case BTN_RELEASED:
       info("Back button has been hit");
       player.stopSpecial();
-      player.loopOne();
+      player.loopOne(currentMillis);
       break;
 
     case BTN_LONGPRESS:

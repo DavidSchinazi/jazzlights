@@ -53,7 +53,7 @@ class Player {
   /**
    *  Loop current effect forever.
    */
-  void loopOne();
+  void loopOne(Milliseconds currentTime);
 
   /**
    * Run text command
