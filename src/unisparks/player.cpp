@@ -15,6 +15,7 @@
 #include "unisparks/effects/slantbars.hpp"
 #include "unisparks/effects/solid.hpp"
 #include "unisparks/effects/threesine.hpp"
+#include "unisparks/pseudorandom.h"
 #include "unisparks/registry.hpp"
 #include "unisparks/renderers/simple.hpp"
 #include "unisparks/util/containers.hpp"
@@ -24,12 +25,6 @@
 #include "unisparks/util/stream.hpp"
 #include "unisparks/util/time.hpp"
 #include "unisparks/version.hpp"
-
-#if defined(linux) || defined(__linux) || defined(__linux__)
-#  include <sys/random.h>
-#elif defined(ESP32)
-#  include "esp_system.h"
-#endif
 
 namespace unisparks {
 
@@ -304,6 +299,9 @@ Player::Player() {
   viewport_.origin.y = 0;
   viewport_.size.height = 1;
   viewport_.size.width = 1;
+  frame_.tempo = 120;
+  frame_.metre = SIMPLE_QUADRUPLE;
+  frame_.player = this;
 }
 
 Player::~Player() {
@@ -360,21 +358,7 @@ void Player::begin(Milliseconds currentTime) {
   while (localDeviceId_ == NetworkDeviceId()) {
     // If no interfaces have a localDeviceId, generate one randomly.
     uint8_t deviceIdBytes[6] = {};
-#if defined(__APPLE___)
-    arc4random_buf(deviceIdBytes, sizeof(deviceIdBytes));
-#elif defined(linux) || defined(__linux) || defined(__linux__)
-    (void)getrandom(&deviceIdBytes[0], sizeof(deviceIdBytes), /*flags=*/0);
-#else
-#  if defined(ESP32)
-    const uint32_t randomOne = esp_random();
-    const uint32_t randomTwo = esp_random();
-#  else
-    const uint32_t randomOne = rand();
-    const uint32_t randomTwo = rand();
-#  endif
-    memcpy(&deviceIdBytes[0], &randomOne, 3);
-    memcpy(&deviceIdBytes[3], &randomTwo, 3);
-#endif
+    UnpredictableRandom::GetBytes(&deviceIdBytes[0], sizeof(deviceIdBytes));
     localDeviceId_ = NetworkDeviceId(deviceIdBytes);
   }
   currentLeader_ = localDeviceId_;
@@ -452,18 +436,15 @@ void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
     network->runLoop(currentTime);
   }
 
-  const Effect* effect;
-  Frame frame;
-  frame.animation.viewport = viewport_;
-  frame.tempo = 120;
-  frame.metre = SIMPLE_QUADRUPLE;
+  frame_.animation.viewport = viewport_;
   if (currentTime - currentPatternStartTime_ > kEffectDuration) {
-    effect = patternFromBits(nextPattern_);
-    frame.time = currentTime - currentPatternStartTime_ - kEffectDuration;
+    frame_.pattern = nextPattern_;
+    frame_.time = currentTime - currentPatternStartTime_ - kEffectDuration;
   } else {
-    effect = patternFromBits(currentPattern_);
-    frame.time = currentTime - currentPatternStartTime_;
+    frame_.pattern = currentPattern_;
+    frame_.time = currentTime - currentPatternStartTime_;
   }
+  const Effect* effect = patternFromBits(frame_.pattern);
 
   // Ensure effectContext_ is big enough for this effect.
   const size_t effectContextSize = effect->contextSize({viewport_, nullptr});
@@ -474,11 +455,11 @@ void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
     effectContextSize_ = effectContextSize;
     effectContext_ = realloc(effectContext_, effectContextSize_);
   }
-  frame.animation.context = effectContext_;
+  frame_.animation.context = effectContext_;
 
   if (effect != lastBegunEffect_) {
     lastBegunEffect_ = effect;
-    effect->begin(frame);
+    effect->begin(frame_);
     lastLEDWriteTime_ =1;
   }
 
@@ -499,10 +480,10 @@ void Player::render(NetworkStatus networkStatus, Milliseconds currentTime) {
   lastLEDWriteTime_ = currentTime;
 
   // Actually render the pixels.
-  effect->rewind(frame);
+  effect->rewind(frame_);
   for (Strand* s = strands_;
        s < strands_ + strandCount_; ++s) {
-    unisparks::render(*s->layout, s->renderer, *effect, frame);
+    unisparks::render(*s->layout, s->renderer, *effect, frame_);
   }
 }
 
@@ -957,6 +938,14 @@ const char* Player::command(const char* req) {
   }
   debug("[%s] -> [%s]", req, res);
   return res;
+}
+
+PredictableRandom& Player::predictableRandom() {
+  if (!randomInitialized_) {
+    predictableRandom_.ResetWithFrame(frame_, lastBegunEffect_->name().c_str());
+    randomInitialized_ = true;
+  }
+  return predictableRandom_;
 }
 
 } // namespace unisparks

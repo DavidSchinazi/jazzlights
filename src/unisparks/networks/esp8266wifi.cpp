@@ -4,6 +4,7 @@
 
 #include <sstream>
 
+#include "unisparks/pseudorandom.h"
 #include "unisparks/util/log.hpp"
 #include "unisparks/util/time.hpp"
 
@@ -48,21 +49,11 @@ NetworkStatus Esp8266WiFi::update(NetworkStatus status, Milliseconds currentTime
       timeOfLastWiFiStatusTransition_ >= 0 &&
       currentTime - timeOfLastWiFiStatusTransition_ > kDhcpTimeout) {
     attemptingDhcp_ = false;
-    uint8_t ipByteC, ipByteD;
-    do {
-#ifdef ESP32
-      const uint32_t randNum = esp_random();
-#else
-      const uint32_t randNum = rand();
-#endif
-      ipByteC = randNum & 0xFF;
-      ipByteD = (randNum >> 8) & 0xFF;
-    } while (ipByteC == 0 || ipByteC == 255);
     IPAddress ip, gw, snm;
     ip[0] = 169;
     ip[1] = 254;
-    ip[2] = ipByteC;
-    ip[3] = ipByteD;
+    ip[2] = UnpredictableRandom::GetNumberBetween(1, 254);
+    ip[3] = UnpredictableRandom::GetNumberBetween(0, 255);
     gw.fromString("169.254.0.0");
     snm.fromString("255.255.0.0");
     info("%u %s Wi-Fi giving up on DHCP, using %u.%u.%u.%u",

@@ -1,6 +1,7 @@
 #ifndef UNISPARKS_NETWORK_H
 #define UNISPARKS_NETWORK_H
 #include <string.h> // memcpy, size_t
+#include "unisparks/types.h"
 #include "unisparks/util/time.hpp"
 #include "unisparks/util/rhytm.hpp"
 
@@ -27,10 +28,6 @@ enum NetworkStatus {
 };
 
 std::string NetworkStatusToString(NetworkStatus status);
-
-using PatternBits = uint32_t;
-using Precedence = uint16_t;
-using NumHops = uint8_t;
 
 #define DEVICE_ID_FMT "%02x:%02x:%02x:%02x:%02x:%02x"
 #define DEVICE_ID_HEX(addr) (addr)(0), (addr)(1), (addr)(2), (addr)(3), (addr)(4), (addr)(5)

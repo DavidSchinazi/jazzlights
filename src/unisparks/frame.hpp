@@ -1,5 +1,7 @@
 #ifndef UNISPARKS_FRAME_HPP
 #define UNISPARKS_FRAME_HPP
+
+#include "unisparks/types.h"
 #include "unisparks/util/geom.hpp"
 #include "unisparks/util/time.hpp"
 #include "unisparks/util/rhytm.hpp"
@@ -13,8 +15,12 @@ struct Animation {
   void* context;
 };
 
+class Player;
+
 struct Frame {
-  // TODO add effect pattern bits to frame and use it from effects.
+ public:
+  PatternBits pattern;
+  Player* player = nullptr;
   Animation animation;
   Milliseconds time;
   BeatsPerMinute tempo;

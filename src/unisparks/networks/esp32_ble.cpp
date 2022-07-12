@@ -6,6 +6,7 @@
 #include <cmath>
 #include <string>
 
+#include "unisparks/pseudorandom.h"
 #include "unisparks/util/log.hpp"
 
 #ifndef ESP32_BLE_DEBUG_OVERRIDE
@@ -396,7 +397,7 @@ void Esp32BleNetwork::GapCallbackInner(esp_gap_ble_cb_event_t event,
     case ESP_GAP_BLE_SCAN_START_COMPLETE_EVT: {
       ESP32_BLE_DEBUG("%u Scanning has now started", currentTime);
       UpdateState(State::kStartingScan, State::kScanning);
-      StopScanningIn(random(500, 1000));
+      StopScanningIn(UnpredictableRandom::GetNumberBetween(500, 1000));
     } break;
     case ESP_GAP_BLE_SCAN_STOP_COMPLETE_EVT: {
       ESP32_BLE_DEBUG("%u Scanning has now stopped", currentTime);

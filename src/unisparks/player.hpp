@@ -3,6 +3,7 @@
 #include "unisparks/effect.hpp"
 #include "unisparks/layout.hpp"
 #include "unisparks/network.hpp"
+#include "unisparks/pseudorandom.h"
 #include "unisparks/renderer.hpp"
 #include "unisparks/renderers/simple.hpp"
 #include "unisparks/registry.hpp"
@@ -82,6 +83,8 @@ class Player {
   void setBasePrecedence(Precedence basePrecedence) {basePrecedence_ = basePrecedence; }
   void setPrecedenceGain(Precedence precedenceGain) {precedenceGain_ = precedenceGain; }
 
+  PredictableRandom& predictableRandom();
+
  private:
   void handleReceivedMessage(NetworkMessage message, Milliseconds currentTime);
 
@@ -135,6 +138,10 @@ class Player {
   Precedence precedenceGain_ = 0;
   NetworkDeviceId localDeviceId_ = NetworkDeviceId();
   NetworkDeviceId currentLeader_ = NetworkDeviceId();
+
+  Frame frame_;
+  PredictableRandom predictableRandom_;
+  bool randomInitialized_ = false;
 
   // Mutable because it is used for logging
   mutable int fps_ = -1;
