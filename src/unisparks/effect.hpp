@@ -20,5 +20,9 @@ class Effect {
   virtual std::string name() const = 0;
 };
 
+// TODO import some patterns from WLED
+// https://github.com/Aircoookie/WLED/wiki/List-of-effects-and-palettes
+// https://github.com/Aircoookie/WLED/blob/main/wled00/FX.cpp
+
 } // namespace unisparks
 #endif /* UNISPARKS_EFFECT_H */
