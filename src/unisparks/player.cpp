@@ -779,6 +779,9 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
         const Milliseconds timeDelta = message.currentPatternStartTime - entry->currentPatternStartTime;
         if (shouldUpdateStartTime || timeDelta >= kPatternStartTimeDeltaMax) {
           changes << ", elapsedTime += " << timeDelta;
+          if (entry->currentPattern == message.currentPattern && timeDelta >= kEffectDuration / 2) {
+            changes << " (keeping currentPattern " << patternFromBits(entry->currentPattern)->name() << ")";
+          }
           shouldUpdateStartTime = true;
         } else if (timeDelta < kPatternStartTimeDeltaMin) {
           if (is_debug_logging_enabled()) {
