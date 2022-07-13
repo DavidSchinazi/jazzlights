@@ -14,8 +14,8 @@ jobs:
     - uses: actions/checkout@v2
     - name: Install dependencies of out dependencies
       run: |
-          apt update
-          apt install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev wayland-protocols libwayland-dev libxkbcommon-dev
+          sudo apt update
+          sudo apt install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev wayland-protocols libwayland-dev libxkbcommon-dev
     - name: Download GLFW3 Dependency
       run: curl -OL https://github.com/glfw/glfw/releases/download/3.3.7/glfw-3.3.7.zip
     - name: Extract GLFW3 Dependency
@@ -23,7 +23,7 @@ jobs:
     - name: Prepare GLFW3 Dependency CMake files
       run: cmake -S glfw-3.3.7 -B glfw-3.3.7/build
     - name: Install GLFW3 Dependency
-      run: cmake --install glfw-3.3.7/build
+      run: sudo cmake --install glfw-3.3.7/build
     - name: Prepare CMake Files
       run: cmake -S extras -B extras/build
     - name: Build
