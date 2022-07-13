@@ -379,30 +379,28 @@ public:
   }
   Color color(const Pixel& pixel) const override {
     const uint8_t color =
-      internal::sin8(sqrt(square((static_cast<float>(pixel.coord.x) + xOffset_) * 12.0) +
-                          square((static_cast<float>(pixel.coord.y) + yOffset_) * 12.0)));
+      internal::sin8(sqrt(square((static_cast<float>(pixel.coord.x) - xOffset_) * xMultiplier_) +
+                          square((static_cast<float>(pixel.coord.y) - yOffset_) * yMultiplier_)));
     return colorFromOurPalette(ocp_, color);
   }
 
   size_t contextSize(const Animation&) const override { return 0; }
   void begin(const Frame& /*frame*/) override {}
   void rewind(const Frame& frame) override {
-#if WEARABLE
-    constexpr int32_t speed = 30;
-#else  // WEARABLE
-    constexpr int32_t speed = 10;
-#endif  // WEARABLE
-    const uint8_t offset = speed * frame.time / 255;
-
+    const uint8_t offset = 30 * frame.time / 255;
     // Calculate current center of plasma pattern (can be offscreen)
-    xOffset_ = (static_cast<float>(internal::cos8(offset))-127.0)/24.0 - 7.5;
-    yOffset_ = (static_cast<float>(internal::sin8(offset))-127.0)/24.0 - 2.0;
+    xOffset_ = (static_cast<float>(internal::cos8(offset))-127.0+180.0) * frame.animation.viewport.size.width / 480.0;
+    yOffset_ = (static_cast<float>(internal::sin8(offset))-127.0+48.0) * frame.animation.viewport.size.height / 480.0;
+    xMultiplier_ = 240.0 / frame.animation.viewport.size.width;
+    yMultiplier_ = 240.0 / frame.animation.viewport.size.height;
   }
 
  private:
   OurColorPalette ocp_ = OCPrainbow;
   float xOffset_;
   float yOffset_;
+  float xMultiplier_;
+  float yMultiplier_;
 };
 
 } // namespace unisparks
