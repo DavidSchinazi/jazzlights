@@ -132,7 +132,7 @@ PatternBits computeNextPattern(PatternBits pattern) {
   return pattern;
 }
 
-auto spin_rainbow_pattern = clone(rainbow());
+auto spin_rainbow_pattern = clone(SpinPlasma(OCPrainbow));
 auto spin_forest_pattern = clone(SpinPlasma(OCPforest));
 auto spin_party_pattern = clone(SpinPlasma(OCPparty));
 auto spin_cloud_pattern = clone(SpinPlasma(OCPcloud));
@@ -177,7 +177,7 @@ Effect* patternFromBits(PatternBits pattern) {
     if (patternbit(pattern, 1)) { // spin
       if (patternbit(pattern, 2)) { // nature
         if (patternbit(pattern, 3)) { // rainbow
-          return &rainbow_pattern;
+          return &spin_rainbow_pattern;
         } else { // frolick
           if (patternbit(pattern, 4)) { // forest
             return &spin_forest_pattern;
