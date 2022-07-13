@@ -380,8 +380,7 @@ public:
   Color color(const Pixel& pixel) const override {
     const uint8_t color =
       internal::sin8(sqrt(square((static_cast<float>(pixel.coord.x) + xOffset_) * 12.0) +
-                          square((static_cast<float>(pixel.coord.y) + yOffset_) * 12.0)) +
-                          offset_);
+                          square((static_cast<float>(pixel.coord.y) + yOffset_) * 12.0)));
     return colorFromOurPalette(ocp_, color);
   }
 
@@ -393,16 +392,15 @@ public:
 #else  // WEARABLE
     constexpr int32_t speed = 10;
 #endif  // WEARABLE
-    offset_ = speed * frame.time / 255;
+    const uint8_t offset = speed * frame.time / 255;
 
     // Calculate current center of plasma pattern (can be offscreen)
-    xOffset_ = (static_cast<float>(internal::cos8(offset_))-127.0)/24.0 - 7.5;
-    yOffset_ = (static_cast<float>(internal::sin8(offset_))-127.0)/24.0 - 2.0;
+    xOffset_ = (static_cast<float>(internal::cos8(offset))-127.0)/24.0 - 7.5;
+    yOffset_ = (static_cast<float>(internal::sin8(offset))-127.0)/24.0 - 2.0;
   }
 
  private:
   OurColorPalette ocp_ = OCPrainbow;
-  uint8_t offset_;
   float xOffset_;
   float yOffset_;
 };
