@@ -91,5 +91,5 @@ install(TARGETS unisparks-demo DESTINATION bin COMPONENT "demo")
 # BENCH
 add_executable(unisparks-bench ${BENCH_SOURCES})
 target_link_libraries(unisparks-bench unisparks)
-set_target_properties(unisparks-bench PROPERTIES COMPILE_OPTIONS "-std=c++11;-fPIC;-Wall;-Wextra;-Werror;-o2")
+set_target_properties(unisparks-bench PROPERTIES COMPILE_OPTIONS "-std=c++14" "-fPIC" "-Wall" "-Wextra" "-Werror")
 install(TARGETS unisparks-bench DESTINATION bin COMPONENT "bench")
