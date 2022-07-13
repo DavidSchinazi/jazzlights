@@ -32,8 +32,8 @@ int main(int argn, char** argv) {
   UnixUdpNetwork network;
 
   DemoLoader().load(config, player);
-  player.connect(network);
-  player.begin(millis());
+  player.connect(&network);
+  player.begin(timeMillis());
 
   return runGui("Unisparks Demo", player, player.bounds(), fullscreen);
 }

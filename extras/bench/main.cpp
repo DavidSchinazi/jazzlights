@@ -11,10 +11,10 @@ void dummyRender(int, uint8_t, uint8_t, uint8_t) {
 
 int main(int, char**) {
   player.addStrand(pixels, &dummyRender);
-  player.begin(millis());
+  player.begin(timeMillis());
   int fps = -1;
   for(;;) {
-    player.render(millis());
+    player.render(timeMillis());
     if (player.fps() != fps) {
       info("FPS: %d", fps);
       fps = player.fps();

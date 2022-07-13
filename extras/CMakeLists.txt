@@ -27,6 +27,8 @@ set(LIB_SOURCES
 	../src/unisparks/network.hpp
 	../src/unisparks/player.cpp
 	../src/unisparks/player.hpp
+	../src/unisparks/pseudorandom.cpp
+	../src/unisparks/pseudorandom.h
 	../src/unisparks/registry.cpp
 	../src/unisparks/registry.hpp
 	../src/unisparks/renderer.hpp
@@ -64,11 +66,6 @@ set(DEMO_SOURCES
 	demo/main.cpp
 )
 
-set(TEST_SOURCES
-	tests/main.cpp
-	tests/player.cpp
-)
-
 set(BENCH_SOURCES
 	bench/main.cpp
 )
@@ -90,13 +87,6 @@ target_link_libraries(unisparks-demo unisparks)
 target_include_directories(unisparks-demo PRIVATE ../src)
 set_target_properties(unisparks-demo PROPERTIES COMPILE_OPTIONS "-std=c++14" "-fPIC" "-Wall" "-Wextra" "-Werror")
 install(TARGETS unisparks-demo DESTINATION bin COMPONENT "demo")
-
-# TESTS
-add_executable(unisparks-test ${TEST_SOURCES})
-target_link_libraries(unisparks-test unisparks)
-target_include_directories(unisparks-test PRIVATE tests)
-set_target_properties(unisparks-test PROPERTIES COMPILE_OPTIONS "-std=c++14" "-fPIC" "-Wall" "-Wextra" "-Werror")
-install(TARGETS unisparks-test DESTINATION bin COMPONENT "tests")
 
 # BENCH
 add_executable(unisparks-bench ${BENCH_SOURCES})
