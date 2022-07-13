@@ -366,34 +366,9 @@ static inline RgbaColor colorFromOurPalette(OurColorPalette ocp, uint8_t color) 
 }
 
 class SpinPlasma : public Effect {
-  Color color(const Pixel& pixel) const override {
-    using internal::sin8;
-    using internal::cos8;
-
-#if WEARABLE
-    constexpr int32_t speed = 30;
-#else  // WEARABLE
-    constexpr int32_t speed = 10;
-#endif  // WEARABLE
-    uint8_t offset = speed * pixel.frame.time / 255;
-    int plasVector = offset;
-
-    // Calculate current center of plasma pattern (can be offscreen)
-    int xOffset = (cos8(plasVector)-127)/2;
-    int yOffset = (sin8(plasVector)-127)/2;
-
-    uint8_t color = sin8(sqrt(square(((float)pixel.coord.x - 7.5) * 12 + xOffset) +
-                              square(((float)pixel.coord.y - 2) * 12 + yOffset)) + offset);
-    return colorFromOurPalette(ocp_, color);
-  }
-
-  size_t contextSize(const Animation&) const override { return 0; }
-  void begin(const Frame&) const override {}
-  void rewind(const Frame& /*frame*/) const override {}
-
-  OurColorPalette ocp_ = OCPrainbow;
 public:
-  SpinPlasma(OurColorPalette ocp) : ocp_(ocp) {}
+  explicit SpinPlasma(OurColorPalette ocp) : ocp_(ocp) {}
+
   std::string name() const override {
     switch(ocp_) {
 #define X(c) case OCP##c: return "sp-" #c;
@@ -402,6 +377,34 @@ public:
     }
     return "sp-unknown";
   }
+  Color color(const Pixel& pixel) const override {
+    const uint8_t color =
+      internal::sin8(sqrt(square(((float)pixel.coord.x - 7.5) * 12 + xOffset_) +
+                          square(((float)pixel.coord.y - 2) * 12 + yOffset_)) +
+                          offset_);
+    return colorFromOurPalette(ocp_, color);
+  }
+
+  size_t contextSize(const Animation&) const override { return 0; }
+  void begin(const Frame& /*frame*/) override {}
+  void rewind(const Frame& frame) override {
+#if WEARABLE
+    constexpr int32_t speed = 30;
+#else  // WEARABLE
+    constexpr int32_t speed = 10;
+#endif  // WEARABLE
+    offset_ = speed * frame.time / 255;
+
+    // Calculate current center of plasma pattern (can be offscreen)
+    xOffset_ = (internal::cos8(offset_)-127)/2;
+    yOffset_ = (internal::sin8(offset_)-127)/2;
+  }
+
+ private:
+  OurColorPalette ocp_ = OCPrainbow;
+  uint8_t offset_;
+  int xOffset_;
+  int yOffset_;
 };
 
 } // namespace unisparks

@@ -391,7 +391,7 @@ void Player::render(Milliseconds currentTime) {
     frame_.pattern = currentPattern_;
     frame_.time = currentTime - currentPatternStartTime_;
   }
-  const Effect* effect = patternFromBits(frame_.pattern);
+  Effect* effect = patternFromBits(frame_.pattern);
 
   // Ensure effectContext_ is big enough for this effect.
   const size_t effectContextSize = effect->contextSize({viewport_, nullptr});

@@ -58,12 +58,12 @@ size_t Flame::contextSize(const Animation& a) const {
   return sizeof(Context) + a.viewport.size.width * a.viewport.size.height;
 }
 
-void Flame::begin(const Frame& frame) const {
+void Flame::begin(const Frame& frame) {
   Context& ctx = *static_cast<Context*>(frame.animation.context);
   memset(ctx.heat, 0, width(frame)*height(frame));
 }
 
-void Flame::rewind(const Frame& frame) const {
+void Flame::rewind(const Frame& frame) {
   Context& ctx = *static_cast<Context*>(frame.animation.context);
   auto w = static_cast<int>(width(frame));
   auto h = static_cast<int>(height(frame));

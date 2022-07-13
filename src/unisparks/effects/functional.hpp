@@ -19,11 +19,11 @@ class FrameFuncEffect : public Effect {
     return sizeof(ContextT);
   }
 
-  void begin(const Frame& frame) const override {
+  void begin(const Frame& frame) override {
     new(frame.animation.context) ContextT(initFrame_(frame));
   }
 
-  void rewind(const Frame& frame) const override {
+  void rewind(const Frame& frame) override {
     static_cast<ContextT*>(frame.animation.context)->~ContextT();
     new(frame.animation.context) ContextT(initFrame_(frame));
   }
