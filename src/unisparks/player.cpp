@@ -398,7 +398,7 @@ void Player::render(Milliseconds currentTime) {
   if (effectContextSize > effectContextSize_) {
     info("%u realloc context size from %zu to %zu (%s w %f h %f)",
          currentTime, effectContextSize_, effectContextSize,
-         effect->name().c_str(), viewport_.size.width * viewport_.size.height);
+         effect->name().c_str(), viewport_.size.width, viewport_.size.height);
     effectContextSize_ = effectContextSize;
     effectContext_ = realloc(effectContext_, effectContextSize_);
   }
