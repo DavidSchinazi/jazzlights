@@ -379,8 +379,8 @@ public:
   }
   Color color(const Pixel& pixel) const override {
     const uint8_t color =
-      internal::sin8(sqrt(square(((float)pixel.coord.x - 7.5) * 12 + xOffset_) +
-                          square(((float)pixel.coord.y - 2) * 12 + yOffset_)) +
+      internal::sin8(sqrt(square((static_cast<float>(pixel.coord.x) + xOffset_) * 12.0) +
+                          square((static_cast<float>(pixel.coord.y) + yOffset_) * 12.0)) +
                           offset_);
     return colorFromOurPalette(ocp_, color);
   }
@@ -396,15 +396,15 @@ public:
     offset_ = speed * frame.time / 255;
 
     // Calculate current center of plasma pattern (can be offscreen)
-    xOffset_ = (internal::cos8(offset_)-127)/2;
-    yOffset_ = (internal::sin8(offset_)-127)/2;
+    xOffset_ = (static_cast<float>(internal::cos8(offset_))-127.0)/24.0 - 7.5;
+    yOffset_ = (static_cast<float>(internal::sin8(offset_))-127.0)/24.0 - 2.0;
   }
 
  private:
   OurColorPalette ocp_ = OCPrainbow;
   uint8_t offset_;
-  int xOffset_;
-  int yOffset_;
+  float xOffset_;
+  float yOffset_;
 };
 
 } // namespace unisparks
