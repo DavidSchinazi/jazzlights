@@ -12,6 +12,14 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Download GLFW3 Dependency
+      run: curl -OL https://github.com/glfw/glfw/releases/download/3.3.7/glfw-3.3.7.zip
+    - name: Extract GLFW3 Dependency
+      run: unzip glfw-3.3.7.zip
+    - name: Prepare GLFW3 Dependency CMake files
+      run: cmake -S glfw-3.3.7 -B glfw-3.3.7/build
+    - name: Install GLFW3 Dependency
+      run: cmake --install glfw-3.3.7/build
     - name: Prepare CMake Files
       run: cmake -S extras -B extras/build
     - name: Build
