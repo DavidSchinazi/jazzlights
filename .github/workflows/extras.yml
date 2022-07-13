@@ -12,6 +12,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Install dependencies of out dependencies
+      run: |
+          apt update
+          apt install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev wayland-protocols libwayland-dev libxkbcommon-dev
     - name: Download GLFW3 Dependency
       run: curl -OL https://github.com/glfw/glfw/releases/download/3.3.7/glfw-3.3.7.zip
     - name: Extract GLFW3 Dependency
