@@ -319,7 +319,7 @@ void Player::begin(Milliseconds currentTime) {
        pxcnt,
        !networks_.empty() ? "networked" : "standalone",
        DEVICE_ID_HEX(localDeviceId_),
-       viewport_.size.width * viewport_.size.height);
+       viewport_.size.width, viewport_.size.height);
 
   ready_ = true;
 
