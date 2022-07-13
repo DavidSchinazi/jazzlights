@@ -21,8 +21,7 @@ Summary for macOS:
 ```
     cd unisparks/extras
     cmake -S . -B build
-    cd build
-    make
+    cmake --build build
 ```
 
 # Run

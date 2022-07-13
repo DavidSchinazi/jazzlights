@@ -13,6 +13,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Prepare CMake Files
-      run: cmake -S unisparks/extras -B unisparks/extras/build
+      run: cmake -S extras -B extras/build
     - name: Build
-      run: cmake --build build
+      run: cmake --build extras/build
