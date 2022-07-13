@@ -13,7 +13,7 @@ class Random {
   virtual uint8_t GetRandomByte() = 0;
   virtual uint32_t GetRandom32bits() = 0;
   virtual void GetRandomBytes(void* buffer, size_t length) = 0;
-  uint32_t GetRandomNumberBetween(uint32_t min, uint32_t max);
+  int32_t GetRandomNumberBetween(int32_t min, int32_t max);
  protected:
   Random() = default;
 };
@@ -44,7 +44,7 @@ class UnpredictableRandom : public Random {
   static uint8_t GetByte();
   static uint32_t Get32bits();
   static void GetBytes(void* buffer, size_t length);
-  static uint32_t GetNumberBetween(uint32_t min, uint32_t max);
+  static int32_t GetNumberBetween(int32_t min, int32_t max);
  private:
   UnpredictableRandom() = default;
   uint8_t GetRandomByte() override;

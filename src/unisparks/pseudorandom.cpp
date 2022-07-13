@@ -30,9 +30,15 @@ inline uint64_t NextXorShift64StarValue(uint64_t x) {
 
 }  // namespace
 
-uint32_t Random::GetRandomNumberBetween(uint32_t min, uint32_t max) {
-  if (max == std::numeric_limits<uint32_t>::max() && min == 0) {
-    return GetRandom32bits();
+int32_t Random::GetRandomNumberBetween(int32_t min, int32_t max) {
+  if (max == std::numeric_limits<int32_t>::max() &&
+      min == std::numeric_limits<int32_t>::min()) {
+    uint32_t rand32u = GetRandom32bits();
+    if (rand32u <= static_cast<uint32_t>(std::numeric_limits<int32_t>::max())) {
+      return rand32u;
+    } else {
+      return static_cast<int32_t>(static_cast<int64_t>(rand32u) - (1LL << 32));
+    }
   }
   const uint32_t numBins = max - min + 1;
   const uint32_t binSize = std::numeric_limits<uint32_t>::max() / numBins;
@@ -41,7 +47,8 @@ uint32_t Random::GetRandomNumberBetween(uint32_t min, uint32_t max) {
   do {
    rand32 = GetRandom32bits();
   } while (std::numeric_limits<uint32_t>::max() - defect <= rand32);
-  return min + rand32 / binSize;
+  rand32 /= binSize;
+  return min + static_cast<int32_t>(rand32);
 }
 
 void PredictableRandom::IngestByte(uint8_t b) {
@@ -168,7 +175,7 @@ void UnpredictableRandom::GetBytes(void* buffer, size_t length) {
 }
 
 // static
-uint32_t UnpredictableRandom::GetNumberBetween(uint32_t min, uint32_t max) {
+int32_t UnpredictableRandom::GetNumberBetween(int32_t min, int32_t max) {
   return UnpredictableRandom().GetRandomNumberBetween(min, max);
 }
 

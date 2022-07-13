@@ -379,28 +379,42 @@ public:
   }
   Color color(const Pixel& pixel) const override {
     const uint8_t color =
-      internal::sin8(sqrt(square((static_cast<float>(pixel.coord.x) - xOffset_) * xMultiplier_) +
-                          square((static_cast<float>(pixel.coord.y) - yOffset_) * yMultiplier_)));
+      internal::sin8(sqrt(square((static_cast<float>(pixel.coord.x) - plasmaCenterX_) * xMultiplier_) +
+                          square((static_cast<float>(pixel.coord.y) - plasmaCenterY_) * yMultiplier_)));
     return colorFromOurPalette(ocp_, color);
   }
 
   size_t contextSize(const Animation&) const override { return 0; }
-  void begin(const Frame& /*frame*/) override {}
+
+  void begin(const Frame& frame) override {
+    const float multiplier = frame.player->predictableRandom().GetRandomNumberBetween(100, 500);//240
+    xMultiplier_ = multiplier / frame.animation.viewport.size.width;
+    yMultiplier_ = multiplier / frame.animation.viewport.size.height;
+    constexpr int32_t randomGranularity = 10000;
+    rotationCenterX_ =
+      frame.animation.viewport.origin.x +
+      static_cast<float>(frame.player->predictableRandom().GetRandomNumberBetween(0, randomGranularity)) *
+        frame.animation.viewport.size.width / randomGranularity;
+    rotationCenterY_ =
+      frame.animation.viewport.origin.y +
+      static_cast<float>(frame.player->predictableRandom().GetRandomNumberBetween(0, randomGranularity)) *
+        frame.animation.viewport.size.height / randomGranularity;
+  }
+
   void rewind(const Frame& frame) override {
     const uint8_t offset = 30 * frame.time / 255;
-    // Calculate current center of plasma pattern (can be offscreen)
-    xOffset_ = (static_cast<float>(internal::cos8(offset))-127.0+180.0) * frame.animation.viewport.size.width / 480.0;
-    yOffset_ = (static_cast<float>(internal::sin8(offset))-127.0+48.0) * frame.animation.viewport.size.height / 480.0;
-    xMultiplier_ = 240.0 / frame.animation.viewport.size.width;
-    yMultiplier_ = 240.0 / frame.animation.viewport.size.height;
+    plasmaCenterX_ = rotationCenterX_ + (static_cast<float>(internal::cos8(offset)) - 127.0) / (xMultiplier_ * 2.0);
+    plasmaCenterY_ = rotationCenterY_ + (static_cast<float>(internal::sin8(offset)) - 127.0) / (yMultiplier_ * 2.0);
   }
 
  private:
   OurColorPalette ocp_ = OCPrainbow;
-  float xOffset_;
-  float yOffset_;
+  float plasmaCenterX_;
+  float plasmaCenterY_;
   float xMultiplier_;
   float yMultiplier_;
+  float rotationCenterX_;
+  float rotationCenterY_;
 };
 
 } // namespace unisparks
