@@ -54,7 +54,7 @@ RAINBOW = 0x00000001
 
 versionByte = 0x10
 thisDeviceMacAddress = b'\xFF\xFF\x01\x02\x03\x04'
-precedence = 3000
+precedence = 30000
 numHops = 0
 currentPattern = GLOWRED
 nextPattern = currentPattern
