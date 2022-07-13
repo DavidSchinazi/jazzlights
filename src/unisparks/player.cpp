@@ -310,7 +310,7 @@ void Player::begin(Milliseconds currentTime) {
   }
   currentLeader_ = localDeviceId_;
   info("%u Starting Unisparks player %s (v%s); strands: %d%s, "
-       "pixels: %d, %s " DEVICE_ID_FMT " w %f h %f",
+       "pixels: %d, %s " DEVICE_ID_FMT " w %f h %f ox %f oy %f",
        currentTime,
        BOOT_MESSAGE,
        UNISPARKS_VERSION,
@@ -319,7 +319,8 @@ void Player::begin(Milliseconds currentTime) {
        pxcnt,
        !networks_.empty() ? "networked" : "standalone",
        DEVICE_ID_HEX(localDeviceId_),
-       viewport_.size.width, viewport_.size.height);
+       viewport_.size.width, viewport_.size.height,
+       viewport_.origin.x, viewport_.origin.y);
 
   ready_ = true;
 
