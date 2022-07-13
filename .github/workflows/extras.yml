@@ -23,7 +23,7 @@ jobs:
     - name: Prepare GLFW3 Dependency CMake files
       run: cmake -S glfw-3.3.7 -B glfw-3.3.7/build
     - name: Install GLFW3 Dependency
-      run: sudo cmake --install glfw-3.3.7/build
+      run: sudo make -C glfw-3.3.7/build install
     - name: Prepare CMake Files
       run: cmake -S extras -B extras/build
     - name: Build

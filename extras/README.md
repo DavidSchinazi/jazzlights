@@ -12,8 +12,7 @@ Summary for macOS:
 ```
     cd GLFW_DIR
     cmake -S . -B build
-    cd build
-    sudo make install
+    sudo make -C build install
 ```
 
 # Build
