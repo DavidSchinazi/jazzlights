@@ -188,21 +188,6 @@ std::string patternName(PatternBits pattern) {
   return patternFromBits(pattern)->effectName(pattern);
 }
 
-void render(const Layout& layout, Renderer* renderer,
-            const Effect& effect, const Frame& frame) {
-  auto pixels = points(layout);
-  auto colors = map(pixels, [&](Point pt) -> Color {
-    Pixel px;
-    px.coord = pt;
-    Color clr = effect.color(frame, px);
-    return clr;
-  });
-
-  if (renderer) {
-    renderer->render(colors);
-  }
-}
-
 Player::Player() {
   frame_.viewport.origin.x = 0;
   frame_.viewport.origin.y = 0;
@@ -403,9 +388,16 @@ void Player::render(Milliseconds currentTime) {
   // Actually render the pixels.
   predictableRandom_.ResetWithFrameTime(frame_, effect->effectName(frame_.pattern).c_str());
   effect->rewind(frame_);
-  for (Strand* s = strands_;
-       s < strands_ + strandCount_; ++s) {
-    unisparks::render(*s->layout, s->renderer, *effect, frame_);
+  for (Strand* s = strands_; s < strands_ + strandCount_; ++s) {
+    auto pixels = points(*s->layout);
+    auto colors = map(pixels, [&](Point pt) -> Color {
+      Pixel px;
+      px.coord = pt;
+      return effect->color(frame_, px);
+    });
+    if (s->renderer) {
+      s->renderer->render(colors);
+    }
   }
 }
 
