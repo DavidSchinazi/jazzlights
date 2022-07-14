@@ -42,7 +42,7 @@ int comparePrecedence(Precedence leftPrecedence,
 }
 
 #if WEARABLE
-
+// TODO make calibation effect work on non-vests
 auto calibration_effect = effect("calibration", [](const Frame& frame) {
   const bool blink = ((frame.time % 1000) < 500);
   return [ = ](const Pixel& pt) -> Color {
