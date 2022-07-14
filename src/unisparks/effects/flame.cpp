@@ -47,20 +47,18 @@ RgbaColor heatColor(uint8_t temperature) {
   return RgbaColor(r, g, b);
 }
 
-static constexpr int cooling = 120;
-
 struct Context {
   Milliseconds t;
   uint8_t heat[];
 };
 
 size_t Flame::contextSize(const Frame& frame) const {
-  return sizeof(Context) + frame.xValues.size() * frame.yValues.size();
+  return sizeof(Context) + sizeof(uint8_t) * frame.xValues.size() * frame.yValues.size();
 }
 
 void Flame::begin(const Frame& frame) const {
   Context& ctx = *static_cast<Context*>(frame.context);
-  memset(ctx.heat, 0, frame.xValues.size() * frame.yValues.size());
+  memset(ctx.heat, 0, sizeof(uint8_t) * frame.xValues.size() * frame.yValues.size());
 }
 
 void Flame::rewind(const Frame& frame) const {
@@ -68,29 +66,28 @@ void Flame::rewind(const Frame& frame) const {
   const int w = frame.xValues.size();
   const int h = frame.yValues.size();
 
-  //heat_t += freq;
-  for (int x = 0; x < w; ++x) {
-
+  for (int x = 0; x < w; x++) {
     // Step 1.  Cool down every cell a little
-    for (int i = 0; i < h; i++) {
-      ctx.heat[i * w + x] = qsub8(
-                              ctx.heat[i * w + x], frame.predictableRandom->GetRandomNumberBetween(0, ((cooling * 10) / h) + 2));
+    for (int y = 0; y < h; y++) {
+      ctx.heat[y * w + x] = qsub8(ctx.heat[y * w + x],
+                                  frame.predictableRandom->GetRandomNumberBetween(0, 1200 / h + 2));
     }
 
     // Step 2.  Heat from each cell drifts 'up' and diffuses a little
-    for (int k = h - 3; k > 0; k--) {
-      ctx.heat[k * w + x] =
-        (ctx.heat[(k - 1) * w + x] + ctx.heat[(k - 2) * w + x] +
-         ctx.heat[(k - 2) * w + x]) /
-        3;
+    for (int y2 = h - 1; y2 >= 3; y2--) {
+      ctx.heat[y2 * w + x] =
+        (static_cast<uint16_t>(ctx.heat[(y2 - 1) * w + x]) +
+         static_cast<uint16_t>(ctx.heat[(y2 - 2) * w + x]) +
+         static_cast<uint16_t>(ctx.heat[(y2 - 3) * w + x])
+        ) / 3;
     }
+    ctx.heat[2 * w + x] =
+      (static_cast<uint16_t>(ctx.heat[1 * w + x]) +
+       static_cast<uint16_t>(ctx.heat[0 * w + x])
+      ) / 2;
+    ctx.heat[1 * w + x] = ctx.heat[0 * w + x];
 
     // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
-    // if (random8() < sparkling) {
-    //   int y = random8(min(h, 2));
-    //   ctx.heat[y * w + x] = qadd8(heat[y * w + x], random8(160,
-    //   255));
-    // }
     ctx.heat[x] = frame.predictableRandom->GetRandomNumberBetween(160, 255);
   }
 }
