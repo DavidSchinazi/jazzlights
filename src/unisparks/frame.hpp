@@ -71,9 +71,6 @@ inline T& cast_context(const Frame& frame) {
 
 double pulse(const Frame& frame);
 
-uint8_t cycleHue(const Frame& frame);
-uint8_t cycleHue(const Frame& frame, Milliseconds periodHint);
-
 Milliseconds adjustDuration(const Frame& f, Milliseconds d);
 
 } // namespace unisparks
