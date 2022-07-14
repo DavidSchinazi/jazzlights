@@ -82,13 +82,21 @@ void PredictableRandom::Reset() {
   numUsedStateBytes_ = 0;
 }
 
-void PredictableRandom::ResetWithFrame(const Frame& frame, const char* label) {
+void PredictableRandom::ResetWithPatternTime(PatternBits pattern, Milliseconds elapsedTime, const char* label) {
   Reset();
   IngestLabel(label);
-  Ingest32bits(frame.pattern);
+  Ingest32bits(pattern);
   IngestLabel(label);
-  Ingest32bits(frame.time);
+  Ingest32bits(elapsedTime);
   IngestLabel(label);
+}
+
+void PredictableRandom::ResetWithFrameStart(const Frame& frame, const char* label) {
+  ResetWithPatternTime(frame.pattern, 0, label);
+}
+
+void PredictableRandom::ResetWithFrameTime(const Frame& frame, const char* label) {
+  ResetWithPatternTime(frame.pattern, frame.time, label);
 }
 
 void PredictableRandom::GenerateNextState() {

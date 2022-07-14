@@ -387,17 +387,17 @@ public:
   size_t contextSize(const Animation&) const override { return 0; }
 
   void begin(const Frame& frame) override {
-    const float multiplier = frame.player->predictableRandom().GetRandomNumberBetween(100, 500);//240
+    const float multiplier = frame.predictableRandom->GetRandomNumberBetween(100, 500);
     xMultiplier_ = multiplier / frame.animation.viewport.size.width;
     yMultiplier_ = multiplier / frame.animation.viewport.size.height;
     constexpr int32_t randomGranularity = 10000;
     rotationCenterX_ =
       frame.animation.viewport.origin.x +
-      static_cast<float>(frame.player->predictableRandom().GetRandomNumberBetween(0, randomGranularity)) *
+      static_cast<float>(frame.predictableRandom->GetRandomNumberBetween(0, randomGranularity)) *
         frame.animation.viewport.size.width / randomGranularity;
     rotationCenterY_ =
       frame.animation.viewport.origin.y +
-      static_cast<float>(frame.player->predictableRandom().GetRandomNumberBetween(0, randomGranularity)) *
+      static_cast<float>(frame.predictableRandom->GetRandomNumberBetween(0, randomGranularity)) *
         frame.animation.viewport.size.height / randomGranularity;
   }
 

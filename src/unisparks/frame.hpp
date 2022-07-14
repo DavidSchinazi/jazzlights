@@ -14,12 +14,12 @@ struct Animation {
   void* context;
 };
 
-class Player;
+class PredictableRandom;
 
 struct Frame {
  public:
   PatternBits pattern;
-  Player* player = nullptr;
+  PredictableRandom* predictableRandom = nullptr;
   Animation animation;
   Milliseconds time;
 };

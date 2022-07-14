@@ -17,8 +17,8 @@ class Glitter : public Effect {
   size_t contextSize(const Animation&) const override { return 0; }
 
   void begin(const Frame& frame) override {
-    startHue_ = frame.player->predictableRandom().GetRandomByte();
-    backwards_ = frame.player->predictableRandom().GetRandomByte() & 1;
+    startHue_ = frame.predictableRandom->GetRandomByte();
+    backwards_ = frame.predictableRandom->GetRandomByte() & 1;
   }
 
   void rewind(const Frame& frame) override {
@@ -30,7 +30,7 @@ class Glitter : public Effect {
   }
 
   Color color(const Pixel& pixel) const override {
-    return HslColor(hue_, 255, pixel.frame.player->predictableRandom().GetRandomByte());
+    return HslColor(hue_, 255, pixel.frame.predictableRandom->GetRandomByte());
   }
 
  private:
@@ -39,5 +39,5 @@ class Glitter : public Effect {
   uint8_t hue_;
 };
 
-} // namespace unisparks
+}  // namespace unisparks
 #endif /* UNISPARKS_EFFECTS_GLITTER_H */

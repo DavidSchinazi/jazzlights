@@ -1,6 +1,7 @@
 #ifndef UNISPARKS_PredictableRandom_H
 #define UNISPARKS_PredictableRandom_H
 
+#include <cstddef>
 #include <cstdint>
 
 #include "unisparks/frame.hpp"
@@ -24,11 +25,13 @@ class Random {
 class PredictableRandom : public Random {
  public:
   PredictableRandom();
-  void ResetWithFrame(const Frame& frame, const char* label);
+  void ResetWithFrameStart(const Frame& frame, const char* label);
+  void ResetWithFrameTime(const Frame& frame, const char* label);
   uint8_t GetRandomByte() override;
   uint32_t GetRandom32bits() override;
   void GetRandomBytes(void* buffer, size_t length) override;
  private:
+  void ResetWithPatternTime(PatternBits pattern, Milliseconds elapsedTime, const char* label);
   void Reset();
   void IngestByte(uint8_t b);
   void IngestLabel(const char* label);

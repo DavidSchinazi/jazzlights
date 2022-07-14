@@ -88,7 +88,7 @@ class Player {
   void setPrecedenceGain(Precedence precedenceGain) {precedenceGain_ = precedenceGain; }
   void setRandomizeLocalDeviceId(bool val) { randomizeLocalDeviceId_ = val; }
 
-  PredictableRandom& predictableRandom();
+  PredictableRandom* predictableRandom() { return &predictableRandom_; }
 
  private:
   void handleReceivedMessage(NetworkMessage message, Milliseconds currentTime);
@@ -147,7 +147,6 @@ class Player {
 
   Frame frame_;
   PredictableRandom predictableRandom_;
-  bool randomInitialized_ = false;
 
   // Mutable because it is used for logging
   mutable int fps_ = -1;

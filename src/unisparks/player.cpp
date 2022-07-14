@@ -243,7 +243,7 @@ Player::Player() {
   viewport_.origin.y = 0;
   viewport_.size.height = 1;
   viewport_.size.width = 1;
-  frame_.player = this;
+  frame_.predictableRandom = &predictableRandom_;
 }
 
 Player::~Player() {
@@ -402,7 +402,7 @@ void Player::render(Milliseconds currentTime) {
 
   if (effect != lastBegunEffect_) {
     lastBegunEffect_ = effect;
-    randomInitialized_ = false;
+    predictableRandom_.ResetWithFrameStart(frame_, lastBegunEffect_->name().c_str());
     effect->begin(frame_);
     lastLEDWriteTime_ =1;
   }
@@ -424,7 +424,7 @@ void Player::render(Milliseconds currentTime) {
   lastLEDWriteTime_ = currentTime;
 
   // Actually render the pixels.
-  randomInitialized_ = false;
+  predictableRandom_.ResetWithFrameTime(frame_, lastBegunEffect_->name().c_str());
   effect->rewind(frame_);
   for (Strand* s = strands_;
        s < strands_ + strandCount_; ++s) {
@@ -888,14 +888,6 @@ const char* Player::command(const char* req) {
   }
   debug("[%s] -> [%s]", req, res);
   return res;
-}
-
-PredictableRandom& Player::predictableRandom() {
-  if (!randomInitialized_) {
-    predictableRandom_.ResetWithFrame(frame_, lastBegunEffect_->name().c_str());
-    randomInitialized_ = true;
-  }
-  return predictableRandom_;
 }
 
 } // namespace unisparks

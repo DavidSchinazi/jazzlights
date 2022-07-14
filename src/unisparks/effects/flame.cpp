@@ -68,15 +68,13 @@ void Flame::rewind(const Frame& frame) {
   auto w = static_cast<int>(width(frame));
   auto h = static_cast<int>(height(frame));
 
-  PredictableRandom& predictableRandom = frame.player->predictableRandom();
-
   //heat_t += freq;
   for (int x = 0; x < w; ++x) {
 
     // Step 1.  Cool down every cell a little
     for (int i = 0; i < h; i++) {
       ctx.heat[i * w + x] = qsub8(
-                              ctx.heat[i * w + x], predictableRandom.GetRandomNumberBetween(0, ((cooling * 10) / h) + 2));
+                              ctx.heat[i * w + x], frame.predictableRandom->GetRandomNumberBetween(0, ((cooling * 10) / h) + 2));
     }
 
     // Step 2.  Heat from each cell drifts 'up' and diffuses a little
@@ -93,7 +91,7 @@ void Flame::rewind(const Frame& frame) {
     //   ctx.heat[y * w + x] = qadd8(heat[y * w + x], random8(160,
     //   255));
     // }
-    ctx.heat[x] = predictableRandom.GetRandomNumberBetween(160, 255);
+    ctx.heat[x] = frame.predictableRandom->GetRandomNumberBetween(160, 255);
   }
 }
 
