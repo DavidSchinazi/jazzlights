@@ -137,7 +137,7 @@ auto spin_ocean_pattern = clone(SpinPlasma(OCPocean));
 auto spin_lava_pattern = clone(SpinPlasma(OCPlava));
 auto spin_heat_pattern = clone(SpinPlasma(OCPheat));
 auto flame_pattern = clone(flame());
-auto glitter_pattern = clone(glitter());
+auto glitter_pattern = clone(Glitter());
 auto threesine_pattern = clone(threesine());
 auto rainbow_pattern = clone(rainbow());
 

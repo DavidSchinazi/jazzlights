@@ -8,6 +8,8 @@
 #  include "esp_system.h"
 #endif
 
+#include "unisparks/util/log.hpp"
+
 namespace unisparks {
 namespace {
 
@@ -111,12 +113,12 @@ void PredictableRandom::GetRandomBytes(void* buffer, size_t length) {
   do {
     const uint8_t amountToCopy = sizeof(uint64_t) - numUsedStateBytes_;
     if (length < amountToCopy) { break; }
-    memcpy(buffer8, &state_ + numUsedStateBytes_, amountToCopy);
+    memcpy(buffer8, reinterpret_cast<uint8_t*>(&state_) + numUsedStateBytes_, amountToCopy);
     buffer8 += amountToCopy;
     length -= amountToCopy;
     GenerateNextState();
   } while (true);
-  memcpy(buffer8, &state_ + numUsedStateBytes_, length);
+  memcpy(buffer8, reinterpret_cast<uint8_t*>(&state_) + numUsedStateBytes_, length);
   numUsedStateBytes_ += length;
 }
 uint8_t UnpredictableRandom::GetRandomByte() {
