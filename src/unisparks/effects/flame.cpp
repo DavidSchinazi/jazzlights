@@ -96,6 +96,7 @@ void Flame::rewind(const Frame& frame) const {
 }
 
 Color Flame::color(const Frame& frame, const Pixel& px) const {
+  // TODO understand why this patern lights up the top row.
   Context& ctx = *static_cast<Context*>(frame.context);
   const int w = frame.xValues.size();
   const int h = frame.yValues.size();
