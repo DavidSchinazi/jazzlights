@@ -5,14 +5,11 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <sstream>
-#include "unisparks/effects/chess.hpp"
 #include "unisparks/effects/flame.hpp"
 #include "unisparks/effects/glitter.hpp"
 #include "unisparks/effects/glow.hpp"
 #include "unisparks/effects/plasma.hpp"
 #include "unisparks/effects/rainbow.hpp"
-#include "unisparks/effects/rider.hpp"
-#include "unisparks/effects/slantbars.hpp"
 #include "unisparks/effects/solid.hpp"
 #include "unisparks/effects/threesine.hpp"
 #include "unisparks/pseudorandom.h"

@@ -4,7 +4,6 @@ project(Unisparks)
 
 set(LIB_SOURCES
 	../src/unisparks/effect.hpp
-	../src/unisparks/effects/chess.hpp
 	../src/unisparks/effects/flame.cpp
 	../src/unisparks/effects/flame.hpp
 	../src/unisparks/effects/functional.hpp
@@ -12,9 +11,6 @@ set(LIB_SOURCES
 	../src/unisparks/effects/glow.hpp
 	../src/unisparks/effects/plasma.hpp
 	../src/unisparks/effects/rainbow.hpp
-	../src/unisparks/effects/rider.hpp
-	../src/unisparks/effects/scroll.hpp
-	../src/unisparks/effects/slantbars.hpp
 	../src/unisparks/effects/solid.hpp
 	../src/unisparks/effects/threesine.hpp
 	../src/unisparks/frame.cpp
