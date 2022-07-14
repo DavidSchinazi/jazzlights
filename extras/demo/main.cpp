@@ -32,6 +32,8 @@ int main(int argn, char** argv) {
   UnixUdpNetwork network;
 
   DemoLoader().load(config, player);
+  player.setBasePrecedence(30000);
+  player.setPrecedenceGain(5000);
   player.connect(&network);
   player.begin(timeMillis());
 

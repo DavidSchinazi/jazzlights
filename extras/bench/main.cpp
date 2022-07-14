@@ -11,8 +11,6 @@ void dummyRender(int, uint8_t, uint8_t, uint8_t) {
 
 int main(int, char**) {
   player.addStrand(pixels, &dummyRender);
-  player.setBasePrecedence(30000);
-  player.setPrecedenceGain(5000);
   player.begin(timeMillis());
   int fps = -1;
   for(;;) {
