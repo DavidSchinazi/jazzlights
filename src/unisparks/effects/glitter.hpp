@@ -14,29 +14,34 @@ class Glitter : public Effect {
     return "glitter";
   }
 
-  size_t contextSize(const Animation&) const override { return 0; }
+  size_t contextSize(const Animation&) const override { return sizeof(GlitterState); }
 
   void begin(const Frame& frame) override {
-    startHue_ = frame.predictableRandom->GetRandomByte();
-    backwards_ = frame.predictableRandom->GetRandomByte() & 1;
+    GlitterState* state = reinterpret_cast<GlitterState*>(frame.animation.context);
+    state->startHue = frame.predictableRandom->GetRandomByte();
+    state->backwards = frame.predictableRandom->GetRandomByte() & 1;
   }
 
   void rewind(const Frame& frame) override {
+    GlitterState* state = reinterpret_cast<GlitterState*>(frame.animation.context);
     uint8_t hueOffset = 256 * frame.time / kEffectDuration;
-    if (backwards_) {
+    if (state->backwards) {
       hueOffset = 255 - hueOffset;
     }
-    hue_ = startHue_ + hueOffset;
+    state->hue = state->startHue + hueOffset;
   }
 
   Color color(const Pixel& pixel) const override {
-    return HslColor(hue_, 255, pixel.frame.predictableRandom->GetRandomByte());
+    GlitterState* state = reinterpret_cast<GlitterState*>(pixel.frame.animation.context);
+    return HslColor(state->hue, 255, pixel.frame.predictableRandom->GetRandomByte());
   }
 
  private:
-  uint8_t startHue_;
-  bool backwards_;
-  uint8_t hue_;
+  struct GlitterState {
+    uint8_t startHue;
+    bool backwards;
+    uint8_t hue;
+  };
 };
 
 }  // namespace unisparks
