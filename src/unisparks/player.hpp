@@ -129,7 +129,7 @@ class Player {
   Milliseconds currentPatternStartTime_ = 0;
   PatternBits currentPattern_;
   PatternBits nextPattern_;
-  const Effect* lastBegunEffect_ = nullptr;
+  PatternBits lastBegunPattern_;
 
   bool loop_ = false;
   size_t specialMode_ = START_SPECIAL;

@@ -400,9 +400,9 @@ void Player::render(Milliseconds currentTime) {
   }
   frame_.animation.context = effectContext_;
 
-  if (effect != lastBegunEffect_) {
-    lastBegunEffect_ = effect;
-    predictableRandom_.ResetWithFrameStart(frame_, lastBegunEffect_->name().c_str());
+  if (frame_.pattern != lastBegunPattern_) {
+    lastBegunPattern_ = frame_.pattern;
+    predictableRandom_.ResetWithFrameStart(frame_, effect->name().c_str());
     effect->begin(frame_);
     lastLEDWriteTime_ =1;
   }
@@ -424,7 +424,7 @@ void Player::render(Milliseconds currentTime) {
   lastLEDWriteTime_ = currentTime;
 
   // Actually render the pixels.
-  predictableRandom_.ResetWithFrameTime(frame_, lastBegunEffect_->name().c_str());
+  predictableRandom_.ResetWithFrameTime(frame_, effect->name().c_str());
   effect->rewind(frame_);
   for (Strand* s = strands_;
        s < strands_ + strandCount_; ++s) {
@@ -884,7 +884,7 @@ const char* Player::command(const char* req) {
   if (!responded) {
     // This is used by the WebUI to display the current pattern name.
     snprintf(res, sizeof(res), "playing %s",
-             lastBegunEffect_->name().c_str());
+             patternFromBits(lastBegunPattern_)->name().c_str());
   }
   debug("[%s] -> [%s]", req, res);
   return res;
