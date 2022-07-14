@@ -80,7 +80,7 @@ class Player {
    * Returns the bounding box of all pixels
    */
   const Box& bounds() const {
-    return viewport_;
+    return frame_.viewport;
   }
 
   void handleSpecial();
@@ -128,7 +128,6 @@ class Player {
   Strand strands_[255];
   size_t strandCount_ = 0;
 
-  Box viewport_;
   void* effectContext_ = nullptr;
   size_t effectContextSize_ = 0;
 

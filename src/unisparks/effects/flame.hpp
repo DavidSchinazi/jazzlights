@@ -5,10 +5,10 @@ namespace unisparks {
 
 class Flame : public Effect {
   public:
-  size_t contextSize(const Animation& a) const override;
+  size_t contextSize(const Frame& frame) const override;
   void begin(const Frame& frame) const override;
-  void rewind(const Frame& f) const override;
-  Color color(const Pixel& px) const override;
+  void rewind(const Frame& frame) const override;
+  Color color(const Frame& frame, const Pixel& px) const override;
   std::string effectName(PatternBits /*pattern*/) const override {return "flame"; }
 };
 

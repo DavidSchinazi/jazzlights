@@ -15,21 +15,21 @@ class FrameFuncEffect : public Effect {
 
   FrameFuncEffect(const FrameFuncEffect& other) = default;
 
-  size_t contextSize(const Animation&) const override {
+  size_t contextSize(const Frame& /*frame*/) const override {
     return sizeof(ContextT);
   }
 
   void begin(const Frame& frame) const override {
-    new(frame.animation.context) ContextT(initFrame_(frame));
+    new(frame.context) ContextT(initFrame_(frame));
   }
 
   void rewind(const Frame& frame) const override {
-    static_cast<ContextT*>(frame.animation.context)->~ContextT();
-    new(frame.animation.context) ContextT(initFrame_(frame));
+    static_cast<ContextT*>(frame.context)->~ContextT();
+    new(frame.context) ContextT(initFrame_(frame));
   }
 
-  Color color(const Pixel& pixel) const override {
-    return (*static_cast<ContextT*>(pixel.frame.animation.context))(pixel);
+  Color color(const Frame& frame, const Pixel& px) const override {
+    return (*static_cast<ContextT*>(frame.context))(px);
   }
 
   std::string effectName(PatternBits /*pattern*/) const override {

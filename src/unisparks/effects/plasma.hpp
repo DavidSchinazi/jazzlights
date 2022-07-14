@@ -378,35 +378,35 @@ public:
     }
     return "sp-unknown";
   }
-  Color color(const Pixel& pixel) const override {
-    SpinPlasmaState* state = reinterpret_cast<SpinPlasmaState*>(pixel.frame.animation.context);
+  Color color(const Frame& frame, const Pixel& px) const override {
+    SpinPlasmaState* state = reinterpret_cast<SpinPlasmaState*>(frame.context);
     const uint8_t color =
-      internal::sin8(sqrt(square((static_cast<float>(pixel.coord.x) - state->plasmaCenterX) * state->xMultiplier) +
-                          square((static_cast<float>(pixel.coord.y) - state->plasmaCenterY) * state->yMultiplier)));
+      internal::sin8(sqrt(square((static_cast<float>(px.coord.x) - state->plasmaCenterX) * state->xMultiplier) +
+                          square((static_cast<float>(px.coord.y) - state->plasmaCenterY) * state->yMultiplier)));
     return colorFromOurPalette(state->ocp, color);
   }
 
-  size_t contextSize(const Animation&) const override { return sizeof(SpinPlasmaState); }
+  size_t contextSize(const Frame& /*frame*/) const override { return sizeof(SpinPlasmaState); }
 
   void begin(const Frame& frame) const override {
-    SpinPlasmaState* state = reinterpret_cast<SpinPlasmaState*>(frame.animation.context);
+    SpinPlasmaState* state = reinterpret_cast<SpinPlasmaState*>(frame.context);
     state->ocp = PaletteFromPattern(frame.pattern);
     const float multiplier = frame.predictableRandom->GetRandomNumberBetween(100, 500);
-    state->xMultiplier = multiplier / frame.animation.viewport.size.width;
-    state->yMultiplier = multiplier / frame.animation.viewport.size.height;
+    state->xMultiplier = multiplier / frame.viewport.size.width;
+    state->yMultiplier = multiplier / frame.viewport.size.height;
     constexpr int32_t randomGranularity = 10000;
     state->rotationCenterX =
-      frame.animation.viewport.origin.x +
+      frame.viewport.origin.x +
       static_cast<float>(frame.predictableRandom->GetRandomNumberBetween(0, randomGranularity)) *
-        frame.animation.viewport.size.width / randomGranularity;
+        frame.viewport.size.width / randomGranularity;
     state->rotationCenterY =
-      frame.animation.viewport.origin.y +
+      frame.viewport.origin.y +
       static_cast<float>(frame.predictableRandom->GetRandomNumberBetween(0, randomGranularity)) *
-        frame.animation.viewport.size.height / randomGranularity;
+        frame.viewport.size.height / randomGranularity;
   }
 
   void rewind(const Frame& frame) const override {
-    SpinPlasmaState* state = reinterpret_cast<SpinPlasmaState*>(frame.animation.context);
+    SpinPlasmaState* state = reinterpret_cast<SpinPlasmaState*>(frame.context);
     const uint8_t offset = 30 * frame.time / 255;
     state->plasmaCenterX = state->rotationCenterX + (static_cast<float>(internal::cos8(offset)) - 127.0) / (state->xMultiplier * 2.0);
     state->plasmaCenterY = state->rotationCenterY + (static_cast<float>(internal::sin8(offset)) - 127.0) / (state->yMultiplier * 2.0);

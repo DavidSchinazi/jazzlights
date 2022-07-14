@@ -2,9 +2,11 @@
 
 #include <cstdio>
 #include <limits>
-#include <stdlib.h>
-#include <assert.h>
+#include <set>
 #include <sstream>
+#include <assert.h>
+#include <stdlib.h>
+
 #include "unisparks/effects/flame.hpp"
 #include "unisparks/effects/glitter.hpp"
 #include "unisparks/effects/glow.hpp"
@@ -165,12 +167,7 @@ Effect* patternFromBits(PatternBits pattern) {
     } else { // custom
       if (patternbit(pattern, 2)) { // sparkly
         if (patternbit(pattern, 3)) { // flame
-#if WEARABLE
           return &flame_pattern;
-#else  // WEARABLE
-          // TODO figure out why flame does not work on vehicles.
-          return &spin_pattern;
-#endif  // WEARABLE
         } else { // glitter
           return &glitter_pattern;
         }
@@ -192,13 +189,12 @@ std::string patternName(PatternBits pattern) {
 }
 
 void render(const Layout& layout, Renderer* renderer,
-            const Effect& effect, Frame effectFrame) {
+            const Effect& effect, const Frame& frame) {
   auto pixels = points(layout);
   auto colors = map(pixels, [&](Point pt) -> Color {
     Pixel px;
     px.coord = pt;
-    px.frame = effectFrame;
-    Color clr = effect.color(px);
+    Color clr = effect.color(frame, px);
     return clr;
   });
 
@@ -208,10 +204,10 @@ void render(const Layout& layout, Renderer* renderer,
 }
 
 Player::Player() {
-  viewport_.origin.x = 0;
-  viewport_.origin.y = 0;
-  viewport_.size.height = 1;
-  viewport_.size.width = 1;
+  frame_.viewport.origin.x = 0;
+  frame_.viewport.origin.y = 0;
+  frame_.viewport.size.height = 1;
+  frame_.viewport.size.width = 1;
   frame_.predictableRandom = &predictableRandom_;
 }
 
@@ -247,16 +243,27 @@ Player& Player::connect(Network* n) {
 }
 
 void Player::begin(Milliseconds currentTime) {
-  for (Strand* s = strands_;
-       s < strands_ + strandCount_; ++s) {
-    viewport_ = merge(viewport_, unisparks::bounds(*s->layout));
-  }
 
-  int pxcnt = 0;
+  auto almostLess = [](Coord a, Coord b) {
+    static constexpr Coord kCoordEpsilon = 0.00001;
+    return a + kCoordEpsilon < b;
+  };
+  std::set<Coord, decltype(almostLess)> xSet(almostLess);
+  std::set<Coord, decltype(almostLess)> ySet(almostLess);
+  frame_.pixelCount = 0;
   for (Strand* s = strands_;
        s < strands_ + strandCount_; ++s) {
-    pxcnt += s->layout->pixelCount();
+    frame_.viewport = merge(frame_.viewport, unisparks::bounds(*s->layout));
+    const int pc = s->layout->pixelCount();
+    frame_.pixelCount += pc;
+    for (int i = 0; i < pc; i++) {
+      const Point pt = s->layout->at(i);
+      xSet.insert(pt.x);
+      ySet.insert(pt.y);
+    }
   }
+  frame_.xValues.assign(xSet.begin(), xSet.end());
+  frame_.yValues.assign(ySet.begin(), ySet.end());
 
   // Figure out localDeviceId_.
   if (!randomizeLocalDeviceId_) {
@@ -276,17 +283,18 @@ void Player::begin(Milliseconds currentTime) {
   }
   currentLeader_ = localDeviceId_;
   info("%u Starting Unisparks player %s (v%s); strands: %d%s, "
-       "pixels: %d, %s " DEVICE_ID_FMT " w %f h %f ox %f oy %f",
+       "pixels: %d, %s " DEVICE_ID_FMT " w %f h %f ox %f oy %f xv %zu yv %zu",
        currentTime,
        BOOT_MESSAGE,
        UNISPARKS_VERSION,
        strandCount_,
        strandCount_ < 1 ? " (CONTROLLER ONLY!)" : "",
-       pxcnt,
+       frame_.pixelCount,
        !networks_.empty() ? "networked" : "standalone",
        DEVICE_ID_HEX(localDeviceId_),
-       viewport_.size.width, viewport_.size.height,
-       viewport_.origin.x, viewport_.origin.y);
+       frame_.viewport.size.width, frame_.viewport.size.height,
+       frame_.viewport.origin.x, frame_.viewport.origin.y,
+       frame_.xValues.size(), frame_.yValues.size());
 
   ready_ = true;
 
@@ -348,7 +356,7 @@ void Player::render(Milliseconds currentTime) {
     network->runLoop(currentTime);
   }
 
-  frame_.animation.viewport = viewport_;
+  frame_.context = nullptr;
   if (currentTime - currentPatternStartTime_ > kEffectDuration) {
     frame_.pattern = nextPattern_;
     frame_.time = currentTime - currentPatternStartTime_ - kEffectDuration;
@@ -359,15 +367,15 @@ void Player::render(Milliseconds currentTime) {
   const Effect* effect = patternFromBits(frame_.pattern);
 
   // Ensure effectContext_ is big enough for this effect.
-  const size_t effectContextSize = effect->contextSize({viewport_, nullptr});
+  const size_t effectContextSize = effect->contextSize(frame_);
   if (effectContextSize > effectContextSize_) {
     info("%u realloc context size from %zu to %zu (%s w %f h %f)",
          currentTime, effectContextSize_, effectContextSize,
-         effect->effectName(frame_.pattern).c_str(), viewport_.size.width, viewport_.size.height);
+         effect->effectName(frame_.pattern).c_str(), frame_.viewport.size.width, frame_.viewport.size.height);
     effectContextSize_ = effectContextSize;
     effectContext_ = realloc(effectContext_, effectContextSize_);
   }
-  frame_.animation.context = effectContext_;
+  frame_.context = effectContext_;
 
   if (frame_.pattern != lastBegunPattern_) {
     lastBegunPattern_ = frame_.pattern;

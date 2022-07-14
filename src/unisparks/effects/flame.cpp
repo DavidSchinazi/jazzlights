@@ -54,19 +54,19 @@ struct Context {
   uint8_t heat[];
 };
 
-size_t Flame::contextSize(const Animation& a) const {
-  return sizeof(Context) + a.viewport.size.width * a.viewport.size.height;
+size_t Flame::contextSize(const Frame& frame) const {
+  return sizeof(Context) + frame.xValues.size() * frame.yValues.size();
 }
 
 void Flame::begin(const Frame& frame) const {
-  Context& ctx = *static_cast<Context*>(frame.animation.context);
-  memset(ctx.heat, 0, width(frame)*height(frame));
+  Context& ctx = *static_cast<Context*>(frame.context);
+  memset(ctx.heat, 0, frame.xValues.size() * frame.yValues.size());
 }
 
 void Flame::rewind(const Frame& frame) const {
-  Context& ctx = *static_cast<Context*>(frame.animation.context);
-  auto w = static_cast<int>(width(frame));
-  auto h = static_cast<int>(height(frame));
+  Context& ctx = *static_cast<Context*>(frame.context);
+  const int w = frame.xValues.size();
+  const int h = frame.yValues.size();
 
   //heat_t += freq;
   for (int x = 0; x < w; ++x) {
@@ -95,13 +95,25 @@ void Flame::rewind(const Frame& frame) const {
   }
 }
 
-Color Flame::color(const Pixel& px) const {
-  Context& ctx = *static_cast<Context*>(px.frame.animation.context);
-  auto w = static_cast<int>(width(px.frame));
-  auto h = static_cast<int>(height(px.frame));
-  auto clr = Color(heatColor(ctx.heat[(h - static_cast<int>(px.coord.y)) * w +
-                            static_cast<int>(px.coord.x)])).lightnessToAlpha();
-  return clr;
+Color Flame::color(const Frame& frame, const Pixel& px) const {
+  Context& ctx = *static_cast<Context*>(frame.context);
+  const int w = frame.xValues.size();
+  const int h = frame.yValues.size();
+  int xIndex = 0;
+  for (int xi = 0; xi < w; xi++) {
+    if (frame.xValues[xi] == px.coord.x) {
+      xIndex = xi;
+      break;
+    }
+  }
+  int yIndex = 0;
+  for (int yi = 0; yi < h; yi++) {
+    if (frame.yValues[yi] == px.coord.y) {
+      yIndex = yi;
+      break;
+    }
+  }
+  return Color(heatColor(ctx.heat[(h - yIndex) * w + xIndex])).lightnessToAlpha();
 }
 
 
