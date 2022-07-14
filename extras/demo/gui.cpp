@@ -95,7 +95,9 @@ int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen) {
     glClear(GL_COLOR_BUFFER_BIT);
 
     player->render(timeMillis());
-    glfwSetWindowTitle(window, player->currentEffectName().c_str());
+    std::ostringstream title;
+    title << "unisparks-demo-" << REVISION << " " << player->currentEffectName();
+    glfwSetWindowTitle(window, title.str().c_str());
 
     glfwSwapBuffers(window);
     glfwPollEvents();
