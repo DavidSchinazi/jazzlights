@@ -23,7 +23,7 @@ class ArduinoEthernetNetwork : public UdpNetwork {
   NetworkDeviceId getLocalDeviceId() override {
     return localDeviceId_;
   }
-  const char* name() const override {
+  const char* networkName() const override {
     return "ArduinoEthernet";
   }
  private:

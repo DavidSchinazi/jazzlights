@@ -369,7 +369,7 @@ class SpinPlasma : public Effect {
 public:
   explicit SpinPlasma(OurColorPalette ocp) : ocp_(ocp) {}
 
-  std::string name() const override {
+  std::string effectName(PatternBits /*pattern*/)const override {
     switch(ocp_) {
 #define X(c) case OCP##c: return "sp-" #c;
   ALL_COLORS

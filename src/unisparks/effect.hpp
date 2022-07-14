@@ -17,7 +17,7 @@ class Effect {
   virtual Color color(const Pixel& px) const = 0;
   virtual void begin(const Frame&) const = 0;
   virtual void rewind(const Frame& frame) const = 0;
-  virtual std::string name() const = 0;
+  virtual std::string effectName(PatternBits pattern) const = 0;
 };
 
 // TODO import some patterns from WLED

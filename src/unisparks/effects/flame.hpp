@@ -9,7 +9,7 @@ class Flame : public Effect {
   void begin(const Frame& frame) const override;
   void rewind(const Frame& f) const override;
   Color color(const Pixel& px) const override;
-  std::string name() const override {return "flame"; }
+  std::string effectName(PatternBits /*pattern*/) const override {return "flame"; }
 };
 
 inline Flame flame() {

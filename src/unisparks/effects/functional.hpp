@@ -32,7 +32,7 @@ class FrameFuncEffect : public Effect {
     return (*static_cast<ContextT*>(pixel.frame.animation.context))(pixel);
   }
 
-  std::string name() const override {
+  std::string effectName(PatternBits /*pattern*/) const override {
     return name_;
   }
 

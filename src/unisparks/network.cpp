@@ -85,7 +85,7 @@ std::string networkMessageToString(const NetworkMessage& message, Milliseconds c
                    ", n=" + displayBitsAsBinary(message.nextPattern);
   if (message.receiptNetwork != nullptr) {
     rv += ", ";
-    rv += message.receiptNetwork->name();
+    rv += message.receiptNetwork->networkName();
   }
   rv += str;
   return rv;
@@ -98,7 +98,7 @@ NetworkStatus Network::status() const {
 void Network::reconnect(Milliseconds currentTime) {
   if (status_ != CONNECTED) {
     lastConnectionAttempt_ = currentTime;
-    info("%u %s Network Reconnecting", currentTime, name());
+    info("%u %s Network Reconnecting", currentTime, networkName());
     status_ = update(CONNECTING, currentTime);
   }
 }
@@ -153,12 +153,12 @@ std::list<NetworkMessage> UdpNetwork::getReceivedMessagesImpl(Milliseconds curre
     }
     if (n < kPayloadLength) {
       info("%u %s Received packet too short, received %d bytes, expected at least %d bytes",
-           currentTime, name(), n, kPayloadLength);
+           currentTime, networkName(), n, kPayloadLength);
       continue;
     }
     if ((udpPayload[kVersionOffset] & 0xF0) != kVersion) {
       info("%u %s Received packet with unexpected prefix %02x",
-           currentTime, name(), udpPayload[kVersionOffset]);
+           currentTime, networkName(), udpPayload[kVersionOffset]);
       continue;
     }
     NetworkMessage receivedMessage;
@@ -192,7 +192,7 @@ std::list<NetworkMessage> UdpNetwork::getReceivedMessagesImpl(Milliseconds curre
     }
 
     debug("%u %s received %s",
-          currentTime, name(),
+          currentTime, networkName(),
           networkMessageToString(receivedMessage, currentTime).c_str());
     receivedMessages.push_back(receivedMessage);
   }
@@ -210,7 +210,7 @@ void Network::checkStatus(Milliseconds currentTime) {
     status_ = update(status_, currentTime);
     if (status_ != previousStatus) {
       info("%u %s updated status from %s to %s",
-           currentTime, name(),
+           currentTime, networkName(),
            NetworkStatusToString(previousStatus).c_str(),
            NetworkStatusToString(status_).c_str());
     }
@@ -258,7 +258,7 @@ void UdpNetwork::runLoopImpl(Milliseconds currentTime) {
       patternTime = 0xFFFF;
     }
     debug("%u %s sending %s",
-          currentTime, name(),
+          currentTime, networkName(),
           networkMessageToString(messageToSend_, currentTime).c_str());
 
     uint8_t udpPayload[kPayloadLength] = {};

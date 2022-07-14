@@ -48,18 +48,18 @@ NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status, Milliseconds 
     case INITIALIZING: {
       EthernetHardwareStatus hwStatus = Ethernet.hardwareStatus();
       if (hwStatus == EthernetNoHardware) {
-        error("%u %s Failed to communicate with Ethernet hardware", currentTime, name());
+        error("%u %s Failed to communicate with Ethernet hardware", currentTime, networkName());
         return CONNECTION_FAILED;
       }
       info("%u %s Ethernet detected hardware status %s with MAC address " DEVICE_ID_FMT,
-           currentTime, name(), EthernetHardwareStatusToString(hwStatus).c_str());
+           currentTime, networkName(), EthernetHardwareStatusToString(hwStatus).c_str());
       return CONNECTING;
     }
     case CONNECTING: {
       EthernetLinkStatus linkStatus = Ethernet.linkStatus();
       if (linkStatus != LinkON) {
         error("%u %s Ethernet is not plugged in (state %s)",
-              currentTime, name(), EthernetLinkStatusToString(linkStatus).c_str());
+              currentTime, networkName(), EthernetLinkStatusToString(linkStatus).c_str());
         return CONNECTION_FAILED;
       }
       constexpr unsigned long kDhcpTimeoutMs = 5000;
@@ -68,13 +68,13 @@ NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status, Milliseconds 
       // and currently blocks our main thread while waiting for a DHCP response.
       int beginRes = Ethernet.begin(localDeviceId_.data(), kDhcpTimeoutMs, kResponseTimeoutMs);
       if (beginRes == 0) {
-        error("%u %s Ethernet DHCP failed", currentTime, name());
+        error("%u %s Ethernet DHCP failed", currentTime, networkName());
         // TODO add support for IPv4 link-local addresses.
         return CONNECTION_FAILED;
       }
       IPAddress ip = Ethernet.localIP();
       info("%u %s Ethernet DHCP provided IP: %d.%d.%d.%d, bound to port %d, multicast group: %s",
-          currentTime, name(), ip[0], ip[1], ip[2], ip[3], port_, mcastAddr_);
+          currentTime, networkName(), ip[0], ip[1], ip[2], ip[3], port_, mcastAddr_);
       IPAddress mcaddr;
       mcaddr.fromString(mcastAddr_);
       udp_.beginMulticast(mcaddr, port_);

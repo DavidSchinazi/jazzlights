@@ -37,7 +37,7 @@ class Esp32BleNetwork : public Network {
   NetworkDeviceId getLocalDeviceId() override {
     return localDeviceId_;
   }
-  const char* name() const override {
+  const char* networkName() const override {
     return "ESP32BLE";
   }
   bool shouldEcho() const override { return true; }

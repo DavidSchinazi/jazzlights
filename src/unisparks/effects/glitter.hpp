@@ -10,7 +10,7 @@ class Glitter : public Effect {
  public:
   Glitter() = default;
 
-  std::string name() const override {
+  std::string effectName(PatternBits /*pattern*/) const override {
     return "glitter";
   }
 
