@@ -26,8 +26,8 @@ void GLRenderer::render(InputStream<Color>& colors) {
   auto pti = begin(layout_);
   auto cli = colors.begin();
   while (cli != colors.end() && pti != end(layout_)) {
-    auto pos = *pti;
-    auto color = *cli;
+    Point pos = (*pti).coord;
+    Color color = *cli;
     renderLed(pos.x, pos.y, ledRadius_, color.asRgba());
     ++pti;
     ++cli;

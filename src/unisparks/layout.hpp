@@ -1,5 +1,7 @@
 #ifndef UNISPARKS_LAYOUT_H
 #define UNISPARKS_LAYOUT_H
+
+#include "unisparks/types.h"
 #include "unisparks/util/geom.hpp"
 #include "unisparks/util/stream.hpp"
 #include "unisparks/util/math.hpp"
@@ -21,14 +23,17 @@ class Layout {
 
 class LayoutIterator {
  public:
-  using value_type = Point;
-  using reference_type = Point&;
+  using value_type = Pixel;
+  using reference_type = Pixel&;
 
   LayoutIterator(const Layout& l, int i) : layout_(&l), index_(i) {
   }
 
-  Point operator*() const {
-    return layout_->at(index_);
+  Pixel operator*() const {
+    Pixel px;
+    px.index = index_;
+    px.coord = layout_->at(index_);
+    return px;
   }
 
   bool operator==(const LayoutIterator& other) const {
@@ -74,7 +79,7 @@ inline RangeInputStream<LayoutIterator> points(const Layout& l) {
 inline Box bounds(const Layout& layout) {
   Box bb;
   for (auto pt : layout) {
-      bb = merge(bb, pt);
+      bb = merge(bb, pt.coord);
   }
   return bb;
 }

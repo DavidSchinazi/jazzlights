@@ -24,11 +24,6 @@ struct Frame {
   std::vector<Coord> yValues;
 };
 
-struct Pixel {
-  Point coord;
-};
-
-
 constexpr Coord width(const Frame& frame) {
   return frame.viewport.size.width;
 }
