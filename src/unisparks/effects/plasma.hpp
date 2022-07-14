@@ -378,43 +378,48 @@ public:
     return "sp-unknown";
   }
   Color color(const Pixel& pixel) const override {
+    SpinPlasmaState* state = reinterpret_cast<SpinPlasmaState*>(pixel.frame.animation.context);
     const uint8_t color =
-      internal::sin8(sqrt(square((static_cast<float>(pixel.coord.x) - plasmaCenterX_) * xMultiplier_) +
-                          square((static_cast<float>(pixel.coord.y) - plasmaCenterY_) * yMultiplier_)));
+      internal::sin8(sqrt(square((static_cast<float>(pixel.coord.x) - state->plasmaCenterX) * state->xMultiplier) +
+                          square((static_cast<float>(pixel.coord.y) - state->plasmaCenterY) * state->yMultiplier)));
     return colorFromOurPalette(ocp_, color);
   }
 
-  size_t contextSize(const Animation&) const override { return 0; }
+  size_t contextSize(const Animation&) const override { return sizeof(SpinPlasmaState); }
 
   void begin(const Frame& frame) override {
+    SpinPlasmaState* state = reinterpret_cast<SpinPlasmaState*>(frame.animation.context);
     const float multiplier = frame.predictableRandom->GetRandomNumberBetween(100, 500);
-    xMultiplier_ = multiplier / frame.animation.viewport.size.width;
-    yMultiplier_ = multiplier / frame.animation.viewport.size.height;
+    state->xMultiplier = multiplier / frame.animation.viewport.size.width;
+    state->yMultiplier = multiplier / frame.animation.viewport.size.height;
     constexpr int32_t randomGranularity = 10000;
-    rotationCenterX_ =
+    state->rotationCenterX =
       frame.animation.viewport.origin.x +
       static_cast<float>(frame.predictableRandom->GetRandomNumberBetween(0, randomGranularity)) *
         frame.animation.viewport.size.width / randomGranularity;
-    rotationCenterY_ =
+    state->rotationCenterY =
       frame.animation.viewport.origin.y +
       static_cast<float>(frame.predictableRandom->GetRandomNumberBetween(0, randomGranularity)) *
         frame.animation.viewport.size.height / randomGranularity;
   }
 
   void rewind(const Frame& frame) override {
+    SpinPlasmaState* state = reinterpret_cast<SpinPlasmaState*>(frame.animation.context);
     const uint8_t offset = 30 * frame.time / 255;
-    plasmaCenterX_ = rotationCenterX_ + (static_cast<float>(internal::cos8(offset)) - 127.0) / (xMultiplier_ * 2.0);
-    plasmaCenterY_ = rotationCenterY_ + (static_cast<float>(internal::sin8(offset)) - 127.0) / (yMultiplier_ * 2.0);
+    state->plasmaCenterX = state->rotationCenterX + (static_cast<float>(internal::cos8(offset)) - 127.0) / (state->xMultiplier * 2.0);
+    state->plasmaCenterY = state->rotationCenterY + (static_cast<float>(internal::sin8(offset)) - 127.0) / (state->yMultiplier * 2.0);
   }
 
  private:
   OurColorPalette ocp_ = OCPrainbow;
-  float plasmaCenterX_;
-  float plasmaCenterY_;
-  float xMultiplier_;
-  float yMultiplier_;
-  float rotationCenterX_;
-  float rotationCenterY_;
+  struct SpinPlasmaState {
+    float plasmaCenterX;
+    float plasmaCenterY;
+    float xMultiplier;
+    float yMultiplier;
+    float rotationCenterX;
+    float rotationCenterY;
+  };
 };
 
 } // namespace unisparks
