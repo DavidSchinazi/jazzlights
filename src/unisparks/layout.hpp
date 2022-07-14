@@ -31,6 +31,7 @@ class LayoutIterator {
 
   Pixel operator*() const {
     Pixel px;
+    px.layout = layout_;
     px.index = index_;
     px.coord = layout_->at(index_);
     return px;

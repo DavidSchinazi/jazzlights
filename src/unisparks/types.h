@@ -11,7 +11,10 @@ using PatternBits = uint32_t;
 using Precedence = uint16_t;
 using NumHops = uint8_t;
 
+class Layout;
+
 struct Pixel {
+  const Layout* layout;
   int index;
   Point coord;
 };
