@@ -6,8 +6,8 @@ namespace unisparks {
 class Flame : public Effect {
   public:
   size_t contextSize(const Animation& a) const override;
-  void begin(const Frame& frame) override;
-  void rewind(const Frame& f) override;
+  void begin(const Frame& frame) const override;
+  void rewind(const Frame& f) const override;
   Color color(const Pixel& px) const override;
   std::string name() const override {return "flame"; }
 };

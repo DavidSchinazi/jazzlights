@@ -387,7 +387,7 @@ public:
 
   size_t contextSize(const Animation&) const override { return sizeof(SpinPlasmaState); }
 
-  void begin(const Frame& frame) override {
+  void begin(const Frame& frame) const override {
     SpinPlasmaState* state = reinterpret_cast<SpinPlasmaState*>(frame.animation.context);
     const float multiplier = frame.predictableRandom->GetRandomNumberBetween(100, 500);
     state->xMultiplier = multiplier / frame.animation.viewport.size.width;
@@ -403,7 +403,7 @@ public:
         frame.animation.viewport.size.height / randomGranularity;
   }
 
-  void rewind(const Frame& frame) override {
+  void rewind(const Frame& frame) const override {
     SpinPlasmaState* state = reinterpret_cast<SpinPlasmaState*>(frame.animation.context);
     const uint8_t offset = 30 * frame.time / 255;
     state->plasmaCenterX = state->rotationCenterX + (static_cast<float>(internal::cos8(offset)) - 127.0) / (state->xMultiplier * 2.0);

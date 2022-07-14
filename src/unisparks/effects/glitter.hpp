@@ -16,13 +16,13 @@ class Glitter : public Effect {
 
   size_t contextSize(const Animation&) const override { return sizeof(GlitterState); }
 
-  void begin(const Frame& frame) override {
+  void begin(const Frame& frame) const override {
     GlitterState* state = reinterpret_cast<GlitterState*>(frame.animation.context);
     state->startHue = frame.predictableRandom->GetRandomByte();
     state->backwards = frame.predictableRandom->GetRandomByte() & 1;
   }
 
-  void rewind(const Frame& frame) override {
+  void rewind(const Frame& frame) const override {
     GlitterState* state = reinterpret_cast<GlitterState*>(frame.animation.context);
     uint8_t hueOffset = 256 * frame.time / kEffectDuration;
     if (state->backwards) {
