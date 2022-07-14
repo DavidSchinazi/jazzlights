@@ -401,6 +401,10 @@ void Player::render(Milliseconds currentTime) {
   }
 }
 
+std::string Player::currentEffectName() const {
+  return patternName(lastBegunPattern_);
+}
+
 void Player::next(Milliseconds currentTime) {
   info("%u next command received: switching from %s to %s, currentLeader=" DEVICE_ID_FMT,
         currentTime, patternName(currentPattern_).c_str(), patternName(nextPattern_).c_str(),

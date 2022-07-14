@@ -95,12 +95,7 @@ int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen) {
     glClear(GL_COLOR_BUFFER_BIT);
 
     player->render(timeMillis());
-
-    std::stringstream title;
-    using std::setw;
-    using std::setfill;
-    title << winTitle;
-    glfwSetWindowTitle(window, title.str().c_str());
+    glfwSetWindowTitle(window, player->currentEffectName().c_str());
 
     glfwSwapBuffers(window);
     glfwPollEvents();

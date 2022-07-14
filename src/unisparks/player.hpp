@@ -94,6 +94,7 @@ class Player {
   void setRandomizeLocalDeviceId(bool val) { randomizeLocalDeviceId_ = val; }
 
   PredictableRandom* predictableRandom() { return &predictableRandom_; }
+  std::string currentEffectName() const;
 
  private:
   void handleReceivedMessage(NetworkMessage message, Milliseconds currentTime);
