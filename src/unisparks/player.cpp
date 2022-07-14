@@ -295,13 +295,13 @@ void Player::begin(Milliseconds currentTime) {
   }
 
   // Figure out localDeviceId_.
-  // TODO add a way to force use of a random localDeviceId and use it from unisparks-demo
-  // so that unisparks-demo and tglight can run on the same machine without interference.
-  for (Network* network : networks_) {
-    NetworkDeviceId localDeviceId = network->getLocalDeviceId();
-    if (localDeviceId != NetworkDeviceId()) {
-      localDeviceId_ = localDeviceId;
-      break;
+  if (!randomizeLocalDeviceId_) {
+    for (Network* network : networks_) {
+      NetworkDeviceId localDeviceId = network->getLocalDeviceId();
+      if (localDeviceId != NetworkDeviceId()) {
+        localDeviceId_ = localDeviceId;
+        break;
+      }
     }
   }
   while (localDeviceId_ == NetworkDeviceId()) {

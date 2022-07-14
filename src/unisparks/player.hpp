@@ -82,6 +82,7 @@ class Player {
 
   void setBasePrecedence(Precedence basePrecedence) {basePrecedence_ = basePrecedence; }
   void setPrecedenceGain(Precedence precedenceGain) {precedenceGain_ = precedenceGain; }
+  void setRandomizeLocalDeviceId(bool val) { randomizeLocalDeviceId_ = val; }
 
   PredictableRandom& predictableRandom();
 
@@ -136,6 +137,7 @@ class Player {
   Milliseconds lastUserInputTime_ = -1;
   Precedence basePrecedence_ = 0;
   Precedence precedenceGain_ = 0;
+  bool randomizeLocalDeviceId_ = false;
   NetworkDeviceId localDeviceId_ = NetworkDeviceId();
   NetworkDeviceId currentLeader_ = NetworkDeviceId();
 
