@@ -13,7 +13,6 @@ set(LIB_SOURCES
 	../src/unisparks/effects/rainbow.hpp
 	../src/unisparks/effects/solid.hpp
 	../src/unisparks/effects/threesine.hpp
-	../src/unisparks/frame.cpp
 	../src/unisparks/frame.hpp
 	../src/unisparks/layout.hpp
 	../src/unisparks/layouts/matrix.hpp
@@ -38,7 +37,6 @@ set(LIB_SOURCES
 	../src/unisparks/util/math.hpp
 	../src/unisparks/util/memory.hpp
 	../src/unisparks/util/meta.hpp
-	../src/unisparks/util/rhytm.hpp
 	../src/unisparks/util/stream.hpp
 	../src/unisparks/util/time.hpp
 	../src/unisparks/version.hpp

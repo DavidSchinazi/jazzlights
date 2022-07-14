@@ -243,8 +243,6 @@ Player::Player() {
   viewport_.origin.y = 0;
   viewport_.size.height = 1;
   viewport_.size.width = 1;
-  frame_.tempo = 120;
-  frame_.metre = SIMPLE_QUADRUPLE;
   frame_.player = this;
 }
 

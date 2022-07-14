@@ -7,11 +7,10 @@ namespace unisparks {
 
 auto threesine = []() {
   return effect("threesine", [ = ](const Frame & frame) {
-    Milliseconds period = adjustDuration(frame, 8000);
     Coord w = width(frame);
     Coord h = height(frame);
 
-    uint8_t sineOffset = 256 * frame.time / period;
+    uint8_t sineOffset = 256 * frame.time / 8000;
 
     return [ = ](const Pixel& px) -> Color {
       using namespace internal;

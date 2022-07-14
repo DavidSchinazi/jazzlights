@@ -3,7 +3,6 @@
 #include <string.h> // memcpy, size_t
 #include "unisparks/types.h"
 #include "unisparks/util/time.hpp"
-#include "unisparks/util/rhytm.hpp"
 
 #include <list>
 #include <string>

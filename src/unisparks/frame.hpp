@@ -4,7 +4,6 @@
 #include "unisparks/types.h"
 #include "unisparks/util/geom.hpp"
 #include "unisparks/util/time.hpp"
-#include "unisparks/util/rhytm.hpp"
 #include "unisparks/util/color.hpp"
 
 namespace unisparks {
@@ -23,8 +22,6 @@ struct Frame {
   Player* player = nullptr;
   Animation animation;
   Milliseconds time;
-  BeatsPerMinute tempo;
-  Metre metre;
 };
 
 struct Pixel {
@@ -68,10 +65,6 @@ template<typename T>
 inline T& cast_context(const Frame& frame) {
   return *reinterpret_cast<T*>(frame.animation.context);
 }
-
-double pulse(const Frame& frame);
-
-Milliseconds adjustDuration(const Frame& f, Milliseconds d);
 
 } // namespace unisparks
 #endif /* UNISPARKS_FRAME_HPP */
