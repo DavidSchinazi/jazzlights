@@ -11,7 +11,7 @@ auto glitter = []() {
     const uint8_t hue = cycleHue(frame);
     PredictableRandom& predictableRandom = frame.player->predictableRandom();
     return [hue, &predictableRandom](const Pixel& /*pt*/) -> Color {
-      return HslColor(hue, 255, predictableRandom.GetRandomNumberBetween(0, 5) * 63);
+      return HslColor(hue, 255, predictableRandom.GetRandomNumberBetween(0, 255));
     };
   });
 };
