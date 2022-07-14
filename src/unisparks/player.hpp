@@ -20,6 +20,11 @@ enum : Milliseconds {
   kEffectDuration = 10 * ONE_SECOND,
 };
 
+// bitNum is [1-32] starting from the highest bit.
+constexpr bool patternbit(PatternBits pattern, uint8_t bitNum) {
+  return (pattern & (1 << (sizeof(PatternBits) * 8 - bitNum))) != 0;
+}
+
 class Player {
  public:
 

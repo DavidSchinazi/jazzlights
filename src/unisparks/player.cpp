@@ -103,11 +103,6 @@ constexpr bool patternIsReserved(PatternBits pattern) {
   return (pattern & 0xFF) == 0;
 }
 
-// bitNum is [1-32] starting from the highest bit.
-constexpr bool patternbit(PatternBits pattern, uint8_t bitNum) {
-  return (pattern & (1 << (sizeof(PatternBits) * 8 - bitNum))) != 0;
-}
-
 PatternBits computeNextPattern(PatternBits pattern) {
   static_assert(sizeof(PatternBits) == 4, "32bits");
   // This code is inspired by xorshift, amended to only require 32 bits of
@@ -129,13 +124,7 @@ PatternBits computeNextPattern(PatternBits pattern) {
   return pattern;
 }
 
-auto spin_rainbow_pattern = clone(SpinPlasma(OCPrainbow));
-auto spin_forest_pattern = clone(SpinPlasma(OCPforest));
-auto spin_party_pattern = clone(SpinPlasma(OCPparty));
-auto spin_cloud_pattern = clone(SpinPlasma(OCPcloud));
-auto spin_ocean_pattern = clone(SpinPlasma(OCPocean));
-auto spin_lava_pattern = clone(SpinPlasma(OCPlava));
-auto spin_heat_pattern = clone(SpinPlasma(OCPheat));
+auto spin_pattern = clone(SpinPlasma());
 auto flame_pattern = clone(flame());
 auto glitter_pattern = clone(Glitter());
 auto threesine_pattern = clone(threesine());
@@ -172,31 +161,7 @@ Effect* patternFromBits(PatternBits pattern) {
     return &red_effect;
   } else {
     if (patternbit(pattern, 1)) { // spin
-      if (patternbit(pattern, 2)) { // nature
-        if (patternbit(pattern, 3)) { // rainbow
-          return &spin_rainbow_pattern;
-        } else { // frolick
-          if (patternbit(pattern, 4)) { // forest
-            return &spin_forest_pattern;
-          } else { // party
-            return &spin_party_pattern;
-          }
-        }
-      } else { // hot&cold
-        if (patternbit(pattern, 3)) { // cold
-          if (patternbit(pattern, 4)) { // cloud
-            return &spin_cloud_pattern;
-          } else { // ocean
-            return &spin_ocean_pattern;
-          }
-        } else { // hot
-          if (patternbit(pattern, 4)) { // lava
-            return &spin_lava_pattern;
-          } else { // heat
-            return &spin_heat_pattern;
-          }
-        }
-      }
+      return &spin_pattern;
     } else { // custom
       if (patternbit(pattern, 2)) { // sparkly
         if (patternbit(pattern, 3)) { // flame
@@ -204,7 +169,7 @@ Effect* patternFromBits(PatternBits pattern) {
           return &flame_pattern;
 #else  // WEARABLE
           // TODO figure out why flame does not work on vehicles.
-          return &spin_lava_pattern;
+          return &spin_pattern;
 #endif  // WEARABLE
         } else { // glitter
           return &glitter_pattern;
