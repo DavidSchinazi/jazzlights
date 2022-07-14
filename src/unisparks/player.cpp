@@ -409,6 +409,7 @@ void Player::render(Milliseconds currentTime) {
 
   if (effect != lastBegunEffect_) {
     lastBegunEffect_ = effect;
+    randomInitialized_ = false;
     effect->begin(frame_);
     lastLEDWriteTime_ =1;
   }
@@ -430,6 +431,7 @@ void Player::render(Milliseconds currentTime) {
   lastLEDWriteTime_ = currentTime;
 
   // Actually render the pixels.
+  randomInitialized_ = false;
   effect->rewind(frame_);
   for (Strand* s = strands_;
        s < strands_ + strandCount_; ++s) {
