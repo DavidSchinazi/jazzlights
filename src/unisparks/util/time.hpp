@@ -6,9 +6,11 @@ namespace unisparks {
 
 typedef int32_t Milliseconds;
 
-constexpr Milliseconds ONE_SECOND = 1000;
-constexpr Milliseconds ONE_MINUTE = 60 * ONE_SECOND;
-constexpr Milliseconds MAX_TIME =  2147483647;
+enum : Milliseconds {
+  ONE_SECOND = 1000,
+  ONE_MINUTE = 60 * ONE_SECOND,
+  MAX_TIME =  2147483647,
+};
 
 /**
  * Get monotonically increasing time in milliseconds

@@ -358,8 +358,6 @@ void Player::stopSpecial() {
   nextPattern_ = computeNextPattern(currentPattern_);
 }
 
-static constexpr Milliseconds kEffectDuration = 10 * ONE_SECOND;
-
 void Player::render(Milliseconds currentTime) {
   if (!ready_) {
     begin(currentTime);

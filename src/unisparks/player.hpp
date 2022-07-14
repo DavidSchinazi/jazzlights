@@ -16,6 +16,10 @@
 
 namespace unisparks {
 
+enum : Milliseconds {
+  kEffectDuration = 10 * ONE_SECOND,
+};
+
 class Player {
  public:
 
