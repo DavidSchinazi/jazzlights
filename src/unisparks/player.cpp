@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include "unisparks/board.h"
 #include "unisparks/effects/flame.hpp"
 #include "unisparks/effects/glitter.hpp"
 #include "unisparks/effects/glow.hpp"
@@ -41,26 +42,25 @@ int comparePrecedence(Precedence leftPrecedence,
   return leftDeviceId.compare(rightDeviceId);
 }
 
-#if WEARABLE
-// TODO make calibation effect work on non-vests
 auto calibration_effect = effect("calibration", [](const Frame& frame) {
+#if ORANGE_VEST
   const bool blink = ((frame.time % 1000) < 500);
+#endif  // ORANGE_VEST
   return [ = ](const Pixel& pt) -> Color {
+    XYIndex xyIndex = frame.xyIndexStore->FromPixel(pt);
     const int32_t green = 0x00ff00, blue = 0x0000ff, red = 0xff0000;
     const int32_t yellow = green | red, purple = red | blue, white = 0xffffff;
     const int32_t orange = 0xffcc00;
-    int32_t yColors[19] = {red, green, blue, yellow,
+    constexpr int32_t yColors[19] = {red, green, blue, yellow,
       purple, orange, white, blue, yellow,
       red, purple, green, orange,
       white, yellow, purple, green, blue, red};
+    constexpr int numYColors = sizeof(yColors) / sizeof(yColors[0]);
 
-    int32_t col = 0;
-    const int32_t x = pt.coord.x;
-    const int32_t y = pt.coord.y;
-    if (y >= 0 && y < static_cast<int32_t>(sizeof(yColors) / sizeof(yColors[0]))) {
-      col = yColors[y];
-    }
-
+    const int y = xyIndex.yIndex;
+    int32_t col = yColors[y % numYColors];
+#if ORANGE_VEST
+    const int x = xyIndex.xIndex;
     if (blink) {
       if (y == 0 &&
           (x == 0 || x == 6 || x == 14)) {
@@ -70,11 +70,10 @@ auto calibration_effect = effect("calibration", [](const Frame& frame) {
         col = 0;
       }
     }
+#endif  // ORANGE_VEST
     return Color(col);
   };
 });
-
-#endif // WEARABLE
 
 auto black_effect = solid(BLACK, "black");
 auto red_effect = solid(RED, "red");
@@ -155,9 +154,7 @@ Effect* patternFromBits(PatternBits pattern) {
         case 0x0D: return &yellow_glow_effect;
         case 0x0E: return &white_glow_effect;
         case 0x0F: return &synctest;
-#if WEARABLE
         case 0x10: return &calibration_effect;
-#endif  // WEARABLE
       }
     }
     return &red_effect;
@@ -278,9 +275,7 @@ void Player::begin(Milliseconds currentTime) {
 
 void Player::handleSpecial() {
     static constexpr PatternBits kSpecialPatternBits[] = {
-#if WEARABLE
     0x00001000,  // calibration.
-#endif  // WEARABLE
     0x00000000,  // black.
     0x00000100,  // red.
     0x00000200,  // green.

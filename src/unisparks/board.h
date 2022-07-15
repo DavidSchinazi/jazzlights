@@ -2,6 +2,9 @@
 #define UNISPARKS_BOARD_H
 
 #include "unisparks/config.h"
+
+#if WEARABLE
+
 #include "unisparks/layout.hpp"
 
 namespace unisparks {
@@ -42,5 +45,7 @@ namespace unisparks {
 const Layout* GetLayout();
 
 }  // namespace unisparks
+
+#endif  // WEARABLE
 
 #endif // UNISPARKS_BOARD_H

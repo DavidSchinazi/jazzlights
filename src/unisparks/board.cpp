@@ -1,5 +1,7 @@
 #include "unisparks/board.h"
 
+#if WEARABLE
+
 #if ORANGE_VEST
 #  include "unisparks/layouts/pixelmap.hpp"
 #endif
@@ -139,7 +141,7 @@ ReverseMap<LEDNUM> pixels(pixelMap, /*MATRIX_WIDTH=*/15, /*MATRIX_HEIGHT=*/20);
 #if HAMMER
 
 constexpr int pixelMap[] = {
-   0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
 };
 
 ReverseMap<LEDNUM> pixels(pixelMap, /*MATRIX_WIDTH=*/1, /*MATRIX_HEIGHT=*/20);
@@ -149,7 +151,9 @@ ReverseMap<LEDNUM> pixels(pixelMap, /*MATRIX_WIDTH=*/1, /*MATRIX_HEIGHT=*/20);
 }  // namespace
 
 const Layout* GetLayout() {
-   return &pixels;
+  return &pixels;
 }
 
 }  // namespace unisparks
+
+#endif  // WEARABLE

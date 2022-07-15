@@ -7,7 +7,7 @@
 
 // Pick which vest to build here.
 #if !defined(CAMP_SIGN) && !defined(ROPELIGHT) && !defined(ORANGE_VEST) && !defined(HAMMER) && !defined(GUPPY)
-#  define ORANGE_VEST 1
+#  define ORANGE_VEST WEARABLE
 // #define CAMP_SIGN 1
 // #define GUPPY 1
 #endif
