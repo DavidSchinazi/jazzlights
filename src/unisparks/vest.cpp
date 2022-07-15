@@ -2,7 +2,11 @@
 
 #if WEARABLE
 
-#if !defined(ESP8266) && !defined(ESP32)
+#if defined(ESP32)
+#  define LED_PIN  26
+#elif defined(ESP8266)
+#  define LED_PIN  5
+#else
 #  error "Unexpected board"
 #endif
 
@@ -39,7 +43,6 @@ NetworkDeviceId GetEthernetDeviceId() {
 ArduinoEthernetNetwork ethernetNetwork(GetEthernetDeviceId());
 #endif  // UNISPARKS_ARDUINO_ETHERNET
 Player player;
-ReverseMap<LEDNUM> pixels(pixelMap, MATRIX_WIDTH, MATRIX_HEIGHT);
 
 CLEDController* mainVestController = nullptr;
 
@@ -47,7 +50,7 @@ void vestSetup(void) {
   Serial.begin(115200);
 
   setupButtons();
-  player.addStrand(pixels, renderPixel);
+  player.addStrand(*GetLayout(), renderPixel);
   player.setBasePrecedence(1000);
   player.setPrecedenceGain(1000);
 

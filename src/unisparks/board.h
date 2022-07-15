@@ -2,6 +2,9 @@
 #define UNISPARKS_BOARD_H
 
 #include "unisparks/config.h"
+#include "unisparks/layout.hpp"
+
+namespace unisparks {
 
 #ifndef ORANGE_VEST
 #  define ORANGE_VEST 0
@@ -16,39 +19,28 @@
 #  define HAMMER 0
 #endif // HAMMER
 
-#if defined(ESP32)
-#  define LED_PIN  26
-#elif defined(ESP8266)
-#  define LED_PIN  5
-#endif
-
 #if ORANGE_VEST
-#  define MATRIX_WIDTH 20
-#  define MATRIX_HEIGHT 19
 #  define LEDNUM 360
 #endif // ORANGE_VEST
 
 #if CAMP_SIGN
-#  define FIRST_BRIGHTNESS MAX_BRIGHTNESS
-#  define MATRIX_WIDTH 30
-#  define MATRIX_HEIGHT 30
 #  define LEDNUM 900
 #endif // CAMP_SIGN
 
-
 #if GUPPY
-#  define MATRIX_WIDTH 15
-#  define MATRIX_HEIGHT 20
 #  define LEDNUM 300
 #endif // GUPPY
 
 #if HAMMER
-#  define FIRST_BRIGHTNESS MAX_BRIGHTNESS
-#  define MATRIX_WIDTH 1
-#  define MATRIX_HEIGHT 20
 #  define LEDNUM 20
 #endif // HAMMER
 
-extern const int pixelMap[];
+#if CAMP_SIGN || HAMMER
+#  define FIRST_BRIGHTNESS MAX_BRIGHTNESS
+#endif // CAMP_SIGN
+
+const Layout* GetLayout();
+
+}  // namespace unisparks
 
 #endif // UNISPARKS_BOARD_H

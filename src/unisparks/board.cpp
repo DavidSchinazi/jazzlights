@@ -1,8 +1,16 @@
 #include "unisparks/board.h"
 
+#if ORANGE_VEST || CAMP_SIGN || GUPPY || HAMMER
+#  include "unisparks/layouts/reversemap.hpp"
+#endif
+
+namespace unisparks {
+
+namespace {
+
 #if ORANGE_VEST
 
-const int pixelMap[] = {
+constexpr int pixelMap[] = {
     0,360, 36,360, 72,360,108,360,144,360,180,360,216,360,252,360,288,360,324,360,
     1, 35, 37, 71, 73,107,109,143,145,179,181,215,217,251,253,287,289,323,325,359,
     2, 34, 38, 70, 74,106,110,142,146,178,182,214,218,250,254,286,290,322,326,358,
@@ -24,11 +32,13 @@ const int pixelMap[] = {
   360, 18,360, 54,360, 90,360,126,360,162,360,198,360,234,360,270,360,306,360,342
 };
 
+ReverseMap<LEDNUM> pixels(pixelMap, /*MATRIX_WIDTH=*/20, /*MATRIX_HEIGHT=*/19);
+
 #endif // ORANGE_VEST
 
 #if CAMP_SIGN
 
-const int pixelMap[] = {
+constexpr int pixelMap[] = {
       0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
      30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
      60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89,
@@ -61,11 +71,13 @@ const int pixelMap[] = {
     870,871,872,873,874,875,876,877,878,879,880,881,882,883,884,885,886,887,888,889,890,891,892,893,894,895,896,897,898,899
 };
 
+ReverseMap<LEDNUM> pixels(pixelMap, /*MATRIX_WIDTH=*/30, /*MATRIX_HEIGHT=*/30);
+
 #endif // CAMP_SIGN
 
 #if GUPPY
 
-const int pixelMap[] = {
+constexpr int pixelMap[] = {
    215,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10,216,217,218,
     11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,219,
     25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38,220,
@@ -88,12 +100,24 @@ const int pixelMap[] = {
    285,286,287,288,289,270,271,272,273,274,275,276,277,278,279,
 };
 
+ReverseMap<LEDNUM> pixels(pixelMap, /*MATRIX_WIDTH=*/15, /*MATRIX_HEIGHT=*/20);
+
 #endif // GUPPY
 
 #if HAMMER
 
-const int pixelMap[] = {
+constexpr int pixelMap[] = {
    0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
 };
 
+ReverseMap<LEDNUM> pixels(pixelMap, /*MATRIX_WIDTH=*/1, /*MATRIX_HEIGHT=*/20);
+
 #endif // HAMMER
+
+}  // namespace
+
+const Layout* GetLayout() {
+   return &pixels;
+}
+
+}  // namespace unisparks
