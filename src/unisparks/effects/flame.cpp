@@ -97,12 +97,11 @@ void Flame::rewind(const Frame& frame) const {
 }
 
 Color Flame::color(const Frame& frame, const Pixel& px) const {
-  // TODO understand why this patern lights up the top row.
   const int w = frame.xyIndexStore->xValuesCount();
   const int h = frame.xyIndexStore->yValuesCount();
   Context& ctx = *static_cast<Context*>(frame.context);
   XYIndex xyIndex = frame.xyIndexStore->FromPixel(px);
-  return Color(heatColor(ctx.heat[(h - xyIndex.yIndex) * w + xyIndex.xIndex])).lightnessToAlpha();
+  return Color(heatColor(ctx.heat[(h - 1 - xyIndex.yIndex) * w + xyIndex.xIndex])).lightnessToAlpha();
 }
 
 
