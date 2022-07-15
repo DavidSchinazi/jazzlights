@@ -7,7 +7,7 @@ namespace unisparks {
 
 class PixelMap : public Layout {
 public:
-  PixelMap(size_t cnt, Point* pts) : count_(cnt), points_(pts) {
+  PixelMap(size_t cnt, const Point* pts) : count_(cnt), points_(pts) {
   }
 
   PixelMap(const PixelMap& other) : Layout(), count_(other.count_), points_(other.points_) {
