@@ -27,5 +27,6 @@ Summary for macOS:
 
 ```
     unisparks/extras/build/unisparks-demo unisparks/extras/demo/matrix.toml
+    unisparks/extras/build/unisparks-demo unisparks/tglight/etc/robot/tglight.toml
     unisparks/extras/build/unisparks-bench
 ```
