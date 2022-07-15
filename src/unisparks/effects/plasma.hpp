@@ -366,6 +366,8 @@ static inline RgbaColor colorFromOurPalette(OurColorPalette ocp, uint8_t color) 
 #undef RET_COLOR
 }
 
+// SpinPlasma orginally inspired from RGBShadesAudio's audioPlasma.
+// https://github.com/macetech/RGBShadesAudio/blob/master/effects.h
 class SpinPlasma : public Effect {
 public:
   SpinPlasma() = default;
