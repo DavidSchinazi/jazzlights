@@ -29,6 +29,7 @@ patterns = {
     'glowwhite': 0xE00,
     'synctest': 0xF00,
     'calibration': 0x1000,
+    'follow-strand': 0x1100,
     'sp_rainbow': 0xE0000001,
     'sp_forest': 0xD0000001,
     'sp_party': 0xC0000001,
