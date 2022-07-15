@@ -53,6 +53,12 @@ int32_t Random::GetRandomNumberBetween(int32_t min, int32_t max) {
   return min + static_cast<int32_t>(rand32);
 }
 
+double Random::GetRandomDoubleBetween(double min, double max) {
+  constexpr int32_t randomGranularity = 10000;
+  return min + GetRandomNumberBetween(0, randomGranularity) *
+                (max - min) / randomGranularity;
+}
+
 void PredictableRandom::IngestByte(uint8_t b) {
   state_ = NextFnv1a64Value(state_, b);
 }
@@ -187,6 +193,11 @@ void UnpredictableRandom::GetBytes(void* buffer, size_t length) {
 // static
 int32_t UnpredictableRandom::GetNumberBetween(int32_t min, int32_t max) {
   return UnpredictableRandom().GetRandomNumberBetween(min, max);
+}
+
+// static
+double UnpredictableRandom::GetDoubleBetween(double min, double max) {
+  return UnpredictableRandom().GetRandomDoubleBetween(min, max);
 }
 
 }  // namespace unisparks

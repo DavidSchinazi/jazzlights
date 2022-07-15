@@ -4,6 +4,47 @@
 #include "unisparks/util/math.hpp"
 
 namespace unisparks {
+#if 0
+class Rainbow : public Effect {
+ public:
+  Rainbow() = default;
+
+  std::string effectName(PatternBits /*pattern*/) const override {
+    return "rainbow";
+  }
+
+  size_t contextSize(const Frame& /*frame*/) const override { return sizeof(RainbowState); }
+
+  void begin(const Frame& frame) const override {
+    RainbowState* state = reinterpret_cast<RainbowState*>(frame.context);
+    state->startHue = frame.predictableRandom->GetRandomByte();
+    state->backwards = frame.predictableRandom->GetRandomByte() & 1;
+  }
+
+  void rewind(const Frame& frame) const override {
+    RainbowState* state = reinterpret_cast<RainbowState*>(frame.context);
+    uint8_t hueOffset = 256 * frame.time / 1500;
+    if (state->backwards) {
+      hueOffset = 255 - hueOffset;
+    }
+    state->hue = state->startHue + hueOffset;
+  }
+
+  Color color(const Frame& frame, const Pixel& /*px*/) const override {
+    RainbowState* state = reinterpret_cast<RainbowState*>(frame.context);
+    return HslColor(state->hue, 255, frame.predictableRandom->GetRandomByte());
+  }
+
+ private:
+  struct RainbowState {
+    uint8_t startHue;
+    Point origin;
+    uint8_t initialHue;
+    bool backwards;
+    uint8_t hue;
+  };
+};
+#endif
 
 auto rainbow = []() {
   return effect("rainbow", [](const Frame & frame) {

@@ -394,15 +394,12 @@ public:
     const float multiplier = frame.predictableRandom->GetRandomNumberBetween(100, 500);
     state->xMultiplier = multiplier / frame.viewport.size.width;
     state->yMultiplier = multiplier / frame.viewport.size.height;
-    constexpr int32_t randomGranularity = 10000;
     state->rotationCenterX =
       frame.viewport.origin.x +
-      static_cast<float>(frame.predictableRandom->GetRandomNumberBetween(0, randomGranularity)) *
-        frame.viewport.size.width / randomGranularity;
+      frame.predictableRandom->GetRandomDoubleBetween(0, frame.viewport.size.width);
     state->rotationCenterY =
       frame.viewport.origin.y +
-      static_cast<float>(frame.predictableRandom->GetRandomNumberBetween(0, randomGranularity)) *
-        frame.viewport.size.height / randomGranularity;
+      frame.predictableRandom->GetRandomDoubleBetween(0, frame.viewport.size.height);
   }
 
   void rewind(const Frame& frame) const override {
