@@ -85,6 +85,7 @@ class Player {
 
   void handleSpecial();
   void stopSpecial();
+  size_t getSpecial() const { return specialMode_; }
 
   bool powerLimited = false;
 

@@ -294,7 +294,7 @@ void Player::begin(Milliseconds currentTime) {
 }
 
 void Player::handleSpecial() {
-    static constexpr PatternBits kSpecialPatternBits[] = {
+  static constexpr PatternBits kSpecialPatternBits[] = {
     0x00001000,  // calibration.
     0x00000000,  // black.
     0x00000100,  // red.

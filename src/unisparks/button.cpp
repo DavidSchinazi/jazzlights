@@ -171,14 +171,54 @@ static const CRGB menuIconBrightness[ATOM_SCREEN_NUM_LEDS] = {
     CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black,
 };
 
-static const CRGB specColor = CRGB::Green;
-// TODO change color of special icon to match player special color.
-static const CRGB menuIconSpecial[ATOM_SCREEN_NUM_LEDS] = {
-    specColor,   specColor,   specColor,   CRGB::Black, CRGB::Black,
-    CRGB::Black, CRGB::Black, specColor,   CRGB::Black, CRGB::Black,
-    CRGB::Black, specColor,   CRGB::Black, CRGB::Black, CRGB::Black,
+static const CRGB menuIconSpecialOff[ATOM_SCREEN_NUM_LEDS] = {
+    CRGB::Yellow, CRGB::Yellow, CRGB::Yellow, CRGB::Black, CRGB::Black,
+    CRGB::Black,  CRGB::Black,  CRGB::Yellow, CRGB::Black, CRGB::Black,
+    CRGB::Black,  CRGB::Yellow, CRGB::Black,  CRGB::Black, CRGB::Black,
+    CRGB::Black,  CRGB::Black,  CRGB::Black,  CRGB::Black, CRGB::Black,
+    CRGB::Black,  CRGB::Yellow, CRGB::Black,  CRGB::Black, CRGB::Black,
+};
+static const CRGB menuIconSpecialCalibration[ATOM_SCREEN_NUM_LEDS] = {
+    CRGB::Red,   CRGB::Green,  CRGB::Blue,   CRGB::Black, CRGB::Black,
+    CRGB::Black, CRGB::Black,  CRGB::Yellow, CRGB::Black, CRGB::Black,
+    CRGB::Black, CRGB::Purple, CRGB::Black,  CRGB::Black, CRGB::Black,
+    CRGB::Black, CRGB::Black,  CRGB::Black,  CRGB::Black, CRGB::Black,
+    CRGB::Black, CRGB::White,  CRGB::Black,  CRGB::Black, CRGB::Black,
+};
+static const CRGB menuIconSpecialBlack[ATOM_SCREEN_NUM_LEDS] = {
+    CRGB::Purple, CRGB::Purple, CRGB::Purple, CRGB::Black, CRGB::Black,
+    CRGB::Black,  CRGB::Black,  CRGB::Purple, CRGB::Black, CRGB::Black,
+    CRGB::Black,  CRGB::Purple, CRGB::Black,  CRGB::Black, CRGB::Black,
+    CRGB::Black,  CRGB::Black,  CRGB::Black,  CRGB::Black, CRGB::Black,
+    CRGB::Black,  CRGB::Purple, CRGB::Black,  CRGB::Black, CRGB::Black,
+};
+static const CRGB menuIconSpecialRed[ATOM_SCREEN_NUM_LEDS] = {
+    CRGB::Red,   CRGB::Red,   CRGB::Red,   CRGB::Black, CRGB::Black,
+    CRGB::Black, CRGB::Black, CRGB::Red,   CRGB::Black, CRGB::Black,
+    CRGB::Black, CRGB::Red,   CRGB::Black, CRGB::Black, CRGB::Black,
     CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black,
-    CRGB::Black, specColor,   CRGB::Black, CRGB::Black, CRGB::Black,
+    CRGB::Black, CRGB::Red,   CRGB::Black, CRGB::Black, CRGB::Black,
+};
+static const CRGB menuIconSpecialGreen[ATOM_SCREEN_NUM_LEDS] = {
+    CRGB::Green, CRGB::Green, CRGB::Green, CRGB::Black, CRGB::Black,
+    CRGB::Black, CRGB::Black, CRGB::Green, CRGB::Black, CRGB::Black,
+    CRGB::Black, CRGB::Green, CRGB::Black, CRGB::Black, CRGB::Black,
+    CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black,
+    CRGB::Black, CRGB::Green, CRGB::Black, CRGB::Black, CRGB::Black,
+};
+static const CRGB menuIconSpecialBlue[ATOM_SCREEN_NUM_LEDS] = {
+    CRGB::Blue,  CRGB::Blue,  CRGB::Blue,  CRGB::Black, CRGB::Black,
+    CRGB::Black, CRGB::Black, CRGB::Blue,  CRGB::Black, CRGB::Black,
+    CRGB::Black, CRGB::Blue,  CRGB::Black, CRGB::Black, CRGB::Black,
+    CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black,
+    CRGB::Black, CRGB::Blue,  CRGB::Black, CRGB::Black, CRGB::Black,
+};
+static const CRGB menuIconSpecialWhite[ATOM_SCREEN_NUM_LEDS] = {
+    CRGB::White, CRGB::White, CRGB::White, CRGB::Black, CRGB::Black,
+    CRGB::Black, CRGB::Black, CRGB::White, CRGB::Black, CRGB::Black,
+    CRGB::Black, CRGB::White, CRGB::Black, CRGB::Black, CRGB::Black,
+    CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black,
+    CRGB::Black, CRGB::White, CRGB::Black, CRGB::Black, CRGB::Black,
 };
 
 CLEDController* atomMatrixScreenController = nullptr;
@@ -218,10 +258,20 @@ void atomScreenNetwork(Player& /*player*/, NetworkStatus networkStatus, const Mi
 void atomScreenUnlocked(Player& player, NetworkStatus networkStatus, const Milliseconds currentMillis) {
   const CRGB* icon = atomScreenLEDs;
   switch (menuMode) {
-    case kNext: icon = menuIconNext; break;
-    case kPrevious: icon = menuIconPrevious; break;
+    case kNext:       icon = menuIconNext; break;
+    case kPrevious:   icon = menuIconPrevious; break;
     case kBrightness: icon = menuIconBrightness; break;
-    case kSpecial: icon = menuIconSpecial; break;
+    case kSpecial: {
+      switch (player.getSpecial()) {
+        case  1: icon = menuIconSpecialCalibration; break;
+        case  2: icon = menuIconSpecialBlack; break;
+        case  3: icon = menuIconSpecialRed; break;
+        case  4: icon = menuIconSpecialGreen; break;
+        case  5: icon = menuIconSpecialBlue; break;
+        case  6: icon = menuIconSpecialWhite; break;
+        default: icon = menuIconSpecialOff; break;
+      }
+    } break;
   };
   for (int i = 0; i < ATOM_SCREEN_NUM_LEDS; i++) {
     atomScreenLEDs[i] = icon[i];
