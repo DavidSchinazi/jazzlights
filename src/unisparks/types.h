@@ -12,6 +12,11 @@ using PatternBits = uint32_t;
 using Precedence = uint16_t;
 using NumHops = uint8_t;
 
+// bitNum is [1-32] starting from the highest bit.
+constexpr inline bool patternbit(PatternBits pattern, uint8_t bitNum) {
+  return (pattern & (1 << (sizeof(PatternBits) * 8 - bitNum))) != 0;
+}
+
 class Layout;
 
 struct Pixel {

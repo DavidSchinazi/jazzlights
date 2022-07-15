@@ -3,10 +3,10 @@
 
 #include <cstdint>
 
+#include "unisparks/effect.hpp"
 #include "unisparks/util/color.hpp"
 
 namespace unisparks {
-
 
 // Some of the code here comes from FastLED
 // https://github.com/FastLED/FastLED
@@ -355,6 +355,35 @@ enum OurColorPalette {
 #undef X
 };
 
+
+static inline OurColorPalette PaletteFromPattern(PatternBits pattern) {
+  if (patternbit(pattern, 2)) { // nature
+    if (patternbit(pattern, 3)) { // rainbow
+      return OCPrainbow;
+    } else { // frolick
+      if (patternbit(pattern, 4)) { // forest
+        return OCPforest;
+      } else { // party
+        return OCPparty;
+      }
+    }
+  } else { // hot&cold
+    if (patternbit(pattern, 3)) { // cold
+      if (patternbit(pattern, 4)) { // cloud
+        return OCPcloud;
+      } else { // ocean
+        return OCPocean;
+      }
+    } else { // hot
+      if (patternbit(pattern, 4)) { // lava
+        return OCPlava;
+      } else { // heat
+        return OCPheat;
+      }
+    }
+  }
+}
+
 static inline RgbaColor colorFromOurPalette(OurColorPalette ocp, uint8_t color) {
 #define RET_COLOR(c) return flToDf(c##Colors_p[color >> 4])
 #define X(c) case OCP##c: RET_COLOR(c);
@@ -365,6 +394,62 @@ static inline RgbaColor colorFromOurPalette(OurColorPalette ocp, uint8_t color) 
 #undef X
 #undef RET_COLOR
 }
+
+template<typename STATE>
+class EffectWithPaletteAndState : public Effect {
+public:
+
+  virtual std::string effectNamePrefix(PatternBits pattern) const = 0;
+  virtual size_t extraContextSize(const Frame& frame) const {
+    (void)frame;
+    return 0;
+  }
+  virtual uint8_t innerColor(const Frame& frame, const Pixel& px, STATE* state) const = 0;
+  virtual void innerBegin(const Frame& frame, STATE* state) const {
+    (void)frame;
+    (void)state;
+  }
+  virtual void innerRewind(const Frame& frame, STATE* state) const {
+    (void)frame;
+    (void)state;
+  }
+
+  std::string effectName(PatternBits pattern) const override {
+    switch(PaletteFromPattern(pattern)) {
+#define X(c) case OCP##c: return effectNamePrefix(pattern) + "-" #c;
+  ALL_COLORS
+#undef X
+    }
+    return effectNamePrefix(pattern) + "-unknown";
+  }
+
+  Color color(const Frame& frame, const Pixel& px) const override {
+    EffectWithPaletteState* state = reinterpret_cast<EffectWithPaletteState*>(frame.context);
+    const uint8_t color = innerColor(frame, px, &state->innerState);
+    return colorFromOurPalette(state->ocp, color);
+  }
+
+  size_t contextSize(const Frame& frame) const override {
+    return sizeof(EffectWithPaletteState) + extraContextSize(frame);
+  }
+
+  void begin(const Frame& frame) const override {
+    EffectWithPaletteState* state = reinterpret_cast<EffectWithPaletteState*>(frame.context);
+    state->ocp = PaletteFromPattern(frame.pattern);
+    innerBegin(frame, &state->innerState);
+  }
+
+  void rewind(const Frame& frame) const override {
+    EffectWithPaletteState* state = reinterpret_cast<EffectWithPaletteState*>(frame.context);
+    innerRewind(frame, &state->innerState);
+  }
+
+ private:
+  struct EffectWithPaletteState {
+    OurColorPalette ocp;
+    STATE innerState;
+  };
+};
 
 }  // namespace unisparks
 
