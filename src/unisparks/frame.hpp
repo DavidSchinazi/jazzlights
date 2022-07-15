@@ -16,12 +16,11 @@ struct Frame {
  public:
   PatternBits pattern;
   PredictableRandom* predictableRandom = nullptr;
+  const XYIndexStore* xyIndexStore = nullptr;
   Box viewport;
   void* context = nullptr;
   Milliseconds time;
   int pixelCount;
-  std::vector<Coord> xValues;
-  std::vector<Coord> yValues;
 };
 
 constexpr Coord width(const Frame& frame) {

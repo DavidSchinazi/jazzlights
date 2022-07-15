@@ -28,6 +28,8 @@ set(LIB_SOURCES
 	../src/unisparks/registry.hpp
 	../src/unisparks/renderer.hpp
 	../src/unisparks/renderers/simple.hpp
+	../src/unisparks/types.cpp
+	../src/unisparks/types.h
 	../src/unisparks/util/color.cpp
 	../src/unisparks/util/color.hpp
 	../src/unisparks/util/geom.hpp

@@ -152,6 +152,7 @@ class Player {
 
   Frame frame_;
   PredictableRandom predictableRandom_;
+  XYIndexStore xyIndexStore_;
 
   // Mutable because it is used for logging
   mutable int fps_ = -1;

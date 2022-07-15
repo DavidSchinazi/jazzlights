@@ -53,18 +53,22 @@ struct Context {
 };
 
 size_t Flame::contextSize(const Frame& frame) const {
-  return sizeof(Context) + sizeof(uint8_t) * frame.xValues.size() * frame.yValues.size();
+  const int w = frame.xyIndexStore->xValuesCount();
+  const int h = frame.xyIndexStore->yValuesCount();
+  return sizeof(Context) + sizeof(uint8_t) * w * h;
 }
 
 void Flame::begin(const Frame& frame) const {
+  const int w = frame.xyIndexStore->xValuesCount();
+  const int h = frame.xyIndexStore->yValuesCount();
   Context& ctx = *static_cast<Context*>(frame.context);
-  memset(ctx.heat, 0, sizeof(uint8_t) * frame.xValues.size() * frame.yValues.size());
+  memset(ctx.heat, 0, sizeof(uint8_t) * w * h);
 }
 
 void Flame::rewind(const Frame& frame) const {
+  const int w = frame.xyIndexStore->xValuesCount();
+  const int h = frame.xyIndexStore->yValuesCount();
   Context& ctx = *static_cast<Context*>(frame.context);
-  const int w = frame.xValues.size();
-  const int h = frame.yValues.size();
 
   for (int x = 0; x < w; x++) {
     // Step 1.  Cool down every cell a little
@@ -94,24 +98,11 @@ void Flame::rewind(const Frame& frame) const {
 
 Color Flame::color(const Frame& frame, const Pixel& px) const {
   // TODO understand why this patern lights up the top row.
+  const int w = frame.xyIndexStore->xValuesCount();
+  const int h = frame.xyIndexStore->yValuesCount();
   Context& ctx = *static_cast<Context*>(frame.context);
-  const int w = frame.xValues.size();
-  const int h = frame.yValues.size();
-  int xIndex = 0;
-  for (int xi = 0; xi < w; xi++) {
-    if (frame.xValues[xi] == px.coord.x) {
-      xIndex = xi;
-      break;
-    }
-  }
-  int yIndex = 0;
-  for (int yi = 0; yi < h; yi++) {
-    if (frame.yValues[yi] == px.coord.y) {
-      yIndex = yi;
-      break;
-    }
-  }
-  return Color(heatColor(ctx.heat[(h - yIndex) * w + xIndex])).lightnessToAlpha();
+  XYIndex xyIndex = frame.xyIndexStore->FromPixel(px);
+  return Color(heatColor(ctx.heat[(h - xyIndex.yIndex) * w + xyIndex.xIndex])).lightnessToAlpha();
 }
 
 

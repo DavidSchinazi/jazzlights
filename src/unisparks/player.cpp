@@ -189,10 +189,6 @@ std::string patternName(PatternBits pattern) {
 }
 
 Player::Player() {
-  frame_.viewport.origin.x = 0;
-  frame_.viewport.origin.y = 0;
-  frame_.viewport.size.height = 1;
-  frame_.viewport.size.width = 1;
   frame_.predictableRandom = &predictableRandom_;
 }
 
@@ -228,27 +224,19 @@ Player& Player::connect(Network* n) {
 }
 
 void Player::begin(Milliseconds currentTime) {
-
-  auto almostLess = [](Coord a, Coord b) {
-    static constexpr Coord kCoordEpsilon = 0.00001;
-    return a + kCoordEpsilon < b;
-  };
-  std::set<Coord, decltype(almostLess)> xSet(almostLess);
-  std::set<Coord, decltype(almostLess)> ySet(almostLess);
+  xyIndexStore_.Reset();
   frame_.pixelCount = 0;
-  for (Strand* s = strands_;
-       s < strands_ + strandCount_; ++s) {
+  frame_.viewport.origin.x = 0;
+  frame_.viewport.origin.y = 0;
+  frame_.viewport.size.height = 0;
+  frame_.viewport.size.width = 0;
+  for (Strand* s = strands_; s < strands_ + strandCount_; ++s) {
     frame_.viewport = merge(frame_.viewport, unisparks::bounds(*s->layout));
-    const int pc = s->layout->pixelCount();
-    frame_.pixelCount += pc;
-    for (int i = 0; i < pc; i++) {
-      const Point pt = s->layout->at(i);
-      xSet.insert(pt.x);
-      ySet.insert(pt.y);
-    }
+    frame_.pixelCount += s->layout->pixelCount();
+    xyIndexStore_.IngestLayout(s->layout);
   }
-  frame_.xValues.assign(xSet.begin(), xSet.end());
-  frame_.yValues.assign(ySet.begin(), ySet.end());
+  xyIndexStore_.Finalize();
+  frame_.xyIndexStore = &xyIndexStore_;
 
   // Figure out localDeviceId_.
   if (!randomizeLocalDeviceId_) {
@@ -268,7 +256,7 @@ void Player::begin(Milliseconds currentTime) {
   }
   currentLeader_ = localDeviceId_;
   info("%u Starting Unisparks player %s (v%s); strands: %d%s, "
-       "pixels: %d, %s " DEVICE_ID_FMT " w %f h %f ox %f oy %f xv %zu yv %zu",
+       "pixels: %d, %s " DEVICE_ID_FMT " w %f h %f ox %f oy %f xv %d yv %d",
        currentTime,
        BOOT_MESSAGE,
        UNISPARKS_VERSION,
@@ -279,7 +267,7 @@ void Player::begin(Milliseconds currentTime) {
        DEVICE_ID_HEX(localDeviceId_),
        frame_.viewport.size.width, frame_.viewport.size.height,
        frame_.viewport.origin.x, frame_.viewport.origin.y,
-       frame_.xValues.size(), frame_.yValues.size());
+       xyIndexStore_.xValuesCount(), xyIndexStore_.yValuesCount());
 
   ready_ = true;
 
@@ -354,9 +342,11 @@ void Player::render(Milliseconds currentTime) {
   // Ensure effectContext_ is big enough for this effect.
   const size_t effectContextSize = effect->contextSize(frame_);
   if (effectContextSize > effectContextSize_) {
-    info("%u realloc context size from %zu to %zu (%s w %f h %f)",
+    info("%u realloc context size from %zu to %zu (%s w %f h %f xv %d yv %d)",
          currentTime, effectContextSize_, effectContextSize,
-         effect->effectName(frame_.pattern).c_str(), frame_.viewport.size.width, frame_.viewport.size.height);
+         effect->effectName(frame_.pattern).c_str(),
+         frame_.viewport.size.width, frame_.viewport.size.height,
+         xyIndexStore_.xValuesCount(), xyIndexStore_.yValuesCount());
     effectContextSize_ = effectContextSize;
     effectContext_ = realloc(effectContext_, effectContextSize_);
   }
