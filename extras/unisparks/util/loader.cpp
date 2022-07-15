@@ -30,9 +30,17 @@ Layout& Loader::loadLayout(const cpptoml::table& cfg) {
           << coordscfg->size();
       throw runtime_error(msg.str());
     }
-    size_t begin = pixelcoords.size();
-    for (size_t i = 0; i < coordscfg->size(); i += 3) {
-      pixelcoords.push_back({coordscfg->at(i), coordscfg->at(i + 1)});
+    const size_t begin = pixelcoords.size();
+    const bool backwards = cfg.get_as<bool>("backwards").value_or(false);
+    if (backwards) {
+      for (size_t i = coordscfg->size() - 3; ; i -= 3) {
+        pixelcoords.push_back({coordscfg->at(i), coordscfg->at(i + 1)});
+        if (i == 0) { break; }
+      }
+    } else {
+      for (size_t i = 0; i < coordscfg->size(); i += 3) {
+        pixelcoords.push_back({coordscfg->at(i), coordscfg->at(i + 1)});
+      }
     }
     PixelMap* m = new PixelMap(coordscfg->size() / 3, &pixelcoords[begin]);
     layouts.emplace_back(unique_ptr<Layout>(m));
