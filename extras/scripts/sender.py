@@ -7,10 +7,6 @@ import struct
 import sys
 import time
 
-name = ''
-if len(sys.argv) >= 2:
-    name = sys.argv[1].lower()
-
 patterns = {
     'black': 0x000,
     'red': 0x100,
@@ -20,29 +16,36 @@ patterns = {
     'cyan': 0x500,
     'yellow': 0x600,
     'white': 0x700,
-    'glowred': 0x800,
-    'glowgreen': 0x900,
-    'glowblue': 0xA00,
-    'glowpurple': 0xB00,
-    'glowcyan': 0xC00,
-    'glowyellow': 0xD00,
-    'glowwhite': 0xE00,
+    'glow-red': 0x800,
+    'glow-green': 0x900,
+    'glow-blue': 0xA00,
+    'glow-purple': 0xB00,
+    'glow-cyan': 0xC00,
+    'glow-yellow': 0xD00,
+    'glow-white': 0xE00,
     'synctest': 0xF00,
     'calibration': 0x1000,
     'follow-strand': 0x1100,
-    'sp_rainbow': 0xE0000001,
-    'sp_forest': 0xD0000001,
-    'sp_party': 0xC0000001,
-    'sp_cloud': 0xB0000001,
-    'sp_ocean': 0xA0000001,
-    'sp_lava': 0x90000001,
-    'sp_heat': 0x80000001,
+    'sp-rainbow': 0xE0000001,
+    'sp-forest': 0xD0000001,
+    'sp-party': 0xC0000001,
+    'sp-cloud': 0xB0000001,
+    'sp-ocean': 0xA0000001,
+    'sp-lava': 0x90000001,
+    'sp-heat': 0x80000001,
     'flame': 0x60000001,
     'glitter': 0x40000001,
     'threesine': 0x20000001,
     'rainbow': 0x00000001,
 }
-pattern = patterns.get(name, patterns['glowred'])
+defaultName = 'glowred'
+
+name = sys.argv[1] if len(sys.argv) >= 2 else ''
+pattern = patterns.get(name.lower(), None)
+
+if pattern is None:
+    print('Unknown pattern "{}", using {}'.format(name, defaultName))
+    pattern = patterns[defaultName]
 
 PORT = 0xDF0D
 MCADDR = '239.255.223.01'
