@@ -152,13 +152,13 @@ std::list<NetworkMessage> UdpNetwork::getReceivedMessagesImpl(Milliseconds curre
       break;
     }
     if (n < kPayloadLength) {
-      info("%u %s Received packet too short, received %d bytes, expected at least %d bytes",
-           currentTime, networkName(), n, kPayloadLength);
+      debug("%u %s Received packet too short, received %d bytes, expected at least %d bytes",
+            currentTime, networkName(), n, kPayloadLength);
       continue;
     }
     if ((udpPayload[kVersionOffset] & 0xF0) != kVersion) {
-      info("%u %s Received packet with unexpected prefix %02x",
-           currentTime, networkName(), udpPayload[kVersionOffset]);
+      debug("%u %s Received packet with unexpected prefix %02x",
+            currentTime, networkName(), udpPayload[kVersionOffset]);
       continue;
     }
     NetworkMessage receivedMessage;
