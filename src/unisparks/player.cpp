@@ -11,6 +11,7 @@
 #include "unisparks/effects/flame.hpp"
 #include "unisparks/effects/glitter.hpp"
 #include "unisparks/effects/glow.hpp"
+#include "unisparks/effects/hiphotic.h"
 #include "unisparks/effects/plasma.hpp"
 #include "unisparks/effects/rainbow.hpp"
 #include "unisparks/effects/solid.hpp"
@@ -149,6 +150,7 @@ PatternBits computeNextPattern(PatternBits pattern) {
 }
 
 auto spin_pattern = clone(SpinPlasma());
+auto hiphotic_pattern = clone(Hiphotic());
 auto flame_pattern = clone(flame());
 auto glitter_pattern = clone(Glitter());
 auto threesine_pattern = clone(threesine());
@@ -183,8 +185,12 @@ Effect* patternFromBits(PatternBits pattern) {
     }
     return &red_effect;
   } else {
-    if (patternbit(pattern, 1)) { // spin
-      return &spin_pattern;
+    if (patternbit(pattern, 1)) { // palette
+      if (patternbit(pattern, 2)) { // spin
+        return &spin_pattern;
+      } else { // hiphotic
+        return &hiphotic_pattern;
+      }
     } else { // custom
       if (patternbit(pattern, 2)) { // sparkly
         if (patternbit(pattern, 3)) { // flame

@@ -357,25 +357,32 @@ enum OurColorPalette {
 
 
 static inline OurColorPalette PaletteFromPattern(PatternBits pattern) {
-  if (patternbit(pattern, 2)) { // nature
-    if (patternbit(pattern, 3)) { // rainbow
+  constexpr uint8_t firstPaletteBit = 17;
+#if 0
+  info("PATTERN BITS %u%u%u",
+       patternbit(pattern, firstPaletteBit + 0),
+       patternbit(pattern, firstPaletteBit + 1),
+       patternbit(pattern, firstPaletteBit + 2));
+#endif
+  if (patternbit(pattern, firstPaletteBit)) { // nature
+    if (patternbit(pattern, firstPaletteBit + 1)) { // rainbow
       return OCPrainbow;
     } else { // frolick
-      if (patternbit(pattern, 4)) { // forest
+      if (patternbit(pattern, firstPaletteBit + 2)) { // forest
         return OCPforest;
       } else { // party
         return OCPparty;
       }
     }
   } else { // hot&cold
-    if (patternbit(pattern, 3)) { // cold
-      if (patternbit(pattern, 4)) { // cloud
+    if (patternbit(pattern, firstPaletteBit + 1)) { // cold
+      if (patternbit(pattern, firstPaletteBit + 2)) { // cloud
         return OCPcloud;
       } else { // ocean
         return OCPocean;
       }
     } else { // hot
-      if (patternbit(pattern, 4)) { // lava
+      if (patternbit(pattern, firstPaletteBit + 2)) { // lava
         return OCPlava;
       } else { // heat
         return OCPheat;
