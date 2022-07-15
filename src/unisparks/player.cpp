@@ -152,7 +152,7 @@ auto spin_pattern = clone(SpinPlasma());
 auto flame_pattern = clone(flame());
 auto glitter_pattern = clone(Glitter());
 auto threesine_pattern = clone(threesine());
-auto rainbow_pattern = clone(rainbow());
+auto rainbow_pattern = clone(Rainbow());
 
 Effect* patternFromBits(PatternBits pattern) {
   if (patternIsReserved(pattern)) {

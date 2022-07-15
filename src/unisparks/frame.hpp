@@ -39,6 +39,21 @@ constexpr Point lefttop(const Frame& frame) {
   return frame.viewport.origin;
 }
 
+constexpr Point righttop(const Frame& frame) {
+  return {frame.viewport.origin.x + frame.viewport.size.width,
+          frame.viewport.origin.y};
+}
+
+constexpr Point leftbottom(const Frame& frame) {
+  return {frame.viewport.origin.x,
+          frame.viewport.origin.y + frame.viewport.size.height,};
+}
+
+constexpr Point rightbottom(const Frame& frame) {
+  return {frame.viewport.origin.x + frame.viewport.size.width,
+          frame.viewport.origin.y + frame.viewport.size.height,};
+}
+
 inline uint8_t* ucontext(const Frame& frame) {
   return reinterpret_cast<uint8_t*>(frame.context);
 }
