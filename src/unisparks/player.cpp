@@ -43,8 +43,12 @@ int comparePrecedence(Precedence leftPrecedence,
 }
 
 auto follow_strand_effect = effect("follow-strand", [](const Frame& frame) {
-  constexpr int32_t green = 0x00ff00, blue = 0x0000ff, red = 0xff0000;
-  constexpr int32_t colors[10] = { red, green, blue };
+  constexpr int32_t green = 0x00ff00, blue = 0x0000ff, red = 0xff0000, black = 0;
+  constexpr int32_t colors[] = {
+    red, red, red, black, black, black, black, black, black,
+    green, green, green, black, black, black, black, black, black,
+    blue, blue, blue, black, black, black, black, black, black,
+  };
   constexpr int numColors = sizeof(colors) / sizeof(colors[0]);
   const int offset = frame.time / 100;
   const bool blink = ((frame.time % 1000) < 500);
