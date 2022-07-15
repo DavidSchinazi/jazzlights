@@ -9,12 +9,6 @@
 #ifndef CAMP_SIGN
 #  define CAMP_SIGN 0
 #endif // CAMP_SIGN
-#ifndef YELLOW_VEST_15
-#  define YELLOW_VEST_15 0
-#endif // YELLOW_VEST_15
-#ifndef YELLOW_VEST_14
-#  define YELLOW_VEST_14 0
-#endif // YELLOW_VEST_14
 #ifndef GUPPY
 #  define GUPPY 0
 #endif // GUPPY
@@ -41,11 +35,6 @@
 #  define LEDNUM 900
 #endif // CAMP_SIGN
 
-#if YELLOW_VEST_15 || YELLOW_VEST_14
-#  define MATRIX_WIDTH 15
-#  define MATRIX_HEIGHT 16
-#  define LEDNUM 215
-#endif // YELLOW_VEST_15
 
 #if GUPPY
 #  define MATRIX_WIDTH 15
