@@ -1,8 +1,9 @@
-from __future__ import print_function
+#!/usr/bin/python3
+
 import sys
 
-# out = sys.stdout
-out = open('/Volumes/PPRJ/Projects/tglight/etc/tglight.toml', 'w')
+out = sys.stdout
+# out = open('/Volumes/PPRJ/Projects/tglight/etc/tglight.toml', 'w')
 
 FEET_IN_METER = 3.28084
 
@@ -132,7 +133,7 @@ def gen_dorsal_fins(left=0, top=0):
         for (n, leds, feet) in slc:
             leds += 1
             x += 0.2
-            for ny in xrange(0, leds):
+            for ny in range(leds):
                 print("   %3.2f, %3.2f, %3.2f," % (x, top + -1.0*ny*feet/(FEET_IN_METER*leds), 0), file=out, end='')
 
         print(']}\n', file=out)
@@ -169,7 +170,7 @@ def gen_tail_fins(left=0, top=0):
     for (name, leds, feet) in left_poles:
         leds = leds+1
         y += 0.3
-        for n in xrange(0,leds):
+        for n in range(leds):
             print("   %3.2f, %3.2f, %3.2f," % (left - n*feet/(FEET_IN_METER*leds), y, 0), file=out, end='')
     print(']}\n', file=out)
 
@@ -181,7 +182,7 @@ def gen_tail_fins(left=0, top=0):
     for (name, leds, feet) in left_poles:
         leds = leds+1
         y += 0.3
-        for n in xrange(0,leds):
+        for n in range(leds):
             print("   %3.2f, %3.2f, %3.2f," % (left - n*feet/(FEET_IN_METER*leds), y, 0), file=out, end='')
     print(']}\n', file=out)
 
