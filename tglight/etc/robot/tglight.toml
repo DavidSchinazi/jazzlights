@@ -21,6 +21,8 @@ layout = {type="pixelmap", coords=[19.70, 1.00, 0.0,   19.70, 1.00, 0.0,   19.70
 # renderers = [{type="pixelpusher", addr="10.1.64.102", controller=10102, group=10001, port=7331, strip=3}]
 # layout = {type="matrix-zigzag", size=[20,20], origin=[10.50, 0.00], resolution=7}
 
+# TODO compare caboose fins with spreadsheet
+
 # Caboose left tail fins
 [[strand]]
 renderers = [{type="pixelpusher", addr="10.1.64.103", controller=10103, group=10001, port=5078, strip=0, reversegb=true}]
