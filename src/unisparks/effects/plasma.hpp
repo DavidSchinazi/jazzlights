@@ -22,14 +22,15 @@ struct SpinPlasmaState {
 class SpinPlasma : public EffectWithPaletteAndState<SpinPlasmaState> {
 public:
   std::string effectNamePrefix(PatternBits /*pattern*/) const override { return "sp"; }
-  uint8_t innerColor(const Frame& /*frame*/,
-                     const Pixel& px,
-                     SpinPlasmaState* state) const override {
+  ColorWithPalette innerColor(const Frame& /*frame*/,
+                              const Pixel& px,
+                              SpinPlasmaState* state) const override {
+    using namespace internal;
     return
-      internal::sin8(sqrt(square((static_cast<float>(px.coord.x) - state->plasmaCenterX) *
-                                 state->xMultiplier) +
-                          square((static_cast<float>(px.coord.y) - state->plasmaCenterY) *
-                                 state->yMultiplier)));
+      sin8(sqrt(square((static_cast<float>(px.coord.x) - state->plasmaCenterX) *
+                        state->xMultiplier) +
+                square((static_cast<float>(px.coord.y) - state->plasmaCenterY) *
+                        state->yMultiplier)));
   }
   void innerBegin(const Frame& frame, SpinPlasmaState* state) const override {
     const float multiplier = frame.predictableRandom->GetRandomNumberBetween(100, 500);
@@ -43,13 +44,14 @@ public:
       frame.predictableRandom->GetRandomDoubleBetween(0, frame.viewport.size.height);
   }
   void innerRewind(const Frame& frame, SpinPlasmaState* state) const override {
+    using namespace internal;
     const uint8_t offset = 30 * frame.time / 255;
     state->plasmaCenterX =
       state->rotationCenterX +
-      (static_cast<float>(internal::cos8(offset)) - 127.0) / (state->xMultiplier * 2.0);
+      (static_cast<float>(cos8(offset)) - 127.0) / (state->xMultiplier * 2.0);
     state->plasmaCenterY =
       state->rotationCenterY +
-      (static_cast<float>(internal::sin8(offset)) - 127.0) / (state->yMultiplier * 2.0);
+      (static_cast<float>(sin8(offset)) - 127.0) / (state->yMultiplier * 2.0);
   }
 };
 

@@ -12,6 +12,7 @@
 #include "unisparks/effects/glitter.hpp"
 #include "unisparks/effects/glow.hpp"
 #include "unisparks/effects/hiphotic.h"
+#include "unisparks/effects/metaballs.h"
 #include "unisparks/effects/plasma.hpp"
 #include "unisparks/effects/rainbow.hpp"
 #include "unisparks/effects/solid.hpp"
@@ -151,6 +152,7 @@ PatternBits computeNextPattern(PatternBits pattern) {
 
 auto spin_pattern = clone(SpinPlasma());
 auto hiphotic_pattern = clone(Hiphotic());
+auto metaballs_pattern = clone(Metaballs());
 auto flame_pattern = clone(flame());
 auto glitter_pattern = clone(Glitter());
 auto threesine_pattern = clone(threesine());
@@ -185,23 +187,27 @@ Effect* patternFromBits(PatternBits pattern) {
     }
     return &red_effect;
   } else {
-    if (patternbit(pattern, 1)) { // palette
-      if (patternbit(pattern, 2)) { // spin
+    if (patternbit(pattern, 1)) { // 1x - palette
+      if (patternbit(pattern, 2)) { // 11x - spin
         return &spin_pattern;
-      } else { // hiphotic
-        return &hiphotic_pattern;
+      } else { // 10x - hiphotic & metaballs
+        if (patternbit(pattern, 3)) { // 101x - hiphotic
+          return &hiphotic_pattern;
+        } else {  // 100x - metaballs
+          return &metaballs_pattern;
+        }
       }
-    } else { // custom
-      if (patternbit(pattern, 2)) { // sparkly
-        if (patternbit(pattern, 3)) { // flame
+    } else { // 0x - custom
+      if (patternbit(pattern, 2)) { // 01x - sparkly
+        if (patternbit(pattern, 3)) { // 011x - flame
           return &flame_pattern;
-        } else { // glitter
+        } else { // 010x - glitter
           return &glitter_pattern;
         }
-      } else { // shiny
-        if (patternbit(pattern, 3)) { // threesine
+      } else { // 00x - shiny
+        if (patternbit(pattern, 3)) { // 001x - threesine
           return &threesine_pattern;
-        } else { // rainbow
+        } else { // 00x - rainbow
           return &rainbow_pattern;
         }
       }

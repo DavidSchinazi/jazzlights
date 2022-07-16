@@ -58,8 +58,11 @@ def getPatternBytes(patternName):
     paletteName = patternName[len('sp-'):]
     patternBytes = 0xC0000001
   elif patternName.startswith('hiphotic-'):
-    patternBytes = 0x80000001
+    patternBytes = 0xA0000001
     paletteName = patternName[len('hiphotic-'):]
+  elif patternName.startswith('metaballs-'):
+    patternBytes = 0x80000001
+    paletteName = patternName[len('metaballs-'):]
 
   paletteByte = palettes.get(paletteName.lower(), None)
   if patternBytes is not None and paletteByte is not None:

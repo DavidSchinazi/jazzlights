@@ -256,6 +256,66 @@ class Welford {
   double m2_;
 };
 
+constexpr inline int8_t avg7(int8_t i, int8_t j) {
+  return ((i + j) >> 1) + (i & 0x1);
+}
+
+constexpr inline int16_t avg15(int16_t i, int16_t j) {
+  return ((int32_t)((int32_t)(i) + (int32_t)(j)) >> 1) + (i & 0x1);
+}
+
+constexpr inline uint16_t scale16(uint16_t i, uint16_t scale) {
+  return ((uint32_t)(i) * (1+(uint32_t)(scale))) / 65536;
+}
+
+inline int16_t lerp15by16(int16_t a, int16_t b, uint16_t frac) {
+  int16_t result;
+  if(b > a) {
+    uint16_t delta = b - a;
+    uint16_t scaled = scale16( delta, frac);
+    result = a + scaled;
+  } else {
+    uint16_t delta = a - b;
+    uint16_t scaled = scale16( delta, frac);
+    result = a - scaled;
+  }
+  return result;
+}
+
+inline uint16_t beat88(uint16_t beats_per_minute_88, uint32_t elapsedTime) {
+  // BPM is 'beats per minute', or 'beats per 60000ms'.
+  // To avoid using the (slower) division operator, we
+  // want to convert 'beats per 60000ms' to 'beats per 65536ms',
+  // and then use a simple, fast bit-shift to divide by 65536.
+  //
+  // The ratio 65536:60000 is 279.620266667:256; we'll call it 280:256.
+  // The conversion is accurate to about 0.05%, more or less,
+  // e.g. if you ask for "120 BPM", you'll get about "119.93".
+  return (elapsedTime * beats_per_minute_88 * 280) >> 16;
+}
+
+inline uint16_t beat16(uint16_t beats_per_minute, uint32_t elapsedTime) {
+  // Convert simple 8-bit BPM's to full Q8.8 accum88's if needed
+  if( beats_per_minute < 256) beats_per_minute <<= 8;
+  return beat88(beats_per_minute, elapsedTime);
+}
+
+inline uint8_t beat8(uint16_t beats_per_minute, uint32_t elapsedTime) {
+  // beat8 generates an 8-bit 'sawtooth' wave at a given BPM
+  return beat16( beats_per_minute, elapsedTime) >> 8;
+}
+
+inline uint8_t beatsin8(uint16_t beats_per_minute, uint32_t elapsedTime,
+                        uint8_t lowest = 0, uint8_t highest = 255,
+                        uint8_t phase_offset = 0) {
+  uint8_t beat = beat8(beats_per_minute, elapsedTime);
+  uint8_t beatsin = sin8(beat + phase_offset);
+  uint8_t rangewidth = highest - lowest;
+  uint8_t scaledbeat = scale8(beatsin, rangewidth);
+  uint8_t result = lowest + scaledbeat;
+  return result;
+}
+
 } // namespace private
 } // namespace unisparks
 #endif /* UNISPARKS_PROTO_H */

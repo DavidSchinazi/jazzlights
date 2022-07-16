@@ -54,6 +54,10 @@ constexpr Point rightbottom(const Frame& frame) {
           frame.viewport.origin.y + frame.viewport.size.height,};
 }
 
+inline Coord diagonal(const Frame& frame) {
+  return distance(lefttop(frame), rightbottom(frame));
+}
+
 inline uint8_t* ucontext(const Frame& frame) {
   return reinterpret_cast<uint8_t*>(frame.context);
 }

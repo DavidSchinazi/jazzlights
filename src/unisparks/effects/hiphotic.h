@@ -21,11 +21,10 @@ struct HiphoticState {
 class Hiphotic : public EffectWithPaletteAndState<HiphoticState> {
 public:
   std::string effectNamePrefix(PatternBits /*pattern*/) const override { return "hiphotic"; }
-  uint8_t innerColor(const Frame& frame,
-                     const Pixel& px,
-                     HiphoticState* state) const override {
-    using internal::sin8;
-    using internal::cos8;
+  ColorWithPalette innerColor(const Frame& frame,
+                              const Pixel& px,
+                              HiphoticState* state) const override {
+    using namespace internal;
     const float x = (px.coord.x - frame.viewport.origin.x) / frame.viewport.size.width;
     const float y = (px.coord.y - frame.viewport.origin.y) / frame.viewport.size.height;
     return

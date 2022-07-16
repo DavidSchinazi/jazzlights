@@ -404,14 +404,35 @@ static inline RgbaColor colorFromOurPalette(OurColorPalette ocp, uint8_t color) 
 
 template<typename STATE>
 class EffectWithPaletteAndState : public Effect {
-public:
-
+ protected:
+  class ColorWithPalette {
+    public:
+    ColorWithPalette(uint8_t innerColor) :
+      colorOverridden_(false), innerColor_(innerColor) {}
+    static ColorWithPalette Override(CRGB overrideColor) {
+      ColorWithPalette col = ColorWithPalette();
+      col.overrideColor_ = overrideColor;
+      return col;
+    }
+    Color colorFromPalette(OurColorPalette ocp) const {
+      if (colorOverridden_) {
+        return flToDf(overrideColor_);
+      }
+      return colorFromOurPalette(ocp, innerColor_);
+    }
+    private:
+    explicit ColorWithPalette() : colorOverridden_(true) {}
+    bool colorOverridden_;
+    uint8_t innerColor_;
+    CRGB overrideColor_ = CRGB::White;
+  };
+ public:
   virtual std::string effectNamePrefix(PatternBits pattern) const = 0;
   virtual size_t extraContextSize(const Frame& frame) const {
     (void)frame;
     return 0;
   }
-  virtual uint8_t innerColor(const Frame& frame, const Pixel& px, STATE* state) const = 0;
+  virtual ColorWithPalette innerColor(const Frame& frame, const Pixel& px, STATE* state) const = 0;
   virtual void innerBegin(const Frame& frame, STATE* state) const {
     (void)frame;
     (void)state;
@@ -432,8 +453,8 @@ public:
 
   Color color(const Frame& frame, const Pixel& px) const override {
     EffectWithPaletteState* state = reinterpret_cast<EffectWithPaletteState*>(frame.context);
-    const uint8_t color = innerColor(frame, px, &state->innerState);
-    return colorFromOurPalette(state->ocp, color);
+    const ColorWithPalette colorWithPalette = innerColor(frame, px, &state->innerState);
+    return colorWithPalette.colorFromPalette(state->ocp);
   }
 
   size_t contextSize(const Frame& frame) const override {

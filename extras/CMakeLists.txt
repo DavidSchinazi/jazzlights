@@ -39,6 +39,8 @@ set(LIB_SOURCES
 	../src/unisparks/util/math.hpp
 	../src/unisparks/util/memory.hpp
 	../src/unisparks/util/meta.hpp
+	../src/unisparks/util/noise.cpp
+	../src/unisparks/util/noise.h
 	../src/unisparks/util/stream.hpp
 	../src/unisparks/util/time.hpp
 	../src/unisparks/version.hpp
