@@ -62,6 +62,10 @@ auto follow_strand_effect = effect("follow-strand", [](const Frame& frame) {
         (fabs(pt.coord.x - pt.layout->at(0).x) < 0.001 &&
          fabs(pt.coord.y - pt.layout->at(0).y) < 0.001)) {
       col = blink ? 0xffffff : 0;
+    } else if (pt.index == pt.layout->pixelCount() - 1 ||
+        (fabs(pt.coord.x - pt.layout->at(pt.layout->pixelCount() - 1).x) < 0.001 &&
+         fabs(pt.coord.y - pt.layout->at(pt.layout->pixelCount() - 1).y) < 0.001)) {
+      col = blink ? 0xff00ff : 0;
     }
     return Color(col);
   };
