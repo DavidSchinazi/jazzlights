@@ -79,6 +79,7 @@ public:
     const Coord w = frame.viewport.size.width / 256.0;
     const Coord h = frame.viewport.size.height / 256.0;
 
+    // TODO make these pixels less jerky in their movement
     state->p1.x = ox + w * beatsin8(state->multX1 * state->speed, frame.time, 0, 15) * 16;
     state->p1.y = oy + h * beatsin8(state->multY1 * state->speed, frame.time, 0, 15) * 16;
 
