@@ -57,7 +57,7 @@ int32_t Random::GetRandomNumberBetween(int32_t min, int32_t max) {
 double Random::GetRandomDoubleBetween(double min, double max) {
   constexpr int32_t kRandomGranularity = 10000;
   const double d = max - min;
-  if (d < kRandomGranularity) { return min; }
+  if (d < 0.000001) { return min; }
   return min + GetRandomNumberBetween(0, kRandomGranularity) * d / kRandomGranularity;
 }
 
