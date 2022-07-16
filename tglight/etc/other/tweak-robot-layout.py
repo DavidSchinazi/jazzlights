@@ -52,8 +52,8 @@ for head in [False, True]:
     minY = 1.0
     numX = 17
     numY = 2
-    startUp = False
-    startMidWay = False
+    startUp = True
+    startMidWay = True
     # x = [14.3 .. 16.59] with diff 0.15
     # on lower y =  [1.0  .. 1.14] with diff 0.14
     # on higher y = [1.07 .. 1.21] with diff 0.14
