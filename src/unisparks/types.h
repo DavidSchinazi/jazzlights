@@ -37,16 +37,16 @@ class XYIndexStore {
   void IngestLayout(const Layout* layout);
   void Finalize();
   XYIndex FromPixel(const Pixel& pixel) const;
-  int xValuesCount() const { return xValuesCount_; }
-  int yValuesCount() const { return yValuesCount_; }
+  size_t xValuesCount() const { return xValuesCount_; }
+  size_t yValuesCount() const { return yValuesCount_; }
  private:
   struct LayoutInfo {
     const Layout* layout;
     std::vector<XYIndex> xyIndices;
   };
   std::vector<LayoutInfo> layoutInfos_;
-  int xValuesCount_;
-  int yValuesCount_;
+  size_t xValuesCount_;
+  size_t yValuesCount_;
 };
 
 } // namespace unisparks

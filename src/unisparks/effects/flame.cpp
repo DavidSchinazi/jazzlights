@@ -47,61 +47,35 @@ RgbaColor heatColor(uint8_t temperature) {
   return RgbaColor(r, g, b);
 }
 
-struct Context {
-  Milliseconds t;
-  uint8_t heat[];
-};
-
-size_t Flame::contextSize(const Frame& frame) const {
-  const int w = frame.xyIndexStore->xValuesCount();
-  const int h = frame.xyIndexStore->yValuesCount();
-  return sizeof(Context) + sizeof(uint8_t) * w * h;
+void Flame::innerBegin(const Frame& /*frame*/) const {
+  memset(&ps(0, 0), 0, sizeof(uint8_t) * w() * h());
 }
 
-void Flame::begin(const Frame& frame) const {
-  const int w = frame.xyIndexStore->xValuesCount();
-  const int h = frame.xyIndexStore->yValuesCount();
-  Context& ctx = *static_cast<Context*>(frame.context);
-  memset(ctx.heat, 0, sizeof(uint8_t) * w * h);
-}
-
-void Flame::rewind(const Frame& frame) const {
-  const int w = frame.xyIndexStore->xValuesCount();
-  const int h = frame.xyIndexStore->yValuesCount();
-  Context& ctx = *static_cast<Context*>(frame.context);
-
-  for (int x = 0; x < w; x++) {
+void Flame::innerRewind(const Frame& frame) const {
+  for (size_t x = 0; x < w(); x++) {
     // Step 1.  Cool down every cell a little
-    for (int y = 0; y < h; y++) {
-      ctx.heat[y * w + x] = qsub8(ctx.heat[y * w + x],
-                                  frame.predictableRandom->GetRandomNumberBetween(0, 1200 / h + 2));
+    for (size_t y = 0; y < h(); y++) {
+      ps(x, y) = qsub8(ps(x, y),
+                       frame.predictableRandom->GetRandomNumberBetween(0, 1200 / h() + 2));
     }
 
     // Step 2.  Heat from each cell drifts 'up' and diffuses a little
-    for (int y2 = h - 1; y2 >= 3; y2--) {
-      ctx.heat[y2 * w + x] =
-        (static_cast<uint16_t>(ctx.heat[(y2 - 1) * w + x]) +
-         static_cast<uint16_t>(ctx.heat[(y2 - 2) * w + x]) +
-         static_cast<uint16_t>(ctx.heat[(y2 - 3) * w + x])
-        ) / 3;
+    for (size_t y2 = h() - 1; y2 >= 3; y2--) {
+      ps(x, y2) = (static_cast<uint16_t>(ps(x, y2 - 1)) +
+        static_cast<uint16_t>(ps(x, y2 - 2)) +
+        static_cast<uint16_t>(ps(x, y2 - 3))
+      ) / 3;
     }
-    ctx.heat[2 * w + x] =
-      (static_cast<uint16_t>(ctx.heat[1 * w + x]) +
-       static_cast<uint16_t>(ctx.heat[0 * w + x])
-      ) / 2;
-    ctx.heat[1 * w + x] = ctx.heat[0 * w + x];
+    ps(x, 2) = (static_cast<uint16_t>(ps(x, 1)) + static_cast<uint16_t>(ps(x, 0))) / 2;
+    ps(x, 1) = ps(x, 0);
 
     // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
-    ctx.heat[x] = frame.predictableRandom->GetRandomNumberBetween(160, 255);
+    ps(x, 0) = frame.predictableRandom->GetRandomNumberBetween(160, 255);
   }
 }
 
-Color Flame::color(const Frame& frame, const Pixel& px) const {
-  const int w = frame.xyIndexStore->xValuesCount();
-  const int h = frame.xyIndexStore->yValuesCount();
-  Context& ctx = *static_cast<Context*>(frame.context);
-  XYIndex xyIndex = frame.xyIndexStore->FromPixel(px);
-  return Color(heatColor(ctx.heat[(h - 1 - xyIndex.yIndex) * w + xyIndex.xIndex])).lightnessToAlpha();
+Color Flame::innerColor(const Frame& /*frame*/) const {
+  return Color(heatColor(ps(x(), h() - 1 - y()))).lightnessToAlpha();
 }
 
 

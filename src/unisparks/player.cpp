@@ -289,7 +289,7 @@ void Player::begin(Milliseconds currentTime) {
   }
   currentLeader_ = localDeviceId_;
   info("%u Starting Unisparks player %s (v%s); strands: %d%s, "
-       "pixels: %d, %s " DEVICE_ID_FMT " w %f h %f ox %f oy %f xv %d yv %d",
+       "pixels: %d, %s " DEVICE_ID_FMT " w %f h %f ox %f oy %f xv %zu yv %zu",
        currentTime,
        BOOT_MESSAGE,
        UNISPARKS_VERSION,
@@ -373,7 +373,7 @@ void Player::render(Milliseconds currentTime) {
   // Ensure effectContext_ is big enough for this effect.
   const size_t effectContextSize = effect->contextSize(frame_);
   if (effectContextSize > effectContextSize_) {
-    info("%u realloc context size from %zu to %zu (%s w %f h %f xv %d yv %d)",
+    info("%u realloc context size from %zu to %zu (%s w %f h %f xv %zu yv %zu)",
          currentTime, effectContextSize_, effectContextSize,
          effect->effectName(frame_.pattern).c_str(),
          frame_.viewport.size.width, frame_.viewport.size.height,

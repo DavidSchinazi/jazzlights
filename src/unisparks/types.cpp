@@ -43,13 +43,13 @@ void XYIndexStore::Finalize() {
     for (int i = 0; i < pixelCount; i++) {
       const Point pt = li.layout->at(i);
       XYIndex xyIndex;
-      for (int xi = 0; xi < xValuesCount_; xi++) {
+      for (size_t xi = 0; xi < xValuesCount_; xi++) {
         if (xValues[xi] == pt.x) {
           xyIndex.xIndex = xi;
           break;
         }
       }
-      for (int yi = 0; yi < yValuesCount_; yi++) {
+      for (size_t yi = 0; yi < yValuesCount_; yi++) {
         if (yValues[yi] == pt.y) {
           xyIndex.yIndex = yi;
           break;

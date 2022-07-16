@@ -53,6 +53,7 @@ patternName = args.pattern
 randomize = not args.norandom
 
 def getPatternBytes(patternName):
+  patternBytes = None
   paletteName = ''
   if patternName.startswith('sp-'):
     paletteName = patternName[len('sp-'):]
