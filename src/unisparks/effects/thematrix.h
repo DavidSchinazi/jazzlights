@@ -78,6 +78,8 @@ class TheMatrix : public XYIndexStateEffect<MatrixState, uint8_t> {
     // Spawn new pixel.
     if (frame.predictableRandom->GetRandomByte() < state->spawnRate || emptyScreen) {
       size_t spawnX = frame.predictableRandom->GetRandomNumberBetween(0, w() - 1);
+      // TODO use the highest real pixel instead of always using yIndex == 0
+      // We could have the xyIndexStore save a map early on of which xyIndices are real
       ps(spawnX, 0) = kMatrixSpawn;
     }
   }
