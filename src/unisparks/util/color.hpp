@@ -215,6 +215,15 @@ inline Color blackMask(Color fg, Color bg) {
   return fg != BLACK ? fg : bg;
 }
 
+inline RgbColor nscale8(RgbColor rgb, uint8_t scale) {
+  if (scale == 255) { return rgb; }
+  const uint16_t scale_fixed = scale + 1;
+  rgb.red = (((uint16_t)rgb.red) * scale_fixed) >> 8;
+  rgb.green = (((uint16_t)rgb.green) * scale_fixed) >> 8;
+  rgb.blue = (((uint16_t)rgb.blue) * scale_fixed) >> 8;
+  return rgb;
+}
+
 // With this: 15-16 fps on complex overlays
 // using Color = RgbaColor;
 

@@ -16,6 +16,7 @@
 #include "unisparks/effects/plasma.hpp"
 #include "unisparks/effects/rainbow.hpp"
 #include "unisparks/effects/solid.hpp"
+#include "unisparks/effects/thematrix.h"
 #include "unisparks/effects/threesine.hpp"
 #include "unisparks/pseudorandom.h"
 #include "unisparks/registry.hpp"
@@ -155,6 +156,7 @@ auto hiphotic_pattern = clone(Hiphotic());
 auto metaballs_pattern = clone(Metaballs());
 auto flame_pattern = clone(flame());
 auto glitter_pattern = clone(Glitter());
+auto thematrix_pattern = clone(TheMatrix());
 auto threesine_pattern = clone(threesine());
 auto rainbow_pattern = clone(Rainbow());
 
@@ -205,8 +207,12 @@ Effect* patternFromBits(PatternBits pattern) {
           return &glitter_pattern;
         }
       } else { // 00x - shiny
-        if (patternbit(pattern, 3)) { // 001x - threesine
-          return &threesine_pattern;
+        if (patternbit(pattern, 3)) { // 001x - threesine & the-matrix
+          if (patternbit(pattern, 4)) { // 0011x - the-matrix
+            return &thematrix_pattern;
+          } else { // 0010x - threesine
+            return &threesine_pattern;
+          }
         } else { // 00x - rainbow
           return &rainbow_pattern;
         }

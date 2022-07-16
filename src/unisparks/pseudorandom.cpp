@@ -33,6 +33,7 @@ inline uint64_t NextXorShift64StarValue(uint64_t x) {
 }  // namespace
 
 int32_t Random::GetRandomNumberBetween(int32_t min, int32_t max) {
+  if (min == max) { return min; }
   if (max == std::numeric_limits<int32_t>::max() &&
       min == std::numeric_limits<int32_t>::min()) {
     uint32_t rand32u = GetRandom32bits();
@@ -54,9 +55,10 @@ int32_t Random::GetRandomNumberBetween(int32_t min, int32_t max) {
 }
 
 double Random::GetRandomDoubleBetween(double min, double max) {
-  constexpr int32_t randomGranularity = 10000;
-  return min + GetRandomNumberBetween(0, randomGranularity) *
-                (max - min) / randomGranularity;
+  constexpr int32_t kRandomGranularity = 10000;
+  const double d = max - min;
+  if (d < kRandomGranularity) { return min; }
+  return min + GetRandomNumberBetween(0, kRandomGranularity) * d / kRandomGranularity;
 }
 
 void PredictableRandom::IngestByte(uint8_t b) {

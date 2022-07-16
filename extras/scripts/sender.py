@@ -39,6 +39,7 @@ patterns = {
   'follow-strand': 0x1100,
   'flame': 0x60000001,
   'glitter': 0x40000001,
+  'the-matrix': 0x30000001,
   'threesine': 0x20000001,
   'rainbow': 0x00000001,
 }
