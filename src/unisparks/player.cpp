@@ -393,8 +393,9 @@ void Player::render(Milliseconds currentTime) {
   }
   frame_.context = effectContext_;
 
-  if (frame_.pattern != lastBegunPattern_) {
+  if (frame_.pattern !=  lastBegunPattern_ || shouldBeginPattern_) {
     lastBegunPattern_ = frame_.pattern;
+    shouldBeginPattern_ = false;
     predictableRandom_.ResetWithFrameStart(frame_, effect->effectName(frame_.pattern).c_str());
     effect->begin(frame_);
     lastLEDWriteTime_ =1;
@@ -585,6 +586,7 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
           currentTime, DEVICE_ID_HEX(originator), precedence, numHops, nextHopNetwork->networkName(),
           patternName(currentPattern_).c_str(), currentPattern_);
       lastLEDWriteTime_ = -1;
+      shouldBeginPattern_ = true;
     }
   } else {
     // We are currently leading.
@@ -602,6 +604,7 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
           currentTime, DEVICE_ID_HEX(localDeviceId_), precedence,
           patternName(currentPattern_).c_str(), currentPattern_);
       lastLEDWriteTime_ = -1;
+      shouldBeginPattern_ = true;
     }
   }
 
@@ -780,6 +783,9 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
         }
       } else if (entry->currentPatternStartTime < message.currentPatternStartTime) {
         const Milliseconds timeDelta = message.currentPatternStartTime - entry->currentPatternStartTime;
+        if (timeDelta > kEffectDuration - kEffectDuration / 10 && entry->originator == currentLeader_) {
+          shouldBeginPattern_ = true;
+        }
         if (shouldUpdateStartTime || timeDelta >= kPatternStartTimeDeltaMax) {
           changes << ", elapsedTime += " << timeDelta;
           if (entry->currentPattern == message.currentPattern && timeDelta >= kEffectDuration / 2) {

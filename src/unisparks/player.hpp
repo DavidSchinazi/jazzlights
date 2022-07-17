@@ -130,7 +130,8 @@ class Player {
   Milliseconds currentPatternStartTime_ = 0;
   PatternBits currentPattern_;
   PatternBits nextPattern_;
-  PatternBits lastBegunPattern_;
+  PatternBits lastBegunPattern_ = 0;
+  bool shouldBeginPattern_ = true;
 
   bool loop_ = false;
   size_t specialMode_ = START_SPECIAL;
