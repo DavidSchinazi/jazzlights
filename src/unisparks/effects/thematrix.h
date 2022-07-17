@@ -29,6 +29,10 @@ class TheMatrix : public XYIndexStateEffect<MatrixState, uint8_t> {
     state->maxTicks = frame.predictableRandom->GetRandomNumberBetween(1, 5);
     state->currentTicks = 0;
     memset(&ps(0, 0), 0, sizeof(uint8_t) * w() * h());
+    // Progess the effect 2*h times to get pixels on all rows.
+    for (size_t y = 0; y < 2 * h() ; y++) {
+      progressEffect(frame, state);
+    }
   }
   void innerRewind(const Frame& frame, MatrixState* state) const override {
     // Only act every maxTicks ticks.
@@ -37,7 +41,22 @@ class TheMatrix : public XYIndexStateEffect<MatrixState, uint8_t> {
       return;
     }
     state->currentTicks = 0;
+    progressEffect(frame, state);
+  }
 
+  Color innerColor(const Frame& /*frame*/, MatrixState* /*state*/) const override {
+    const uint8_t p = ps(x(), y());
+    if (p == kMatrixSpawn) {
+      return RgbColor(175 ,255 ,175);
+    } else if (p == 0) {
+      return BLACK;
+    } else {
+      return nscale8(RgbColor(27, 130, 39), p);
+    }
+  }
+  std::string effectName(PatternBits /*pattern*/) const override { return "the-matrix"; }
+ private:
+  void progressEffect(const Frame& frame, MatrixState* state) const {
     for (size_t y = h() - 1;; y--) {
       for (size_t x = 0; x < w(); x++) {
         if (ps(x, y) == kMatrixSpawn) {
@@ -78,23 +97,9 @@ class TheMatrix : public XYIndexStateEffect<MatrixState, uint8_t> {
     // Spawn new pixel.
     if (frame.predictableRandom->GetRandomByte() < state->spawnRate || emptyScreen) {
       size_t spawnX = frame.predictableRandom->GetRandomNumberBetween(0, w() - 1);
-      // TODO use the highest real pixel instead of always using yIndex == 0
-      // We could have the xyIndexStore save a map early on of which xyIndices are real
       ps(spawnX, 0) = kMatrixSpawn;
     }
   }
-
-  Color innerColor(const Frame& /*frame*/, MatrixState* /*state*/) const override {
-    const uint8_t p = ps(x(), y());
-    if (p == kMatrixSpawn) {
-      return RgbColor(175 ,255 ,175);
-    } else if (p == 0) {
-      return BLACK;
-    } else {
-      return nscale8(RgbColor(27, 130, 39), p);
-    }
-  }
-  std::string effectName(PatternBits /*pattern*/) const override { return "the-matrix"; }
 };
 
 } // namespace unisparks

@@ -43,7 +43,7 @@ patterns = {
   'threesine': 0x20000001,
   'rainbow': 0x00000001,
 }
-defaultName = 'glowred'
+defaultName = 'glow-red'
 
 parser = argparse.ArgumentParser()
 parser.add_argument('pattern')
