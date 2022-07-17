@@ -37,6 +37,10 @@
 #  endif // ESP32
 #endif // ATOM_MATRIX_SCREEN
 
+#ifndef GECKO_SCALES
+#  define GECKO_SCALES 0
+#endif  // GECKO_SCALES
+
 #ifndef BOOT_NAME
 #  define BOOT_NAME X
 #endif // BOOT_NAME

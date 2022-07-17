@@ -63,18 +63,29 @@ void vestSetup(void) {
 #endif  // UNISPARKS_ARDUINO_ETHERNET
   player.begin(timeMillis());
 
+#if GECKO_SCALES
   // Note to self for future reference: we were able to get the 2018 Gecko Robot scales to light
-  // up correctly with the M5Stack ATOM Matrix without any level shifters by connecting:
-  // M5 black wire - ground - scale pigtail black (also connect 12VDC power supply ground here)
-  // M5 red wire - 5VDC power supply - not connected to scale pigtail
-  // M5 yellow wire - G26 - data - scale pigtail yellow
-  // M5 white wire - G32 - clock - scale pigtail blue
-  // 12VDC power supply - scale pigtail brown
-  // FastLED.addLeds</*CHIPSET=*/WS2801, /*DATA_PIN=*/26, /*CLOCK_PIN=*/32, /*RGB_ORDER=*/GBR>
-  // TODO refactor this comment into a PlatformIO environment.
-
+  // up correctly with the M5Stack ATOM Matrix without any level shifters.
+  // Wiring of the 2018 Gecko Robot scales: (1) = Data, (2) = Ground, (3) = 12VDC, (4) = Clock
+  // if we number the wires on the male connector (assuming notch is up top):
+  // (1)  (4)
+  // (2)  (3)
+  // conversely on the female connector (also assuming notch is up top):
+  // (4)  (1)
+  // (3)  (2)
+  // M5 black wire = Ground = scale (2) = scale pigtail black (also connect 12VDC power supply ground here)
+  // M5 red wire = 5VDC power supply - not connected to scale pigtail
+  // M5 yellow wire = G26 = Data = scale (1) = scale pigtail yellow/green
+  // M5 white wire = G32 = Clock = scale (4) = scale pigtail blue in some cases, brown in others
+  // 12VDC power supply = scale (3) = scale pigtail brown in some cases, blue in others
+  // IMPORTANT: it appears that on some pigtails brown and blue are inverted.
+  // Separately, on the two-wire pigtails for power injection, blue is 12VDC and brown is Ground.
+  mainVestController = &FastLED.addLeds</*CHIPSET=*/WS2801, /*DATA_PIN=*/26, /*CLOCK_PIN=*/32, /*RGB_ORDER=*/GBR>(
+    leds, sizeof(leds)/sizeof(*leds));
+#else  // GECKO_SCALES
   mainVestController = &FastLED.addLeds<WS2812B, LED_PIN, GRB>(
     leds, sizeof(leds)/sizeof(*leds));
+#endif  // GECKO_SCALES
 }
 
 void vestLoop(void) {
