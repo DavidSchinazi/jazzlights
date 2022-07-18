@@ -72,7 +72,11 @@ public:
     }
     state->speed = frame.predictableRandom->GetRandomNumberBetween(3, 10);
     // Start all pixels black.
-    memset(&ps(0,0), 0, sizeof(RgbColor) * w() * h());
+    for (size_t x = 0; x < state->w; x++) {
+      for (size_t y = 0; y < state->h; y++) {
+        ps(x, y) = RgbColor(0, 0, 0);
+      }
+    }
   }
 
   void innerRewind(const Frame& frame, ColoredBurstsState* state) const override {
