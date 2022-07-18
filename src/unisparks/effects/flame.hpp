@@ -7,7 +7,7 @@ class Flame : public XYIndexEffect<uint8_t> {
   public:
   void innerBegin(const Frame& frame) const override;
   void innerRewind(const Frame& frame) const override;
-  Color innerColor(const Frame& frame) const override;
+  Color innerColor(const Frame& frame, const Pixel& px) const override;
   std::string effectName(PatternBits /*pattern*/) const override {return "flame"; }
 };
 

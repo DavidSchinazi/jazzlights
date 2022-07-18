@@ -256,6 +256,10 @@ class Welford {
   double m2_;
 };
 
+constexpr inline int8_t abs8(int8_t i) {
+  return i >= 0 ? i : -i;
+}
+
 constexpr inline int8_t avg7(int8_t i, int8_t j) {
   return ((i + j) >> 1) + (i & 0x1);
 }
@@ -268,18 +272,20 @@ constexpr inline uint16_t scale16(uint16_t i, uint16_t scale) {
   return ((uint32_t)(i) * (1+(uint32_t)(scale))) / 65536;
 }
 
-inline int16_t lerp15by16(int16_t a, int16_t b, uint16_t frac) {
-  int16_t result;
-  if(b > a) {
-    uint16_t delta = b - a;
-    uint16_t scaled = scale16( delta, frac);
-    result = a + scaled;
+inline uint8_t lerp8by8(uint8_t a, uint8_t b, uint8_t frac) {
+  if (b > a) {
+    return a + scale8(b - a, frac);
   } else {
-    uint16_t delta = a - b;
-    uint16_t scaled = scale16( delta, frac);
-    result = a - scaled;
+    return a - scale8(a - b, frac);
   }
-  return result;
+}
+
+inline int16_t lerp15by16(int16_t a, int16_t b, uint16_t frac) {
+  if (b > a) {
+    return a + scale16(b - a, frac);
+  } else {
+    return a - scale16(a - b, frac);
+  }
 }
 
 inline uint16_t beat88(uint16_t beats_per_minute_88, uint32_t elapsedTime) {
@@ -313,6 +319,17 @@ inline uint8_t beatsin8(uint16_t beats_per_minute, uint32_t elapsedTime,
   uint8_t rangewidth = highest - lowest;
   uint8_t scaledbeat = scale8(beatsin, rangewidth);
   uint8_t result = lowest + scaledbeat;
+  return result;
+}
+
+inline int beatsin(uint16_t beats_per_minute, uint32_t elapsedTime,
+                  int lowest, int highest,
+                  uint8_t phase_offset = 0) {
+  uint8_t beat = beat8(beats_per_minute, elapsedTime);
+  uint8_t beatsin = sin8(beat + phase_offset);
+  int rangewidth = highest - lowest;
+  int scaledbeat = rangewidth * beatsin / 256;
+  int result = lowest + scaledbeat;
   return result;
 }
 

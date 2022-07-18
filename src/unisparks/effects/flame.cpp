@@ -54,6 +54,7 @@ void Flame::innerBegin(const Frame& /*frame*/) const {
 void Flame::innerRewind(const Frame& frame) const {
   for (size_t x = 0; x < w(); x++) {
     // Step 1.  Cool down every cell a little
+    // TODO make flame look better on gecko by adjusting these constants
     for (size_t y = 0; y < h(); y++) {
       ps(x, y) = qsub8(ps(x, y),
                        frame.predictableRandom->GetRandomNumberBetween(0, 1200 / h() + 2));
@@ -74,7 +75,7 @@ void Flame::innerRewind(const Frame& frame) const {
   }
 }
 
-Color Flame::innerColor(const Frame& /*frame*/) const {
+Color Flame::innerColor(const Frame& /*frame*/, const Pixel& /*px*/) const {
   return Color(heatColor(ps(x(), h() - 1 - y()))).lightnessToAlpha();
 }
 

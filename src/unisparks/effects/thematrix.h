@@ -45,7 +45,7 @@ class TheMatrix : public XYIndexStateEffect<MatrixState, uint8_t> {
     progressEffect(frame, state);
   }
 
-  Color innerColor(const Frame& /*frame*/, MatrixState* /*state*/) const override {
+  Color innerColor(const Frame& /*frame*/, MatrixState* /*state*/, const Pixel& /*px*/) const override {
     const uint8_t p = ps(x(), y());
     if (p == kMatrixSpawn) {
       return RgbColor(175 ,255 ,175);

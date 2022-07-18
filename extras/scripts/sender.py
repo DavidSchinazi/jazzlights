@@ -62,6 +62,9 @@ def getPatternBytes(patternName):
   elif patternName.startswith('hiphotic-'):
     patternBytes = 0xA0000001
     paletteName = patternName[len('hiphotic-'):]
+  elif patternName.startswith('bursts-'):
+    patternBytes = 0x90000001
+    paletteName = patternName[len('bursts-'):]
   elif patternName.startswith('metaballs-'):
     patternBytes = 0x80000001
     paletteName = patternName[len('metaballs-'):]

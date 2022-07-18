@@ -42,7 +42,7 @@ public:
     const Coord d2 = distance(p, state->p2);
     const Coord d3 = distance(p, state->p3);
     if (d1 < state->ballRadius || d2 < state->ballRadius || d3 < state->ballRadius) {
-      return ColorWithPalette::Override(CRGB::White);
+      return ColorWithPalette::OverrideCRGB(CRGB::White);
     }
 
     const Coord dist = (d1 * 2 + d2 + d3) * 256 / state->diagonalLength;
@@ -80,8 +80,8 @@ public:
     const Coord h = frame.viewport.size.height / 256.0;
 
     // TODO make these pixels less jerky in their movement
-    state->p1.x = ox + w * beatsin8(state->multX1 * state->speed, frame.time, 0, 15) * 16;
-    state->p1.y = oy + h * beatsin8(state->multY1 * state->speed, frame.time, 0, 15) * 16;
+    state->p1.x = ox + w * beatsin8(state->multX1 * state->speed, frame.time, 0, 255);
+    state->p1.y = oy + h * beatsin8(state->multY1 * state->speed, frame.time, 0, 255);
 
     state->p2.x = ox + w * inoise8(frame.time * state->speed, state->noiseX2a, state->noiseX2b);
     state->p2.y = oy + h * inoise8(frame.time * state->speed, state->noiseY2a, state->noiseY2b);

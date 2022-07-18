@@ -1,4 +1,4 @@
 [[strand]]
-layout = {type="matrix", size=[100,75]}
+layout = {type="matrix", size=[494,306]}
 renderers = [{type="any"}]
 

@@ -3,11 +3,20 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "unisparks/util/math.hpp"
+
 namespace unisparks {
 
 struct HslColor;
 struct RgbColor;
 struct RgbaColor;
+
+inline void nscale8x3_video(uint8_t& r, uint8_t& g, uint8_t& b, uint8_t scale) {
+    uint8_t nonzeroscale = (scale != 0) ? 1 : 0;
+    r = (r == 0) ? 0 : (((int)r * (int)(scale) ) >> 8) + nonzeroscale;
+    g = (g == 0) ? 0 : (((int)g * (int)(scale) ) >> 8) + nonzeroscale;
+    b = (b == 0) ? 0 : (((int)b * (int)(scale) ) >> 8) + nonzeroscale;
+}
 
 struct RgbColor {
   constexpr RgbColor()
@@ -26,6 +35,19 @@ struct RgbColor {
 
   constexpr bool operator!=(const RgbColor& other) const {
     return !(*this == other);
+  }
+
+  RgbColor& operator+=(const RgbColor& other) {
+    using namespace internal;
+    red = qadd8(red, other.red);
+    green = qadd8(green, other.green);
+    blue = qadd8(blue, other.blue);
+    return *this;
+  }
+
+  RgbColor& operator%=(uint8_t scaledown) {
+    nscale8x3_video(red, green, blue, scaledown);
+    return *this;
   }
 
   uint8_t red;

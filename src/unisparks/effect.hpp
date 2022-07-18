@@ -25,7 +25,7 @@ class XYIndexStateEffect : public Effect {
  public:
   virtual void innerBegin(const Frame& frame, STATE* state) const = 0;
   virtual void innerRewind(const Frame& frame, STATE* state) const = 0;
-  virtual Color innerColor(const Frame& frame, STATE* state) const = 0;
+  virtual Color innerColor(const Frame& frame, STATE* state, const Pixel& px) const = 0;
 
   size_t contextSize(const Frame& frame) const override {
     return sizeof(STATE) + sizeof(PER_PIXEL_TYPE) * width(frame) * height(frame);
@@ -34,7 +34,7 @@ class XYIndexStateEffect : public Effect {
     XYIndex xyIndex = frame.xyIndexStore->FromPixel(px);
     x_ = xyIndex.xIndex;
     y_ = xyIndex.yIndex;
-    return innerColor(frame, state(frame));
+    return innerColor(frame, state(frame), px);
   }
   void begin(const Frame& frame) const override {
     saveFrame(frame);
@@ -81,15 +81,15 @@ class XYIndexEffect : public XYIndexStateEffect<EmptyState, PER_PIXEL_TYPE> {
  public:
   virtual void innerBegin(const Frame& frame) const = 0;
   virtual void innerRewind(const Frame& frame) const = 0;
-  virtual Color innerColor(const Frame& frame) const = 0;
+  virtual Color innerColor(const Frame& frame, const Pixel& px) const = 0;
   void innerBegin(const Frame& frame, EmptyState* /*state*/) const override {
     innerBegin(frame);
   }
   void innerRewind(const Frame& frame, EmptyState* /*state*/) const override {
     innerRewind(frame);
   }
-  Color innerColor(const Frame& frame, EmptyState* /*state*/) const override {
-    return innerColor(frame);
+  Color innerColor(const Frame& frame, EmptyState* /*state*/, const Pixel& px) const override {
+    return innerColor(frame, px);
   }
 };
 

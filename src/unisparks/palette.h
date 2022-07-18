@@ -335,8 +335,8 @@ extern const TProgmemRGBPalette16 heatColors_p FL_PROGMEM =
 };
 
 
-static inline RgbaColor flToDf(CRGB ori) {
-  return RgbaColor(ori.r, ori.g, ori.b);
+static inline RgbColor flToDf(CRGB ori) {
+  return RgbColor(ori.r, ori.g, ori.b);
 }
 
 #define ALL_COLORS \
@@ -391,7 +391,7 @@ static inline OurColorPalette PaletteFromPattern(PatternBits pattern) {
   }
 }
 
-static inline RgbaColor colorFromOurPalette(OurColorPalette ocp, uint8_t color) {
+static inline RgbColor colorFromOurPalette(OurColorPalette ocp, uint8_t color) {
 #define RET_COLOR(c) return flToDf(c##Colors_p[color >> 4])
 #define X(c) case OCP##c: RET_COLOR(c);
   switch (ocp) {
@@ -402,30 +402,43 @@ static inline RgbaColor colorFromOurPalette(OurColorPalette ocp, uint8_t color) 
 #undef RET_COLOR
 }
 
+class ColorWithPalette {
+  public:
+  ColorWithPalette(uint8_t innerColor) :
+    colorOverridden_(false), innerColor_(innerColor) {}
+  static ColorWithPalette OverrideColor(RgbColor overrideColor) {
+    ColorWithPalette col = ColorWithPalette();
+    col.overrideColor_ = overrideColor;
+    return col;
+  }
+  static ColorWithPalette OverrideCRGB(CRGB overrideColor) {
+    return OverrideColor(flToDf(overrideColor));
+  }
+  RgbColor colorFromPalette(OurColorPalette ocp) const {
+    if (colorOverridden_) {
+      return overrideColor_;
+    }
+    return colorFromOurPalette(ocp, innerColor_);
+  }
+  private:
+  explicit ColorWithPalette() : colorOverridden_(true) {}
+  bool colorOverridden_;
+  uint8_t innerColor_;
+  RgbColor overrideColor_;
+};
+
+inline std::string PaletteNameFromPattern(PatternBits pattern) {
+  switch(PaletteFromPattern(pattern)) {
+#define X(c) case OCP##c: return #c;
+    ALL_COLORS
+#undef X
+  }
+  return "unknown";
+}
+
 template<typename STATE>
 class EffectWithPaletteAndState : public Effect {
  protected:
-  class ColorWithPalette {
-    public:
-    ColorWithPalette(uint8_t innerColor) :
-      colorOverridden_(false), innerColor_(innerColor) {}
-    static ColorWithPalette Override(CRGB overrideColor) {
-      ColorWithPalette col = ColorWithPalette();
-      col.overrideColor_ = overrideColor;
-      return col;
-    }
-    Color colorFromPalette(OurColorPalette ocp) const {
-      if (colorOverridden_) {
-        return flToDf(overrideColor_);
-      }
-      return colorFromOurPalette(ocp, innerColor_);
-    }
-    private:
-    explicit ColorWithPalette() : colorOverridden_(true) {}
-    bool colorOverridden_;
-    uint8_t innerColor_;
-    CRGB overrideColor_ = CRGB::White;
-  };
  public:
   virtual std::string effectNamePrefix(PatternBits pattern) const = 0;
   virtual size_t extraContextSize(const Frame& frame) const {
@@ -443,12 +456,7 @@ class EffectWithPaletteAndState : public Effect {
   }
 
   std::string effectName(PatternBits pattern) const override {
-    switch(PaletteFromPattern(pattern)) {
-#define X(c) case OCP##c: return effectNamePrefix(pattern) + "-" #c;
-  ALL_COLORS
-#undef X
-    }
-    return effectNamePrefix(pattern) + "-unknown";
+    return effectNamePrefix(pattern) + "-" + PaletteNameFromPattern(pattern);
   }
 
   Color color(const Frame& frame, const Pixel& px) const override {
@@ -477,6 +485,50 @@ class EffectWithPaletteAndState : public Effect {
     OurColorPalette ocp;
     STATE innerState;
   };
+};
+
+
+template<typename STATE>
+struct EffectWithPaletteState {
+  OurColorPalette ocp;
+  STATE innerState;
+};
+
+template<typename STATE, typename PER_PIXEL_TYPE>
+class EffectWithPaletteXYIndexAndState :
+  public XYIndexStateEffect<EffectWithPaletteState<STATE>, PER_PIXEL_TYPE> {
+ protected:
+  RgbColor colorFromPalette(uint8_t innerColor) const {
+    return colorFromOurPalette(ocp_, innerColor);
+  }
+ public:
+  virtual std::string effectNamePrefix(PatternBits pattern) const = 0;
+  virtual ColorWithPalette innerColor(const Frame& frame, STATE* state, const Pixel& px) const = 0;
+  virtual void innerBegin(const Frame& frame, STATE* state) const = 0;
+  virtual void innerRewind(const Frame& frame, STATE* state) const = 0;
+
+  std::string effectName(PatternBits pattern) const override {
+    return effectNamePrefix(pattern) + "-" + PaletteNameFromPattern(pattern);
+  }
+
+  Color innerColor(const Frame& frame, EffectWithPaletteState<STATE>* state, const Pixel& px) const override {
+    const ColorWithPalette colorWithPalette = innerColor(frame, &state->innerState, px);
+    return colorWithPalette.colorFromPalette(state->ocp);
+  }
+
+  void innerBegin(const Frame& frame, EffectWithPaletteState<STATE>* state) const override {
+    state->ocp = PaletteFromPattern(frame.pattern);
+    ocp_ = state->ocp;
+    innerBegin(frame, &state->innerState);
+  }
+
+  void innerRewind(const Frame& frame, EffectWithPaletteState<STATE>* state) const override {
+    ocp_ = state->ocp;
+    innerRewind(frame, &state->innerState);
+  }
+
+ private:
+  mutable OurColorPalette ocp_;
 };
 
 }  // namespace unisparks

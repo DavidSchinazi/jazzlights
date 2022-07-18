@@ -8,6 +8,7 @@
 #include <stdlib.h>
 
 #include "unisparks/board.h"
+#include "unisparks/effects/coloredbursts.h"
 #include "unisparks/effects/flame.hpp"
 #include "unisparks/effects/glitter.hpp"
 #include "unisparks/effects/glow.hpp"
@@ -158,6 +159,7 @@ PatternBits computeNextPattern(PatternBits pattern) {
 auto spin_pattern = clone(SpinPlasma());
 auto hiphotic_pattern = clone(Hiphotic());
 auto metaballs_pattern = clone(Metaballs());
+auto colored_bursts_pattern = clone(ColoredBursts());
 auto flame_pattern = clone(flame());
 auto glitter_pattern = clone(Glitter());
 auto thematrix_pattern = clone(TheMatrix());
@@ -199,8 +201,12 @@ Effect* patternFromBits(PatternBits pattern) {
       } else { // 10x - hiphotic & metaballs
         if (patternbit(pattern, 3)) { // 101x - hiphotic
           return &hiphotic_pattern;
-        } else {  // 100x - metaballs
-          return &metaballs_pattern;
+        } else {  // 100x - metaballs & colored bursts
+          if (patternbit(pattern, 4)) { // // 1001x - colored bursts
+            return &colored_bursts_pattern;
+          } else {  // 1000x - metaballs
+            return &metaballs_pattern;
+          }
         }
       }
     } else { // 0x - custom
@@ -213,7 +219,7 @@ Effect* patternFromBits(PatternBits pattern) {
       } else { // 00x - shiny
         if (patternbit(pattern, 3)) { // 001x - threesine & the-matrix
           if (patternbit(pattern, 4)) { // 0011x - the-matrix
-            return &thematrix_pattern;
+            return &colored_bursts_pattern;//&thematrix_pattern;
           } else { // 0010x - threesine
             return &threesine_pattern;
           }
