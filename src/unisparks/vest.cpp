@@ -66,7 +66,7 @@ void vestSetup(void) {
 #if GECKO_SCALES
   // Note to self for future reference: we were able to get the 2018 Gecko Robot scales to light
   // up correctly with the M5Stack ATOM Matrix without any level shifters.
-  // Wiring of the 2018 Gecko Robot scales: (1) = Data, (2) = Ground, (3) = 12VDC, (4) = Clock
+  // Wiring of the 2018 Gecko Robot scales: (1) = Data, (2) = Ground, (3) = Clock, (4) = 12VDC
   // if we number the wires on the male connector (assuming notch is up top):
   // (1)  (4)
   // (2)  (3)
@@ -76,10 +76,12 @@ void vestSetup(void) {
   // M5 black wire = Ground = scale (2) = scale pigtail black (also connect 12VDC power supply ground here)
   // M5 red wire = 5VDC power supply - not connected to scale pigtail
   // M5 yellow wire = G26 = Data = scale (1) = scale pigtail yellow/green
-  // M5 white wire = G32 = Clock = scale (4) = scale pigtail blue in some cases, brown in others
-  // 12VDC power supply = scale (3) = scale pigtail brown in some cases, blue in others
+  // M5 white wire = G32 = Clock = scale (3) = scale pigtail blue in some cases, brown in others
+  // 12VDC power supply = scale (4) = scale pigtail brown in some cases, blue in others
   // IMPORTANT: it appears that on some pigtails brown and blue are inverted.
   // Separately, on the two-wire pigtails for power injection, blue is 12VDC and brown is Ground.
+  // IMPORTANT: the two-wire pigtail is unfortunately reversible, and needs to be plugged in such
+  // that the YL inscription is on the male end of the three-way power-injection splitter.
   mainVestController = &FastLED.addLeds</*CHIPSET=*/WS2801, /*DATA_PIN=*/26, /*CLOCK_PIN=*/32, /*RGB_ORDER=*/GBR>(
     leds, sizeof(leds)/sizeof(*leds));
 #else  // GECKO_SCALES
