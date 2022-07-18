@@ -9,6 +9,7 @@
 namespace unisparks {
 
 // Hiphotic orginally inspired from Sound Reactive WLED.
+// https://github.com/scottrbailey/WLED-Utils/blob/main/effects_sr.md
 // https://github.com/atuline/WLED/blob/master/wled00/FX.cpp
 
 struct HiphoticState {

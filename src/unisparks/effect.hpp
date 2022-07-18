@@ -93,9 +93,5 @@ class XYIndexEffect : public XYIndexStateEffect<EmptyState, PER_PIXEL_TYPE> {
   }
 };
 
-// TODO import some 2D patterns from Sound Reactive WLED
-// https://github.com/scottrbailey/WLED-Utils/blob/main/effects_sr.md
-// https://github.com/atuline/WLED/blob/master/wled00/FX.cpp
-
 } // namespace unisparks
-#endif /* UNISPARKS_EFFECT_H */
+#endif  // UNISPARKS_EFFECT_H
