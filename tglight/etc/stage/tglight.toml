@@ -1,6 +1,8 @@
 ledr=0.04
 # Stage LED strands
 
+# TODO reduce stage precedence (add a way to configure from this file)
+
 # Stage ???
 [[strand]]
 renderers = [{type="pixelpusher", addr="10.2.0.10", controller=10010, group=10002, port=7331, strip=0}]
