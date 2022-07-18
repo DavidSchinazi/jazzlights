@@ -170,9 +170,8 @@ Effect* patternFromBits(PatternBits pattern) {
   if (patternIsReserved(pattern)) {
     const uint8_t byte1 = (pattern >> 24) & 0xFF;
     const uint8_t byte2 = (pattern >> 16) & 0xFF;
-    const uint8_t byte3 = (pattern >>  8) & 0xFF;
-    if (byte1 == 0 && byte2 == 0) {
-      switch (byte3) {
+    if (byte1 == 0) {
+      switch (byte2) {
         case 0x00: return &black_effect;
         case 0x01: return &red_effect;
         case 0x02: return &green_effect;
