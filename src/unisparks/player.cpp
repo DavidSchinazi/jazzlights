@@ -195,17 +195,17 @@ Effect* patternFromBits(PatternBits pattern) {
     return &red_effect;
   } else {
     if (patternbit(pattern, 1)) { // 1x - palette
-      if (patternbit(pattern, 2)) { // 11x - spin
-        return &spin_pattern;
-      } else { // 10x - hiphotic & metaballs & colored bursts
-        if (patternbit(pattern, 3)) { // 101x - hiphotic
+      if (patternbit(pattern, 2)) { // 11x - palette waves
+        if (patternbit(pattern, 3)) { // 111x - spin
+          return &spin_pattern;
+        } else { // 110x - hiphotic
           return &hiphotic_pattern;
-        } else {  // 100x - metaballs & colored bursts
-          if (patternbit(pattern, 4)) { // // 1001x - colored bursts
-            return &colored_bursts_pattern;
-          } else {  // 1000x - metaballs
-            return &metaballs_pattern;
-          }
+        }
+      } else { // 10x - palette balls
+        if (patternbit(pattern, 3)) { // 101x - metaballs
+          return &metaballs_pattern;
+        } else {  // 100x - colored bursts
+          return &colored_bursts_pattern;
         }
       }
     } else { // 0x - custom
