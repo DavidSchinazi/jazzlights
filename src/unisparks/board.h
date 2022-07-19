@@ -9,19 +9,6 @@
 
 namespace unisparks {
 
-#ifndef ORANGE_VEST
-#  define ORANGE_VEST 0
-#endif // ORANGE_VEST
-#ifndef CAMP_SIGN
-#  define CAMP_SIGN 0
-#endif // CAMP_SIGN
-#ifndef GUPPY
-#  define GUPPY 0
-#endif // GUPPY
-#ifndef HAMMER
-#  define HAMMER 0
-#endif // HAMMER
-
 #if ORANGE_VEST
 #  define LEDNUM 360
 #endif // ORANGE_VEST
@@ -29,6 +16,10 @@ namespace unisparks {
 #if CAMP_SIGN
 #  define LEDNUM 900
 #endif // CAMP_SIGN
+
+#if GECKO_FOOT
+#  define LEDNUM 68
+#endif  // GECKO_FOOT
 
 #if GUPPY
 #  define LEDNUM 300
@@ -38,7 +29,7 @@ namespace unisparks {
 #  define LEDNUM 20
 #endif // HAMMER
 
-#if CAMP_SIGN || HAMMER
+#if CAMP_SIGN || HAMMER || GECKO_FOOT
 #  define FIRST_BRIGHTNESS MAX_BRIGHTNESS
 #endif // CAMP_SIGN
 

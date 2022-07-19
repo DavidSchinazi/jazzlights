@@ -6,7 +6,7 @@ w = 20
 h = 18
 
 s = '{\n  '
-for i in range(360):
+for i in range(w * h):
   x = 0.0 + i // h
   y = 0.0 + i % h
   if x % 2 == 1:
@@ -18,6 +18,7 @@ for i in range(360):
   s += '{{{x:4}, {y:4}}}, '.format(x=x,y=y)
   if i % 8 == 7:
     s += '\n  '
-s = s[:-2]
-s += '};'
+if w * h % 8 == 0:
+  s = s[:-3]
+s += '\n};'
 print(s)
