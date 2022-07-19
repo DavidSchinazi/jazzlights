@@ -234,6 +234,18 @@ void atomScreenDisplay(const Milliseconds currentMillis) {
   atomMatrixScreenController->showLeds(t&8 ? 4+t : 20-t);
 }
 
+uint8_t getReceiveTimeBrightness(Milliseconds lastReceiveTime, Milliseconds currentMillis) {
+  if (lastReceiveTime < 0) {
+    return 0;
+  }
+  constexpr Milliseconds kReceiveMaxTime = 10000;
+  const Milliseconds timeSinceReceive = currentMillis - lastReceiveTime;
+  if (timeSinceReceive >= kReceiveMaxTime) {
+    return 0;
+  }
+  return 255 - static_cast<uint8_t>(timeSinceReceive * 256 / kReceiveMaxTime);
+}
+
 void atomScreenNetwork(Player& player,
                        const Esp8266WiFi& wifiNetwork,
 #if ESP32_BLE
@@ -241,16 +253,20 @@ void atomScreenNetwork(Player& player,
 #endif  // ESP32_BLE
                        Milliseconds currentMillis) {
   // Change top-right Atom matrix screen LED based on network status.
-  CRGB wifiNetworkColor = CRGB::Black;
+  CRGB wifiStatusColor = CRGB::Black;
   switch (wifiNetwork.status()) {
-    case INITIALIZING:      wifiNetworkColor = CRGB::Pink;   break;
-    case DISCONNECTED:      wifiNetworkColor = CRGB::Purple; break;
-    case CONNECTING:        wifiNetworkColor = CRGB::Yellow; break;
-    case CONNECTED:         wifiNetworkColor = CRGB::Green;  break;
-    case DISCONNECTING:     wifiNetworkColor = CRGB::Orange; break;
-    case CONNECTION_FAILED: wifiNetworkColor = CRGB::Red;    break;
+    case INITIALIZING:      wifiStatusColor = CRGB::Pink;   break;
+    case DISCONNECTED:      wifiStatusColor = CRGB::Purple; break;
+    case CONNECTING:        wifiStatusColor = CRGB::Yellow; break;
+    case CONNECTED:         wifiStatusColor = CRGB::Green;  break;
+    case DISCONNECTING:     wifiStatusColor = CRGB::Orange; break;
+    case CONNECTION_FAILED: wifiStatusColor = CRGB::Red;    break;
   }
-  atomScreenLEDs[4] = wifiNetworkColor;
+  atomScreenLEDs[4] = wifiStatusColor;
+  atomScreenLEDs[9] = CRGB(0, getReceiveTimeBrightness(wifiNetwork.getLastReceiveTime(), currentMillis), 0);
+#if ESP32_BLE
+  atomScreenLEDs[14] = CRGB(0, 0, getReceiveTimeBrightness(bleNetwork.getLastReceiveTime(), currentMillis));
+#endif  // ESP32_BLE
 }
 
 // ATOM Matrix button map looks like this:

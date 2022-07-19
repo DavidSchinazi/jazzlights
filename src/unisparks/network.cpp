@@ -195,6 +195,7 @@ std::list<NetworkMessage> UdpNetwork::getReceivedMessagesImpl(Milliseconds curre
           currentTime, networkName(),
           networkMessageToString(receivedMessage, currentTime).c_str());
     receivedMessages.push_back(receivedMessage);
+    lastReceiveTime_ = currentTime;
   }
   return receivedMessages;
 }

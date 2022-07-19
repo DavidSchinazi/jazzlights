@@ -141,6 +141,9 @@ class Network {
   // Whether we should advertise patterns on this network if that's where we received them.
   virtual bool shouldEcho() const = 0;
 
+  // Last time we received a message, or -1 to indicate never.
+  virtual Milliseconds getLastReceiveTime() const = 0;
+
  protected:
   Network() = default;
   // Perform any work necessary to switch to requested state.
@@ -172,6 +175,7 @@ class UdpNetwork : public Network {
   void disableSending(Milliseconds currentTime) override;
   void triggerSendAsap(Milliseconds currentTime) override;
   bool shouldEcho() const override { return false; }
+  Milliseconds getLastReceiveTime() const override { return lastReceiveTime_; }
 
  protected:
   std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds currentTime) override;
@@ -186,6 +190,7 @@ class UdpNetwork : public Network {
   PatternBits lastSentPattern_ = 0;
 
   Milliseconds effectLastTxTime_ = 0;
+  Milliseconds lastReceiveTime_ = -1;
 };
 
 

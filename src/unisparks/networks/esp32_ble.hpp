@@ -13,6 +13,7 @@
 
 #include <Arduino.h>
 #include <BLEDevice.h>
+#include <atomic>
 #include <list>
 #include <mutex>
 
@@ -41,6 +42,7 @@ class Esp32BleNetwork : public Network {
     return "ESP32BLE";
   }
   bool shouldEcho() const override { return true; }
+  Milliseconds getLastReceiveTime() const override { return lastReceiveTime_; }
  protected:
   void runLoopImpl(Milliseconds currentTime) override;
   NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
@@ -92,6 +94,7 @@ class Esp32BleNetwork : public Network {
                           esp_ble_gap_cb_param_t *param);
 
   NetworkDeviceId localDeviceId_;
+  std::atomic<Milliseconds> lastReceiveTime_;
   std::mutex mutex_;
   // All the variables below are protected by mutex_.
   State state_ = State::kIdle;

@@ -231,6 +231,7 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
 
   ESP32_BLE_DEBUG("%u Received %s",
                   currentTime, networkMessageToString(message, currentTime).c_str());
+  lastReceiveTime_ = receiptTime;
 
   {
     const std::lock_guard<std::mutex> lock(mutex_);
@@ -453,6 +454,7 @@ Esp32BleNetwork::Esp32BleNetwork() {
   info("Initialized BLE with local MAC address " ESP_BD_ADDR_STR " (type %u)",
        ESP_BD_ADDR_HEX(localAddress), addressType);
   localDeviceId_ = NetworkDeviceId(localAddress);
+  lastReceiveTime_ = -1;
   // Override callbacks away from BLEDevice back to us.
   ESP_ERROR_CHECK(esp_ble_gap_register_callback(&Esp32BleNetwork::GapCallback));
   // Configure scanning parameters.
