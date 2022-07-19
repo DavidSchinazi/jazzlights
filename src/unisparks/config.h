@@ -60,7 +60,7 @@
 #endif // BOOT_NAME
 
 #ifndef REVISION
-#  define REVISION 5
+#  define REVISION 6
 #endif // REVISION
 
 // Extra indirection ensures preprocessor expands macros in correct order.
