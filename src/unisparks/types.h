@@ -26,8 +26,8 @@ struct Pixel {
 };
 
 struct XYIndex {
-  int xIndex = 0;
-  int yIndex = 0;
+  size_t xIndex = 0;
+  size_t yIndex = 0;
 };
 
 class XYIndexStore {

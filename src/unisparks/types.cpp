@@ -58,6 +58,9 @@ void XYIndexStore::Finalize(const Box& viewport) {
       XYIndex xyIndex;
       if (useSmallerXGrid_) {
         xyIndex.xIndex = (pt.x - viewport.origin.x) * kSmallerGridSize / viewport.size.width;
+        if (xyIndex.xIndex == xValuesCount_) {
+          xyIndex.xIndex--;
+        }
       } else {
         for (size_t xi = 0; xi < xValuesCount_; xi++) {
           if (fabs(xValues[xi] - pt.x) < kCoordEpsilon) {
@@ -68,6 +71,9 @@ void XYIndexStore::Finalize(const Box& viewport) {
       }
       if (useSmallerYGrid_) {
         xyIndex.yIndex = (pt.y - viewport.origin.y) * kSmallerGridSize / viewport.size.height;
+        if (xyIndex.yIndex == yValuesCount_) {
+          xyIndex.yIndex--;
+        }
       } else {
         for (size_t yi = 0; yi < yValuesCount_; yi++) {
           if (fabs(yValues[yi] - pt.y) < kCoordEpsilon) {

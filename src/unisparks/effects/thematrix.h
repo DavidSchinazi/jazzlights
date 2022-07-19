@@ -20,7 +20,6 @@ enum : uint8_t {
   kMatrixTrail = kMatrixSpawn - 10,
 };
 
-// TODO make this pattern look good on robot or remove from rotation
 class TheMatrix : public XYIndexStateEffect<MatrixState, uint8_t> {
   public:
   void innerBegin(const Frame& frame, MatrixState* state) const override {
