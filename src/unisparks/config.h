@@ -6,7 +6,7 @@
 #endif // WEARABLE
 
 // Pick which vest to build here.
-#if !defined(CAMP_SIGN) && !defined(ROPELIGHT) && !defined(ORANGE_VEST) && !defined(HAMMER) && !defined(GUPPY) && !defined(GECKO_FOOT)
+#if !defined(CAMP_SIGN) && !defined(ROPELIGHT) && !defined(ORANGE_VEST) && !defined(HAMMER) && !defined(GUPPY) && !defined(GECKO_FOOT) && !defined(FAIRY_WAND)
 #  define ORANGE_VEST WEARABLE
 #endif
 
@@ -29,6 +29,10 @@
 #ifndef HAMMER
 #  define HAMMER 0
 #endif // HAMMER
+
+#ifndef FAIRY_WAND
+#  define FAIRY_WAND 0
+#endif // FAIRY_WAND
 
 #ifndef ROPELIGHT
 #  define ROPELIGHT 0

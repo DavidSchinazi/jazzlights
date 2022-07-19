@@ -81,6 +81,9 @@ class Player {
   void handleSpecial();
   void stopSpecial();
   size_t getSpecial() const { return specialMode_; }
+#if FAIRY_WAND
+  void triggerPatternOverride(Milliseconds currentTime);
+#endif  // FAIRY_WAND
 
   bool powerLimited = false;
 
@@ -135,6 +138,9 @@ class Player {
 
   bool loop_ = false;
   size_t specialMode_ = START_SPECIAL;
+#if FAIRY_WAND
+  Milliseconds overridePatternStartTime_ = -1;
+#endif  // FAIRY_WAND
 
   std::vector<Network*> networks_;
   std::list<OriginatorEntry> originatorEntries_;

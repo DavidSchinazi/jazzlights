@@ -410,6 +410,15 @@ void doButtons(Player& player, NetworkStatus networkStatus, const Milliseconds c
   }
 #endif // ATOM_MATRIX_SCREEN
 
+#if FAIRY_WAND
+  atomScreenClear();
+  atomScreenDisplay(currentMillis);
+  if (BTN_EVENT(btn)) {
+    player.triggerPatternOverride(currentMillis);
+  }
+  return;
+#endif  // FAIRY_WAND
+
 #if BUTTON_LOCK
   // info("doButtons start");
   // 0 Locked and awaiting click; 1 Awaiting long press; 2 Awaiting click; 3 Awaiting long press; 4 Awaiting release; 5 Unlocked

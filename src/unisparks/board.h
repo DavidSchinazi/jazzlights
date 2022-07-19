@@ -29,6 +29,10 @@ namespace unisparks {
 #  define LEDNUM 20
 #endif // HAMMER
 
+#if FAIRY_WAND
+#  define LEDNUM 9
+#endif // FAIRY_WAND
+
 #if CAMP_SIGN || HAMMER || GECKO_FOOT
 #  define FIRST_BRIGHTNESS MAX_BRIGHTNESS
 #endif // CAMP_SIGN

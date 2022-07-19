@@ -54,10 +54,13 @@ void vestSetup(void) {
 #if GECKO_FOOT
   player.setBasePrecedence(2500);
   player.setPrecedenceGain(1000);
-#else  // GECKO_FOOT
+#elif FAIRY_WAND
+  player.setBasePrecedence(500);
+  player.setPrecedenceGain(100);
+#else
   player.setBasePrecedence(1000);
   player.setPrecedenceGain(1000);
-#endif  // GECKO_FOOT
+#endif
 
 #if ESP32_BLE
   player.connect(Esp32BleNetwork::get());

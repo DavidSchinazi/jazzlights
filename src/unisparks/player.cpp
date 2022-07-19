@@ -106,6 +106,30 @@ auto calibration_effect = effect("calibration", [](const Frame& frame) {
   };
 });
 
+#if FAIRY_WAND
+constexpr Milliseconds kOverridePatternDuration = 8000;
+auto override_effect = effect("fairy-wand", [](const Frame& frame) {
+  bool blink;
+  if (frame.time < 1000) {
+    blink = ((frame.time % 500) < 250);
+  } else if (frame.time < 2000) {
+    blink = ((frame.time % 250) < 125);
+  } else if (frame.time < 3000) {
+    blink = ((frame.time % 125) < 63);
+  } else if (frame.time < 4000) {
+    blink = ((frame.time % 63) < 32);
+  } else if (frame.time < 7000) {
+    blink = true;
+  } else {
+    blink = false;
+  }
+  return [ = ](const Pixel& /*pt*/) -> Color {
+    constexpr int32_t white = 0xffffff, black = 0;
+    return Color(blink ? white : black);
+  };
+});
+#endif  // FAIRY_WAND
+
 auto black_effect = solid(BLACK, "black");
 auto red_effect = solid(RED, "red");
 auto green_effect = solid(GREEN, "green");
@@ -356,6 +380,13 @@ void Player::stopSpecial() {
   nextPattern_ = computeNextPattern(currentPattern_);
 }
 
+#if FAIRY_WAND
+void Player::triggerPatternOverride(Milliseconds currentTime) {
+  info("%u Triggering pattern override", currentTime);
+  overridePatternStartTime_ = currentTime;
+}
+#endif  // FAIRY_WAND
+
 void Player::render(Milliseconds currentTime) {
   if (!ready_) {
     begin(currentTime);
@@ -386,6 +417,13 @@ void Player::render(Milliseconds currentTime) {
     frame_.time = currentTime - currentPatternStartTime_;
   }
   const Effect* effect = patternFromBits(frame_.pattern);
+#if FAIRY_WAND
+  if (overridePatternStartTime_ >= 0 &&
+      currentTime - overridePatternStartTime_ < kOverridePatternDuration) {
+    frame_.time = currentTime - overridePatternStartTime_;
+    effect = &override_effect;
+  }
+#endif  // FAIRY_WAND
 
   // Ensure effectContext_ is big enough for this effect.
   const size_t effectContextSize = effect->contextSize(frame_);

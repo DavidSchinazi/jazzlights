@@ -6,7 +6,7 @@
 #  include "unisparks/layouts/pixelmap.hpp"
 #endif
 
-#if CAMP_SIGN || GUPPY || HAMMER
+#if CAMP_SIGN || GUPPY || HAMMER || FAIRY_WAND
 #  include "unisparks/layouts/reversemap.hpp"
 #endif
 
@@ -167,6 +167,20 @@ constexpr int pixelMap[] = {
 ReverseMap<LEDNUM> pixels(pixelMap, /*MATRIX_WIDTH=*/1, /*MATRIX_HEIGHT=*/20);
 
 #endif // HAMMER
+
+#if FAIRY_WAND
+
+constexpr int pixelMap[] = {
+  0, 1, 2,
+  3, 4, 5,
+  6, 7, 8,
+};
+
+static_assert(LEDNUM == sizeof(pixelMap) / sizeof(pixelMap[0]), "bad LEDNUM");
+
+ReverseMap<LEDNUM> pixels(pixelMap, /*MATRIX_WIDTH=*/3, /*MATRIX_HEIGHT=*/3);
+
+#endif // FAIRY_WAND
 
 }  // namespace
 
