@@ -218,7 +218,7 @@ Effect* patternFromBits(PatternBits pattern) {
       } else { // 00x - shiny
         if (patternbit(pattern, 3)) { // 001x - threesine & the-matrix
           if (patternbit(pattern, 4)) { // 0011x - the-matrix
-            return &colored_bursts_pattern;//&thematrix_pattern;
+            return &thematrix_pattern;
           } else { // 0010x - threesine
             return &threesine_pattern;
           }
