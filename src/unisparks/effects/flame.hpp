@@ -3,11 +3,15 @@
 #include "unisparks/effects/functional.hpp"
 namespace unisparks {
 
-class Flame : public XYIndexEffect<uint8_t> {
+struct FlameState {
+  uint8_t maxDim;
+};
+
+class Flame : public XYIndexStateEffect<FlameState, uint8_t> {
   public:
-  void innerBegin(const Frame& frame) const override;
-  void innerRewind(const Frame& frame) const override;
-  Color innerColor(const Frame& frame, const Pixel& px) const override;
+  void innerBegin(const Frame& frame, FlameState* state) const override;
+  void innerRewind(const Frame& frame, FlameState* state) const override;
+  Color innerColor(const Frame& frame, FlameState* state, const Pixel& px) const override;
   std::string effectName(PatternBits /*pattern*/) const override {return "flame"; }
 };
 
