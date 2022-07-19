@@ -283,7 +283,7 @@ void Player::begin(Milliseconds currentTime) {
     frame_.pixelCount += s->layout->pixelCount();
     xyIndexStore_.IngestLayout(s->layout);
   }
-  xyIndexStore_.Finalize();
+  xyIndexStore_.Finalize(frame_.viewport);
   frame_.xyIndexStore = &xyIndexStore_;
 
   // Figure out localDeviceId_.

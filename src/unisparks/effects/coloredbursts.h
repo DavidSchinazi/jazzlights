@@ -19,9 +19,6 @@ enum : size_t {
 };
 
 struct ColoredBurstsState {
-  bool useSmallerGrid;
-  size_t w;
-  size_t h;
   bool dot;
   bool grad;
   uint8_t hue;
@@ -40,26 +37,13 @@ class ColoredBursts : public EffectWithPaletteXYIndexAndState<ColoredBurstsState
 public:
   std::string effectNamePrefix(PatternBits /*pattern*/) const override { return "bursts"; }
 
-  ColorWithPalette innerColor(const Frame& frame,
-                              ColoredBurstsState* state, const Pixel& px) const override {
-    if (state->useSmallerGrid) {
-      size_t xx = (px.coord.x - frame.viewport.origin.x) * kColorsBurstSmallerGridSize / frame.viewport.size.width;
-      size_t yy = (px.coord.y - frame.viewport.origin.y) * kColorsBurstSmallerGridSize / frame.viewport.size.height;
-      return ColorWithPalette::OverrideColor(ps(xx, yy));
-    } else {
-      return ColorWithPalette::OverrideColor(ps());  
-    }
+  ColorWithPalette innerColor(const Frame& /*frame*/,
+                              ColoredBurstsState* /*state*/,
+                              const Pixel& /*px*/) const override {
+    return ColorWithPalette::OverrideColor(ps());
   }
 
   void innerBegin(const Frame& frame, ColoredBurstsState* state) const override {
-    state->useSmallerGrid = (w() >= kColorsBurstSmallerGridSize && h() >= kColorsBurstSmallerGridSize);
-    if (state->useSmallerGrid) {
-      state->w = kColorsBurstSmallerGridSize;
-      state->h = kColorsBurstSmallerGridSize;
-    } else {
-      state->w = w();
-      state->h = h();
-    }
     state->dot = false;
     state->grad = true;
     state->hue = 0;
@@ -72,8 +56,8 @@ public:
     }
     state->speed = frame.predictableRandom->GetRandomNumberBetween(3, 10);
     // Start all pixels black.
-    for (size_t x = 0; x < state->w; x++) {
-      for (size_t y = 0; y < state->h; y++) {
+    for (size_t x = 0; x < w(); x++) {
+      for (size_t y = 0; y < h(); y++) {
         ps(x, y) = RgbColor(0, 0, 0);
       }
     }
@@ -84,14 +68,14 @@ public:
 
     state->hue++;
     // Slightly fade all pixels.
-    for (size_t x = 0; x < state->w; x++) {
-      for (size_t y = 0; y < state->h; y++) {
+    for (size_t x = 0; x < w(); x++) {
+      for (size_t y = 0; y < h(); y++) {
         ps(x, y) = nscale8(ps(x, y), state->fadeScale);
       }
     }
 
-    int x1 = beatsin(2 + state->speed, frame.time, 0, (state->w - 1));
-    int y1 = beatsin(5 + state->speed, frame.time, 0, (state->h - 1));
+    int x1 = beatsin(2 + state->speed, frame.time, 0, (w() - 1));
+    int y1 = beatsin(5 + state->speed, frame.time, 0, (h() - 1));
     int& curX1 = state->curX1;
     int& curY1 = state->curY1;
     if (!state->curInit1) {
@@ -115,8 +99,8 @@ public:
     }
 
     for (uint8_t i = 0; i < state->numLines; i++) {
-      int x2 = beatsin(1 + state->speed, frame.time, 0, (state->w - 1), i * 24);
-      int y2 = beatsin(3 + state->speed, frame.time, 0, (state->h - 1), i * 48 + 64);
+      int x2 = beatsin(1 + state->speed, frame.time, 0, (w() - 1), i * 24);
+      int y2 = beatsin(3 + state->speed, frame.time, 0, (h() - 1), i * 48 + 64);
       RgbColor color = colorFromPalette(i * 255 / state->numLines + state->hue);
       int& curX2 = state->curX2[i];
       int& curY2 = state->curY2[i];
