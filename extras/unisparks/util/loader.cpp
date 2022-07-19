@@ -75,6 +75,14 @@ Layout& Loader::loadLayout(const cpptoml::table& cfg) {
 
 void Loader::loadPlayer(Player& player, const cpptoml::table& cfg) {
   ledr_ = cfg.get_as<Meters>("ledr").value_or(1.0/60.0);
+  cpptoml::option<Precedence> basePrecedence = cfg.get_as<Precedence>("baseprecedence");
+  if (basePrecedence) {
+    player.setBasePrecedence(*basePrecedence);
+  }
+  cpptoml::option<Precedence> precedenceGain = cfg.get_as<Precedence>("precedencegain");
+  if (precedenceGain) {
+    player.setPrecedenceGain(*precedenceGain);
+  }
 
   auto strandscfg = cfg.get_table_array("strand");
   if (!strandscfg) {

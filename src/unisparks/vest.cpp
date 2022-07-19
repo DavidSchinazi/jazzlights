@@ -51,8 +51,13 @@ void vestSetup(void) {
 
   setupButtons();
   player.addStrand(*GetLayout(), renderPixel);
+#if GECKO_FOOT
+  player.setBasePrecedence(2500);
+  player.setPrecedenceGain(1000);
+#else  // GECKO_FOOT
   player.setBasePrecedence(1000);
   player.setPrecedenceGain(1000);
+#endif  // GECKO_FOOT
 
 #if ESP32_BLE
   player.connect(Esp32BleNetwork::get());

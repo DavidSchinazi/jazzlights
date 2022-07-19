@@ -1,4 +1,6 @@
 ledr=0.04
+baseprecedence=20000
+precedencegain=5000
 # Robot LED strands
 
 # Robot outside wall

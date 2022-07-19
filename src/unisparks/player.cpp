@@ -303,11 +303,13 @@ void Player::begin(Milliseconds currentTime) {
     localDeviceId_ = NetworkDeviceId(deviceIdBytes);
   }
   currentLeader_ = localDeviceId_;
-  info("%u Starting Unisparks player %s (v%s); strands: %d%s, "
+  info("%u Starting Unisparks player %s (v%s); "
+       "basePrecedence %u precedenceGain %u strands: %d%s, "
        "pixels: %d, %s " DEVICE_ID_FMT " w %f h %f ox %f oy %f xv %zu yv %zu",
        currentTime,
        BOOT_MESSAGE,
        UNISPARKS_VERSION,
+       basePrecedence_, precedenceGain_,
        strandCount_,
        strandCount_ < 1 ? " (CONTROLLER ONLY!)" : "",
        frame_.pixelCount,

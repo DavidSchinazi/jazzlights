@@ -1,7 +1,7 @@
 ledr=0.04
+baseprecedence=2500
+precedencegain=1000
 # Stage LED strands
-
-# TODO reduce stage precedence (add a way to configure from this file)
 
 # Stage ???
 [[strand]]

@@ -31,10 +31,10 @@ int main(int argn, char** argv) {
   Player player;
   UnixUdpNetwork network;
 
-  DemoLoader().load(config, player);
-  player.setRandomizeLocalDeviceId(true);
   player.setBasePrecedence(30000);
   player.setPrecedenceGain(5000);
+  DemoLoader().load(config, player);
+  player.setRandomizeLocalDeviceId(true);
   player.connect(&network);
   player.begin(timeMillis());
 
