@@ -615,27 +615,26 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
     currentLeader_ = originator;
   }
 
-  NumHops numHops;
   Milliseconds lastOriginationTime;
-  Network* nextHopNetwork = nullptr;
   if (entry != nullptr) {
     // Update our state based on entry from leader.
     nextPattern_ = entry->nextPattern;
     currentPatternStartTime_ = entry->currentPatternStartTime;
-    nextHopNetwork = entry->nextHopNetwork;
-    numHops = entry->numHops;
+    followedNextHopNetwork_ = entry->nextHopNetwork;
+    currentNumHops_ = entry->numHops;
     lastOriginationTime = entry->lastOriginationTime;
     if (currentPattern_ != entry->currentPattern) {
       currentPattern_ = entry->currentPattern;
       info("%u Following " DEVICE_ID_FMT "p%u nh=%u %s new currentPattern %s (%4x)",
-          currentTime, DEVICE_ID_HEX(originator), precedence, numHops, nextHopNetwork->networkName(),
+          currentTime, DEVICE_ID_HEX(originator), precedence, currentNumHops_,
+          followedNextHopNetwork_->networkName(),
           patternName(currentPattern_).c_str(), currentPattern_);
       lastLEDWriteTime_ = -1;
       shouldBeginPattern_ = true;
     }
   } else {
     // We are currently leading.
-    numHops = 0;
+    currentNumHops_ = 0;
     lastOriginationTime = currentTime;
     while (currentTime - currentPatternStartTime_ > kEffectDuration) {
       currentPatternStartTime_ += kEffectDuration;
@@ -665,9 +664,9 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
   messageToSend.currentPatternStartTime = currentPatternStartTime_;
   messageToSend.precedence = precedence;
   messageToSend.lastOriginationTime = lastOriginationTime;
-  messageToSend.numHops = numHops;
+  messageToSend.numHops = currentNumHops_;
   for (Network* network : networks_) {
-    if (!network->shouldEcho() && nextHopNetwork == network) {
+    if (!network->shouldEcho() && followedNextHopNetwork_ == network) {
       debug("%u Not echoing for %s to %s ",
             currentTime, network->networkName(),
             networkMessageToString(messageToSend, currentTime).c_str());

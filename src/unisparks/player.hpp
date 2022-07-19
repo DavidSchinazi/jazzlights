@@ -94,6 +94,8 @@ class Player {
 
   PredictableRandom* predictableRandom() { return &predictableRandom_; }
   std::string currentEffectName() const;
+  const Network* followedNextHopNetwork() const { return followedNextHopNetwork_; }
+  NumHops currentNumHops() const { return currentNumHops_; }
 
  private:
   void handleReceivedMessage(NetworkMessage message, Milliseconds currentTime);
@@ -152,6 +154,8 @@ class Player {
   bool randomizeLocalDeviceId_ = false;
   NetworkDeviceId localDeviceId_ = NetworkDeviceId();
   NetworkDeviceId currentLeader_ = NetworkDeviceId();
+  Network* followedNextHopNetwork_ = nullptr;
+  NumHops currentNumHops_ = 0;
 
   Frame frame_;
   PredictableRandom predictableRandom_;

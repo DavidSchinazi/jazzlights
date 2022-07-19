@@ -258,15 +258,33 @@ void atomScreenNetwork(Player& player,
     case INITIALIZING:      wifiStatusColor = CRGB::Pink;   break;
     case DISCONNECTED:      wifiStatusColor = CRGB::Purple; break;
     case CONNECTING:        wifiStatusColor = CRGB::Yellow; break;
-    case CONNECTED:         wifiStatusColor = CRGB::Green;  break;
+    case CONNECTED:         wifiStatusColor = CRGB(0, 255, 0);  break;
     case DISCONNECTING:     wifiStatusColor = CRGB::Orange; break;
     case CONNECTION_FAILED: wifiStatusColor = CRGB::Red;    break;
   }
   atomScreenLEDs[4] = wifiStatusColor;
-  atomScreenLEDs[9] = CRGB(0, getReceiveTimeBrightness(wifiNetwork.getLastReceiveTime(), currentMillis), 0);
+  CRGB followedNetworkColor = CRGB::Red;
+  if (player.followedNextHopNetwork() == &wifiNetwork) {
+    switch (player.currentNumHops()) {
+      case 1:  followedNetworkColor = CRGB(0, 255, 0); break;
+      case 2:  followedNetworkColor = CRGB(128, 255, 0); break;
+      default: followedNetworkColor = CRGB(255, 255, 0); break;
+    }
+  }
+  const uint8_t wifiBrightness = getReceiveTimeBrightness(wifiNetwork.getLastReceiveTime(), currentMillis);
+  atomScreenLEDs[9] = CRGB(255 - wifiBrightness, wifiBrightness, 0);
 #if ESP32_BLE
-  atomScreenLEDs[14] = CRGB(0, 0, getReceiveTimeBrightness(bleNetwork.getLastReceiveTime(), currentMillis));
+  const uint8_t bleBrightness = getReceiveTimeBrightness(bleNetwork.getLastReceiveTime(), currentMillis);
+  atomScreenLEDs[14] = CRGB(255 - bleBrightness, 0, bleBrightness);
+  if (player.followedNextHopNetwork() == &bleNetwork) {
+    switch (player.currentNumHops()) {
+      case 1:  followedNetworkColor = CRGB(0, 0, 255); break;
+      case 2:  followedNetworkColor = CRGB(128, 0, 255); break;
+      default: followedNetworkColor = CRGB(255, 0, 255); break;
+    }
+  }
 #endif  // ESP32_BLE
+  atomScreenLEDs[24] = followedNetworkColor;
 }
 
 // ATOM Matrix button map looks like this:
