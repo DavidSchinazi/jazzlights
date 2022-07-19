@@ -100,7 +100,13 @@ void vestSetup(void) {
 
 void vestLoop(void) {
   Milliseconds currentTime = timeMillis();
-  doButtons(player, network.status(), currentTime); // Read, debounce, and process the buttons, and perform actions based on button state
+  // Read, debounce, and process the buttons, and perform actions based on button state.
+  doButtons(player,
+            network,
+#if ESP32_BLE
+            *Esp32BleNetwork::get(),
+#endif // ESP32_BLE
+            currentTime);
 
 #if ESP32_BLE
   Esp32BleNetwork::get()->runLoop(currentTime);

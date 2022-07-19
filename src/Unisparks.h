@@ -22,7 +22,7 @@
 #endif // WEARABLE
 
 #include "unisparks/board.h"
-#include "unisparks/button.h"
+#include "unisparks/types.h"
 #include "unisparks/layouts/matrix.hpp"
 #include "unisparks/layouts/pixelmap.hpp"
 #include "unisparks/networks/esp32_ble.hpp"
@@ -32,6 +32,7 @@
 #include "unisparks/util/log.hpp"
 #include "unisparks/vest.h"
 #include "unisparks/text.h"
+#include "unisparks/button.h"
 
 namespace Unisparks = unisparks;
 
