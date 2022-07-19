@@ -94,10 +94,10 @@ auto calibration_effect = effect("calibration", [](const Frame& frame) {
     const int x = xyIndex.xIndex;
     if (blink) {
       if (y == 0 &&
-          (x == 0 || x == 6 || x == 14)) {
+          (x == 0 || x == 11 || x == 26)) {
         col = 0;
       } else if (y == 1 &&
-                (x == 5 || x == 13 || x == 19)) {
+                (x == 10 || x == 25 || x == 36)) {
         col = 0;
       }
     }
