@@ -3263,7 +3263,7 @@ class toml_writer
             {
                 res += "\\\\";
             }
-            else if ('\0' <= *it && *it < ' ')
+            else if (static_cast<unsigned char>(*it) < ' ')
             {
                 res += "\\u";
                 std::stringstream ss;

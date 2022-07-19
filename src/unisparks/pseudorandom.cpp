@@ -3,7 +3,12 @@
 #include <limits>
 
 #if defined(linux) || defined(__linux) || defined(__linux__)
-#  include <sys/random.h>
+#  if __GLIBC_PREREQ(2, 25)
+#    include <sys/random.h>
+#  else
+#    include <fcntl.h>
+#    include <unistd.h>
+#  endif
 #elif defined(ESP32)
 #  include "esp_system.h"
 #endif
@@ -161,7 +166,12 @@ void UnpredictableRandom::GetRandomBytes(void* buffer, size_t length) {
 #if defined(__APPLE__)
   arc4random_buf(buffer, length);
 #elif defined(linux) || defined(__linux) || defined(__linux__)
+#  if __GLIBC_PREREQ(2, 25)
   (void)getrandom(buffer, length, /*flags=*/0);
+#  else
+  static int randFd = open("/dev/urandom", O_RDONLY);
+  (void)read(randFd, buffer, length);
+#  endif
 #else
   uint8_t* buffer8 = reinterpret_cast<uint8_t*>(buffer);
   while (length >= sizeof(uint32_t)) {
