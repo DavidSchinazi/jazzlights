@@ -197,7 +197,7 @@ Effect* patternFromBits(PatternBits pattern) {
     if (patternbit(pattern, 1)) { // 1x - palette
       if (patternbit(pattern, 2)) { // 11x - spin
         return &spin_pattern;
-      } else { // 10x - hiphotic & metaballs
+      } else { // 10x - hiphotic & metaballs & colored bursts
         if (patternbit(pattern, 3)) { // 101x - hiphotic
           return &hiphotic_pattern;
         } else {  // 100x - metaballs & colored bursts

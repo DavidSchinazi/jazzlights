@@ -83,7 +83,7 @@ def getPatternBytes(patternName):
     patternBytes &= 0xFFFFFF00
     patternBytes |= random.randrange(1, 1 << 8)
     patternBytes |= random.randrange(0, 1 << 5) << 8
-    patternBytes |= random.randrange(0, 1 << 13) << 16
+    patternBytes |= random.randrange(0, 1 << 12) << 16
   return patternBytes
 
 patternBytes = getPatternBytes(patternName)
