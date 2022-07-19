@@ -53,6 +53,14 @@ args = parser.parse_args()
 patternName = args.pattern
 randomize = not args.norandom
 
+def randomizePattern(patternBytes, randomize=True):
+  if randomize and patternBytes & 0xFF != 0:
+    patternBytes &= 0xF000E000
+    patternBytes |= random.randrange(1, 1 << 8)
+    patternBytes |= random.randrange(0, 1 << 5) << 8
+    patternBytes |= random.randrange(0, 1 << 12) << 16
+  return patternBytes
+
 def getPatternBytes(patternName):
   patternBytes = None
   paletteName = ''
@@ -79,11 +87,7 @@ def getPatternBytes(patternName):
   if patternBytes is None:
     print('Unknown pattern "{}"'.format(patternName))
     patternBytes = patterns[defaultName]
-  if randomize and patternBytes & 0xFF != 0:
-    patternBytes &= 0xFFFFFF00
-    patternBytes |= random.randrange(1, 1 << 8)
-    patternBytes |= random.randrange(0, 1 << 5) << 8
-    patternBytes |= random.randrange(0, 1 << 12) << 16
+  patternBytes = randomizePattern(patternBytes, randomize)
   return patternBytes
 
 patternBytes = getPatternBytes(patternName)
@@ -92,6 +96,7 @@ print('Using pattern {} ({:02X})'.format(patternName, patternBytes))
 
 PORT = 0xDF0D
 MCADDR = '239.255.223.01'
+PATTERN_DURATION = 10000
 
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 s.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 3)
@@ -111,12 +116,21 @@ thisDeviceMacAddress = b'\xFF\xFF\x01\x02\x03\x04'
 precedence = 40000
 numHops = 0
 currentPattern = patternBytes
-nextPattern = currentPattern
-startTime = time.time()
+nextPattern = randomizePattern(currentPattern, randomize)
+
+def getTimeMillis():
+  return int(time.time() * 1000)
+
+startTimeThisPattern = getTimeMillis()
 
 while True:
   timeDeltaSinceOrigination = 0
-  timeDeltaSinceStartOfCurrentPattern = int((time.time() - startTime) * 1000) % 10000
+  while getTimeMillis() - startTimeThisPattern >= PATTERN_DURATION:
+    startTimeThisPattern += PATTERN_DURATION
+    currentPattern = nextPattern
+    print('Using pattern {} ({:02X})'.format(patternName, currentPattern))
+    nextPattern = randomizePattern(nextPattern, randomize)
+  timeDeltaSinceStartOfCurrentPattern = getTimeMillis() - startTimeThisPattern
   messageToSend = struct.pack('!B6s6sHBHIIH',
                               versionByte, thisDeviceMacAddress, thisDeviceMacAddress,
                               precedence, numHops, timeDeltaSinceOrigination,
