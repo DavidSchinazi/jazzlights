@@ -83,20 +83,8 @@ class TheMatrix : public XYIndexStateEffect<MatrixState, uint8_t> {
       }
     }
 
-    // Check for empty screen to ensure code spawn.
-    bool emptyScreen = true;
-    for (size_t x = 0; x < w(); x++) {
-      for (size_t y = 0; y < h(); y++) {
-        if (ps(x, y)) {
-          emptyScreen = false;
-          break;
-        }
-      }
-      if (!emptyScreen) { break; }
-    }
-
     // Spawn new pixel.
-    if (frame.predictableRandom->GetRandomByte() < state->spawnRate || emptyScreen) {
+    if (frame.predictableRandom->GetRandomByte() < state->spawnRate) {
       size_t spawnX = frame.predictableRandom->GetRandomNumberBetween(0, w() - 1);
       ps(spawnX, 0) = kMatrixSpawn;
     }
