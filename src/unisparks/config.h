@@ -14,6 +14,10 @@
 #  define ORANGE_VEST 0
 #endif // ORANGE_VEST
 
+#ifndef CORE2AWS
+#  define CORE2AWS 0
+#endif  // CORE2AWS
+
 #ifndef GECKO_FOOT
 #  define GECKO_FOOT 0
 #endif  // GECKO_FOOT

@@ -2,7 +2,9 @@
 
 #if WEARABLE
 
-#if defined(ESP32)
+#if CORE2AWS
+#  define LED_PIN  32
+#elif defined(ESP32)
 #  define LED_PIN  26
 #elif defined(ESP8266)
 #  define LED_PIN  5
