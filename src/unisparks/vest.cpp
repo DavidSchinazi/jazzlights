@@ -149,7 +149,7 @@ void vestSetup(void) {
 void vestLoop(void) {
   Milliseconds currentTime = timeMillis();
 #if CORE2AWS
-  M5.update();
+  // M5.update();
 #else // CORE2AWS
   // Read, debounce, and process the buttons, and perform actions based on button state.
   doButtons(player,
