@@ -56,7 +56,14 @@ Matrix core2ScreenPixels(40, 30);
 class Core2ScreenRenderer : public Renderer {
  public:
   Core2ScreenRenderer() {}
+  void toggleEnabled() {
+    enabled_ = !enabled_;
+    if (!enabled_) {
+      M5.Lcd.fillScreen(BLACK);
+    }
+  }
   void render(InputStream<Color>& pixelColors) override {
+    if (!enabled_) { return; }
     size_t i = 0;
     uint16_t rowColors16[320 * 8];
     for (Color color : pixelColors) {
@@ -80,6 +87,8 @@ class Core2ScreenRenderer : public Renderer {
       i++;
     }
   }
+ private:
+  bool enabled_ = true;
 };
 
 Core2ScreenRenderer core2ScreenRenderer;
@@ -149,7 +158,12 @@ void vestSetup(void) {
 void vestLoop(void) {
   Milliseconds currentTime = timeMillis();
 #if CORE2AWS
-  // M5.update();
+  M5.Touch.update();
+  M5.Buttons.update();
+  if (M5.background.wasPressed()) {
+    info("%u background pressed", currentTime);
+    core2ScreenRenderer.toggleEnabled();
+  }
 #else // CORE2AWS
   // Read, debounce, and process the buttons, and perform actions based on button state.
   doButtons(player,
