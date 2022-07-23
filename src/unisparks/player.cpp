@@ -447,12 +447,12 @@ void Player::render(Milliseconds currentTime) {
   }
 
   // Keep track of how many FPS we might be able to get.
+  framesSinceFpsProbe_++;
   if (currentTime - lastFpsProbeTime_ > ONE_SECOND) {
-    fps_ = framesSinceFpsProbe_;
+    fps_ = framesSinceFpsProbe_ * 1000 / (currentTime - lastFpsProbeTime_);
     lastFpsProbeTime_ = currentTime;
     framesSinceFpsProbe_ = 0;
   }
-  framesSinceFpsProbe_++;
 
   // Do not send data to LEDs faster than 100Hz.
   static constexpr Milliseconds minLEDWriteTime = 10;
@@ -625,10 +625,10 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
     lastOriginationTime = entry->lastOriginationTime;
     if (currentPattern_ != entry->currentPattern) {
       currentPattern_ = entry->currentPattern;
-      info("%u Following " DEVICE_ID_FMT "p%u nh=%u %s new currentPattern %s (%4x)",
+      info("%u Following " DEVICE_ID_FMT "p%u nh=%u %s new currentPattern %s (%4x) %u FPS",
           currentTime, DEVICE_ID_HEX(originator), precedence, currentNumHops_,
           followedNextHopNetwork_->networkName(),
-          patternName(currentPattern_).c_str(), currentPattern_);
+          patternName(currentPattern_).c_str(), currentPattern_, fps());
       lastLEDWriteTime_ = -1;
       shouldBeginPattern_ = true;
     }
@@ -644,9 +644,9 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
         currentPattern_ = nextPattern_;
         nextPattern_ = computeNextPattern(nextPattern_);
       }
-      info("%u We (" DEVICE_ID_FMT "p%u) are leading, new currentPattern %s (%4x)",
+      info("%u We (" DEVICE_ID_FMT "p%u) are leading, new currentPattern %s (%4x) %u FPS",
           currentTime, DEVICE_ID_HEX(localDeviceId_), precedence,
-          patternName(currentPattern_).c_str(), currentPattern_);
+          patternName(currentPattern_).c_str(), currentPattern_, fps());
       lastLEDWriteTime_ = -1;
       shouldBeginPattern_ = true;
     }

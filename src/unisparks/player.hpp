@@ -67,7 +67,7 @@ class Player {
   /**
    * Returns number of frames rendered per second.
    */
-  int fps() const {
+  uint32_t fps() const {
     return fps_;
   }
 
@@ -161,10 +161,9 @@ class Player {
   PredictableRandom predictableRandom_;
   XYIndexStore xyIndexStore_;
 
-  // Mutable because it is used for logging
-  mutable int fps_ = -1;
-  mutable Milliseconds lastFpsProbeTime_ = -1;
-  mutable int framesSinceFpsProbe_ = -1;
+  uint32_t fps_ = 0;
+  Milliseconds lastFpsProbeTime_ = 0;
+  uint64_t framesSinceFpsProbe_ = 0;
 };
 
 
