@@ -3,6 +3,7 @@
 #if WEARABLE
 
 #if CORE2AWS
+#  include <M5Core2.h>
 #  define LED_PIN  32
 #elif defined(ESP32)
 #  define LED_PIN  26
@@ -48,10 +49,52 @@ Player player;
 
 CLEDController* mainVestController = nullptr;
 
+#if CORE2AWS
+
+Matrix core2ScreenPixels(40, 30);
+
+class Core2ScreenRenderer : public Renderer {
+ public:
+  Core2ScreenRenderer() {}
+  void render(InputStream<Color>& pixelColors) override {
+    size_t i = 0;
+    uint16_t rowColors16[320 * 8];
+    for (Color color : pixelColors) {
+      RgbColor rgb = color.asRgb();
+      uint16_t color16 = ((uint16_t)(rgb.red & 0xF8) << 8) |
+                         ((uint16_t)(rgb.green & 0xFC) << 3) | \
+                         ((rgb.blue & 0xF8) >> 3);
+      int32_t x = i % 40;
+      int32_t y = i / 40;
+      for (size_t xi = 0; xi < 8; xi++) {
+        for (size_t yi = 0; yi < 8; yi++) {
+          rowColors16[x * 8 + xi + yi * 320] = color16;
+        }
+      }
+      if (x == 39) {
+        bool swap = M5.Lcd.getSwapBytes();
+        M5.Lcd.setSwapBytes(true);
+        M5.Lcd.pushImage(/*x0=*/0, /*y0=*/y*8, /*w=*/320, /*h=*/8, rowColors16);
+        M5.Lcd.setSwapBytes(swap);
+      }
+      i++;
+    }
+  }
+};
+
+Core2ScreenRenderer core2ScreenRenderer;
+
+#endif  // CORE2AWS
+
 void vestSetup(void) {
   Serial.begin(115200);
-
+#if CORE2AWS
+  M5.begin();
+  M5.Lcd.fillScreen(BLACK);
+  player.addStrand(core2ScreenPixels, core2ScreenRenderer);
+#else  // CORE2AWS
   setupButtons();
+#endif  // CORE2AWS
   player.addStrand(*GetLayout(), renderPixel);
 #if GECKO_FOOT
   player.setBasePrecedence(2500);
@@ -105,6 +148,9 @@ void vestSetup(void) {
 
 void vestLoop(void) {
   Milliseconds currentTime = timeMillis();
+#if CORE2AWS
+  M5.update();
+#else // CORE2AWS
   // Read, debounce, and process the buttons, and perform actions based on button state.
   doButtons(player,
             network,
@@ -112,6 +158,7 @@ void vestLoop(void) {
             *Esp32BleNetwork::get(),
 #endif // ESP32_BLE
             currentTime);
+#endif // CORE2AWS
 
 #if ESP32_BLE
   Esp32BleNetwork::get()->runLoop(currentTime);
