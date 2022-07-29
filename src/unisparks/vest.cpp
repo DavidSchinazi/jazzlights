@@ -58,8 +58,20 @@ class Core2ScreenRenderer : public Renderer {
   Core2ScreenRenderer() {}
   void toggleEnabled() {
     enabled_ = !enabled_;
-    if (!enabled_) {
+    if (enabled_) {
+      M5.Lcd.startWrite();
+      M5.Lcd.writecommand(ILI9341_DISPON);
+      M5.Lcd.endWrite();
+      M5.Lcd.wakeup();
+      M5.Lcd.setBrightness(80);
+      M5.Buttons.draw();
+    } else {
       M5.Lcd.fillScreen(BLACK);
+      M5.Lcd.setBrightness(0);
+      M5.Lcd.sleep();
+      M5.Lcd.startWrite();
+      M5.Lcd.writecommand(ILI9341_DISPOFF);
+      M5.Lcd.endWrite();
     }
   }
   void render(InputStream<Color>& pixelColors) override {
@@ -73,15 +85,16 @@ class Core2ScreenRenderer : public Renderer {
                          ((rgb.blue & 0xF8) >> 3);
       int32_t x = i % 40;
       int32_t y = i / 40;
-      for (size_t xi = 0; xi < 8; xi++) {
-        for (size_t yi = 0; yi < 8; yi++) {
-          rowColors16[x * 8 + xi + yi * 320] = color16;
+      int32_t factor = fullScreen_ ? 8 : 4;
+      for (size_t xi = 0; xi < factor; xi++) {
+        for (size_t yi = 0; yi < factor; yi++) {
+          rowColors16[x * factor + xi + yi * 40 * factor] = color16;
         }
       }
       if (x == 39) {
         bool swap = M5.Lcd.getSwapBytes();
         M5.Lcd.setSwapBytes(true);
-        M5.Lcd.pushImage(/*x0=*/0, /*y0=*/y*8, /*w=*/320, /*h=*/8, rowColors16);
+        M5.Lcd.pushImage(/*x0=*/0, /*y0=*/y * factor, /*w=*/40 * factor, /*h=*/factor, rowColors16);
         M5.Lcd.setSwapBytes(swap);
       }
       i++;
@@ -89,9 +102,16 @@ class Core2ScreenRenderer : public Renderer {
   }
  private:
   bool enabled_ = true;
+  bool fullScreen_ = false;
 };
 
 Core2ScreenRenderer core2ScreenRenderer;
+
+ButtonColors onCol = {BLACK, WHITE, WHITE};
+ButtonColors offCol = {RED, WHITE, WHITE};
+Button nextButton(/*x=*/165, /*y=*/5, /*w=*/150, /*h=*/50, /*rot1=*/false, "Next", onCol, offCol);
+Button loopButton(/*x=*/165, /*y=*/65, /*w=*/150, /*h=*/50, /*rot1=*/false, "Loop", onCol, offCol);
+Button patternControlButton(/*x=*/5, /*y=*/125, /*w=*/150, /*h=*/110, /*rot1=*/false, "Pattern Control", onCol, offCol);
 
 #endif  // CORE2AWS
 
@@ -100,6 +120,7 @@ void vestSetup(void) {
 #if CORE2AWS
   M5.begin();
   M5.Lcd.fillScreen(BLACK);
+  M5.Buttons.draw();
   player.addStrand(core2ScreenPixels, core2ScreenRenderer);
 #else  // CORE2AWS
   setupButtons();
@@ -161,8 +182,25 @@ void vestLoop(void) {
   M5.Touch.update();
   M5.Buttons.update();
   if (M5.background.wasPressed()) {
-    info("%u background pressed", currentTime);
+    uint32_t freeHeap = ESP.getFreeHeap();
+    uint32_t totalHeap = ESP.getHeapSize();
+    uint32_t freePSRAM = ESP.getFreePsram();
+    uint32_t totalPSRAM = ESP.getPsramSize();
+    info("%u background pressed, free RAM %u/%u free PSRAM %u/%u",
+         currentTime, freeHeap, totalHeap, freePSRAM, totalPSRAM);
     core2ScreenRenderer.toggleEnabled();
+  }
+  if (nextButton.wasPressed()) {
+    info("%u next pressed", currentTime);
+    loopButton.setLabel("Loop");
+    loopButton.draw();
+    player.next(currentTime);
+  }
+  if (loopButton.wasPressed()) {
+    info("%u loop pressed", currentTime);
+    loopButton.setLabel("Looping");
+    loopButton.draw();
+    player.loopOne(currentTime);
   }
 #else // CORE2AWS
   // Read, debounce, and process the buttons, and perform actions based on button state.
