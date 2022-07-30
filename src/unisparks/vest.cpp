@@ -51,13 +51,41 @@ CLEDController* mainVestController = nullptr;
 
 #if CORE2AWS
 
+void setCore2ScreenBrightness(uint8_t brightness, bool allowUnsafe = false) {
+  // brightness of 0 means backlight off.
+  // max safe brightness is 20, max unsafe brightness is 36.
+  // levels between 21 and 36 included should be used for short periods of time only.
+  // Inspired by https://github.com/Sarah-C/M5Stack_Core2_ScreenBrightness
+  if (brightness == 0) {
+    M5.Axp.SetDCDC3(false);
+    return;
+  }
+  M5.Axp.SetDCDC3(true);
+  const uint8_t maxBrightness = allowUnsafe ? 36 : 20;
+  if (brightness > maxBrightness) { brightness = maxBrightness; }
+  const uint16_t backlightVoltage = 2300 + brightness * 25;
+  constexpr uint8_t kBacklightVoltageAddress = 2;
+  M5.Axp.SetDCVoltage(kBacklightVoltageAddress, backlightVoltage);
+}
+
+enum class ScreenMode {
+  kMainMenu,
+  kFullScreenPattern,
+  kPatternControlMenu,
+  kSystemMenu,
+};
+ScreenMode gScreenMode = ScreenMode::kMainMenu;
+
 Matrix core2ScreenPixels(40, 30);
 
 class Core2ScreenRenderer : public Renderer {
  public:
   Core2ScreenRenderer() {}
-  void toggleEnabled() {
-    enabled_ = !enabled_;
+  void setFullScreen(bool fullScreen) { fullScreen_ = fullScreen; }
+  void toggleEnabled() { setEnabled(!enabled_); }
+  void setEnabled(bool enabled) {
+    enabled_ = enabled;
+    /*
     if (enabled_) {
       M5.Lcd.startWrite();
       M5.Lcd.writecommand(ILI9341_DISPON);
@@ -73,6 +101,7 @@ class Core2ScreenRenderer : public Renderer {
       M5.Lcd.writecommand(ILI9341_DISPOFF);
       M5.Lcd.endWrite();
     }
+    */
   }
   void render(InputStream<Color>& pixelColors) override {
     if (!enabled_) { return; }
@@ -111,7 +140,152 @@ ButtonColors onCol = {BLACK, WHITE, WHITE};
 ButtonColors offCol = {RED, WHITE, WHITE};
 Button nextButton(/*x=*/165, /*y=*/5, /*w=*/150, /*h=*/50, /*rot1=*/false, "Next", onCol, offCol);
 Button loopButton(/*x=*/165, /*y=*/65, /*w=*/150, /*h=*/50, /*rot1=*/false, "Loop", onCol, offCol);
-Button patternControlButton(/*x=*/5, /*y=*/125, /*w=*/150, /*h=*/110, /*rot1=*/false, "Pattern Control", onCol, offCol);
+Button patternControlButton(/*x=*/5, /*y=*/125, /*w=*/150, /*h=*/110, /*rot1=*/false,
+                            "Pattern Control", onCol, offCol,
+                            BUTTON_DATUM, /*dx=*/0, /*dy=*/-30);
+Button backButton(/*x=*/5, /*y=*/5, /*w=*/150, /*h=*/50, /*rot1=*/false, "Back", onCol, offCol);
+Button downButton(/*x=*/5, /*y=*/65, /*w=*/70, /*h=*/50, /*rot1=*/false, "Down", onCol, offCol);
+Button upButton(/*x=*/85, /*y=*/65, /*w=*/70, /*h=*/50, /*rot1=*/false, "Up", onCol, offCol);
+std::string currentPatternName;
+
+void drawPatternControlButton(Button& b, ButtonColors bc) {
+  if (gScreenMode != ScreenMode::kMainMenu) { return; }
+  info("drawing pattern control button bg 0x%x outline 0x%x text 0x%x",
+       bc.bg, bc.outline, bc.text);
+  // First call default draw function to draw button text, outline, and background.
+  M5Buttons::drawFunction(b, bc);
+  // Then add custom pattern string.
+  M5.Lcd.setTextColor(bc.text, bc.bg);
+  M5.Lcd.setTextDatum(BC_DATUM);  // Bottom Center.
+  M5.Lcd.drawString(currentPatternName.c_str(), /*x=*/80, /*y=*/210);
+}
+
+void drawMainMenuButtons() {
+  info("drawMainMenuButtons");
+  nextButton.draw();
+  loopButton.draw();
+  patternControlButton.draw();
+}
+
+void hideMainMenuButtons() {
+  info("hideMainMenuButtons");
+  nextButton.hide();
+  loopButton.hide();
+  patternControlButton.hide();
+}
+
+void drawPatternControlMenuButtons() {
+  info("drawPatternControlMenuButtons");
+  backButton.draw();
+  downButton.draw();
+  upButton.draw();
+}
+
+void hidePatternControlMenuButtons() {
+  info("hidePatternControlMenuButtons");
+  backButton.hide();
+  downButton.hide();
+  upButton.hide();
+}
+
+class PatternControlMenu {
+ public:
+  void draw() {
+    switch (state_) {
+    case State::kOff: {
+      state_ = State::kPattern;
+      M5.Lcd.setTextDatum(TL_DATUM);  // Top Left.
+      int32_t y = 0;
+      if (selectedIndex_ < kNumRegularPatterns) {
+        for (uint8_t i = 0; i < kNumRegularPatterns; i++) {
+          drawPatternTextLine(i, kSelectablePatterns[i].name, i == selectedIndex_);
+        }
+        M5.Lcd.drawString("Special Patterns...", x_, kNumRegularPatterns * dy());
+      } else {
+        M5.Lcd.drawString("Regular Patterns...", x_, 0);
+        for (uint8_t i = 0; i < kNumSpecialPatterns; i++) {
+          drawPatternTextLine(i + 1, kSelectablePatterns[i + kNumRegularPatterns].name, i == selectedIndex_);
+        }
+      }
+    } break;
+    }
+  }
+  void downPressed() {
+    if (selectedIndex_ < kNumRegularPatterns - 1) {
+
+    }
+  }
+  void upPressed() {
+
+  }
+ private:
+  uint8_t dy() {
+    if (dy_ == 0) { dy_ = M5.Lcd.fontHeight(); }  // By default this is 22.
+    return dy_;
+  }
+  void drawPatternTextLine(uint8_t i, const char* text, bool selected) {
+    const uint16_t y = i * dy();
+    const uint16_t textColor = selected ? BLACK : WHITE;
+    const uint16_t backgroundColor = selected ? WHITE : BLACK;
+    M5.Lcd.setTextColor(textColor, backgroundColor);
+    M5.Lcd.fillRect(x_, y, /*w=*/155, /*h=*/dy(), backgroundColor);
+    M5.Lcd.drawString(text, x_, y);
+  }
+  enum class State {
+    kOff,
+    kPattern,
+    kPalette,
+    kColor,
+    kConfirmed,
+  };
+  struct SelectablePattern {
+    const char* name;
+    PatternBits bits;
+    State nextState;
+  };
+  static constexpr uint8_t kNumRegularPatterns = 5 + 4;
+  static constexpr uint8_t kNumSpecialPatterns = 3 + 15;
+  SelectablePattern kSelectablePatterns[kNumRegularPatterns + kNumSpecialPatterns] = {
+    // Non-palette regular patterns.
+    {"flame",       0x60000001, State::kConfirmed},
+    {"glitter",     0x40000001, State::kConfirmed},
+    {"the-matrix",  0x30000001, State::kConfirmed},
+    {"threesine",   0x20000001, State::kConfirmed},
+    {"raibow",      0x00000001, State::kConfirmed},
+    // Palette regular patterns.
+    {"spin-plasma", 0xE0000001, State::kPalette},
+    {"hiphotic",    0xC0000001, State::kPalette},
+    {"metaballs",   0xA0000001, State::kPalette},
+    {"bursts",      0x80000001, State::kPalette},
+    // Non-color special patterns.
+    {"synctest",      0x0F0000, State::kConfirmed},
+    {"calibration",   0x100000, State::kConfirmed},
+    {"follow-strand", 0x110000, State::kConfirmed},
+    // Color special patterns.
+    {"black",          0x00000, State::kConfirmed},
+    {"red",            0x10000, State::kConfirmed},
+    {"green",          0x20000, State::kConfirmed},
+    {"blue",           0x30000, State::kConfirmed},
+    {"purple",         0x40000, State::kConfirmed},
+    {"cyan",           0x50000, State::kConfirmed},
+    {"yellow",         0x60000, State::kConfirmed},
+    {"white",          0x70000, State::kConfirmed},
+    {"glow-red",       0x80000, State::kConfirmed},
+    {"glow-green",     0x90000, State::kConfirmed},
+    {"glow-blue",      0xA0000, State::kConfirmed},
+    {"glow-purple",    0xB0000, State::kConfirmed},
+    {"glow-cyan",      0xC0000, State::kConfirmed},
+    {"glow-yellow",    0xD0000, State::kConfirmed},
+    {"glow-white",     0xE0000, State::kConfirmed},
+  };
+  State state_ = State::kOff;
+  // SelectablePattern selectablePattern = SelectablePattern("flame", 0x60000001, State::kConfirmed);
+  uint8_t selectedIndex_ = 0;
+  const int16_t x_ = 165;
+  uint8_t dy_ = 0;
+};
+PatternControlMenu gPatternControlMenu;
+
 
 #endif  // CORE2AWS
 
@@ -120,6 +294,8 @@ void vestSetup(void) {
 #if CORE2AWS
   M5.begin();
   M5.Lcd.fillScreen(BLACK);
+  hidePatternControlMenuButtons();
+  patternControlButton.drawFn = drawPatternControlButton;
   M5.Buttons.draw();
   player.addStrand(core2ScreenPixels, core2ScreenRenderer);
 #else  // CORE2AWS
@@ -186,21 +362,78 @@ void vestLoop(void) {
     uint32_t totalHeap = ESP.getHeapSize();
     uint32_t freePSRAM = ESP.getFreePsram();
     uint32_t totalPSRAM = ESP.getPsramSize();
-    info("%u background pressed, free RAM %u/%u free PSRAM %u/%u",
-         currentTime, freeHeap, totalHeap, freePSRAM, totalPSRAM);
-    core2ScreenRenderer.toggleEnabled();
+    ::Point pressed = M5.background.event.from;
+    int16_t px = pressed.x;
+    int16_t py = pressed.y;
+    info("%u background pressed x=%d y=%d, free RAM %u/%u free PSRAM %u/%u",
+         currentTime, px, py, freeHeap, totalHeap, freePSRAM, totalPSRAM);
+    switch (gScreenMode) {
+    case ScreenMode::kMainMenu: {
+        gScreenMode = ScreenMode::kFullScreenPattern;
+      if (px < 160 && py < 120) {
+        info("%u pattern screen pressed", currentTime);
+        hideMainMenuButtons();
+        M5.Lcd.fillScreen(BLACK);
+        core2ScreenRenderer.setFullScreen(true);
+      }
+    } break;
+    case ScreenMode::kFullScreenPattern: {
+      gScreenMode = ScreenMode::kMainMenu;
+      info("%u full screen pattern pressed", currentTime);
+      core2ScreenRenderer.setFullScreen(false);
+      M5.Lcd.fillScreen(BLACK);
+      drawMainMenuButtons();
+    } break;
+    case ScreenMode::kPatternControlMenu: {
+    } break;
+    case ScreenMode::kSystemMenu: {
+    } break;
+    //core2ScreenRenderer.toggleEnabled();
+    }
   }
-  if (nextButton.wasPressed()) {
+  if (nextButton.wasPressed() && gScreenMode == ScreenMode::kMainMenu) {
     info("%u next pressed", currentTime);
     loopButton.setLabel("Loop");
     loopButton.draw();
+    player.stopSpecial();
     player.next(currentTime);
   }
-  if (loopButton.wasPressed()) {
+  if (loopButton.wasPressed() && gScreenMode == ScreenMode::kMainMenu) {
     info("%u loop pressed", currentTime);
     loopButton.setLabel("Looping");
     loopButton.draw();
+    player.stopSpecial();
     player.loopOne(currentTime);
+  }
+  if (patternControlButton.wasPressed() && gScreenMode == ScreenMode::kMainMenu) {
+    gScreenMode = ScreenMode::kPatternControlMenu;
+    info("%u pattern control button pressed", currentTime);
+    hideMainMenuButtons();
+    core2ScreenRenderer.setEnabled(false);
+    M5.Lcd.fillScreen(BLACK);
+    drawPatternControlMenuButtons();
+    gPatternControlMenu.draw();
+  }
+  if (backButton.wasPressed() &&
+      (gScreenMode == ScreenMode::kPatternControlMenu || gScreenMode == ScreenMode::kSystemMenu)) {
+    gScreenMode = ScreenMode::kMainMenu;
+    info("%u back button pressed", currentTime);
+    hidePatternControlMenuButtons();
+    M5.Lcd.fillScreen(BLACK);
+    drawMainMenuButtons();
+    core2ScreenRenderer.setEnabled(true);
+  }
+  // std::string patternControlLabel = "Pattern 2Control\n3";
+  // patternControlLabel += player.currentEffectName();
+  // patternControlButton.setLabel(patternControlLabel.c_str());
+  // patternControlButton.draw();
+  std::string patternName = player.currentEffectName();
+  if (patternName != currentPatternName) {
+    currentPatternName = patternName;
+    if (gScreenMode == ScreenMode::kMainMenu) {
+      info("%u drawing new pattern name in pattern control button", currentTime);
+      patternControlButton.draw();
+    }
   }
 #else // CORE2AWS
   // Read, debounce, and process the buttons, and perform actions based on button state.
