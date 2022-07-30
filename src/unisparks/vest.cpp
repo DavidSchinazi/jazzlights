@@ -136,17 +136,36 @@ class Core2ScreenRenderer : public Renderer {
 
 Core2ScreenRenderer core2ScreenRenderer;
 
+void setupButtonDrawZone(Button& b) {
+  constexpr int16_t kButtonDrawOffset = 3;
+  ::Zone drawZone(/*x=*/b.x + kButtonDrawOffset,
+                  /*y=*/b.y + kButtonDrawOffset,
+                  /*w=*/b.w - 2 * kButtonDrawOffset,
+                  /*h=*/b.h - 2 * kButtonDrawOffset);
+  b.drawZone = drawZone;
+}
+
 ButtonColors onCol = {BLACK, WHITE, WHITE};
 ButtonColors offCol = {RED, WHITE, WHITE};
-Button nextButton(/*x=*/165, /*y=*/5, /*w=*/150, /*h=*/50, /*rot1=*/false, "Next", onCol, offCol);
-Button loopButton(/*x=*/165, /*y=*/65, /*w=*/150, /*h=*/50, /*rot1=*/false, "Loop", onCol, offCol);
-Button patternControlButton(/*x=*/5, /*y=*/125, /*w=*/150, /*h=*/110, /*rot1=*/false,
+Button nextButton(/*x=*/160, /*y=*/0, /*w=*/160, /*h=*/60, /*rot1=*/false, "Next", onCol, offCol);
+Button loopButton(/*x=*/160, /*y=*/60, /*w=*/160, /*h=*/60, /*rot1=*/false, "Loop", onCol, offCol);
+Button patternControlButton(/*x=*/0, /*y=*/120, /*w=*/160, /*h=*/120, /*rot1=*/false,
                             "Pattern Control", onCol, offCol,
-                            BUTTON_DATUM, /*dx=*/0, /*dy=*/-30);
-Button backButton(/*x=*/5, /*y=*/5, /*w=*/150, /*h=*/50, /*rot1=*/false, "Back", onCol, offCol);
-Button downButton(/*x=*/5, /*y=*/65, /*w=*/70, /*h=*/50, /*rot1=*/false, "Down", onCol, offCol);
-Button upButton(/*x=*/85, /*y=*/65, /*w=*/70, /*h=*/50, /*rot1=*/false, "Up", onCol, offCol);
+                            BUTTON_DATUM, /*dx=*/0, /*dy=*/-25);
+Button backButton(/*x=*/0, /*y=*/0, /*w=*/160, /*h=*/60, /*rot1=*/false, "Back", onCol, offCol);
+Button downButton(/*x=*/0, /*y=*/60, /*w=*/80, /*h=*/60, /*rot1=*/false, "Down", onCol, offCol);
+Button upButton(/*x=*/80, /*y=*/60, /*w=*/80, /*h=*/60, /*rot1=*/false, "Up", onCol, offCol);
 std::string currentPatternName;
+
+void setupButtonsDrawZone() {
+  setupButtonDrawZone(nextButton);
+  setupButtonDrawZone(loopButton);
+  setupButtonDrawZone(patternControlButton);
+  setupButtonDrawZone(backButton);
+  setupButtonDrawZone(downButton);
+  setupButtonDrawZone(upButton);
+}
+
 
 void drawPatternControlButton(Button& b, ButtonColors bc) {
   if (gScreenMode != ScreenMode::kMainMenu) { return; }
@@ -217,6 +236,9 @@ class PatternControlMenu {
   }
   void upPressed() {
 
+  }
+  void backPressed() {
+    state_ = State::kOff;
   }
  private:
   uint8_t dy() {
@@ -296,6 +318,7 @@ void vestSetup(void) {
   M5.Lcd.fillScreen(BLACK);
   hidePatternControlMenuButtons();
   patternControlButton.drawFn = drawPatternControlButton;
+  setupButtonsDrawZone();
   M5.Buttons.draw();
   player.addStrand(core2ScreenPixels, core2ScreenRenderer);
 #else  // CORE2AWS
@@ -418,6 +441,7 @@ void vestLoop(void) {
       (gScreenMode == ScreenMode::kPatternControlMenu || gScreenMode == ScreenMode::kSystemMenu)) {
     gScreenMode = ScreenMode::kMainMenu;
     info("%u back button pressed", currentTime);
+    gPatternControlMenu.backPressed();
     hidePatternControlMenuButtons();
     M5.Lcd.fillScreen(BLACK);
     drawMainMenuButtons();
