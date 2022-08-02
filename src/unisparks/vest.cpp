@@ -235,12 +235,14 @@ class PatternControlMenu {
       }
     } break;
     }
+    drawConfirmButton();
   }
   void downPressed() {
     if (selectedIndex_ < kNumRegularPatterns - 1) {
       drawPatternTextLine(selectedIndex_, kSelectablePatterns[selectedIndex_].name, /*selected=*/false);
       selectedIndex_++;
       drawPatternTextLine(selectedIndex_, kSelectablePatterns[selectedIndex_].name, /*selected=*/true);
+      drawConfirmButton();
     } else if (selectedIndex_ == kNumRegularPatterns - 1) {
       selectedIndex_ ++;
       draw();
@@ -252,6 +254,7 @@ class PatternControlMenu {
       drawPatternTextLine(1 + selectedIndex_ - kNumRegularPatterns,
                           kSelectablePatterns[selectedIndex_].name,
                           /*selected=*/true);
+      drawConfirmButton();
     }
   }
   void upPressed() {
@@ -265,6 +268,7 @@ class PatternControlMenu {
       drawPatternTextLine(selectedIndex_,
                           kSelectablePatterns[selectedIndex_].name,
                           /*selected=*/true);
+      drawConfirmButton();
     } else if (selectedIndex_ == kNumRegularPatterns) {
       selectedIndex_--;
       draw();
@@ -276,8 +280,8 @@ class PatternControlMenu {
       drawPatternTextLine(1 + selectedIndex_ - kNumRegularPatterns,
                           kSelectablePatterns[selectedIndex_].name,
                           /*selected=*/true);
+      drawConfirmButton();
     }
-
   }
   void backPressed() {
     state_ = State::kOff;
@@ -288,6 +292,19 @@ class PatternControlMenu {
     overrideButton.setLabel(overrideEnabled_ ? "Override ON" : "Override");
   }
  private:
+ void drawConfirmButton() {
+   const char* confirmLabel;
+   switch (kSelectablePatterns[selectedIndex_].nextState) {
+    case State::kOff:       confirmLabel = "Error Off"; break;
+    case State::kPattern:   confirmLabel = "Error Pattern"; break;
+    case State::kPalette:   confirmLabel = "Select Palette"; break;
+    case State::kColor:     confirmLabel = "Select Color"; break;
+    case State::kConfirmed: confirmLabel = "Confirm"; break;
+
+   }
+   confirmButton.setLabel(confirmLabel);
+   confirmButton.draw();
+ }
   uint8_t dy() {
     if (dy_ == 0) { dy_ = M5.Lcd.fontHeight(); }  // By default this is 22.
     return dy_;
@@ -321,7 +338,7 @@ class PatternControlMenu {
     {"glitter",     0x40000001, State::kConfirmed},
     {"the-matrix",  0x30000001, State::kConfirmed},
     {"threesine",   0x20000001, State::kConfirmed},
-    {"raibow",      0x00000001, State::kConfirmed},
+    {"rainbow",      0x00000001, State::kConfirmed},
     // Palette regular patterns.
     {"spin-plasma", 0xE0000001, State::kPalette},
     {"hiphotic",    0xC0000001, State::kPalette},
@@ -332,8 +349,8 @@ class PatternControlMenu {
     {"calibration",   0x100000, State::kConfirmed},
     {"follow-strand", 0x110000, State::kConfirmed},
     // Color special patterns.
-    {"solid",          0x00000, State::kConfirmed},
-    {"glow",           0x70000, State::kConfirmed},
+    {"solid",          0x00000, State::kColor},
+    {"glow",           0x70000, State::kColor},
     /*
     {"black",          0x00000, State::kConfirmed},
     {"red",            0x10000, State::kConfirmed},
