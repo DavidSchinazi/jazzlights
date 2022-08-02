@@ -136,15 +136,6 @@ class Core2ScreenRenderer : public Renderer {
 
 Core2ScreenRenderer core2ScreenRenderer;
 
-void setupButtonDrawZone(Button& b) {
-  constexpr int16_t kButtonDrawOffset = 3;
-  ::Zone drawZone(/*x=*/b.x + kButtonDrawOffset,
-                  /*y=*/b.y + kButtonDrawOffset,
-                  /*w=*/b.w - 2 * kButtonDrawOffset,
-                  /*h=*/b.h - 2 * kButtonDrawOffset);
-  b.drawZone = drawZone;
-}
-
 ButtonColors onCol = {BLACK, WHITE, WHITE};
 ButtonColors offCol = {RED, WHITE, WHITE};
 Button nextButton(/*x=*/160, /*y=*/0, /*w=*/160, /*h=*/60, /*rot1=*/false, "Next", onCol, offCol);
@@ -155,17 +146,19 @@ Button patternControlButton(/*x=*/0, /*y=*/120, /*w=*/160, /*h=*/120, /*rot1=*/f
 Button backButton(/*x=*/0, /*y=*/0, /*w=*/160, /*h=*/60, /*rot1=*/false, "Back", onCol, offCol);
 Button downButton(/*x=*/80, /*y=*/60, /*w=*/80, /*h=*/60, /*rot1=*/false, "Down", onCol, offCol);
 Button upButton(/*x=*/0, /*y=*/60, /*w=*/80, /*h=*/60, /*rot1=*/false, "Up", onCol, offCol);
+Button overrideButton(/*x=*/0, /*y=*/120, /*w=*/160, /*h=*/60, /*rot1=*/false, "Override", onCol, offCol);
+Button confirmButton(/*x=*/0, /*y=*/180, /*w=*/160, /*h=*/60, /*rot1=*/false, "Confirm", onCol, offCol);
 std::string currentPatternName;
 
 void setupButtonsDrawZone() {
-  setupButtonDrawZone(nextButton);
-  setupButtonDrawZone(loopButton);
-  setupButtonDrawZone(patternControlButton);
-  setupButtonDrawZone(backButton);
-  setupButtonDrawZone(downButton);
-  setupButtonDrawZone(upButton);
+  constexpr int16_t kButtonDrawOffset = 3;
+  for (Button* b : Button::instances) {
+    b->drawZone = ::Zone(/*x=*/b->x + kButtonDrawOffset,
+                         /*y=*/b->y + kButtonDrawOffset,
+                         /*w=*/b->w - 2 * kButtonDrawOffset,
+                         /*h=*/b->h - 2 * kButtonDrawOffset);
+  }
 }
-
 
 void drawPatternControlButton(Button& b, ButtonColors bc) {
   if (gScreenMode != ScreenMode::kMainMenu) { return; }
@@ -198,6 +191,8 @@ void drawPatternControlMenuButtons() {
   backButton.draw();
   downButton.draw();
   upButton.draw();
+  overrideButton.draw();
+  confirmButton.draw();
 }
 
 void hidePatternControlMenuButtons() {
@@ -205,6 +200,8 @@ void hidePatternControlMenuButtons() {
   backButton.hide();
   downButton.hide();
   upButton.hide();
+  overrideButton.hide();
+  confirmButton.hide();
 }
 
 class PatternControlMenu {
