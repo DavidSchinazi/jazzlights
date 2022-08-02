@@ -425,6 +425,7 @@ void vestSetup(void) {
     leds, sizeof(leds)/sizeof(*leds));
 #endif
 #if CORE2AWS
+  currentPatternName = player.currentEffectName();
   drawMainMenuButtons();
 #endif  // CORE2AWS
 }
