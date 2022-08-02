@@ -63,6 +63,10 @@
 #  define GECKO_SCALES 0
 #endif  // GECKO_SCALES
 
+#ifndef STAFF
+#  define STAFF 0
+#endif  // STAFF
+
 #ifndef BOOT_NAME
 #  define BOOT_NAME X
 #endif // BOOT_NAME
