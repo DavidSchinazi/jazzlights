@@ -363,7 +363,10 @@ PatternControlMenu gPatternControlMenu;
 void vestSetup(void) {
   Serial.begin(115200);
 #if CORE2AWS
-  M5.begin();
+  M5.begin(/*LCDEnable=*/true, /*SDEnable=*/false,
+           /*SerialEnable=*/false, /*I2CEnable=*/false,
+           /*mode=*/kMBusModeOutput);
+  // TODO switch mode to kMBusModeInput once we power from pins instead of USB.
   M5.Lcd.fillScreen(BLACK);
   hidePatternControlMenuButtons();
   patternControlButton.drawFn = drawPatternControlButton;
