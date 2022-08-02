@@ -60,6 +60,16 @@ class Player {
   void loopOne(Milliseconds currentTime);
 
   /**
+   *  Stop looping current effect forever.
+   */
+  void stopLooping(Milliseconds currentTime);
+
+  /**
+   *  Returns whether we are looping current effect forever.
+   */
+  bool isLooping() const { return loop_; }
+
+  /**
    * Run text command
    */
   const char* command(const char* cmd);
@@ -78,8 +88,8 @@ class Player {
     return frame_.viewport;
   }
 
-  void handleSpecial();
-  void stopSpecial();
+  void handleSpecial(Milliseconds currentTime);
+  void stopSpecial(Milliseconds currentTime);
   size_t getSpecial() const { return specialMode_; }
 #if FAIRY_WAND
   void triggerPatternOverride(Milliseconds currentTime);

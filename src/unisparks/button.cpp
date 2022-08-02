@@ -125,12 +125,13 @@ void modeAct(Player& player, const Milliseconds currentMillis) {
   switch (menuMode) {
     case kNext:
       info("%u Next button has been hit", currentMillis);
-      player.stopSpecial();
+      player.stopSpecial(currentMillis);
+      player.stopLooping(currentMillis);
       player.next(currentMillis);
       break;
     case kPrevious:
       info("%u Back button has been hit", currentMillis);
-      player.stopSpecial();
+      player.stopSpecial(currentMillis);
       player.loopOne(currentMillis);
       break;
     case kBrightness:
@@ -139,7 +140,7 @@ void modeAct(Player& player, const Milliseconds currentMillis) {
       break;
     case kSpecial:
       info("%u Special button has been hit", currentMillis);
-      player.handleSpecial();
+      player.handleSpecial(currentMillis);
       break;
   };
 
@@ -618,7 +619,8 @@ void doButtons(Player& player,
   switch (btn0) {
     case BTN_RELEASED:
       info("Next button has been hit");
-      player.stopSpecial();
+      player.stopSpecial(currentMillis);
+      player.stopLooping(currentMillis);
       player.next(currentMillis);
       break;
 
@@ -647,7 +649,7 @@ void doButtons(Player& player,
   switch (btn2) {
     case BTN_RELEASED:
       info("Back button has been hit");
-      player.stopSpecial();
+      player.stopSpecial(currentMillis);
       player.loopOne(currentMillis);
       break;
 
@@ -660,7 +662,7 @@ void doButtons(Player& player,
   switch (btn3) {
     case BTN_RELEASED:
       info("Special button has been hit");
-      player.handleSpecial();
+      player.handleSpecial(currentMillis);
       break;
 
     case BTN_LONGPRESS:

@@ -475,19 +475,20 @@ void vestLoop(void) {
   }
   if (nextButton.wasPressed() && gScreenMode == ScreenMode::kMainMenu) {
     info("%u next pressed", currentTime);
-    loopButton.setLabel("Loop");
-    loopButton.off = idleCol;
-    loopButton.draw();
-    player.stopSpecial();
     player.next(currentTime);
   }
   if (loopButton.wasPressed() && gScreenMode == ScreenMode::kMainMenu) {
     info("%u loop pressed", currentTime);
-    loopButton.setLabel("Looping");
-    loopButton.off = idleEnabledCol;
+    if (player.isLooping()) {
+      player.stopLooping(currentTime);
+      loopButton.setLabel("Loop");
+      loopButton.off = idleCol;
+    } else {
+      player.loopOne(currentTime);
+      loopButton.setLabel("Looping");
+      loopButton.off = idleEnabledCol;
+    }
     loopButton.draw();
-    player.stopSpecial();
-    player.loopOne(currentTime);
   }
   if (patternControlButton.wasPressed() && gScreenMode == ScreenMode::kMainMenu) {
     gScreenMode = ScreenMode::kPatternControlMenu;

@@ -350,7 +350,7 @@ void Player::begin(Milliseconds currentTime) {
   nextPattern_ = computeNextPattern(currentPattern_);
 }
 
-void Player::handleSpecial() {
+void Player::handleSpecial(Milliseconds currentTime) {
   static constexpr PatternBits kSpecialPatternBits[] = {
     0x00001000,  // calibration.
     0x00000000,  // black.
@@ -366,16 +366,15 @@ void Player::handleSpecial() {
   currentPattern_ = kSpecialPatternBits[specialMode_ - 1];
   nextPattern_ = currentPattern_;
   loop_ = true;
-  info("Starting special mode %u", specialMode_);
+  info("%u Starting special mode %u", currentTime, specialMode_);
 }
 
-void Player::stopSpecial() {
+void Player::stopSpecial(Milliseconds currentTime) {
   if (specialMode_ == 0) {
     return;
   }
-  info("Stopping special mode");
+  info("%u Stopping special mode", currentTime);
   specialMode_ = 0;
-  loop_ = false;
   currentPattern_ = computeNextPattern(currentPattern_);
   nextPattern_ = computeNextPattern(currentPattern_);
 }
@@ -487,8 +486,13 @@ void Player::next(Milliseconds currentTime) {
         DEVICE_ID_HEX(currentLeader_));
   lastUserInputTime_ = currentTime;
   currentPatternStartTime_ = currentTime;
-  currentPattern_ = nextPattern_;
-  nextPattern_ = computeNextPattern(nextPattern_);
+  if (loop_ && currentPattern_ == nextPattern_) {
+    currentPattern_ = computeNextPattern(currentPattern_);
+    nextPattern_ = currentPattern_;
+  } else {
+    currentPattern_ = nextPattern_;
+    nextPattern_ = computeNextPattern(nextPattern_);
+  }
   checkLeaderAndPattern(currentTime);
   info("%u next command processed: now current %s (%4x) next %s (%4x), currentLeader=" DEVICE_ID_FMT,
         currentTime, patternName(currentPattern_).c_str(), currentPattern_,
@@ -921,17 +925,28 @@ void Player::loopOne(Milliseconds currentTime) {
   nextPattern_ = currentPattern_;
 }
 
+void Player::stopLooping(Milliseconds currentTime) {
+  if (!loop_) {
+    return;
+  }
+  info("%u Stopping loop", currentTime);
+  loop_ = false;
+  nextPattern_ = computeNextPattern(currentPattern_);
+}
+
 const char* Player::command(const char* req) {
   static char res[256];
   const size_t MAX_CMD_LEN = 16;
   bool responded = false;
 
+  const Milliseconds currentTime = timeMillis();
   if (!strncmp(req, "status?", MAX_CMD_LEN)) {
     // do nothing
   } else  if (!strncmp(req, "next", MAX_CMD_LEN)) {
-    next(timeMillis());
+    stopLooping(currentTime);
+    next(currentTime);
   } else  if (!strncmp(req, "prev", MAX_CMD_LEN)) {
-    loopOne(timeMillis());
+    loopOne(currentTime);
   } else {
     snprintf(res, sizeof(res), "! unknown command");
     responded = true;
