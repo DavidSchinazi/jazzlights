@@ -386,7 +386,7 @@ void Player::triggerPatternOverride(Milliseconds currentTime) {
 }
 #endif  // FAIRY_WAND
 
-void Player::render(Milliseconds currentTime) {
+bool Player::render(Milliseconds currentTime) {
   if (!ready_) {
     begin(currentTime);
   }
@@ -457,7 +457,7 @@ void Player::render(Milliseconds currentTime) {
   static constexpr Milliseconds minLEDWriteTime = 10;
   if (lastLEDWriteTime_ >= 0 &&
       currentTime - minLEDWriteTime < lastLEDWriteTime_) {
-    return;
+    return false;
   }
   lastLEDWriteTime_ = currentTime;
 
@@ -473,6 +473,7 @@ void Player::render(Milliseconds currentTime) {
       s->renderer->render(colors);
     }
   }
+  return true;
 }
 
 std::string Player::currentEffectName() const {

@@ -45,9 +45,10 @@ class Player {
   void begin(Milliseconds currentTime);
 
   /**
-   *  Render current frame to all strands
+   *  Render current frame to all strands.
+   *  Returns whether the caller should send data to the LEDs.
    */
-  void render(Milliseconds currentTime);
+  bool render(Milliseconds currentTime);
 
   /**
    *  Play next effect in the playlist

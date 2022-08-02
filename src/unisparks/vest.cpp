@@ -544,7 +544,9 @@ void vestLoop(void) {
   Esp32BleNetwork::get()->runLoop(currentTime);
 #endif // ESP32_BLE
 
-  player.render(currentTime);
+  if (!player.render(currentTime)) {
+    return;
+  }
   uint32_t brightness = getBrightness();        // May be reduced if this exceeds our power budget with the current pattern
 
 #if MAX_MILLIWATTS
