@@ -137,6 +137,7 @@ class Core2ScreenRenderer : public Renderer {
 Core2ScreenRenderer core2ScreenRenderer;
 
 ButtonColors idleCol = {BLACK, WHITE, WHITE};
+ButtonColors idleEnabledCol = {WHITE, BLACK, WHITE};
 ButtonColors pressedCol = {RED, WHITE, WHITE};
 Button nextButton(/*x=*/160, /*y=*/0, /*w=*/160, /*h=*/60, /*rot1=*/false, "Next", idleCol, pressedCol);
 Button loopButton(/*x=*/160, /*y=*/60, /*w=*/160, /*h=*/60, /*rot1=*/false, "Loop", idleCol, pressedCol);
@@ -281,6 +282,11 @@ class PatternControlMenu {
   void backPressed() {
     state_ = State::kOff;
   }
+  void overridePressed() {
+    overrideEnabled_ = !overrideEnabled_;
+    overrideButton.off = overrideEnabled_ ? idleEnabledCol : idleCol;
+    overrideButton.setLabel(overrideEnabled_ ? "Override ON" : "Override");
+  }
  private:
   uint8_t dy() {
     if (dy_ == 0) { dy_ = M5.Lcd.fontHeight(); }  // By default this is 22.
@@ -351,6 +357,7 @@ class PatternControlMenu {
   uint8_t selectedIndex_ = 0;
   const int16_t x_ = 165;
   uint8_t dy_ = 0;
+  bool overrideEnabled_ = false;
 };
 PatternControlMenu gPatternControlMenu;
 
@@ -469,6 +476,7 @@ void vestLoop(void) {
   if (nextButton.wasPressed() && gScreenMode == ScreenMode::kMainMenu) {
     info("%u next pressed", currentTime);
     loopButton.setLabel("Loop");
+    loopButton.off = idleCol;
     loopButton.draw();
     player.stopSpecial();
     player.next(currentTime);
@@ -476,6 +484,7 @@ void vestLoop(void) {
   if (loopButton.wasPressed() && gScreenMode == ScreenMode::kMainMenu) {
     info("%u loop pressed", currentTime);
     loopButton.setLabel("Looping");
+    loopButton.off = idleEnabledCol;
     loopButton.draw();
     player.stopSpecial();
     player.loopOne(currentTime);
@@ -504,6 +513,9 @@ void vestLoop(void) {
   }
   if (upButton.wasPressed() && gScreenMode == ScreenMode::kPatternControlMenu) {
     gPatternControlMenu.upPressed();
+  }
+  if (overrideButton.wasPressed() && gScreenMode == ScreenMode::kPatternControlMenu) {
+    gPatternControlMenu.overridePressed();
   }
   // std::string patternControlLabel = "Pattern 2Control\n3";
   // patternControlLabel += player.currentEffectName();
