@@ -371,7 +371,6 @@ void vestSetup(void) {
   hidePatternControlMenuButtons();
   patternControlButton.drawFn = drawPatternControlButton;
   setupButtonsDrawZone();
-  M5.Buttons.draw();
   player.addStrand(core2ScreenPixels, core2ScreenRenderer);
 #else  // CORE2AWS
   setupButtons();
@@ -425,6 +424,9 @@ void vestSetup(void) {
   mainVestController = &FastLED.addLeds<WS2812B, LED_PIN, GRB>(
     leds, sizeof(leds)/sizeof(*leds));
 #endif
+#if CORE2AWS
+  drawMainMenuButtons();
+#endif  // CORE2AWS
 }
 
 void vestLoop(void) {
