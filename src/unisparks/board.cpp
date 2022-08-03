@@ -10,6 +10,10 @@
 #  include "unisparks/layouts/reversemap.hpp"
 #endif
 
+#if IS_STAFF
+#  include "unisparks/layouts/matrix.hpp"
+#endif
+
 namespace unisparks {
 
 namespace {
@@ -181,6 +185,10 @@ static_assert(LEDNUM == sizeof(pixelMap) / sizeof(pixelMap[0]), "bad LEDNUM");
 ReverseMap<LEDNUM> pixels(pixelMap, /*MATRIX_WIDTH=*/3, /*MATRIX_HEIGHT=*/3);
 
 #endif // FAIRY_WAND
+
+#if IS_STAFF
+Matrix pixels(/*w=*/1, /*h=*/LEDNUM);
+#endif  // IS_STAFF
 
 }  // namespace
 
