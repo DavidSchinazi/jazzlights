@@ -18,7 +18,7 @@ namespace unisparks {
 #endif // CAMP_SIGN
 
 #if GECKO_FOOT
-#  define LEDNUM 68
+#  define LEDNUM 102
 #endif  // GECKO_FOOT
 
 #if GUPPY

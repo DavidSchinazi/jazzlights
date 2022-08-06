@@ -2,11 +2,11 @@
 
 # Tool used to generate the layout for the gecko foot on the stage.
 
-w = 8
-h = 8
+w = 7
+h = 7
 ox = 10.5
 oy = 0.0
-resolution = 7.0
+resolution = 8
 
 l = []
 for i in range(w * h):
@@ -16,6 +16,7 @@ for i in range(w * h):
     x = w - x - 1.0
   x = ox + x / resolution
   y = oy + y / resolution
+  l.append((x, y))
   l.append((x, y))
 
 # Add four corners of robot bounding box.
