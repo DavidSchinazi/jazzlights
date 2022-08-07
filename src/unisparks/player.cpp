@@ -351,14 +351,13 @@ void Player::begin(Milliseconds currentTime) {
 }
 
 void Player::handleSpecial() {
-  // TODO check if special still works
   static constexpr PatternBits kSpecialPatternBits[] = {
-    0x00001000,  // calibration.
+    0x00100000,  // calibration.
     0x00000000,  // black.
-    0x00000100,  // red.
-    0x00000200,  // green.
-    0x00000300,  // blue.
-    0x00000700,  // white.
+    0x00010000,  // red.
+    0x00020000,  // green.
+    0x00030000,  // blue.
+    0x00070000,  // white.
   };
   specialMode_++;
   if (specialMode_ > sizeof(kSpecialPatternBits) / sizeof(kSpecialPatternBits[0])) {
