@@ -94,7 +94,7 @@ void vestSetup(void) {
   // that the YL inscription is on the male end of the three-way power-injection splitter.
   mainVestController = &FastLED.addLeds</*CHIPSET=*/WS2801, /*DATA_PIN=*/26, /*CLOCK_PIN=*/32, /*RGB_ORDER=*/GBR>(
     leds, sizeof(leds)/sizeof(*leds));
-#elif IS_STAFF
+#elif IS_STAFF || ROPELIGHT
   mainVestController = &FastLED.addLeds<WS2811, LED_PIN, RGB>(
     leds, sizeof(leds)/sizeof(*leds));
 #else  // Vest.

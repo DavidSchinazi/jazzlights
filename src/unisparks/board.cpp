@@ -10,7 +10,7 @@
 #  include "unisparks/layouts/reversemap.hpp"
 #endif
 
-#if IS_STAFF
+#if IS_STAFF || ROPELIGHT
 #  include "unisparks/layouts/matrix.hpp"
 #endif
 
@@ -193,6 +193,10 @@ ReverseMap<LEDNUM> pixels(pixelMap, /*MATRIX_WIDTH=*/3, /*MATRIX_HEIGHT=*/3);
 #if IS_STAFF
 Matrix pixels(/*w=*/1, /*h=*/LEDNUM);
 #endif  // IS_STAFF
+
+#if ROPELIGHT
+Matrix pixels(/*w=*/LEDNUM, /*h=*/1);
+#endif  // ROPELIGHT
 
 }  // namespace
 

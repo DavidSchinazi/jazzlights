@@ -37,6 +37,10 @@ namespace unisparks {
 #  define LEDNUM 36
 #endif  // IS_STAFF
 
+#if ROPELIGHT
+#  define LEDNUM 100
+#endif  // ROPELIGHT
+
 #if CAMP_SIGN || HAMMER || GECKO_FOOT
 #  define FIRST_BRIGHTNESS MAX_BRIGHTNESS
 #endif // CAMP_SIGN
