@@ -21,9 +21,9 @@ namespace unisparks {
 #  define LEDNUM 102
 #endif  // GECKO_FOOT
 
-#if GUPPY
+#if IS_GUPPY
 #  define LEDNUM 300
-#endif // GUPPY
+#endif // IS_GUPPY
 
 #if HAMMER
 #  define LEDNUM 20
@@ -38,7 +38,7 @@ namespace unisparks {
 #endif  // IS_STAFF
 
 #if ROPELIGHT
-#  define LEDNUM 100
+#  define LEDNUM 300
 #endif  // ROPELIGHT
 
 #if CAMP_SIGN || HAMMER || GECKO_FOOT

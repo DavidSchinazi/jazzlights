@@ -6,7 +6,7 @@
 #  include "unisparks/layouts/pixelmap.hpp"
 #endif
 
-#if CAMP_SIGN || GUPPY || HAMMER || FAIRY_WAND
+#if CAMP_SIGN || IS_GUPPY || HAMMER || FAIRY_WAND
 #  include "unisparks/layouts/reversemap.hpp"
 #endif
 
@@ -137,7 +137,7 @@ ReverseMap<LEDNUM> pixels(pixelMap, /*MATRIX_WIDTH=*/30, /*MATRIX_HEIGHT=*/30);
 
 #endif // CAMP_SIGN
 
-#if GUPPY
+#if IS_GUPPY
 
 constexpr int pixelMap[] = {
    215,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10,216,217,218,
@@ -164,7 +164,7 @@ constexpr int pixelMap[] = {
 
 ReverseMap<LEDNUM> pixels(pixelMap, /*MATRIX_WIDTH=*/15, /*MATRIX_HEIGHT=*/20);
 
-#endif // GUPPY
+#endif // IS_GUPPY
 
 #if HAMMER
 
