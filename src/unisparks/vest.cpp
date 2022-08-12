@@ -56,7 +56,7 @@ void vestSetup(void) {
 #if GECKO_FOOT
   player.setBasePrecedence(2500);
   player.setPrecedenceGain(1000);
-#elif FAIRY_WAND || IS_STAFF
+#elif FAIRY_WAND || IS_STAFF || IS_CAPTAIN_HAT
   player.setBasePrecedence(500);
   player.setPrecedenceGain(100);
 #else

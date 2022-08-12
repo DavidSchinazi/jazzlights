@@ -37,6 +37,10 @@ namespace unisparks {
 #  define LEDNUM 36
 #endif  // IS_STAFF
 
+#if IS_CAPTAIN_HAT
+#  define LEDNUM 60
+#endif  // IS_CAPTAIN_HAT
+
 #if ROPELIGHT
 #  define LEDNUM 300
 #endif  // ROPELIGHT

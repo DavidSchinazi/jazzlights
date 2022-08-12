@@ -10,7 +10,7 @@
 #  include "unisparks/layouts/reversemap.hpp"
 #endif
 
-#if IS_STAFF || ROPELIGHT
+#if IS_STAFF || ROPELIGHT || IS_CAPTAIN_HAT
 #  include "unisparks/layouts/matrix.hpp"
 #endif
 
@@ -193,6 +193,12 @@ ReverseMap<LEDNUM> pixels(pixelMap, /*MATRIX_WIDTH=*/3, /*MATRIX_HEIGHT=*/3);
 #if IS_STAFF
 Matrix pixels(/*w=*/1, /*h=*/LEDNUM);
 #endif  // IS_STAFF
+
+#if IS_CAPTAIN_HAT
+// Intentionally use w=48 instead of LEDNUM to keep last 12 LEDs black.
+static_assert(LEDNUM == 60, "bad LEDNUM");
+Matrix pixels(/*w=*/48, /*h=*/1);
+#endif  // IS_CAPTAIN_HAT
 
 #if ROPELIGHT
 Matrix pixels(/*w=*/LEDNUM, /*h=*/1);
