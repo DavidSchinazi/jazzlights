@@ -262,6 +262,9 @@ std::string patternName(PatternBits pattern) {
 
 Player::Player() {
   frame_.predictableRandom = &predictableRandom_;
+  // Work around a heap corruption issue that causes an abort when running realloc.
+  effectContextSize_ = 1000;
+  effectContext_ = malloc(effectContextSize_);
 }
 
 Player::~Player() {
