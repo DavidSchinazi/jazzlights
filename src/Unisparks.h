@@ -30,6 +30,7 @@
 #include "unisparks/networks/arduinoethernet.hpp"
 #include "unisparks/player.hpp"
 #include "unisparks/util/log.hpp"
+#include "unisparks/core2.h"
 #include "unisparks/vest.h"
 #include "unisparks/text.h"
 #include "unisparks/button.h"
