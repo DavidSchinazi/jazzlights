@@ -6,7 +6,9 @@
 #endif // WEARABLE
 
 // Pick which vest to build here.
-#if !defined(CAMP_SIGN) && !defined(ROPELIGHT) && !defined(ORANGE_VEST) && !defined(HAMMER) && !defined(GUPPY) && !defined(GECKO_FOOT) && !defined(FAIRY_WAND)
+#if !defined(CAMP_SIGN) && !defined(ROPELIGHT) && !defined(ORANGE_VEST) && \
+    !defined(HAMMER) && !defined(IS_GUPPY) && !defined(GECKO_FOOT) && \
+    !defined(FAIRY_WAND) && !defined(IS_STAFF) && !defined(IS_CAPTAIN_HAT)
 #  define ORANGE_VEST WEARABLE
 #endif
 
@@ -26,9 +28,9 @@
 #  define CAMP_SIGN 0
 #endif // CAMP_SIGN
 
-#ifndef GUPPY
-#  define GUPPY 0
-#endif // GUPPY
+#ifndef IS_GUPPY
+#  define IS_GUPPY 0
+#endif // IS_GUPPY
 
 #ifndef HAMMER
 #  define HAMMER 0
@@ -63,9 +65,13 @@
 #  define GECKO_SCALES 0
 #endif  // GECKO_SCALES
 
-#ifndef STAFF
-#  define STAFF 0
-#endif  // STAFF
+#ifndef IS_STAFF
+#  define IS_STAFF 0
+#endif  // IS_STAFF
+
+#ifndef IS_CAPTAIN_HAT
+#  define IS_CAPTAIN_HAT 0
+#endif  // IS_CAPTAIN_HAT
 
 #ifndef BOOT_NAME
 #  define BOOT_NAME X

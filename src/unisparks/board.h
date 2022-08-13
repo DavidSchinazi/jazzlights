@@ -18,12 +18,12 @@ namespace unisparks {
 #endif // CAMP_SIGN
 
 #if GECKO_FOOT
-#  define LEDNUM 68
+#  define LEDNUM 102
 #endif  // GECKO_FOOT
 
-#if GUPPY
+#if IS_GUPPY
 #  define LEDNUM 300
-#endif // GUPPY
+#endif // IS_GUPPY
 
 #if HAMMER
 #  define LEDNUM 20
@@ -32,6 +32,18 @@ namespace unisparks {
 #if FAIRY_WAND
 #  define LEDNUM 9
 #endif // FAIRY_WAND
+
+#if IS_STAFF
+#  define LEDNUM 36
+#endif  // IS_STAFF
+
+#if IS_CAPTAIN_HAT
+#  define LEDNUM 60
+#endif  // IS_CAPTAIN_HAT
+
+#if ROPELIGHT
+#  define LEDNUM 300
+#endif  // ROPELIGHT
 
 #if CAMP_SIGN || HAMMER || GECKO_FOOT
 #  define FIRST_BRIGHTNESS MAX_BRIGHTNESS
