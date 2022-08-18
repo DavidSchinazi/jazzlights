@@ -35,6 +35,7 @@ namespace unisparks {
 
 #if IS_STAFF
 #  define LEDNUM 36
+#  define LEDNUM2 50
 #endif  // IS_STAFF
 
 #if IS_CAPTAIN_HAT
@@ -50,6 +51,14 @@ namespace unisparks {
 #endif // CAMP_SIGN
 
 const Layout* GetLayout();
+
+#ifndef LEDNUM2
+#  define LEDNUM2 0
+#endif  // LEDNUM2
+
+#if LEDNUM2
+const Layout* GetLayout2();
+#endif  // LEDNUM2
 
 }  // namespace unisparks
 

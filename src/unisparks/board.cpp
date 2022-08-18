@@ -192,6 +192,7 @@ ReverseMap<LEDNUM> pixels(pixelMap, /*MATRIX_WIDTH=*/3, /*MATRIX_HEIGHT=*/3);
 
 #if IS_STAFF
 Matrix pixels(/*w=*/1, /*h=*/LEDNUM);
+Matrix pixels2(/*w=*/LEDNUM2, /*h=*/1);
 #endif  // IS_STAFF
 
 #if IS_CAPTAIN_HAT
@@ -209,6 +210,12 @@ Matrix pixels(/*w=*/LEDNUM, /*h=*/1);
 const Layout* GetLayout() {
   return &pixels;
 }
+
+#if LEDNUM2
+const Layout* GetLayout2() {
+  return &pixels2;
+}
+#endif  // LEDNUM2
 
 }  // namespace unisparks
 

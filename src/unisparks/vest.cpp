@@ -6,6 +6,7 @@
 #  define LED_PIN  32
 #elif defined(ESP32)
 #  define LED_PIN  26
+#  define LED_PIN2 32
 #elif defined(ESP8266)
 #  define LED_PIN  5
 #else
@@ -19,6 +20,14 @@ CRGB leds[LEDNUM] = {};
 void renderPixel(int i, uint8_t r, uint8_t g, uint8_t b) {
   leds[i] = CRGB(r, g, b);
 }
+
+#if LEDNUM2
+CRGB leds2[LEDNUM2] = {};
+
+void renderPixel2(int i, uint8_t r, uint8_t g, uint8_t b) {
+  leds2[i] = CRGB(r, g, b);
+}
+#endif  // LEDNUM2
 
 Esp8266WiFi network("FISHLIGHT", "155155155");
 #if UNISPARKS_ARDUINO_ETHERNET
@@ -47,6 +56,9 @@ ArduinoEthernetNetwork ethernetNetwork(GetEthernetDeviceId());
 Player player;
 
 CLEDController* mainVestController = nullptr;
+#if LEDNUM2
+CLEDController* mainVestController2 = nullptr;
+#endif  // LEDNUM2
 
 void vestSetup(void) {
   Serial.begin(115200);
@@ -56,6 +68,9 @@ void vestSetup(void) {
   setupButtons();
 #endif  // CORE2AWS
   player.addStrand(*GetLayout(), renderPixel);
+#if LEDNUM2
+  player.addStrand(*GetLayout2(), renderPixel2);
+#endif  // LEDNUM2
 #if GECKO_FOOT
   player.setBasePrecedence(2500);
   player.setPrecedenceGain(1000);
@@ -107,6 +122,10 @@ void vestSetup(void) {
   mainVestController = &FastLED.addLeds<WS2812B, LED_PIN, GRB>(
     leds, sizeof(leds)/sizeof(*leds));
 #endif
+#if LEDNUM2
+  mainVestController2 = &FastLED.addLeds<WS2812B, LED_PIN2, GRB>(
+    leds2, sizeof(leds2)/sizeof(*leds2));
+#endif  // LEDNUM2
 #if CORE2AWS
   core2SetupEnd(player);
 #endif  // CORE2AWS
@@ -149,6 +168,9 @@ void vestLoop(void) {
 #endif
 
   mainVestController->showLeds(brightness);
+#if LEDNUM2
+  mainVestController2->showLeds();
+#endif  // LEDNUM2
 }
 
 } // namespace unisparks
