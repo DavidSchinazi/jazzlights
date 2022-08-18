@@ -192,6 +192,7 @@ ReverseMap<LEDNUM> pixels(pixelMap, /*MATRIX_WIDTH=*/3, /*MATRIX_HEIGHT=*/3);
 
 #if IS_STAFF
 Matrix pixels(/*w=*/1, /*h=*/LEDNUM);
+// TODO remap staff bulb, it has 33 pixels zigzagging up where each line is 8 wide
 Matrix pixels2(/*w=*/LEDNUM2, /*h=*/1);
 #endif  // IS_STAFF
 
