@@ -2,7 +2,7 @@
 
 #if WEARABLE
 
-#if ORANGE_VEST || GECKO_FOOT
+#if ORANGE_VEST || IS_STAFF || GECKO_FOOT
 #  include "unisparks/layouts/pixelmap.hpp"
 #endif
 
@@ -10,7 +10,7 @@
 #  include "unisparks/layouts/reversemap.hpp"
 #endif
 
-#if IS_STAFF || ROPELIGHT || IS_CAPTAIN_HAT
+#if ROPELIGHT || IS_CAPTAIN_HAT
 #  include "unisparks/layouts/matrix.hpp"
 #endif
 
@@ -191,9 +191,31 @@ ReverseMap<LEDNUM> pixels(pixelMap, /*MATRIX_WIDTH=*/3, /*MATRIX_HEIGHT=*/3);
 #endif // FAIRY_WAND
 
 #if IS_STAFF
-Matrix pixels(/*w=*/1, /*h=*/LEDNUM);
-// TODO remap staff bulb, it has 33 pixels zigzagging up where each line is 8 wide
-Matrix pixels2(/*w=*/LEDNUM2, /*h=*/1);
+
+constexpr Point pixelMap[] = {
+  {2.00, 1.00}, {2.00, 2.00}, {2.00, 3.00}, {2.00, 4.00}, {2.00, 5.00}, {2.00, 6.00}, {2.00, 7.00}, {2.00, 8.00},
+  {2.00, 9.00}, {2.00, 10.00}, {2.00, 11.00}, {2.00, 12.00}, {2.00, 13.00}, {2.00, 14.00}, {2.00, 15.00}, {2.00, 16.00},
+  {2.00, 17.00}, {2.00, 18.00}, {2.00, 19.00}, {2.00, 20.00}, {2.00, 21.00}, {2.00, 22.00}, {2.00, 23.00}, {2.00, 24.00},
+  {2.00, 25.00}, {2.00, 26.00}, {2.00, 27.00}, {2.00, 28.00}, {2.00, 29.00}, {2.00, 30.00}, {2.00, 31.00}, {2.00, 32.00},
+  {2.00, 33.00}, {2.00, 34.00}, {2.00, 35.00}, {2.00, 36.00},
+};
+
+static_assert(LEDNUM == sizeof(pixelMap) / sizeof(pixelMap[0]), "bad LEDNUM");
+
+PixelMap pixels(LEDNUM, pixelMap);
+
+constexpr Point pixelMap2[] = {
+  {0.00, 0.00}, {1.00, 0.00}, {2.00, 0.00}, {3.00, 0.00}, {4.00, 0.00}, {3.00, 0.00}, {2.00, 0.00}, {1.00, 0.00},
+  {0.00, -1.00}, {1.00, -1.00}, {2.00, -1.00}, {3.00, -1.00}, {4.00, -1.00}, {3.00, -1.00}, {2.00, -1.00}, {1.00, -1.00},
+  {0.00, -2.00}, {1.00, -2.00}, {2.00, -2.00}, {3.00, -2.00}, {4.00, -2.00}, {3.00, -2.00}, {2.00, -2.00}, {1.00, -2.00},
+  {0.00, -3.00}, {1.00, -3.00}, {2.00, -3.00}, {3.00, -3.00}, {4.00, -3.00}, {3.00, -3.00}, {2.00, -3.00}, {1.00, -3.00},
+  {0.00, -4.00},
+};
+
+static_assert(LEDNUM2 == sizeof(pixelMap2) / sizeof(pixelMap2[0]), "bad LEDNUM2");
+
+PixelMap pixels2(LEDNUM2, pixelMap2);
+
 #endif  // IS_STAFF
 
 #if IS_CAPTAIN_HAT
