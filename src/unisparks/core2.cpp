@@ -197,57 +197,88 @@ class PatternControlMenu {
         }
       }
     } break;
+    case State::kPalette: {
+      M5.Lcd.fillRect(x_, /*y=*/0, /*w=*/155, /*h=*/240, BLACK);
+      for (uint8_t i = 0; i < kNumPalettes; i++) {
+        drawPatternTextLine(i,
+                            kPaletteNames[i],
+                            i == selectedPaletteIndex_);
+      }
+      M5.Lcd.setTextColor(WHITE, BLACK);
+    } break;
     }
     drawConfirmButton();
   }
   void downPressed() {
-    if (selectedPatternIndex_ < kNumRegularPatterns - 1) {
-      drawPatternTextLine(selectedPatternIndex_, kSelectablePatterns[selectedPatternIndex_].name, /*selected=*/false);
-      selectedPatternIndex_++;
-      drawPatternTextLine(selectedPatternIndex_, kSelectablePatterns[selectedPatternIndex_].name, /*selected=*/true);
-      drawConfirmButton();
-    } else if (selectedPatternIndex_ == kNumRegularPatterns - 1) {
-      selectedPatternIndex_ ++;
-      draw();
-    } else if (selectedPatternIndex_ < kNumRegularPatterns + kNumSpecialPatterns - 1) {
-      drawPatternTextLine(1 + selectedPatternIndex_ - kNumRegularPatterns,
-                          kSelectablePatterns[selectedPatternIndex_].name,
-                          /*selected=*/false);
-      selectedPatternIndex_++;
-      drawPatternTextLine(1 + selectedPatternIndex_ - kNumRegularPatterns,
-                          kSelectablePatterns[selectedPatternIndex_].name,
-                          /*selected=*/true);
-      drawConfirmButton();
+    if (state_ == State::kPattern) {
+      if (selectedPatternIndex_ < kNumRegularPatterns - 1) {
+        drawPatternTextLine(selectedPatternIndex_, kSelectablePatterns[selectedPatternIndex_].name, /*selected=*/false);
+        selectedPatternIndex_++;
+        drawPatternTextLine(selectedPatternIndex_, kSelectablePatterns[selectedPatternIndex_].name, /*selected=*/true);
+        drawConfirmButton();
+      } else if (selectedPatternIndex_ == kNumRegularPatterns - 1) {
+        selectedPatternIndex_ ++;
+        draw();
+      } else if (selectedPatternIndex_ < kNumRegularPatterns + kNumSpecialPatterns - 1) {
+        drawPatternTextLine(1 + selectedPatternIndex_ - kNumRegularPatterns,
+                            kSelectablePatterns[selectedPatternIndex_].name,
+                            /*selected=*/false);
+        selectedPatternIndex_++;
+        drawPatternTextLine(1 + selectedPatternIndex_ - kNumRegularPatterns,
+                            kSelectablePatterns[selectedPatternIndex_].name,
+                            /*selected=*/true);
+        drawConfirmButton();
+      }
+    } else if (state_ == State::kPalette) {
+      if (selectedPaletteIndex_ < kNumPalettes - 1) {
+        drawPatternTextLine(selectedPaletteIndex_, kPaletteNames[selectedPaletteIndex_], /*selected=*/false);
+        selectedPaletteIndex_++;
+        drawPatternTextLine(selectedPaletteIndex_, kPaletteNames[selectedPaletteIndex_], /*selected=*/true);
+      }
     }
   }
   void upPressed() {
-    if (selectedPatternIndex_ == 0) {
-      // Do nothing.
-    } else if (selectedPatternIndex_ < kNumRegularPatterns) {
-      drawPatternTextLine(selectedPatternIndex_,
-                          kSelectablePatterns[selectedPatternIndex_].name,
-                          /*selected=*/false);
-      selectedPatternIndex_--;
-      drawPatternTextLine(selectedPatternIndex_,
-                          kSelectablePatterns[selectedPatternIndex_].name,
-                          /*selected=*/true);
-      drawConfirmButton();
-    } else if (selectedPatternIndex_ == kNumRegularPatterns) {
-      selectedPatternIndex_--;
-      draw();
-    } else {
-      drawPatternTextLine(1 + selectedPatternIndex_ - kNumRegularPatterns,
-                          kSelectablePatterns[selectedPatternIndex_].name,
-                          /*selected=*/false);
-      selectedPatternIndex_--;
-      drawPatternTextLine(1 + selectedPatternIndex_ - kNumRegularPatterns,
-                          kSelectablePatterns[selectedPatternIndex_].name,
-                          /*selected=*/true);
-      drawConfirmButton();
+    if (state_ == State::kPattern) {
+      if (selectedPatternIndex_ == 0) {
+        // Do nothing.
+      } else if (selectedPatternIndex_ < kNumRegularPatterns) {
+        drawPatternTextLine(selectedPatternIndex_,
+                            kSelectablePatterns[selectedPatternIndex_].name,
+                            /*selected=*/false);
+        selectedPatternIndex_--;
+        drawPatternTextLine(selectedPatternIndex_,
+                            kSelectablePatterns[selectedPatternIndex_].name,
+                            /*selected=*/true);
+        drawConfirmButton();
+      } else if (selectedPatternIndex_ == kNumRegularPatterns) {
+        selectedPatternIndex_--;
+        draw();
+      } else {
+        drawPatternTextLine(1 + selectedPatternIndex_ - kNumRegularPatterns,
+                            kSelectablePatterns[selectedPatternIndex_].name,
+                            /*selected=*/false);
+        selectedPatternIndex_--;
+        drawPatternTextLine(1 + selectedPatternIndex_ - kNumRegularPatterns,
+                            kSelectablePatterns[selectedPatternIndex_].name,
+                            /*selected=*/true);
+        drawConfirmButton();
+      }
+    } else if (state_ == State::kPalette) {
+      if (selectedPaletteIndex_ > 0) {
+        drawPatternTextLine(selectedPaletteIndex_, kPaletteNames[selectedPaletteIndex_], /*selected=*/false);
+        selectedPaletteIndex_--;
+        drawPatternTextLine(selectedPaletteIndex_, kPaletteNames[selectedPaletteIndex_], /*selected=*/true);
+      }
     }
   }
-  void backPressed() {
-    state_ = State::kOff;
+  bool backPressed() {
+    if (state_ == State::kPattern) {
+      state_ = State::kOff;
+      return true;
+    }
+    state_ = State::kPattern;
+    draw();
+    return false;
   }
   void overridePressed() {
     overrideEnabled_ = !overrideEnabled_;
@@ -259,24 +290,32 @@ class PatternControlMenu {
     if (state_ == State::kPattern) {
       State nextState = kSelectablePatterns[selectedPatternIndex_].nextState;
       if (nextState == State::kPalette || nextState == State::kColor) {
-        info("Pattern %s confirmed now asking for %s",
-             kSelectablePatterns[selectedPatternIndex_].name,
+        info("%u Pattern %s confirmed now asking for %s",
+             currentTime, kSelectablePatterns[selectedPatternIndex_].name,
              (nextState == State::kPalette ? "palette" : "color"));
         state_ = nextState;
         draw();
       } else {
-        info("Pattern %s confirmed now playing 0x%4x",
-             kSelectablePatterns[selectedPatternIndex_].name, kSelectablePatterns[selectedPatternIndex_].bits);
-        setPattern(player, kSelectablePatterns[selectedPatternIndex_].bits, currentTime);
-        return true;
+        info("%u Pattern %s confirmed now playing", currentTime, kSelectablePatterns[selectedPatternIndex_].name);
+        return setPattern(player, kSelectablePatterns[selectedPatternIndex_].bits, currentTime);
       }
+    } else if (state_ == State::kPalette) {
+        info("%u Pattern %s and palette %s confirmed now playing",
+             currentTime, kSelectablePatterns[selectedPatternIndex_].name,
+             kPaletteNames[selectedPaletteIndex_]);
+        return setPatternWithPalette(player, kSelectablePatterns[selectedPatternIndex_].bits, selectedPaletteIndex_, currentTime);
     }
     return false;
   }
  private:
-  void setPattern(Player& player, PatternBits patternBits, Milliseconds currentTime) {
+  bool setPattern(Player& player, PatternBits patternBits, Milliseconds currentTime) {
     patternBits = randomizePatternBits(patternBits);
     player.setPattern(patternBits, currentTime);
+    state_ = State::kOff;
+    return true;
+  }
+  bool setPatternWithPalette(Player& player, PatternBits patternBits, uint8_t palette, Milliseconds currentTime) {
+    return setPattern(player, patternBits | (palette << 13), currentTime);
   }
   void drawConfirmButton() {
     const char* confirmLabel;
@@ -356,7 +395,8 @@ class PatternControlMenu {
     {"glow-white",     0xE0000, State::kConfirmed},
     */
   };
-  const char* kPaletteNames[7] = {
+  static constexpr size_t kNumPalettes = 7;
+  const char* kPaletteNames[kNumPalettes] = {
     "heat",
     "lava",
     "ocean",
@@ -462,13 +502,14 @@ void core2Loop(Player& player, Milliseconds currentTime) {
   }
   if (backButton.wasPressed() &&
       (gScreenMode == ScreenMode::kPatternControlMenu || gScreenMode == ScreenMode::kSystemMenu)) {
-    gScreenMode = ScreenMode::kMainMenu;
     info("%u back button pressed", currentTime);
-    gPatternControlMenu.backPressed();
-    hidePatternControlMenuButtons();
-    M5.Lcd.fillScreen(BLACK);
-    drawMainMenuButtons();
-    core2ScreenRenderer.setEnabled(true);
+    if (gPatternControlMenu.backPressed()) {
+      gScreenMode = ScreenMode::kMainMenu;
+      hidePatternControlMenuButtons();
+      M5.Lcd.fillScreen(BLACK);
+      drawMainMenuButtons();
+      core2ScreenRenderer.setEnabled(true);
+    }
   }
   if (downButton.wasPressed() && gScreenMode == ScreenMode::kPatternControlMenu) {
     gPatternControlMenu.downPressed();
