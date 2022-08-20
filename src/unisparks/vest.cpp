@@ -61,9 +61,10 @@ CLEDController* mainVestController2 = nullptr;
 #endif  // LEDNUM2
 
 void vestSetup(void) {
+  Milliseconds currentTime = timeMillis();
   Serial.begin(115200);
 #if CORE2AWS
-  core2SetupStart(player);
+  core2SetupStart(player, currentTime);
 #else  // CORE2AWS
   setupButtons();
 #endif  // CORE2AWS
@@ -89,7 +90,7 @@ void vestSetup(void) {
 #if UNISPARKS_ARDUINO_ETHERNET
   player.connect(&ethernetNetwork);
 #endif  // UNISPARKS_ARDUINO_ETHERNET
-  player.begin(timeMillis());
+  player.begin(currentTime);
 
 #if GECKO_SCALES
   // Note to self for future reference: we were able to get the 2018 Gecko Robot scales to light
@@ -127,7 +128,7 @@ void vestSetup(void) {
     leds2, sizeof(leds2)/sizeof(*leds2));
 #endif  // LEDNUM2
 #if CORE2AWS
-  core2SetupEnd(player);
+  core2SetupEnd(player, currentTime);
 #endif  // CORE2AWS
 }
 
