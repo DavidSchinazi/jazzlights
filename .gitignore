@@ -1,4 +1,5 @@
 build/
+.dockerignore 2
 .DS_Store
 .pio
 .pioenvs
