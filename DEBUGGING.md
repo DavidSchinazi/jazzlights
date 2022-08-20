@@ -25,6 +25,15 @@ Run from `unisparks/tglight`:
 cargo run -- --timestamp --config ./etc/robot/tglight.toml
 ```
 
+# To build all available PlatformIO environments
+
+This is useful to load all dependencies locally so you can build them later without Internet connectivity.
+
+Run from `unisparks`:
+```
+for e in $(pio project config | grep 'env:' | grep -v extends | sed 's/env://g') ; do pio run -e "$e" ; done
+```
+
 # DS33 dual devices
 
 ```
