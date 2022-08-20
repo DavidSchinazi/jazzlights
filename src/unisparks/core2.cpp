@@ -259,7 +259,9 @@ class PatternControlMenu {
     if (state_ == State::kPattern) {
       State nextState = kSelectablePatterns[selectedPatternIndex_].nextState;
       if (nextState == State::kPalette || nextState == State::kColor) {
-        info("Pattern %s confirmed now asking for %s", (nextState == State::kPalette ? "palette" : "color"));
+        info("Pattern %s confirmed now asking for %s",
+             kSelectablePatterns[selectedPatternIndex_].name,
+             (nextState == State::kPalette ? "palette" : "color"));
         state_ = nextState;
         draw();
       } else {
