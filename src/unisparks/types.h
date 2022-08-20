@@ -17,6 +17,8 @@ constexpr inline bool patternbit(PatternBits pattern, uint8_t bitNum) {
   return (pattern & (1 << (sizeof(PatternBits) * 8 - bitNum))) != 0;
 }
 
+PatternBits randomizePatternBits(PatternBits pattern);
+
 class Layout;
 
 struct Pixel {

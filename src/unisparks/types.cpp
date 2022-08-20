@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "unisparks/layout.hpp"
+#include "unisparks/pseudorandom.h"
 #include "unisparks/util/log.hpp"
 
 namespace unisparks {
@@ -104,6 +105,16 @@ void XYIndexStore::Reset() {
   layoutInfos_.clear();
   xValuesCount_ = 0;
   yValuesCount_ = 0;
+}
+
+PatternBits randomizePatternBits(PatternBits pattern) {
+  if ((pattern & 0xFF) != 0) {
+    pattern &= 0xF000E000;
+    pattern |= UnpredictableRandom::GetNumberBetween(1, 1 <<  8 - 1);
+    pattern |= UnpredictableRandom::GetNumberBetween(0, 1 <<  5 - 1) << 8;
+    pattern |= UnpredictableRandom::GetNumberBetween(0, 1 << 12 - 1) << 16;
+  }
+  return pattern;
 }
 
 } // namespace unisparks

@@ -71,6 +71,11 @@ class Player {
   bool isLooping() const { return loop_; }
 
   /**
+   *  Sets the current pattern and correspondingly resets the next pattern.
+   */
+  void setPattern(PatternBits pattern, Milliseconds currentTime);
+
+  /**
    * Run text command
    */
   const char* command(const char* cmd);

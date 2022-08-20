@@ -254,7 +254,7 @@ class PatternControlMenu {
     overrideButton.off = overrideEnabled_ ? idleEnabledCol : idleCol;
     overrideButton.setLabel(overrideEnabled_ ? "Override ON" : "Override");
   }
-  bool confirmPressed() {
+  bool confirmPressed(Player& player, Milliseconds currentTime) {
     const char* confirmLabel;
     if (state_ == State::kPattern) {
       State nextState = kSelectablePatterns[selectedPatternIndex_].nextState;
@@ -263,19 +263,20 @@ class PatternControlMenu {
         state_ = nextState;
         draw();
       } else {
-        info("Pattern %s confirmed now playing 0x%x",
+        info("Pattern %s confirmed now playing 0x%4x",
              kSelectablePatterns[selectedPatternIndex_].name, kSelectablePatterns[selectedPatternIndex_].bits);
-        // TODO apply randomness to pattern and apply to player
+        setPattern(player, kSelectablePatterns[selectedPatternIndex_].bits, currentTime);
         return true;
       }
     }
     return false;
   }
  private:
-  void setPattern(PatternBits patternBits) {
-
+  void setPattern(Player& player, PatternBits patternBits, Milliseconds currentTime) {
+    patternBits = randomizePatternBits(patternBits);
+    player.setPattern(patternBits, currentTime);
   }
- void drawConfirmButton() {
+  void drawConfirmButton() {
     const char* confirmLabel;
     switch (kSelectablePatterns[selectedPatternIndex_].nextState) {
       case State::kOff:       confirmLabel = "Error Off"; break;
@@ -287,7 +288,7 @@ class PatternControlMenu {
     confirmButton.setLabel(confirmLabel);
     info("drawing confirm button with label %s", confirmLabel);
     confirmButton.draw();
- }
+  }
   uint8_t dy() {
     if (dy_ == 0) { dy_ = M5.Lcd.fontHeight(); }  // By default this is 22.
     return dy_;
@@ -327,6 +328,7 @@ class PatternControlMenu {
     {"hiphotic",    0xC0000001, State::kPalette},
     {"metaballs",   0xA0000001, State::kPalette},
     {"bursts",      0x80000001, State::kPalette},
+    // TODO add a mode that forces looping through all patterns but with a fixed palette.
     // Non-color special patterns.
     {"synctest",      0x0F0000, State::kConfirmed},
     {"calibration",   0x100000, State::kConfirmed},
@@ -476,7 +478,7 @@ void core2Loop(Player& player, Milliseconds currentTime) {
     gPatternControlMenu.overridePressed();
   }
   if (confirmButton.wasPressed() && gScreenMode == ScreenMode::kPatternControlMenu) {
-    if (gPatternControlMenu.confirmPressed()) {
+    if (gPatternControlMenu.confirmPressed(player, currentTime)) {
       gScreenMode = ScreenMode::kMainMenu;
       hidePatternControlMenuButtons();
       M5.Lcd.fillScreen(BLACK);

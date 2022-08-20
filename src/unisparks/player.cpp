@@ -508,6 +508,31 @@ void Player::next(Milliseconds currentTime) {
   }
 }
 
+void Player::setPattern(PatternBits pattern, Milliseconds currentTime) {
+  info("%u set pattern command received: switching from %s (%4x) to %s (%4x), currentLeader=" DEVICE_ID_FMT,
+        currentTime, patternName(currentPattern_).c_str(), currentPattern_,
+        patternName(pattern).c_str(), pattern,
+        DEVICE_ID_HEX(currentLeader_));
+  lastUserInputTime_ = currentTime;
+  currentPatternStartTime_ = currentTime;
+  if (loop_ && currentPattern_ == nextPattern_) {
+    currentPattern_ = pattern;
+    nextPattern_ = currentPattern_;
+  } else {
+    currentPattern_ = pattern;
+    nextPattern_ = computeNextPattern(pattern);
+  }
+  checkLeaderAndPattern(currentTime);
+  info("%u set pattern command processed: now current %s (%4x) next %s (%4x), currentLeader=" DEVICE_ID_FMT,
+        currentTime, patternName(currentPattern_).c_str(), currentPattern_,
+        patternName(nextPattern_).c_str(), nextPattern_,
+        DEVICE_ID_HEX(currentLeader_));
+
+  for (Network* network : networks_) {
+    network->triggerSendAsap(currentTime);
+  }
+}
+
 Precedence getPrecedenceGain(Milliseconds epochTime,
                              Milliseconds currentTime,
                              Milliseconds duration,
