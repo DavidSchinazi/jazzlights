@@ -123,6 +123,7 @@ Button unlock1Button(/*x=*/160, /*y=*/0, /*w=*/160, /*h=*/60, /*rot1=*/false, "U
 Button unlock2Button(/*x=*/0, /*y=*/180, /*w=*/160, /*h=*/60, /*rot1=*/false, "Unlock", idleCol, pressedCol);
 std::string gCurrentPatternName;
 constexpr Milliseconds kLockDelay = 60000;
+constexpr Milliseconds kUnlockingTime = 5000;
 Milliseconds gLastScreenInteractionTime = -1;
 
 void setupButtonsDrawZone() {
@@ -617,12 +618,14 @@ void core2Loop(Player& player, Milliseconds currentTime) {
          currentTime, px, py, freeHeap, totalHeap, freePSRAM, totalPSRAM);
     switch (gScreenMode) {
     case ScreenMode::kOff: {
-      info("%u unlocking from button press", currentTime);
+      gLastScreenInteractionTime = currentTime;
       setCore2ScreenBrightness(gOnBrightness);
 #if BUTTON_LOCK
+      info("%u starting unlock sequence from button press", currentTime);
       gScreenMode = ScreenMode::kLocked1;
       unlock1Button.draw();
 #else  // BUTTON_LOCK
+      info("%u unlocking from button press", currentTime);
       startMainMenu(player, currentTime);
       gLastScreenInteractionTime = currentTime;
 #endif  // BUTTON_LOCK
@@ -646,6 +649,11 @@ void core2Loop(Player& player, Milliseconds currentTime) {
     case ScreenMode::kPatternControlMenu: {
     } break;
     case ScreenMode::kSystemMenu: {
+    } break;
+    case ScreenMode::kLocked1:  // fallthrough.
+    case ScreenMode::kLocked2: {
+      info("%u locking screen due to background press while unlocking");
+      lockScreen(currentTime);
     } break;
     }
   }
@@ -760,9 +768,9 @@ void core2Loop(Player& player, Milliseconds currentTime) {
     }
   }
   if (unlock2Button.wasPressed()) {
+    gLastScreenInteractionTime = currentTime;
     if (gScreenMode == ScreenMode::kLocked2) {
       info("%u unlock2 button pressed", currentTime);
-      gLastScreenInteractionTime = currentTime;
       unlock2Button.hide();
       startMainMenu(player, currentTime);
     } else if (gScreenMode == ScreenMode::kMainMenu) {
@@ -779,16 +787,15 @@ void core2Loop(Player& player, Milliseconds currentTime) {
     }
   }
   if (unlock1Button.wasPressed()) {
+    gLastScreenInteractionTime = currentTime;
     if (gScreenMode == ScreenMode::kLocked1) {
       info("%u unlock1 button pressed", currentTime);
-      gLastScreenInteractionTime = currentTime;
       gScreenMode = ScreenMode::kLocked2;
       unlock1Button.hide();
       M5.Lcd.fillScreen(BLACK);
       unlock2Button.draw();
     } else if (gScreenMode == ScreenMode::kMainMenu) {
       info("%u unlock1 button unexpectedly pressed in main menu, treating as next button", currentTime);
-      gLastScreenInteractionTime = currentTime;
       player.next(currentTime);
     } else {
       info("%u ignoring unlock1 button pressed", currentTime);
@@ -803,9 +810,15 @@ void core2Loop(Player& player, Milliseconds currentTime) {
     }
   }
 #if BUTTON_LOCK
-  if (gLastScreenInteractionTime >= 0 && currentTime - gLastScreenInteractionTime > kLockDelay) {
-    info("%u Locking screen due to inactivity", currentTime);
-    lockScreen(currentTime);
+  if (gLastScreenInteractionTime >= 0) {
+    Milliseconds lockTime = kLockDelay;
+    if (gScreenMode == ScreenMode::kLocked1 || gScreenMode == ScreenMode::kLocked2) {
+      lockTime = kUnlockingTime;
+    }
+    if (currentTime - gLastScreenInteractionTime > lockTime) {
+      info("%u Locking screen due to inactivity", currentTime);
+      lockScreen(currentTime);
+    }
   }
 #endif  // BUTTON_LOCK
 }
