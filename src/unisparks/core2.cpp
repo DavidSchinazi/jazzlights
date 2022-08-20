@@ -384,6 +384,8 @@ void core2Loop(Player& player, Milliseconds currentTime) {
   if (M5.background.wasPressed()) {
     uint32_t freeHeap = ESP.getFreeHeap();
     uint32_t totalHeap = ESP.getHeapSize();
+    // TODO enable PSRAM by adding "-DBOARD_HAS_PSRAM" and "-mfix-esp32-psram-cache-issue" to build_flags in platformio.ini
+    // https://thingpulse.com/esp32-how-to-use-psram/
     uint32_t freePSRAM = ESP.getFreePsram();
     uint32_t totalPSRAM = ESP.getPsramSize();
     ::Point pressed = M5.background.event.from;
