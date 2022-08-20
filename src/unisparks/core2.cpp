@@ -204,7 +204,14 @@ class PatternControlMenu {
                             kPaletteNames[i],
                             i == selectedPaletteIndex_);
       }
-      M5.Lcd.setTextColor(WHITE, BLACK);
+    } break;
+    case State::kColor: {
+      M5.Lcd.fillRect(x_, /*y=*/0, /*w=*/155, /*h=*/240, BLACK);
+      for (uint8_t i = 0; i < kNumColors; i++) {
+        drawPatternTextLine(i,
+                            kColorNames[i],
+                            i == selectedColorIndex_);
+      }
     } break;
     }
     drawConfirmButton();
@@ -234,6 +241,12 @@ class PatternControlMenu {
         drawPatternTextLine(selectedPaletteIndex_, kPaletteNames[selectedPaletteIndex_], /*selected=*/false);
         selectedPaletteIndex_++;
         drawPatternTextLine(selectedPaletteIndex_, kPaletteNames[selectedPaletteIndex_], /*selected=*/true);
+      }
+    } else if (state_ == State::kColor) {
+      if (selectedColorIndex_ < kNumColors - 1) {
+        drawPatternTextLine(selectedColorIndex_, kColorNames[selectedColorIndex_], /*selected=*/false);
+        selectedColorIndex_++;
+        drawPatternTextLine(selectedColorIndex_, kColorNames[selectedColorIndex_], /*selected=*/true);
       }
     }
   }
@@ -268,6 +281,12 @@ class PatternControlMenu {
         drawPatternTextLine(selectedPaletteIndex_, kPaletteNames[selectedPaletteIndex_], /*selected=*/false);
         selectedPaletteIndex_--;
         drawPatternTextLine(selectedPaletteIndex_, kPaletteNames[selectedPaletteIndex_], /*selected=*/true);
+      }
+    } else if (state_ == State::kColor) {
+      if (selectedColorIndex_ > 0) {
+        drawPatternTextLine(selectedColorIndex_, kColorNames[selectedColorIndex_], /*selected=*/false);
+        selectedColorIndex_--;
+        drawPatternTextLine(selectedColorIndex_, kColorNames[selectedColorIndex_], /*selected=*/true);
       }
     }
   }
@@ -304,6 +323,11 @@ class PatternControlMenu {
              currentTime, kSelectablePatterns[selectedPatternIndex_].name,
              kPaletteNames[selectedPaletteIndex_]);
         return setPatternWithPalette(player, kSelectablePatterns[selectedPatternIndex_].bits, selectedPaletteIndex_, currentTime);
+    } else if (state_ == State::kColor) {
+        info("%u Pattern %s and color %s confirmed now playing",
+             currentTime, kSelectablePatterns[selectedPatternIndex_].name,
+             kColorNames[selectedColorIndex_]);
+        return setPatternWithColor(player, kSelectablePatterns[selectedPatternIndex_].bits, selectedColorIndex_, currentTime);
     }
     return false;
   }
@@ -316,6 +340,12 @@ class PatternControlMenu {
   }
   bool setPatternWithPalette(Player& player, PatternBits patternBits, uint8_t palette, Milliseconds currentTime) {
     return setPattern(player, patternBits | (palette << 13), currentTime);
+  }
+  bool setPatternWithColor(Player& player, PatternBits patternBits, uint8_t color, Milliseconds currentTime) {
+    if (patternBits == 0x70000 && color == 0) {  // glow-black is just solid-black.
+      return setPattern(player, 0, currentTime);
+    }
+    return setPattern(player, patternBits + color * 0x10000, currentTime);
   }
   void drawConfirmButton() {
     const char* confirmLabel;
@@ -404,6 +434,17 @@ class PatternControlMenu {
     "party",
     "forest",
     "rainbow",
+  };
+  static constexpr size_t kNumColors = 8;
+  const char* kColorNames[kNumColors] = {
+    "black",
+    "red",
+    "green",
+    "blue",
+    "purple",
+    "cyan",
+    "yellow",
+    "white",
   };
   State state_ = State::kOff;
   // SelectablePattern selectablePattern = SelectablePattern("flame", 0x60000001, State::kConfirmed);
