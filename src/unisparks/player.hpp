@@ -116,6 +116,7 @@ class Player {
 
   void setBasePrecedence(Precedence basePrecedence) {basePrecedence_ = basePrecedence; }
   void setPrecedenceGain(Precedence precedenceGain) {precedenceGain_ = precedenceGain; }
+  void updatePrecedence(Precedence basePrecedence, Precedence precedenceGain, Milliseconds currentTime);
   void setRandomizeLocalDeviceId(bool val) { randomizeLocalDeviceId_ = val; }
 
   PredictableRandom* predictableRandom() { return &predictableRandom_; }

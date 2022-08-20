@@ -368,6 +368,18 @@ void Player::begin(Milliseconds currentTime) {
   nextPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
 }
 
+void Player::updatePrecedence(Precedence basePrecedence, Precedence precedenceGain, Milliseconds currentTime) {
+  if (basePrecedence == basePrecedence_ && precedenceGain == precedenceGain_) { return; }
+  basePrecedence_ = basePrecedence;
+  precedenceGain_ = precedenceGain;
+  info("%u updating precedence to base %u gain %u", currentTime, basePrecedence, precedenceGain);
+  if (!ready_) { return; }
+  checkLeaderAndPattern(currentTime);
+  for (Network* network : networks_) {
+    network->triggerSendAsap(currentTime);
+  }
+}
+
 void Player::handleSpecial(Milliseconds currentTime) {
   static constexpr PatternBits kSpecialPatternBits[] = {
     0x00100000,  // calibration.
@@ -695,13 +707,14 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
       currentPattern_ = entry->currentPattern;
       info("%u Following " DEVICE_ID_FMT ".p%u nh=%u %s new currentPattern %s (%4x) %u FPS",
           currentTime, DEVICE_ID_HEX(originator), precedence, currentNumHops_,
-          followedNextHopNetwork_->networkName(),
+          (followedNextHopNetwork_ != nullptr ? followedNextHopNetwork_->networkName() : "null"),
           patternName(currentPattern_).c_str(), currentPattern_, fps());
       lastLEDWriteTime_ = -1;
       shouldBeginPattern_ = true;
     }
   } else {
     // We are currently leading.
+    followedNextHopNetwork_ = nullptr;
     currentNumHops_ = 0;
     lastOriginationTime = currentTime;
     while (currentTime - currentPatternStartTime_ > kEffectDuration) {

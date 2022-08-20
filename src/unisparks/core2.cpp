@@ -231,6 +231,14 @@ void hideSystemMenuButtons() {
   shutdownButton.hide();
 }
 
+void setDefaultPrecedence(Player& player, Milliseconds currentTime) {
+  player.updatePrecedence(4000, 1000, currentTime);
+}
+
+void setOverridePrecedence(Player& player, Milliseconds currentTime) {
+  player.updatePrecedence(36000, 5000, currentTime);
+}
+
 class PatternControlMenu {
  public:
   void draw() {
@@ -363,10 +371,15 @@ class PatternControlMenu {
     draw();
     return false;
   }
-  void overridePressed() {
+  void overridePressed(Player& player, Milliseconds currentTime) {
     overrideEnabled_ = !overrideEnabled_;
     overrideButton.off = overrideEnabled_ ? idleEnabledCol : idleCol;
     overrideButton.setLabel(overrideEnabled_ ? "Override ON" : "Override");
+    if (overrideEnabled_) {
+      setOverridePrecedence(player, currentTime);
+    } else {
+      setDefaultPrecedence(player, currentTime);
+    }
   }
   bool confirmPressed(Player& player, Milliseconds currentTime) {
     const char* confirmLabel;
@@ -538,6 +551,7 @@ void core2SetupStart(Player& player, Milliseconds currentTime) {
   unlock2Button.drawFn = drawButtonButOnlyInLocked2;
   setupButtonsDrawZone();
   player.addStrand(core2ScreenPixels, core2ScreenRenderer);
+  setDefaultPrecedence(player, currentTime);
 }
 
 void startMainMenu(Player& player, Milliseconds currentTime) {
@@ -716,7 +730,7 @@ void core2Loop(Player& player, Milliseconds currentTime) {
     if (gScreenMode == ScreenMode::kPatternControlMenu) {
       info("%u override button pressed", currentTime);
       gLastScreenInteractionTime = currentTime;
-      gPatternControlMenu.overridePressed();
+      gPatternControlMenu.overridePressed(player, currentTime);
     } else {
       info("%u ignoring override button pressed", currentTime);
     }
