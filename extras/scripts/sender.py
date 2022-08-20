@@ -122,6 +122,9 @@ def getTimeMillis():
   return int(time.time() * 1000)
 
 startTimeThisPattern = getTimeMillis()
+lastSendErrorPrintTime = -1
+lastSendErrorStr = ''
+MAX_ERROR_WINDOW = 5000
 
 while True:
   timeDeltaSinceOrigination = 0
@@ -136,5 +139,13 @@ while True:
                               precedence, numHops, timeDeltaSinceOrigination,
                               currentPattern, nextPattern, timeDeltaSinceStartOfCurrentPattern)
   # print(messageToSend)
-  s.sendto(messageToSend, (MCADDR, PORT))
+  try:
+    s.sendto(messageToSend, (MCADDR, PORT))
+    lastSendErrorStr = ''
+  except OSError as e:
+    errorTime = getTimeMillis()
+    if str(e) != lastSendErrorStr or lastSendErrorPrintTime < 0 or errorTime - lastSendErrorPrintTime > MAX_ERROR_WINDOW:
+      lastSendErrorStr = str(e)
+      lastSendErrorPrintTime = errorTime
+      print("Send failure: {}".format(lastSendErrorStr))
   time.sleep(0.1)
