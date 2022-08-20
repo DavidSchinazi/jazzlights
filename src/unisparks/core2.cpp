@@ -342,6 +342,7 @@ class PatternControlMenu {
   bool setPatternWithPalette(Player& player, PatternBits patternBits, uint8_t palette, Milliseconds currentTime) {
     if (patternBits == 0x00FF0000) {  // forced palette.
       player.forcePalette(palette, currentTime);
+      state_ = State::kOff;
       return true;
     }
     player.stopForcePalette(currentTime);
