@@ -169,7 +169,7 @@ void vestLoop(void) {
     getBrightness(), brightness,                                                              // Desired and selected brightness
     powerAtFullBrightness * brightness / 256, powerAtFullBrightness * brightness / 256 / 5,   // Selected power & current
     player.powerLimited ? " (limited)" : "");
-#endif
+#endif  // MAX_MILLIWATTS
 
   mainVestController->showLeds(brightness);
 #if LEDNUM2
