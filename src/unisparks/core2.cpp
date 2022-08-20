@@ -117,6 +117,12 @@ void setupButtonsDrawZone() {
   }
 }
 
+void drawButtonButNotInMainMenu(Button& b, ButtonColors bc) {
+  if (gScreenMode != ScreenMode::kMainMenu) {
+    M5Buttons::drawFunction(b, bc);
+  }
+}
+
 void drawPatternControlButton(Button& b, ButtonColors bc) {
   if (gScreenMode != ScreenMode::kMainMenu) { return; }
   info("drawing pattern control button bg 0x%x outline 0x%x text 0x%x",
@@ -164,6 +170,7 @@ void hidePatternControlMenuButtons() {
 class PatternControlMenu {
  public:
   void draw() {
+    info("PatternControlMenu::draw()");
     // Reset text datum and color in case we need to draw any.
     M5.Lcd.setTextDatum(TL_DATUM);  // Top Left.
     M5.Lcd.setTextColor(WHITE, BLACK);
@@ -252,10 +259,13 @@ class PatternControlMenu {
     if (state_ == State::kPattern) {
       State nextState = kSelectablePatterns[selectedPatternIndex_].nextState;
       if (nextState == State::kPalette || nextState == State::kColor) {
+        info("Pattern %s confirmed now asking for %s", (nextState == State::kPalette ? "palette" : "color"));
         state_ = nextState;
         draw();
       } else {
-        // apply randomness to pattern and apply to player
+        info("Pattern %s confirmed now playing 0x%x",
+             kSelectablePatterns[selectedPatternIndex_].name, kSelectablePatterns[selectedPatternIndex_].bits);
+        // TODO apply randomness to pattern and apply to player
         return true;
       }
     }
@@ -275,6 +285,7 @@ class PatternControlMenu {
       case State::kConfirmed: confirmLabel = "Confirm"; break;
     }
     confirmButton.setLabel(confirmLabel);
+    info("drawing confirm button with label %s", confirmLabel);
     confirmButton.draw();
  }
   uint8_t dy() {
@@ -369,6 +380,8 @@ void core2SetupStart(Player& player) {
   M5.Lcd.fillScreen(BLACK);
   hidePatternControlMenuButtons();
   patternControlButton.drawFn = drawPatternControlButton;
+  backButton.drawFn = drawButtonButNotInMainMenu;
+  confirmButton.drawFn = drawButtonButNotInMainMenu;
   setupButtonsDrawZone();
   player.addStrand(core2ScreenPixels, core2ScreenRenderer);
 }
@@ -464,6 +477,7 @@ void core2Loop(Player& player, Milliseconds currentTime) {
   }
   if (confirmButton.wasPressed() && gScreenMode == ScreenMode::kPatternControlMenu) {
     if (gPatternControlMenu.confirmPressed()) {
+      gScreenMode = ScreenMode::kMainMenu;
       hidePatternControlMenuButtons();
       M5.Lcd.fillScreen(BLACK);
       drawMainMenuButtons();
