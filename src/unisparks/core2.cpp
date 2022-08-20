@@ -6,6 +6,8 @@
 
 namespace unisparks {
 
+constexpr uint8_t kDefaultOnBrightness = 12;
+uint8_t gOnBrightness = kDefaultOnBrightness;
 void setCore2ScreenBrightness(uint8_t brightness, bool allowUnsafe = false) {
   // brightness of 0 means backlight off.
   // max safe brightness is 20, max unsafe brightness is 36.
@@ -24,6 +26,8 @@ void setCore2ScreenBrightness(uint8_t brightness, bool allowUnsafe = false) {
 }
 
 enum class ScreenMode {
+  kOff,
+  kLocked,
   kMainMenu,
   kFullScreenPattern,
   kPatternControlMenu,
@@ -107,6 +111,7 @@ Button downButton(/*x=*/80, /*y=*/60, /*w=*/80, /*h=*/60, /*rot1=*/false, "Down"
 Button upButton(/*x=*/0, /*y=*/60, /*w=*/80, /*h=*/60, /*rot1=*/false, "Up", idleCol, pressedCol);
 Button overrideButton(/*x=*/0, /*y=*/120, /*w=*/160, /*h=*/60, /*rot1=*/false, "Override", idleCol, pressedCol);
 Button confirmButton(/*x=*/0, /*y=*/180, /*w=*/160, /*h=*/60, /*rot1=*/false, "Confirm", idleCol, pressedCol);
+Button lockButton(/*x=*/160, /*y=*/180, /*w=*/160, /*h=*/60, /*rot1=*/false, "Lock", idleCol, pressedCol);
 std::string gCurrentPatternName;
 
 void setupButtonsDrawZone() {
@@ -183,11 +188,13 @@ void hidePatternControlMenuButtons() {
 void drawSystemMenuButtons() {
   info("drawSystemMenuButtons");
   backButton.draw();
+  lockButton.draw();
 }
 
 void hideSystemMenuButtons() {
   info("hideSystemMenuButtons");
   backButton.hide();
+  lockButton.hide();
 }
 
 class PatternControlMenu {
@@ -484,13 +491,22 @@ void core2SetupStart(Player& player) {
   systemButton.drawFn = drawSystemButton;
   backButton.drawFn = drawButtonButNotInMainMenu;
   confirmButton.drawFn = drawButtonButNotInMainMenu;
+  lockButton.drawFn = drawButtonButNotInMainMenu;
   setupButtonsDrawZone();
   player.addStrand(core2ScreenPixels, core2ScreenRenderer);
+  setCore2ScreenBrightness(gOnBrightness);
 }
 
 void core2SetupEnd(Player& player) {
   gCurrentPatternName = player.currentEffectName();
   drawMainMenuButtons();
+}
+
+void startMainMenu(Player& player, Milliseconds currentTime) {
+  gScreenMode = ScreenMode::kMainMenu;
+  M5.Lcd.fillScreen(BLACK);
+  drawMainMenuButtons();
+  core2ScreenRenderer.setEnabled(true);
 }
 
 void core2Loop(Player& player, Milliseconds currentTime) {
@@ -519,11 +535,9 @@ void core2Loop(Player& player, Milliseconds currentTime) {
       }
     } break;
     case ScreenMode::kFullScreenPattern: {
-      gScreenMode = ScreenMode::kMainMenu;
       info("%u full screen pattern pressed", currentTime);
       core2ScreenRenderer.setFullScreen(false);
-      M5.Lcd.fillScreen(BLACK);
-      drawMainMenuButtons();
+      startMainMenu(player, currentTime);
     } break;
     case ScreenMode::kPatternControlMenu: {
     } break;
@@ -571,12 +585,9 @@ void core2Loop(Player& player, Milliseconds currentTime) {
     info("%u back button pressed", currentTime);
     if (gScreenMode == ScreenMode::kSystemMenu ||
         gScreenMode == ScreenMode::kPatternControlMenu && gPatternControlMenu.backPressed()) {
-      gScreenMode = ScreenMode::kMainMenu;
       hidePatternControlMenuButtons();
       hideSystemMenuButtons();
-      M5.Lcd.fillScreen(BLACK);
-      drawMainMenuButtons();
-      core2ScreenRenderer.setEnabled(true);
+      startMainMenu(player, currentTime);
     }
   }
   if (downButton.wasPressed() && gScreenMode == ScreenMode::kPatternControlMenu) {
@@ -590,12 +601,20 @@ void core2Loop(Player& player, Milliseconds currentTime) {
   }
   if (confirmButton.wasPressed() && gScreenMode == ScreenMode::kPatternControlMenu) {
     if (gPatternControlMenu.confirmPressed(player, currentTime)) {
-      gScreenMode = ScreenMode::kMainMenu;
       hidePatternControlMenuButtons();
-      M5.Lcd.fillScreen(BLACK);
-      drawMainMenuButtons();
-      core2ScreenRenderer.setEnabled(true);
+      startMainMenu(player, currentTime);
     }
+  }
+  if (M5.background.wasPressed() && gScreenMode == ScreenMode::kOff) {
+    info("%u unlocking from button press", currentTime);
+    setCore2ScreenBrightness(gOnBrightness);
+    startMainMenu(player, currentTime);
+  }
+  if (lockButton.wasPressed() && gScreenMode == ScreenMode::kSystemMenu) {
+    info("%u lock button pressed", currentTime);
+    gScreenMode = ScreenMode::kOff;
+    hideSystemMenuButtons();
+    setCore2ScreenBrightness(0);
   }
   std::string patternName = player.currentEffectName();
   if (patternName != gCurrentPatternName) {
