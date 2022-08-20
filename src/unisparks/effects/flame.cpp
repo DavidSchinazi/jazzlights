@@ -2,6 +2,7 @@
 
 #include <assert.h>
 
+#include "unisparks/config.h"
 #include "unisparks/player.hpp"
 #include "unisparks/util/color.hpp"
 #include "unisparks/util/math.hpp"
@@ -9,6 +10,16 @@
 namespace unisparks {
 using internal::scale8_video;
 using internal::qsub8;
+
+namespace {
+#if IS_CAPTAIN_HAT
+constexpr uint8_t kIgnitionMin = 0;
+constexpr uint8_t kIgnitionMax = 15;
+#else  // IS_CAPTAIN_HAT
+constexpr uint8_t kIgnitionMin = 160;
+constexpr uint8_t kIgnitionMax = 255;
+#endif  // IS_CAPTAIN_HAT
+}  // namespace
 
 RgbaColor heatColor(uint8_t temperature) {
   uint8_t r, g, b;
@@ -71,7 +82,7 @@ void Flame::innerRewind(const Frame& frame, FlameState* state) const {
     ps(x, 1) = ps(x, 0);
 
     // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
-    ps(x, 0) = frame.predictableRandom->GetRandomNumberBetween(160, 255);
+    ps(x, 0) = frame.predictableRandom->GetRandomNumberBetween(kIgnitionMin, kIgnitionMax);
   }
 }
 
