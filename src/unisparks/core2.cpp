@@ -99,6 +99,8 @@ Button loopButton(/*x=*/160, /*y=*/60, /*w=*/160, /*h=*/60, /*rot1=*/false, "Loo
 Button patternControlButton(/*x=*/0, /*y=*/120, /*w=*/160, /*h=*/120, /*rot1=*/false,
                             "Pattern Control", idleCol, pressedCol,
                             BUTTON_DATUM, /*dx=*/0, /*dy=*/-25);
+Button systemButton(/*x=*/160, /*y=*/120, /*w=*/160, /*h=*/120, /*rot1=*/false,
+                    "System", idleCol, pressedCol, BUTTON_DATUM, /*dx=*/0, /*dy=*/-25);
 Button backButton(/*x=*/0, /*y=*/0, /*w=*/160, /*h=*/60, /*rot1=*/false, "Back", idleCol, pressedCol);
 // TODO split the player in half so we can render the selected pattern in the right half of the Back button.
 Button downButton(/*x=*/80, /*y=*/60, /*w=*/80, /*h=*/60, /*rot1=*/false, "Down", idleCol, pressedCol);
@@ -135,11 +137,21 @@ void drawPatternControlButton(Button& b, ButtonColors bc) {
   M5.Lcd.drawString(gCurrentPatternName.c_str(), /*x=*/80, /*y=*/210);
 }
 
+void drawSystemButton(Button& b, ButtonColors bc) {
+  if (gScreenMode != ScreenMode::kMainMenu) { return; }
+  info("drawing system button bg 0x%x outline 0x%x text 0x%x",
+       bc.bg, bc.outline, bc.text);
+  // First call default draw function to draw button text, outline, and background.
+  M5Buttons::drawFunction(b, bc);
+  // TODO add custom system info.
+}
+
 void drawMainMenuButtons() {
   info("drawMainMenuButtons");
   nextButton.draw();
   loopButton.draw();
   patternControlButton.draw();
+  systemButton.draw();
 }
 
 void hideMainMenuButtons() {
@@ -147,6 +159,7 @@ void hideMainMenuButtons() {
   nextButton.hide();
   loopButton.hide();
   patternControlButton.hide();
+  systemButton.hide();
 }
 
 void drawPatternControlMenuButtons() {
@@ -165,6 +178,16 @@ void hidePatternControlMenuButtons() {
   upButton.hide();
   overrideButton.hide();
   confirmButton.hide();
+}
+
+void drawSystemMenuButtons() {
+  info("drawSystemMenuButtons");
+  backButton.draw();
+}
+
+void hideSystemMenuButtons() {
+  info("hideSystemMenuButtons");
+  backButton.hide();
 }
 
 class PatternControlMenu {
@@ -456,7 +479,9 @@ void core2SetupStart(Player& player) {
   // TODO switch mode to kMBusModeInput once we power from pins instead of USB.
   M5.Lcd.fillScreen(BLACK);
   hidePatternControlMenuButtons();
+  hideSystemMenuButtons();
   patternControlButton.drawFn = drawPatternControlButton;
+  systemButton.drawFn = drawSystemButton;
   backButton.drawFn = drawButtonButNotInMainMenu;
   confirmButton.drawFn = drawButtonButNotInMainMenu;
   setupButtonsDrawZone();
@@ -533,12 +558,22 @@ void core2Loop(Player& player, Milliseconds currentTime) {
     drawPatternControlMenuButtons();
     gPatternControlMenu.draw();
   }
-  if (backButton.wasPressed() &&
-      (gScreenMode == ScreenMode::kPatternControlMenu || gScreenMode == ScreenMode::kSystemMenu)) {
+  if (systemButton.wasPressed() && gScreenMode == ScreenMode::kMainMenu) {
+    gScreenMode = ScreenMode::kSystemMenu;
+    info("%u system button pressed", currentTime);
+    hideMainMenuButtons();
+    core2ScreenRenderer.setEnabled(false);
+    M5.Lcd.fillScreen(BLACK);
+    drawSystemMenuButtons();
+    // TODO draw system menu
+  }
+  if (backButton.wasPressed()) {
     info("%u back button pressed", currentTime);
-    if (gPatternControlMenu.backPressed()) {
+    if (gScreenMode == ScreenMode::kSystemMenu ||
+        gScreenMode == ScreenMode::kPatternControlMenu && gPatternControlMenu.backPressed()) {
       gScreenMode = ScreenMode::kMainMenu;
       hidePatternControlMenuButtons();
+      hideSystemMenuButtons();
       M5.Lcd.fillScreen(BLACK);
       drawMainMenuButtons();
       core2ScreenRenderer.setEnabled(true);
@@ -562,10 +597,6 @@ void core2Loop(Player& player, Milliseconds currentTime) {
       core2ScreenRenderer.setEnabled(true);
     }
   }
-  // std::string patternControlLabel = "Pattern 2Control\n3";
-  // patternControlLabel += player.currentEffectName();
-  // patternControlButton.setLabel(patternControlLabel.c_str());
-  // patternControlButton.draw();
   std::string patternName = player.currentEffectName();
   if (patternName != gCurrentPatternName) {
     gCurrentPatternName = patternName;
