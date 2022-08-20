@@ -110,9 +110,9 @@ void XYIndexStore::Reset() {
 PatternBits randomizePatternBits(PatternBits pattern) {
   if ((pattern & 0xFF) != 0) {
     pattern &= 0xF000E000;
-    pattern |= UnpredictableRandom::GetNumberBetween(1, 1 <<  8 - 1);
-    pattern |= UnpredictableRandom::GetNumberBetween(0, 1 <<  5 - 1) << 8;
-    pattern |= UnpredictableRandom::GetNumberBetween(0, 1 << 12 - 1) << 16;
+    pattern |= UnpredictableRandom::GetNumberBetween(1, (1 <<  8) - 1);
+    pattern |= UnpredictableRandom::GetNumberBetween(0, (1 <<  5) - 1) << 8;
+    pattern |= UnpredictableRandom::GetNumberBetween(0, (1 << 12) - 1) << 16;
   }
   return pattern;
 }
