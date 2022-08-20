@@ -568,6 +568,24 @@ void lockScreen(Milliseconds currentTime) {
   M5.Lcd.fillScreen(BLACK);
 }
 
+void patternControlButtonPressed(Player& player, Milliseconds currentTime) {
+  gScreenMode = ScreenMode::kPatternControlMenu;
+  gLastScreenInteractionTime = currentTime;
+  hideMainMenuButtons();
+  core2ScreenRenderer.setEnabled(false);
+  M5.Lcd.fillScreen(BLACK);
+  drawPatternControlMenuButtons();
+  gPatternControlMenu.draw();
+}
+
+void confirmButtonPressed(Player& player, Milliseconds currentTime) {
+  gLastScreenInteractionTime = currentTime;
+  if (gPatternControlMenu.confirmPressed(player, currentTime)) {
+    hidePatternControlMenuButtons();
+    startMainMenu(player, currentTime);
+  }
+}
+
 void core2Loop(Player& player, Milliseconds currentTime) {
   M5.Touch.update();
   M5.Buttons.update();
@@ -645,13 +663,7 @@ void core2Loop(Player& player, Milliseconds currentTime) {
   if (patternControlButton.wasPressed()) {
     if (gScreenMode == ScreenMode::kMainMenu) {
       info("%u pattern control button pressed", currentTime);
-      gScreenMode = ScreenMode::kPatternControlMenu;
-      gLastScreenInteractionTime = currentTime;
-      hideMainMenuButtons();
-      core2ScreenRenderer.setEnabled(false);
-      M5.Lcd.fillScreen(BLACK);
-      drawPatternControlMenuButtons();
-      gPatternControlMenu.draw();
+      patternControlButtonPressed(player, currentTime);
     } else {
       info("%u ignoring pattern control button pressed", currentTime);
     }
@@ -712,11 +724,7 @@ void core2Loop(Player& player, Milliseconds currentTime) {
   if (confirmButton.wasPressed()) {
     if (gScreenMode == ScreenMode::kPatternControlMenu) {
       info("%u confirm button pressed", currentTime);
-      gLastScreenInteractionTime = currentTime;
-      if (gPatternControlMenu.confirmPressed(player, currentTime)) {
-        hidePatternControlMenuButtons();
-        startMainMenu(player, currentTime);
-      }
+      confirmButtonPressed(player, currentTime);
     } else {
       info("%u ignoring confirm button pressed", currentTime);
     }
@@ -743,6 +751,15 @@ void core2Loop(Player& player, Milliseconds currentTime) {
       gLastScreenInteractionTime = currentTime;
       unlock2Button.hide();
       startMainMenu(player, currentTime);
+    } else if (gScreenMode == ScreenMode::kMainMenu) {
+      info("%u unlock2 button unexpectedly pressed in main menu, treating as pattern control button", currentTime);
+      patternControlButtonPressed(player, currentTime);
+    } else if (gScreenMode == ScreenMode::kPatternControlMenu) {
+      info("%u unlock2 button unexpectedly pressed in pattern control menu, treating as confirm button", currentTime);
+      confirmButtonPressed(player, currentTime);
+    } else if (gScreenMode == ScreenMode::kSystemMenu) {
+      info("%u unlock2 button unexpectedly pressed in system menu, treating as shutdown button", currentTime);
+      M5.shutdown();
     } else {
       info("%u ignoring unlock2 button pressed", currentTime);
     }
@@ -755,6 +772,10 @@ void core2Loop(Player& player, Milliseconds currentTime) {
       unlock1Button.hide();
       M5.Lcd.fillScreen(BLACK);
       unlock2Button.draw();
+    } else if (gScreenMode == ScreenMode::kMainMenu) {
+      info("%u unlock1 button unexpectedly pressed in main menu, treating as next button", currentTime);
+      gLastScreenInteractionTime = currentTime;
+      player.next(currentTime);
     } else {
       info("%u ignoring unlock1 button pressed", currentTime);
     }
