@@ -180,6 +180,20 @@ PatternBits computeNextPattern(PatternBits pattern) {
   return pattern;
 }
 
+PatternBits applyPalette(PatternBits pattern, uint8_t palette) {
+  // Avoid any reserved patterns.
+  while (patternIsReserved(pattern)) {
+    pattern = computeNextPattern(pattern);
+  }
+  // Set palette bit.
+  pattern |= 0x80000000;
+  // Clear palette.
+  pattern &= 0xFFFF1FFF;
+  // Set palette.
+  pattern |= palette << 13;
+  return pattern;
+}
+
 auto spin_pattern = clone(SpinPlasma());
 auto hiphotic_pattern = clone(Hiphotic());
 auto metaballs_pattern = clone(Metaballs());
@@ -214,6 +228,7 @@ Effect* patternFromBits(PatternBits pattern) {
         case 0x0F: return &synctest;
         case 0x10: return &calibration_effect;
         case 0x11: return &follow_strand_effect;
+        // 0xFF is reserved for looping through all patterns from palette.
       }
     }
     return &red_effect;
@@ -349,8 +364,8 @@ void Player::begin(Milliseconds currentTime) {
   ready_ = true;
 
   currentPatternStartTime_ = currentTime;
-  currentPattern_ = 0xef74ab26;
-  nextPattern_ = computeNextPattern(currentPattern_);
+  currentPattern_ = enforceForcedPalette(0xef74ab26);
+  nextPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
 }
 
 void Player::handleSpecial(Milliseconds currentTime) {
@@ -378,8 +393,8 @@ void Player::stopSpecial(Milliseconds currentTime) {
   }
   info("%u Stopping special mode", currentTime);
   specialMode_ = 0;
-  currentPattern_ = computeNextPattern(currentPattern_);
-  nextPattern_ = computeNextPattern(currentPattern_);
+  currentPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
+  nextPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
 }
 
 #if FAIRY_WAND
@@ -491,11 +506,11 @@ void Player::next(Milliseconds currentTime) {
   lastUserInputTime_ = currentTime;
   currentPatternStartTime_ = currentTime;
   if (loop_ && currentPattern_ == nextPattern_) {
-    currentPattern_ = computeNextPattern(currentPattern_);
+    currentPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
     nextPattern_ = currentPattern_;
   } else {
     currentPattern_ = nextPattern_;
-    nextPattern_ = computeNextPattern(nextPattern_);
+    nextPattern_ = enforceForcedPalette(computeNextPattern(nextPattern_));
   }
   checkLeaderAndPattern(currentTime);
   info("%u next command processed: now current %s (%4x) next %s (%4x), currentLeader=" DEVICE_ID_FMT,
@@ -515,12 +530,11 @@ void Player::setPattern(PatternBits pattern, Milliseconds currentTime) {
         DEVICE_ID_HEX(currentLeader_));
   lastUserInputTime_ = currentTime;
   currentPatternStartTime_ = currentTime;
+  currentPattern_ = pattern;
   if (loop_ && currentPattern_ == nextPattern_) {
-    currentPattern_ = pattern;
     nextPattern_ = currentPattern_;
   } else {
-    currentPattern_ = pattern;
-    nextPattern_ = computeNextPattern(pattern);
+    nextPattern_ = enforceForcedPalette(computeNextPattern(pattern));
   }
   checkLeaderAndPattern(currentTime);
   info("%u set pattern command processed: now current %s (%4x) next %s (%4x), currentLeader=" DEVICE_ID_FMT,
@@ -531,6 +545,27 @@ void Player::setPattern(PatternBits pattern, Milliseconds currentTime) {
   for (Network* network : networks_) {
     network->triggerSendAsap(currentTime);
   }
+}
+
+void Player::forcePalette(uint8_t palette, Milliseconds currentTime) {
+  info("%u Forcing palette %u", currentTime, palette);
+  paletteIsForced_ = true;
+  forcedPalette_ = palette;
+  setPattern(enforceForcedPalette(currentPattern_), currentTime);
+}
+
+void Player::stopForcePalette(Milliseconds currentTime) {
+  if (!paletteIsForced_) { return; }
+  info("%u Stop forcing palette %u", currentTime, forcedPalette_);
+  paletteIsForced_ = false;
+  forcedPalette_ = 0;
+}
+
+PatternBits Player::enforceForcedPalette(PatternBits pattern) {
+  if (paletteIsForced_) {
+    pattern = applyPalette(pattern, forcedPalette_);
+  }
+  return pattern;
 }
 
 Precedence getPrecedenceGain(Milliseconds epochTime,
@@ -675,7 +710,7 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
         nextPattern_ = currentPattern_;
       } else {
         currentPattern_ = nextPattern_;
-        nextPattern_ = computeNextPattern(nextPattern_);
+        nextPattern_ = enforceForcedPalette(computeNextPattern(nextPattern_));
       }
       info("%u We (" DEVICE_ID_FMT ".p%u) are leading, new currentPattern %s (%4x) %u FPS",
           currentTime, DEVICE_ID_HEX(localDeviceId_), precedence,
@@ -960,7 +995,7 @@ void Player::stopLooping(Milliseconds currentTime) {
   }
   info("%u Stopping loop", currentTime);
   loop_ = false;
-  nextPattern_ = computeNextPattern(currentPattern_);
+  nextPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
 }
 
 const char* Player::command(const char* req) {

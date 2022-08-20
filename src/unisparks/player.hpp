@@ -76,6 +76,16 @@ class Player {
   void setPattern(PatternBits pattern, Milliseconds currentTime);
 
   /**
+   *  Forces the rotation to always use this palette.
+   */
+  void forcePalette(uint8_t palette, Milliseconds currentTime);
+
+  /**
+   *  Cancels previous call to forcePalette.
+   */
+  void stopForcePalette(Milliseconds currentTime);
+
+  /**
    * Run text command
    */
   const char* command(const char* cmd);
@@ -134,6 +144,7 @@ class Player {
 
   OriginatorEntry* getOriginatorEntry(NetworkDeviceId originator, Milliseconds currentTime);
   void checkLeaderAndPattern(Milliseconds currentTime);
+  PatternBits enforceForcedPalette(PatternBits pattern);
 
   bool ready_ = false;
 
@@ -176,6 +187,9 @@ class Player {
   Frame frame_;
   PredictableRandom predictableRandom_;
   XYIndexStore xyIndexStore_;
+
+  bool paletteIsForced_ = false;
+  uint8_t forcedPalette_ = 0;
 
   uint32_t fps_ = 0;
   Milliseconds lastFpsProbeTime_ = 0;

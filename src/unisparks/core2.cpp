@@ -105,7 +105,7 @@ Button downButton(/*x=*/80, /*y=*/60, /*w=*/80, /*h=*/60, /*rot1=*/false, "Down"
 Button upButton(/*x=*/0, /*y=*/60, /*w=*/80, /*h=*/60, /*rot1=*/false, "Up", idleCol, pressedCol);
 Button overrideButton(/*x=*/0, /*y=*/120, /*w=*/160, /*h=*/60, /*rot1=*/false, "Override", idleCol, pressedCol);
 Button confirmButton(/*x=*/0, /*y=*/180, /*w=*/160, /*h=*/60, /*rot1=*/false, "Confirm", idleCol, pressedCol);
-std::string currentPatternName;
+std::string gCurrentPatternName;
 
 void setupButtonsDrawZone() {
   constexpr int16_t kButtonDrawOffset = 3;
@@ -132,7 +132,7 @@ void drawPatternControlButton(Button& b, ButtonColors bc) {
   // Then add custom pattern string.
   M5.Lcd.setTextColor(bc.text, bc.bg);
   M5.Lcd.setTextDatum(BC_DATUM);  // Bottom Center.
-  M5.Lcd.drawString(currentPatternName.c_str(), /*x=*/80, /*y=*/210);
+  M5.Lcd.drawString(gCurrentPatternName.c_str(), /*x=*/80, /*y=*/210);
 }
 
 void drawMainMenuButtons() {
@@ -316,6 +316,7 @@ class PatternControlMenu {
         draw();
       } else {
         info("%u Pattern %s confirmed now playing", currentTime, kSelectablePatterns[selectedPatternIndex_].name);
+        player.stopForcePalette(currentTime);
         return setPattern(player, kSelectablePatterns[selectedPatternIndex_].bits, currentTime);
       }
     } else if (state_ == State::kPalette) {
@@ -339,9 +340,15 @@ class PatternControlMenu {
     return true;
   }
   bool setPatternWithPalette(Player& player, PatternBits patternBits, uint8_t palette, Milliseconds currentTime) {
+    if (patternBits == 0x00FF0000) {  // forced palette.
+      player.forcePalette(palette, currentTime);
+      return true;
+    }
+    player.stopForcePalette(currentTime);
     return setPattern(player, patternBits | (palette << 13), currentTime);
   }
   bool setPatternWithColor(Player& player, PatternBits patternBits, uint8_t color, Milliseconds currentTime) {
+    player.stopForcePalette(currentTime);
     if (patternBits == 0x70000 && color == 0) {  // glow-black is just solid-black.
       return setPattern(player, 0, currentTime);
     }
@@ -386,7 +393,7 @@ class PatternControlMenu {
     State nextState;
   };
   static constexpr uint8_t kNumRegularPatterns = 5 + 4;
-  static constexpr uint8_t kNumSpecialPatterns = 3 + 2;
+  static constexpr uint8_t kNumSpecialPatterns = 3 + 2 + 1;
   SelectablePattern kSelectablePatterns[kNumRegularPatterns + kNumSpecialPatterns] = {
     // Non-palette regular patterns.
     {"flame",       0x60000001, State::kConfirmed},
@@ -399,7 +406,6 @@ class PatternControlMenu {
     {"hiphotic",    0xC0000001, State::kPalette},
     {"metaballs",   0xA0000001, State::kPalette},
     {"bursts",      0x80000001, State::kPalette},
-    // TODO add a mode that forces looping through all patterns but with a fixed palette.
     // Non-color special patterns.
     {"synctest",      0x0F0000, State::kConfirmed},
     {"calibration",   0x100000, State::kConfirmed},
@@ -407,23 +413,8 @@ class PatternControlMenu {
     // Color special patterns.
     {"solid",          0x00000, State::kColor},
     {"glow",           0x70000, State::kColor},
-    /*
-    {"black",          0x00000, State::kConfirmed},
-    {"red",            0x10000, State::kConfirmed},
-    {"green",          0x20000, State::kConfirmed},
-    {"blue",           0x30000, State::kConfirmed},
-    {"purple",         0x40000, State::kConfirmed},
-    {"cyan",           0x50000, State::kConfirmed},
-    {"yellow",         0x60000, State::kConfirmed},
-    {"white",          0x70000, State::kConfirmed},
-    {"glow-red",       0x80000, State::kConfirmed},
-    {"glow-green",     0x90000, State::kConfirmed},
-    {"glow-blue",      0xA0000, State::kConfirmed},
-    {"glow-purple",    0xB0000, State::kConfirmed},
-    {"glow-cyan",      0xC0000, State::kConfirmed},
-    {"glow-yellow",    0xD0000, State::kConfirmed},
-    {"glow-white",     0xE0000, State::kConfirmed},
-    */
+    // All -palette pattern.
+    {"all-palette", 0x00FF0000, State::kPalette},
   };
   static constexpr size_t kNumPalettes = 7;
   const char* kPaletteNames[kNumPalettes] = {
@@ -472,7 +463,7 @@ void core2SetupStart(Player& player) {
 }
 
 void core2SetupEnd(Player& player) {
-  currentPatternName = player.currentEffectName();
+  gCurrentPatternName = player.currentEffectName();
   drawMainMenuButtons();
 }
 
@@ -575,8 +566,8 @@ void core2Loop(Player& player, Milliseconds currentTime) {
   // patternControlButton.setLabel(patternControlLabel.c_str());
   // patternControlButton.draw();
   std::string patternName = player.currentEffectName();
-  if (patternName != currentPatternName) {
-    currentPatternName = patternName;
+  if (patternName != gCurrentPatternName) {
+    gCurrentPatternName = patternName;
     if (gScreenMode == ScreenMode::kMainMenu) {
       info("%u drawing new pattern name in pattern control button", currentTime);
       patternControlButton.draw();
