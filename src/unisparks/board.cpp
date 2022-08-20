@@ -2,7 +2,7 @@
 
 #if WEARABLE
 
-#if ORANGE_VEST || IS_STAFF || GECKO_FOOT
+#if ORANGE_VEST || IS_STAFF || GECKO_FOOT || IS_CAPTAIN_HAT
 #  include "unisparks/layouts/pixelmap.hpp"
 #endif
 
@@ -10,7 +10,7 @@
 #  include "unisparks/layouts/reversemap.hpp"
 #endif
 
-#if ROPELIGHT || IS_CAPTAIN_HAT
+#if ROPELIGHT
 #  include "unisparks/layouts/matrix.hpp"
 #endif
 
@@ -219,9 +219,21 @@ PixelMap pixels2(LEDNUM2, pixelMap2);
 #endif  // IS_STAFF
 
 #if IS_CAPTAIN_HAT
-// Intentionally use w=48 instead of LEDNUM to keep last 12 LEDs black.
+constexpr Point pixelMap[] = {
+  {0.00, 0.00}, {1.00, 0.00}, {2.00, 0.00}, {3.00, 0.00}, {4.00, 0.00}, {5.00, 0.00}, {6.00, 0.00}, {7.00, 0.00},
+  {8.00, 0.00}, {9.00, 0.00}, {10.00, 0.00}, {11.00, 0.00}, {12.00, 0.00}, {13.00, 0.00}, {14.00, 0.00}, {15.00, 0.00},
+  {16.00, 0.00}, {17.00, 0.00}, {18.00, 0.00}, {19.00, 0.00}, {20.00, 0.00}, {21.00, 0.00}, {22.00, 0.00}, {23.00, 0.00},
+  {22.00, 0.00}, {21.00, 0.00}, {20.00, 0.00}, {19.00, 0.00}, {18.00, 0.00}, {17.00, 0.00}, {16.00, 0.00}, {15.00, 0.00},
+  {14.00, 0.00}, {13.00, 0.00}, {12.00, 0.00}, {11.00, 0.00}, {10.00, 0.00}, {9.00, 0.00}, {8.00, 0.00}, {7.00, 0.00},
+  {6.00, 0.00}, {5.00, 0.00}, {4.00, 0.00}, {3.00, 0.00}, {2.00, 0.00}, {1.00, 0.00}, {0.00, 0.00}, {1.00, 0.00},
+};
+
+// Intentionally use 48 instead of LEDNUM to keep last 12 LEDs black.
+static_assert(48 == sizeof(pixelMap) / sizeof(pixelMap[0]), "bad LEDNUM");
 static_assert(LEDNUM == 60, "bad LEDNUM");
-Matrix pixels(/*w=*/48, /*h=*/1);
+
+PixelMap pixels(sizeof(pixelMap) / sizeof(pixelMap[0]), pixelMap);
+
 #endif  // IS_CAPTAIN_HAT
 
 #if ROPELIGHT
