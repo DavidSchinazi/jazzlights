@@ -121,6 +121,8 @@ Button lockButton(/*x=*/160, /*y=*/180, /*w=*/160, /*h=*/60, /*rot1=*/false, "Lo
 Button unlock1Button(/*x=*/160, /*y=*/0, /*w=*/160, /*h=*/60, /*rot1=*/false, "Unlock", idleCol, pressedCol);
 Button unlock2Button(/*x=*/0, /*y=*/180, /*w=*/160, /*h=*/60, /*rot1=*/false, "Unlock", idleCol, pressedCol);
 std::string gCurrentPatternName;
+constexpr Milliseconds kLockDelay = 60000;
+Milliseconds gLastScreenInteractionTime = -1;
 
 void setupButtonsDrawZone() {
   constexpr int16_t kButtonDrawOffset = 3;
@@ -547,6 +549,17 @@ void core2SetupEnd(Player& player, Milliseconds currentTime) {
   }
 }
 
+void lockScreen(Milliseconds currentTime) {
+  gLastScreenInteractionTime = -1;
+  gScreenMode = ScreenMode::kOff;
+  hideSystemMenuButtons();
+  hideMainMenuButtons();
+  hidePatternControlMenuButtons();
+  core2ScreenRenderer.setEnabled(false);
+  setCore2ScreenBrightness(0);
+  M5.Lcd.fillScreen(BLACK);
+}
+
 void core2Loop(Player& player, Milliseconds currentTime) {
   M5.Touch.update();
   M5.Buttons.update();
@@ -571,6 +584,7 @@ void core2Loop(Player& player, Milliseconds currentTime) {
       unlock1Button.draw();
 #else  // BUTTON_LOCK
       startMainMenu(player, currentTime);
+      gLastScreenInteractionTime = currentTime;
 #endif  // BUTTON_LOCK
     } break;
     case ScreenMode::kMainMenu: {
@@ -580,12 +594,14 @@ void core2Loop(Player& player, Milliseconds currentTime) {
         hideMainMenuButtons();
         M5.Lcd.fillScreen(BLACK);
         core2ScreenRenderer.setFullScreen(true);
+        gLastScreenInteractionTime = currentTime;
       }
     } break;
     case ScreenMode::kFullScreenPattern: {
       info("%u full screen pattern pressed", currentTime);
       core2ScreenRenderer.setFullScreen(false);
       startMainMenu(player, currentTime);
+      gLastScreenInteractionTime = currentTime;
     } break;
     case ScreenMode::kPatternControlMenu: {
     } break;
@@ -595,10 +611,12 @@ void core2Loop(Player& player, Milliseconds currentTime) {
   }
   if (nextButton.wasPressed() && gScreenMode == ScreenMode::kMainMenu) {
     info("%u next pressed", currentTime);
+    gLastScreenInteractionTime = currentTime;
     player.next(currentTime);
   }
   if (loopButton.wasPressed() && gScreenMode == ScreenMode::kMainMenu) {
     info("%u loop pressed", currentTime);
+    gLastScreenInteractionTime = currentTime;
     if (player.isLooping()) {
       player.stopLooping(currentTime);
       loopButton.setLabel("Loop");
@@ -613,6 +631,7 @@ void core2Loop(Player& player, Milliseconds currentTime) {
   if (patternControlButton.wasPressed() && gScreenMode == ScreenMode::kMainMenu) {
     gScreenMode = ScreenMode::kPatternControlMenu;
     info("%u pattern control button pressed", currentTime);
+    gLastScreenInteractionTime = currentTime;
     hideMainMenuButtons();
     core2ScreenRenderer.setEnabled(false);
     M5.Lcd.fillScreen(BLACK);
@@ -622,6 +641,7 @@ void core2Loop(Player& player, Milliseconds currentTime) {
   if (systemButton.wasPressed() && gScreenMode == ScreenMode::kMainMenu) {
     gScreenMode = ScreenMode::kSystemMenu;
     info("%u system button pressed", currentTime);
+    gLastScreenInteractionTime = currentTime;
     hideMainMenuButtons();
     core2ScreenRenderer.setEnabled(false);
     M5.Lcd.fillScreen(BLACK);
@@ -632,21 +652,26 @@ void core2Loop(Player& player, Milliseconds currentTime) {
     info("%u back button pressed", currentTime);
     if (gScreenMode == ScreenMode::kSystemMenu ||
         gScreenMode == ScreenMode::kPatternControlMenu && gPatternControlMenu.backPressed()) {
+      gLastScreenInteractionTime = currentTime;
       hidePatternControlMenuButtons();
       hideSystemMenuButtons();
       startMainMenu(player, currentTime);
     }
   }
   if (downButton.wasPressed() && gScreenMode == ScreenMode::kPatternControlMenu) {
+    gLastScreenInteractionTime = currentTime;
     gPatternControlMenu.downPressed();
   }
   if (upButton.wasPressed() && gScreenMode == ScreenMode::kPatternControlMenu) {
+    gLastScreenInteractionTime = currentTime;
     gPatternControlMenu.upPressed();
   }
   if (overrideButton.wasPressed() && gScreenMode == ScreenMode::kPatternControlMenu) {
+    gLastScreenInteractionTime = currentTime;
     gPatternControlMenu.overridePressed();
   }
   if (confirmButton.wasPressed() && gScreenMode == ScreenMode::kPatternControlMenu) {
+    gLastScreenInteractionTime = currentTime;
     if (gPatternControlMenu.confirmPressed(player, currentTime)) {
       hidePatternControlMenuButtons();
       startMainMenu(player, currentTime);
@@ -654,19 +679,17 @@ void core2Loop(Player& player, Milliseconds currentTime) {
   }
   if (lockButton.wasPressed() && gScreenMode == ScreenMode::kSystemMenu) {
     info("%u lock button pressed", currentTime);
-    gScreenMode = ScreenMode::kOff;
-    hideSystemMenuButtons();
-    core2ScreenRenderer.setEnabled(false);
-    setCore2ScreenBrightness(0);
-    M5.Lcd.fillScreen(BLACK);
+    lockScreen(currentTime);
   }
   if (unlock2Button.wasPressed() && gScreenMode == ScreenMode::kLocked2) {
     info("%u unlock2 button pressed", currentTime);
+    gLastScreenInteractionTime = currentTime;
     unlock2Button.hide();
     startMainMenu(player, currentTime);
   }
   if (unlock1Button.wasPressed() && gScreenMode == ScreenMode::kLocked1) {
     info("%u unlock1 button pressed", currentTime);
+    gLastScreenInteractionTime = currentTime;
     gScreenMode = ScreenMode::kLocked2;
     unlock1Button.hide();
     M5.Lcd.fillScreen(BLACK);
@@ -680,6 +703,12 @@ void core2Loop(Player& player, Milliseconds currentTime) {
       patternControlButton.draw();
     }
   }
+#if BUTTON_LOCK
+  if (gLastScreenInteractionTime >= 0 && currentTime - gLastScreenInteractionTime > kLockDelay) {
+    info("%u Locking screen due to inactivity", currentTime);
+    lockScreen(currentTime);
+  }
+#endif  // BUTTON_LOCK
 }
 
 }  // namespace unisparks
