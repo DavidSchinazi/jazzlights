@@ -34,6 +34,18 @@ Run from `unisparks`:
 for e in $(pio project config | grep 'env:' | grep -v extends | sed 's/env://g') ; do pio run -e "$e" || break ; done
 ```
 
+# To copy this git directory over SSH from a laptop to the Robot box without Internet connectivity
+
+First run once on your laptop:
+```
+git remote add robotlight02 robotlight02:/root/lights2019/unisparks
+```
+
+Then to copy the local main branch over:
+```
+git push robotlight02 main:main
+```
+
 # DS33 dual devices
 
 ```
