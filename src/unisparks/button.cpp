@@ -673,9 +673,11 @@ void doButtons(Player& player,
 #endif // !BUTTONS_DISABLED
 }
 
+#if !CORE2AWS
 uint8_t getBrightness() {
   return brightnessList[brightnessCursor];
 }
+#endif  // !CORE2AWS
 
 } // namespace unisparks
 

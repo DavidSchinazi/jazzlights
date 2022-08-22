@@ -17,7 +17,10 @@ void doButtons(Player& player,
                const Esp32BleNetwork& bleNetwork,
 #endif  // ESP32_BLE
                Milliseconds currentMillis);
+
+#if !CORE2AWS
 uint8_t getBrightness();
+#endif  // !CORE2AWS
 
 } // namespace unisparks
 

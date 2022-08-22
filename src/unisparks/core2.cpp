@@ -11,6 +11,7 @@ constexpr uint8_t kMinOnBrightness = 1;
 constexpr uint8_t kMaxOnBrightness = 20;
 uint8_t gOnBrightness = kDefaultOnBrightness;
 void setCore2ScreenBrightness(uint8_t brightness, bool allowUnsafe = false) {
+  info("Setting screen brightness to %u%s", brightness, (allowUnsafe ? " (unsafe enabled)" : ""));
   // brightness of 0 means backlight off.
   // max safe brightness is 20, max unsafe brightness is 36.
   // levels between 21 and 36 included should be used for short periods of time only.
@@ -123,14 +124,24 @@ Button lockButton(/*x=*/160, /*y=*/180, /*w=*/160, /*h=*/60, /*rot1=*/false, "Lo
 Button shutdownButton(/*x=*/0, /*y=*/180, /*w=*/160, /*h=*/60, /*rot1=*/false, "Shutdown", idleCol, pressedCol);
 Button unlock1Button(/*x=*/160, /*y=*/0, /*w=*/160, /*h=*/60, /*rot1=*/false, "Unlock", idleCol, pressedCol);
 Button unlock2Button(/*x=*/0, /*y=*/180, /*w=*/160, /*h=*/60, /*rot1=*/false, "Unlock", idleCol, pressedCol);
-Button ledPlusButton(/*x=*/160, /*y=*/0, /*w=*/80, /*h=*/60, /*rot1=*/false, "LED+", idleCol, pressedCol);
-Button ledMinusButton(/*x=*/240, /*y=*/0, /*w=*/80, /*h=*/60, /*rot1=*/false, "LED-", idleCol, pressedCol);
-Button screenPlusButton(/*x=*/160, /*y=*/60, /*w=*/80, /*h=*/60, /*rot1=*/false, "Screen+", idleCol, pressedCol);
-Button screenMinusButton(/*x=*/240, /*y=*/60, /*w=*/80, /*h=*/60, /*rot1=*/false, "Screen-", idleCol, pressedCol);
+Button ledMinusButton(/*x=*/160, /*y=*/0, /*w=*/80, /*h=*/60, /*rot1=*/false, "LED-", idleCol, pressedCol);
+Button ledPlusButton(/*x=*/240, /*y=*/0, /*w=*/80, /*h=*/60, /*rot1=*/false, "LED+", idleCol, pressedCol);
+Button screenMinusButton(/*x=*/160, /*y=*/60, /*w=*/80, /*h=*/60, /*rot1=*/false, "Screen-", idleCol, pressedCol);
+Button screenPlusButton(/*x=*/240, /*y=*/60, /*w=*/80, /*h=*/60, /*rot1=*/false, "Screen+", idleCol, pressedCol);
 std::string gCurrentPatternName;
 constexpr Milliseconds kLockDelay = 60000;
 constexpr Milliseconds kUnlockingTime = 5000;
 Milliseconds gLastScreenInteractionTime = -1;
+
+#if defined(FIRST_BRIGHTNESS) && FIRST_BRIGHTNESS == 0
+uint8_t gLedBrightness = 2;
+#else
+uint8_t gLedBrightness = 32;
+#endif
+
+uint8_t getBrightness() {
+  return gLedBrightness;
+}
 
 void setupButtonsDrawZone() {
   constexpr int16_t kButtonDrawOffset = 3;
@@ -815,20 +826,35 @@ void core2Loop(Player& player, Milliseconds currentTime) {
       info("%u ignoring unlock1 button pressed", currentTime);
     }
   }
-  if (screenPlusButton.wasPressed()) {
+  if (ledPlusButton.wasPressed()) {
     info("%u ledPlusButton button pressed", currentTime);
+    if (gLedBrightness < 255 && gScreenMode == ScreenMode::kSystemMenu) {
+      gLedBrightness++;
+      info("%u setting LED brightness to %u", currentTime, gLedBrightness);
+    }
+  }
+  if (ledMinusButton.wasPressed()) {
+    info("%u ledMinusButton button pressed", currentTime);
+    if (gLedBrightness > 0 && gScreenMode == ScreenMode::kSystemMenu) {
+      gLedBrightness--;
+      info("%u setting LED brightness to %u", currentTime, gLedBrightness);
+    }
+  }
+  if (screenPlusButton.wasPressed()) {
+    info("%u screenPlusButton button pressed", currentTime);
     if (gOnBrightness < kMaxOnBrightness && gScreenMode == ScreenMode::kSystemMenu) {
       gOnBrightness++;
       setCore2ScreenBrightness(gOnBrightness);
     }
   }
   if (screenMinusButton.wasPressed()) {
-    info("%u ledPlusButton button pressed", currentTime);
+    info("%u screenMinusButton button pressed", currentTime);
     if (gOnBrightness > kMinOnBrightness && gScreenMode == ScreenMode::kSystemMenu) {
       gOnBrightness--;
       setCore2ScreenBrightness(gOnBrightness);
     }
   }
+
   std::string patternName = player.currentEffectName();
   if (patternName != gCurrentPatternName) {
     gCurrentPatternName = patternName;
