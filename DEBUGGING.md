@@ -31,7 +31,7 @@ This is useful to load all dependencies locally so you can build them later with
 
 Run from `unisparks`:
 ```
-for e in $(pio project config | grep 'env:' | grep -v extends | sed 's/env://g') ; do pio run -e "$e" ; done
+for e in $(pio project config | grep 'env:' | grep -v extends | sed 's/env://g') ; do pio run -e "$e" || break ; done
 ```
 
 # DS33 dual devices
