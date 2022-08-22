@@ -626,6 +626,27 @@ void confirmButtonPressed(Player& player, Milliseconds currentTime) {
   }
 }
 
+void drawSystemTextLine(uint8_t i, const char* text) {
+  constexpr uint8_t kSytemLineHeight = 22;
+  constexpr uint8_t kSytemStartX = 5;
+  constexpr uint8_t kSytemStartY = 65;
+  M5.Lcd.setTextDatum(TL_DATUM);  // Top Left.
+  const uint16_t x = kSytemStartX;
+  const uint16_t y = kSytemStartY + i * kSytemLineHeight;
+  M5.Lcd.setTextColor(WHITE, BLACK);
+  M5.Lcd.fillRect(x, y, /*w=*/155, /*h=*/kSytemLineHeight, BLACK);
+  M5.Lcd.drawString(text, x, y);
+}
+
+void drawSystemTextLines() {
+  size_t i = 0;
+  char line[100] = {};
+  snprintf(line, sizeof(line) - 1, "LED Brgt %u/255", gLedBrightness);
+  drawSystemTextLine(i++, line);
+  snprintf(line, sizeof(line) - 1, "Screen Brgt %u/20",gOnBrightness);
+  drawSystemTextLine(i++, line);
+}
+
 void core2Loop(Player& player, Milliseconds currentTime) {
   M5.Touch.update();
   M5.Buttons.update();
@@ -724,7 +745,7 @@ void core2Loop(Player& player, Milliseconds currentTime) {
       core2ScreenRenderer.setEnabled(false);
       M5.Lcd.fillScreen(BLACK);
       drawSystemMenuButtons();
-      // TODO draw system menu
+      drawSystemTextLines();
     } else {
       info("%u ignoring system button pressed", currentTime);
     }
@@ -831,6 +852,7 @@ void core2Loop(Player& player, Milliseconds currentTime) {
     if (gLedBrightness < 255 && gScreenMode == ScreenMode::kSystemMenu) {
       gLedBrightness++;
       info("%u setting LED brightness to %u", currentTime, gLedBrightness);
+      drawSystemTextLines();
     }
   }
   if (ledMinusButton.wasPressed()) {
@@ -838,6 +860,7 @@ void core2Loop(Player& player, Milliseconds currentTime) {
     if (gLedBrightness > 0 && gScreenMode == ScreenMode::kSystemMenu) {
       gLedBrightness--;
       info("%u setting LED brightness to %u", currentTime, gLedBrightness);
+      drawSystemTextLines();
     }
   }
   if (screenPlusButton.wasPressed()) {
@@ -845,6 +868,7 @@ void core2Loop(Player& player, Milliseconds currentTime) {
     if (gOnBrightness < kMaxOnBrightness && gScreenMode == ScreenMode::kSystemMenu) {
       gOnBrightness++;
       setCore2ScreenBrightness(gOnBrightness);
+      drawSystemTextLines();
     }
   }
   if (screenMinusButton.wasPressed()) {
@@ -852,6 +876,7 @@ void core2Loop(Player& player, Milliseconds currentTime) {
     if (gOnBrightness > kMinOnBrightness && gScreenMode == ScreenMode::kSystemMenu) {
       gOnBrightness--;
       setCore2ScreenBrightness(gOnBrightness);
+      drawSystemTextLines();
     }
   }
 
