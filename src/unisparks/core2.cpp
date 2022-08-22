@@ -7,6 +7,8 @@
 namespace unisparks {
 
 constexpr uint8_t kDefaultOnBrightness = 12;
+constexpr uint8_t kMinOnBrightness = 1;
+constexpr uint8_t kMaxOnBrightness = 20;
 uint8_t gOnBrightness = kDefaultOnBrightness;
 void setCore2ScreenBrightness(uint8_t brightness, bool allowUnsafe = false) {
   // brightness of 0 means backlight off.
@@ -121,6 +123,10 @@ Button lockButton(/*x=*/160, /*y=*/180, /*w=*/160, /*h=*/60, /*rot1=*/false, "Lo
 Button shutdownButton(/*x=*/0, /*y=*/180, /*w=*/160, /*h=*/60, /*rot1=*/false, "Shutdown", idleCol, pressedCol);
 Button unlock1Button(/*x=*/160, /*y=*/0, /*w=*/160, /*h=*/60, /*rot1=*/false, "Unlock", idleCol, pressedCol);
 Button unlock2Button(/*x=*/0, /*y=*/180, /*w=*/160, /*h=*/60, /*rot1=*/false, "Unlock", idleCol, pressedCol);
+Button ledPlusButton(/*x=*/160, /*y=*/0, /*w=*/80, /*h=*/60, /*rot1=*/false, "LED+", idleCol, pressedCol);
+Button ledMinusButton(/*x=*/240, /*y=*/0, /*w=*/80, /*h=*/60, /*rot1=*/false, "LED-", idleCol, pressedCol);
+Button screenPlusButton(/*x=*/160, /*y=*/60, /*w=*/80, /*h=*/60, /*rot1=*/false, "Screen+", idleCol, pressedCol);
+Button screenMinusButton(/*x=*/240, /*y=*/60, /*w=*/80, /*h=*/60, /*rot1=*/false, "Screen-", idleCol, pressedCol);
 std::string gCurrentPatternName;
 constexpr Milliseconds kLockDelay = 60000;
 constexpr Milliseconds kUnlockingTime = 5000;
@@ -223,6 +229,10 @@ void drawSystemMenuButtons() {
   backButton.draw();
   lockButton.draw();
   shutdownButton.draw();
+  ledPlusButton.draw();
+  ledMinusButton.draw();
+  screenPlusButton.draw();
+  screenMinusButton.draw();
 }
 
 void hideSystemMenuButtons() {
@@ -230,6 +240,10 @@ void hideSystemMenuButtons() {
   backButton.hide();
   lockButton.hide();
   shutdownButton.hide();
+  ledPlusButton.hide();
+  ledMinusButton.hide();
+  screenPlusButton.hide();
+  screenMinusButton.hide();
 }
 
 void setDefaultPrecedence(Player& player, Milliseconds currentTime) {
@@ -799,6 +813,20 @@ void core2Loop(Player& player, Milliseconds currentTime) {
       player.next(currentTime);
     } else {
       info("%u ignoring unlock1 button pressed", currentTime);
+    }
+  }
+  if (screenPlusButton.wasPressed()) {
+    info("%u ledPlusButton button pressed", currentTime);
+    if (gOnBrightness < kMaxOnBrightness && gScreenMode == ScreenMode::kSystemMenu) {
+      gOnBrightness++;
+      setCore2ScreenBrightness(gOnBrightness);
+    }
+  }
+  if (screenMinusButton.wasPressed()) {
+    info("%u ledPlusButton button pressed", currentTime);
+    if (gOnBrightness > kMinOnBrightness && gScreenMode == ScreenMode::kSystemMenu) {
+      gOnBrightness--;
+      setCore2ScreenBrightness(gOnBrightness);
     }
   }
   std::string patternName = player.currentEffectName();
