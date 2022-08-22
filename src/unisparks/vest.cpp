@@ -177,6 +177,31 @@ void vestLoop(void) {
 #endif  // LEDNUM2
 }
 
+std::string wifiStatus(Milliseconds currentTime) {
+  return network.statusStr(currentTime);
+}
+
+std::string bleStatus(Milliseconds currentTime) {
+#if ESP32_BLE
+  return Esp32BleNetwork::get()->statusStr(currentTime);
+#else  // ESP32_BLE
+  return "Not supported";
+#endif  // ESP32_BLE
+}
+
+std::string otherStatus(Player& player, Milliseconds currentTime) {
+  char otherStatusStr[100] = "Leading";
+  if (player.followedNextHopNetwork() == &network) {
+    snprintf(otherStatusStr, sizeof(otherStatusStr) - 1, "Following Wi-Fi nh=%u", player.currentNumHops());
+  }
+#if ESP32_BLE
+  else if (player.followedNextHopNetwork() == Esp32BleNetwork::get()) {
+    snprintf(otherStatusStr, sizeof(otherStatusStr) - 1, "Following BLE nh=%u", player.currentNumHops());
+  }
+#endif  // ESP32_BLE
+  return std::string(otherStatusStr);
+}
+
 } // namespace unisparks
 
 #endif // WEARABLE

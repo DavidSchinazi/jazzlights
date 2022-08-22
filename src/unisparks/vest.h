@@ -8,6 +8,10 @@ namespace unisparks {
 void vestSetup(void);
 void vestLoop(void);
 
+std::string wifiStatus(Milliseconds currentTime);
+std::string bleStatus(Milliseconds currentTime);
+std::string otherStatus(Player& player, Milliseconds currentTime);
+
 } // namespace unisparks
 
 #endif // WEARABLE

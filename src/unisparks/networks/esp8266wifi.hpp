@@ -49,6 +49,8 @@ class Esp8266WiFi : public UdpNetwork {
     const char* subnetMask;
   };
 
+  std::string statusStr(Milliseconds currentTime);
+
  private:
   static constexpr wl_status_t kUninitialized = static_cast<wl_status_t>(123);
   static std::string WiFiStatusToString(wl_status_t status);

@@ -43,6 +43,8 @@ class Esp32BleNetwork : public Network {
   }
   bool shouldEcho() const override { return true; }
   Milliseconds getLastReceiveTime() const override { return lastReceiveTime_; }
+
+  std::string statusStr(Milliseconds currentTime);
  protected:
   void runLoopImpl(Milliseconds currentTime) override;
   NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;

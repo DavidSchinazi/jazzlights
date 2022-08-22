@@ -204,6 +204,25 @@ void Esp8266WiFi::send(void* buf, size_t bufsize) {
 #endif // ENABLE_ESP_WIFI_SENDING
 }
 
+std::string Esp8266WiFi::statusStr(Milliseconds currentTime) {
+  switch (getStatus()) {
+    case INITIALIZING:      return "init";
+    case DISCONNECTED:      return "disconnected";
+    case CONNECTING:        return "connecting";
+    case DISCONNECTING:     return "disconnecting";
+    case CONNECTION_FAILED: return "failed";
+    case CONNECTED: {
+      IPAddress ip = WiFi.localIP();
+      const Milliseconds lastRcv = getLastReceiveTime();
+      char statStr[100] = {};
+      snprintf(statStr, sizeof(statStr) - 1, "%s %u.%u.%u.%u - %ums",
+               creds_.ssid, ip[0], ip[1], ip[2], ip[3],
+               (lastRcv >= 0 ? currentTime - getLastReceiveTime() : -1));
+      return std::string(statStr);
+    }
+  }
+  return "error";
+}
 
 } // namespace unisparks
 
