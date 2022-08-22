@@ -13,6 +13,10 @@ namespace unisparks {
 #  define LEDNUM 360
 #endif // ORANGE_VEST
 
+#if IS_GAUNTLET
+#  define LEDNUM 300
+#endif  // IS_GAUNTLET
+
 #if CAMP_SIGN
 #  define LEDNUM 900
 #endif // CAMP_SIGN

@@ -8,7 +8,8 @@
 // Pick which vest to build here.
 #if !defined(CAMP_SIGN) && !defined(IS_ROPELIGHT) && !defined(ORANGE_VEST) && \
     !defined(HAMMER) && !defined(IS_GUPPY) && !defined(GECKO_FOOT) && \
-    !defined(FAIRY_WAND) && !defined(IS_STAFF) && !defined(IS_CAPTAIN_HAT)
+    !defined(FAIRY_WAND) && !defined(IS_STAFF) && !defined(IS_CAPTAIN_HAT) && \
+    !defined(IS_GAUNTLET)
 #  define ORANGE_VEST WEARABLE
 #endif
 
@@ -19,6 +20,10 @@
 #ifndef CORE2AWS
 #  define CORE2AWS 0
 #endif  // CORE2AWS
+
+#ifndef IS_GAUNTLET
+#  define IS_GAUNTLET 0
+#endif  // IS_GAUNTLET
 
 #ifndef GECKO_FOOT
 #  define GECKO_FOOT 0

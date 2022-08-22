@@ -10,7 +10,7 @@
 #  include "unisparks/layouts/reversemap.hpp"
 #endif
 
-#if IS_ROPELIGHT
+#if IS_ROPELIGHT || IS_GAUNTLET
 #  include "unisparks/layouts/matrix.hpp"
 #endif
 
@@ -73,6 +73,10 @@ static_assert(LEDNUM == sizeof(pixelMap) / sizeof(pixelMap[0]), "bad LEDNUM");
 PixelMap pixels(LEDNUM, pixelMap);
 
 #endif // ORANGE_VEST
+
+#if IS_GAUNTLET
+Matrix pixels(/*w=*/20, /*h=*/15);
+#endif  // IS_GAUNTLET
 
 #if GECKO_FOOT
 
