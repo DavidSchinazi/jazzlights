@@ -10,7 +10,7 @@
 #  include "unisparks/layouts/reversemap.hpp"
 #endif
 
-#if ROPELIGHT
+#if IS_ROPELIGHT
 #  include "unisparks/layouts/matrix.hpp"
 #endif
 
@@ -236,9 +236,9 @@ PixelMap pixels(sizeof(pixelMap) / sizeof(pixelMap[0]), pixelMap);
 
 #endif  // IS_CAPTAIN_HAT
 
-#if ROPELIGHT
+#if IS_ROPELIGHT
 Matrix pixels(/*w=*/LEDNUM, /*h=*/1);
-#endif  // ROPELIGHT
+#endif  // IS_ROPELIGHT
 
 }  // namespace
 

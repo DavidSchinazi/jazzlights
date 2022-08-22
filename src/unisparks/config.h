@@ -6,7 +6,7 @@
 #endif // WEARABLE
 
 // Pick which vest to build here.
-#if !defined(CAMP_SIGN) && !defined(ROPELIGHT) && !defined(ORANGE_VEST) && \
+#if !defined(CAMP_SIGN) && !defined(IS_ROPELIGHT) && !defined(ORANGE_VEST) && \
     !defined(HAMMER) && !defined(IS_GUPPY) && !defined(GECKO_FOOT) && \
     !defined(FAIRY_WAND) && !defined(IS_STAFF) && !defined(IS_CAPTAIN_HAT)
 #  define ORANGE_VEST WEARABLE
@@ -40,9 +40,9 @@
 #  define FAIRY_WAND 0
 #endif // FAIRY_WAND
 
-#ifndef ROPELIGHT
-#  define ROPELIGHT 0
-#endif // ROPELIGHT
+#ifndef IS_ROPELIGHT
+#  define IS_ROPELIGHT 0
+#endif // IS_ROPELIGHT
 
 // Choose whether to enable button lock.
 #ifndef BUTTON_LOCK

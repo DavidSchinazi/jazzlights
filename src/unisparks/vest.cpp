@@ -116,7 +116,7 @@ void vestSetup(void) {
 #elif IS_STAFF
   mainVestController = &FastLED.addLeds<WS2811, LED_PIN, RGB>(
     leds, sizeof(leds)/sizeof(*leds));
-#elif ROPELIGHT
+#elif IS_ROPELIGHT
   mainVestController = &FastLED.addLeds<WS2811, LED_PIN, BRG>(
     leds, sizeof(leds)/sizeof(*leds));
 #else  // Vest.

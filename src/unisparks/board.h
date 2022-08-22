@@ -42,9 +42,9 @@ namespace unisparks {
 #  define LEDNUM 60
 #endif  // IS_CAPTAIN_HAT
 
-#if ROPELIGHT
+#if IS_ROPELIGHT
 #  define LEDNUM 300
-#endif  // ROPELIGHT
+#endif  // IS_ROPELIGHT
 
 #if CAMP_SIGN || HAMMER || GECKO_FOOT
 #  define FIRST_BRIGHTNESS MAX_BRIGHTNESS
