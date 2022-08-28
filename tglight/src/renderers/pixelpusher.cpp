@@ -29,7 +29,8 @@ namespace unisparks {
 uint8_t reduceOneChannelBrightness(uint8_t c) {
   uint16_t c16 = static_cast<uint16_t>(c);
   c16++;
-  c16 /= 2;
+  c16 *= 7;
+  c16 /= 8;
   return static_cast<uint8_t>(c16);
 }
 #endif  // REDUCE_PIXELPUSHER_BRIGHTNESS
