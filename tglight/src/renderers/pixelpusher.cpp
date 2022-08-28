@@ -20,7 +20,7 @@
 #include "unisparks/util/time.hpp"
 
 #ifndef REDUCE_PIXELPUSHER_BRIGHTNESS
-#define REDUCE_PIXELPUSHER_BRIGHTNESS 1
+#define REDUCE_PIXELPUSHER_BRIGHTNESS 0
 #endif  // REDUCE_PIXELPUSHER_BRIGHTNESS
 
 namespace unisparks {
