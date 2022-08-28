@@ -19,7 +19,20 @@
 #include "unisparks/util/log.hpp"
 #include "unisparks/util/time.hpp"
 
+#ifndef REDUCE_PIXELPUSHER_BRIGHTNESS
+#define REDUCE_PIXELPUSHER_BRIGHTNESS 1
+#endif  // REDUCE_PIXELPUSHER_BRIGHTNESS
+
 namespace unisparks {
+
+#if REDUCE_PIXELPUSHER_BRIGHTNESS
+uint8_t reduceOneChannelBrightness(uint8_t c) {
+  uint16_t c16 = static_cast<uint16_t>(c);
+  c16++;
+  c16 /= 2;
+  return static_cast<uint8_t>(c16);
+}
+#endif  // REDUCE_PIXELPUSHER_BRIGHTNESS
 
 struct PixelPusherDiscoveryResult {
   struct sockaddr_in addressAndPort = {};
@@ -244,9 +257,15 @@ void PixelPusher::render(InputStream<Color>& pixelColors) {
   int pxcnt = 0;
   for (auto color : pixelColors) {
     auto rgb = color.asRgb();
+#if REDUCE_PIXELPUSHER_BRIGHTNESS
+    buf.push_back(reduceOneChannelBrightness(rgb.red));
+    buf.push_back(reduceOneChannelBrightness(rgb.green));
+    buf.push_back(reduceOneChannelBrightness(rgb.blue));
+#else  // REDUCE_PIXELPUSHER_BRIGHTNESS
     buf.push_back(rgb.red);
     buf.push_back(rgb.green);
     buf.push_back(rgb.blue);
+#endif  // REDUCE_PIXELPUSHER_BRIGHTNESS
     pxcnt++;
     if (pxcnt > HACKY_HARD_CODED_NUM_OF_LEDS) {
       break;

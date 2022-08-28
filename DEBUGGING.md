@@ -41,6 +41,8 @@ First run once on your laptop:
 git remote add robotlight02 robotlight02:/root/lights2019/unisparks
 ```
 
+Also remember to make sure the destination filesystem is readable!
+
 Then to copy the local main branch over:
 ```
 git push robotlight02 main:main
