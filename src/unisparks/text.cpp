@@ -118,7 +118,7 @@ constexpr CharacterPixels kCharacterMap[] = {
       0b100,
       0b100}
   },
-  {'0', 0,
+  {'0', 3,
     { 0b111,
       0b101,
       0b101,
