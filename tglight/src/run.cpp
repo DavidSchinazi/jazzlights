@@ -1,6 +1,9 @@
-#include <stdlib.h>
 #include "tgloader.hpp"
-#include "extras.h"
+
+#include "jazzlights/config.h"
+#include "jazzlights/networks/udp.hpp"
+
+#include <stdlib.h>
 
 using namespace jazzlights;
 

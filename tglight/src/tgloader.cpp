@@ -1,11 +1,12 @@
-#include <vector>
-#include <sstream>
-#include <unistd.h>
-
 #include "tgloader.hpp"
 #include "renderers/pixelpusher.hpp"
 #include "renderers/openpixel.hpp"
-#include "extras.h"
+
+#include "jazzlights/util/loader.hpp"
+
+#include <vector>
+#include <sstream>
+#include <unistd.h>
 
 using namespace std;
 using namespace jazzlights;

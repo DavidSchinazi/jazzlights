@@ -1,13 +1,14 @@
+#include "glrenderer.hpp"
+
+#include "jazzlights/config.h"
+#include "jazzlights/player.hpp"
+
 #include <vector>
 #include <sstream>
 #include <iomanip>
 #include <array>
 #include <memory>
 #include <GLFW/glfw3.h>
-#include "extras.h"
-#include "glrenderer.hpp"
-
-using namespace std;
 
 namespace jazzlights {
 

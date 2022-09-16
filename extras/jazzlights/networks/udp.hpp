@@ -39,4 +39,4 @@ private:
 }  // namespace jazzlights
 
 #endif  // JAZZLIGHTS_NETWORK_UDPSOCKET_H
-#endif /* !ARDUINO */
+#endif  // ARDUINO

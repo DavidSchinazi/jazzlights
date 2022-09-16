@@ -44,7 +44,6 @@ set(LIB_SOURCES
 	../src/jazzlights/util/stream.hpp
 	../src/jazzlights/util/time.hpp
 	../src/jazzlights/version.hpp
-	extras.h
 	jazzlights/effects/pixeltest.hpp
 	jazzlights/networks/udp.cpp
 	jazzlights/networks/udp.hpp

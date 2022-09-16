@@ -1,23 +1,23 @@
 #include "glrenderer.hpp"
 #include "gui.hpp"
-#include "extras.h"
+
+#include "jazzlights/networks/udp.hpp"
+#include "jazzlights/util/loader.hpp"
 
 #include <vector>
 #include <memory>
 
 using namespace jazzlights;
-using std::vector;
-using std::unique_ptr;
 
 class DemoLoader : public Loader {
   Renderer& loadRenderer(const Layout& layout, const cpptoml::table&, int strandidx) override {
-    static vector<unique_ptr<Renderer>> renderers;
+    static std::vector<std::unique_ptr<Renderer>> renderers;
     static int laststrandidx = -1;
     if (laststrandidx == strandidx) {
       return *renderers.back();
     }
     laststrandidx = strandidx;
-    renderers.emplace_back(unique_ptr<Renderer>(new GLRenderer(layout, ledRadius())));
+    renderers.emplace_back(std::make_unique<GLRenderer>(layout, ledRadius()));
     return *renderers.back();
   }
 };

@@ -58,7 +58,7 @@ typedef int32_t s32;
 typedef struct { u8 r, g, b; } pixel;
 #endif
 
-#endif /* OPC_TYPES_H */
+#endif  // OPC_TYPES_H
 
 // ============================================================================
 // opc.h
@@ -390,4 +390,4 @@ void OpenPixelWriter::render(InputStream<Color>& pixelColors) {
 
 }  // namespace jazzlights
 
-#endif /* !defined(ARDUINO) */
+#endif  // ARDUINO
