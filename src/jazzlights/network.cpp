@@ -152,7 +152,7 @@ std::list<NetworkMessage> UdpNetwork::getReceivedMessagesImpl(Milliseconds curre
       break;
     }
     if (n < kPayloadLength) {
-      debug("%u %s Received packet too short, received %ld bytes, expected at least %u bytes",
+      debug("%u %s Received packet too short, received %zd bytes, expected at least %u bytes",
             currentTime, networkName(), n, kPayloadLength);
       continue;
     }
