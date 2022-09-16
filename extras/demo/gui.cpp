@@ -4,12 +4,12 @@
 #include <array>
 #include <memory>
 #include <GLFW/glfw3.h>
-#include "unisparks.hpp"
+#include "extras.h"
 #include "glrenderer.hpp"
 
 using namespace std;
 
-namespace unisparks {
+namespace jazzlights {
 
 const int WIN_W = 960;
 const int WIN_H = 720;
@@ -98,7 +98,7 @@ int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen) {
 
     player->render(timeMillis());
     std::ostringstream title;
-    title << "unisparks-demo-" << REVISION << " " << player->currentEffectName();
+    title << "jazzlights-demo-" << REVISION << " " << player->currentEffectName();
     glfwSetWindowTitle(window, title.str().c_str());
 
     glfwSwapBuffers(window);
@@ -109,4 +109,4 @@ int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen) {
 }
 
 
-} // namespace unisparks
+}  // namespace jazzlights

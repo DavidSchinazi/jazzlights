@@ -1,13 +1,13 @@
-#include <Unisparks.h>
+#include <Jazzlights.h>
 
-#ifdef UNISPARKS_PLATFORMIO
+#ifdef JAZZLIGHTS_PLATFORMIO
 
 void setup() {
-  unisparks::vestSetup();
+  jazzlights::vestSetup();
 }
 
 void loop() {
-  unisparks::vestLoop();
+  jazzlights::vestLoop();
 }
 
-#endif // UNISPARKS_PLATFORMIO
+#endif  // JAZZLIGHTS_PLATFORMIO

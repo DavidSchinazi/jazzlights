@@ -1,12 +1,12 @@
 #include "glrenderer.hpp"
 #include <GLFW/glfw3.h>
 #include <math.h>
-namespace unisparks {
+namespace jazzlights {
 
 static constexpr double TWO_PI = 2 * 3.1415926;
 
 static void renderLed(double cx, double cy, double r,
-                      unisparks::RgbaColor color, int segments = 6) {
+                      jazzlights::RgbaColor color, int segments = 6) {
   glColor4f(color.red / 255.f, color.green / 255.f, color.blue / 255.f,
             color.alpha / 255.f);
   glBegin(GL_TRIANGLE_FAN);
@@ -34,4 +34,4 @@ void GLRenderer::render(InputStream<Color>& colors) {
   }
 }
 
-} // namespace unisparks
+}  // namespace jazzlights

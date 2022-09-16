@@ -1,20 +1,22 @@
 #include <vector>
 #include <sstream>
 #include <unistd.h>
+
 #include "tgloader.hpp"
 #include "renderers/pixelpusher.hpp"
 #include "renderers/openpixel.hpp"
-#include "unisparks.hpp"
+#include "extras.h"
+
 using namespace std;
-using namespace unisparks;
+using namespace jazzlights;
 
 
-class TGLoader : public unisparks::Loader {
-  unisparks::Renderer& loadRenderer(const unisparks::Layout& layout,
+class TGLoader : public jazzlights::Loader {
+  jazzlights::Renderer& loadRenderer(const jazzlights::Layout& layout,
                                     const cpptoml::table&, int strandidx) override;
 };
 
-Renderer& TGLoader::loadRenderer(const unisparks::Layout&,
+Renderer& TGLoader::loadRenderer(const jazzlights::Layout&,
                                  const cpptoml::table& cfg, int strandidx) {
 
   static vector<unique_ptr<Renderer>> renderers;
@@ -52,7 +54,7 @@ Renderer& TGLoader::loadRenderer(const unisparks::Layout&,
   return *renderers.back();
 }
 
-void load(const char *file, unisparks::Player& player) {
+void load(const char *file, jazzlights::Player& player) {
   for(;;) {
     try {
       info("Loading %s...", file);

@@ -1,4 +1,4 @@
-# Unisparks Library
+# JazzLights Library
 
 This library contains the LED software that runs on
 [TechnoGecko](https://www.technogecko.org/) vehicles and furry LED vests.
@@ -25,7 +25,7 @@ In theory this project also works with the Arduino IDE (look for `Vest.ino`) but
 ## Installation on Raspberry Pi for vehicles
 
 First [install the rust/cargo toolchain](https://www.rust-lang.org/tools/install),
-then from the `unisparks/tglight` directory you can run
+then from the `jazzlights/tglight` directory you can run
 `cargo run -- --timestamp --config ./etc/tglight-from-robot.toml`
 
 ## Debugging
@@ -38,5 +38,5 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Acknowledgements
 
-This repository is a heavily modified fork of the original
+This project initially started off as a fork of
 [unisparks](https://github.com/unisparks/unisparks) by Dmitry Azovtsev and Igor Chernyshev.

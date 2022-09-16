@@ -1,9 +1,11 @@
 #include "glrenderer.hpp"
 #include "gui.hpp"
-#include "unisparks.hpp"
+#include "extras.h"
+
 #include <vector>
 #include <memory>
-using namespace unisparks;
+
+using namespace jazzlights;
 using std::vector;
 using std::unique_ptr;
 
@@ -38,5 +40,5 @@ int main(int argn, char** argv) {
   player.connect(&network);
   player.begin(timeMillis());
 
-  return runGui("Unisparks Demo", player, player.bounds(), fullscreen);
+  return runGui("JazzLights Demo", player, player.bounds(), fullscreen);
 }

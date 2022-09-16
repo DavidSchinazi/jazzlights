@@ -13,14 +13,14 @@ Otherwise the location of `xtensa-esp32-elf-addr2line` can be found by running `
 
 ## PlatformIO build for ESP32
 
-Run from `unisparks`:
+Run from `jazzlights`:
 ```
 pio run -e atom_matrix_dev -t upload && pio device monitor -e atom_matrix_dev
 ```
 
 ## Rust build for tglight
 
-Run from `unisparks/tglight`:
+Run from `jazzlights/tglight`:
 ```
 cargo run -- --timestamp --config ./etc/robot/tglight.toml
 ```
@@ -29,7 +29,7 @@ cargo run -- --timestamp --config ./etc/robot/tglight.toml
 
 This is useful to load all dependencies locally so you can build them later without Internet connectivity.
 
-Run from `unisparks`:
+Run from `jazzlights`:
 ```
 for e in $(pio project config | grep 'env:' | grep -v extends | sed 's/env://g') ; do pio run -e "$e" || break ; done
 ```
@@ -38,7 +38,7 @@ for e in $(pio project config | grep 'env:' | grep -v extends | sed 's/env://g')
 
 First run once on your laptop:
 ```
-git remote add robotlight02 robotlight02:/root/lights2019/unisparks
+git remote add robotlight02 robotlight02:/root/jazzlights
 ```
 
 Also remember to make sure the destination filesystem is readable!

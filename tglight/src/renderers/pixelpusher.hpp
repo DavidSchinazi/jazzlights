@@ -1,10 +1,10 @@
-#ifndef UNISPARKS_RENDERERS_PIXELPUSHER_H
-#define UNISPARKS_RENDERERS_PIXELPUSHER_H
+#ifndef JAZZLIGHTS_RENDERERS_PIXELPUSHER_H
+#define JAZZLIGHTS_RENDERERS_PIXELPUSHER_H
 #include <netinet/in.h>
 
-#include "unisparks/renderer.hpp"
+#include "jazzlights/renderer.hpp"
 
-namespace unisparks {
+namespace jazzlights {
 
 class PixelPusher : public Renderer {
 public:
@@ -25,5 +25,5 @@ private:
 };
 
 
-} // namespace unisparks
-#endif /* UNISPARKS_RENDERERS_PIXELPUSHER_H */
+}  // namespace jazzlights
+#endif  // JAZZLIGHTS_RENDERERS_PIXELPUSHER_H

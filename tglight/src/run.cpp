@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include "tgloader.hpp"
-#include "unisparks.hpp"
+#include "extras.h"
 
-using namespace unisparks;
+using namespace jazzlights;
 
 Player player;
 UnixUdpNetwork network;

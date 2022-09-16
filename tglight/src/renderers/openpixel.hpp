@@ -1,8 +1,8 @@
-#ifndef UNISPARKS_RENDERERS_OPENPIXEL_H
-#define UNISPARKS_RENDERERS_OPENPIXEL_H
-#include "unisparks/renderer.hpp"
+#ifndef JAZZLIGHTS_RENDERERS_OPENPIXEL_H
+#define JAZZLIGHTS_RENDERERS_OPENPIXEL_H
+#include "jazzlights/renderer.hpp"
 
-namespace unisparks {
+namespace jazzlights {
 
 class OpenPixelWriter : public Renderer {
  public:
@@ -24,6 +24,6 @@ class OpenPixelWriter : public Renderer {
 };
 
 
-} // namespace unisparks
-#endif /* UNISPARKS_RENDERERS_OPENPIXEL_H */
+}  // namespace jazzlights
+#endif  // JAZZLIGHTS_RENDERERS_OPENPIXEL_H
 

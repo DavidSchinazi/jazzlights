@@ -82,44 +82,6 @@ sure how exactly it is set up on LIGHT01, probably via /etc/fstab as well).
 
 Then follow the deployment instructions below.
 
-## Making and testing code changes
-
-Most of pattern generaton code now lives in
-[Unisparks repository on Github](https://github.com/DavidSchinazi/unisparks). This repository
-is for the stuff that depends on TechnoGecko hardware.
-
-The easies way to get started is to use Docker. Install Docker (`sudo apt-get install docker.io` on Ubuntu<sup>1</sup>, or download and run installers for [Mac](https://www.docker.com/docker-mac) or [Windows](https://www.docker.com/docker-windows)), then type:
-
-```shell
-    # check out and build
-	git clone https://github.com/DavidSchinazi/tglight.git
-	cd tglight
-	make docker-build
-
-	# run
-	make docker-run
-```
-
-Then open web browser and navigate to http://localhost:8080 - you should see LED control UI.
-
-<sup>1</sup> Ubuntu 18.04 LTE or later. If you're using an older version look up the appropriate commands.
-
-## Deploying software updates
-
-Connect to TechnoGecko WiFi (the password is `theshiniestlizard`) and type:
-
-```shell
-	# update LED control software on light01 box
-	TGLIGHT_HOST=light01 make docker-deploy
-```
-
-## Developing without Docker
-
-To run without Docker (e.g. if you recompile a lot and want better performance, or use native debugger, or something of
-this sort) - look at the `Dockerfile` and setup your environment in a similar way. You may have to modify commands to
-work on your system.
-
-
 ## Cloning SD card on Mac
 
 To create master image from card:

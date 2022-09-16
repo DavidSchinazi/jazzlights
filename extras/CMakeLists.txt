@@ -1,59 +1,58 @@
 cmake_minimum_required(VERSION 3.9)
 set(CMAKE_MACOSX_RPATH 1)
-project(Unisparks)
+project(Jazzlights)
 
 set(LIB_SOURCES
-	../src/unisparks/effect.hpp
-	../src/unisparks/effects/flame.cpp
-	../src/unisparks/effects/flame.hpp
-	../src/unisparks/effects/functional.hpp
-	../src/unisparks/effects/glitter.hpp
-	../src/unisparks/effects/glow.hpp
-	../src/unisparks/effects/plasma.hpp
-	../src/unisparks/effects/rainbow.hpp
-	../src/unisparks/effects/solid.hpp
-	../src/unisparks/effects/threesine.hpp
-	../src/unisparks/frame.hpp
-	../src/unisparks/layout.hpp
-	../src/unisparks/layouts/matrix.hpp
-	../src/unisparks/layouts/pixelmap.hpp
-	../src/unisparks/layouts/reversemap.hpp
-	../src/unisparks/network.cpp
-	../src/unisparks/network.hpp
-	../src/unisparks/player.cpp
-	../src/unisparks/player.hpp
-	../src/unisparks/pseudorandom.cpp
-	../src/unisparks/pseudorandom.h
-	../src/unisparks/registry.cpp
-	../src/unisparks/registry.hpp
-	../src/unisparks/renderer.hpp
-	../src/unisparks/renderers/simple.hpp
-	../src/unisparks/types.cpp
-	../src/unisparks/types.h
-	../src/unisparks/util/color.cpp
-	../src/unisparks/util/color.hpp
-	../src/unisparks/util/geom.hpp
-	../src/unisparks/util/log.cpp
-	../src/unisparks/util/log.hpp
-	../src/unisparks/util/math.cpp
-	../src/unisparks/util/math.hpp
-	../src/unisparks/util/memory.hpp
-	../src/unisparks/util/meta.hpp
-	../src/unisparks/util/noise.cpp
-	../src/unisparks/util/noise.h
-	../src/unisparks/util/stream.hpp
-	../src/unisparks/util/time.hpp
-	../src/unisparks/version.hpp
-	unisparks.hpp
-	unisparks/effects/pixeltest.hpp
-	unisparks/networks/udp.cpp
-	unisparks/networks/udp.hpp
-	unisparks/util/geom3d.hpp
-	unisparks/util/cpptoml.hpp
-	unisparks/util/loader.cpp
-	unisparks/util/loader.hpp
-	unisparks/util/stdlog.cpp
-	unisparks/util/stdtime.cpp
+	../src/jazzlights/effect.hpp
+	../src/jazzlights/effects/flame.cpp
+	../src/jazzlights/effects/flame.hpp
+	../src/jazzlights/effects/functional.hpp
+	../src/jazzlights/effects/glitter.hpp
+	../src/jazzlights/effects/glow.hpp
+	../src/jazzlights/effects/plasma.hpp
+	../src/jazzlights/effects/rainbow.hpp
+	../src/jazzlights/effects/solid.hpp
+	../src/jazzlights/effects/threesine.hpp
+	../src/jazzlights/frame.hpp
+	../src/jazzlights/layout.hpp
+	../src/jazzlights/layouts/matrix.hpp
+	../src/jazzlights/layouts/pixelmap.hpp
+	../src/jazzlights/layouts/reversemap.hpp
+	../src/jazzlights/network.cpp
+	../src/jazzlights/network.hpp
+	../src/jazzlights/player.cpp
+	../src/jazzlights/player.hpp
+	../src/jazzlights/pseudorandom.cpp
+	../src/jazzlights/pseudorandom.h
+	../src/jazzlights/registry.cpp
+	../src/jazzlights/registry.hpp
+	../src/jazzlights/renderer.hpp
+	../src/jazzlights/renderers/simple.hpp
+	../src/jazzlights/types.cpp
+	../src/jazzlights/types.h
+	../src/jazzlights/util/color.cpp
+	../src/jazzlights/util/color.hpp
+	../src/jazzlights/util/geom.hpp
+	../src/jazzlights/util/log.cpp
+	../src/jazzlights/util/log.hpp
+	../src/jazzlights/util/math.cpp
+	../src/jazzlights/util/math.hpp
+	../src/jazzlights/util/memory.hpp
+	../src/jazzlights/util/meta.hpp
+	../src/jazzlights/util/noise.cpp
+	../src/jazzlights/util/noise.h
+	../src/jazzlights/util/stream.hpp
+	../src/jazzlights/util/time.hpp
+	../src/jazzlights/version.hpp
+	extras.h
+	jazzlights/effects/pixeltest.hpp
+	jazzlights/networks/udp.cpp
+	jazzlights/networks/udp.hpp
+	jazzlights/util/cpptoml.hpp
+	jazzlights/util/loader.cpp
+	jazzlights/util/loader.hpp
+	jazzlights/util/stdlog.cpp
+	jazzlights/util/stdtime.cpp
 )
 
 set(DEMO_SOURCES
@@ -71,23 +70,23 @@ set(BENCH_SOURCES
 # LIBRARY
 find_package(glfw3 3.2 REQUIRED)
 find_package(OpenGL REQUIRED)
-add_library(unisparks SHARED ${LIB_SOURCES})
-target_include_directories(unisparks PUBLIC ../src . PRIVATE ${GLFW_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR})
-target_link_libraries(unisparks glfw ${OPENGL_gl_LIBRARY})
-set_target_properties(unisparks PROPERTIES COMPILE_OPTIONS "-std=c++17;-fPIC;-Wall;-Wextra;-Werror;-Wno-deprecated-declarations")
-install(TARGETS unisparks LIBRARY DESTINATION lib)
-install(DIRECTORY src/ COMPONENT "lib" DESTINATION include FILES_MATCHING PATTERN "*.h" PATTERN "Unisparks.h" EXCLUDE)
-install(DIRECTORY extras/unisparks/ COMPONENT "lib" DESTINATION include/unisparks FILES_MATCHING PATTERN "*.h")
+add_library(jazzlights SHARED ${LIB_SOURCES})
+target_include_directories(jazzlights PUBLIC ../src . PRIVATE ${GLFW_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR})
+target_link_libraries(jazzlights glfw ${OPENGL_gl_LIBRARY})
+set_target_properties(jazzlights PROPERTIES COMPILE_OPTIONS "-std=c++17;-fPIC;-Wall;-Wextra;-Werror;-Wno-deprecated-declarations")
+install(TARGETS jazzlights LIBRARY DESTINATION lib)
+install(DIRECTORY src/ COMPONENT "lib" DESTINATION include FILES_MATCHING PATTERN "*.h" PATTERN "Jazzlights.h" EXCLUDE)
+install(DIRECTORY extras/jazzlights/ COMPONENT "lib" DESTINATION include/jazzlights FILES_MATCHING PATTERN "*.h")
 
 # DEMO
-add_executable(unisparks-demo ${DEMO_SOURCES})
-target_link_libraries(unisparks-demo unisparks)
-target_include_directories(unisparks-demo PRIVATE ../src)
-set_target_properties(unisparks-demo PROPERTIES COMPILE_OPTIONS "-std=c++17;-fPIC;-Wall;-Wextra;-Werror;-Wno-deprecated-declarations")
-install(TARGETS unisparks-demo DESTINATION bin COMPONENT "demo")
+add_executable(jazzlights-demo ${DEMO_SOURCES})
+target_link_libraries(jazzlights-demo jazzlights)
+target_include_directories(jazzlights-demo PRIVATE ../src)
+set_target_properties(jazzlights-demo PROPERTIES COMPILE_OPTIONS "-std=c++17;-fPIC;-Wall;-Wextra;-Werror;-Wno-deprecated-declarations")
+install(TARGETS jazzlights-demo DESTINATION bin COMPONENT "demo")
 
 # BENCH
-add_executable(unisparks-bench ${BENCH_SOURCES})
-target_link_libraries(unisparks-bench unisparks)
-set_target_properties(unisparks-bench PROPERTIES COMPILE_OPTIONS "-std=c++17;-fPIC;-Wall;-Wextra;-Werror;-Wno-deprecated-declarations")
-install(TARGETS unisparks-bench DESTINATION bin COMPONENT "bench")
+add_executable(jazzlights-bench ${BENCH_SOURCES})
+target_link_libraries(jazzlights-bench jazzlights)
+set_target_properties(jazzlights-bench PROPERTIES COMPILE_OPTIONS "-std=c++17;-fPIC;-Wall;-Wextra;-Werror;-Wno-deprecated-declarations")
+install(TARGETS jazzlights-bench DESTINATION bin COMPONENT "bench")

@@ -1,10 +1,10 @@
-#ifndef UNISPARKS_GUI_HPP
-#define UNISPARKS_GUI_HPP
-#include "unisparks.hpp"
-namespace unisparks {
+#ifndef JAZZLIGHTS_GUI_HPP
+#define JAZZLIGHTS_GUI_HPP
+#include "extras.h"
+namespace jazzlights {
 
 int runGui(const char* winTitle, Player& player, Box viewport, bool fullscreen=false);
 
 
-} // namespace unisparks
-#endif /* UNISPARKS_GUI_HPP */
+}  // namespace jazzlights
+#endif  // JAZZLIGHTS_GUI_HPP

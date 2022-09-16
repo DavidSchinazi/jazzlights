@@ -16,14 +16,14 @@
 #include <assert.h>
 #include <list>
 
-#include "unisparks/util/log.hpp"
-#include "unisparks/util/time.hpp"
+#include "jazzlights/util/log.hpp"
+#include "jazzlights/util/time.hpp"
 
 #ifndef REDUCE_PIXELPUSHER_BRIGHTNESS
 #define REDUCE_PIXELPUSHER_BRIGHTNESS 0
 #endif  // REDUCE_PIXELPUSHER_BRIGHTNESS
 
-namespace unisparks {
+namespace jazzlights {
 
 #if REDUCE_PIXELPUSHER_BRIGHTNESS
 uint8_t reduceOneChannelBrightness(uint8_t c) {
@@ -392,4 +392,4 @@ void PixelPusher::render(InputStream<Color>& pixelColors) {
 // https://github.com/robot-head/PixelPusher-java/blob/master/src/com/heroicrobot/dropbit/discovery/DeviceType.java
 // https://github.com/robot-head/PixelPusher-java/blob/master/src/com/heroicrobot/dropbit/devices/pixelpusher/PixelPusher.java
 
-} // namespace unisparks
+}  // namespace jazzlights

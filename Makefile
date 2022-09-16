@@ -28,17 +28,17 @@ install: all
 	${CMAKE} -P ${CMAKE_BUILD_DIR}/cmake_install.cmake 
 
 demo: ${CMAKE_BUILD_DIR}
-	${CMAKE} --build ${CMAKE_BUILD_DIR} --config release --target unisparks-demo 
+	${CMAKE} --build ${CMAKE_BUILD_DIR} --config release --target jazzlights-demo 
 	LD_LIBRARY_PATH=${BUILD_DIR}/lib \
-		${BUILD_DIR}/bin/unisparks-demo ${SOURCE_DIR}/extras/demo/matrix.toml
+		${BUILD_DIR}/bin/jazzlights-demo ${SOURCE_DIR}/extras/demo/matrix.toml
 
 bench: ${CMAKE_BUILD_DIR}
-	${CMAKE} --build ${CMAKE_BUILD_DIR} --config release --target unisparks-bench
-	LD_LIBRARY_PATH=${BUILD_DIR}/lib ${BUILD_DIR}/bin/unisparks-bench
+	${CMAKE} --build ${CMAKE_BUILD_DIR} --config release --target jazzlights-bench
+	LD_LIBRARY_PATH=${BUILD_DIR}/lib ${BUILD_DIR}/bin/jazzlights-bench
 
 test: ${CMAKE_BUILD_DIR}
-	${CMAKE} --build ${CMAKE_BUILD_DIR} --config debug --target unisparks-test
-	LD_LIBRARY_PATH=${BUILD_DIR}/lib ${BUILD_DIR}/bin/unisparks-test
+	${CMAKE} --build ${CMAKE_BUILD_DIR} --config debug --target jazzlights-test
+	LD_LIBRARY_PATH=${BUILD_DIR}/lib ${BUILD_DIR}/bin/jazzlights-test
 
 xcodeproj: clean
 	${CMAKE} -E make_directory ${CMAKE_BUILD_DIR}

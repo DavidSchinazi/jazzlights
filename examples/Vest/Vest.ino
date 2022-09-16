@@ -1,11 +1,11 @@
 #define WEARABLE 1
 
-#include "Unisparks.h"
+#include "JazzLights.h"
 
 void setup() {
-  unisparks::vestSetup();
+  jazzlights::vestSetup();
 }
 
 void loop() {
-  unisparks::vestLoop();
+  jazzlights::vestLoop();
 }

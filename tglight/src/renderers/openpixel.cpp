@@ -1,5 +1,5 @@
 #include "renderers/openpixel.hpp"
-#include "unisparks/util/log.hpp"
+#include "jazzlights/util/log.hpp"
 
 #if !defined(ARDUINO)
 
@@ -349,7 +349,7 @@ u8 opc_put_pixels(opc_sink sink, u8 channel, u16 count, pixel* pixels) {
          opc_send(sink, (u8*) pixels, len, OPC_SEND_TIMEOUT_MS);
 }
 
-namespace unisparks {
+namespace jazzlights {
 
 OpenPixelWriter::OpenPixelWriter(const char* host, int port,
                                  uint8_t channel) : channel_(channel) {
@@ -388,6 +388,6 @@ void OpenPixelWriter::render(InputStream<Color>& pixelColors) {
 }
 
 
-} // namespace unisparks
+}  // namespace jazzlights
 
 #endif /* !defined(ARDUINO) */

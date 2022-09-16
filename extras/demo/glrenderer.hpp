@@ -1,8 +1,10 @@
-#ifndef UNISPARKS_RENDERERS_OPENGL_H
-#define UNISPARKS_RENDERERS_OPENGL_H
-#include "unisparks/renderer.hpp"
-#include "unisparks/layout.hpp"
-namespace unisparks {
+#ifndef JAZZLIGHTS_RENDERERS_OPENGL_H
+#define JAZZLIGHTS_RENDERERS_OPENGL_H
+
+#include "jazzlights/renderer.hpp"
+#include "jazzlights/layout.hpp"
+
+namespace jazzlights {
 
 class GLRenderer : public Renderer {
  public:
@@ -15,9 +17,6 @@ private:
   Meters ledRadius_;
 };
 
+}  // namespace jazzlights
 
-} // namespace unisparks
-#endif /* UNISPARKS_RENDERERS_OPENGL_H */
-
-
-
+#endif  // JAZZLIGHTS_RENDERERS_OPENGL_H

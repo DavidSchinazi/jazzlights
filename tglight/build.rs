@@ -23,7 +23,7 @@ fn collect_files(dir: &Path, out: &mut Vec<PathBuf>) -> Result<(), io::Error>{
 
 fn main() {
       let project_dir = canonicalize(PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap())).unwrap();
-      let unisparks_dir = canonicalize(match env::var("UNISPARKS_DIR") {
+      let jazzlights_dir = canonicalize(match env::var("JAZZLIGHTS_DIR") {
             Ok(v) => PathBuf::from(v),
             Err(_e) => project_dir.join("..")
       }).unwrap();
@@ -35,8 +35,8 @@ fn main() {
 
       let mut cpp_files = Vec::<PathBuf>::new();
       collect_files(&project_dir.join("src"), &mut cpp_files).unwrap();
-      collect_files(&unisparks_dir.join("src"), &mut cpp_files).unwrap();
-      collect_files(&unisparks_dir.join("extras/unisparks"), &mut cpp_files).unwrap();
+      collect_files(&jazzlights_dir.join("src"), &mut cpp_files).unwrap();
+      collect_files(&jazzlights_dir.join("extras/jazzlights"), &mut cpp_files).unwrap();
       let cpp_files : Vec<&PathBuf> = cpp_files.iter()
         .filter(|&f| f.to_str().unwrap().ends_with(".cpp"))
         .filter(|&f| !f.file_name().unwrap().to_str().unwrap().starts_with("arduino"))
@@ -50,13 +50,8 @@ fn main() {
             .flag("-std=c++14")
             .flag("-DBOOT_NAME=TGLIGHT")
             .include(project_dir.join("src"))
-            .include(unisparks_dir.join("src"))
-            .include(unisparks_dir.join("extras"))
+            .include(jazzlights_dir.join("src"))
+            .include(jazzlights_dir.join("extras"))
             .files(cpp_files)
             .compile("tgplayer");
-            
-      // println!("cargo:rustc-link-search={}", unisparks_dir.join("build").join("lib").display());
-      // println!("cargo:rustc-link-lib=unisparks");
-      // println!("cargo:rerun-if-changed={}", unisparks_dir.display());
-      // println!("cargo:rerun-if-changed=./src/run.cpp");
 }

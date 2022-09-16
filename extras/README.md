@@ -1,4 +1,4 @@
-# Unisparks Extras
+# Extras
 
 These are tools that can run on your computer.
 
@@ -18,7 +18,7 @@ Summary for macOS:
 # Build
 
 ```
-    cd unisparks/extras
+    cd jazzlights/extras
     cmake -S . -B build
     cmake --build build
 ```
@@ -26,7 +26,7 @@ Summary for macOS:
 # Run
 
 ```
-    unisparks/extras/build/unisparks-demo unisparks/extras/demo/matrix.toml
-    unisparks/extras/build/unisparks-demo unisparks/tglight/etc/robot/tglight.toml
-    unisparks/extras/build/unisparks-bench
+    jazzlights/extras/build/jazzlights-demo jazzlights/extras/demo/matrix.toml
+    jazzlights/extras/build/jazzlights-demo jazzlights/tglight/etc/robot/tglight.toml
+    jazzlights/extras/build/jazzlights-bench
 ```
