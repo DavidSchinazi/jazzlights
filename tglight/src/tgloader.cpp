@@ -1,6 +1,5 @@
 #include "tgloader.h"
 #include "renderers/pixelpusher.h"
-#include "renderers/openpixel.h"
 
 #include "jazzlights/util/loader.h"
 
@@ -37,15 +36,6 @@ Renderer& TGLoader::loadRenderer(const Layout&, const cpptoml::table& cfg, int s
  
     renderers.emplace_back(std::make_unique<PixelPusher>(strdup(addr), port,
                            strip, throttle, controller, group));
-  } else if (!strcmp(type, "openpixel")) {
-    auto addrcfg = cfg.get_as<std::string>("addr");
-    if (!addrcfg) {
-      throw std::runtime_error("must specify openpixel address");
-    }
-    auto addr = addrcfg->c_str();
-    auto channel = cfg.get_as<int64_t>("channel").value_or(0);
-    auto port = cfg.get_as<int64_t>("port").value_or(5000);
-    renderers.emplace_back(std::make_unique<OpenPixelWriter>(addr, port, channel));
   }
   return *renderers.back();
 }
