@@ -1,4 +1,7 @@
 #include "jazzlights/util/time.h"
+
+#ifdef ARDUINO
+
 #include <Arduino.h>
 #include <limits>
 #include <stdlib.h>
@@ -17,5 +20,4 @@ Milliseconds timeMillis() {
 
 }  // namespace jazzlights
 
-
-
+#endif  // ARDUINO

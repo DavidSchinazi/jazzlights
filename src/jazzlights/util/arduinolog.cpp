@@ -1,4 +1,7 @@
 #include "jazzlights/util/log.h"
+
+#ifdef ARDUINO
+
 #include <Arduino.h>
 #include <string>
 
@@ -15,3 +18,4 @@ void defaultHandler(const LogMessage& msg) {
 
 }  // namespace jazzlights
 
+#endif  // ARDUINO
