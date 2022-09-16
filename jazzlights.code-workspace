@@ -57,7 +57,14 @@
 			"regex": "cpp",
 			"thread": "cpp",
 			"random": "cpp",
-			"set": "cpp"
+			"set": "cpp",
+			"atomic": "cpp",
+			"complex": "cpp",
+			"condition_variable": "cpp",
+			"iterator": "cpp",
+			"map": "cpp",
+			"memory_resource": "cpp",
+			"string_view": "cpp"
 		}
 	}
 }

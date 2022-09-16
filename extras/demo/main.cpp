@@ -7,7 +7,7 @@
 #include <vector>
 #include <memory>
 
-using namespace jazzlights;
+namespace jazzlights {
 
 class DemoLoader : public Loader {
   Renderer& loadRenderer(const Layout& layout, const cpptoml::table&, int strandidx) override {
@@ -22,7 +22,7 @@ class DemoLoader : public Loader {
   }
 };
 
-int main(int argn, char** argv) {
+int runMain(int argn, char** argv) {
   if (argn<2) {
     printf("Usage: %s <config>\n", argv[0]);
     exit(-1);
@@ -41,4 +41,10 @@ int main(int argn, char** argv) {
   player.begin(timeMillis());
 
   return runGui("JazzLights Demo", player, player.bounds(), fullscreen);
+}
+
+}  // namespace jazzlights
+
+int main(int argc, char** argv) {
+  return jazzlights::runMain(argc, argv);
 }

@@ -1,3 +1,5 @@
+#include "sysinfo.h"
+
 #include <sstream>
 #include <string.h>
 #include <stdio.h>
@@ -11,13 +13,13 @@
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 
+namespace jazzlights {
+
 extern char version[];
 
 const char* sysinfo() {
   static char res[512];
-
-  using namespace std;
-  stringstream out;
+  std::stringstream out;
 
   out << "sysinfo " << version << " ";
 
@@ -53,3 +55,5 @@ const char* sysinfo() {
   strncpy(res, out.str().c_str(), sizeof(res));
   return res;
 }
+
+}  // namespace jazzlights

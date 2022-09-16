@@ -1,5 +1,6 @@
 #ifndef JAZZLIGHTS_UTIL_LOADER_HPP
 #define JAZZLIGHTS_UTIL_LOADER_HPP
+
 #include "jazzlights/player.hpp"
 #include "jazzlights/util/cpptoml.hpp"
 
@@ -21,5 +22,6 @@ class Loader {
   Meters ledr_;
 };
 
-}
+}  // namespace jazzlights
+
 #endif  // JAZZLIGHTS_UTIL_LOADER_HPP

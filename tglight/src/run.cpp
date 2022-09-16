@@ -1,18 +1,18 @@
 #include "tgloader.hpp"
+#include "sysinfo.h"
 
 #include "jazzlights/config.h"
 #include "jazzlights/networks/udp.hpp"
 
 #include <stdlib.h>
 
-using namespace jazzlights;
+namespace jazzlights {
 
 Player player;
 UnixUdpNetwork network;
-const char* sysinfo();
 char version[256] = {};
 
-extern "C" const char* call(const char* cmd) {
+const char* callInner(const char* cmd) {
   if (!strcmp(cmd, "shutdown")) {
     if (!system("shutdown -h now")) {
       return "msg shutting down...";
@@ -25,7 +25,7 @@ extern "C" const char* call(const char* cmd) {
   return player.command(cmd);
 }
 
-extern "C" void run(bool verbose, const char* ver, const char* cfgfile) {
+void runInner(bool verbose, const char* ver, const char* cfgfile) {
   if (verbose) {
     enableVerboseOutput();    
   }
@@ -37,8 +37,18 @@ extern "C" void run(bool verbose, const char* ver, const char* cfgfile) {
   load(cfgfile, player);
   player.connect(&network);
   player.begin(timeMillis());
-  for (;;) {
+  while (true) {
     player.render(timeMillis());
   }
   // runGui("TechnoGecko LED control", player, fullscreen);
+}
+
+}  // namespace jazzlights
+
+extern "C" const char* call(const char* cmd) {
+  return jazzlights::callInner(cmd);
+}
+
+extern "C" void run(bool verbose, const char* ver, const char* cfgfile) {
+  return jazzlights::runInner(verbose, ver, cfgfile);
 }

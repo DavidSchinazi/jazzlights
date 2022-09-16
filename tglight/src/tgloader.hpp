@@ -3,6 +3,10 @@
 
 #include "jazzlights/player.hpp"
 
-void load(const char *file, jazzlights::Player& player);
+namespace jazzlights {
+
+void load(const char *file, Player& player);
+
+}  // namespace jazzlights
 
 #endif  // TGPLAYER_LOADER_HPP

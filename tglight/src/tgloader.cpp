@@ -8,29 +8,25 @@
 #include <sstream>
 #include <unistd.h>
 
-using namespace std;
-using namespace jazzlights;
+namespace jazzlights {
 
-
-class TGLoader : public jazzlights::Loader {
-  jazzlights::Renderer& loadRenderer(const jazzlights::Layout& layout,
-                                    const cpptoml::table&, int strandidx) override;
+class TGLoader : public Loader {
+  Renderer& loadRenderer(const Layout& layout, const cpptoml::table&, int strandidx) override;
 };
 
-Renderer& TGLoader::loadRenderer(const jazzlights::Layout&,
-                                 const cpptoml::table& cfg, int strandidx) {
+Renderer& TGLoader::loadRenderer(const Layout&, const cpptoml::table& cfg, int strandidx) {
 
-  static vector<unique_ptr<Renderer>> renderers;
-  auto typecfg = cfg.get_as<string>("type");
+  static std::vector<std::unique_ptr<Renderer>> renderers;
+  auto typecfg = cfg.get_as<std::string>("type");
   if (!typecfg) {
-    throw runtime_error("must specify renderer type");
+    throw std::runtime_error("must specify renderer type");
   }
   auto type = typecfg->c_str();
 
   if (!strcmp(type, "pixelpusher")) {
-    auto addrcfg = cfg.get_as<string>("addr");
+    auto addrcfg = cfg.get_as<std::string>("addr");
     if (!addrcfg) {
-      throw runtime_error("must specify pixelpusher address");
+      throw std::runtime_error("must specify pixelpusher address");
     }
     auto addr = addrcfg->c_str();
     auto strip = cfg.get_as<int64_t>("strip").value_or(strandidx);
@@ -39,31 +35,32 @@ Renderer& TGLoader::loadRenderer(const jazzlights::Layout&,
     auto controller = cfg.get_as<int64_t>("controller").value_or(0);
     auto group = cfg.get_as<int64_t>("group").value_or(0);
  
-    renderers.emplace_back(unique_ptr<Renderer>(new PixelPusher(strdup(addr), port,
-                           strip, throttle, controller, group)));
+    renderers.emplace_back(std::make_unique<PixelPusher>(strdup(addr), port,
+                           strip, throttle, controller, group));
   } else if (!strcmp(type, "openpixel")) {
-    auto addrcfg = cfg.get_as<string>("addr");
+    auto addrcfg = cfg.get_as<std::string>("addr");
     if (!addrcfg) {
-      throw runtime_error("must specify openpixel address");
+      throw std::runtime_error("must specify openpixel address");
     }
     auto addr = addrcfg->c_str();
     auto channel = cfg.get_as<int64_t>("channel").value_or(0);
     auto port = cfg.get_as<int64_t>("port").value_or(5000);
-    renderers.emplace_back(unique_ptr<Renderer>(new OpenPixelWriter(addr, port,
-                           channel)));
+    renderers.emplace_back(std::make_unique<OpenPixelWriter>(addr, port, channel));
   }
   return *renderers.back();
 }
 
-void load(const char *file, jazzlights::Player& player) {
-  for(;;) {
+void load(const char *file, Player& player) {
+  while (true) {
     try {
       info("Loading %s...", file);
       TGLoader().load(file, player);
       return;
-    } catch (const runtime_error& err) {
+    } catch (const std::runtime_error& err) {
       error("Couldn't parse %s: %s", file, err.what());
       sleep(2);
     }
   }
 }
+
+}  // namespace jazzlights
