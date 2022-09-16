@@ -34,10 +34,7 @@ void onResize(GLFWwindow*, int winWidth, int winHeight) {
 void onKey(GLFWwindow* window, int key, int /*scncode*/, int action,
            int mods) {
   const Milliseconds currentTime = timeMillis();
-  if (key == GLFW_KEY_V && action == GLFW_PRESS) {
-    // logLevel =
-    //     (logLevel == errorLevel ? debugLevel : errorLevel);
-  } else if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
+  if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
     player->loopOne(currentTime);
   } else if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
     player->stopLooping(currentTime);

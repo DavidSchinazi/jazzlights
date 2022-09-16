@@ -285,10 +285,10 @@ void PixelPusher::render(InputStream<Color>& pixelColors) {
     inet_ntop(AF_INET, &(targetAddress->sin_addr), ipAddressStr, sizeof(ipAddressStr));
     if (sendto(fd, buf.data(), buf.size(), 0, reinterpret_cast<const struct sockaddr*>(targetAddress),
               sizeof(*targetAddress)) != static_cast<ssize_t>(buf.size())) {
-      error("Can't send %d bytes to PixelPusher at %s:%u on socket %d: %s",
+      error("Can't send %zu bytes to PixelPusher at %s:%u on socket %d: %s",
             buf.size(), ipAddressStr, ntohs(targetAddress->sin_port), fd, strerror(errno));
     } else {
-      debug("Sent strip %d (%d pixels, %d bytes) to PixelPusher at %s:%u on socket %d",
+      debug("Sent strip %d (%d pixels, %zu bytes) to PixelPusher at %s:%u on socket %d",
             strip, pxcnt, buf.size(), ipAddressStr, ntohs(targetAddress->sin_port), fd);
     }
   }

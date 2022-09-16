@@ -236,7 +236,7 @@ int UnixUdpNetwork::recv(void* buf, size_t bufsize, std::string* /*details*/) {
       continue; // error reading
     }
     fromstr = inet_ntoa(fromaddr.sin_addr);
-    debug("Received %d bytes on UDP socket %d ifName %s from %s:%d",
+    debug("Received %ld bytes on UDP socket %d ifName %s from %s:%d",
           n, fd, ifName.c_str(), fromstr, ntohs(fromaddr.sin_port));
     return n;
   }
@@ -261,7 +261,7 @@ void UnixUdpNetwork::send(void* buf, size_t bufsize) {
       if (errno == EWOULDBLOCK || errno == EAGAIN) {
         continue; // no room to enqueue data on nonblocking socket
       }
-      error("Failed to send %d bytes on UDP socket %d ifName %s: %s",
+      error("Failed to send %zu bytes on UDP socket %d ifName %s: %s",
             bufsize, fd, ifName.c_str(), strerror(errno));
       if (errno == ENETUNREACH) {
         // Do not invalidate the socket as we would immediately
@@ -280,7 +280,7 @@ void UnixUdpNetwork::send(void* buf, size_t bufsize) {
       setupSockets();
       continue;
     }
-    debug("Sent %d bytes on UDP socket %d ifName %s to %s:%d",
+    debug("Sent %zu bytes on UDP socket %d ifName %s to %s:%d",
           bufsize, fd, ifName.c_str(), mcastAddrStr_, port_);
   }
 }

@@ -3,35 +3,28 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef ARDUINO
+#  include <Arduino.h>
+#endif  // ARDUINO
+
 namespace jazzlights {
 
-const char* level_str[] = {"FATAL", "ERROR", "WARNING", "INFO", "DEBUG"};
-#if 0
-LogLevel logLevel = LogLevel::DEBUG;
-#else
-LogLevel logLevel = LogLevel::INFO;
-#endif
+bool gDebugLoggingEnabled = false;
 
-void defaultHandler(const LogMessage& msg);
-LogHandler logHandler = defaultHandler;
+#ifdef ARDUINO
 
-void setLogHandler(LogHandler fn) {
-  logHandler = fn;
-}
-
-void log(LogLevel level, const char* fmt, va_list args) {
-  if (level > logLevel) {
-    return;
-  }
+void arduinoLog(const char* format, ...) {
   char buf[256];
-  vsnprintf(buf, sizeof(buf), fmt, args);
-  LogMessage msg {level, buf};
-  logHandler(msg);  
-  if (level == LogLevel::FATAL) {
-    abort();
+  va_list args;
+  va_start(args, format);
+  const int numPrinted = vsnprintf(buf, sizeof(buf), format, args);
+  va_end(args);
+  if (numPrinted >= sizeof(buf)) {
+    buf[sizeof(buf) - 1] = '\0';
   }
+  Serial.println(buf);
 }
 
+#endif  // ARDUINO
 
 }  // namespace jazzlights
-

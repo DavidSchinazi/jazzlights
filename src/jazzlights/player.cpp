@@ -300,7 +300,7 @@ Player& Player::addStrand(const Layout& l, SimpleRenderFunc r) {
 Player& Player::addStrand(const Layout& l, Renderer& r) {
   constexpr size_t MAX_STRANDS = sizeof(strands_) / sizeof(*strands_);
   if (strandCount_ >= MAX_STRANDS) {
-    fatal("Trying to add too many strands, max=%d", MAX_STRANDS);
+    fatal("Trying to add too many strands, max=%zu", MAX_STRANDS);
   }
   strands_[strandCount_++] = {&l, &r};
   return *this;
@@ -346,7 +346,7 @@ void Player::begin(Milliseconds currentTime) {
   }
   currentLeader_ = localDeviceId_;
   info("%u Starting JazzLights player %s (v%s); "
-       "basePrecedence %u precedenceGain %u strands: %d%s, "
+       "basePrecedence %u precedenceGain %u strands: %zu%s, "
        "pixels: %d, %s " DEVICE_ID_FMT " w %f h %f ox %f oy %f xv %zu yv %zu",
        currentTime,
        BOOT_MESSAGE,
@@ -396,7 +396,7 @@ void Player::handleSpecial(Milliseconds currentTime) {
   currentPattern_ = kSpecialPatternBits[specialMode_ - 1];
   nextPattern_ = currentPattern_;
   loop_ = true;
-  info("%u Starting special mode %u", currentTime, specialMode_);
+  info("%u Starting special mode %zu", currentTime, specialMode_);
 }
 
 void Player::stopSpecial(Milliseconds currentTime) {

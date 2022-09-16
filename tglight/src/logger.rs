@@ -47,18 +47,6 @@ impl Log for Logger {
     }
 }
 
-// extern "C" fn player_msg_handler(msg: *const player::LogMessage) {
-//     let msg = unsafe{*msg};
-//     match msg.level() {
-//         player::LogLevel_FATAL => error!("{}", msg.text()),
-//         player::LogLevel_ERROR => error!("{}", msg.text()),
-//         player::LogLevel_WARNING => warn!("{}", msg.text()),
-//         player::LogLevel_INFO => info!("{}", msg.text()),
-//         player::LogLevel_DEBUG => debug!("{}", msg.text()),
-//         _ => info!("{}", msg.text()),
-//     }
-// }
-
 pub fn init(verbose : bool, nocolor: bool, timestamps: bool) {
     let level = if verbose { 
         Level::Debug

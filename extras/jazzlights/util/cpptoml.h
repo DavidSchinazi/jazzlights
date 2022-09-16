@@ -1798,7 +1798,7 @@ class consumer
         return val;
     }
 
-    void error()
+    void trigger_error()
     {
         on_error_();
     }
@@ -2687,7 +2687,7 @@ class parser
             return make_value<bool>(false);
         }
 
-        eat.error();
+        eat.trigger_error();
         return nullptr;
     }
 
