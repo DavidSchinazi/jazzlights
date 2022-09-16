@@ -11,8 +11,6 @@ file(GLOB LIB_SOURCES
 	../src/jazzlights/layouts/*.h
 	../src/jazzlights/util/*.cpp
 	../src/jazzlights/util/*.h
-	jazzlights/effects/*.cpp
-	jazzlights/effects/*.h
 	jazzlights/networks/*.cpp
 	jazzlights/networks/*.h
 	jazzlights/util/*.cpp
