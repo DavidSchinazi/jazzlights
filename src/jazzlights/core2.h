@@ -3,7 +3,7 @@
 
 #if WEARABLE && CORE2AWS
 
-#include "jazzlights/player.hpp"
+#include "jazzlights/player.h"
 
 namespace jazzlights {
 

@@ -3,8 +3,8 @@
 
 #include <cstdint>
 
-#include "jazzlights/effect.hpp"
-#include "jazzlights/util/color.hpp"
+#include "jazzlights/effect.h"
+#include "jazzlights/util/color.h"
 
 namespace jazzlights {
 

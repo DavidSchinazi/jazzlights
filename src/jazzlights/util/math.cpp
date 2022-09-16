@@ -1,4 +1,4 @@
-#include "jazzlights/util/math.hpp"
+#include "jazzlights/util/math.h"
 
 namespace jazzlights {
 namespace internal {

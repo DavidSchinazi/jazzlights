@@ -3,62 +3,62 @@ set(CMAKE_MACOSX_RPATH 1)
 project(Jazzlights)
 
 set(LIB_SOURCES
-	../src/jazzlights/effect.hpp
+	../src/jazzlights/effect.h
 	../src/jazzlights/effects/flame.cpp
-	../src/jazzlights/effects/flame.hpp
-	../src/jazzlights/effects/functional.hpp
-	../src/jazzlights/effects/glitter.hpp
-	../src/jazzlights/effects/glow.hpp
-	../src/jazzlights/effects/plasma.hpp
-	../src/jazzlights/effects/rainbow.hpp
-	../src/jazzlights/effects/solid.hpp
-	../src/jazzlights/effects/threesine.hpp
-	../src/jazzlights/frame.hpp
-	../src/jazzlights/layout.hpp
-	../src/jazzlights/layouts/matrix.hpp
-	../src/jazzlights/layouts/pixelmap.hpp
-	../src/jazzlights/layouts/reversemap.hpp
+	../src/jazzlights/effects/flame.h
+	../src/jazzlights/effects/functional.h
+	../src/jazzlights/effects/glitter.h
+	../src/jazzlights/effects/glow.h
+	../src/jazzlights/effects/plasma.h
+	../src/jazzlights/effects/rainbow.h
+	../src/jazzlights/effects/solid.h
+	../src/jazzlights/effects/threesine.h
+	../src/jazzlights/frame.h
+	../src/jazzlights/layout.h
+	../src/jazzlights/layouts/matrix.h
+	../src/jazzlights/layouts/pixelmap.h
+	../src/jazzlights/layouts/reversemap.h
 	../src/jazzlights/network.cpp
-	../src/jazzlights/network.hpp
+	../src/jazzlights/network.h
 	../src/jazzlights/player.cpp
-	../src/jazzlights/player.hpp
+	../src/jazzlights/player.h
 	../src/jazzlights/pseudorandom.cpp
 	../src/jazzlights/pseudorandom.h
 	../src/jazzlights/registry.cpp
-	../src/jazzlights/registry.hpp
-	../src/jazzlights/renderer.hpp
-	../src/jazzlights/renderers/simple.hpp
+	../src/jazzlights/registry.h
+	../src/jazzlights/renderer.h
+	../src/jazzlights/renderers/simple.h
 	../src/jazzlights/types.cpp
 	../src/jazzlights/types.h
 	../src/jazzlights/util/color.cpp
-	../src/jazzlights/util/color.hpp
-	../src/jazzlights/util/geom.hpp
+	../src/jazzlights/util/color.h
+	../src/jazzlights/util/geom.h
 	../src/jazzlights/util/log.cpp
-	../src/jazzlights/util/log.hpp
+	../src/jazzlights/util/log.h
 	../src/jazzlights/util/math.cpp
-	../src/jazzlights/util/math.hpp
-	../src/jazzlights/util/memory.hpp
-	../src/jazzlights/util/meta.hpp
+	../src/jazzlights/util/math.h
+	../src/jazzlights/util/memory.h
+	../src/jazzlights/util/meta.h
 	../src/jazzlights/util/noise.cpp
 	../src/jazzlights/util/noise.h
-	../src/jazzlights/util/stream.hpp
-	../src/jazzlights/util/time.hpp
-	../src/jazzlights/version.hpp
-	jazzlights/effects/pixeltest.hpp
+	../src/jazzlights/util/stream.h
+	../src/jazzlights/util/time.h
+	../src/jazzlights/version.h
+	jazzlights/effects/pixeltest.h
 	jazzlights/networks/udp.cpp
-	jazzlights/networks/udp.hpp
-	jazzlights/util/cpptoml.hpp
+	jazzlights/networks/udp.h
+	jazzlights/util/cpptoml.h
 	jazzlights/util/loader.cpp
-	jazzlights/util/loader.hpp
+	jazzlights/util/loader.h
 	jazzlights/util/stdlog.cpp
 	jazzlights/util/stdtime.cpp
 )
 
 set(DEMO_SOURCES
 	demo/glrenderer.cpp
-	demo/glrenderer.hpp
+	demo/glrenderer.h
 	demo/gui.cpp
-	demo/gui.hpp
+	demo/gui.h
 	demo/main.cpp
 )
 

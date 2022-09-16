@@ -1,8 +1,8 @@
-#include "tgloader.hpp"
-#include "renderers/pixelpusher.hpp"
-#include "renderers/openpixel.hpp"
+#include "tgloader.h"
+#include "renderers/pixelpusher.h"
+#include "renderers/openpixel.h"
 
-#include "jazzlights/util/loader.hpp"
+#include "jazzlights/util/loader.h"
 
 #include <vector>
 #include <sstream>

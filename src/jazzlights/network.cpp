@@ -1,8 +1,8 @@
-#include "jazzlights/network.hpp"
+#include "jazzlights/network.h"
 
-#include "jazzlights/util/log.hpp"
-#include "jazzlights/util/time.hpp"
-#include "jazzlights/util/math.hpp"
+#include "jazzlights/util/log.h"
+#include "jazzlights/util/time.h"
+#include "jazzlights/util/math.h"
 
 #include <stdint.h>
 #include <string.h>

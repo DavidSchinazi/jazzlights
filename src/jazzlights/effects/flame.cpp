@@ -1,11 +1,11 @@
-#include "jazzlights/effects/flame.hpp"
+#include "jazzlights/effects/flame.h"
 
 #include <assert.h>
 
 #include "jazzlights/config.h"
-#include "jazzlights/player.hpp"
-#include "jazzlights/util/color.hpp"
-#include "jazzlights/util/math.hpp"
+#include "jazzlights/player.h"
+#include "jazzlights/util/color.h"
+#include "jazzlights/util/math.h"
 
 namespace jazzlights {
 using internal::scale8_video;

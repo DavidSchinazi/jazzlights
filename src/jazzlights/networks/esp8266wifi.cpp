@@ -1,12 +1,12 @@
-#include "jazzlights/networks/esp8266wifi.hpp"
+#include "jazzlights/networks/esp8266wifi.h"
 
 #if JAZZLIGHTS_ESP_WIFI
 
 #include <sstream>
 
 #include "jazzlights/pseudorandom.h"
-#include "jazzlights/util/log.hpp"
-#include "jazzlights/util/time.hpp"
+#include "jazzlights/util/log.h"
+#include "jazzlights/util/time.h"
 
 namespace jazzlights {
 

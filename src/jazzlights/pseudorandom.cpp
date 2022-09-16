@@ -13,7 +13,7 @@
 #  include "esp_system.h"
 #endif
 
-#include "jazzlights/util/log.hpp"
+#include "jazzlights/util/log.h"
 
 namespace jazzlights {
 namespace {

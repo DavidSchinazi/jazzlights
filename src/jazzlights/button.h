@@ -2,9 +2,9 @@
 #define JAZZLIGHTS_BUTTON_H
 
 #include "jazzlights/config.h"
-#include "jazzlights/player.hpp"
-#include "jazzlights/networks/esp32_ble.hpp"
-#include "jazzlights/networks/esp8266wifi.hpp"
+#include "jazzlights/player.h"
+#include "jazzlights/networks/esp32_ble.h"
+#include "jazzlights/networks/esp8266wifi.h"
 
 #if WEARABLE
 

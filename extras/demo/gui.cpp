@@ -1,7 +1,8 @@
-#include "glrenderer.hpp"
+#include "gui.h"
+#include "glrenderer.h"
 
 #include "jazzlights/config.h"
-#include "jazzlights/player.hpp"
+#include "jazzlights/player.h"
 
 #include <vector>
 #include <sstream>

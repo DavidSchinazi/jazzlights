@@ -1,7 +1,7 @@
-#include "jazzlights/util/loader.hpp"
-#include "jazzlights/layouts/matrix.hpp"
-#include "jazzlights/layouts/pixelmap.hpp"
-#include "jazzlights/networks/udp.hpp"
+#include "jazzlights/util/loader.h"
+#include "jazzlights/layouts/matrix.h"
+#include "jazzlights/layouts/pixelmap.h"
+#include "jazzlights/networks/udp.h"
 
 #include <vector>
 #include <sstream>

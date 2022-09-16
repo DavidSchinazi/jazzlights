@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "jazzlights/frame.hpp"
+#include "jazzlights/frame.h"
 
 namespace jazzlights {
 

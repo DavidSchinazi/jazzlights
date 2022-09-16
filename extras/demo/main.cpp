@@ -1,8 +1,8 @@
-#include "glrenderer.hpp"
-#include "gui.hpp"
+#include "glrenderer.h"
+#include "gui.h"
 
-#include "jazzlights/networks/udp.hpp"
-#include "jazzlights/util/loader.hpp"
+#include "jazzlights/networks/udp.h"
+#include "jazzlights/util/loader.h"
 
 #include <vector>
 #include <memory>

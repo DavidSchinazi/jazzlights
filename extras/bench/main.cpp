@@ -1,6 +1,6 @@
-#include "jazzlights/layouts/matrix.hpp"
-#include "jazzlights/player.hpp"
-#include "jazzlights/util/log.hpp"
+#include "jazzlights/layouts/matrix.h"
+#include "jazzlights/player.h"
+#include "jazzlights/util/log.h"
 
 namespace jazzlights {
 

@@ -1,4 +1,4 @@
-#include "esp32_ble.hpp"
+#include "esp32_ble.h"
 
 #if ESP32_BLE
 
@@ -7,7 +7,7 @@
 #include <string>
 
 #include "jazzlights/pseudorandom.h"
-#include "jazzlights/util/log.hpp"
+#include "jazzlights/util/log.h"
 
 #ifndef ESP32_BLE_DEBUG_OVERRIDE
 #  define ESP32_BLE_DEBUG_OVERRIDE 0

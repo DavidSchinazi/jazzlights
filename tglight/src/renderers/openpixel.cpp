@@ -1,5 +1,5 @@
-#include "renderers/openpixel.hpp"
-#include "jazzlights/util/log.hpp"
+#include "renderers/openpixel.h"
+#include "jazzlights/util/log.h"
 
 #if !defined(ARDUINO)
 

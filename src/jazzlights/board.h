@@ -5,7 +5,7 @@
 
 #if WEARABLE
 
-#include "jazzlights/layout.hpp"
+#include "jazzlights/layout.h"
 
 namespace jazzlights {
 

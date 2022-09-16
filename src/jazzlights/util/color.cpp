@@ -1,5 +1,5 @@
-#include "jazzlights/util/color.hpp"
-#include "jazzlights/util/math.hpp"
+#include "jazzlights/util/color.h"
+#include "jazzlights/util/math.h"
 #define FAST_HSL 1
 
 namespace jazzlights {

@@ -3,7 +3,7 @@
 // This file is mostly copied from FastLED
 // https://github.com/FastLED/FastLED/blob/master/src/noise.cpp
 
-#include "jazzlights/util/math.hpp"
+#include "jazzlights/util/math.h"
 
 namespace jazzlights {
 namespace internal {

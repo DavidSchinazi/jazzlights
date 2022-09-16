@@ -3,9 +3,9 @@
 #include <set>
 #include <vector>
 
-#include "jazzlights/layout.hpp"
+#include "jazzlights/layout.h"
 #include "jazzlights/pseudorandom.h"
-#include "jazzlights/util/log.hpp"
+#include "jazzlights/util/log.h"
 
 namespace jazzlights {
 namespace {

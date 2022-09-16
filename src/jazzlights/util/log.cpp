@@ -1,4 +1,4 @@
-#include "jazzlights/util/log.hpp"
+#include "jazzlights/util/log.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>

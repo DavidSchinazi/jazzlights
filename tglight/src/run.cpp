@@ -1,8 +1,8 @@
-#include "tgloader.hpp"
+#include "tgloader.h"
 #include "sysinfo.h"
 
 #include "jazzlights/config.h"
-#include "jazzlights/networks/udp.hpp"
+#include "jazzlights/networks/udp.h"
 
 #include <stdlib.h>
 

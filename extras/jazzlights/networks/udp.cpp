@@ -1,5 +1,5 @@
 #ifndef ARDUINO
-#include "jazzlights/networks/udp.hpp"
+#include "jazzlights/networks/udp.h"
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -19,7 +19,7 @@
 #  include <linux/if_packet.h>
 #endif // __APPLE__
 
-#include "jazzlights/util/log.hpp"
+#include "jazzlights/util/log.h"
 
 namespace jazzlights {
 

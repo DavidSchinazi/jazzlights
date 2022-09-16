@@ -1,4 +1,4 @@
-#include "jazzlights/registry.hpp"
+#include "jazzlights/registry.h"
 namespace jazzlights {
 namespace internal {
 

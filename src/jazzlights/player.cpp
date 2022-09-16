@@ -1,4 +1,4 @@
-#include "jazzlights/player.hpp"
+#include "jazzlights/player.h"
 
 #include <cstdio>
 #include <limits>
@@ -9,26 +9,26 @@
 
 #include "jazzlights/board.h"
 #include "jazzlights/effects/coloredbursts.h"
-#include "jazzlights/effects/flame.hpp"
-#include "jazzlights/effects/glitter.hpp"
-#include "jazzlights/effects/glow.hpp"
+#include "jazzlights/effects/flame.h"
+#include "jazzlights/effects/glitter.h"
+#include "jazzlights/effects/glow.h"
 #include "jazzlights/effects/hiphotic.h"
 #include "jazzlights/effects/metaballs.h"
-#include "jazzlights/effects/plasma.hpp"
-#include "jazzlights/effects/rainbow.hpp"
-#include "jazzlights/effects/solid.hpp"
+#include "jazzlights/effects/plasma.h"
+#include "jazzlights/effects/rainbow.h"
+#include "jazzlights/effects/solid.h"
 #include "jazzlights/effects/thematrix.h"
-#include "jazzlights/effects/threesine.hpp"
+#include "jazzlights/effects/threesine.h"
 #include "jazzlights/pseudorandom.h"
-#include "jazzlights/registry.hpp"
-#include "jazzlights/renderers/simple.hpp"
-#include "jazzlights/util/containers.hpp"
-#include "jazzlights/util/log.hpp"
-#include "jazzlights/util/math.hpp"
-#include "jazzlights/util/memory.hpp"
-#include "jazzlights/util/stream.hpp"
-#include "jazzlights/util/time.hpp"
-#include "jazzlights/version.hpp"
+#include "jazzlights/registry.h"
+#include "jazzlights/renderers/simple.h"
+#include "jazzlights/util/containers.h"
+#include "jazzlights/util/log.h"
+#include "jazzlights/util/math.h"
+#include "jazzlights/util/memory.h"
+#include "jazzlights/util/stream.h"
+#include "jazzlights/util/time.h"
+#include "jazzlights/version.h"
 
 namespace jazzlights {
 

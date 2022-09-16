@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "jazzlights/util/geom.hpp"
+#include "jazzlights/util/geom.h"
 
 namespace jazzlights {
 

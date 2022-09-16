@@ -1,4 +1,4 @@
-#include "jazzlights/util/time.hpp"
+#include "jazzlights/util/time.h"
 #include <Arduino.h>
 #include <limits>
 #include <stdlib.h>

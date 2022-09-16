@@ -3,15 +3,15 @@
 #if WEARABLE
 
 #if ORANGE_VEST || IS_STAFF || GECKO_FOOT || IS_CAPTAIN_HAT
-#  include "jazzlights/layouts/pixelmap.hpp"
+#  include "jazzlights/layouts/pixelmap.h"
 #endif
 
 #if CAMP_SIGN || IS_GUPPY || HAMMER || FAIRY_WAND
-#  include "jazzlights/layouts/reversemap.hpp"
+#  include "jazzlights/layouts/reversemap.h"
 #endif
 
 #if IS_ROPELIGHT || IS_GAUNTLET
-#  include "jazzlights/layouts/matrix.hpp"
+#  include "jazzlights/layouts/matrix.h"
 #endif
 
 namespace jazzlights {

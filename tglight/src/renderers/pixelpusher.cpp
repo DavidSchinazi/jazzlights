@@ -1,4 +1,4 @@
-#include "renderers/pixelpusher.hpp"
+#include "renderers/pixelpusher.h"
 
 #include <vector>
 #include <arpa/inet.h>
@@ -16,8 +16,8 @@
 #include <assert.h>
 #include <list>
 
-#include "jazzlights/util/log.hpp"
-#include "jazzlights/util/time.hpp"
+#include "jazzlights/util/log.h"
+#include "jazzlights/util/time.h"
 
 #ifndef REDUCE_PIXELPUSHER_BRIGHTNESS
 #define REDUCE_PIXELPUSHER_BRIGHTNESS 0

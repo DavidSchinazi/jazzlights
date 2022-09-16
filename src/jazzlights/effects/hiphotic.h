@@ -1,10 +1,10 @@
 #ifndef JAZZLIGHTS_EFFECTS_HIPHOTIC_H
 #define JAZZLIGHTS_EFFECTS_HIPHOTIC_H
 
-#include "jazzlights/effect.hpp"
+#include "jazzlights/effect.h"
 #include "jazzlights/palette.h"
 #include "jazzlights/pseudorandom.h"
-#include "jazzlights/util/math.hpp"
+#include "jazzlights/util/math.h"
 
 namespace jazzlights {
 

@@ -1,4 +1,4 @@
-#include "jazzlights/util/log.hpp"
+#include "jazzlights/util/log.h"
 #include <stdio.h>
 
 namespace jazzlights {

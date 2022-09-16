@@ -1,9 +1,9 @@
-#include "jazzlights/networks/arduinoethernet.hpp"
+#include "jazzlights/networks/arduinoethernet.h"
 
 #include <sstream>
 
-#include "jazzlights/util/log.hpp"
-#include "jazzlights/util/time.hpp"
+#include "jazzlights/util/log.h"
+#include "jazzlights/util/time.h"
 
 #if JAZZLIGHTS_ARDUINO_ETHERNET
 

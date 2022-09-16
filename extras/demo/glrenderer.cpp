@@ -1,4 +1,4 @@
-#include "glrenderer.hpp"
+#include "glrenderer.h"
 #include <GLFW/glfw3.h>
 #include <math.h>
 namespace jazzlights {
