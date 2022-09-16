@@ -1,4 +1,4 @@
-#include "jazzlights/networks/esp8266wifi.h"
+#include "jazzlights/networks/esp_wifi.h"
 
 #if JAZZLIGHTS_ESP_WIFI
 
@@ -10,7 +10,7 @@
 
 namespace jazzlights {
 
-std::string Esp8266WiFi::WiFiStatusToString(wl_status_t status) {
+std::string EspWiFi::WiFiStatusToString(wl_status_t status) {
   if (status == kUninitialized) { return "UNINITIALIZED"; }
   switch (status) {
     case WL_NO_SHIELD: return "WL_NO_SHIELD";
@@ -27,12 +27,12 @@ std::string Esp8266WiFi::WiFiStatusToString(wl_status_t status) {
   return s.str();
 }
 
-Esp8266WiFi::Esp8266WiFi(const char* ssid, const char* pass) : creds_{ssid, pass} {
+EspWiFi::EspWiFi(const char* ssid, const char* pass) : creds_{ssid, pass} {
   uint8_t macAddress[6] = {};
   localDeviceId_ = NetworkDeviceId(WiFi.macAddress(&macAddress[0]));
 }
 
-NetworkStatus Esp8266WiFi::update(NetworkStatus status, Milliseconds currentTime) {
+NetworkStatus EspWiFi::update(NetworkStatus status, Milliseconds currentTime) {
   const wl_status_t newWiFiStatus = WiFi.status();
   if (newWiFiStatus != currentWiFiStatus_) {
     info("%u %s Wi-Fi status changing from %s to %s",
@@ -174,10 +174,10 @@ err:
   return CONNECTION_FAILED;
 }
 
-int Esp8266WiFi::recv(void* buf, size_t bufsize, std::string* details) {
+int EspWiFi::recv(void* buf, size_t bufsize, std::string* details) {
   int cb = udp_.parsePacket();
   if (cb <= 0) {
-    debug("Esp8266WiFi::recv returned %d status = %s",
+    debug("EspWiFi::recv returned %d status = %s",
           cb, NetworkStatusToString(status()).c_str());
     return 0;
   }
@@ -191,7 +191,7 @@ int Esp8266WiFi::recv(void* buf, size_t bufsize, std::string* details) {
 #  define ENABLE_ESP_WIFI_SENDING 1
 #endif // ENABLE_ESP_WIFI_SENDING
 
-void Esp8266WiFi::send(void* buf, size_t bufsize) {
+void EspWiFi::send(void* buf, size_t bufsize) {
 #if ENABLE_ESP_WIFI_SENDING
   IPAddress ip;
   ip.fromString(mcastAddr_);
@@ -204,7 +204,7 @@ void Esp8266WiFi::send(void* buf, size_t bufsize) {
 #endif // ENABLE_ESP_WIFI_SENDING
 }
 
-std::string Esp8266WiFi::statusStr(Milliseconds currentTime) {
+std::string EspWiFi::statusStr(Milliseconds currentTime) {
   switch (getStatus()) {
     case INITIALIZING:      return "init";
     case DISCONNECTED:      return "disconnected";

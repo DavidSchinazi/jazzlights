@@ -4,7 +4,7 @@
 #include "jazzlights/config.h"
 #include "jazzlights/player.h"
 #include "jazzlights/networks/esp32_ble.h"
-#include "jazzlights/networks/esp8266wifi.h"
+#include "jazzlights/networks/esp_wifi.h"
 
 #if WEARABLE
 
@@ -12,7 +12,7 @@ namespace jazzlights {
 
 void setupButtons();
 void doButtons(Player& player,
-               const Esp8266WiFi& wifiNetwork,
+               const EspWiFi& wifiNetwork,
 #if ESP32_BLE
                const Esp32BleNetwork& bleNetwork,
 #endif  // ESP32_BLE

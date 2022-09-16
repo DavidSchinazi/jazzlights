@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_NETWORKS_ESP8266_H
-#define JAZZLIGHTS_NETWORKS_ESP8266_H
+#ifndef JAZZLIGHTS_NETWORKS_ESP_WIFI_H
+#define JAZZLIGHTS_NETWORKS_ESP_WIFI_H
 
 #include "jazzlights/network.h"
 
@@ -24,9 +24,9 @@
 namespace jazzlights {
 
 
-class Esp8266WiFi : public UdpNetwork {
+class EspWiFi : public UdpNetwork {
  public:
-  Esp8266WiFi(const char* ssid, const char* pass);
+  EspWiFi(const char* ssid, const char* pass);
 
   NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
   int recv(void* buf, size_t bufsize, std::string* details) override;
@@ -35,7 +35,7 @@ class Esp8266WiFi : public UdpNetwork {
     return localDeviceId_;
   }
   const char* networkName() const override {
-    return "ESP8266WiFi";
+    return "EspWiFi";
   }
 
   struct Credentials {
@@ -68,4 +68,4 @@ class Esp8266WiFi : public UdpNetwork {
 }  // namespace jazzlights
 
 #endif  // JAZZLIGHTS_ESP_WIFI
-#endif  // JAZZLIGHTS_NETWORKS_ESP8266_H
+#endif  // JAZZLIGHTS_NETWORKS_ESP_WIFI_H

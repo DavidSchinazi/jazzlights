@@ -29,7 +29,7 @@ void renderPixel2(int i, uint8_t r, uint8_t g, uint8_t b) {
 }
 #endif  // LEDNUM2
 
-Esp8266WiFi network("FISHLIGHT", "155155155");
+EspWiFi network("FISHLIGHT", "155155155");
 #if JAZZLIGHTS_ARDUINO_ETHERNET
 NetworkDeviceId GetEthernetDeviceId() {
   NetworkDeviceId deviceId = network.getLocalDeviceId();

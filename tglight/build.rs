@@ -39,8 +39,6 @@ fn main() {
       collect_files(&jazzlights_dir.join("extras/jazzlights"), &mut cpp_files).unwrap();
       let cpp_files : Vec<&PathBuf> = cpp_files.iter()
         .filter(|&f| f.to_str().unwrap().ends_with(".cpp"))
-        .filter(|&f| !f.file_name().unwrap().to_str().unwrap().starts_with("arduino"))
-        .filter(|&f| !f.file_name().unwrap().to_str().unwrap().starts_with("esp8266"))
         .collect();
       eprintln!("Compiling {:?}", cpp_files);
 

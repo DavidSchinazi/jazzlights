@@ -248,7 +248,7 @@ uint8_t getReceiveTimeBrightness(Milliseconds lastReceiveTime, Milliseconds curr
 }
 
 void atomScreenNetwork(Player& player,
-                       const Esp8266WiFi& wifiNetwork,
+                       const EspWiFi& wifiNetwork,
 #if ESP32_BLE
                        const Esp32BleNetwork& bleNetwork,
 #endif  // ESP32_BLE
@@ -296,7 +296,7 @@ void atomScreenNetwork(Player& player,
 // 20 21 22 23 24
 
 void atomScreenUnlocked(Player& player,
-                        const Esp8266WiFi& wifiNetwork,
+                        const EspWiFi& wifiNetwork,
 #if ESP32_BLE
                         const Esp32BleNetwork& bleNetwork,
 #endif  // ESP32_BLE
@@ -342,7 +342,7 @@ void atomScreenClear() {
 }
 
 void atomScreenLong(Player& player,
-                    const Esp8266WiFi& wifiNetwork,
+                    const EspWiFi& wifiNetwork,
 #if ESP32_BLE
                     const Esp32BleNetwork& bleNetwork,
 #endif  // ESP32_BLE
@@ -359,7 +359,7 @@ void atomScreenLong(Player& player,
 }
 
 void atomScreenShort(Player& player,
-                     const Esp8266WiFi& wifiNetwork,
+                     const EspWiFi& wifiNetwork,
 #if ESP32_BLE
                      const Esp32BleNetwork& bleNetwork,
 #endif  // ESP32_BLE
@@ -466,7 +466,7 @@ void setupButtons() {
 }
 
 void doButtons(Player& player,
-               const Esp8266WiFi& wifiNetwork,
+               const EspWiFi& wifiNetwork,
 #if ESP32_BLE
                const Esp32BleNetwork& bleNetwork,
 #endif  // ESP32_BLE
