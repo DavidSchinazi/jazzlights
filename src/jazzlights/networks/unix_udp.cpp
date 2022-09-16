@@ -273,9 +273,8 @@ void UnixUdpNetwork::send(void* buf, size_t bufsize) {
       continue;
     }
     if (static_cast<size_t>(sendResult) != bufsize) {
-      error("Incorrectly sent %lld bytes instead of %llu on UDP socket %d ifName %s: %s",
-            static_cast<int64_t>(sendResult), static_cast<uint64_t>(bufsize),
-            fd, ifName.c_str(), strerror(errno));
+      error("Incorrectly sent %zd bytes instead of %zu on UDP socket %d ifName %s: %s",
+            sendResult, bufsize, fd, ifName.c_str(), strerror(errno));
       invalidateSocket(ifName);
       setupSockets();
       continue;
