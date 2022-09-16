@@ -2,7 +2,7 @@
 #include "sysinfo.h"
 
 #include "jazzlights/config.h"
-#include "jazzlights/networks/udp.h"
+#include "jazzlights/networks/unix_udp.h"
 
 #include <stdlib.h>
 

@@ -1,7 +1,7 @@
 #include "glrenderer.h"
 #include "gui.h"
 
-#include "jazzlights/networks/udp.h"
+#include "jazzlights/networks/unix_udp.h"
 #include "jazzlights/util/loader.h"
 
 #include <vector>

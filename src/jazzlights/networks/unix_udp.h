@@ -1,6 +1,8 @@
-#ifndef ARDUINO
 #ifndef JAZZLIGHTS_NETWORK_UDPSOCKET_H
 #define JAZZLIGHTS_NETWORK_UDPSOCKET_H
+
+#ifndef ARDUINO
+
 #include "jazzlights/network.h"
 
 #include <netinet/in.h>
@@ -38,5 +40,6 @@ private:
 
 }  // namespace jazzlights
 
-#endif  // JAZZLIGHTS_NETWORK_UDPSOCKET_H
 #endif  // ARDUINO
+
+#endif  // JAZZLIGHTS_NETWORK_UDPSOCKET_H

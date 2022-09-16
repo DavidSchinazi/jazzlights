@@ -1,5 +1,6 @@
+#include "jazzlights/networks/unix_udp.h"
+
 #ifndef ARDUINO
-#include "jazzlights/networks/udp.h"
 
 #include <arpa/inet.h>
 #include <errno.h>
