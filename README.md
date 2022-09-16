@@ -20,8 +20,6 @@ you can run: `pio run -e atom_matrix -t upload`
 
 This project focuses on the M5Stack ATOM Matrix but other ESP32 and ESP8266 boards should also be supported.
 
-In theory this project also works with the Arduino IDE (look for `Vest.ino`) but that has not been tested in a while.
-
 ## Installation on Raspberry Pi for vehicles
 
 First [install the rust/cargo toolchain](https://www.rust-lang.org/tools/install),
