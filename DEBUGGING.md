@@ -48,6 +48,13 @@ Then to copy the local main branch over:
 git push robotlight02 main:main
 ```
 
+# To tweak the ESP-IDF settings for instrumentation
+
+Run from `jazzlights`:
+```
+pio run -e atom_matrix_instrumentation -t menuconfig
+```
+
 # DS33 dual devices
 
 ```
