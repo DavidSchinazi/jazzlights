@@ -4,6 +4,22 @@
 
 printPrevious = True
 
+def printLayout(l, num=""):
+  s = '{\n  '
+  i = 0
+  for (x, y) in l:
+    for _ in range(2):
+      s += '{{{x:.2f}, {y:.2f}}}, '.format(x=x,y=y)
+    if i % 4 == 3:
+      s += '\n  '
+    i += 1
+  if i % 4 == 0:
+    s = s[:-3]
+  s += '\n};'
+  s += '\n\n'
+  s += '#define LEDNUM{num} {lednum}'.format(num=num, lednum=len(l) * 2)
+  print(s)
+
 for head in [False, True]:
   if printPrevious:
     if head:
@@ -116,4 +132,6 @@ for head in [False, True]:
 
   print('\n')
   print(s)
+  print('\n')
+  printLayout(l, '2' if head else '')
   print('\n')
