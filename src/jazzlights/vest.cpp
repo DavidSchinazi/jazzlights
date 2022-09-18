@@ -1,4 +1,5 @@
 #include <Jazzlights.h>
+#include "jazzlights/instrumentation.h"
 
 #if WEARABLE
 
@@ -133,10 +134,12 @@ void vestSetup(void) {
 }
 
 void vestLoop(void) {
+  SAVE_TIME_POINT(LoopStart);
   Milliseconds currentTime = timeMillis();
 #if CORE2AWS
   core2Loop(player, currentTime);
 #else // CORE2AWS
+  SAVE_TIME_POINT(Core2);
   // Read, debounce, and process the buttons, and perform actions based on button state.
   doButtons(player,
             network,
@@ -145,12 +148,16 @@ void vestLoop(void) {
 #endif // ESP32_BLE
             currentTime);
 #endif // CORE2AWS
+  SAVE_TIME_POINT(Buttons);
 
 #if ESP32_BLE
   Esp32BleNetwork::get()->runLoop(currentTime);
 #endif // ESP32_BLE
+  SAVE_TIME_POINT(Bluetooth);
 
-  if (!player.render(currentTime)) {
+  const bool shouldRender = player.render(currentTime);
+  SAVE_TIME_POINT(Player);
+  if (!shouldRender) {
     return;
   }
   uint32_t brightness = getBrightness();        // May be reduced if this exceeds our power budget with the current pattern
@@ -170,11 +177,14 @@ void vestLoop(void) {
     powerAtFullBrightness * brightness / 256, powerAtFullBrightness * brightness / 256 / 5,   // Selected power & current
     player.powerLimited ? " (limited)" : "");
 #endif  // MAX_MILLIWATTS
+  SAVE_TIME_POINT(Brightness);
 
   mainVestController->showLeds(brightness);
+  SAVE_TIME_POINT(MainLED);
 #if LEDNUM2
   mainVestController2->showLeds(brightness);
 #endif  // LEDNUM2
+  SAVE_TIME_POINT(SecondLED);
 }
 
 std::string wifiStatus(Milliseconds currentTime) {
