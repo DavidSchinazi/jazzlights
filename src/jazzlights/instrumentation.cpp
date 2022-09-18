@@ -6,6 +6,7 @@
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+#include <limits>
 
 namespace jazzlights {
 
@@ -49,6 +50,24 @@ void saveTimePoint(TimePoint timePoint) {
   }
 }
 
+int64_t gLastLedStart = 0;
+int64_t gLedTimeSum = 0;
+int64_t gLedTimeCount = 0;
+int64_t gLedTimeMin = std::numeric_limits<int64_t>::max();
+int64_t gLedTimeMax = -1;
+
+void ledWriteStart() {
+  gLastLedStart = esp_timer_get_time();
+}
+
+void ledWriteEnd() {
+  const int64_t ledTime = esp_timer_get_time() - gLastLedStart;
+  gLedTimeSum += ledTime;
+  gLedTimeCount++;
+  if (ledTime < gLedTimeMin) { gLedTimeMin = ledTime; }
+  if (ledTime > gLedTimeMax) { gLedTimeMax = ledTime; }
+}
+
 void printInstrumentationInfo(Milliseconds currentTime) {
   static Milliseconds lastInstrumentationLog = -1;
   static constexpr Milliseconds kInstrumentationPeriod = 5000;
@@ -77,6 +96,16 @@ void printInstrumentationInfo(Milliseconds currentTime) {
        static_cast<double>(gNumLedWrites) * 1000 / (currentTime - lastInstrumentationLog));
   gNumLedWrites = 0;
   lastInstrumentationLog = currentTime;
+  if (gLedTimeCount > 0) {
+    info("LED data from %lld writes: min %lld average %lld max %lld (us)",
+        gLedTimeCount, gLedTimeMin, gLedTimeSum / gLedTimeCount, gLedTimeMax);
+  } else {
+    info("No LED data available");
+  }
+  gLedTimeCount = 0;
+  gLedTimeSum = 0;
+  gLedTimeMin = std::numeric_limits<int64_t>::max();
+  gLedTimeMax = -1;
 }
 
 }  // namespace jazzlights

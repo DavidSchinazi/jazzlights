@@ -179,11 +179,13 @@ void vestLoop(void) {
 #endif  // MAX_MILLIWATTS
   SAVE_TIME_POINT(Brightness);
 
+  ledWriteStart();
   mainVestController->showLeds(brightness);
   SAVE_TIME_POINT(MainLED);
 #if LEDNUM2
   mainVestController2->showLeds(brightness);
 #endif  // LEDNUM2
+  ledWriteEnd();
   SAVE_TIME_POINT(SecondLED);
 }
 

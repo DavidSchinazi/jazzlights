@@ -29,6 +29,9 @@ void saveTimePoint(TimePoint timePoint);
 
 void printInstrumentationInfo(Milliseconds currentTime);
 
+void ledWriteStart();
+void ledWriteEnd();
+
 }  // namespace jazzlights
 
 #define SAVE_TIME_POINT(v) saveTimePoint(k ## v)
@@ -36,6 +39,8 @@ void printInstrumentationInfo(Milliseconds currentTime);
 #else  // JL_INSTRUMENTATION
 
 #define SAVE_TIME_POINT(v) do {} while (false)
+#define ledWriteStart() do {} while (false)
+#define ledWriteEnd() do {} while (false)
 
 #endif  // JL_INSTRUMENTATION
 
