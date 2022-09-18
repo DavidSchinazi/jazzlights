@@ -35,12 +35,17 @@ void clearTimePoints() {
 
 }  // namespace
 
+int64_t gNumLedWrites = 0;
+
 void saveTimePoint(TimePoint timePoint) {
   TimePointData& thisTimePointData = gTimePointDatas[timePoint];
   const TimePointData& prevTimePointData = timePoint > 0 ? gTimePointDatas[timePoint - 1] : gTimePointDatas[kNumTimePoints - 1];
   thisTimePointData.lastSavedTime = esp_timer_get_time();
   if (prevTimePointData.lastSavedTime >= 0) {
     thisTimePointData.sumTimes += thisTimePointData.lastSavedTime - prevTimePointData.lastSavedTime;
+  }
+  if (timePoint == kMainLED) {
+    gNumLedWrites++;
   }
 }
 
@@ -56,7 +61,6 @@ void printInstrumentationInfo(Milliseconds currentTime) {
   vTaskGetRunTimeStats(vTaskInfoStr);
   vTaskInfoStr[sizeof(vTaskInfoStr) - 1] = '\0';
   info("%u INSTRUMENTATION:\n%s", currentTime, vTaskInfoStr);
-  lastInstrumentationLog = currentTime;
   int64_t totalTimePointsSum = 0;
   for (size_t i = 0; i < kNumTimePoints; i++) {
     totalTimePointsSum += gTimePointDatas[i].sumTimes;
@@ -69,6 +73,10 @@ void printInstrumentationInfo(Milliseconds currentTime) {
          (gTimePointDatas[i].sumTimes * 100 + minPercentOffset) / totalTimePointsSum);
   }
   clearTimePoints();
+  info("Wrote to LEDs %f times per second",
+       static_cast<double>(gNumLedWrites) * 1000 / (currentTime - lastInstrumentationLog));
+  gNumLedWrites = 0;
+  lastInstrumentationLog = currentTime;
 }
 
 }  // namespace jazzlights
