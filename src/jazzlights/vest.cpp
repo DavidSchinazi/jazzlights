@@ -115,7 +115,11 @@ void vestSetup(void) {
   // Separately, on the two-wire pigtails for power injection, blue is 12VDC and brown is Ground.
   // IMPORTANT: the two-wire pigtail is unfortunately reversible, and needs to be plugged in such
   // that the YL inscription is on the male end of the three-way power-injection splitter.
-  mainVestController = &FastLED.addLeds</*CHIPSET=*/WS2801, /*DATA_PIN=*/26, /*CLOCK_PIN=*/32, /*RGB_ORDER=*/GBR, /*SPI_SPEED=*/DATA_RATE_MHZ(1)>(
+  constexpr uint32_t kSpiSpeed = DATA_RATE_MHZ(2);
+  // The FastLED default for WS2801 is 1MHz. Empirically without long runs of wire it appeared that 2MHz and 3MHz both worked
+  // while 4MHz caused visible glitches. We chose 2MHz because that allows us to run the robot at 100FPS while 1MHz doesn't.
+  // Empirical data indicates that for the 378 LEDs in the robot (310 on side and 68 in head), 1MHz takes 10.7ms to render while 2MHz takes 5.7ms.
+  mainVestController = &FastLED.addLeds</*CHIPSET=*/WS2801, /*DATA_PIN=*/26, /*CLOCK_PIN=*/32, /*RGB_ORDER=*/GBR, /*SPI_SPEED=*/kSpiSpeed>(
     leds, sizeof(leds)/sizeof(*leds));
 #elif IS_STAFF
   mainVestController = &FastLED.addLeds<WS2811, LED_PIN, RGB>(
@@ -129,7 +133,7 @@ void vestSetup(void) {
 #endif
 #if LEDNUM2
 #if GECKO_SCALES
-  mainVestController2 = &FastLED.addLeds</*CHIPSET=*/WS2801, /*DATA_PIN=*/21, /*CLOCK_PIN=*/25, /*RGB_ORDER=*/GBR, /*SPI_SPEED=*/DATA_RATE_MHZ(1)>(
+  mainVestController2 = &FastLED.addLeds</*CHIPSET=*/WS2801, /*DATA_PIN=*/21, /*CLOCK_PIN=*/32, /*RGB_ORDER=*/GBR, /*SPI_SPEED=*/kSpiSpeed>(
     leds2, sizeof(leds2)/sizeof(*leds2));
 #else  // GECKO_SCALES
   mainVestController2 = &FastLED.addLeds<WS2812B, LED_PIN2, GRB>(
