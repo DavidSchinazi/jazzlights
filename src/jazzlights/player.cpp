@@ -710,6 +710,9 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
           currentTime, DEVICE_ID_HEX(originator), precedence, currentNumHops_,
           (followedNextHopNetwork_ != nullptr ? followedNextHopNetwork_->networkName() : "null"),
           patternName(currentPattern_).c_str(), currentPattern_, fps());
+#if JL_INSTRUMENTATION
+      printInstrumentationInfo(currentTime);
+#endif  // JL_INSTRUMENTATION
       lastLEDWriteTime_ = -1;
       shouldBeginPattern_ = true;
     }
@@ -967,6 +970,11 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
             currentTime, (entry->originator == currentLeader_ ? "followed" : "ignored"),
             DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(entry->nextHopDevice),
             entry->nextHopNetwork->networkName(), changesStr.c_str(), message.receiptDetails.c_str());
+#if JL_INSTRUMENTATION
+        if (entry->originator == currentLeader_) {
+          printInstrumentationInfo(currentTime);
+        }
+#endif  // JL_INSTRUMENTATION
       }
     } else {
       debug("%u Rejecting %s update from " DEVICE_ID_FMT ".p%u via "
