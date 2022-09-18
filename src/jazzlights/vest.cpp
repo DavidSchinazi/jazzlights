@@ -175,17 +175,6 @@ void vestLoop(void) {
 #if LEDNUM2
   mainVestController2->showLeds(brightness);
 #endif  // LEDNUM2
-#if JL_INSTRUMENTATION
-  static Milliseconds lastInstrumentationLog = 0;
-  static constexpr Milliseconds kInstrumentationPeriod = 15000;
-  if (currentTime - lastInstrumentationLog >= kInstrumentationPeriod) {
-    char vTaskInfoStr[2048];
-    vTaskGetRunTimeStats(vTaskInfoStr);
-    vTaskInfoStr[sizeof(vTaskInfoStr) - 1] = '\0';
-    info("%u INSTRUMENTATION:\n%s", currentTime, vTaskInfoStr);
-    lastInstrumentationLog = currentTime;
-  }
-#endif  // JL_INSTRUMENTATIONs
 }
 
 std::string wifiStatus(Milliseconds currentTime) {

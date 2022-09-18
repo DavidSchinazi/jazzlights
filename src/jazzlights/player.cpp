@@ -19,6 +19,7 @@
 #include "jazzlights/effects/solid.h"
 #include "jazzlights/effects/thematrix.h"
 #include "jazzlights/effects/threesine.h"
+#include "jazzlights/instrumentation.h"
 #include "jazzlights/pseudorandom.h"
 #include "jazzlights/registry.h"
 #include "jazzlights/renderers/simple.h"
@@ -728,6 +729,9 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
       info("%u We (" DEVICE_ID_FMT ".p%u) are leading, new currentPattern %s (%4x) %u FPS",
           currentTime, DEVICE_ID_HEX(localDeviceId_), precedence,
           patternName(currentPattern_).c_str(), currentPattern_, fps());
+#if JL_INSTRUMENTATION
+      printInstrumentationInfo(currentTime);
+#endif  // JL_INSTRUMENTATION
       lastLEDWriteTime_ = -1;
       shouldBeginPattern_ = true;
     }
