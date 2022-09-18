@@ -25,6 +25,11 @@ namespace jazzlights {
 #  define LEDNUM 102
 #endif  // GECKO_FOOT
 
+#if IS_ROBOT
+#  define LEDNUM 310
+#  define LEDNUM2 68
+#endif  // IS_STAFF
+
 #if IS_GUPPY
 #  define LEDNUM 300
 #endif // IS_GUPPY
@@ -50,7 +55,7 @@ namespace jazzlights {
 #  define LEDNUM 300
 #endif  // IS_ROPELIGHT
 
-#if CAMP_SIGN || HAMMER || GECKO_FOOT
+#if CAMP_SIGN || HAMMER || GECKO_FOOT || IS_ROBOT
 #  define FIRST_BRIGHTNESS MAX_BRIGHTNESS
 #endif // CAMP_SIGN
 

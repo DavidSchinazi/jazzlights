@@ -9,7 +9,7 @@
 #if !defined(CAMP_SIGN) && !defined(IS_ROPELIGHT) && !defined(ORANGE_VEST) && \
     !defined(HAMMER) && !defined(IS_GUPPY) && !defined(GECKO_FOOT) && \
     !defined(FAIRY_WAND) && !defined(IS_STAFF) && !defined(IS_CAPTAIN_HAT) && \
-    !defined(IS_GAUNTLET)
+    !defined(IS_GAUNTLET) && !defined(IS_ROBOT)
 #  define ORANGE_VEST WEARABLE
 #endif
 
@@ -28,6 +28,10 @@
 #ifndef GECKO_FOOT
 #  define GECKO_FOOT 0
 #endif  // GECKO_FOOT
+
+#ifndef IS_ROBOT
+#  define IS_ROBOT 0
+#endif  // IS_ROBOT
 
 #ifndef CAMP_SIGN
 #  define CAMP_SIGN 0

@@ -73,7 +73,10 @@ void vestSetup(void) {
 #if LEDNUM2
   player.addStrand(*GetLayout2(), renderPixel2);
 #endif  // LEDNUM2
-#if GECKO_FOOT
+#if IS_ROBOT
+  player.setBasePrecedence(20000);
+  player.setPrecedenceGain(5000);
+#elif GECKO_FOOT
   player.setBasePrecedence(2500);
   player.setPrecedenceGain(1000);
 #elif FAIRY_WAND || IS_STAFF || IS_CAPTAIN_HAT
@@ -112,7 +115,7 @@ void vestSetup(void) {
   // Separately, on the two-wire pigtails for power injection, blue is 12VDC and brown is Ground.
   // IMPORTANT: the two-wire pigtail is unfortunately reversible, and needs to be plugged in such
   // that the YL inscription is on the male end of the three-way power-injection splitter.
-  mainVestController = &FastLED.addLeds</*CHIPSET=*/WS2801, /*DATA_PIN=*/26, /*CLOCK_PIN=*/32, /*RGB_ORDER=*/GBR>(
+  mainVestController = &FastLED.addLeds</*CHIPSET=*/WS2801, /*DATA_PIN=*/26, /*CLOCK_PIN=*/32, /*RGB_ORDER=*/GBR, /*SPI_SPEED=*/DATA_RATE_MHZ(1)>(
     leds, sizeof(leds)/sizeof(*leds));
 #elif IS_STAFF
   mainVestController = &FastLED.addLeds<WS2811, LED_PIN, RGB>(
@@ -125,8 +128,13 @@ void vestSetup(void) {
     leds, sizeof(leds)/sizeof(*leds));
 #endif
 #if LEDNUM2
+#if GECKO_SCALES
+  mainVestController2 = &FastLED.addLeds</*CHIPSET=*/WS2801, /*DATA_PIN=*/21, /*CLOCK_PIN=*/25, /*RGB_ORDER=*/GBR, /*SPI_SPEED=*/DATA_RATE_MHZ(1)>(
+    leds2, sizeof(leds2)/sizeof(*leds2));
+#else  // GECKO_SCALES
   mainVestController2 = &FastLED.addLeds<WS2812B, LED_PIN2, GRB>(
     leds2, sizeof(leds2)/sizeof(*leds2));
+#endif  // GECKO_SCALES
 #endif  // LEDNUM2
 #if CORE2AWS
   core2SetupEnd(player, currentTime);
