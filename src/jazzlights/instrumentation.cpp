@@ -1,14 +1,22 @@
 #include "jazzlights/instrumentation.h"
 
+#if JL_INSTRUMENTATION || JL_TIMING
+#  include "jazzlights/util/log.h"
+#  include <freertos/FreeRTOS.h>
+#  include <cstddef>
+#endif  // JL_INSTRUMENTATION || JL_TIMING
+
 #if JL_INSTRUMENTATION
+#  include <freertos/task.h>
+#endif  // JL_INSTRUMENTATION
 
-#include "jazzlights/util/log.h"
-
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include <limits>
+#if JL_TIMING
+#  include <limits>
+#endif  // JL_TIMING
 
 namespace jazzlights {
+
+#if JL_TIMING
 
 namespace {
 
@@ -68,6 +76,10 @@ void ledWriteEnd() {
   if (ledTime > gLedTimeMax) { gLedTimeMax = ledTime; }
 }
 
+#endif  // JL_TIMING
+
+#if JL_INSTRUMENTATION || JL_TIMING
+
 void printInstrumentationInfo(Milliseconds currentTime) {
   static Milliseconds lastInstrumentationLog = -1;
   static constexpr Milliseconds kInstrumentationPeriod = 5000;
@@ -76,10 +88,13 @@ void printInstrumentationInfo(Milliseconds currentTime) {
     // Ignore any request to print more than once every 5s.
     return;
   }
+#if JL_INSTRUMENTATION
   char vTaskInfoStr[2048];
   vTaskGetRunTimeStats(vTaskInfoStr);
   vTaskInfoStr[sizeof(vTaskInfoStr) - 1] = '\0';
   info("%u INSTRUMENTATION:\n%s", currentTime, vTaskInfoStr);
+#endif  // JL_INSTRUMENTATION
+#if JL_TIMING
   int64_t totalTimePointsSum = 0;
   for (size_t i = 0; i < kNumTimePoints; i++) {
     totalTimePointsSum += gTimePointDatas[i].sumTimes;
@@ -106,8 +121,9 @@ void printInstrumentationInfo(Milliseconds currentTime) {
   gLedTimeSum = 0;
   gLedTimeMin = std::numeric_limits<int64_t>::max();
   gLedTimeMax = -1;
+#endif  // JL_TIMING
 }
 
-}  // namespace jazzlights
+#endif  // JL_INSTRUMENTATION || JL_TIMING
 
-#endif  // JL_INSTRUMENTATION
+}  // namespace jazzlights

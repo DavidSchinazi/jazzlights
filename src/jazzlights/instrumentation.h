@@ -4,9 +4,15 @@
 #ifndef JAZZLIGHTS_INSTRUMENTATION_H
 #define JAZZLIGHTS_INSTRUMENTATION_H
 
-#if JL_INSTRUMENTATION
-
 namespace jazzlights {
+
+#if JL_INSTRUMENTATION || JL_TIMING
+void printInstrumentationInfo(Milliseconds currentTime);
+#else  // JL_INSTRUMENTATION || JL_TIMING
+inline void printInstrumentationInfo(Milliseconds /*currentTime*/) {}
+#endif  // JL_INSTRUMENTATION || JL_TIMING
+
+#if JL_TIMING
 
 #define ALL_TIME_POINTS \
   X(LoopStart) \
@@ -27,21 +33,19 @@ enum TimePoint {
 
 void saveTimePoint(TimePoint timePoint);
 
-void printInstrumentationInfo(Milliseconds currentTime);
-
 void ledWriteStart();
 void ledWriteEnd();
 
-}  // namespace jazzlights
-
 #define SAVE_TIME_POINT(v) saveTimePoint(k ## v)
 
-#else  // JL_INSTRUMENTATION
+#else  // JL_TIMING
 
 #define SAVE_TIME_POINT(v) do {} while (false)
-#define ledWriteStart() do {} while (false)
-#define ledWriteEnd() do {} while (false)
+inline void ledWriteStart() {}
+inline void ledWriteEnd() {}
 
-#endif  // JL_INSTRUMENTATION
+#endif  // JL_TIMING
+
+}  // namespace jazzlights
 
 #endif  // JAZZLIGHTS_INSTRUMENTATION_H
