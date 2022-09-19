@@ -132,10 +132,10 @@ void printInstrumentationInfo(Milliseconds currentTime) {
   }
   const int64_t minPercentOffset = totalTimePointsSum / 200;
   for (size_t i = 0; i < kNumTimePoints; i++) {
-    info("%s: %lld %lld%%",
+    info("%12s: %2lld%% %8lld",
          TimePointToString(static_cast<TimePoint>(i)),
-         gTimePointDatas[i].sumTimes,
-         (gTimePointDatas[i].sumTimes * 100 + minPercentOffset) / totalTimePointsSum);
+         (gTimePointDatas[i].sumTimes * 100 + minPercentOffset) / totalTimePointsSum,
+         gTimePointDatas[i].sumTimes);
   }
   clearTimePoints();
   info("Wrote to LEDs %f times per second",
