@@ -78,6 +78,24 @@ void ledWriteEnd() {
 
 #endif  // JL_TIMING
 
+#if JL_INSTRUMENTATION
+
+const char* TaskStateToString(eTaskState taskState) {
+  switch (taskState) {
+#define TASK_STATE_CASE_RETURN(ts) case e ## ts: return #ts
+    case eRunning:   return "Running  ";
+    case eReady:     return "Ready    ";
+    case eBlocked:   return "Blocked  ";
+    case eSuspended: return "Suspended";
+    case eDeleted:   return "Deleted  ";
+    case eInvalid:   return "Invalid  ";
+#undef TASK_STATE_CASE_RETURN
+  }
+  return "Unknown  ";
+}
+
+#endif  // JL_INSTRUMENTATION
+
 #if JL_INSTRUMENTATION || JL_TIMING
 
 void printInstrumentationInfo(Milliseconds currentTime) {
@@ -89,10 +107,23 @@ void printInstrumentationInfo(Milliseconds currentTime) {
     return;
   }
 #if JL_INSTRUMENTATION
-  char vTaskInfoStr[2048];
-  vTaskGetRunTimeStats(vTaskInfoStr);
-  vTaskInfoStr[sizeof(vTaskInfoStr) - 1] = '\0';
-  info("%u INSTRUMENTATION:\n%s", currentTime, vTaskInfoStr);
+  UBaseType_t numTasks = uxTaskGetNumberOfTasks();
+  // Add 10 in case some tasks get created while this is getting executed.
+  TaskStatus_t* tastStatuses = reinterpret_cast<TaskStatus_t*>(calloc(numTasks + 10, sizeof(TaskStatus_t)));
+  uint32_t totalRuntime = 0;
+  numTasks = uxTaskGetSystemState(tastStatuses, numTasks, &totalRuntime);
+  info("%u INSTRUMENTATION for %u tasks:", currentTime, numTasks);
+  for (UBaseType_t i = 0; i < numTasks; i++) {
+    const TaskStatus_t& ts = tastStatuses[i];
+    uint32_t percentRuntime = 0;
+    if (ts.ulRunTimeCounter > 0 && totalRuntime > 0) {
+      percentRuntime = (ts.ulRunTimeCounter + (totalRuntime / 200)) / (totalRuntime / 100);
+    }
+    static_assert(configMAX_TASK_NAME_LEN == 16, "tweak format string");
+    info("%16s: num=%02u %s priority=current%02u/base%02u runtime=%09u=%02u%% core=%+d",
+         ts.pcTaskName, ts.xTaskNumber, TaskStateToString(ts.eCurrentState), ts.uxCurrentPriority,
+         ts.uxBasePriority, ts.ulRunTimeCounter, percentRuntime, (ts.xCoreID == 2147483647 ? -1 : ts.xCoreID));
+  }
 #endif  // JL_INSTRUMENTATION
 #if JL_TIMING
   int64_t totalTimePointsSum = 0;
