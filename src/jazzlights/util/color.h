@@ -155,8 +155,6 @@ class Color {
     return !(*this == other);
   }
 
-  Color& operator=(const Color&) = default;
-
   Color& operator=(const RgbaColor& other) {
     space_ = RGBA;
     rgba_ = other;
