@@ -6,22 +6,16 @@
 namespace jazzlights {
 
 class PixelMap : public Layout {
-public:
-  PixelMap(size_t cnt, const Point* pts) : count_(cnt), points_(pts) {
-  }
+ public:
+  PixelMap(size_t cnt, const Point* pts) : count_(cnt), points_(pts) {}
 
-  PixelMap(const PixelMap& other) : Layout(), count_(other.count_), points_(other.points_) {
-  }
+  PixelMap(const PixelMap& other) : Layout(), count_(other.count_), points_(other.points_) {}
 
-  int pixelCount() const override {
-    return count_;
-  }
-  
-  Point at(int i) const override {
-    return points_[i];
-  }
+  int pixelCount() const override { return count_; }
 
-private:
+  Point at(int i) const override { return points_[i]; }
+
+ private:
   size_t count_;
   const Point* points_;
 };

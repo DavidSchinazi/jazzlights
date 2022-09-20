@@ -39,10 +39,10 @@ enum class ScreenMode {
 };
 ScreenMode gScreenMode =
 #if BUTTON_LOCK
-  ScreenMode::kOff;
-#else  // BUTTON_LOCK
-  ScreenMode::kMainMenu;
-#endif  //BUTTON_LOCK
+    ScreenMode::kOff;
+#else   // BUTTON_LOCK
+    ScreenMode::kMainMenu;
+#endif  // BUTTON_LOCK
 
 Matrix core2ScreenPixels(40, 30);
 
@@ -77,16 +77,13 @@ class Core2ScreenRenderer : public Renderer {
     uint16_t rowColors16[320 * 8];
     for (Color color : pixelColors) {
       RgbColor rgb = color.asRgb();
-      uint16_t color16 = ((uint16_t)(rgb.red & 0xF8) << 8) |
-                         ((uint16_t)(rgb.green & 0xFC) << 3) | \
-                         ((rgb.blue & 0xF8) >> 3);
+      uint16_t color16 =
+          ((uint16_t)(rgb.red & 0xF8) << 8) | ((uint16_t)(rgb.green & 0xFC) << 3) | ((rgb.blue & 0xF8) >> 3);
       int32_t x = i % 40;
       int32_t y = i / 40;
       int32_t factor = fullScreen_ ? 8 : 4;
       for (size_t xi = 0; xi < factor; xi++) {
-        for (size_t yi = 0; yi < factor; yi++) {
-          rowColors16[x * factor + xi + yi * 40 * factor] = color16;
-        }
+        for (size_t yi = 0; yi < factor; yi++) { rowColors16[x * factor + xi + yi * 40 * factor] = color16; }
       }
       if (x == 39) {
         bool swap = M5.Lcd.getSwapBytes();
@@ -97,6 +94,7 @@ class Core2ScreenRenderer : public Renderer {
       i++;
     }
   }
+
  private:
   bool enabled_ = true;
   bool fullScreen_ = false;
@@ -109,11 +107,10 @@ ButtonColors idleEnabledCol = {WHITE, BLACK, WHITE};
 ButtonColors pressedCol = {RED, WHITE, WHITE};
 Button nextButton(/*x=*/160, /*y=*/0, /*w=*/160, /*h=*/60, /*rot1=*/false, "Next", idleCol, pressedCol);
 Button loopButton(/*x=*/160, /*y=*/60, /*w=*/160, /*h=*/60, /*rot1=*/false, "Loop", idleCol, pressedCol);
-Button patternControlButton(/*x=*/0, /*y=*/120, /*w=*/160, /*h=*/120, /*rot1=*/false,
-                            "Pattern Control", idleCol, pressedCol,
-                            BUTTON_DATUM, /*dx=*/0, /*dy=*/-25);
-Button systemButton(/*x=*/160, /*y=*/120, /*w=*/160, /*h=*/120, /*rot1=*/false,
-                    "System", idleCol, pressedCol, BUTTON_DATUM, /*dx=*/0, /*dy=*/-25);
+Button patternControlButton(/*x=*/0, /*y=*/120, /*w=*/160, /*h=*/120, /*rot1=*/false, "Pattern Control", idleCol,
+                            pressedCol, BUTTON_DATUM, /*dx=*/0, /*dy=*/-25);
+Button systemButton(/*x=*/160, /*y=*/120, /*w=*/160, /*h=*/120, /*rot1=*/false, "System", idleCol, pressedCol,
+                    BUTTON_DATUM, /*dx=*/0, /*dy=*/-25);
 Button backButton(/*x=*/0, /*y=*/0, /*w=*/160, /*h=*/60, /*rot1=*/false, "Back", idleCol, pressedCol);
 // TODO split the player in half so we can render the selected pattern in the right half of the Back button.
 Button downButton(/*x=*/80, /*y=*/60, /*w=*/80, /*h=*/60, /*rot1=*/false, "Down", idleCol, pressedCol);
@@ -139,9 +136,7 @@ uint8_t gLedBrightness = 2;
 uint8_t gLedBrightness = 32;
 #endif
 
-uint8_t getBrightness() {
-  return gLedBrightness;
-}
+uint8_t getBrightness() { return gLedBrightness; }
 
 void setupButtonsDrawZone() {
   constexpr int16_t kButtonDrawOffset = 3;
@@ -154,30 +149,23 @@ void setupButtonsDrawZone() {
 }
 
 void drawButtonOnlyInSubMenus(Button& b, ButtonColors bc) {
-  if (gScreenMode != ScreenMode::kOff &&
-      gScreenMode != ScreenMode::kLocked1 &&
-      gScreenMode != ScreenMode::kLocked2 &&
+  if (gScreenMode != ScreenMode::kOff && gScreenMode != ScreenMode::kLocked1 && gScreenMode != ScreenMode::kLocked2 &&
       gScreenMode != ScreenMode::kMainMenu) {
     M5Buttons::drawFunction(b, bc);
   }
 }
 
 void drawButtonButOnlyInLocked1(Button& b, ButtonColors bc) {
-  if (gScreenMode == ScreenMode::kLocked1) {
-    M5Buttons::drawFunction(b, bc);
-  }
+  if (gScreenMode == ScreenMode::kLocked1) { M5Buttons::drawFunction(b, bc); }
 }
 
 void drawButtonButOnlyInLocked2(Button& b, ButtonColors bc) {
-  if (gScreenMode == ScreenMode::kLocked2) {
-    M5Buttons::drawFunction(b, bc);
-  }
+  if (gScreenMode == ScreenMode::kLocked2) { M5Buttons::drawFunction(b, bc); }
 }
 
 void drawPatternControlButton(Button& b, ButtonColors bc) {
   if (gScreenMode != ScreenMode::kMainMenu) { return; }
-  info("drawing pattern control button bg 0x%x outline 0x%x text 0x%x",
-       bc.bg, bc.outline, bc.text);
+  info("drawing pattern control button bg 0x%x outline 0x%x text 0x%x", bc.bg, bc.outline, bc.text);
   // First call default draw function to draw button text, outline, and background.
   M5Buttons::drawFunction(b, bc);
   // Then add custom pattern string.
@@ -188,8 +176,7 @@ void drawPatternControlButton(Button& b, ButtonColors bc) {
 
 void drawSystemButton(Button& b, ButtonColors bc) {
   if (gScreenMode != ScreenMode::kMainMenu) { return; }
-  info("drawing system button bg 0x%x outline 0x%x text 0x%x",
-       bc.bg, bc.outline, bc.text);
+  info("drawing system button bg 0x%x outline 0x%x text 0x%x", bc.bg, bc.outline, bc.text);
   // First call default draw function to draw button text, outline, and background.
   M5Buttons::drawFunction(b, bc);
   // TODO add custom system info.
@@ -273,44 +260,35 @@ class PatternControlMenu {
     M5.Lcd.setTextDatum(TL_DATUM);  // Top Left.
     M5.Lcd.setTextColor(WHITE, BLACK);
     switch (state_) {
-    case State::kOff:  // Fall through.
-    case State::kPattern: {
-      state_ = State::kPattern;
-      M5.Lcd.fillRect(x_, /*y=*/0, /*w=*/155, /*h=*/240, BLACK);
-      if (selectedPatternIndex_ < kNumRegularPatterns) {
-        for (uint8_t i = 0; i < kNumRegularPatterns; i++) {
-          drawPatternTextLine(i,
-                              kSelectablePatterns[i].name,
-                              i == selectedPatternIndex_);
+      case State::kOff:  // Fall through.
+      case State::kPattern: {
+        state_ = State::kPattern;
+        M5.Lcd.fillRect(x_, /*y=*/0, /*w=*/155, /*h=*/240, BLACK);
+        if (selectedPatternIndex_ < kNumRegularPatterns) {
+          for (uint8_t i = 0; i < kNumRegularPatterns; i++) {
+            drawPatternTextLine(i, kSelectablePatterns[i].name, i == selectedPatternIndex_);
+          }
+          M5.Lcd.setTextColor(WHITE, BLACK);
+          M5.Lcd.drawString("Special Patterns...", x_, kNumRegularPatterns * dy());
+        } else {
+          M5.Lcd.setTextColor(WHITE, BLACK);
+          M5.Lcd.drawString("Regular Patterns...", x_, /*y=*/0);
+          for (uint8_t i = 0; i < kNumSpecialPatterns; i++) {
+            drawPatternTextLine(i + 1, kSelectablePatterns[i + kNumRegularPatterns].name,
+                                i + kNumRegularPatterns == selectedPatternIndex_);
+          }
         }
-        M5.Lcd.setTextColor(WHITE, BLACK);
-        M5.Lcd.drawString("Special Patterns...", x_, kNumRegularPatterns * dy());
-      } else {
-        M5.Lcd.setTextColor(WHITE, BLACK);
-        M5.Lcd.drawString("Regular Patterns...", x_, /*y=*/0);
-        for (uint8_t i = 0; i < kNumSpecialPatterns; i++) {
-          drawPatternTextLine(i + 1,
-                              kSelectablePatterns[i + kNumRegularPatterns].name,
-                              i + kNumRegularPatterns == selectedPatternIndex_);
+      } break;
+      case State::kPalette: {
+        M5.Lcd.fillRect(x_, /*y=*/0, /*w=*/155, /*h=*/240, BLACK);
+        for (uint8_t i = 0; i < kNumPalettes; i++) {
+          drawPatternTextLine(i, kPaletteNames[i], i == selectedPaletteIndex_);
         }
-      }
-    } break;
-    case State::kPalette: {
-      M5.Lcd.fillRect(x_, /*y=*/0, /*w=*/155, /*h=*/240, BLACK);
-      for (uint8_t i = 0; i < kNumPalettes; i++) {
-        drawPatternTextLine(i,
-                            kPaletteNames[i],
-                            i == selectedPaletteIndex_);
-      }
-    } break;
-    case State::kColor: {
-      M5.Lcd.fillRect(x_, /*y=*/0, /*w=*/155, /*h=*/240, BLACK);
-      for (uint8_t i = 0; i < kNumColors; i++) {
-        drawPatternTextLine(i,
-                            kColorNames[i],
-                            i == selectedColorIndex_);
-      }
-    } break;
+      } break;
+      case State::kColor: {
+        M5.Lcd.fillRect(x_, /*y=*/0, /*w=*/155, /*h=*/240, BLACK);
+        for (uint8_t i = 0; i < kNumColors; i++) { drawPatternTextLine(i, kColorNames[i], i == selectedColorIndex_); }
+      } break;
     }
     drawConfirmButton();
   }
@@ -322,7 +300,7 @@ class PatternControlMenu {
         drawPatternTextLine(selectedPatternIndex_, kSelectablePatterns[selectedPatternIndex_].name, /*selected=*/true);
         drawConfirmButton();
       } else if (selectedPatternIndex_ == kNumRegularPatterns - 1) {
-        selectedPatternIndex_ ++;
+        selectedPatternIndex_++;
         draw();
       } else if (selectedPatternIndex_ < kNumRegularPatterns + kNumSpecialPatterns - 1) {
         drawPatternTextLine(1 + selectedPatternIndex_ - kNumRegularPatterns,
@@ -353,12 +331,10 @@ class PatternControlMenu {
       if (selectedPatternIndex_ == 0) {
         // Do nothing.
       } else if (selectedPatternIndex_ < kNumRegularPatterns) {
-        drawPatternTextLine(selectedPatternIndex_,
-                            kSelectablePatterns[selectedPatternIndex_].name,
+        drawPatternTextLine(selectedPatternIndex_, kSelectablePatterns[selectedPatternIndex_].name,
                             /*selected=*/false);
         selectedPatternIndex_--;
-        drawPatternTextLine(selectedPatternIndex_,
-                            kSelectablePatterns[selectedPatternIndex_].name,
+        drawPatternTextLine(selectedPatternIndex_, kSelectablePatterns[selectedPatternIndex_].name,
                             /*selected=*/true);
         drawConfirmButton();
       } else if (selectedPatternIndex_ == kNumRegularPatterns) {
@@ -412,8 +388,7 @@ class PatternControlMenu {
     if (state_ == State::kPattern) {
       State nextState = kSelectablePatterns[selectedPatternIndex_].nextState;
       if (nextState == State::kPalette || nextState == State::kColor) {
-        info("%u Pattern %s confirmed now asking for %s",
-             currentTime, kSelectablePatterns[selectedPatternIndex_].name,
+        info("%u Pattern %s confirmed now asking for %s", currentTime, kSelectablePatterns[selectedPatternIndex_].name,
              (nextState == State::kPalette ? "palette" : "color"));
         state_ = nextState;
         draw();
@@ -423,18 +398,19 @@ class PatternControlMenu {
         return setPattern(player, kSelectablePatterns[selectedPatternIndex_].bits, currentTime);
       }
     } else if (state_ == State::kPalette) {
-        info("%u Pattern %s and palette %s confirmed now playing",
-             currentTime, kSelectablePatterns[selectedPatternIndex_].name,
-             kPaletteNames[selectedPaletteIndex_]);
-        return setPatternWithPalette(player, kSelectablePatterns[selectedPatternIndex_].bits, selectedPaletteIndex_, currentTime);
+      info("%u Pattern %s and palette %s confirmed now playing", currentTime,
+           kSelectablePatterns[selectedPatternIndex_].name, kPaletteNames[selectedPaletteIndex_]);
+      return setPatternWithPalette(player, kSelectablePatterns[selectedPatternIndex_].bits, selectedPaletteIndex_,
+                                   currentTime);
     } else if (state_ == State::kColor) {
-        info("%u Pattern %s and color %s confirmed now playing",
-             currentTime, kSelectablePatterns[selectedPatternIndex_].name,
-             kColorNames[selectedColorIndex_]);
-        return setPatternWithColor(player, kSelectablePatterns[selectedPatternIndex_].bits, selectedColorIndex_, currentTime);
+      info("%u Pattern %s and color %s confirmed now playing", currentTime,
+           kSelectablePatterns[selectedPatternIndex_].name, kColorNames[selectedColorIndex_]);
+      return setPatternWithColor(player, kSelectablePatterns[selectedPatternIndex_].bits, selectedColorIndex_,
+                                 currentTime);
     }
     return false;
   }
+
  private:
   bool setPattern(Player& player, PatternBits patternBits, Milliseconds currentTime) {
     patternBits = randomizePatternBits(patternBits);
@@ -461,10 +437,10 @@ class PatternControlMenu {
   void drawConfirmButton() {
     const char* confirmLabel;
     switch (kSelectablePatterns[selectedPatternIndex_].nextState) {
-      case State::kOff:       confirmLabel = "Error Off"; break;
-      case State::kPattern:   confirmLabel = "Error Pattern"; break;
-      case State::kPalette:   confirmLabel = "Select Palette"; break;
-      case State::kColor:     confirmLabel = "Select Color"; break;
+      case State::kOff: confirmLabel = "Error Off"; break;
+      case State::kPattern: confirmLabel = "Error Pattern"; break;
+      case State::kPalette: confirmLabel = "Select Palette"; break;
+      case State::kColor: confirmLabel = "Select Color"; break;
       case State::kConfirmed: confirmLabel = "Confirm"; break;
     }
     confirmButton.setLabel(confirmLabel);
@@ -499,47 +475,34 @@ class PatternControlMenu {
   static constexpr uint8_t kNumRegularPatterns = 5 + 4;
   static constexpr uint8_t kNumSpecialPatterns = 3 + 2 + 1;
   SelectablePattern kSelectablePatterns[kNumRegularPatterns + kNumSpecialPatterns] = {
-    // Non-palette regular patterns.
-    {"flame",       0x60000001, State::kConfirmed},
-    {"glitter",     0x40000001, State::kConfirmed},
-    {"the-matrix",  0x30000001, State::kConfirmed},
-    {"threesine",   0x20000001, State::kConfirmed},
-    {"rainbow",      0x00000001, State::kConfirmed},
-    // Palette regular patterns.
-    {"spin-plasma", 0xE0000001, State::kPalette},
-    {"hiphotic",    0xC0000001, State::kPalette},
-    {"metaballs",   0xA0000001, State::kPalette},
-    {"bursts",      0x80000001, State::kPalette},
-    // Non-color special patterns.
-    {"synctest",      0x0F0000, State::kConfirmed},
-    {"calibration",   0x100000, State::kConfirmed},
-    {"follow-strand", 0x110000, State::kConfirmed},
-    // Color special patterns.
-    {"solid",          0x00000, State::kColor},
-    {"glow",           0x70000, State::kColor},
-    // All -palette pattern.
-    {"all-palette", 0x00FF0000, State::kPalette},
+  // Non-palette regular patterns.
+      {        "flame", 0x60000001, State::kConfirmed},
+      {      "glitter", 0x40000001, State::kConfirmed},
+      {   "the-matrix", 0x30000001, State::kConfirmed},
+      {    "threesine", 0x20000001, State::kConfirmed},
+      {      "rainbow", 0x00000001, State::kConfirmed},
+ // Palette regular patterns.
+      {  "spin-plasma", 0xE0000001,   State::kPalette},
+      {     "hiphotic", 0xC0000001,   State::kPalette},
+      {    "metaballs", 0xA0000001,   State::kPalette},
+      {       "bursts", 0x80000001,   State::kPalette},
+ // Non-color special patterns.
+      {     "synctest",   0x0F0000, State::kConfirmed},
+      {  "calibration",   0x100000, State::kConfirmed},
+      {"follow-strand",   0x110000, State::kConfirmed},
+ // Color special patterns.
+      {        "solid",    0x00000,     State::kColor},
+      {         "glow",    0x70000,     State::kColor},
+ // All -palette pattern.
+      {  "all-palette", 0x00FF0000,   State::kPalette},
   };
   static constexpr size_t kNumPalettes = 7;
   const char* kPaletteNames[kNumPalettes] = {
-    "heat",
-    "lava",
-    "ocean",
-    "cloud",
-    "party",
-    "forest",
-    "rainbow",
+      "heat", "lava", "ocean", "cloud", "party", "forest", "rainbow",
   };
   static constexpr size_t kNumColors = 8;
   const char* kColorNames[kNumColors] = {
-    "black",
-    "red",
-    "green",
-    "blue",
-    "purple",
-    "cyan",
-    "yellow",
-    "white",
+      "black", "red", "green", "blue", "purple", "cyan", "yellow", "white",
   };
   State state_ = State::kOff;
   // SelectablePattern selectablePattern = SelectablePattern("flame", 0x60000001, State::kConfirmed);
@@ -645,7 +608,7 @@ void drawSystemTextLines(Player& player, Milliseconds currentTime) {
   snprintf(line, sizeof(line) - 1, "LED Brgt %u/255", gLedBrightness);
   drawSystemTextLine(i++, line);
   // Screen Brightness.
-  snprintf(line, sizeof(line) - 1, "Screen Brgt %u/20",gOnBrightness);
+  snprintf(line, sizeof(line) - 1, "Screen Brgt %u/20", gOnBrightness);
   drawSystemTextLine(i++, line);
   // BLE.
   snprintf(line, sizeof(line) - 1, "BLE: %s", bleStatus(currentTime).c_str());
@@ -664,54 +627,54 @@ void core2Loop(Player& player, Milliseconds currentTime) {
   if (M5.background.wasPressed()) {
     uint32_t freeHeap = ESP.getFreeHeap();
     uint32_t totalHeap = ESP.getHeapSize();
-    // TODO enable PSRAM by adding "-DBOARD_HAS_PSRAM" and "-mfix-esp32-psram-cache-issue" to build_flags in platformio.ini
-    // https://thingpulse.com/esp32-how-to-use-psram/
+    // TODO enable PSRAM by adding "-DBOARD_HAS_PSRAM" and "-mfix-esp32-psram-cache-issue" to build_flags in
+    // platformio.ini https://thingpulse.com/esp32-how-to-use-psram/
     uint32_t freePSRAM = ESP.getFreePsram();
     uint32_t totalPSRAM = ESP.getPsramSize();
     ::Point pressed = M5.background.event.from;
     int16_t px = pressed.x;
     int16_t py = pressed.y;
-    info("%u background pressed x=%d y=%d, free RAM %u/%u free PSRAM %u/%u",
-         currentTime, px, py, freeHeap, totalHeap, freePSRAM, totalPSRAM);
+    info("%u background pressed x=%d y=%d, free RAM %u/%u free PSRAM %u/%u", currentTime, px, py, freeHeap, totalHeap,
+         freePSRAM, totalPSRAM);
     switch (gScreenMode) {
-    case ScreenMode::kOff: {
-      gLastScreenInteractionTime = currentTime;
-      setCore2ScreenBrightness(gOnBrightness);
-#if BUTTON_LOCK
-      info("%u starting unlock sequence from button press", currentTime);
-      gScreenMode = ScreenMode::kLocked1;
-      unlock1Button.draw();
-#else  // BUTTON_LOCK
-      info("%u unlocking from button press", currentTime);
-      startMainMenu(player, currentTime);
-      gLastScreenInteractionTime = currentTime;
-#endif  // BUTTON_LOCK
-    } break;
-    case ScreenMode::kMainMenu: {
-        gScreenMode = ScreenMode::kFullScreenPattern;
-      if (px < 160 && py < 120) {
-        info("%u pattern screen pressed", currentTime);
-        hideMainMenuButtons();
-        M5.Lcd.fillScreen(BLACK);
-        core2ScreenRenderer.setFullScreen(true);
+      case ScreenMode::kOff: {
         gLastScreenInteractionTime = currentTime;
-      }
-    } break;
-    case ScreenMode::kFullScreenPattern: {
-      info("%u full screen pattern pressed", currentTime);
-      core2ScreenRenderer.setFullScreen(false);
-      startMainMenu(player, currentTime);
-      gLastScreenInteractionTime = currentTime;
-    } break;
-    case ScreenMode::kPatternControlMenu: {
-    } break;
-    case ScreenMode::kSystemMenu: {
-    } break;
-    case ScreenMode::kLocked1:  // fallthrough.
-    case ScreenMode::kLocked2: {
-      info("%u locking screen due to background press while unlocking");
-      lockScreen(currentTime);
-    } break;
+        setCore2ScreenBrightness(gOnBrightness);
+#if BUTTON_LOCK
+        info("%u starting unlock sequence from button press", currentTime);
+        gScreenMode = ScreenMode::kLocked1;
+        unlock1Button.draw();
+#else   // BUTTON_LOCK
+        info("%u unlocking from button press", currentTime);
+        startMainMenu(player, currentTime);
+        gLastScreenInteractionTime = currentTime;
+#endif  // BUTTON_LOCK
+      } break;
+      case ScreenMode::kMainMenu: {
+        gScreenMode = ScreenMode::kFullScreenPattern;
+        if (px < 160 && py < 120) {
+          info("%u pattern screen pressed", currentTime);
+          hideMainMenuButtons();
+          M5.Lcd.fillScreen(BLACK);
+          core2ScreenRenderer.setFullScreen(true);
+          gLastScreenInteractionTime = currentTime;
+        }
+      } break;
+      case ScreenMode::kFullScreenPattern: {
+        info("%u full screen pattern pressed", currentTime);
+        core2ScreenRenderer.setFullScreen(false);
+        startMainMenu(player, currentTime);
+        gLastScreenInteractionTime = currentTime;
+      } break;
+      case ScreenMode::kPatternControlMenu: {
+      } break;
+      case ScreenMode::kSystemMenu: {
+      } break;
+      case ScreenMode::kLocked1:  // fallthrough.
+      case ScreenMode::kLocked2: {
+        info("%u locking screen due to background press while unlocking");
+        lockScreen(currentTime);
+      } break;
     }
   }
   if (nextButton.wasPressed()) {
@@ -902,9 +865,7 @@ void core2Loop(Player& player, Milliseconds currentTime) {
 #if BUTTON_LOCK
   if (gLastScreenInteractionTime >= 0) {
     Milliseconds lockTime = kLockDelay;
-    if (gScreenMode == ScreenMode::kLocked1 || gScreenMode == ScreenMode::kLocked2) {
-      lockTime = kUnlockingTime;
-    }
+    if (gScreenMode == ScreenMode::kLocked1 || gScreenMode == ScreenMode::kLocked2) { lockTime = kUnlockingTime; }
     if (currentTime - gLastScreenInteractionTime > lockTime) {
       info("%u Locking screen due to inactivity", currentTime);
       lockScreen(currentTime);

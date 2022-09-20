@@ -29,11 +29,9 @@ struct MetaballsState {
 };
 
 class Metaballs : public EffectWithPaletteAndState<MetaballsState> {
-public:
+ public:
   std::string effectNamePrefix(PatternBits /*pattern*/) const override { return "metaballs"; }
-  ColorWithPalette innerColor(const Frame& /*frame*/,
-                              const Pixel& px,
-                              MetaballsState* state) const override {
+  ColorWithPalette innerColor(const Frame& /*frame*/, const Pixel& px, MetaballsState* state) const override {
     const Point p = px.coord;
     const Coord d1 = distance(p, state->p1);
     const Coord d2 = distance(p, state->p2);

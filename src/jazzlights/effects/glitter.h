@@ -10,9 +10,7 @@ class Glitter : public Effect {
  public:
   Glitter() = default;
 
-  std::string effectName(PatternBits /*pattern*/) const override {
-    return "glitter";
-  }
+  std::string effectName(PatternBits /*pattern*/) const override { return "glitter"; }
 
   size_t contextSize(const Frame& /*frame*/) const override { return sizeof(GlitterState); }
 
@@ -25,9 +23,7 @@ class Glitter : public Effect {
   void rewind(const Frame& frame) const override {
     GlitterState* state = reinterpret_cast<GlitterState*>(frame.context);
     uint8_t hueOffset = 256 * frame.time / kEffectDuration;
-    if (state->backwards) {
-      hueOffset = 255 - hueOffset;
-    }
+    if (state->backwards) { hueOffset = 255 - hueOffset; }
     state->hue = state->startHue + hueOffset;
   }
 

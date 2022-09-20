@@ -41,6 +41,7 @@ class XYIndexStore {
   XYIndex FromPixel(const Pixel& pixel) const;
   size_t xValuesCount() const { return xValuesCount_; }
   size_t yValuesCount() const { return yValuesCount_; }
+
  private:
   struct LayoutInfo {
     const Layout* layout;

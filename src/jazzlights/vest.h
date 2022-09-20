@@ -14,6 +14,6 @@ std::string otherStatus(Player& player, Milliseconds currentTime);
 
 }  // namespace jazzlights
 
-#endif // WEARABLE
+#endif  // WEARABLE
 
 #endif  // JAZZLIGHTS_VEST_H

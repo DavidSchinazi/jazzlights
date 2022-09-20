@@ -12,26 +12,22 @@ class Rainbow : public Effect {
  public:
   Rainbow() = default;
 
-  std::string effectName(PatternBits /*pattern*/) const override {
-    return "rainbow";
-  }
+  std::string effectName(PatternBits /*pattern*/) const override { return "rainbow"; }
 
-  size_t contextSize(const Frame& /*frame*/) const override {
-    return sizeof(RainbowState);
-  }
+  size_t contextSize(const Frame& /*frame*/) const override { return sizeof(RainbowState); }
 
   void begin(const Frame& frame) const override {
     RainbowState* state = reinterpret_cast<RainbowState*>(frame.context);
     state->startHue = frame.predictableRandom->GetRandomByte();
     state->origin.x =
-      frame.viewport.origin.x + frame.predictableRandom->GetRandomDoubleBetween(0, frame.viewport.size.width);
+        frame.viewport.origin.x + frame.predictableRandom->GetRandomDoubleBetween(0, frame.viewport.size.width);
     state->origin.y =
-      frame.viewport.origin.y + frame.predictableRandom->GetRandomDoubleBetween(0, frame.viewport.size.height);
+        frame.viewport.origin.y + frame.predictableRandom->GetRandomDoubleBetween(0, frame.viewport.size.height);
     state->maxDistance = std::max({
-      distance(state->origin, lefttop(frame)),
-      distance(state->origin, righttop(frame)),
-      distance(state->origin, leftbottom(frame)),
-      distance(state->origin, rightbottom(frame)),
+        distance(state->origin, lefttop(frame)),
+        distance(state->origin, righttop(frame)),
+        distance(state->origin, leftbottom(frame)),
+        distance(state->origin, rightbottom(frame)),
     });
     state->backwards = frame.predictableRandom->GetRandomByte() & 1;
   }
@@ -39,9 +35,7 @@ class Rainbow : public Effect {
   void rewind(const Frame& frame) const override {
     RainbowState* state = reinterpret_cast<RainbowState*>(frame.context);
     uint8_t hueOffset = 256 * frame.time / 1500;
-    if (state->backwards) {
-      hueOffset = 255 - hueOffset;
-    }
+    if (state->backwards) { hueOffset = 255 - hueOffset; }
     state->initialHue = state->startHue + hueOffset;
   }
 
@@ -64,4 +58,3 @@ class Rainbow : public Effect {
 
 }  // namespace jazzlights
 #endif  // JAZZLIGHTS_EFFECTS_RAINBOW_H
-

@@ -24,9 +24,7 @@ void XYIndexStore::Finalize(const Box& viewport) {
   std::vector<Coord> xValues;
   std::vector<Coord> yValues;
   {
-    auto almostLess = [](Coord a, Coord b) {
-      return a + kCoordEpsilon < b;
-    };
+    auto almostLess = [](Coord a, Coord b) { return a + kCoordEpsilon < b; };
     std::set<Coord, decltype(almostLess)> xSet(almostLess);
     std::set<Coord, decltype(almostLess)> ySet(almostLess);
     for (LayoutInfo& li : layoutInfos_) {
@@ -59,9 +57,7 @@ void XYIndexStore::Finalize(const Box& viewport) {
       XYIndex xyIndex;
       if (useSmallerXGrid_) {
         xyIndex.xIndex = (pt.x - viewport.origin.x) * kSmallerGridSize / viewport.size.width;
-        if (xyIndex.xIndex == xValuesCount_) {
-          xyIndex.xIndex--;
-        }
+        if (xyIndex.xIndex == xValuesCount_) { xyIndex.xIndex--; }
       } else {
         for (size_t xi = 0; xi < xValuesCount_; xi++) {
           if (fabs(xValues[xi] - pt.x) < kCoordEpsilon) {
@@ -72,9 +68,7 @@ void XYIndexStore::Finalize(const Box& viewport) {
       }
       if (useSmallerYGrid_) {
         xyIndex.yIndex = (pt.y - viewport.origin.y) * kSmallerGridSize / viewport.size.height;
-        if (xyIndex.yIndex == yValuesCount_) {
-          xyIndex.yIndex--;
-        }
+        if (xyIndex.yIndex == yValuesCount_) { xyIndex.yIndex--; }
       } else {
         for (size_t yi = 0; yi < yValuesCount_; yi++) {
           if (fabs(yValues[yi] - pt.y) < kCoordEpsilon) {
@@ -90,16 +84,12 @@ void XYIndexStore::Finalize(const Box& viewport) {
 
 XYIndex XYIndexStore::FromPixel(const Pixel& pixel) const {
   for (const LayoutInfo& li : layoutInfos_) {
-    if (li.layout == pixel.layout) {
-      return li.xyIndices[pixel.index];
-    }
+    if (li.layout == pixel.layout) { return li.xyIndices[pixel.index]; }
   }
   return XYIndex();
 }
 
-XYIndexStore::XYIndexStore() {
-  Reset();
-}
+XYIndexStore::XYIndexStore() { Reset(); }
 
 void XYIndexStore::Reset() {
   layoutInfos_.clear();
@@ -110,8 +100,8 @@ void XYIndexStore::Reset() {
 PatternBits randomizePatternBits(PatternBits pattern) {
   if ((pattern & 0xFF) != 0) {
     pattern &= 0xF000E000;
-    pattern |= UnpredictableRandom::GetNumberBetween(1, (1 <<  8) - 1);
-    pattern |= UnpredictableRandom::GetNumberBetween(0, (1 <<  5) - 1) << 8;
+    pattern |= UnpredictableRandom::GetNumberBetween(1, (1 << 8) - 1);
+    pattern |= UnpredictableRandom::GetNumberBetween(0, (1 << 5) - 1) << 8;
     pattern |= UnpredictableRandom::GetNumberBetween(0, (1 << 12) - 1) << 16;
   }
   return pattern;

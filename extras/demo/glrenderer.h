@@ -1,18 +1,18 @@
 #ifndef JAZZLIGHTS_RENDERERS_OPENGL_H
 #define JAZZLIGHTS_RENDERERS_OPENGL_H
 
-#include "jazzlights/renderer.h"
 #include "jazzlights/layout.h"
+#include "jazzlights/renderer.h"
 
 namespace jazzlights {
 
 class GLRenderer : public Renderer {
  public:
-  GLRenderer(const Layout& l, Meters ledRadius = 1/120.0);
+  GLRenderer(const Layout& l, Meters ledRadius = 1 / 120.0);
 
   void render(InputStream<Color>& pixelColors) override;
 
-private:
+ private:
   const Layout& layout_;
   Meters ledRadius_;
 };

@@ -1,17 +1,18 @@
 #include "sysinfo.h"
 
-#include <sstream>
-#include <string.h>
+#include <arpa/inet.h>
+#include <errno.h>
+#include <ifaddrs.h>
+#include <netdb.h>
+#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-#include <netdb.h>
-#include <sys/types.h>
+#include <string.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <ifaddrs.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#include <sstream>
 
 namespace jazzlights {
 
@@ -31,7 +32,7 @@ const char* sysinfo() {
   }
   out << " ";
 
-  struct ifaddrs* addrs, *addr;
+  struct ifaddrs *addrs, *addr;
   if (getifaddrs(&addrs) < 0) {
     out << "unknown";
   } else {

@@ -10,16 +10,15 @@ struct Deleter {
   Deleter* next = nullptr;
 };
 extern Deleter* firstDeleter;
-template <typename T> struct GenDeleter : Deleter {
-  ~GenDeleter() override {
-    delete item;
-  }
+template <typename T>
+struct GenDeleter : Deleter {
+  ~GenDeleter() override { delete item; }
   T* item = nullptr;
 };
-} // namespace internal
+}  // namespace internal
 
 template <typename T, typename... Args>
-T& make(Args&& ... args) {
+T& make(Args&&... args) {
   using namespace internal;
   GenDeleter<T>* d = new GenDeleter<T>;
   d->item = new T(forward<Args>(args)...);
@@ -32,7 +31,6 @@ template <typename T>
 T& clone(const T& v) {
   return make<T>(v);
 }
-
 
 }  // namespace jazzlights
 #endif  // JAZZLIGHTS_REGISTRY_HPP

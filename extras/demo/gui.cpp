@@ -1,15 +1,16 @@
 #include "gui.h"
-#include "glrenderer.h"
 
+#include <GLFW/glfw3.h>
+
+#include <array>
+#include <iomanip>
+#include <memory>
+#include <sstream>
+#include <vector>
+
+#include "glrenderer.h"
 #include "jazzlights/config.h"
 #include "jazzlights/player.h"
-
-#include <vector>
-#include <sstream>
-#include <iomanip>
-#include <array>
-#include <memory>
-#include <GLFW/glfw3.h>
 
 namespace jazzlights {
 
@@ -26,40 +27,32 @@ void onResize(GLFWwindow*, int winWidth, int winHeight) {
   glViewport(0, 0, winWidth, winHeight);
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  glOrtho(left(vp), right(vp), top(vp) + height(vp)*aspect, top(vp), -1, 1);
+  glOrtho(left(vp), right(vp), top(vp) + height(vp) * aspect, top(vp), -1, 1);
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
 }
 
-void onKey(GLFWwindow* window, int key, int /*scncode*/, int action,
-           int mods) {
+void onKey(GLFWwindow* window, int key, int /*scncode*/, int action, int mods) {
   const Milliseconds currentTime = timeMillis();
   if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
     player->loopOne(currentTime);
   } else if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
     player->stopLooping(currentTime);
     player->next(currentTime);
-  } else if (key == GLFW_KEY_0 && action == GLFW_PRESS
-             && (mods & GLFW_MOD_SHIFT)) {
-  } else if (key == GLFW_KEY_ESCAPE || (key == GLFW_KEY_C
-                                        && (mods & GLFW_MOD_CONTROL))) {
+  } else if (key == GLFW_KEY_0 && action == GLFW_PRESS && (mods & GLFW_MOD_SHIFT)) {
+  } else if (key == GLFW_KEY_ESCAPE || (key == GLFW_KEY_C && (mods & GLFW_MOD_CONTROL))) {
     glfwSetWindowShouldClose(window, GL_TRUE);
   }
 };
 
-
-
 int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen) {
   player = &playerRef;
   viewport = vp;
-  
-  info("Running GUI, view box is (%0.3f, %0.3f) - (%0.3f, %0.3f) meters, using GLFW v.%s",
-       left(player->bounds()), top(player->bounds()), right(player->bounds()),
-       bottom(player->bounds()), glfwGetVersionString());
 
-  if (!glfwInit()) {
-    fatal("Can't initialize graphics");
-  }
+  info("Running GUI, view box is (%0.3f, %0.3f) - (%0.3f, %0.3f) meters, using GLFW v.%s", left(player->bounds()),
+       top(player->bounds()), right(player->bounds()), bottom(player->bounds()), glfwGetVersionString());
+
+  if (!glfwInit()) { fatal("Can't initialize graphics"); }
 
   int winWidth = WIN_W;
   int winHeight = WIN_H;
@@ -76,12 +69,9 @@ int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen) {
     winHeight = mode->height;
   }
 
-  GLFWwindow* window = glfwCreateWindow(winWidth, winHeight, winTitle,
-                                        fullscreen ? glfwGetPrimaryMonitor() :
-                                        nullptr, nullptr);
-  if (!window) {
-    fatal("Can't create window");
-  }
+  GLFWwindow* window =
+      glfwCreateWindow(winWidth, winHeight, winTitle, fullscreen ? glfwGetPrimaryMonitor() : nullptr, nullptr);
+  if (!window) { fatal("Can't create window"); }
 
   glfwSetFramebufferSizeCallback(window, onResize);
   glfwMakeContextCurrent(window);
@@ -106,6 +96,5 @@ int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen) {
   glfwTerminate();
   return 0;
 }
-
 
 }  // namespace jazzlights

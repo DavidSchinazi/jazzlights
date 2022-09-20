@@ -25,6 +25,4 @@ int runMain() {
 
 }  // namespace jazzlights
 
-int main(int /*argc*/, char** /*argv*/) {
-  return jazzlights::runMain();
-}
+int main(int /*argc*/, char** /*argv*/) { return jazzlights::runMain(); }

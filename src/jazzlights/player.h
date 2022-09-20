@@ -1,18 +1,18 @@
 #ifndef JAZZLIGHTS_PLAYER_H
 #define JAZZLIGHTS_PLAYER_H
+#include <vector>
+
 #include "jazzlights/effect.h"
 #include "jazzlights/layout.h"
 #include "jazzlights/network.h"
 #include "jazzlights/pseudorandom.h"
+#include "jazzlights/registry.h"
 #include "jazzlights/renderer.h"
 #include "jazzlights/renderers/simple.h"
-#include "jazzlights/registry.h"
-
-#include <vector>
 
 #ifndef START_SPECIAL
-#  define START_SPECIAL 0
-#endif // START_SPECIAL
+#define START_SPECIAL 0
+#endif  // START_SPECIAL
 
 namespace jazzlights {
 
@@ -22,7 +22,6 @@ enum : Milliseconds {
 
 class Player {
  public:
-
   Player();
   ~Player();
 
@@ -93,16 +92,12 @@ class Player {
   /**
    * Returns number of frames rendered per second.
    */
-  uint32_t fps() const {
-    return fps_;
-  }
+  uint32_t fps() const { return fps_; }
 
   /**
    * Returns the bounding box of all pixels
    */
-  const Box& bounds() const {
-    return frame_.viewport;
-  }
+  const Box& bounds() const { return frame_.viewport; }
 
   void handleSpecial(Milliseconds currentTime);
   void stopSpecial(Milliseconds currentTime);
@@ -113,9 +108,8 @@ class Player {
 
   bool powerLimited = false;
 
-
-  void setBasePrecedence(Precedence basePrecedence) {basePrecedence_ = basePrecedence; }
-  void setPrecedenceGain(Precedence precedenceGain) {precedenceGain_ = precedenceGain; }
+  void setBasePrecedence(Precedence basePrecedence) { basePrecedence_ = basePrecedence; }
+  void setPrecedenceGain(Precedence precedenceGain) { precedenceGain_ = precedenceGain; }
   void updatePrecedence(Precedence basePrecedence, Precedence precedenceGain, Milliseconds currentTime);
   void setRandomizeLocalDeviceId(bool val) { randomizeLocalDeviceId_ = val; }
 
@@ -196,7 +190,6 @@ class Player {
   Milliseconds lastFpsProbeTime_ = 0;
   uint64_t framesSinceFpsProbe_ = 0;
 };
-
 
 }  // namespace jazzlights
 #endif  // JAZZLIGHTS_PLAYER_H

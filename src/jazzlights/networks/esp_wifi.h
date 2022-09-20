@@ -4,25 +4,24 @@
 #include "jazzlights/network.h"
 
 #ifndef JAZZLIGHTS_ESP_WIFI
-#  if defined(ESP8266) || defined(ESP32)
-#    define JAZZLIGHTS_ESP_WIFI 1
-#  else // defined(ESP8266) || defined(ESP32)
-#    define JAZZLIGHTS_ESP_WIFI 0
-#  endif  // defined(ESP8266) || defined(ESP32)
+#if defined(ESP8266) || defined(ESP32)
+#define JAZZLIGHTS_ESP_WIFI 1
+#else  // defined(ESP8266) || defined(ESP32)
+#define JAZZLIGHTS_ESP_WIFI 0
+#endif  // defined(ESP8266) || defined(ESP32)
 #endif  // JAZZLIGHTS_ESP_WIFI
 
 #if JAZZLIGHTS_ESP_WIFI
 
 #if defined(ESP8266)
-#  include <ESP8266WiFi.h>
+#include <ESP8266WiFi.h>
 #elif defined(ESP32)
-#  include <WiFi.h>
+#include <WiFi.h>
 #endif
 
 #include <WiFiUdp.h>
 
 namespace jazzlights {
-
 
 class EspWiFi : public UdpNetwork {
  public:
@@ -31,12 +30,8 @@ class EspWiFi : public UdpNetwork {
   NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
   int recv(void* buf, size_t bufsize, std::string* details) override;
   void send(void* buf, size_t bufsize) override;
-  NetworkDeviceId getLocalDeviceId() override {
-    return localDeviceId_;
-  }
-  const char* networkName() const override {
-    return "EspWiFi";
-  }
+  NetworkDeviceId getLocalDeviceId() override { return localDeviceId_; }
+  const char* networkName() const override { return "EspWiFi"; }
 
   struct Credentials {
     const char* ssid;

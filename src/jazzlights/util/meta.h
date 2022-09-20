@@ -8,13 +8,13 @@
 
 namespace jazzlights {
 
-template<typename T>
+template <typename T>
 struct iterator_traits {
   using value_type = typename T::value_type;
   using reference = typename T::reference_type;
 };
 
-template<typename T>
+template <typename T>
 struct iterator_traits<T*> {
   using value_type = T;
   using reference = T&;
@@ -23,22 +23,20 @@ struct iterator_traits<T*> {
 template <typename T>
 struct function_traits;
 
-template<class R, class... Args>
-struct function_traits<R(*)(Args...)> : public function_traits<R(Args...)> {
-};
+template <class R, class... Args>
+struct function_traits<R (*)(Args...)> : public function_traits<R(Args...)> {};
 
 template <typename T>
-struct function_traits : public function_traits<decltype(&T::operator())> {
-};
+struct function_traits : public function_traits<decltype(&T::operator())> {};
 
-template<class R, class... Args>
+template <class R, class... Args>
 struct function_traits<R(Args...)> {
   using return_type = R;
   static constexpr size_t arity = sizeof...(Args);
 };
 
 template <typename C, typename R, typename... Args>
-struct function_traits<R(C::*)(Args...) const> {
+struct function_traits<R (C::*)(Args...) const> {
   using return_type = R;
   static constexpr size_t arity = sizeof...(Args);
 };
@@ -68,16 +66,15 @@ struct is_lvalue_reference<T&> : true_type {};
 template <typename T>
 struct is_rvalue_reference : false_type {};
 template <typename T>
-struct is_rvalue_reference < T&& > : true_type {};
+struct is_rvalue_reference<T&&> : true_type {};
 
 // is_class builtin
 template <typename T>
-struct is_class : public integral_constant<bool, __is_class(T)> { };
+struct is_class : public integral_constant<bool, __is_class(T)> {};
 
 // is_base_of builtin
 template <typename Base, typename Derived>
-struct is_base_of : public
-integral_constant<bool, __is_base_of(Base, Derived)> { };
+struct is_base_of : public integral_constant<bool, __is_base_of(Base, Derived)> {};
 
 // remove_reference:
 template <typename T>
@@ -89,7 +86,7 @@ struct remove_reference<T&> {
   using type = T;
 };
 template <typename T>
-struct remove_reference < T&& > {
+struct remove_reference<T&&> {
   using type = T;
 };
 
@@ -122,29 +119,32 @@ struct remove_cv {
 // move
 template <typename T>
 constexpr typename remove_reference<T>::type&& move(T&& t) {
-  return static_cast < typename remove_reference<T>::type && >(t);
+  return static_cast<typename remove_reference<T>::type&&>(t);
 }
 
 // forward:
 template <typename T>
 constexpr T&& forward(typename remove_reference<T>::type& t) {
-  return static_cast < T && >(t);
+  return static_cast<T&&>(t);
 }
 template <typename T>
 constexpr T&& forward(typename remove_reference<T>::type&& t) {
   static_assert(!is_lvalue_reference<T>::value, "bad fbl::forward call");
-  return static_cast < T && >(t);
+  return static_cast<T&&>(t);
 }
 
 // is_same:
-template<class T, class U> struct is_same : false_type {};
-template<class T> struct is_same<T, T> : true_type {};
+template <class T, class U>
+struct is_same : false_type {};
+template <class T>
+struct is_same<T, T> : true_type {};
 // enable_if:
-template<bool B, class T = void> struct enable_if { };
-template<class T> struct enable_if<true, T> {
+template <bool B, class T = void>
+struct enable_if {};
+template <class T>
+struct enable_if<true, T> {
   typedef T type;
 };
-
 
 }  // namespace jazzlights
 #endif  // JAZZLIGHTS_TYPE_SUPPORT_H

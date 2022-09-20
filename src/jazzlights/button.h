@@ -2,17 +2,16 @@
 #define JAZZLIGHTS_BUTTON_H
 
 #include "jazzlights/config.h"
-#include "jazzlights/player.h"
 #include "jazzlights/networks/esp32_ble.h"
 #include "jazzlights/networks/esp_wifi.h"
+#include "jazzlights/player.h"
 
 #if WEARABLE
 
 namespace jazzlights {
 
 void setupButtons();
-void doButtons(Player& player,
-               const EspWiFi& wifiNetwork,
+void doButtons(Player& player, const EspWiFi& wifiNetwork,
 #if ESP32_BLE
                const Esp32BleNetwork& bleNetwork,
 #endif  // ESP32_BLE
@@ -24,6 +23,6 @@ uint8_t getBrightness();
 
 }  // namespace jazzlights
 
-#endif // WEARABLE
+#endif  // WEARABLE
 
 #endif  // JAZZLIGHTS_BUTTON_H

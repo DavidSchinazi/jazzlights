@@ -8,16 +8,14 @@ struct FlameState {
 };
 
 class Flame : public XYIndexStateEffect<FlameState, uint8_t> {
-  public:
+ public:
   void innerBegin(const Frame& frame, FlameState* state) const override;
   void innerRewind(const Frame& frame, FlameState* state) const override;
   Color innerColor(const Frame& frame, FlameState* state, const Pixel& px) const override;
-  std::string effectName(PatternBits /*pattern*/) const override {return "flame"; }
+  std::string effectName(PatternBits /*pattern*/) const override { return "flame"; }
 };
 
-inline Flame flame() {
-  return Flame();
-}
+inline Flame flame() { return Flame(); }
 
 }  // namespace jazzlights
 #endif  // JAZZLIGHTS_EFFECT_FLAME_H

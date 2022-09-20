@@ -10,9 +10,7 @@ class Loader {
  public:
   void load(const char* file, Player& player);
 
-  Meters ledRadius() const {
-    return ledr_;
-  }
+  Meters ledRadius() const { return ledr_; }
 
  private:
   void loadPlayer(Player& player, const cpptoml::table& cfg);

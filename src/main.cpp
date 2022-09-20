@@ -2,12 +2,8 @@
 
 #ifdef JAZZLIGHTS_PLATFORMIO
 
-void setup() {
-  jazzlights::vestSetup();
-}
+void setup() { jazzlights::vestSetup(); }
 
-void loop() {
-  jazzlights::vestLoop();
-}
+void loop() { jazzlights::vestLoop(); }
 
 #endif  // JAZZLIGHTS_PLATFORMIO

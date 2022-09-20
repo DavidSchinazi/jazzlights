@@ -14,25 +14,25 @@
 
 #ifdef ESP8266
 // Required to map feather huzzah and LoLin nodecmu pins properly.
-#  define FASTLED_ESP8266_RAW_PIN_ORDER
-#endif // ESP8266
+#define FASTLED_ESP8266_RAW_PIN_ORDER
+#endif  // ESP8266
 
 #include <FastLED.h>
 
-#endif // WEARABLE
+#endif  // WEARABLE
 
 #include "jazzlights/board.h"
-#include "jazzlights/types.h"
+#include "jazzlights/button.h"
+#include "jazzlights/core2.h"
 #include "jazzlights/layouts/matrix.h"
 #include "jazzlights/layouts/pixelmap.h"
+#include "jazzlights/networks/arduinoethernet.h"
 #include "jazzlights/networks/esp32_ble.h"
 #include "jazzlights/networks/esp_wifi.h"
-#include "jazzlights/networks/arduinoethernet.h"
 #include "jazzlights/player.h"
-#include "jazzlights/util/log.h"
-#include "jazzlights/core2.h"
-#include "jazzlights/vest.h"
 #include "jazzlights/text.h"
-#include "jazzlights/button.h"
+#include "jazzlights/types.h"
+#include "jazzlights/util/log.h"
+#include "jazzlights/vest.h"
 
 #endif  // JAZZLIGHTS_H

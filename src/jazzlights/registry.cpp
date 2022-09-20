@@ -2,14 +2,9 @@
 namespace jazzlights {
 namespace internal {
 
-Deleter::~Deleter() {
-    delete next;
-}
+Deleter::~Deleter() { delete next; }
 
-Deleter* firstDeleter = nullptr;  
+Deleter* firstDeleter = nullptr;
 
-} // namespace internal
+}  // namespace internal
 }  // namespace jazzlights
-
-
-

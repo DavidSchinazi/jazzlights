@@ -5,7 +5,7 @@
 
 namespace jazzlights {
 
-void load(const char *file, Player& player);
+void load(const char* file, Player& player);
 
 }  // namespace jazzlights
 

@@ -1,33 +1,30 @@
 #include <Jazzlights.h>
+
 #include "jazzlights/instrumentation.h"
 
 #if WEARABLE
 
 #if CORE2AWS
-#  define LED_PIN  32
+#define LED_PIN 32
 #elif defined(ESP32)
-#  define LED_PIN  26
-#  define LED_PIN2 32
+#define LED_PIN 26
+#define LED_PIN2 32
 #elif defined(ESP8266)
-#  define LED_PIN  5
+#define LED_PIN 5
 #else
-#  error "Unexpected board"
+#error "Unexpected board"
 #endif
 
 namespace jazzlights {
 
 CRGB leds[LEDNUM] = {};
 
-void renderPixel(int i, uint8_t r, uint8_t g, uint8_t b) {
-  leds[i] = CRGB(r, g, b);
-}
+void renderPixel(int i, uint8_t r, uint8_t g, uint8_t b) { leds[i] = CRGB(r, g, b); }
 
 #if LEDNUM2
 CRGB leds2[LEDNUM2] = {};
 
-void renderPixel2(int i, uint8_t r, uint8_t g, uint8_t b) {
-  leds2[i] = CRGB(r, g, b);
-}
+void renderPixel2(int i, uint8_t r, uint8_t g, uint8_t b) { leds2[i] = CRGB(r, g, b); }
 #endif  // LEDNUM2
 
 EspWiFi network("FISHLIGHT", "155155155");
@@ -43,9 +40,7 @@ NetworkDeviceId GetEthernetDeviceId() {
         deviceId.data()[2]++;
         if (deviceId.data()[2] == 0) {
           deviceId.data()[1]++;
-          if (deviceId.data()[1] == 0) {
-            deviceId.data()[0]++;
-          }
+          if (deviceId.data()[1] == 0) { deviceId.data()[0]++; }
         }
       }
     }
@@ -66,7 +61,7 @@ void vestSetup(void) {
   Serial.begin(115200);
 #if CORE2AWS
   core2SetupStart(player, currentTime);
-#else  // CORE2AWS
+#else   // CORE2AWS
   setupButtons();
 #endif  // CORE2AWS
   player.addStrand(*GetLayout(), renderPixel);
@@ -89,7 +84,7 @@ void vestSetup(void) {
 
 #if ESP32_BLE
   player.connect(Esp32BleNetwork::get());
-#endif // ESP32_BLE
+#endif  // ESP32_BLE
   player.connect(&network);
 #if JAZZLIGHTS_ARDUINO_ETHERNET
   player.connect(&ethernetNetwork);
@@ -116,28 +111,25 @@ void vestSetup(void) {
   // IMPORTANT: the two-wire pigtail is unfortunately reversible, and needs to be plugged in such
   // that the YL inscription is on the male end of the three-way power-injection splitter.
   constexpr uint32_t kSpiSpeed = DATA_RATE_MHZ(2);
-  // The FastLED default for WS2801 is 1MHz. Empirically without long runs of wire it appeared that 2MHz and 3MHz both worked
-  // while 4MHz caused visible glitches. We chose 2MHz because that allows us to run the robot at 100FPS while 1MHz doesn't.
-  // Empirical data indicates that for the 378 LEDs in the robot (310 on side and 68 in head), 1MHz takes 10.7ms to render while 2MHz takes 5.7ms.
-  mainVestController = &FastLED.addLeds</*CHIPSET=*/WS2801, /*DATA_PIN=*/26, /*CLOCK_PIN=*/32, /*RGB_ORDER=*/GBR, /*SPI_SPEED=*/kSpiSpeed>(
-    leds, sizeof(leds)/sizeof(*leds));
+  // The FastLED default for WS2801 is 1MHz. Empirically without long runs of wire it appeared that 2MHz and 3MHz both
+  // worked while 4MHz caused visible glitches. We chose 2MHz because that allows us to run the robot at 100FPS while
+  // 1MHz doesn't. Empirical data indicates that for the 378 LEDs in the robot (310 on side and 68 in head), 1MHz
+  // takes 10.7ms to render while 2MHz takes 5.7ms.
+  mainVestController = &FastLED.addLeds</*CHIPSET=*/WS2801, /*DATA_PIN=*/26, /*CLOCK_PIN=*/32, /*RGB_ORDER=*/GBR,
+                                        /*SPI_SPEED=*/kSpiSpeed>(leds, sizeof(leds) / sizeof(*leds));
 #elif IS_STAFF
-  mainVestController = &FastLED.addLeds<WS2811, LED_PIN, RGB>(
-    leds, sizeof(leds)/sizeof(*leds));
+  mainVestController = &FastLED.addLeds<WS2811, LED_PIN, RGB>(leds, sizeof(leds) / sizeof(*leds));
 #elif IS_ROPELIGHT
-  mainVestController = &FastLED.addLeds<WS2811, LED_PIN, BRG>(
-    leds, sizeof(leds)/sizeof(*leds));
+  mainVestController = &FastLED.addLeds<WS2811, LED_PIN, BRG>(leds, sizeof(leds) / sizeof(*leds));
 #else  // Vest.
-  mainVestController = &FastLED.addLeds<WS2812B, LED_PIN, GRB>(
-    leds, sizeof(leds)/sizeof(*leds));
+  mainVestController = &FastLED.addLeds<WS2812B, LED_PIN, GRB>(leds, sizeof(leds) / sizeof(*leds));
 #endif
 #if LEDNUM2
 #if GECKO_SCALES
-  mainVestController2 = &FastLED.addLeds</*CHIPSET=*/WS2801, /*DATA_PIN=*/21, /*CLOCK_PIN=*/32, /*RGB_ORDER=*/GBR, /*SPI_SPEED=*/kSpiSpeed>(
-    leds2, sizeof(leds2)/sizeof(*leds2));
-#else  // GECKO_SCALES
-  mainVestController2 = &FastLED.addLeds<WS2812B, LED_PIN2, GRB>(
-    leds2, sizeof(leds2)/sizeof(*leds2));
+  mainVestController2 = &FastLED.addLeds</*CHIPSET=*/WS2801, /*DATA_PIN=*/21, /*CLOCK_PIN=*/32, /*RGB_ORDER=*/GBR,
+                                         /*SPI_SPEED=*/kSpiSpeed>(leds2, sizeof(leds2) / sizeof(*leds2));
+#else   // GECKO_SCALES
+  mainVestController2 = &FastLED.addLeds<WS2812B, LED_PIN2, GRB>(leds2, sizeof(leds2) / sizeof(*leds2));
 #endif  // GECKO_SCALES
 #endif  // LEDNUM2
 #if CORE2AWS
@@ -150,44 +142,43 @@ void vestLoop(void) {
   Milliseconds currentTime = timeMillis();
 #if CORE2AWS
   core2Loop(player, currentTime);
-#else // CORE2AWS
+#else  // CORE2AWS
   SAVE_TIME_POINT(Core2);
   // Read, debounce, and process the buttons, and perform actions based on button state.
-  doButtons(player,
-            network,
+  doButtons(player, network,
 #if ESP32_BLE
             *Esp32BleNetwork::get(),
-#endif // ESP32_BLE
+#endif  // ESP32_BLE
             currentTime);
-#endif // CORE2AWS
+#endif  // CORE2AWS
   SAVE_TIME_POINT(Buttons);
 
 #if ESP32_BLE
   Esp32BleNetwork::get()->runLoop(currentTime);
-#endif // ESP32_BLE
+#endif  // ESP32_BLE
   SAVE_TIME_POINT(Bluetooth);
 
   const bool shouldRender = player.render(currentTime);
   SAVE_TIME_POINT(Player);
-  if (!shouldRender) {
-    return;
-  }
-  uint32_t brightness = getBrightness();        // May be reduced if this exceeds our power budget with the current pattern
+  if (!shouldRender) { return; }
+  uint32_t brightness = getBrightness();  // May be reduced if this exceeds our power budget with the current pattern
 
 #if MAX_MILLIWATTS
   uint32_t powerAtFullBrightness = calculate_unscaled_power_mW(mainVestController->leds(), mainVestController->size());
 #if LEDNUM2
   powerAtFullBrightness += calculate_unscaled_power_mW(mainVestController2->leds(), mainVestController2->size());
-#endif // LEDNUM2
-  const uint32_t powerAtDesiredBrightness = powerAtFullBrightness * brightness / 256;         // Forecast power at our current desired brightness
+#endif  // LEDNUM2
+  const uint32_t powerAtDesiredBrightness =
+      powerAtFullBrightness * brightness / 256;  // Forecast power at our current desired brightness
   player.powerLimited = (powerAtDesiredBrightness > MAX_MILLIWATTS);
   if (player.powerLimited) { brightness = brightness * MAX_MILLIWATTS / powerAtDesiredBrightness; }
 
-  debug("pf%6u    pd%5u    bu%4u    bs%4u    mW%5u    mA%5u%s",
-    powerAtFullBrightness, powerAtDesiredBrightness,                                          // Full-brightness power, desired-brightness power
-    getBrightness(), brightness,                                                              // Desired and selected brightness
-    powerAtFullBrightness * brightness / 256, powerAtFullBrightness * brightness / 256 / 5,   // Selected power & current
-    player.powerLimited ? " (limited)" : "");
+  debug("pf%6u    pd%5u    bu%4u    bs%4u    mW%5u    mA%5u%s", powerAtFullBrightness,
+        powerAtDesiredBrightness,     // Full-brightness power, desired-brightness power
+        getBrightness(), brightness,  // Desired and selected brightness
+        powerAtFullBrightness * brightness / 256,
+        powerAtFullBrightness * brightness / 256 / 5,  // Selected power & current
+        player.powerLimited ? " (limited)" : "");
 #endif  // MAX_MILLIWATTS
   SAVE_TIME_POINT(Brightness);
 
@@ -201,14 +192,12 @@ void vestLoop(void) {
   SAVE_TIME_POINT(SecondLED);
 }
 
-std::string wifiStatus(Milliseconds currentTime) {
-  return network.statusStr(currentTime);
-}
+std::string wifiStatus(Milliseconds currentTime) { return network.statusStr(currentTime); }
 
 std::string bleStatus(Milliseconds currentTime) {
 #if ESP32_BLE
   return Esp32BleNetwork::get()->statusStr(currentTime);
-#else  // ESP32_BLE
+#else   // ESP32_BLE
   return "Not supported";
 #endif  // ESP32_BLE
 }
@@ -228,4 +217,4 @@ std::string otherStatus(Player& player, Milliseconds currentTime) {
 
 }  // namespace jazzlights
 
-#endif // WEARABLE
+#endif  // WEARABLE

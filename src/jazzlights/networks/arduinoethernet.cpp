@@ -33,14 +33,13 @@ std::string EthernetHardwareStatusToString(EthernetHardwareStatus hwStatus) {
   return s.str();
 }
 
-} // namespace
+}  // namespace
 
-ArduinoEthernetNetwork::ArduinoEthernetNetwork(NetworkDeviceId localDeviceId) :
-    localDeviceId_(localDeviceId) {
+ArduinoEthernetNetwork::ArduinoEthernetNetwork(NetworkDeviceId localDeviceId) : localDeviceId_(localDeviceId) {
   // These pins work with the M5Stack ATOM Matrix (or ATOM Lite) connected to the ATOM PoE Kit.
   // https://shop.m5stack.com/products/atom-poe-kit-with-w5500-hy601742e
   SPI.begin(/*SCK=*/22, /*MISO=*/23, /*MOSI=*/33, /*SS=*/-1);
-  Ethernet.init(/*=CS*/19);
+  Ethernet.init(/*=CS*/ 19);
 }
 
 NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status, Milliseconds currentTime) {
@@ -51,15 +50,15 @@ NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status, Milliseconds 
         error("%u %s Failed to communicate with Ethernet hardware", currentTime, networkName());
         return CONNECTION_FAILED;
       }
-      info("%u %s Ethernet detected hardware status %s with MAC address " DEVICE_ID_FMT,
-           currentTime, networkName(), EthernetHardwareStatusToString(hwStatus).c_str());
+      info("%u %s Ethernet detected hardware status %s with MAC address " DEVICE_ID_FMT, currentTime, networkName(),
+           EthernetHardwareStatusToString(hwStatus).c_str());
       return CONNECTING;
     }
     case CONNECTING: {
       EthernetLinkStatus linkStatus = Ethernet.linkStatus();
       if (linkStatus != LinkON) {
-        error("%u %s Ethernet is not plugged in (state %s)",
-              currentTime, networkName(), EthernetLinkStatusToString(linkStatus).c_str());
+        error("%u %s Ethernet is not plugged in (state %s)", currentTime, networkName(),
+              EthernetLinkStatusToString(linkStatus).c_str());
         return CONNECTION_FAILED;
       }
       constexpr unsigned long kDhcpTimeoutMs = 5000;
@@ -73,8 +72,8 @@ NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status, Milliseconds 
         return CONNECTION_FAILED;
       }
       IPAddress ip = Ethernet.localIP();
-      info("%u %s Ethernet DHCP provided IP: %d.%d.%d.%d, bound to port %d, multicast group: %s",
-          currentTime, networkName(), ip[0], ip[1], ip[2], ip[3], port_, mcastAddr_);
+      info("%u %s Ethernet DHCP provided IP: %d.%d.%d.%d, bound to port %d, multicast group: %s", currentTime,
+           networkName(), ip[0], ip[1], ip[2], ip[3], port_, mcastAddr_);
       IPAddress mcaddr;
       mcaddr.fromString(mcastAddr_);
       udp_.beginMulticast(mcaddr, port_);
@@ -98,9 +97,7 @@ NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status, Milliseconds 
 
 int ArduinoEthernetNetwork::recv(void* buf, size_t bufsize, std::string* /*details*/) {
   int cb = udp_.parsePacket();
-  if (cb <= 0) {
-    return 0;
-  }
+  if (cb <= 0) { return 0; }
   return udp_.read((unsigned char*)buf, bufsize);
 }
 
