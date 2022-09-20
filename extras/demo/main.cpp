@@ -1,11 +1,10 @@
+#include <memory>
+#include <vector>
+
 #include "glrenderer.h"
 #include "gui.h"
-
 #include "jazzlights/networks/unix_udp.h"
 #include "jazzlights/util/loader.h"
-
-#include <vector>
-#include <memory>
 
 namespace jazzlights {
 
@@ -13,9 +12,7 @@ class DemoLoader : public Loader {
   Renderer& loadRenderer(const Layout& layout, const cpptoml::table&, int strandidx) override {
     static std::vector<std::unique_ptr<Renderer>> renderers;
     static int laststrandidx = -1;
-    if (laststrandidx == strandidx) {
-      return *renderers.back();
-    }
+    if (laststrandidx == strandidx) { return *renderers.back(); }
     laststrandidx = strandidx;
     renderers.emplace_back(std::make_unique<GLRenderer>(layout, ledRadius()));
     return *renderers.back();
@@ -23,7 +20,7 @@ class DemoLoader : public Loader {
 };
 
 int runMain(int argn, char** argv) {
-  if (argn<2) {
+  if (argn < 2) {
     printf("Usage: %s <config>\n", argv[0]);
     exit(-1);
   }
@@ -45,6 +42,4 @@ int runMain(int argn, char** argv) {
 
 }  // namespace jazzlights
 
-int main(int argc, char** argv) {
-  return jazzlights::runMain(argc, argv);
-}
+int main(int argc, char** argv) { return jazzlights::runMain(argc, argv); }

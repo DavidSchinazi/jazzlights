@@ -7,11 +7,11 @@
 namespace jazzlights {
 
 class PixelPusher : public Renderer {
-public:
+ public:
   PixelPusher(const char* host, int port, int strip, int throttle, int32_t controller, int32_t group);
   void render(InputStream<Color>& pixelColors) override;
 
-private:
+ private:
   const char* host;
   int port;
   int strip;
@@ -23,7 +23,6 @@ private:
   Milliseconds lastTxTime = -1;
   // Milliseconds lastReconnectTime = -1;
 };
-
 
 }  // namespace jazzlights
 #endif  // JAZZLIGHTS_RENDERERS_PIXELPUSHER_H

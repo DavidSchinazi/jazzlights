@@ -1,23 +1,24 @@
 #ifndef JAZZLIGHTS_NETWORK_H
 #define JAZZLIGHTS_NETWORK_H
-#include <string.h> // memcpy, size_t
-#include "jazzlights/types.h"
-#include "jazzlights/util/time.h"
+#include <stdio.h>
+#include <string.h>  // memcpy, size_t
 
 #include <list>
 #include <string>
-#include <stdio.h>
+
+#include "jazzlights/types.h"
+#include "jazzlights/util/time.h"
 
 namespace jazzlights {
 
 class Network;
 
 #define ALL_NETWORK_STATUSES \
-  X(INITIALIZING) \
-  X(DISCONNECTED) \
-  X(CONNECTING) \
-  X(CONNECTED) \
-  X(DISCONNECTING) \
+  X(INITIALIZING)            \
+  X(DISCONNECTED)            \
+  X(CONNECTING)              \
+  X(CONNECTED)               \
+  X(DISCONNECTING)           \
   X(CONNECTION_FAILED)
 
 enum NetworkStatus {
@@ -33,38 +34,30 @@ std::string NetworkStatusToString(NetworkStatus status);
 
 class NetworkDeviceId {
  public:
-  explicit NetworkDeviceId() {
-    memset(&data_[0], 0, kNetworkDeviceIdSize);
-  }
-  explicit NetworkDeviceId(const uint8_t* data) {
-    memcpy(&data_[0], data, kNetworkDeviceIdSize);
-  }
-  NetworkDeviceId(const NetworkDeviceId& other) :
-    NetworkDeviceId(&other.data_[0]) {}
+  explicit NetworkDeviceId() { memset(&data_[0], 0, kNetworkDeviceIdSize); }
+  explicit NetworkDeviceId(const uint8_t* data) { memcpy(&data_[0], data, kNetworkDeviceIdSize); }
+  NetworkDeviceId(const NetworkDeviceId& other) : NetworkDeviceId(&other.data_[0]) {}
   NetworkDeviceId& operator=(const NetworkDeviceId& other) {
     memcpy(&data_[0], &other.data_[0], kNetworkDeviceIdSize);
     return *this;
   }
-  uint8_t operator()(uint8_t i) const {
-    return data_[i];
-  }
-  int compare(const NetworkDeviceId& other) const {
-    return memcmp(&data_[0], &other.data_[0], kNetworkDeviceIdSize);
-  }
+  uint8_t operator()(uint8_t i) const { return data_[i]; }
+  int compare(const NetworkDeviceId& other) const { return memcmp(&data_[0], &other.data_[0], kNetworkDeviceIdSize); }
   void writeTo(uint8_t* data) const { memcpy(data, &data_[0], kNetworkDeviceIdSize); }
   bool operator==(const NetworkDeviceId& other) const { return compare(other) == 0; }
   bool operator!=(const NetworkDeviceId& other) const { return compare(other) != 0; }
-  bool operator< (const NetworkDeviceId& other) const { return compare(other) <  0; }
+  bool operator<(const NetworkDeviceId& other) const { return compare(other) < 0; }
   bool operator<=(const NetworkDeviceId& other) const { return compare(other) <= 0; }
-  bool operator> (const NetworkDeviceId& other) const { return compare(other) >  0; }
+  bool operator>(const NetworkDeviceId& other) const { return compare(other) > 0; }
   bool operator>=(const NetworkDeviceId& other) const { return compare(other) >= 0; }
   std::string toString() const {
-    char result[2*6+5+1] = {};
+    char result[2 * 6 + 5 + 1] = {};
     snprintf(result, sizeof(result), DEVICE_ID_FMT, DEVICE_ID_HEX(*this));
     return result;
   }
   const uint8_t* data() const { return &data_[0]; }
   uint8_t* data() { return &data_[0]; }
+
  private:
   static constexpr size_t kNetworkDeviceIdSize = 6;
   uint8_t data_[kNetworkDeviceIdSize];
@@ -87,35 +80,25 @@ struct NetworkMessage {
   std::string receiptDetails;
 
   bool isEqualExceptOriginationTime(const NetworkMessage& other) const {
-    return sender == other.sender &&
-           originator == other.originator &&
-           precedence == other.precedence &&
-           currentPattern == other.currentPattern &&
-           nextPattern == other.nextPattern &&
-           numHops == other.numHops &&
-           currentPatternStartTime == other.currentPatternStartTime &&
-           receiptNetwork == other.receiptNetwork;
+    return sender == other.sender && originator == other.originator && precedence == other.precedence &&
+           currentPattern == other.currentPattern && nextPattern == other.nextPattern && numHops == other.numHops &&
+           currentPatternStartTime == other.currentPatternStartTime && receiptNetwork == other.receiptNetwork;
   }
   bool operator==(const NetworkMessage& other) const {
-    return isEqualExceptOriginationTime(other) &&
-           lastOriginationTime == other.lastOriginationTime;
+    return isEqualExceptOriginationTime(other) && lastOriginationTime == other.lastOriginationTime;
   }
-  bool operator!=(const NetworkMessage& other) const {
-    return !(*this == other);
-  }
+  bool operator!=(const NetworkMessage& other) const { return !(*this == other); }
 };
 
 std::string displayBitsAsBinary(PatternBits p);
-std::string networkMessageToString(const NetworkMessage& message,
-                                   Milliseconds currentTime);
+std::string networkMessageToString(const NetworkMessage& message, Milliseconds currentTime);
 
 class Network {
  public:
   virtual ~Network() = default;
 
   // Set message to send during next send opportunity.
-  virtual void setMessageToSend(const NetworkMessage& messageToSend,
-                                Milliseconds currentTime) = 0;
+  virtual void setMessageToSend(const NetworkMessage& messageToSend, Milliseconds currentTime) = 0;
 
   // Disables sending until the next call to setMessageToSend.
   virtual void disableSending(Milliseconds currentTime) = 0;
@@ -153,6 +136,7 @@ class Network {
   // Called once per Arduino loop.
   virtual void runLoopImpl(Milliseconds currentTime) = 0;
   NetworkStatus getStatus() const { return status_; }
+
  private:
   void checkStatus(Milliseconds currentTime);
   void reconnect(Milliseconds currentTime);
@@ -171,8 +155,7 @@ class UdpNetwork : public Network {
   ~UdpNetwork() = default;
   UdpNetwork(const UdpNetwork&) = default;
 
-  void setMessageToSend(const NetworkMessage& messageToSend,
-                        Milliseconds currentTime) override;
+  void setMessageToSend(const NetworkMessage& messageToSend, Milliseconds currentTime) override;
   void disableSending(Milliseconds currentTime) override;
   void triggerSendAsap(Milliseconds currentTime) override;
   bool shouldEcho() const override { return false; }
@@ -183,6 +166,7 @@ class UdpNetwork : public Network {
   void runLoopImpl(Milliseconds currentTime) override;
   virtual int recv(void* buf, size_t bufsize, std::string* details) = 0;
   virtual void send(void* buf, size_t bufsize) = 0;
+
  private:
   bool maybeHandleNotConnected(Milliseconds currentTime);
   bool hasDataToSend_ = false;
@@ -193,7 +177,6 @@ class UdpNetwork : public Network {
   Milliseconds effectLastTxTime_ = 0;
   Milliseconds lastReceiveTime_ = -1;
 };
-
 
 static constexpr int DEFAULT_UDP_PORT = 0xDF0D;
 static constexpr const char* const DEFAULT_MULTICAST_ADDR = "239.255.223.01";

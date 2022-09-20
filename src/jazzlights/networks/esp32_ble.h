@@ -2,23 +2,24 @@
 #define JAZZLIGHTS_NETWORKS_ESP32BLE_H
 
 #ifndef ESP32_BLE
-#  ifdef ESP32
-#    define ESP32_BLE 1
-#  else // ESP32
-#    define ESP32_BLE 0
-#  endif // ESP32
+#ifdef ESP32
+#define ESP32_BLE 1
+#else  // ESP32
+#define ESP32_BLE 0
+#endif  // ESP32
 #endif  // ESP32_BLE
 
 #if ESP32_BLE
 
 #include <Arduino.h>
 #include <BLEDevice.h>
+
 #include <atomic>
 #include <list>
 #include <mutex>
 
-#include "jazzlights/util/time.h"
 #include "jazzlights/network.h"
+#include "jazzlights/util/time.h"
 
 namespace jazzlights {
 
@@ -29,22 +30,18 @@ class Esp32BleNetwork : public Network {
  public:
   static Esp32BleNetwork* get();
 
-  void setMessageToSend(const NetworkMessage& messageToSend,
-                        Milliseconds currentTime) override;
+  void setMessageToSend(const NetworkMessage& messageToSend, Milliseconds currentTime) override;
   void disableSending(Milliseconds currentTime) override;
   void triggerSendAsap(Milliseconds currentTime) override;
 
   // Get this device's BLE MAC address.
-  NetworkDeviceId getLocalDeviceId() override {
-    return localDeviceId_;
-  }
-  const char* networkName() const override {
-    return "ESP32BLE";
-  }
+  NetworkDeviceId getLocalDeviceId() override { return localDeviceId_; }
+  const char* networkName() const override { return "ESP32BLE"; }
   bool shouldEcho() const override { return true; }
   Milliseconds getLastReceiveTime() const override { return lastReceiveTime_; }
 
   std::string statusStr(Milliseconds currentTime);
+
  protected:
   void runLoopImpl(Milliseconds currentTime) override;
   NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
@@ -78,22 +75,14 @@ class Esp32BleNetwork : public Network {
   void MaybeUpdateAdvertisingState(Milliseconds currentTime);
   void StopAdvertisingIn(Milliseconds duration);
   void StopScanningIn(Milliseconds duration);
-  void ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifier,
-                            uint8_t innerPayloadLength,
-                            const uint8_t* innerPayload,
-                            int rssi,
-                            Milliseconds currentTime);
-  uint8_t GetNextInnerPayloadToSend(uint8_t* innerPayload,
-                                    uint8_t maxInnerPayloadLength,
-                                    Milliseconds currentTime);
+  void ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifier, uint8_t innerPayloadLength,
+                            const uint8_t* innerPayload, int rssi, Milliseconds currentTime);
+  uint8_t GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_t maxInnerPayloadLength, Milliseconds currentTime);
   void UpdateState(State expectedCurrentState, State newState);
   bool ExtractShouldTriggerSendAsap();
-  void GapCallbackInner(esp_gap_ble_cb_event_t event,
-                        esp_ble_gap_cb_param_t *param,
-                        Milliseconds currentTime);
-                    
-  static void GapCallback(esp_gap_ble_cb_event_t event,
-                          esp_ble_gap_cb_param_t *param);
+  void GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param, Milliseconds currentTime);
+
+  static void GapCallback(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param);
 
   NetworkDeviceId localDeviceId_;
   std::atomic<Milliseconds> lastReceiveTime_;
@@ -111,5 +100,5 @@ class Esp32BleNetwork : public Network {
 
 }  // namespace jazzlights
 
-#endif // ESP32_BLE
+#endif  // ESP32_BLE
 #endif  // JAZZLIGHTS_NETWORKS_ESP32BLE_H

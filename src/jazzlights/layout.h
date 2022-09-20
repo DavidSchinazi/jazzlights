@@ -3,8 +3,8 @@
 
 #include "jazzlights/types.h"
 #include "jazzlights/util/geom.h"
-#include "jazzlights/util/stream.h"
 #include "jazzlights/util/math.h"
+#include "jazzlights/util/stream.h"
 
 namespace jazzlights {
 
@@ -26,8 +26,7 @@ class LayoutIterator {
   using value_type = Pixel;
   using reference_type = Pixel&;
 
-  LayoutIterator(const Layout& l, int i) : layout_(&l), index_(i) {
-  }
+  LayoutIterator(const Layout& l, int i) : layout_(&l), index_(i) {}
 
   Pixel operator*() const {
     Pixel px;
@@ -37,17 +36,11 @@ class LayoutIterator {
     return px;
   }
 
-  bool operator==(const LayoutIterator& other) const {
-    return layout_ == other.layout_ && index_ == other.index_;
-  }
+  bool operator==(const LayoutIterator& other) const { return layout_ == other.layout_ && index_ == other.index_; }
 
-  bool operator!=(const LayoutIterator& other) {
-    return !(*this == other);
-  }
+  bool operator!=(const LayoutIterator& other) { return !(*this == other); }
 
-  size_t operator-(const LayoutIterator& other) const {
-    return index_ - other.index_;
-  }
+  size_t operator-(const LayoutIterator& other) const { return index_ - other.index_; }
 
   LayoutIterator& operator++() {
     index_++;
@@ -64,14 +57,9 @@ class LayoutIterator {
   int index_;
 };
 
+inline LayoutIterator begin(const Layout& l) { return LayoutIterator(l, 0); }
 
-inline LayoutIterator begin(const Layout& l) {
-  return LayoutIterator(l, 0);
-}
-
-inline LayoutIterator end(const Layout& l) {
-  return LayoutIterator(l, l.pixelCount());
-}
+inline LayoutIterator end(const Layout& l) { return LayoutIterator(l, l.pixelCount()); }
 
 inline RangeInputStream<LayoutIterator> points(const Layout& l) {
   return RangeInputStream<LayoutIterator>(begin(l), end(l));
@@ -79,9 +67,7 @@ inline RangeInputStream<LayoutIterator> points(const Layout& l) {
 
 inline Box bounds(const Layout& layout) {
   Box bb;
-  for (auto pt : layout) {
-      bb = merge(bb, pt.coord);
-  }
+  for (auto pt : layout) { bb = merge(bb, pt.coord); }
   return bb;
 }
 

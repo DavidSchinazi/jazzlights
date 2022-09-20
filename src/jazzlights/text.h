@@ -9,14 +9,11 @@ namespace jazzlights {
 
 #define MATRIX_SIZE 25
 
-bool displayText(const std::string& text,
-                 CRGB pixels[MATRIX_SIZE],
-                 CRGB textColor,
-                 CRGB backgroundColor,
+bool displayText(const std::string& text, CRGB pixels[MATRIX_SIZE], CRGB textColor, CRGB backgroundColor,
                  Milliseconds offsetMillis);
 
 }  // namespace jazzlights
 
-#endif // ATOM_MATRIX_SCREEN
+#endif  // ATOM_MATRIX_SCREEN
 
 #endif  // JAZZLIGHTS_TEXT_H

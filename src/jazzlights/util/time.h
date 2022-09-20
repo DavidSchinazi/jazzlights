@@ -9,7 +9,7 @@ typedef int32_t Milliseconds;
 enum : Milliseconds {
   ONE_SECOND = 1000,
   ONE_MINUTE = 60 * ONE_SECOND,
-  MAX_TIME =  2147483647,
+  MAX_TIME = 2147483647,
 };
 
 /**
@@ -18,7 +18,6 @@ enum : Milliseconds {
 Milliseconds timeMillis();
 
 typedef int32_t FramesPerSecond;
-
 
 }  // namespace jazzlights
 

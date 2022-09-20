@@ -1,0 +1,13 @@
+name: Check clang-format
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Check format
+      run: ./check_format.sh

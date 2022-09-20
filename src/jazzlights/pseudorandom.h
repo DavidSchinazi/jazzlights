@@ -17,6 +17,7 @@ class Random {
   // Between functions consider min and max to be inclusive.
   int32_t GetRandomNumberBetween(int32_t min, int32_t max);
   double GetRandomDoubleBetween(double min, double max);
+
  protected:
   Random() = default;
 };
@@ -32,6 +33,7 @@ class PredictableRandom : public Random {
   uint8_t GetRandomByte() override;
   uint32_t GetRandom32bits() override;
   void GetRandomBytes(void* buffer, size_t length) override;
+
  private:
   void ResetWithPatternTime(PatternBits pattern, Milliseconds elapsedTime, const char* label);
   void Reset();
@@ -52,6 +54,7 @@ class UnpredictableRandom : public Random {
   // Between functions consider min and max to be inclusive.
   static int32_t GetNumberBetween(int32_t min, int32_t max);
   static double GetDoubleBetween(double min, double max);
+
  private:
   UnpredictableRandom() = default;
   uint8_t GetRandomByte() override;

@@ -1,10 +1,11 @@
 #include "jazzlights/util/loader.h"
+
+#include <sstream>
+#include <vector>
+
 #include "jazzlights/layouts/matrix.h"
 #include "jazzlights/layouts/pixelmap.h"
 #include "jazzlights/networks/unix_udp.h"
-
-#include <vector>
-#include <sstream>
 
 namespace jazzlights {
 
@@ -22,19 +23,16 @@ Layout& Loader::loadLayout(const cpptoml::table& cfg) {
 
   if (type == "pixelmap") {
     auto coordscfg = cfg.get_array_of<double>("coords");
-    if (!coordscfg) {
-      throw std::runtime_error("pixelmap must specify coords");
-    }
+    if (!coordscfg) { throw std::runtime_error("pixelmap must specify coords"); }
     if (coordscfg->size() % 3 != 0) {
       std::stringstream msg;
-      msg << "pixelmap coordinates must be a whole number of triplets, got "
-          << coordscfg->size();
+      msg << "pixelmap coordinates must be a whole number of triplets, got " << coordscfg->size();
       throw std::runtime_error(msg.str());
     }
     const size_t begin = pixelcoords.size();
     const bool backwards = cfg.get_as<bool>("backwards").value_or(false);
     if (backwards) {
-      for (size_t i = coordscfg->size() - 3; ; i -= 3) {
+      for (size_t i = coordscfg->size() - 3;; i -= 3) {
         pixelcoords.push_back({coordscfg->at(i), coordscfg->at(i + 1)});
         if (i == 0) { break; }
       }
@@ -50,10 +48,8 @@ Layout& Loader::loadLayout(const cpptoml::table& cfg) {
   if (type.size() >= 6 && type.substr(0, 6) == "matrix") {
     auto subtype = type.substr(6);
 
-    auto size = cfg.get_array_of<int64_t>("size").value_or(
-                  std::vector<int64_t>({5, 5}));
-    auto origin = cfg.get_array_of<double>("origin")
-                  .value_or(std::vector<double>({0, 0}));
+    auto size = cfg.get_array_of<int64_t>("size").value_or(std::vector<int64_t>({5, 5}));
+    auto origin = cfg.get_array_of<double>("origin").value_or(std::vector<double>({0, 0}));
     auto res = cfg.get_as<double>("resolution").value_or(60);
     auto m = std::make_unique<Matrix>(size[0], size[1]);
     m->origin(origin[0], origin[1]);
@@ -72,29 +68,20 @@ Layout& Loader::loadLayout(const cpptoml::table& cfg) {
   throw std::runtime_error("unknown layout type '" + type + "'");
 }
 
-
 void Loader::loadPlayer(Player& player, const cpptoml::table& cfg) {
-  ledr_ = cfg.get_as<Meters>("ledr").value_or(1.0/60.0);
+  ledr_ = cfg.get_as<Meters>("ledr").value_or(1.0 / 60.0);
   cpptoml::option<Precedence> basePrecedence = cfg.get_as<Precedence>("baseprecedence");
-  if (basePrecedence) {
-    player.setBasePrecedence(*basePrecedence);
-  }
+  if (basePrecedence) { player.setBasePrecedence(*basePrecedence); }
   cpptoml::option<Precedence> precedenceGain = cfg.get_as<Precedence>("precedencegain");
-  if (precedenceGain) {
-    player.setPrecedenceGain(*precedenceGain);
-  }
+  if (precedenceGain) { player.setPrecedenceGain(*precedenceGain); }
 
   auto strandscfg = cfg.get_table_array("strand");
-  if (!strandscfg) {
-    throw std::runtime_error("must define at least one strand");
-  }
+  if (!strandscfg) { throw std::runtime_error("must define at least one strand"); }
 
   size_t strandidx = 0;
   for (const auto& strandcfg : *strandscfg) {
     auto layoutcfg = strandcfg->get_table("layout");
-    if (!layoutcfg) {
-      throw std::runtime_error("strand must specify layout");
-    }
+    if (!layoutcfg) { throw std::runtime_error("strand must specify layout"); }
     Layout& layout = loadLayout(*layoutcfg);
 
     auto rendererscfg = strandcfg->get_table_array("renderers");
@@ -112,11 +99,9 @@ void Loader::load(const char* file, Player& player) {
   info("jazzlights::Loader loading: %s", file);
   try {
     auto config = cpptoml::parse_file(file);
-    //cout << (*config) << endl;
+    // cout << (*config) << endl;
     loadPlayer(player, *config);
-  } catch (const std::runtime_error& err) {
-    fatal("Couldn't parse %s: %s", file, err.what());
-  }
+  } catch (const std::runtime_error& err) { fatal("Couldn't parse %s: %s", file, err.what()); }
 }
 
 }  // namespace jazzlights

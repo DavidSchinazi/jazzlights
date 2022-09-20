@@ -7,14 +7,15 @@ using PixelsPerMeter = double;
 
 class Matrix : public Layout {
  public:
-  constexpr Matrix(int w, int h) :
-    width_(w), height_(h) {
-  }
+  constexpr Matrix(int w, int h) : width_(w), height_(h) {}
 
-  Matrix(const Matrix& other) : Layout(), width_(other.width_), height_(other.height_),
-    origin_(other.origin_), resolution_(other.resolution_),
-    flags_(other.flags_) {
-  }
+  Matrix(const Matrix& other)
+      : Layout(),
+        width_(other.width_),
+        height_(other.height_),
+        origin_(other.origin_),
+        resolution_(other.resolution_),
+        flags_(other.flags_) {}
 
   Matrix& resolution(PixelsPerMeter r) {
     resolution_ = r;
@@ -36,25 +37,19 @@ class Matrix : public Layout {
     return *this;
   }
 
-  Dimensions size() const {
-    return { width_ / resolution_, height_ / resolution_};
-  }
+  Dimensions size() const { return {width_ / resolution_, height_ / resolution_}; }
 
-  int pixelCount() const override {
-    return width_ * height_;
-  }
+  int pixelCount() const override { return width_ * height_; }
 
   Point at(int index) const override {
     int x = (index % width_);
     int y = (index / width_);
-    if ((flags_ & ZIGZAG) && y % 2 == 0) {
-      x = width_ - x - 1;
-    }
+    if ((flags_ & ZIGZAG) && y % 2 == 0) { x = width_ - x - 1; }
     return {origin_.x + x / resolution_, origin_.y + y / resolution_};
   }
 
  private:
-  enum {PROGRESSIVE = 0, ZIGZAG = 1};
+  enum { PROGRESSIVE = 0, ZIGZAG = 1 };
 
   int width_;
   int height_;

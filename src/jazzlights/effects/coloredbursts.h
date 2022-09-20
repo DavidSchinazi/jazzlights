@@ -34,11 +34,10 @@ struct ColoredBurstsState {
 };
 
 class ColoredBursts : public EffectWithPaletteXYIndexAndState<ColoredBurstsState, RgbColor> {
-public:
+ public:
   std::string effectNamePrefix(PatternBits /*pattern*/) const override { return "bursts"; }
 
-  ColorWithPalette innerColor(const Frame& /*frame*/,
-                              ColoredBurstsState* /*state*/,
+  ColorWithPalette innerColor(const Frame& /*frame*/, ColoredBurstsState* /*state*/,
                               const Pixel& /*px*/) const override {
     return ColorWithPalette::OverrideColor(ps());
   }
@@ -51,15 +50,11 @@ public:
     uint8_t fadeAmount = frame.predictableRandom->GetRandomNumberBetween(20, 50);
     state->fadeScale = 255 - fadeAmount;
     state->curInit1 = false;
-    for (uint8_t i = 0; i < state->numLines; i++) {
-      state->curInit2[i] = false;
-    }
+    for (uint8_t i = 0; i < state->numLines; i++) { state->curInit2[i] = false; }
     state->speed = frame.predictableRandom->GetRandomNumberBetween(3, 10);
     // Start all pixels black.
     for (size_t x = 0; x < w(); x++) {
-      for (size_t y = 0; y < h(); y++) {
-        ps(x, y) = RgbColor(0, 0, 0);
-      }
+      for (size_t y = 0; y < h(); y++) { ps(x, y) = RgbColor(0, 0, 0); }
     }
   }
 
@@ -69,9 +64,7 @@ public:
     state->hue++;
     // Slightly fade all pixels.
     for (size_t x = 0; x < w(); x++) {
-      for (size_t y = 0; y < h(); y++) {
-        ps(x, y) = nscale8(ps(x, y), state->fadeScale);
-      }
+      for (size_t y = 0; y < h(); y++) { ps(x, y) = nscale8(ps(x, y), state->fadeScale); }
     }
 
     int x1 = beatsin(2 + state->speed, frame.time, 0, (w() - 1));
@@ -124,9 +117,7 @@ public:
       for (int x1t = x1Min; x1t <= x1Max; x1t++) {
         for (int x2t = x2Min; x2t <= x2Max; x2t++) {
           for (int y1t = y1Min; y1t <= y1Max; y1t++) {
-            for (int y2t = y2Min; y2t <= y2Max; y2t++) {
-              drawLine(state, x1t, x2t, y1t, y2t, color);
-            }
+            for (int y2t = y2Min; y2t <= y2Max; y2t++) { drawLine(state, x1t, x2t, y1t, y2t, color); }
           }
         }
       }
@@ -135,8 +126,9 @@ public:
     }
     curX1 = x1;
     curY1 = y1;
-    //blur2d(leds, 4);
+    // blur2d(leds, 4);
   }
+
  private:
   void drawLine(ColoredBurstsState* state, int x1, int x2, int y1, int y2, RgbColor color) const {
     int xsteps = std::abs(x1 - y1) + 1;
@@ -145,42 +137,32 @@ public:
     int steps = steppingX ? xsteps : ysteps;
 
     for (int i = 1; i <= steps; i++) {
-      int dx = x1 + (x2-x1) * i / steps;
-      int dy = y1 + (y2-y1) * i / steps;
+      int dx = x1 + (x2 - x1) * i / steps;
+      int dy = y1 + (y2 - y1) * i / steps;
       ps(dx, dy) += color;
-      if (state->grad) {
-        ps(dx, dy) %= (i * 255 / steps);
-      }
+      if (state->grad) { ps(dx, dy) %= (i * 255 / steps); }
       if (steppingX) {
         if (dx < x1 && dx < x2) {
           ps(dx + 1, dy) += color;
-          if (state->grad) {
-            ps(dx + 1, dy) %= (i * 255 / steps);
-          }
+          if (state->grad) { ps(dx + 1, dy) %= (i * 255 / steps); }
         }
         if (dx > x1 && dx > x2) {
           ps(dx - 1, dy) += color;
-          if (state->grad) {
-            ps(dx - 1, dy) %= (i * 255 / steps);
-          }
+          if (state->grad) { ps(dx - 1, dy) %= (i * 255 / steps); }
         }
       } else {
         if (dy < y1 && dy < y2) {
           ps(dx, dy + 1) += color;
-          if (state->grad) {
-            ps(dx, dy + 1) %= (i * 255 / steps);
-          }
+          if (state->grad) { ps(dx, dy + 1) %= (i * 255 / steps); }
         }
         if (dy > y1 && dy > y2) {
           ps(dx, dy - 1) += color;
-          if (state->grad) {
-            ps(dx, dy - 1) %= (i * 255 / steps);
-          }
+          if (state->grad) { ps(dx, dy - 1) %= (i * 255 / steps); }
         }
       }
     }
 
-    if (state->dot) { //add white point at the ends of line
+    if (state->dot) {  // add white point at the ends of line
       ps(x1, y1) += CRGB::White;
       ps(x2, y2) += CRGB::White;
     }

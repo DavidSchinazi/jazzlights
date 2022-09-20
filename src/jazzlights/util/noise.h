@@ -10,7 +10,7 @@ namespace jazzlights {
 namespace internal {
 
 ///@defgroup Noise Noise functions
-///Perlin noise function definitions
+/// Perlin noise function definitions
 ///@{
 /// @name scaled 16 bit noise functions
 ///@{

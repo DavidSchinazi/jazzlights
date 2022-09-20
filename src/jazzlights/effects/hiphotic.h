@@ -20,18 +20,14 @@ struct HiphoticState {
 };
 
 class Hiphotic : public EffectWithPaletteAndState<HiphoticState> {
-public:
+ public:
   std::string effectNamePrefix(PatternBits /*pattern*/) const override { return "hiphotic"; }
-  ColorWithPalette innerColor(const Frame& frame,
-                              const Pixel& px,
-                              HiphoticState* state) const override {
+  ColorWithPalette innerColor(const Frame& frame, const Pixel& px, HiphoticState* state) const override {
     using namespace internal;
     const float x = (px.coord.x - frame.viewport.origin.x) / frame.viewport.size.width;
     const float y = (px.coord.y - frame.viewport.origin.y) / frame.viewport.size.height;
-    return
-      sin8(cos8(x * state->xScale + state->offset / 3) +
-           sin8(y * state->yScale + state->offset / 4) +
-           state->offset);
+    return sin8(cos8(x * state->xScale + state->offset / 3) + sin8(y * state->yScale + state->offset / 4) +
+                state->offset);
   }
   void innerBegin(const Frame& frame, HiphoticState* state) const override {
     state->offsetScale = frame.predictableRandom->GetRandomNumberBetween(6, 10);

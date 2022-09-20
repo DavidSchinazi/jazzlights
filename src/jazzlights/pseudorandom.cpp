@@ -3,14 +3,14 @@
 #include <limits>
 
 #if defined(linux) || defined(__linux) || defined(__linux__)
-#  if __GLIBC_PREREQ(2, 25)
-#    include <sys/random.h>
-#  else
-#    include <fcntl.h>
-#    include <unistd.h>
-#  endif
+#if __GLIBC_PREREQ(2, 25)
+#include <sys/random.h>
+#else
+#include <fcntl.h>
+#include <unistd.h>
+#endif
 #elif defined(ESP32)
-#  include "esp_system.h"
+#include "esp_system.h"
 #endif
 
 #include "jazzlights/util/log.h"
@@ -22,9 +22,7 @@ namespace {
 // https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
 constexpr uint64_t kFNV1a64Prime = 0x100000001B3;
 constexpr uint64_t kFNV1a64OffsetBasis = 0xCBF29CE484222325;
-inline uint64_t NextFnv1a64Value(uint64_t hash, uint8_t b) {
-  return (hash ^ b) * kFNV1a64Prime;
-}
+inline uint64_t NextFnv1a64Value(uint64_t hash, uint8_t b) { return (hash ^ b) * kFNV1a64Prime; }
 
 // Implementation of the 64bit variant of xorshift*.
 // https://en.wikipedia.org/wiki/Xorshift#xorshift*
@@ -39,8 +37,7 @@ inline uint64_t NextXorShift64StarValue(uint64_t x) {
 
 int32_t Random::GetRandomNumberBetween(int32_t min, int32_t max) {
   if (min == max) { return min; }
-  if (max == std::numeric_limits<int32_t>::max() &&
-      min == std::numeric_limits<int32_t>::min()) {
+  if (max == std::numeric_limits<int32_t>::max() && min == std::numeric_limits<int32_t>::min()) {
     uint32_t rand32u = GetRandom32bits();
     if (rand32u <= static_cast<uint32_t>(std::numeric_limits<int32_t>::max())) {
       return rand32u;
@@ -52,9 +49,7 @@ int32_t Random::GetRandomNumberBetween(int32_t min, int32_t max) {
   const uint32_t binSize = std::numeric_limits<uint32_t>::max() / numBins;
   const uint32_t defect = std::numeric_limits<uint32_t>::max() % numBins;
   uint32_t rand32;
-  do {
-   rand32 = GetRandom32bits();
-  } while (std::numeric_limits<uint32_t>::max() - defect <= rand32);
+  do { rand32 = GetRandom32bits(); } while (std::numeric_limits<uint32_t>::max() - defect <= rand32);
   rand32 /= binSize;
   return min + static_cast<int32_t>(rand32);
 }
@@ -66,9 +61,7 @@ double Random::GetRandomDoubleBetween(double min, double max) {
   return min + GetRandomNumberBetween(0, kRandomGranularity) * d / kRandomGranularity;
 }
 
-void PredictableRandom::IngestByte(uint8_t b) {
-  state_ = NextFnv1a64Value(state_, b);
-}
+void PredictableRandom::IngestByte(uint8_t b) { state_ = NextFnv1a64Value(state_, b); }
 
 void PredictableRandom::IngestLabel(const char* label) {
   while (*label != '\0') {
@@ -85,10 +78,7 @@ void PredictableRandom::Ingest32bits(uint32_t i) {
   IngestByte(i & 0xFF);
 }
 
-
-PredictableRandom::PredictableRandom() {
-  Reset();
-}
+PredictableRandom::PredictableRandom() { Reset(); }
 
 void PredictableRandom::Reset() {
   state_ = kFNV1a64OffsetBasis;
@@ -142,9 +132,7 @@ void PredictableRandom::GetRandomBytes(void* buffer, size_t length) {
   memcpy(buffer8, reinterpret_cast<uint8_t*>(&state_) + numUsedStateBytes_, length);
   numUsedStateBytes_ += length;
 }
-uint8_t UnpredictableRandom::GetRandomByte() {
-  return GetRandom32bits() & 0xFF;
-}
+uint8_t UnpredictableRandom::GetRandomByte() { return GetRandom32bits() & 0xFF; }
 
 uint32_t UnpredictableRandom::GetRandom32bits() {
 #if defined(__APPLE__) || defined(linux) || defined(__linux) || defined(__linux__)
@@ -158,7 +146,7 @@ uint32_t UnpredictableRandom::GetRandom32bits() {
   const uint32_t randTwo = static_cast<uint32_t>(rand());
   return randOne ^ ((randTwo << 16) | (randTwo >> 16));
 #else
-#  error "Unsupported platform"
+#error "Unsupported platform"
 #endif
 }
 
@@ -166,12 +154,12 @@ void UnpredictableRandom::GetRandomBytes(void* buffer, size_t length) {
 #if defined(__APPLE__)
   arc4random_buf(buffer, length);
 #elif defined(linux) || defined(__linux) || defined(__linux__)
-#  if __GLIBC_PREREQ(2, 25)
+#if __GLIBC_PREREQ(2, 25)
   (void)getrandom(buffer, length, /*flags=*/0);
-#  else
+#else
   static int randFd = open("/dev/urandom", O_RDONLY);
   (void)read(randFd, buffer, length);
-#  endif
+#endif
 #else
   uint8_t* buffer8 = reinterpret_cast<uint8_t*>(buffer);
   while (length >= sizeof(uint32_t)) {
@@ -188,14 +176,10 @@ void UnpredictableRandom::GetRandomBytes(void* buffer, size_t length) {
 }
 
 // static
-uint8_t UnpredictableRandom::GetByte() {
-  return UnpredictableRandom().GetRandomByte();
-}
+uint8_t UnpredictableRandom::GetByte() { return UnpredictableRandom().GetRandomByte(); }
 
 // static
-uint32_t UnpredictableRandom::Get32bits() {
-  return UnpredictableRandom().GetRandom32bits();
-}
+uint32_t UnpredictableRandom::Get32bits() { return UnpredictableRandom().GetRandom32bits(); }
 
 // static
 void UnpredictableRandom::GetBytes(void* buffer, size_t length) {
