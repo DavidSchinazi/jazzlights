@@ -21,8 +21,6 @@
 
 #endif  // WEARABLE
 
-#include "jazzlights/layouts/matrix.h"
-#include "jazzlights/layouts/pixelmap.h"
 #include "jazzlights/networks/arduinoethernet.h"
 #include "jazzlights/networks/esp32_ble.h"
 #include "jazzlights/networks/esp_wifi.h"
