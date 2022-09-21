@@ -6,7 +6,6 @@
 #include "jazzlights/palette.h"
 #include "jazzlights/pseudorandom.h"
 #include "jazzlights/util/math.h"
-#include "jazzlights/util/noise.h"
 
 namespace jazzlights {
 
