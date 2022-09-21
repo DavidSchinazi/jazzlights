@@ -6,6 +6,9 @@
 #include "jazzlights/button.h"
 #include "jazzlights/core2.h"
 #include "jazzlights/instrumentation.h"
+#include "jazzlights/networks/arduinoethernet.h"
+#include "jazzlights/networks/esp32_ble.h"
+#include "jazzlights/networks/esp_wifi.h"
 
 #if WEARABLE
 
