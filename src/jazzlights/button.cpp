@@ -2,6 +2,8 @@
 
 #include <Jazzlights.h>
 
+#include "jazzlights/text.h"
+
 #if WEARABLE
 
 #include <Arduino.h>
