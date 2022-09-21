@@ -21,7 +21,4 @@
 
 #endif  // WEARABLE
 
-#include "jazzlights/types.h"
-#include "jazzlights/util/log.h"
-
 #endif  // JAZZLIGHTS_H
