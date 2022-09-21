@@ -122,6 +122,7 @@ void printInstrumentationInfo(Milliseconds currentTime) {
              ts.xTaskNumber, TaskStateToString(ts.eCurrentState), ts.uxCurrentPriority, ts.uxBasePriority,
              ts.ulRunTimeCounter, percentRuntime, (ts.xCoreID == 2147483647 ? -1 : ts.xCoreID));
   }
+  free(tastStatuses);
 #endif  // JL_INSTRUMENTATION
 #if JL_TIMING
   int64_t totalTimePointsSum = 0;
