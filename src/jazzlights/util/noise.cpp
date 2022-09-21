@@ -3,13 +3,12 @@
 // This file is mostly copied from FastLED
 // https://github.com/FastLED/FastLED/blob/master/src/noise.cpp
 
+#include "jazzlights/fastled_wrapper.h"
 #include "jazzlights/util/math.h"
 
 namespace jazzlights {
 namespace internal {
 
-#define FL_PROGMEM
-#define FL_PGM_READ_BYTE_NEAR(x) (*(x))
 using fract8 = uint8_t;
 
 #define P(x) FL_PGM_READ_BYTE_NEAR(p + x)
