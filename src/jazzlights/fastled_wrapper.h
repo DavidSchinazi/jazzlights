@@ -19,7 +19,10 @@
 #include <FastLED.h>
 
 #else  // WEARABLE
+
 // Copy and/or reimplement enough of FastLED to allow working on platforms that don't support FastLED.
+
+#include <cstdint>
 
 #define FL_PROGMEM
 #define FL_PGM_READ_BYTE_NEAR(x) (*(x))
@@ -206,6 +209,17 @@ struct CRGB {
   };
 };
 
+typedef uint32_t TProgmemRGBPalette16[16];
+extern const TProgmemRGBPalette16 CloudColors_p FL_PROGMEM;
+extern const TProgmemRGBPalette16 OceanColors_p FL_PROGMEM;
+extern const TProgmemRGBPalette16 ForestColors_p FL_PROGMEM;
+extern const TProgmemRGBPalette16 RainbowColors_p FL_PROGMEM;
+extern const TProgmemRGBPalette16 PartyColors_p FL_PROGMEM;
+extern const TProgmemRGBPalette16 HeatColors_p FL_PROGMEM;
+
 #endif  // WEARABLE
+
+// Define our own due to <https://github.com/FastLED/FastLED/issues/1435>.
+extern const TProgmemRGBPalette16 JLLavaColors_p FL_PROGMEM;
 
 #endif  // JAZZLIGHTS_FASTLED_WRAPPER_H
