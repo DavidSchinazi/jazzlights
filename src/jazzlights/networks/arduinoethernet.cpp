@@ -47,18 +47,18 @@ NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status, Milliseconds 
     case INITIALIZING: {
       EthernetHardwareStatus hwStatus = Ethernet.hardwareStatus();
       if (hwStatus == EthernetNoHardware) {
-        error("%u %s Failed to communicate with Ethernet hardware", currentTime, networkName());
+        jll_error("%u %s Failed to communicate with Ethernet hardware", currentTime, networkName());
         return CONNECTION_FAILED;
       }
-      info("%u %s Ethernet detected hardware status %s with MAC address " DEVICE_ID_FMT, currentTime, networkName(),
-           EthernetHardwareStatusToString(hwStatus).c_str());
+      jll_info("%u %s Ethernet detected hardware status %s with MAC address " DEVICE_ID_FMT, currentTime, networkName(),
+               EthernetHardwareStatusToString(hwStatus).c_str());
       return CONNECTING;
     }
     case CONNECTING: {
       EthernetLinkStatus linkStatus = Ethernet.linkStatus();
       if (linkStatus != LinkON) {
-        error("%u %s Ethernet is not plugged in (state %s)", currentTime, networkName(),
-              EthernetLinkStatusToString(linkStatus).c_str());
+        jll_error("%u %s Ethernet is not plugged in (state %s)", currentTime, networkName(),
+                  EthernetLinkStatusToString(linkStatus).c_str());
         return CONNECTION_FAILED;
       }
       constexpr unsigned long kDhcpTimeoutMs = 5000;
@@ -67,13 +67,13 @@ NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status, Milliseconds 
       // and currently blocks our main thread while waiting for a DHCP response.
       int beginRes = Ethernet.begin(localDeviceId_.data(), kDhcpTimeoutMs, kResponseTimeoutMs);
       if (beginRes == 0) {
-        error("%u %s Ethernet DHCP failed", currentTime, networkName());
+        jll_error("%u %s Ethernet DHCP failed", currentTime, networkName());
         // TODO add support for IPv4 link-local addresses.
         return CONNECTION_FAILED;
       }
       IPAddress ip = Ethernet.localIP();
-      info("%u %s Ethernet DHCP provided IP: %d.%d.%d.%d, bound to port %d, multicast group: %s", currentTime,
-           networkName(), ip[0], ip[1], ip[2], ip[3], port_, mcastAddr_);
+      jll_info("%u %s Ethernet DHCP provided IP: %d.%d.%d.%d, bound to port %d, multicast group: %s", currentTime,
+               networkName(), ip[0], ip[1], ip[2], ip[3], port_, mcastAddr_);
       IPAddress mcaddr;
       mcaddr.fromString(mcastAddr_);
       udp_.beginMulticast(mcaddr, port_);

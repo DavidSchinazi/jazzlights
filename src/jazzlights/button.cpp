@@ -129,22 +129,22 @@ void nextMode(Player& /*player*/, const Milliseconds /*currentMillis*/) {
 void modeAct(Player& player, const Milliseconds currentMillis) {
   switch (menuMode) {
     case kNext:
-      info("%u Next button has been hit", currentMillis);
+      jll_info("%u Next button has been hit", currentMillis);
       player.stopSpecial(currentMillis);
       player.stopLooping(currentMillis);
       player.next(currentMillis);
       break;
     case kPrevious:
-      info("%u Back button has been hit", currentMillis);
+      jll_info("%u Back button has been hit", currentMillis);
       player.stopSpecial(currentMillis);
       player.loopOne(currentMillis);
       break;
     case kBrightness:
       brightnessCursor = (brightnessCursor + 1 < NUM_BRIGHTNESSES) ? brightnessCursor + 1 : 0;
-      info("%u Brightness button has been hit %u", currentMillis, brightnessList[brightnessCursor]);
+      jll_info("%u Brightness button has been hit %u", currentMillis, brightnessList[brightnessCursor]);
       break;
     case kSpecial:
-      info("%u Special button has been hit", currentMillis);
+      jll_info("%u Special button has been hit", currentMillis);
       player.handleSpecial(currentMillis);
       break;
   };
@@ -356,7 +356,7 @@ bool atomScreenMessage(uint8_t btn, const Milliseconds currentMillis) {
   if (!displayingBootMessage) { return false; }
   if (btn != BTN_IDLE) {
     displayingBootMessage = false;
-    info("%u Stopping boot message due to button press", currentMillis);
+    jll_info("%u Stopping boot message due to button press", currentMillis);
     return false;
   }
   static Milliseconds bootMessageStartTime = -1;
@@ -364,7 +364,7 @@ bool atomScreenMessage(uint8_t btn, const Milliseconds currentMillis) {
   displayingBootMessage =
       displayText(BOOT_MESSAGE, atomScreenLEDs, CRGB::Red, CRGB::Black, currentMillis - bootMessageStartTime);
   if (!displayingBootMessage) {
-    info("%u Done displaying boot message", currentMillis);
+    jll_info("%u Done displaying boot message", currentMillis);
   } else {
     atomScreenDisplay(currentMillis);
   }
@@ -450,7 +450,7 @@ void doButtons(Player& player, const EspWiFi& wifiNetwork,
 #endif  // FAIRY_WAND
 
 #if BUTTON_LOCK
-  // info("doButtons start");
+  // jll_info("doButtons start");
   // 0 Locked and awaiting click; 1 Awaiting long press; 2 Awaiting click; 3 Awaiting long press; 4 Awaiting release; 5
   // Unlocked
   static uint8_t buttonLockState = 0;
@@ -570,13 +570,13 @@ void doButtons(Player& player, const EspWiFi& wifiNetwork,
   // Check the mode button (for switching between effects)
   switch (btn0) {
     case BTN_RELEASED:
-      info("Next button has been hit");
+      jll_info("Next button has been hit");
       player.stopSpecial(currentMillis);
       player.stopLooping(currentMillis);
       player.next(currentMillis);
       break;
 
-    case BTN_LONGPRESS: info("Ignoring next button long press"); break;
+    case BTN_LONGPRESS: jll_info("Ignoring next button long press"); break;
   }
 
   // Check the brightness adjust button
@@ -584,34 +584,34 @@ void doButtons(Player& player, const EspWiFi& wifiNetwork,
     case BTN_RELEASED:
       brightnessCursor++;
       if (brightnessCursor >= NUM_BRIGHTNESSES) { brightnessCursor = 0; }
-      info("Brightness button has been hit %u", brightnessList[brightnessCursor]);
+      jll_info("Brightness button has been hit %u", brightnessList[brightnessCursor]);
       break;
 
     case BTN_LONGPRESS:  // button was held down for a while
       brightnessCursor = FIRST_BRIGHTNESS;
-      info("Brightness button long press %u", brightnessList[brightnessCursor]);
+      jll_info("Brightness button long press %u", brightnessList[brightnessCursor]);
       break;
   }
 
   // Check the back button
   switch (btn2) {
     case BTN_RELEASED:
-      info("Back button has been hit");
+      jll_info("Back button has been hit");
       player.stopSpecial(currentMillis);
       player.loopOne(currentMillis);
       break;
 
-    case BTN_LONGPRESS: info("Ignoring back button long press"); break;
+    case BTN_LONGPRESS: jll_info("Ignoring back button long press"); break;
   }
 
   // Check the special button
   switch (btn3) {
     case BTN_RELEASED:
-      info("Special button has been hit");
+      jll_info("Special button has been hit");
       player.handleSpecial(currentMillis);
       break;
 
-    case BTN_LONGPRESS: info("Ignoring special button long press"); break;
+    case BTN_LONGPRESS: jll_info("Ignoring special button long press"); break;
   }
 #endif  // ESPxx
 #endif  // !BUTTONS_DISABLED

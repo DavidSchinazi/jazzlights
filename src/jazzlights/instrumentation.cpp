@@ -110,7 +110,7 @@ void printInstrumentationInfo(Milliseconds currentTime) {
   TaskStatus_t* tastStatuses = reinterpret_cast<TaskStatus_t*>(calloc(numTasks + 10, sizeof(TaskStatus_t)));
   uint32_t totalRuntime = 0;
   numTasks = uxTaskGetSystemState(tastStatuses, numTasks, &totalRuntime);
-  info("%u INSTRUMENTATION for %u tasks:", currentTime, numTasks);
+  jll_info("%u INSTRUMENTATION for %u tasks:", currentTime, numTasks);
   for (UBaseType_t i = 0; i < numTasks; i++) {
     const TaskStatus_t& ts = tastStatuses[i];
     uint32_t percentRuntime = 0;
@@ -118,9 +118,9 @@ void printInstrumentationInfo(Milliseconds currentTime) {
       percentRuntime = (ts.ulRunTimeCounter + (totalRuntime / 200)) / (totalRuntime / 100);
     }
     static_assert(configMAX_TASK_NAME_LEN == 16, "tweak format string");
-    info("%16s: num=%02u %s priority=current%02u/base%02u runtime=%09u=%02u%% core=%+d", ts.pcTaskName, ts.xTaskNumber,
-         TaskStateToString(ts.eCurrentState), ts.uxCurrentPriority, ts.uxBasePriority, ts.ulRunTimeCounter,
-         percentRuntime, (ts.xCoreID == 2147483647 ? -1 : ts.xCoreID));
+    jll_info("%16s: num=%02u %s priority=current%02u/base%02u runtime=%09u=%02u%% core=%+d", ts.pcTaskName,
+             ts.xTaskNumber, TaskStateToString(ts.eCurrentState), ts.uxCurrentPriority, ts.uxBasePriority,
+             ts.ulRunTimeCounter, percentRuntime, (ts.xCoreID == 2147483647 ? -1 : ts.xCoreID));
   }
 #endif  // JL_INSTRUMENTATION
 #if JL_TIMING
@@ -128,19 +128,19 @@ void printInstrumentationInfo(Milliseconds currentTime) {
   for (size_t i = 0; i < kNumTimePoints; i++) { totalTimePointsSum += gTimePointDatas[i].sumTimes; }
   const int64_t minPercentOffset = totalTimePointsSum / 200;
   for (size_t i = 0; i < kNumTimePoints; i++) {
-    info("%12s: %2lld%% %8lld", TimePointToString(static_cast<TimePoint>(i)),
-         (gTimePointDatas[i].sumTimes * 100 + minPercentOffset) / totalTimePointsSum, gTimePointDatas[i].sumTimes);
+    jll_info("%12s: %2lld%% %8lld", TimePointToString(static_cast<TimePoint>(i)),
+             (gTimePointDatas[i].sumTimes * 100 + minPercentOffset) / totalTimePointsSum, gTimePointDatas[i].sumTimes);
   }
   clearTimePoints();
-  info("Wrote to LEDs %f times per second",
-       static_cast<double>(gNumLedWrites) * 1000 / (currentTime - lastInstrumentationLog));
+  jll_info("Wrote to LEDs %f times per second",
+           static_cast<double>(gNumLedWrites) * 1000 / (currentTime - lastInstrumentationLog));
   gNumLedWrites = 0;
   lastInstrumentationLog = currentTime;
   if (gLedTimeCount > 0) {
-    info("LED data from %lld writes: min %lld average %lld max %lld (us)", gLedTimeCount, gLedTimeMin,
-         gLedTimeSum / gLedTimeCount, gLedTimeMax);
+    jll_info("LED data from %lld writes: min %lld average %lld max %lld (us)", gLedTimeCount, gLedTimeMin,
+             gLedTimeSum / gLedTimeCount, gLedTimeMax);
   } else {
-    info("No LED data available");
+    jll_info("No LED data available");
   }
   gLedTimeCount = 0;
   gLedTimeSum = 0;

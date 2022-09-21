@@ -49,10 +49,10 @@ int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen) {
   player = &playerRef;
   viewport = vp;
 
-  info("Running GUI, view box is (%0.3f, %0.3f) - (%0.3f, %0.3f) meters, using GLFW v.%s", left(player->bounds()),
-       top(player->bounds()), right(player->bounds()), bottom(player->bounds()), glfwGetVersionString());
+  jll_info("Running GUI, view box is (%0.3f, %0.3f) - (%0.3f, %0.3f) meters, using GLFW v.%s", left(player->bounds()),
+           top(player->bounds()), right(player->bounds()), bottom(player->bounds()), glfwGetVersionString());
 
-  if (!glfwInit()) { fatal("Can't initialize graphics"); }
+  if (!glfwInit()) { jll_fatal("Can't initialize graphics"); }
 
   int winWidth = WIN_W;
   int winHeight = WIN_H;
@@ -71,7 +71,7 @@ int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen) {
 
   GLFWwindow* window =
       glfwCreateWindow(winWidth, winHeight, winTitle, fullscreen ? glfwGetPrimaryMonitor() : nullptr, nullptr);
-  if (!window) { fatal("Can't create window"); }
+  if (!window) { jll_fatal("Can't create window"); }
 
   glfwSetFramebufferSizeCallback(window, onResize);
   glfwMakeContextCurrent(window);

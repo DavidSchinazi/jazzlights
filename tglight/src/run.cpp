@@ -25,7 +25,7 @@ void runInner(bool verbose, const char* ver, const char* cfgfile) {
   if (verbose) { enable_debug_logging(); }
 
   snprintf(version, sizeof(version) - 1, "%s_%s", ver, BOOT_MESSAGE);
-  info("My %s", sysinfo());
+  jll_info("My %s", sysinfo());
   player.setBasePrecedence(20000);
   player.setPrecedenceGain(5000);
   load(cfgfile, player);

@@ -280,7 +280,7 @@ enum OurColorPalette {
 static inline OurColorPalette PaletteFromPattern(PatternBits pattern) {
   constexpr uint8_t firstPaletteBit = 17;
 #if 0
-  info("PATTERN BITS %u%u%u",
+  jll_info("PATTERN BITS %u%u%u",
        patternbit(pattern, firstPaletteBit + 0),
        patternbit(pattern, firstPaletteBit + 1),
        patternbit(pattern, firstPaletteBit + 2));

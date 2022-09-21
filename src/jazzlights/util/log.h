@@ -21,15 +21,15 @@ __attribute__((format(printf, 1, 2))) void arduinoLog(const char* format, ...);
 
 #endif  // ARDUINO
 
-#define debug(format, ...)                                                             \
+#define jll_debug(format, ...)                                                         \
   do {                                                                                 \
     if (is_debug_logging_enabled()) { _LOG_AT_LEVEL("DEBUG", format, ##__VA_ARGS__); } \
   } while (0)
 
-#define info(format, ...) _LOG_AT_LEVEL("INFO", format, ##__VA_ARGS__)
-#define error(format, ...) _LOG_AT_LEVEL("ERROR", format, ##__VA_ARGS__)
+#define jll_info(format, ...) _LOG_AT_LEVEL("INFO", format, ##__VA_ARGS__)
+#define jll_error(format, ...) _LOG_AT_LEVEL("ERROR", format, ##__VA_ARGS__)
 
-#define fatal(format, ...)                         \
+#define jll_fatal(format, ...)                     \
   do {                                             \
     _LOG_AT_LEVEL("FATAL", format, ##__VA_ARGS__); \
     abort();                                       \

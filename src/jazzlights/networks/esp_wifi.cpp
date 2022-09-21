@@ -35,8 +35,8 @@ EspWiFi::EspWiFi(const char* ssid, const char* pass) : creds_{ssid, pass} {
 NetworkStatus EspWiFi::update(NetworkStatus status, Milliseconds currentTime) {
   const wl_status_t newWiFiStatus = WiFi.status();
   if (newWiFiStatus != currentWiFiStatus_) {
-    info("%u %s Wi-Fi status changing from %s to %s", currentTime, networkName(),
-         WiFiStatusToString(currentWiFiStatus_).c_str(), WiFiStatusToString(newWiFiStatus).c_str());
+    jll_info("%u %s Wi-Fi status changing from %s to %s", currentTime, networkName(),
+             WiFiStatusToString(currentWiFiStatus_).c_str(), WiFiStatusToString(newWiFiStatus).c_str());
     currentWiFiStatus_ = newWiFiStatus;
     timeOfLastWiFiStatusTransition_ = currentTime;
   }
@@ -52,19 +52,20 @@ NetworkStatus EspWiFi::update(NetworkStatus status, Milliseconds currentTime) {
     ip[3] = UnpredictableRandom::GetNumberBetween(0, 255);
     gw.fromString("169.254.0.0");
     snm.fromString("255.255.0.0");
-    info("%u %s Wi-Fi giving up on DHCP, using %u.%u.%u.%u", currentTime, networkName(), ip[0], ip[1], ip[2], ip[3]);
+    jll_info("%u %s Wi-Fi giving up on DHCP, using %u.%u.%u.%u", currentTime, networkName(), ip[0], ip[1], ip[2],
+             ip[3]);
     WiFi.config(ip, gw, snm);
   } else if (staticConf_ == nullptr && !attemptingDhcp_ && timeOfLastWiFiStatusTransition_ >= 0 &&
              currentTime - timeOfLastWiFiStatusTransition_ > kDhcpRetryTime) {
     attemptingDhcp_ = true;
-    info("%u %s Wi-Fi going back to another DHCP attempt", currentTime, networkName());
+    jll_info("%u %s Wi-Fi going back to another DHCP attempt", currentTime, networkName());
     WiFi.config(IPAddress(), IPAddress(), IPAddress());
     WiFi.reconnect();
   }
   switch (status) {
     case INITIALIZING: {
-      info("%u %s Wi-Fi " DEVICE_ID_FMT " connecting to %s...", currentTime, networkName(),
-           DEVICE_ID_HEX(localDeviceId_), creds_.ssid);
+      jll_info("%u %s Wi-Fi " DEVICE_ID_FMT " connecting to %s...", currentTime, networkName(),
+               DEVICE_ID_HEX(localDeviceId_), creds_.ssid);
       if (staticConf_) {
         IPAddress ip, gw, snm;
         ip.fromString(staticConf_->ip);
@@ -74,22 +75,22 @@ NetworkStatus EspWiFi::update(NetworkStatus status, Milliseconds currentTime) {
       }
 
       wl_status_t beginWiFiStatus = WiFi.begin(creds_.ssid, creds_.pass);
-      info("%u %s Wi-Fi begin to %s returned %s", currentTime, networkName(), creds_.ssid,
-           WiFiStatusToString(beginWiFiStatus).c_str());
+      jll_info("%u %s Wi-Fi begin to %s returned %s", currentTime, networkName(), creds_.ssid,
+               WiFiStatusToString(beginWiFiStatus).c_str());
       return CONNECTING;
     } break;
     case CONNECTING: {
       switch (newWiFiStatus) {
         case WL_NO_SHIELD:
-          error("%u %s connection to %s failed: there's no WiFi shield", currentTime, networkName(), creds_.ssid);
+          jll_error("%u %s connection to %s failed: there's no WiFi shield", currentTime, networkName(), creds_.ssid);
           return CONNECTION_FAILED;
 
         case WL_NO_SSID_AVAIL:
-          error("%u %s connection to %s failed: SSID not available", currentTime, networkName(), creds_.ssid);
+          jll_error("%u %s connection to %s failed: SSID not available", currentTime, networkName(), creds_.ssid);
           return CONNECTION_FAILED;
 
         case WL_SCAN_COMPLETED:
-          debug("%u %s scan completed, still connecting to %s...", currentTime, networkName(), creds_.ssid);
+          jll_debug("%u %s scan completed, still connecting to %s...", currentTime, networkName(), creds_.ssid);
           break;
 
         case WL_CONNECTED: {
@@ -101,22 +102,22 @@ NetworkStatus EspWiFi::update(NetworkStatus status, Milliseconds currentTime) {
           int res = udp_.beginMulticast(mcaddr, port_);
 #endif
           if (!res) {
-            error("%u %s can't begin multicast on port %d, multicast group %s", currentTime, networkName(), port_,
-                  mcastAddr_);
+            jll_error("%u %s can't begin multicast on port %d, multicast group %s", currentTime, networkName(), port_,
+                      mcastAddr_);
             goto err;
           }
           IPAddress ip = WiFi.localIP();
-          info("%u %s connected to %s, IP: %d.%d.%d.%d, bound to port %d, multicast group: %s", currentTime,
-               networkName(), creds_.ssid, ip[0], ip[1], ip[2], ip[3], port_, mcastAddr_);
+          jll_info("%u %s connected to %s, IP: %d.%d.%d.%d, bound to port %d, multicast group: %s", currentTime,
+                   networkName(), creds_.ssid, ip[0], ip[1], ip[2], ip[3], port_, mcastAddr_);
           return CONNECTED;
         } break;
 
         case WL_CONNECT_FAILED:
-          error("%u %s connection to %s failed", currentTime, networkName(), creds_.ssid);
+          jll_error("%u %s connection to %s failed", currentTime, networkName(), creds_.ssid);
           return CONNECTION_FAILED;
 
         case WL_CONNECTION_LOST:
-          error("%u %s connection to %s lost", currentTime, networkName(), creds_.ssid);
+          jll_error("%u %s connection to %s lost", currentTime, networkName(), creds_.ssid);
           return INITIALIZING;
 
         case WL_DISCONNECTED:
@@ -124,10 +125,10 @@ NetworkStatus EspWiFi::update(NetworkStatus status, Milliseconds currentTime) {
           static int32_t last_t = 0;
           if (currentTime - last_t > 5000) {
             if (newWiFiStatus == WL_DISCONNECTED) {
-              debug("%u %s still connecting...", currentTime, networkName());
+              jll_debug("%u %s still connecting...", currentTime, networkName());
             } else {
-              info("%u %s still connecting, unexpected status code %s", currentTime, networkName(),
-                   WiFiStatusToString(newWiFiStatus).c_str());
+              jll_info("%u %s still connecting, unexpected status code %s", currentTime, networkName(),
+                       WiFiStatusToString(newWiFiStatus).c_str());
             }
             last_t = currentTime;
           }
@@ -144,10 +145,10 @@ NetworkStatus EspWiFi::update(NetworkStatus status, Milliseconds currentTime) {
     case DISCONNECTING: {
       switch (newWiFiStatus) {
         case WL_DISCONNECTED:
-          info("%u %s disconnected from %s", currentTime, networkName(), creds_.ssid);
+          jll_info("%u %s disconnected from %s", currentTime, networkName(), creds_.ssid);
           return DISCONNECTED;
         default:
-          info("%u %s disconnecting from %s...", currentTime, networkName(), creds_.ssid);
+          jll_info("%u %s disconnecting from %s...", currentTime, networkName(), creds_.ssid);
           WiFi.disconnect();
           break;
       }
@@ -157,7 +158,7 @@ NetworkStatus EspWiFi::update(NetworkStatus status, Milliseconds currentTime) {
   return status;
 
 err:
-  error("%u %s connection to %s failed", currentTime, networkName(), creds_.ssid);
+  jll_error("%u %s connection to %s failed", currentTime, networkName(), creds_.ssid);
   WiFi.disconnect();
   return CONNECTION_FAILED;
 }
@@ -165,7 +166,7 @@ err:
 int EspWiFi::recv(void* buf, size_t bufsize, std::string* details) {
   int cb = udp_.parsePacket();
   if (cb <= 0) {
-    debug("EspWiFi::recv returned %d status = %s", cb, NetworkStatusToString(status()).c_str());
+    jll_debug("EspWiFi::recv returned %d status = %s", cb, NetworkStatusToString(status()).c_str());
     return 0;
   }
   std::ostringstream s;

@@ -96,12 +96,12 @@ void Loader::loadPlayer(Player& player, const cpptoml::table& cfg) {
 }
 
 void Loader::load(const char* file, Player& player) {
-  info("jazzlights::Loader loading: %s", file);
+  jll_info("jazzlights::Loader loading: %s", file);
   try {
     auto config = cpptoml::parse_file(file);
     // cout << (*config) << endl;
     loadPlayer(player, *config);
-  } catch (const std::runtime_error& err) { fatal("Couldn't parse %s: %s", file, err.what()); }
+  } catch (const std::runtime_error& err) { jll_fatal("Couldn't parse %s: %s", file, err.what()); }
 }
 
 }  // namespace jazzlights

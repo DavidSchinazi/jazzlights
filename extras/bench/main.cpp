@@ -17,7 +17,7 @@ int runMain() {
     player.render(timeMillis());
     if (player.fps() != fps) {
       fps = player.fps();
-      info("FPS: %u", fps);
+      jll_info("FPS: %u", fps);
     }
   }
   return 0;

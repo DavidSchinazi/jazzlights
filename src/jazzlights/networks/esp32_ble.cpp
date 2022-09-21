@@ -14,10 +14,10 @@
 #endif  // ESP32_BLE_DEBUG_OVERRIDE
 
 #if ESP32_BLE_DEBUG_OVERRIDE
-#define ESP32_BLE_DEBUG(...) info(__VA_ARGS__)
+#define ESP32_BLE_DEBUG(...) jll_info(__VA_ARGS__)
 #define ESP32_BLE_DEBUG_ENABLED() 1
 #else  // ESP32_BLE_DEBUG_OVERRIDE
-#define ESP32_BLE_DEBUG(...) debug(__VA_ARGS__)
+#define ESP32_BLE_DEBUG(...) jll_debug(__VA_ARGS__)
 #define ESP32_BLE_DEBUG_ENABLED() is_debug_logging_enabled()
 #endif  // ESP32_BLE_DEBUG_OVERRIDE
 
@@ -41,8 +41,8 @@ void convertToHex(char* target, size_t targetLength, const uint8_t* source, uint
 void Esp32BleNetwork::UpdateState(Esp32BleNetwork::State expectedCurrentState, Esp32BleNetwork::State newState) {
   const std::lock_guard<std::mutex> lock(mutex_);
   if (state_ != expectedCurrentState) {
-    error("Unexpected state %s updating from %s to %s", StateToString(state_).c_str(),
-          StateToString(expectedCurrentState).c_str(), StateToString(newState).c_str());
+    jll_error("Unexpected state %s updating from %s to %s", StateToString(state_).c_str(),
+              StateToString(expectedCurrentState).c_str(), StateToString(newState).c_str());
   }
   state_ = newState;
 }
@@ -163,7 +163,7 @@ constexpr uint8_t kPayloadLength = kPatternTimeOffset + 2;
 void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifier, uint8_t innerPayloadLength,
                                            const uint8_t* innerPayload, int /*rssi*/, Milliseconds currentTime) {
   if (innerPayloadLength > kMaxInnerPayloadLength) {
-    error("%u Received advertisement with unexpected length %u", currentTime, innerPayloadLength);
+    jll_error("%u Received advertisement with unexpected length %u", currentTime, innerPayloadLength);
     return;
   }
   if (innerPayloadLength < kPayloadLength) {
@@ -223,7 +223,7 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_
   const std::lock_guard<std::mutex> lock(mutex_);
   static_assert(kPayloadLength <= kMaxInnerPayloadLength, "bad size");
   if (kPayloadLength > maxInnerPayloadLength) {
-    error("%u GetNextInnerPayloadToSend nonsense %u > %u", currentTime, kPayloadLength, maxInnerPayloadLength);
+    jll_error("%u GetNextInnerPayloadToSend nonsense %u > %u", currentTime, kPayloadLength, maxInnerPayloadLength);
     return 0;
   }
 
@@ -278,7 +278,7 @@ void Esp32BleNetwork::StartConfigureAdvertising(Milliseconds currentTime) {
   uint8_t advPayload[kMaxInnerPayloadLength + 2];
   uint8_t innerPayloadSize = GetNextInnerPayloadToSend(&advPayload[2], kMaxInnerPayloadLength, currentTime);
   if (innerPayloadSize > kMaxInnerPayloadLength) {
-    error("%u getNextAdvertisementToSend returned nonsense %u", currentTime, innerPayloadSize);
+    jll_error("%u getNextAdvertisementToSend returned nonsense %u", currentTime, innerPayloadSize);
     innerPayloadSize = kMaxInnerPayloadLength;
     memset(advPayload, 0, sizeof(advPayload));
   }
@@ -317,7 +317,7 @@ void Esp32BleNetwork::GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap
             snprintf(macAddressString, sizeof(macAddressString), "%02x:%02x:%02x:%02x:%02x:%02x",
                      param->scan_rst.bda[0], param->scan_rst.bda[1], param->scan_rst.bda[2], param->scan_rst.bda[3],
                      param->scan_rst.bda[4], param->scan_rst.bda[5]);
-            error(
+            jll_error(
                 "%u Unexpected scan result %s dev_type=%d ble_addr_type=%d"
                 " ble_evt_type=%d rssi=%d flag=%d num_resps=%d adv_data_len=%u"
                 " scan_rsp_len=%u num_dis=%u",
@@ -405,8 +405,8 @@ Esp32BleNetwork::Esp32BleNetwork() {
   esp_bd_addr_t localAddress;
   memset(localAddress, 0, sizeof(localAddress));
   ESP_ERROR_CHECK(esp_ble_gap_get_local_used_addr(localAddress, &addressType));
-  info("Initialized BLE with local MAC address " ESP_BD_ADDR_STR " (type %u)", ESP_BD_ADDR_HEX(localAddress),
-       addressType);
+  jll_info("Initialized BLE with local MAC address " ESP_BD_ADDR_STR " (type %u)", ESP_BD_ADDR_HEX(localAddress),
+           addressType);
   localDeviceId_ = NetworkDeviceId(localAddress);
   lastReceiveTime_ = -1;
   // Override callbacks away from BLEDevice back to us.

@@ -38,11 +38,11 @@ Renderer& TGLoader::loadRenderer(const Layout&, const cpptoml::table& cfg, int s
 void load(const char* file, Player& player) {
   while (true) {
     try {
-      info("Loading %s...", file);
+      jll_info("Loading %s...", file);
       TGLoader().load(file, player);
       return;
     } catch (const std::runtime_error& err) {
-      error("Couldn't parse %s: %s", file, err.what());
+      jll_error("Couldn't parse %s: %s", file, err.what());
       sleep(2);
     }
   }

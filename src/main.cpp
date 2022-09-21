@@ -2,6 +2,8 @@
 
 #ifdef JAZZLIGHTS_PLATFORMIO
 
+#include <Arduino.h>
+
 #include "jazzlights/vest.h"
 
 void setup() { jazzlights::vestSetup(); }

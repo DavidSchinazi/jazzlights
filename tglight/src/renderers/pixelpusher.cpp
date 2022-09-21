@@ -57,11 +57,11 @@ class PixelPusherDiscovery {
  public:
   PixelPusherDiscovery() {
     fd_ = socket(AF_INET, SOCK_DGRAM, 0);
-    if (fd_ < 0) { fatal("Failed to create PixelPusherDiscovery socket: %s", strerror(errno)); }
+    if (fd_ < 0) { jll_fatal("Failed to create PixelPusherDiscovery socket: %s", strerror(errno)); }
     int flags = fcntl(fd_, F_GETFL, 0);
-    if (flags == -1) { fatal("Failed to fcntl F_GETFL PixelPusherDiscovery socket: %s", strerror(errno)); }
+    if (flags == -1) { jll_fatal("Failed to fcntl F_GETFL PixelPusherDiscovery socket: %s", strerror(errno)); }
     if (fcntl(fd_, F_SETFL, flags | O_NONBLOCK) == -1) {
-      fatal("Failed to fcntl F_SETFL PixelPusherDiscovery socket: %s", strerror(errno));
+      jll_fatal("Failed to fcntl F_SETFL PixelPusherDiscovery socket: %s", strerror(errno));
     }
     struct sockaddr_in localAddr = {};
 #ifdef __APPLE__
@@ -70,9 +70,9 @@ class PixelPusherDiscovery {
     localAddr.sin_family = AF_INET;
     localAddr.sin_port = htons(7331);
     if (bind(fd_, reinterpret_cast<struct sockaddr*>(&localAddr), sizeof(localAddr)) < 0) {
-      fatal("Failed to bind PixelPusherDiscovery socket: %s", strerror(errno));
+      jll_fatal("Failed to bind PixelPusherDiscovery socket: %s", strerror(errno));
     }
-    info("created PixelPusherDiscovery socket %d", fd_);
+    jll_info("created PixelPusherDiscovery socket %d", fd_);
   }
   std::list<const struct sockaddr_in*> getAddresses(struct sockaddr_in* defaultAddressAndPort, int32_t controller,
                                                     int32_t group, Milliseconds currentTime) {
@@ -112,17 +112,17 @@ class PixelPusherDiscovery {
       ssize_t recvLen =
           recvfrom(fd_, buffer, sizeof(buffer), /*flags=*/0, reinterpret_cast<struct sockaddr*>(&srcAddr), &srcAddrLen);
       if (recvLen < 0) {
-        if (errno != EAGAIN) { error("PixelPusherDiscovery recvfrom failed: %s", strerror(errno)); }
+        if (errno != EAGAIN) { jll_error("PixelPusherDiscovery recvfrom failed: %s", strerror(errno)); }
         break;
       }
       static constexpr ssize_t kMinPacketLength =
           6 + 4 + 1 + 1 + 2 + 2 + 2 + 2 + 4 + 1 + 1 + 2 + 4 + 4 + 4 + 4 + 4 + 2 + 2 + 2;
       if (recvLen < kMinPacketLength) {
-        error("PixelPusherDiscovery received unexpected length %zu < %zu", recvLen, kMinPacketLength);
+        jll_error("PixelPusherDiscovery received unexpected length %zu < %zu", recvLen, kMinPacketLength);
         continue;
       }
       if (buffer[10] != 2) {
-        error("PixelPusherDiscovery received non-PixelPusher type %u", buffer[10]);
+        jll_error("PixelPusherDiscovery received non-PixelPusher type %u", buffer[10]);
         continue;
       }
       static constexpr size_t kIpAddressOffset = 6;
@@ -131,10 +131,10 @@ class PixelPusherDiscovery {
       static constexpr size_t kGroupOffset = 6 + 4 + 1 + 1 + 2 + 2 + 2 + 2 + 4 + 1 + 1 + 2 + 4 + 4 + 4 + 4;
       char srcAddrStr[INET_ADDRSTRLEN] = {};
       inet_ntop(AF_INET, &(srcAddr.sin_addr), srcAddrStr, sizeof(srcAddrStr));
-      debug("PixelPusherDiscovery: %02x:%02x:%02x:%02x:%02x:%02x %u.%u.%u.%u:%u c%u g%u from %s:%u", buffer[0],
-            buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7], buffer[8], buffer[9],
-            readUint16LE(&buffer[kPortOffset]), readUint32LE(&buffer[kControllerOffset]),
-            readUint32LE(&buffer[kGroupOffset]), srcAddrStr, ntohs(srcAddr.sin_port));
+      jll_debug("PixelPusherDiscovery: %02x:%02x:%02x:%02x:%02x:%02x %u.%u.%u.%u:%u c%u g%u from %s:%u", buffer[0],
+                buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7], buffer[8], buffer[9],
+                readUint16LE(&buffer[kPortOffset]), readUint32LE(&buffer[kControllerOffset]),
+                readUint32LE(&buffer[kGroupOffset]), srcAddrStr, ntohs(srcAddr.sin_port));
       {
         // Save first result from IP they think they have.
         PixelPusherDiscoveryResult result;
@@ -190,11 +190,11 @@ static constexpr int HACKY_HARD_CODED_NUM_OF_LEDS = 400;
 PixelPusher::PixelPusher(const char* h, int p, int s, int t, int32_t controller, int32_t group)
     : host(h), port(p), strip(s), throttle(t), controller_(controller), group_(group), fd(0) {
   fd = socket(AF_INET, SOCK_DGRAM, 0);
-  if (fd < 0) { fatal("can't create client socket: %s", strerror(errno)); }
+  if (fd < 0) { jll_fatal("can't create client socket: %s", strerror(errno)); }
 
   struct hostent* hp;
   hp = gethostbyname(host);
-  if (!hp) { fatal("can't connect to %s: %s", host, strerror(errno)); }
+  if (!hp) { jll_fatal("can't connect to %s: %s", host, strerror(errno)); }
 
   bzero((char*)&addr, sizeof(addr));
   addr.sin_family = AF_INET;
@@ -247,11 +247,11 @@ void PixelPusher::render(InputStream<Color>& pixelColors) {
     inet_ntop(AF_INET, &(targetAddress->sin_addr), ipAddressStr, sizeof(ipAddressStr));
     if (sendto(fd, buf.data(), buf.size(), 0, reinterpret_cast<const struct sockaddr*>(targetAddress),
                sizeof(*targetAddress)) != static_cast<ssize_t>(buf.size())) {
-      error("Can't send %zu bytes to PixelPusher at %s:%u on socket %d: %s", buf.size(), ipAddressStr,
-            ntohs(targetAddress->sin_port), fd, strerror(errno));
+      jll_error("Can't send %zu bytes to PixelPusher at %s:%u on socket %d: %s", buf.size(), ipAddressStr,
+                ntohs(targetAddress->sin_port), fd, strerror(errno));
     } else {
-      debug("Sent strip %d (%d pixels, %zu bytes) to PixelPusher at %s:%u on socket %d", strip, pxcnt, buf.size(),
-            ipAddressStr, ntohs(targetAddress->sin_port), fd);
+      jll_debug("Sent strip %d (%d pixels, %zu bytes) to PixelPusher at %s:%u on socket %d", strip, pxcnt, buf.size(),
+                ipAddressStr, ntohs(targetAddress->sin_port), fd);
     }
   }
 }

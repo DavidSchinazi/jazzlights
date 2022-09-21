@@ -183,12 +183,12 @@ void vestLoop(void) {
   player.powerLimited = (powerAtDesiredBrightness > MAX_MILLIWATTS);
   if (player.powerLimited) { brightness = brightness * MAX_MILLIWATTS / powerAtDesiredBrightness; }
 
-  debug("pf%6u    pd%5u    bu%4u    bs%4u    mW%5u    mA%5u%s", powerAtFullBrightness,
-        powerAtDesiredBrightness,     // Full-brightness power, desired-brightness power
-        getBrightness(), brightness,  // Desired and selected brightness
-        powerAtFullBrightness * brightness / 256,
-        powerAtFullBrightness * brightness / 256 / 5,  // Selected power & current
-        player.powerLimited ? " (limited)" : "");
+  jll_debug("pf%6u    pd%5u    bu%4u    bs%4u    mW%5u    mA%5u%s", powerAtFullBrightness,
+            powerAtDesiredBrightness,     // Full-brightness power, desired-brightness power
+            getBrightness(), brightness,  // Desired and selected brightness
+            powerAtFullBrightness * brightness / 256,
+            powerAtFullBrightness * brightness / 256 / 5,  // Selected power & current
+            player.powerLimited ? " (limited)" : "");
 #endif  // MAX_MILLIWATTS
   SAVE_TIME_POINT(Brightness);
 

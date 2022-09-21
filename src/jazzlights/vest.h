@@ -1,6 +1,8 @@
 #ifndef JAZZLIGHTS_VEST_H
 #define JAZZLIGHTS_VEST_H
 
+#include "jazzlights/config.h"
+
 #if WEARABLE
 
 #include <string>

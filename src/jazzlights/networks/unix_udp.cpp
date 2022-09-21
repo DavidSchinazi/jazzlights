@@ -37,23 +37,23 @@ int UnixUdpNetwork::setupSocketForInterface(const char* ifName, struct in_addr l
   fd = socket(AF_INET, SOCK_DGRAM, 0);
   do {
     if (fd < 0) {
-      error("Failed to create UDP socket");
+      jll_error("Failed to create UDP socket");
       break;
     }
 
     int one = 1;
     if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) < 0) {
-      error("Failed to set reuseaddr option on UDP socket %d ifName %s: %s", fd, ifName, strerror(errno));
+      jll_error("Failed to set reuseaddr option on UDP socket %d ifName %s: %s", fd, ifName, strerror(errno));
       break;
     }
     if (setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &one, sizeof(one)) < 0) {
-      error("Failed to set reuseport option on UDP socket %d ifName %s: %s", fd, ifName, strerror(errno));
+      jll_error("Failed to set reuseport option on UDP socket %d ifName %s: %s", fd, ifName, strerror(errno));
       break;
     }
 
     int flags = fcntl(fd, F_GETFL) | O_NONBLOCK;
     if (fcntl(fd, F_SETFL, flags) < 0) {
-      error("Failed to set UDP socket %d ifName %s to nonblocking mode: %s", fd, ifName, strerror(errno));
+      jll_error("Failed to set UDP socket %d ifName %s to nonblocking mode: %s", fd, ifName, strerror(errno));
       break;
     }
 
@@ -66,7 +66,7 @@ int UnixUdpNetwork::setupSocketForInterface(const char* ifName, struct in_addr l
     };
 
     if (bind(fd, (struct sockaddr*)&sin, sizeof(sin)) < 0) {
-      error("Failed to bind UDP socket %d ifName %s to port %d: %s", fd, ifName, port_, strerror(errno));
+      jll_error("Failed to bind UDP socket %d ifName %s to port %d: %s", fd, ifName, port_, strerror(errno));
       break;
     }
 
@@ -75,21 +75,22 @@ int UnixUdpNetwork::setupSocketForInterface(const char* ifName, struct in_addr l
         .imr_interface = localAddr,
     };
     if (setsockopt(fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mcastGroup, sizeof(mcastGroup)) < 0) {
-      error("Failed to add UDP socket %d ifName %s to multicast group %s: %s", fd, ifName, mcastAddrStr_,
-            strerror(errno));
+      jll_error("Failed to add UDP socket %d ifName %s to multicast group %s: %s", fd, ifName, mcastAddrStr_,
+                strerror(errno));
       break;
     }
 
     // Disable receiving our own multicast traffic.
     u_char zero = 0;
     if (setsockopt(fd, IPPROTO_IP, IP_MULTICAST_LOOP, &zero, sizeof(zero)) < 0) {
-      error("Failed to disable multicast loopack on UDP socket %d ifName %s: %s", fd, ifName, strerror(errno));
+      jll_error("Failed to disable multicast loopack on UDP socket %d ifName %s: %s", fd, ifName, strerror(errno));
       break;
     }
 
     sockets_[ifName] = fd;
 
-    info("Joined multicast group %s, listening on port %d, UDP socket %d, ifName %s", mcastAddrStr_, port_, fd, ifName);
+    jll_info("Joined multicast group %s, listening on port %d, UDP socket %d, ifName %s", mcastAddrStr_, port_, fd,
+             ifName);
     return 2;
   } while (false);
 
@@ -98,7 +99,7 @@ int UnixUdpNetwork::setupSocketForInterface(const char* ifName, struct in_addr l
     close(fd);
     fd = -1;
   }
-  error("UDP socket connection failed");
+  jll_error("UDP socket connection failed");
   return 0;
 }
 
@@ -106,26 +107,26 @@ void UnixUdpNetwork::invalidateSocket(std::string ifName) {
   auto search = sockets_.find(ifName);
   if (search == sockets_.end()) {
     // No socket for ifName.
-    error("Did not find socket to invalidate for ifName %s", ifName.c_str());
+    jll_error("Did not find socket to invalidate for ifName %s", ifName.c_str());
     return;
   }
   int fd = search->second;
   if (fd >= 0) { close(fd); }
   sockets_.erase(ifName);
-  info("Invalidated socket %d for ifName %s", fd, ifName.c_str());
+  jll_info("Invalidated socket %d for ifName %s", fd, ifName.c_str());
 }
 
 bool UnixUdpNetwork::setupSockets() {
   struct ifaddrs* ifaddr = NULL;
   if (getifaddrs(&ifaddr) == -1) {
-    error("getifaddrs failed: %s", strerror(errno));
+    jll_error("getifaddrs failed: %s", strerror(errno));
     return false;
   }
 
   uint32_t newValidSockets = 0;
   for (struct ifaddrs* ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
     if (ifa->ifa_addr == NULL) {
-      error("Skipping interface without data \"%s\"", ifa->ifa_name);
+      jll_error("Skipping interface without data \"%s\"", ifa->ifa_name);
       continue;
     }
     if (localDeviceId_ == NetworkDeviceId()) {
@@ -141,8 +142,8 @@ bool UnixUdpNetwork::setupSockets() {
 #error "Unsupported platform"
 #endif
       if (localAddress != NetworkDeviceId()) {
-        info("Choosing local MAC address " DEVICE_ID_FMT " from interface %s", DEVICE_ID_HEX(localAddress),
-             ifa->ifa_name);
+        jll_info("Choosing local MAC address " DEVICE_ID_FMT " from interface %s", DEVICE_ID_HEX(localAddress),
+                 ifa->ifa_name);
         localDeviceId_ = localAddress;
       }
     }
@@ -161,7 +162,7 @@ bool UnixUdpNetwork::setupSockets() {
   }
 
   freeifaddrs(ifaddr);
-  if (newValidSockets > 0) { info("Created %u new valid sockets", newValidSockets); }
+  if (newValidSockets > 0) { jll_info("Created %u new valid sockets", newValidSockets); }
   return !sockets_.empty();
 }
 
@@ -183,7 +184,7 @@ NetworkStatus UnixUdpNetwork::update(NetworkStatus status, Milliseconds /*curren
       std::string ifName = pair.first;
       int fd = pair.second;
       close(fd);
-      info("Disconnected UDP socket %d for ifName %s", fd, ifName.c_str());
+      jll_info("Disconnected UDP socket %d for ifName %s", fd, ifName.c_str());
     }
     sockets_.clear();
     return DISCONNECTED;
@@ -200,21 +201,21 @@ int UnixUdpNetwork::recv(void* buf, size_t bufsize, std::string* /*details*/) {
     const char* fromstr = nullptr;
     sockaddr_in fromaddr = {};
     socklen_t fromaddrlen = sizeof(fromaddr);
-    // info("Attempting to read %llu bytes on UDP socket %d ifName %s",
+    // jll_info("Attempting to read %llu bytes on UDP socket %d ifName %s",
     //      static_cast<uint64_t>(bufsize), fd, ifName.c_str());
     ssize_t n = recvfrom(fd, buf, bufsize, 0, reinterpret_cast<sockaddr*>(&fromaddr), &fromaddrlen);
     if (n < 0) {
       if (errno == EWOULDBLOCK || errno == EAGAIN) {
         continue;  // no data on nonblocking socket
       }
-      error("Failed to receive data on UDP socket %d ifName %s: %s", fd, ifName.c_str(), strerror(errno));
+      jll_error("Failed to receive data on UDP socket %d ifName %s: %s", fd, ifName.c_str(), strerror(errno));
       invalidateSocket(ifName);
       setupSockets();
       continue;  // error reading
     }
     fromstr = inet_ntoa(fromaddr.sin_addr);
-    debug("Received %ld bytes on UDP socket %d ifName %s from %s:%d", n, fd, ifName.c_str(), fromstr,
-          ntohs(fromaddr.sin_port));
+    jll_debug("Received %ld bytes on UDP socket %d ifName %s from %s:%d", n, fd, ifName.c_str(), fromstr,
+              ntohs(fromaddr.sin_port));
     return n;
   }
   return -1;
@@ -236,7 +237,8 @@ void UnixUdpNetwork::send(void* buf, size_t bufsize) {
       if (errno == EWOULDBLOCK || errno == EAGAIN) {
         continue;  // no room to enqueue data on nonblocking socket
       }
-      error("Failed to send %zu bytes on UDP socket %d ifName %s: %s", bufsize, fd, ifName.c_str(), strerror(errno));
+      jll_error("Failed to send %zu bytes on UDP socket %d ifName %s: %s", bufsize, fd, ifName.c_str(),
+                strerror(errno));
       if (errno == ENETUNREACH) {
         // Do not invalidate the socket as we would immediately
         // recreate it and infinite loop.
@@ -247,13 +249,13 @@ void UnixUdpNetwork::send(void* buf, size_t bufsize) {
       continue;
     }
     if (static_cast<size_t>(sendResult) != bufsize) {
-      error("Incorrectly sent %zd bytes instead of %zu on UDP socket %d ifName %s: %s", sendResult, bufsize, fd,
-            ifName.c_str(), strerror(errno));
+      jll_error("Incorrectly sent %zd bytes instead of %zu on UDP socket %d ifName %s: %s", sendResult, bufsize, fd,
+                ifName.c_str(), strerror(errno));
       invalidateSocket(ifName);
       setupSockets();
       continue;
     }
-    debug("Sent %zu bytes on UDP socket %d ifName %s to %s:%d", bufsize, fd, ifName.c_str(), mcastAddrStr_, port_);
+    jll_debug("Sent %zu bytes on UDP socket %d ifName %s to %s:%d", bufsize, fd, ifName.c_str(), mcastAddrStr_, port_);
   }
 }
 
