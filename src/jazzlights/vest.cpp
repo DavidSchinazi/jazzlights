@@ -2,6 +2,7 @@
 
 #include <Jazzlights.h>
 
+#include "jazzlights/board.h"
 #include "jazzlights/instrumentation.h"
 
 #if WEARABLE
