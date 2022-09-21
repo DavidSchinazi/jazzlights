@@ -5,6 +5,10 @@
 
 #if ATOM_MATRIX_SCREEN
 
+#include <string>
+
+#include "jazzlights/util/time.h"
+
 namespace jazzlights {
 
 #define MATRIX_SIZE 25
