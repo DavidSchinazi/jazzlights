@@ -2,6 +2,7 @@
 #define JAZZLIGHTS_EFFECTS_COLOREDBURSTS_H
 
 #include "jazzlights/effect.h"
+#include "jazzlights/fastled_wrapper.h"
 #include "jazzlights/palette.h"
 #include "jazzlights/pseudorandom.h"
 #include "jazzlights/util/math.h"
@@ -59,16 +60,14 @@ class ColoredBursts : public EffectWithPaletteXYIndexAndState<ColoredBurstsState
   }
 
   void innerRewind(const Frame& frame, ColoredBurstsState* state) const override {
-    using namespace internal;
-
     state->hue++;
     // Slightly fade all pixels.
     for (size_t x = 0; x < w(); x++) {
       for (size_t y = 0; y < h(); y++) { ps(x, y) = nscale8(ps(x, y), state->fadeScale); }
     }
 
-    int x1 = beatsin(2 + state->speed, frame.time, 0, (w() - 1));
-    int y1 = beatsin(5 + state->speed, frame.time, 0, (h() - 1));
+    int x1 = jlbeatsin(2 + state->speed, frame.time, 0, (w() - 1));
+    int y1 = jlbeatsin(5 + state->speed, frame.time, 0, (h() - 1));
     int& curX1 = state->curX1;
     int& curY1 = state->curY1;
     if (!state->curInit1) {
@@ -92,8 +91,8 @@ class ColoredBursts : public EffectWithPaletteXYIndexAndState<ColoredBurstsState
     }
 
     for (uint8_t i = 0; i < state->numLines; i++) {
-      int x2 = beatsin(1 + state->speed, frame.time, 0, (w() - 1), i * 24);
-      int y2 = beatsin(3 + state->speed, frame.time, 0, (h() - 1), i * 48 + 64);
+      int x2 = jlbeatsin(1 + state->speed, frame.time, 0, (w() - 1), i * 24);
+      int y2 = jlbeatsin(3 + state->speed, frame.time, 0, (h() - 1), i * 48 + 64);
       RgbColor color = colorFromPalette(i * 255 / state->numLines + state->hue);
       int& curX2 = state->curX2[i];
       int& curY2 = state->curY2[i];

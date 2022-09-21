@@ -23,7 +23,6 @@ class SpinPlasma : public EffectWithPaletteAndState<SpinPlasmaState> {
  public:
   std::string effectNamePrefix(PatternBits /*pattern*/) const override { return "sp"; }
   ColorWithPalette innerColor(const Frame& /*frame*/, const Pixel& px, SpinPlasmaState* state) const override {
-    using namespace internal;
     return sin8(sqrt(square((static_cast<float>(px.coord.x) - state->plasmaCenterX) * state->xMultiplier) +
                      square((static_cast<float>(px.coord.y) - state->plasmaCenterY) * state->yMultiplier)));
   }
@@ -37,7 +36,6 @@ class SpinPlasma : public EffectWithPaletteAndState<SpinPlasmaState> {
         frame.viewport.origin.y + frame.predictableRandom->GetRandomDoubleBetween(0, frame.viewport.size.height);
   }
   void innerRewind(const Frame& frame, SpinPlasmaState* state) const override {
-    using namespace internal;
     const uint8_t offset = 30 * frame.time / 255;
     state->plasmaCenterX =
         state->rotationCenterX + (static_cast<float>(cos8(offset)) - 127.0) / (state->xMultiplier * 2.0);

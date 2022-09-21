@@ -34,7 +34,6 @@ struct RgbColor {
   constexpr bool operator!=(const RgbColor& other) const { return !(*this == other); }
 
   RgbColor& operator+=(const RgbColor& other) {
-    using namespace internal;
     red = qadd8(red, other.red);
     green = qadd8(green, other.green);
     blue = qadd8(blue, other.blue);

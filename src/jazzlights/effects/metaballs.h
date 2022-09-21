@@ -64,20 +64,19 @@ class Metaballs : public EffectWithPaletteAndState<MetaballsState> {
   }
 
   void innerRewind(const Frame& frame, MetaballsState* state) const override {
-    using namespace internal;
     const Coord ox = frame.viewport.origin.x;
     const Coord oy = frame.viewport.origin.y;
     const Coord w = frame.viewport.size.width / 256.0;
     const Coord h = frame.viewport.size.height / 256.0;
 
-    state->p1.x = ox + w * beatsin8(state->multX1 * state->speed, frame.time, 0, 255);
-    state->p1.y = oy + h * beatsin8(state->multY1 * state->speed, frame.time, 0, 255);
+    state->p1.x = ox + w * jlbeatsin8(state->multX1 * state->speed, frame.time, 0, 255);
+    state->p1.y = oy + h * jlbeatsin8(state->multY1 * state->speed, frame.time, 0, 255);
 
-    state->p2.x = ox + w * beatsin8(state->multX2 * state->speed, frame.time, 0, 255, 24);
-    state->p2.y = oy + h * beatsin8(state->multY2 * state->speed, frame.time, 0, 255, 112);
+    state->p2.x = ox + w * jlbeatsin8(state->multX2 * state->speed, frame.time, 0, 255, 24);
+    state->p2.y = oy + h * jlbeatsin8(state->multY2 * state->speed, frame.time, 0, 255, 112);
 
-    state->p3.x = ox + w * beatsin8(state->multX3 * state->speed, frame.time, 0, 255, 48);
-    state->p3.y = oy + h * beatsin8(state->multY3 * state->speed, frame.time, 0, 255, 160);
+    state->p3.x = ox + w * jlbeatsin8(state->multX3 * state->speed, frame.time, 0, 255, 48);
+    state->p3.y = oy + h * jlbeatsin8(state->multY3 * state->speed, frame.time, 0, 255, 160);
   }
 };
 

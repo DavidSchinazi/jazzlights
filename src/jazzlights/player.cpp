@@ -34,8 +34,6 @@
 
 namespace jazzlights {
 
-using namespace internal;
-
 int comparePrecedence(Precedence leftPrecedence, const NetworkDeviceId& leftDeviceId, Precedence rightPrecedence,
                       const NetworkDeviceId& rightDeviceId) {
   if (leftPrecedence < rightPrecedence) {

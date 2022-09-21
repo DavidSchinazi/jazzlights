@@ -217,6 +217,114 @@ extern const TProgmemRGBPalette16 RainbowColors_p FL_PROGMEM;
 extern const TProgmemRGBPalette16 PartyColors_p FL_PROGMEM;
 extern const TProgmemRGBPalette16 HeatColors_p FL_PROGMEM;
 
+static const uint8_t b_m16_interleave[] = {0, 49, 49, 41, 90, 27, 117, 10};
+
+inline int absi(int i) { return i < 0 ? -i : i; }
+
+inline uint8_t qmul8(uint8_t i, uint8_t j) {
+  int p = ((int)i * (int)(j));
+  if (p > 255) { p = 255; }
+  return p;
+}
+
+inline uint8_t scale8(uint8_t i, uint8_t scale) { return ((uint16_t)i * (uint16_t)(scale)) >> 8; }
+
+inline uint8_t scale8_video(uint8_t i, uint8_t scale) {
+  uint8_t j = (((int)i * (int)scale) >> 8) + ((i && scale) ? 1 : 0);
+  return j;
+}
+
+inline uint8_t sin8(uint8_t theta) {
+  uint8_t offset = theta;
+  if (theta & 0x40) { offset = (uint8_t)255 - offset; }
+  offset &= 0x3F;  // 0..63
+
+  uint8_t secoffset = offset & 0x0F;  // 0..15
+  if (theta & 0x40) { secoffset++; }
+
+  uint8_t section = offset >> 4;  // 0..3
+  uint8_t s2 = section * 2;
+  const uint8_t* p = b_m16_interleave;
+  p += s2;
+  uint8_t b = *p;
+  p++;
+  uint8_t m16 = *p;
+
+  uint8_t mx = (m16 * secoffset) >> 4;
+
+  int8_t y = mx + b;
+  if (theta & 0x80) { y = -y; }
+
+  y += 128;
+
+  return y;
+}
+
+inline uint8_t cos8(uint8_t theta) { return sin8(theta + 64); }
+
+inline uint8_t triwave8(uint8_t in) {
+  if (in & 0x80) { in = 255 - in; }
+  uint8_t out = in << 1;
+  return out;
+}
+
+inline uint8_t ease8InOutQuad(uint8_t i) {
+  uint8_t j = i;
+  if (j & 0x80) { j = 255 - j; }
+  uint8_t jj = scale8(j, (j + 1));
+  uint8_t jj2 = jj << 1;
+  if (i & 0x80) { jj2 = 255 - jj2; }
+  return jj2;
+}
+
+inline uint8_t quadwave8(uint8_t in) { return ease8InOutQuad(triwave8(in)); }
+
+inline uint8_t qadd8(uint8_t i, uint8_t j) {
+  unsigned int t = i + j;
+  if (t > 255) { t = 255; }
+  return t;
+}
+
+inline int8_t qadd7(int8_t i, int8_t j) {
+  int16_t t = i + j;
+  if (t > 127) { t = 127; }
+  return t;
+}
+
+inline uint8_t qsub8(uint8_t i, uint8_t j) {
+  int t = i - j;
+  if (t < 0) { t = 0; }
+  return t;
+}
+
+constexpr inline int8_t abs8(int8_t i) { return i >= 0 ? i : -i; }
+
+constexpr inline int8_t avg7(int8_t i, int8_t j) { return ((i + j) >> 1) + (i & 0x1); }
+
+constexpr inline int16_t avg15(int16_t i, int16_t j) {
+  return ((int32_t)((int32_t)(i) + (int32_t)(j)) >> 1) + (i & 0x1);
+}
+
+constexpr inline uint16_t scale16(uint16_t i, uint16_t scale) {
+  return ((uint32_t)(i) * (1 + (uint32_t)(scale))) / 65536;
+}
+
+inline uint8_t lerp8by8(uint8_t a, uint8_t b, uint8_t frac) {
+  if (b > a) {
+    return a + scale8(b - a, frac);
+  } else {
+    return a - scale8(a - b, frac);
+  }
+}
+
+inline int16_t lerp15by16(int16_t a, int16_t b, uint16_t frac) {
+  if (b > a) {
+    return a + scale16(b - a, frac);
+  } else {
+    return a - scale16(a - b, frac);
+  }
+}
+
 #endif  // WEARABLE
 
 // Define our own due to <https://github.com/FastLED/FastLED/issues/1435>.

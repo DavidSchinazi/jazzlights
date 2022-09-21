@@ -8,8 +8,6 @@
 #include "jazzlights/util/math.h"
 
 namespace jazzlights {
-using internal::qsub8;
-using internal::scale8_video;
 
 namespace {
 #if IS_CAPTAIN_HAT

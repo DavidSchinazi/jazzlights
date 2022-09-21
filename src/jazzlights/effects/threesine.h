@@ -13,8 +13,6 @@ auto threesine = []() {
     uint8_t sineOffset = 256 * frame.time / 8000;
 
     return [=](const Pixel& px) -> Color {
-      using namespace internal;
-
       // Calculate "sine" waves with varying periods
       // sin8 is used for speed; cos8, quadwave8, or triwave8 would also work
       // here
