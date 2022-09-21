@@ -33,6 +33,5 @@
 #include "jazzlights/text.h"
 #include "jazzlights/types.h"
 #include "jazzlights/util/log.h"
-#include "jazzlights/vest.h"
 
 #endif  // JAZZLIGHTS_H

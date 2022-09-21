@@ -1,6 +1,8 @@
-#include <Jazzlights.h>
+#include "jazzlights/config.h"
 
 #ifdef JAZZLIGHTS_PLATFORMIO
+
+#include "jazzlights/vest.h"
 
 void setup() { jazzlights::vestSetup(); }
 

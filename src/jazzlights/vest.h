@@ -3,6 +3,11 @@
 
 #if WEARABLE
 
+#include <string>
+
+#include "jazzlights/player.h"
+#include "jazzlights/util/time.h"
+
 namespace jazzlights {
 
 void vestSetup(void);

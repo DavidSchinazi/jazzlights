@@ -1,3 +1,5 @@
+#include "jazzlights/vest.h"
+
 #include <Jazzlights.h>
 
 #include "jazzlights/instrumentation.h"
