@@ -21,7 +21,6 @@
 
 #endif  // WEARABLE
 
-#include "jazzlights/button.h"
 #include "jazzlights/core2.h"
 #include "jazzlights/layouts/matrix.h"
 #include "jazzlights/layouts/pixelmap.h"

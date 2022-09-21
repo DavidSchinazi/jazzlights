@@ -1,3 +1,5 @@
+#include "jazzlights/button.h"
+
 #include <Jazzlights.h>
 
 #if WEARABLE
