@@ -20,12 +20,13 @@
 
 #else  // WEARABLE
 
-// Copy and/or reimplement enough of FastLED to allow working on platforms that don't support FastLED.
+// We mainly use FastLED to communicate with LEDs on embedded devices. However, we also use some of FastLED's data types
+// and math functions in the rest of our code. To avoid requiring a dependency on FastLED on platforms where we don't
+// communicate with LEDs, we reimplement some FastLED features here.
 
 #include <cstdint>
 
 #define FL_PROGMEM
-#define FL_PGM_READ_BYTE_NEAR(x) (*(x))
 
 struct CRGB {
   union {
@@ -49,7 +50,7 @@ struct CRGB {
   inline CRGB(uint32_t colorcode) __attribute__((always_inline))
   : r((colorcode >> 16) & 0xFF), g((colorcode >> 8) & 0xFF), b((colorcode >> 0) & 0xFF) {}
 
-  enum KnownColors : uint32_t {
+  typedef enum {
     AliceBlue = 0xF0F8FF,
     Amethyst = 0x9966CC,
     AntiqueWhite = 0xFAEBD7,
@@ -198,15 +199,9 @@ struct CRGB {
     WhiteSmoke = 0xF5F5F5,
     Yellow = 0xFFFF00,
     YellowGreen = 0x9ACD32,
-
-    // LED RGB color that roughly approximates
-    // the color of incandescent fairy lights,
-    // assuming that you're using FastLED
-    // color correction on your LEDs (recommended).
     FairyLight = 0xFFE42D,
-    // If you are using no color correction, use this
     FairyLightNCC = 0xFF9D2A
-  };
+  } HTMLColorCode;
 };
 
 typedef uint32_t TProgmemRGBPalette16[16];
