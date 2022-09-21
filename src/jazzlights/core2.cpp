@@ -1,3 +1,5 @@
+#include "jazzlights/core2.h"
+
 #include <Jazzlights.h>
 
 #if WEARABLE && CORE2AWS

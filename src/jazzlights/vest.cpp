@@ -4,6 +4,7 @@
 
 #include "jazzlights/board.h"
 #include "jazzlights/button.h"
+#include "jazzlights/core2.h"
 #include "jazzlights/instrumentation.h"
 
 #if WEARABLE
