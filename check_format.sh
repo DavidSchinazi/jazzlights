@@ -12,6 +12,12 @@ for f in $(echo "$(find . -name '*.h' ; find . -name '*.cpp')" | grep -v /.pio/ 
   else
     if [ -n "$(clang-format --output-replacements-xml "$f" | grep '<replacement ')" ] ; then
       echo "Format issue detected in $f"
+      echo ""
+      TMP_FILE="$(mktemp /tmp/jazzlights-clang-format.XXXXXXXX)"
+      clang-format "$f" > "$TMP_FILE"
+      diff -u "$f" "$TMP_FILE"
+      rm "$TMP_FILE"
+      echo "" ; echo ""
       RET_VAL=1
     fi
   fi
