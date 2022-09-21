@@ -9,11 +9,6 @@
 
 namespace jazzlights {
 
-// Some of the code here comes from FastLED
-// https://github.com/FastLED/FastLED
-
-static inline RgbColor flToDf(CRGB ori) { return RgbColor(ori.r, ori.g, ori.b); }
-
 #define ALL_COLORS \
   X(cloud)         \
   X(lava)          \
@@ -78,7 +73,7 @@ static inline const TProgmemRGBPalette16* FastLEDPaletteFromOurColorPalette(OurC
 }
 
 static inline RgbColor colorFromOurPalette(OurColorPalette ocp, uint8_t color) {
-  return flToDf((*FastLEDPaletteFromOurColorPalette(ocp))[color >> 4]);
+  return (*FastLEDPaletteFromOurColorPalette(ocp))[color >> 4];
 }
 
 class ColorWithPalette {
@@ -89,7 +84,7 @@ class ColorWithPalette {
     col.overrideColor_ = overrideColor;
     return col;
   }
-  static ColorWithPalette OverrideCRGB(CRGB overrideColor) { return OverrideColor(flToDf(overrideColor)); }
+  static ColorWithPalette OverrideCRGB(CRGB overrideColor) { return OverrideColor(overrideColor); }
   RgbColor colorFromPalette(OurColorPalette ocp) const {
     if (colorOverridden_) { return overrideColor_; }
     return colorFromOurPalette(ocp, innerColor_);

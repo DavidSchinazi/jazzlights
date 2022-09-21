@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "jazzlights/fastled_wrapper.h"
 #include "jazzlights/util/math.h"
 
 namespace jazzlights {
@@ -23,6 +24,7 @@ struct RgbColor {
   constexpr RgbColor() : red(0), green(0), blue(0) {}
   constexpr RgbColor(uint8_t r, uint8_t g, uint8_t b) : red(r), green(g), blue(b) {}
   constexpr RgbColor(uint32_t c) : red((c >> 16) & 0xFF), green((c >> 8) & 0xFF), blue(c & 0xFF) {}
+  RgbColor(CRGB other) : RgbColor(other.r, other.g, other.b) {}
   RgbColor(HslColor c);
 
   constexpr bool operator==(const RgbColor& other) const {
