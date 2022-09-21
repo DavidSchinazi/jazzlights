@@ -74,10 +74,10 @@ inline Point operator*(double k, const Point& v) { return {Coord(k * v.x), Coord
 inline double distance(Point a, Point b) { return sqrt(square(a.x - b.x) + square(a.y - b.y)); }
 
 inline Box merge(const Box& a, const Box& b) {
-  Coord left = min(a.origin.x, b.origin.x);
-  Coord top = min(a.origin.y, b.origin.y);
-  Coord right = max(a.origin.x + a.size.width, b.origin.x + b.size.width);
-  Coord bottom = max(a.origin.y + a.size.height, b.origin.y + b.size.height);
+  Coord left = std::min(a.origin.x, b.origin.x);
+  Coord top = std::min(a.origin.y, b.origin.y);
+  Coord right = std::max(a.origin.x + a.size.width, b.origin.x + b.size.width);
+  Coord bottom = std::max(a.origin.y + a.size.height, b.origin.y + b.size.height);
   return {
       {right - left, bottom - top},
       {        left,          top}
@@ -85,10 +85,10 @@ inline Box merge(const Box& a, const Box& b) {
 }
 
 inline Box merge(const Box& a, const Point& p) {
-  Coord left = min(a.origin.x, p.x);
-  Coord top = min(a.origin.y, p.y);
-  Coord right = max(a.origin.x + a.size.width, p.x);
-  Coord bottom = max(a.origin.y + a.size.height, p.y);
+  Coord left = std::min(a.origin.x, p.x);
+  Coord top = std::min(a.origin.y, p.y);
+  Coord right = std::max(a.origin.x + a.size.width, p.x);
+  Coord bottom = std::max(a.origin.y + a.size.height, p.y);
   return {
       {right - left, bottom - top},
       {        left,          top}
@@ -96,12 +96,12 @@ inline Box merge(const Box& a, const Point& p) {
 }
 
 inline Dimensions scaleToFit(const Dimensions& src, const Dimensions& dst) {
-  auto scale = min(dst.width / src.width, dst.height / src.height);
+  auto scale = std::min(dst.width / src.width, dst.height / src.height);
   return {src.width * scale, src.height * scale};
 }
 
 inline Point translateInto(Point pos, const Box& src, const Box& dst) {
-  auto scale = min(dst.size.width / src.size.width, dst.size.height / src.size.height);
+  auto scale = std::min(dst.size.width / src.size.width, dst.size.height / src.size.height);
   return {dst.origin.x + scale * (pos.x - src.origin.x), dst.origin.y + scale * (pos.y - src.origin.y)};
 }
 

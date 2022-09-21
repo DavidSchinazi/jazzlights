@@ -11,67 +11,9 @@
 namespace jazzlights {
 
 template <class T>
-constexpr const T& min(const T& a, const T& b) {
-  return (b < a) ? b : a;
-}
-template <class T>
-constexpr const T& max(const T& a, const T& b) {
-  return (a < b) ? b : a;
-}
-template <class T>
-constexpr const T& clamp(const T& v, const T& lo, const T& hi) {
-  return (v < lo) ? lo : (hi < v) ? hi : v;
-}
-
-template <class T>
 constexpr T square(T x) {
   return x * x;
 }
-
-/**
- * Returns positive reminder
- */
-inline double amod(double a, double b) { return fabs(fmod(a, b)); }
-
-/**
- * Returns triangle wave with the period of 1 and amplitude of 1
- */
-inline double triwave(double x) {
-  // 1 - 2*abs[mod[2*x+0.5, 2]- 1]
-  return 1 - 2 * fabs(amod(2 * x + 0.5, 2) - 1);
-}
-
-namespace internal {
-
-extern uint8_t sqrt16(uint16_t x);
-
-/**
- * Online calculation of median, variance, and standard deviation
- */
-class Welford {
- public:
-  void reset() {
-    n_ = 0;
-    mean_ = m2_ = 0;
-  }
-  void add(double x) {
-    n_++;
-    double delta = x - mean_;
-    mean_ += delta / n_;
-    m2_ += delta * (x - mean_);
-  }
-
-  double mean() const { return mean_; }
-  double variance() const { return n_ < 2 ? NAN : m2_ / (n_ - 1); }
-  double stddev() const { return sqrt(variance()); }
-
- private:
-  int n_;
-  double mean_;
-  double m2_;
-};
-
-}  // namespace internal
 
 // The jlbeat* functions are almost identical to the corresponding beat* functions in FastLED/src/lib8tion.h, except
 // that they operate on elapsedTime (the time since the current pattern has started) instead of the absolute time.
