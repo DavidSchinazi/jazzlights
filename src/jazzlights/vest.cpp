@@ -1,17 +1,18 @@
 #include "jazzlights/vest.h"
 
-#include <Jazzlights.h>
+#include "jazzlights/config.h"
+
+#if WEARABLE
 
 #include "jazzlights/board.h"
 #include "jazzlights/button.h"
 #include "jazzlights/core2.h"
+#include "jazzlights/fastled_wrapper.h"
 #include "jazzlights/instrumentation.h"
 #include "jazzlights/networks/arduinoethernet.h"
 #include "jazzlights/networks/esp32_ble.h"
 #include "jazzlights/networks/esp_wifi.h"
 #include "jazzlights/player.h"
-
-#if WEARABLE
 
 #if CORE2AWS
 #define LED_PIN 32

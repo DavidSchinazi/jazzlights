@@ -1,6 +1,5 @@
-// Arduino API wrapper
-#ifndef JAZZLIGHTS_H
-#define JAZZLIGHTS_H
+#ifndef JAZZLIGHTS_FASTLED_WRAPPER_H
+#define JAZZLIGHTS_FASTLED_WRAPPER_H
 
 #include "jazzlights/config.h"
 
@@ -21,4 +20,4 @@
 
 #endif  // WEARABLE
 
-#endif  // JAZZLIGHTS_H
+#endif  // JAZZLIGHTS_FASTLED_WRAPPER_H

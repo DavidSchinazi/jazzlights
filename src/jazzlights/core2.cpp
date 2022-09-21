@@ -1,10 +1,12 @@
 #include "jazzlights/core2.h"
 
-#include <Jazzlights.h>
+#include "jazzlights/config.h"
 
 #if WEARABLE && CORE2AWS
 
 #include <M5Core2.h>
+
+#include "jazzlights/fastled_wrapper.h"
 
 namespace jazzlights {
 

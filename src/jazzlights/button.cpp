@@ -1,7 +1,6 @@
 #include "jazzlights/button.h"
 
-#include <Jazzlights.h>
-
+#include "jazzlights/fastled_wrapper.h"
 #include "jazzlights/text.h"
 
 #if WEARABLE

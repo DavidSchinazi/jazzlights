@@ -35,7 +35,7 @@ target_include_directories(jazzlights PUBLIC ../src . PRIVATE ${GLFW_INCLUDE_DIR
 target_link_libraries(jazzlights glfw ${OPENGL_gl_LIBRARY})
 set_target_properties(jazzlights PROPERTIES COMPILE_OPTIONS "-std=c++17;-fPIC;-Wall;-Wextra;-Werror;-Wno-deprecated-declarations")
 install(TARGETS jazzlights LIBRARY DESTINATION lib)
-install(DIRECTORY src/ COMPONENT "lib" DESTINATION include FILES_MATCHING PATTERN "*.h" PATTERN "Jazzlights.h" EXCLUDE)
+install(DIRECTORY src/ COMPONENT "lib" DESTINATION include FILES_MATCHING PATTERN "*.h")
 install(DIRECTORY extras/jazzlights/ COMPONENT "lib" DESTINATION include/jazzlights FILES_MATCHING PATTERN "*.h")
 
 # DEMO
