@@ -118,6 +118,54 @@ std::unique_ptr<FastLedRenderer> mainVestRenderer;
 std::unique_ptr<FastLedRenderer> mainVestRenderer2;
 #endif  // LEDNUM2
 
+void sendLedsToFastLed() {
+  {
+    const std::lock_guard<std::mutex> lock(gLockedLedMutex);
+    mainVestRenderer->copyLedsFromPlayerToLocked();
+#if LEDNUM2
+    mainVestRenderer->copyLedsFromPlayerToLocked();
+#endif  // LEDNUM2
+  }
+
+  {  // TODO move this to separate thread.
+    const std::lock_guard<std::mutex> lock(gLockedLedMutex);
+    mainVestRenderer->copyLedsFromLockedToFastLed();
+#if LEDNUM2
+    mainVestRenderer->copyLedsFromLockedToFastLed();
+#endif  // LEDNUM2
+  }
+
+  uint32_t brightness = getBrightness();  // May be reduced if this exceeds our power budget with the current pattern
+
+#if MAX_MILLIWATTS
+  uint32_t powerAtFullBrightness = mainVestRenderer->GetPowerAtFullBrightness();
+#if LEDNUM2
+  powerAtFullBrightness += mainVestRenderer->GetPowerAtFullBrightness2();
+#endif  // LEDNUM2
+  const uint32_t powerAtDesiredBrightness =
+      powerAtFullBrightness * brightness / 256;  // Forecast power at our current desired brightness
+  player.powerLimited = (powerAtDesiredBrightness > MAX_MILLIWATTS);
+  if (player.powerLimited) { brightness = brightness * MAX_MILLIWATTS / powerAtDesiredBrightness; }
+
+  jll_debug("pf%6u    pd%5u    bu%4u    bs%4u    mW%5u    mA%5u%s", powerAtFullBrightness,
+            powerAtDesiredBrightness,     // Full-brightness power, desired-brightness power
+            getBrightness(), brightness,  // Desired and selected brightness
+            powerAtFullBrightness * brightness / 256,
+            powerAtFullBrightness * brightness / 256 / 5,  // Selected power & current
+            player.powerLimited ? " (limited)" : "");
+#endif  // MAX_MILLIWATTS
+  SAVE_TIME_POINT(Brightness);
+
+  ledWriteStart();
+  mainVestRenderer->sendToLeds(brightness);
+  SAVE_TIME_POINT(MainLED);
+#if LEDNUM2
+  mainVestRenderer2->sendToLeds(brightness);
+#endif  // LEDNUM2
+  ledWriteEnd();
+  SAVE_TIME_POINT(SecondLED);
+}
+
 void vestSetup(void) {
   Milliseconds currentTime = timeMillis();
   Serial.begin(115200);
@@ -201,54 +249,6 @@ void vestSetup(void) {
 #if CORE2AWS
   core2SetupEnd(player, currentTime);
 #endif  // CORE2AWS
-}
-
-void sendLedsToFastLed() {
-  {
-    const std::lock_guard<std::mutex> lock(gLockedLedMutex);
-    mainVestRenderer->copyLedsFromPlayerToLocked();
-#if LEDNUM2
-    mainVestRenderer->copyLedsFromPlayerToLocked();
-#endif  // LEDNUM2
-  }
-
-  {  // TODO move this to separate thread.
-    const std::lock_guard<std::mutex> lock(gLockedLedMutex);
-    mainVestRenderer->copyLedsFromLockedToFastLed();
-#if LEDNUM2
-    mainVestRenderer->copyLedsFromLockedToFastLed();
-#endif  // LEDNUM2
-  }
-
-  uint32_t brightness = getBrightness();  // May be reduced if this exceeds our power budget with the current pattern
-
-#if MAX_MILLIWATTS
-  uint32_t powerAtFullBrightness = mainVestRenderer->GetPowerAtFullBrightness();
-#if LEDNUM2
-  powerAtFullBrightness += mainVestRenderer->GetPowerAtFullBrightness2();
-#endif  // LEDNUM2
-  const uint32_t powerAtDesiredBrightness =
-      powerAtFullBrightness * brightness / 256;  // Forecast power at our current desired brightness
-  player.powerLimited = (powerAtDesiredBrightness > MAX_MILLIWATTS);
-  if (player.powerLimited) { brightness = brightness * MAX_MILLIWATTS / powerAtDesiredBrightness; }
-
-  jll_debug("pf%6u    pd%5u    bu%4u    bs%4u    mW%5u    mA%5u%s", powerAtFullBrightness,
-            powerAtDesiredBrightness,     // Full-brightness power, desired-brightness power
-            getBrightness(), brightness,  // Desired and selected brightness
-            powerAtFullBrightness * brightness / 256,
-            powerAtFullBrightness * brightness / 256 / 5,  // Selected power & current
-            player.powerLimited ? " (limited)" : "");
-#endif  // MAX_MILLIWATTS
-  SAVE_TIME_POINT(Brightness);
-
-  ledWriteStart();
-  mainVestRenderer->sendToLeds(brightness);
-  SAVE_TIME_POINT(MainLED);
-#if LEDNUM2
-  mainVestRenderer2->sendToLeds(brightness);
-#endif  // LEDNUM2
-  ledWriteEnd();
-  SAVE_TIME_POINT(SecondLED);
 }
 
 void vestLoop(void) {
