@@ -141,7 +141,7 @@ void printInstrumentationInfo(Milliseconds currentTime) {
     jll_info("LED data from %lld writes: min %lld average %lld max %lld (us)", gLedTimeCount, gLedTimeMin,
              gLedTimeSum / gLedTimeCount, gLedTimeMax);
   } else {
-    jll_info("No LED data available");
+    jll_info("No LED timing data available");
   }
   gLedTimeCount = 0;
   gLedTimeSum = 0;
