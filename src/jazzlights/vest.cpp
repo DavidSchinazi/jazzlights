@@ -4,6 +4,8 @@
 
 #if WEARABLE
 
+#include <memory>
+
 #include "jazzlights/board.h"
 #include "jazzlights/button.h"
 #include "jazzlights/core2.h"
@@ -27,15 +29,48 @@
 
 namespace jazzlights {
 
-CRGB leds[LEDNUM] = {};
+class FastLedRenderer : public Renderer {
+ public:
+  explicit FastLedRenderer(size_t numLeds) : numLeds_(numLeds) {
+    leds_ = reinterpret_cast<CRGB*>(calloc(numLeds_, sizeof(CRGB)));
+    if (leds_ == nullptr) { jll_fatal("Failed to allocate %zu*%zu", numLeds_, sizeof(CRGB)); }
+  }
+  ~FastLedRenderer() { free(leds_); }
 
-void renderPixel(int i, uint8_t r, uint8_t g, uint8_t b) { leds[i] = CRGB(r, g, b); }
+  template <ESPIChipsets CHIPSET, uint8_t DATA_PIN, uint8_t CLOCK_PIN, EOrder RGB_ORDER, uint32_t SPI_DATA_RATE>
+  static std::unique_ptr<FastLedRenderer> Create(size_t numLeds) {
+    std::unique_ptr<FastLedRenderer> r = std::unique_ptr<FastLedRenderer>(new FastLedRenderer(numLeds));
+    r->ledController_ = &FastLED.addLeds<CHIPSET, DATA_PIN, CLOCK_PIN, RGB_ORDER, SPI_DATA_RATE>(r->leds_, numLeds);
+    return r;
+  }
 
-#if LEDNUM2
-CRGB leds2[LEDNUM2] = {};
+  template <template <uint8_t DATA_PIN, EOrder RGB_ORDER> class CHIPSET, uint8_t DATA_PIN, EOrder RGB_ORDER>
+  static std::unique_ptr<FastLedRenderer> Create(size_t numLeds) {
+    std::unique_ptr<FastLedRenderer> r = std::unique_ptr<FastLedRenderer>(new FastLedRenderer(numLeds));
+    r->ledController_ = &FastLED.addLeds<CHIPSET, DATA_PIN, RGB_ORDER>(r->leds_, numLeds);
+    return r;
+  }
 
-void renderPixel2(int i, uint8_t r, uint8_t g, uint8_t b) { leds2[i] = CRGB(r, g, b); }
-#endif  // LEDNUM2
+  void render(InputStream<Color>& colors) override {
+    size_t i = 0;
+    for (auto color : colors) {
+      RgbaColor rgba = color.asRgba();
+      leds_[i] = CRGB(rgba.red, rgba.green, rgba.blue);
+      i++;
+    }
+  }
+
+  uint32_t GetPowerAtFullBrightness() const {
+    return calculate_unscaled_power_mW(ledController_->leds(), ledController_->size());
+  }
+
+  void sendToLeds(uint8_t brightness = 255) { ledController_->showLeds(brightness); }
+
+ private:
+  size_t numLeds_;
+  CRGB* leds_;
+  CLEDController* ledController_;
+};
 
 EspWiFi network("FISHLIGHT", "155155155");
 #if JAZZLIGHTS_ARDUINO_ETHERNET
@@ -61,9 +96,9 @@ ArduinoEthernetNetwork ethernetNetwork(GetEthernetDeviceId());
 #endif  // JAZZLIGHTS_ARDUINO_ETHERNET
 Player player;
 
-CLEDController* mainVestController = nullptr;
+std::unique_ptr<FastLedRenderer> mainVestRenderer;
 #if LEDNUM2
-CLEDController* mainVestController2 = nullptr;
+std::unique_ptr<FastLedRenderer> mainVestRenderer2;
 #endif  // LEDNUM2
 
 void vestSetup(void) {
@@ -74,32 +109,6 @@ void vestSetup(void) {
 #else   // CORE2AWS
   setupButtons();
 #endif  // CORE2AWS
-  player.addStrand(*GetLayout(), renderPixel);
-#if LEDNUM2
-  player.addStrand(*GetLayout2(), renderPixel2);
-#endif  // LEDNUM2
-#if IS_ROBOT
-  player.setBasePrecedence(20000);
-  player.setPrecedenceGain(5000);
-#elif GECKO_FOOT
-  player.setBasePrecedence(2500);
-  player.setPrecedenceGain(1000);
-#elif FAIRY_WAND || IS_STAFF || IS_CAPTAIN_HAT
-  player.setBasePrecedence(500);
-  player.setPrecedenceGain(100);
-#else
-  player.setBasePrecedence(1000);
-  player.setPrecedenceGain(1000);
-#endif
-
-#if ESP32_BLE
-  player.connect(Esp32BleNetwork::get());
-#endif  // ESP32_BLE
-  player.connect(&network);
-#if JAZZLIGHTS_ARDUINO_ETHERNET
-  player.connect(&ethernetNetwork);
-#endif  // JAZZLIGHTS_ARDUINO_ETHERNET
-  player.begin(currentTime);
 
 #if GECKO_SCALES
   // Note to self for future reference: we were able to get the 2018 Gecko Robot scales to light
@@ -125,23 +134,53 @@ void vestSetup(void) {
   // worked while 4MHz caused visible glitches. We chose 2MHz because that allows us to run the robot at 100FPS while
   // 1MHz doesn't. Empirical data indicates that for the 378 LEDs in the robot (310 on side and 68 in head), 1MHz
   // takes 10.7ms to render while 2MHz takes 5.7ms.
-  mainVestController = &FastLED.addLeds</*CHIPSET=*/WS2801, /*DATA_PIN=*/26, /*CLOCK_PIN=*/32, /*RGB_ORDER=*/GBR,
-                                        /*SPI_SPEED=*/kSpiSpeed>(leds, sizeof(leds) / sizeof(*leds));
+  mainVestRenderer =
+      std::move(FastLedRenderer::Create</*CHIPSET=*/WS2801, /*DATA_PIN=*/26, /*CLOCK_PIN=*/32, /*RGB_ORDER=*/GBR,
+                                        /*SPI_SPEED=*/kSpiSpeed>(LEDNUM));
 #elif IS_STAFF
-  mainVestController = &FastLED.addLeds<WS2811, LED_PIN, RGB>(leds, sizeof(leds) / sizeof(*leds));
+  mainVestRenderer = std::move(FastLedRenderer::Create<WS2811, LED_PIN, RGB>(LEDNUM));
 #elif IS_ROPELIGHT
-  mainVestController = &FastLED.addLeds<WS2811, LED_PIN, BRG>(leds, sizeof(leds) / sizeof(*leds));
+  mainVestRenderer = std::move(FastLedRenderer::Create<WS2811, LED_PIN, BRG>(LEDNUM));
 #else  // Vest.
-  mainVestController = &FastLED.addLeds<WS2812B, LED_PIN, GRB>(leds, sizeof(leds) / sizeof(*leds));
+  mainVestRenderer = std::move(FastLedRenderer::Create<WS2812B, LED_PIN, GRB>(LEDNUM));
 #endif
 #if LEDNUM2
 #if GECKO_SCALES
-  mainVestController2 = &FastLED.addLeds</*CHIPSET=*/WS2801, /*DATA_PIN=*/21, /*CLOCK_PIN=*/32, /*RGB_ORDER=*/GBR,
-                                         /*SPI_SPEED=*/kSpiSpeed>(leds2, sizeof(leds2) / sizeof(*leds2));
+  mainVestRenderer2 =
+      std::move(FastLedRenderer::Create</*CHIPSET=*/WS2801, /*DATA_PIN=*/21, /*CLOCK_PIN=*/32, /*RGB_ORDER=*/GBR,
+                                        /*SPI_SPEED=*/kSpiSpeed>(LEDNUM2));
 #else   // GECKO_SCALES
-  mainVestController2 = &FastLED.addLeds<WS2812B, LED_PIN2, GRB>(leds2, sizeof(leds2) / sizeof(*leds2));
+  mainVestRenderer2 = std::move(FastLedRenderer::Create<WS2812B, LED_PIN2, GRB>(LEDNUM2));
 #endif  // GECKO_SCALES
 #endif  // LEDNUM2
+
+  player.addStrand(*GetLayout(), *mainVestRenderer);
+#if LEDNUM2
+  player.addStrand(*GetLayout2(), *mainVestRenderer2);
+#endif  // LEDNUM2
+#if IS_ROBOT
+  player.setBasePrecedence(20000);
+  player.setPrecedenceGain(5000);
+#elif GECKO_FOOT
+  player.setBasePrecedence(2500);
+  player.setPrecedenceGain(1000);
+#elif FAIRY_WAND || IS_STAFF || IS_CAPTAIN_HAT
+  player.setBasePrecedence(500);
+  player.setPrecedenceGain(100);
+#else
+  player.setBasePrecedence(1000);
+  player.setPrecedenceGain(1000);
+#endif
+
+#if ESP32_BLE
+  player.connect(Esp32BleNetwork::get());
+#endif  // ESP32_BLE
+  player.connect(&network);
+#if JAZZLIGHTS_ARDUINO_ETHERNET
+  player.connect(&ethernetNetwork);
+#endif  // JAZZLIGHTS_ARDUINO_ETHERNET
+  player.begin(currentTime);
+
 #if CORE2AWS
   core2SetupEnd(player, currentTime);
 #endif  // CORE2AWS
@@ -174,9 +213,9 @@ void vestLoop(void) {
   uint32_t brightness = getBrightness();  // May be reduced if this exceeds our power budget with the current pattern
 
 #if MAX_MILLIWATTS
-  uint32_t powerAtFullBrightness = calculate_unscaled_power_mW(mainVestController->leds(), mainVestController->size());
+  uint32_t powerAtFullBrightness = mainVestRenderer->GetPowerAtFullBrightness();
 #if LEDNUM2
-  powerAtFullBrightness += calculate_unscaled_power_mW(mainVestController2->leds(), mainVestController2->size());
+  powerAtFullBrightness += mainVestRenderer->GetPowerAtFullBrightness2();
 #endif  // LEDNUM2
   const uint32_t powerAtDesiredBrightness =
       powerAtFullBrightness * brightness / 256;  // Forecast power at our current desired brightness
@@ -193,10 +232,10 @@ void vestLoop(void) {
   SAVE_TIME_POINT(Brightness);
 
   ledWriteStart();
-  mainVestController->showLeds(brightness);
+  mainVestRenderer->sendToLeds(brightness);
   SAVE_TIME_POINT(MainLED);
 #if LEDNUM2
-  mainVestController2->showLeds(brightness);
+  mainVestRenderer2->sendToLeds(brightness);
 #endif  // LEDNUM2
   ledWriteEnd();
   SAVE_TIME_POINT(SecondLED);

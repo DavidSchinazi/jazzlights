@@ -23,7 +23,6 @@
 #include "jazzlights/instrumentation.h"
 #include "jazzlights/pseudorandom.h"
 #include "jazzlights/registry.h"
-#include "jazzlights/renderers/simple.h"
 #include "jazzlights/util/containers.h"
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/math.h"
@@ -279,8 +278,6 @@ Player& Player::clearStrands() {
   strandCount_ = 0;
   return *this;
 }
-
-Player& Player::addStrand(const Layout& l, SimpleRenderFunc r) { return addStrand(l, make<SimpleRenderer>(r)); }
 
 Player& Player::addStrand(const Layout& l, Renderer& r) {
   constexpr size_t MAX_STRANDS = sizeof(strands_) / sizeof(*strands_);

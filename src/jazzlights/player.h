@@ -8,7 +8,6 @@
 #include "jazzlights/pseudorandom.h"
 #include "jazzlights/registry.h"
 #include "jazzlights/renderer.h"
-#include "jazzlights/renderers/simple.h"
 
 #ifndef START_SPECIAL
 #define START_SPECIAL 0
@@ -32,7 +31,6 @@ class Player {
   // Constructing the player
   Player& clearStrands();
   Player& addStrand(const Layout& l, Renderer& r);
-  Player& addStrand(const Layout& l, SimpleRenderFunc r);
   Player& connect(Network* n);
 
   /**
