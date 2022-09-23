@@ -4,8 +4,18 @@
 
 #if WEARABLE
 
+#ifndef JL_FASTLED_ASYNC
+#ifdef ESP32
+#define JL_FASTLED_ASYNC 1
+#else  // ESP32
+#define JL_FASTLED_ASYNC 0
+#endif  // ESP32
+#endif  // JL_FASTLED_ASYNC
+
 #include <memory>
+#if JL_FASTLED_ASYNC
 #include <mutex>
+#endif  // JL_FASTLED_ASYNC
 
 #include "jazzlights/board.h"
 #include "jazzlights/button.h"
@@ -30,7 +40,9 @@
 
 namespace jazzlights {
 
+#if JL_FASTLED_ASYNC
 static std::mutex gLockedLedMutex;
+#endif  // JL_FASTLED_ASYNC
 
 class FastLedRenderer : public Renderer {
  public:
@@ -76,14 +88,25 @@ class FastLedRenderer : public Renderer {
     return calculate_unscaled_power_mW(ledController_->leds(), ledController_->size());
   }
 
-  void copyLedsFromPlayerToLocked() { memcpy(ledsLocked_, ledsPlayer_, ledMemorySize_); }
-  void copyLedsFromLockedToFastLed() { memcpy(ledsFastLed_, ledsLocked_, ledMemorySize_); }
+  void copyLedsFromPlayerToLocked() {
+    freshLedLockedDataAvailable_ = true;
+    memcpy(ledsLocked_, ledsPlayer_, ledMemorySize_);
+  }
+  bool copyLedsFromLockedToFastLed() {
+    const bool freshData = freshLedLockedDataAvailable_;
+    if (freshData) {
+      memcpy(ledsFastLed_, ledsLocked_, ledMemorySize_);
+      freshLedLockedDataAvailable_ = false;
+    }
+    return freshData;
+  }
 
   void sendToLeds(uint8_t brightness = 255) { ledController_->showLeds(brightness); }
 
  private:
   size_t ledMemorySize_;
   CRGB* ledsPlayer_;
+  bool freshLedLockedDataAvailable_ = false;
   CRGB* ledsLocked_;  // Protected by gLockedLedMutex.
   CRGB* ledsFastLed_;
   CLEDController* ledController_;
@@ -119,21 +142,24 @@ std::unique_ptr<FastLedRenderer> mainVestRenderer2;
 #endif  // LEDNUM2
 
 void sendLedsToFastLed() {
+  bool shouldWrite;
+#if LEDNUM2
+  bool shouldWrite2;
+#endif  // LEDNUM2
   {
+#if JL_FASTLED_ASYNC
     const std::lock_guard<std::mutex> lock(gLockedLedMutex);
-    mainVestRenderer->copyLedsFromPlayerToLocked();
+#endif  // JL_FASTLED_ASYNC
+    shouldWrite = mainVestRenderer->copyLedsFromLockedToFastLed();
 #if LEDNUM2
-    mainVestRenderer->copyLedsFromPlayerToLocked();
+    shouldWrite2 = mainVestRenderer2->copyLedsFromLockedToFastLed();
 #endif  // LEDNUM2
   }
-
-  {  // TODO move this to separate thread.
-    const std::lock_guard<std::mutex> lock(gLockedLedMutex);
-    mainVestRenderer->copyLedsFromLockedToFastLed();
 #if LEDNUM2
-    mainVestRenderer->copyLedsFromLockedToFastLed();
+  if (!shouldWrite && !shouldWrite2) { return; }
+#else   // LEDNUM2
+  if (!shouldWrite) { return; }
 #endif  // LEDNUM2
-  }
 
   uint32_t brightness = getBrightness();  // May be reduced if this exceeds our power budget with the current pattern
 
@@ -157,14 +183,25 @@ void sendLedsToFastLed() {
   SAVE_TIME_POINT(Brightness);
 
   ledWriteStart();
-  mainVestRenderer->sendToLeds(brightness);
+  if (shouldWrite) { mainVestRenderer->sendToLeds(brightness); }
   SAVE_TIME_POINT(MainLED);
 #if LEDNUM2
-  mainVestRenderer2->sendToLeds(brightness);
+  if (shouldWrite2) { mainVestRenderer2->sendToLeds(brightness); }
 #endif  // LEDNUM2
   ledWriteEnd();
   SAVE_TIME_POINT(SecondLED);
 }
+
+#if JL_FASTLED_ASYNC
+void fastLedTaskFunction(void* /*parameters*/) {
+  while (true) {
+    // jll_info("Start sending LEDs to FastLED");
+    sendLedsToFastLed();
+    // jll_info("Done sending LEDs to FastLED");
+    vTaskDelay(1);  // Yield.
+  }
+}
+#endif  // JL_FASTLED_ASYNC
 
 void vestSetup(void) {
   Milliseconds currentTime = timeMillis();
@@ -249,6 +286,15 @@ void vestSetup(void) {
 #if CORE2AWS
   core2SetupEnd(player, currentTime);
 #endif  // CORE2AWS
+
+#if JL_FASTLED_ASYNC
+  TaskHandle_t fastLedTaskHandle;
+  // The Arduino loop is pinned to core 1 so we pin FastLED writes to core 0.
+  BaseType_t ret = xTaskCreatePinnedToCore(fastLedTaskFunction, "FastLED", 4000 /*configMINIMAL_STACK_SIZE*/,
+                                           /*parameters=*/nullptr,
+                                           /*priority=*/30, &fastLedTaskHandle, /*coreID=*/0);
+  if (ret != pdPASS) { jll_fatal("Failed to create FastLED task"); }
+#endif  // JL_FASTLED_ASYNC
 }
 
 void vestLoop(void) {
@@ -275,7 +321,21 @@ void vestLoop(void) {
   const bool shouldRender = player.render(currentTime);
   SAVE_TIME_POINT(Player);
   if (!shouldRender) { return; }
+  {
+#if JL_FASTLED_ASYNC
+    const std::lock_guard<std::mutex> lock(gLockedLedMutex);
+#endif  // JL_FASTLED_ASYNC
+    mainVestRenderer->copyLedsFromPlayerToLocked();
+#if LEDNUM2
+    mainVestRenderer2->copyLedsFromPlayerToLocked();
+#endif  // LEDNUM2
+  }
+
+#if JL_FASTLED_ASYNC
+  vTaskDelay(1);  // Yield.
+#else             // !JL_FASTLED_ASYNC
   sendLedsToFastLed();
+#endif            // !JL_FASTLED_ASYNC
 }
 
 std::string wifiStatus(Milliseconds currentTime) { return network.statusStr(currentTime); }
