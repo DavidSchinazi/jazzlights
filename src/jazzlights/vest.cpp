@@ -5,6 +5,7 @@
 #if WEARABLE
 
 #include <memory>
+#include <mutex>
 
 #include "jazzlights/board.h"
 #include "jazzlights/button.h"
@@ -29,25 +30,36 @@
 
 namespace jazzlights {
 
+static std::mutex gLockedLedMutex;
+
 class FastLedRenderer : public Renderer {
  public:
-  explicit FastLedRenderer(size_t numLeds) : numLeds_(numLeds) {
-    leds_ = reinterpret_cast<CRGB*>(calloc(numLeds_, sizeof(CRGB)));
-    if (leds_ == nullptr) { jll_fatal("Failed to allocate %zu*%zu", numLeds_, sizeof(CRGB)); }
+  explicit FastLedRenderer(size_t numLeds) : ledMemorySize_(numLeds * sizeof(CRGB)) {
+    ledsPlayer_ = reinterpret_cast<CRGB*>(calloc(ledMemorySize_, 1));
+    ledsLocked_ = reinterpret_cast<CRGB*>(calloc(ledMemorySize_, 1));
+    ledsFastLed_ = reinterpret_cast<CRGB*>(calloc(ledMemorySize_, 1));
+    if (ledsPlayer_ == nullptr || ledsLocked_ == nullptr || ledsFastLed_ == nullptr) {
+      jll_fatal("Failed to allocate %zu*%zu", numLeds, sizeof(CRGB));
+    }
   }
-  ~FastLedRenderer() { free(leds_); }
+  ~FastLedRenderer() {
+    free(ledsPlayer_);
+    free(ledsLocked_);
+    free(ledsFastLed_);
+  }
 
   template <ESPIChipsets CHIPSET, uint8_t DATA_PIN, uint8_t CLOCK_PIN, EOrder RGB_ORDER, uint32_t SPI_DATA_RATE>
   static std::unique_ptr<FastLedRenderer> Create(size_t numLeds) {
     std::unique_ptr<FastLedRenderer> r = std::unique_ptr<FastLedRenderer>(new FastLedRenderer(numLeds));
-    r->ledController_ = &FastLED.addLeds<CHIPSET, DATA_PIN, CLOCK_PIN, RGB_ORDER, SPI_DATA_RATE>(r->leds_, numLeds);
+    r->ledController_ =
+        &FastLED.addLeds<CHIPSET, DATA_PIN, CLOCK_PIN, RGB_ORDER, SPI_DATA_RATE>(r->ledsFastLed_, numLeds);
     return r;
   }
 
   template <template <uint8_t DATA_PIN, EOrder RGB_ORDER> class CHIPSET, uint8_t DATA_PIN, EOrder RGB_ORDER>
   static std::unique_ptr<FastLedRenderer> Create(size_t numLeds) {
     std::unique_ptr<FastLedRenderer> r = std::unique_ptr<FastLedRenderer>(new FastLedRenderer(numLeds));
-    r->ledController_ = &FastLED.addLeds<CHIPSET, DATA_PIN, RGB_ORDER>(r->leds_, numLeds);
+    r->ledController_ = &FastLED.addLeds<CHIPSET, DATA_PIN, RGB_ORDER>(r->ledsFastLed_, numLeds);
     return r;
   }
 
@@ -55,7 +67,7 @@ class FastLedRenderer : public Renderer {
     size_t i = 0;
     for (auto color : colors) {
       RgbaColor rgba = color.asRgba();
-      leds_[i] = CRGB(rgba.red, rgba.green, rgba.blue);
+      ledsPlayer_[i] = CRGB(rgba.red, rgba.green, rgba.blue);
       i++;
     }
   }
@@ -64,11 +76,16 @@ class FastLedRenderer : public Renderer {
     return calculate_unscaled_power_mW(ledController_->leds(), ledController_->size());
   }
 
+  void copyLedsFromPlayerToLocked() { memcpy(ledsLocked_, ledsPlayer_, ledMemorySize_); }
+  void copyLedsFromLockedToFastLed() { memcpy(ledsFastLed_, ledsLocked_, ledMemorySize_); }
+
   void sendToLeds(uint8_t brightness = 255) { ledController_->showLeds(brightness); }
 
  private:
-  size_t numLeds_;
-  CRGB* leds_;
+  size_t ledMemorySize_;
+  CRGB* ledsPlayer_;
+  CRGB* ledsLocked_;  // Protected by gLockedLedMutex.
+  CRGB* ledsFastLed_;
   CLEDController* ledController_;
 };
 
@@ -230,6 +247,22 @@ void vestLoop(void) {
             player.powerLimited ? " (limited)" : "");
 #endif  // MAX_MILLIWATTS
   SAVE_TIME_POINT(Brightness);
+
+  {
+    const std::lock_guard<std::mutex> lock(gLockedLedMutex);
+    mainVestRenderer->copyLedsFromPlayerToLocked();
+#if LEDNUM2
+    mainVestRenderer->copyLedsFromPlayerToLocked();
+#endif  // LEDNUM2
+  }
+
+  {  // TODO move this to separate thread.
+    const std::lock_guard<std::mutex> lock(gLockedLedMutex);
+    mainVestRenderer->copyLedsFromLockedToFastLed();
+#if LEDNUM2
+    mainVestRenderer->copyLedsFromLockedToFastLed();
+#endif  // LEDNUM2
+  }
 
   ledWriteStart();
   mainVestRenderer->sendToLeds(brightness);
