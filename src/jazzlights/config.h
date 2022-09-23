@@ -8,7 +8,7 @@
 // Pick which vest to build here.
 #if !defined(CAMP_SIGN) && !defined(IS_ROPELIGHT) && !defined(ORANGE_VEST) && !defined(HAMMER) && \
     !defined(IS_GUPPY) && !defined(GECKO_FOOT) && !defined(FAIRY_WAND) && !defined(IS_STAFF) &&   \
-    !defined(IS_CAPTAIN_HAT) && !defined(IS_GAUNTLET) && !defined(IS_ROBOT)
+    !defined(IS_CAPTAIN_HAT) && !defined(IS_GAUNTLET) && !defined(IS_ROBOT) && !defined(IS_CABOOSE_WALL)
 #define ORANGE_VEST WEARABLE
 #endif
 
@@ -27,6 +27,10 @@
 #ifndef GECKO_FOOT
 #define GECKO_FOOT 0
 #endif  // GECKO_FOOT
+
+#ifndef IS_CABOOSE_WALL
+#define IS_CABOOSE_WALL 0
+#endif  // IS_CABOOSE_WALL
 
 #ifndef IS_ROBOT
 #define IS_ROBOT 0
@@ -72,6 +76,10 @@
 #ifndef GECKO_SCALES
 #define GECKO_SCALES 0
 #endif  // GECKO_SCALES
+
+#ifndef CABOOSE_LIGHTS
+#define CABOOSE_LIGHTS 0
+#endif  // CABOOSE_LIGHTS
 
 #ifndef IS_STAFF
 #define IS_STAFF 0

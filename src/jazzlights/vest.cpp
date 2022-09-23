@@ -60,6 +60,7 @@ class FastLedRenderer : public Renderer {
     free(ledsFastLed_);
   }
 
+  // 4 wires with specified data rate.
   template <ESPIChipsets CHIPSET, uint8_t DATA_PIN, uint8_t CLOCK_PIN, EOrder RGB_ORDER, uint32_t SPI_DATA_RATE>
   static std::unique_ptr<FastLedRenderer> Create(size_t numLeds) {
     std::unique_ptr<FastLedRenderer> r = std::unique_ptr<FastLedRenderer>(new FastLedRenderer(numLeds));
@@ -68,6 +69,15 @@ class FastLedRenderer : public Renderer {
     return r;
   }
 
+  // 4 wires with default data rate.
+  template <ESPIChipsets CHIPSET, uint8_t DATA_PIN, uint8_t CLOCK_PIN, EOrder RGB_ORDER>
+  static std::unique_ptr<FastLedRenderer> Create(size_t numLeds) {
+    std::unique_ptr<FastLedRenderer> r = std::unique_ptr<FastLedRenderer>(new FastLedRenderer(numLeds));
+    r->ledController_ = &FastLED.addLeds<CHIPSET, DATA_PIN, CLOCK_PIN, RGB_ORDER>(r->ledsFastLed_, numLeds);
+    return r;
+  }
+
+  // 3 wires.
   template <template <uint8_t DATA_PIN, EOrder RGB_ORDER> class CHIPSET, uint8_t DATA_PIN, EOrder RGB_ORDER>
   static std::unique_ptr<FastLedRenderer> Create(size_t numLeds) {
     std::unique_ptr<FastLedRenderer> r = std::unique_ptr<FastLedRenderer>(new FastLedRenderer(numLeds));
@@ -239,6 +249,15 @@ void vestSetup(void) {
   mainVestRenderer =
       std::move(FastLedRenderer::Create</*CHIPSET=*/WS2801, /*DATA_PIN=*/26, /*CLOCK_PIN=*/32, /*RGB_ORDER=*/GBR,
                                         /*SPI_SPEED=*/kSpiSpeed>(LEDNUM));
+#elif CABOOSE_LIGHTS
+  // The caboose uses Total Control Lighing from Cool Neon.
+  // https://www.coolneon.com/tutorials-2/total-control-lighting/total-control-lighting-faq/
+  // Atom Matrix Black = Ground = TCL Blue
+  // Atom Matrix Red = 5VDC = TCL Red
+  // Atom Matrix Yellow (G26) = Data = TCL Green
+  // Atom Matrix White (G32) = Clock = TCL Yellow
+  mainVestRenderer = std::move(FastLedRenderer::Create</*CHIPSET=*/P9813, /*DATA_PIN=*/26, /*CLOCK_PIN=*/32,
+                                                       /*RGB_ORDER=*/RGB>(LEDNUM));
 #elif IS_STAFF
   mainVestRenderer = std::move(FastLedRenderer::Create<WS2811, LED_PIN, RGB>(LEDNUM));
 #elif IS_ROPELIGHT

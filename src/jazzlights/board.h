@@ -25,6 +25,10 @@ namespace jazzlights {
 #define LEDNUM 102
 #endif  // GECKO_FOOT
 
+#if IS_CABOOSE_WALL
+#define LEDNUM 206
+#endif  // IS_CABOOSE_WALL
+
 #if IS_ROBOT
 #define LEDNUM 310
 #define LEDNUM2 68
