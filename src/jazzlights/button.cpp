@@ -18,6 +18,9 @@ namespace jazzlights {
 #if ATOM_MATRIX_SCREEN
 #define ATOM_SCREEN_NUM_LEDS 25
 CRGB atomScreenLEDs[ATOM_SCREEN_NUM_LEDS] = {};
+CRGB atomScreenLEDsLastWrite[ATOM_SCREEN_NUM_LEDS] = {};
+CRGB atomScreenLEDsAllZero[ATOM_SCREEN_NUM_LEDS] = {};
+uint8_t brightnessLastWrite = 255;
 #endif  // ATOM_MATRIX_SCREEN
 
 #if defined(ESP32)
@@ -221,7 +224,15 @@ void atomScreenDisplay(const Milliseconds currentMillis) {
   // For t values 8..15 we add that to 4 to get brightness 12..19
   // This gives us a brightness that starts at 20, dims to 12, and then brightens back to 20 every second
   const uint32_t t = (currentMillis >> 6) & 0xF;
-  atomMatrixScreenController->showLeds(t & 8 ? 4 + t : 20 - t);
+  uint8_t brightness = t & 8 ? 4 + t : 20 - t;
+  if (memcmp(atomScreenLEDs, atomScreenLEDsAllZero, sizeof(atomScreenLEDs)) == 0) { brightness = 0; }
+  if (brightness == brightnessLastWrite &&
+      memcmp(atomScreenLEDs, atomScreenLEDsLastWrite, sizeof(atomScreenLEDs)) == 0) {
+    return;
+  }
+  brightnessLastWrite = brightness;
+  memcpy(atomScreenLEDsLastWrite, atomScreenLEDs, sizeof(atomScreenLEDs));
+  atomMatrixScreenController->showLeds(brightness);
 }
 
 uint8_t getReceiveTimeBrightness(Milliseconds lastReceiveTime, Milliseconds currentMillis) {
