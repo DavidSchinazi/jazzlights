@@ -32,6 +32,24 @@ EspWiFi::EspWiFi(const char* ssid, const char* pass) : creds_{ssid, pass} {
   localDeviceId_ = NetworkDeviceId(WiFi.macAddress(&macAddress[0]));
 }
 
+#ifdef ESP32
+void WiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
+  switch (event) {
+    case ARDUINO_EVENT_WIFI_READY: jll_info("Wi-Fi ready"); break;
+    case ARDUINO_EVENT_WIFI_STA_CONNECTED: jll_info("Wi-Fi connected to \"%s\"", info.wifi_sta_connected.ssid); break;
+    case ARDUINO_EVENT_WIFI_STA_GOT_IP:
+      jll_info("Wi-Fi got IP %u.%u.%u.%u", nfo.got_ip.ip_info.ip.addr & 0xFF, (info.got_ip.ip_info.ip.addr >> 8) & 0xFF,
+               (info.got_ip.ip_info.ip.addr >> 16) & 0xFF, (info.got_ip.ip_info.ip.addr >> 24) & 0xFF);
+      break;
+    case ARDUINO_EVENT_WIFI_STA_LOST_IP: jll_info("Wi-Fi lost IP"); break;
+    case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
+      jll_info("Wi-Fi disconnected reason=%u", info.wifi_sta_disconnected.reason);
+      break;
+    default: break;
+  }
+}
+#endif  // ESP32
+
 NetworkStatus EspWiFi::update(NetworkStatus status, Milliseconds currentTime) {
   const wl_status_t newWiFiStatus = WiFi.status();
   if (newWiFiStatus != currentWiFiStatus_) {
@@ -73,7 +91,13 @@ NetworkStatus EspWiFi::update(NetworkStatus status, Milliseconds currentTime) {
         snm.fromString(staticConf_->subnetMask);
         WiFi.config(ip, gw, snm);
       }
-
+#ifdef ESP32
+      WiFi.onEvent(WiFiEvent, ARDUINO_EVENT_WIFI_READY);
+      WiFi.onEvent(WiFiEvent, ARDUINO_EVENT_WIFI_STA_CONNECTED);
+      WiFi.onEvent(WiFiEvent, ARDUINO_EVENT_WIFI_STA_GOT_IP);
+      WiFi.onEvent(WiFiEvent, ARDUINO_EVENT_WIFI_STA_LOST_IP);
+      WiFi.onEvent(WiFiEvent, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
+#endif  // ESP32
       wl_status_t beginWiFiStatus = WiFi.begin(creds_.ssid, creds_.pass);
       jll_info("%u %s Wi-Fi begin to %s returned %s", currentTime, networkName(), creds_.ssid,
                WiFiStatusToString(beginWiFiStatus).c_str());
