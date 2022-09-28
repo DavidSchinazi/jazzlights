@@ -165,6 +165,7 @@ void sendLedsToFastLed() {
     shouldWrite2 = mainVestRenderer2->copyLedsFromLockedToFastLed();
 #endif  // LEDNUM2
   }
+  SAVE_COUNT_POINT(LedPrintLoop);
 #if LEDNUM2
   if (!shouldWrite && !shouldWrite2) { return; }
 #else   // LEDNUM2
@@ -193,6 +194,7 @@ void sendLedsToFastLed() {
   SAVE_TIME_POINT(Brightness);
 
   ledWriteStart();
+  SAVE_COUNT_POINT(LedPrintSend);
   if (shouldWrite) { mainVestRenderer->sendToLeds(brightness); }
   SAVE_TIME_POINT(MainLED);
 #if LEDNUM2

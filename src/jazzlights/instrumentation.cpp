@@ -39,8 +39,41 @@ struct TimePointData {
 
 TimePointData gTimePointDatas[kNumTimePoints];
 
-void clearTimePoints() {
+void printAndClearTimePoints() {
+  int64_t totalTimePointsSum = 0;
+  for (size_t i = 0; i < kNumTimePoints; i++) { totalTimePointsSum += gTimePointDatas[i].sumTimes; }
+  const int64_t minPercentOffset = totalTimePointsSum / 200;
+  for (size_t i = 0; i < kNumTimePoints; i++) {
+    jll_info("%12s: %2lld%% %8lld", TimePointToString(static_cast<TimePoint>(i)),
+             (gTimePointDatas[i].sumTimes * 100 + minPercentOffset) / totalTimePointsSum, gTimePointDatas[i].sumTimes);
+  }
   for (size_t i = 0; i < kNumTimePoints; i++) { gTimePointDatas[i] = TimePointData(); }
+}
+
+const char* CountPointToString(CountPoint countPoint) {
+  switch (countPoint) {
+#define X(v) \
+  case k##v: return #v;
+    ALL_COUNT_POINTS
+#undef X
+  }
+  return "Unknown";
+}
+
+int64_t gLastCountPointPrint = -1;
+uint64_t gCountPointDatas[kNumCountPoints];
+
+void printAndClearCountPoints() {
+  int64_t curTime = esp_timer_get_time();
+  if (gLastCountPointPrint >= 0) {
+    const int64_t period = curTime - gLastCountPointPrint;
+    for (size_t i = 0; i < kNumCountPoints; i++) {
+      jll_info("%12s: %lld counts/s", CountPointToString(static_cast<CountPoint>(i)),
+               gCountPointDatas[i] * 1000000 / period);
+    }
+  }
+  gLastCountPointPrint = curTime;
+  for (size_t i = 0; i < kNumCountPoints; i++) { gCountPointDatas[i] = 0; }
 }
 
 }  // namespace
@@ -57,6 +90,8 @@ void saveTimePoint(TimePoint timePoint) {
   }
   if (timePoint == kMainLED) { gNumLedWrites++; }
 }
+
+void saveCountPoint(CountPoint countPoint) { gCountPointDatas[countPoint]++; }
 
 int64_t gLastLedStart = 0;
 int64_t gLedTimeSum = 0;
@@ -125,14 +160,8 @@ void printInstrumentationInfo(Milliseconds currentTime) {
   free(tastStatuses);
 #endif  // JL_INSTRUMENTATION
 #if JL_TIMING
-  int64_t totalTimePointsSum = 0;
-  for (size_t i = 0; i < kNumTimePoints; i++) { totalTimePointsSum += gTimePointDatas[i].sumTimes; }
-  const int64_t minPercentOffset = totalTimePointsSum / 200;
-  for (size_t i = 0; i < kNumTimePoints; i++) {
-    jll_info("%12s: %2lld%% %8lld", TimePointToString(static_cast<TimePoint>(i)),
-             (gTimePointDatas[i].sumTimes * 100 + minPercentOffset) / totalTimePointsSum, gTimePointDatas[i].sumTimes);
-  }
-  clearTimePoints();
+  printAndClearTimePoints();
+  printAndClearCountPoints();
   jll_info("Wrote to LEDs %f times per second",
            static_cast<double>(gNumLedWrites) * 1000 / (currentTime - lastInstrumentationLog));
   gNumLedWrites = 0;

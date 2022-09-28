@@ -38,6 +38,21 @@ void ledWriteEnd();
 
 #define SAVE_TIME_POINT(v) saveTimePoint(k##v)
 
+#define ALL_COUNT_POINTS \
+  X(LedPrintLoop)        \
+  X(LedPrintSend)        \
+  X(NumCountPoints)  // Leave this as last member.
+
+enum CountPoint {
+#define X(v) k##v,
+  ALL_COUNT_POINTS
+#undef X
+};
+
+void saveCountPoint(CountPoint countPoint);
+
+#define SAVE_COUNT_POINT(v) saveCountPoint(k##v)
+
 #else  // JL_TIMING
 
 #define SAVE_TIME_POINT(v) \
@@ -45,6 +60,10 @@ void ledWriteEnd();
   } while (false)
 inline void ledWriteStart() {}
 inline void ledWriteEnd() {}
+
+#define SAVE_COUNT_POINT(v) \
+  do {                      \
+  } while (false)
 
 #endif  // JL_TIMING
 
