@@ -205,12 +205,17 @@ void sendLedsToFastLed() {
 }
 
 #if JL_FASTLED_ASYNC
+TaskHandle_t gFastLedTaskHandle = nullptr;
+// Index 0 is normally reserved by FreeRTOS for stream and message buffers. However, the default precompiled FreeRTOS
+// kernel for arduino/esp-idf only allows a single notification, so we use index 0 here. We don't use stream or message
+// buffers on this specific task so we should be fine.
+constexpr UBaseType_t kFastLedNotificationIndex = 0;
+static_assert(kFastLedNotificationIndex < configTASK_NOTIFICATION_ARRAY_ENTRIES, "index too high");
 void fastLedTaskFunction(void* /*parameters*/) {
   while (true) {
-    // jll_info("Start sending LEDs to FastLED");
     sendLedsToFastLed();
-    // jll_info("Done sending LEDs to FastLED");
-    vTaskDelay(1);  // Yield.
+    // Block this task until we are notified that there is new data to write.
+    (void)ulTaskGenericNotifyTake(kFastLedNotificationIndex, pdTRUE, portMAX_DELAY);
   }
 }
 #endif  // JL_FASTLED_ASYNC
@@ -309,11 +314,10 @@ void vestSetup(void) {
 #endif  // CORE2AWS
 
 #if JL_FASTLED_ASYNC
-  TaskHandle_t fastLedTaskHandle;
   // The Arduino loop is pinned to core 1 so we pin FastLED writes to core 0.
   BaseType_t ret = xTaskCreatePinnedToCore(fastLedTaskFunction, "FastLED", 4000 /*configMINIMAL_STACK_SIZE*/,
                                            /*parameters=*/nullptr,
-                                           /*priority=*/30, &fastLedTaskHandle, /*coreID=*/0);
+                                           /*priority=*/30, &gFastLedTaskHandle, /*coreID=*/0);
   if (ret != pdPASS) { jll_fatal("Failed to create FastLED task"); }
 #endif  // JL_FASTLED_ASYNC
 }
@@ -353,10 +357,12 @@ void vestLoop(void) {
   }
 
 #if JL_FASTLED_ASYNC
-  vTaskDelay(1);  // Yield.
-#else             // !JL_FASTLED_ASYNC
+  // Notify the FastLED task that there is new data to write.
+  (void)xTaskGenericNotify(gFastLedTaskHandle, kFastLedNotificationIndex,
+                           /*notification_value=*/0, eNoAction, /*previousNotificationValue=*/nullptr);
+#else   // !JL_FASTLED_ASYNC
   sendLedsToFastLed();
-#endif            // !JL_FASTLED_ASYNC
+#endif  // !JL_FASTLED_ASYNC
 }
 
 std::string wifiStatus(Milliseconds currentTime) { return network.statusStr(currentTime); }
