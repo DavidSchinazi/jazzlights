@@ -360,9 +360,10 @@ void vestLoop(void) {
   // Notify the FastLED task that there is new data to write.
   (void)xTaskGenericNotify(gFastLedTaskHandle, kFastLedNotificationIndex,
                            /*notification_value=*/0, eNoAction, /*previousNotificationValue=*/nullptr);
-#else   // !JL_FASTLED_ASYNC
+  vTaskDelay(1);  // Yield.
+#else             // !JL_FASTLED_ASYNC
   sendLedsToFastLed();
-#endif  // !JL_FASTLED_ASYNC
+#endif            // !JL_FASTLED_ASYNC
 }
 
 std::string wifiStatus(Milliseconds currentTime) { return network.statusStr(currentTime); }
