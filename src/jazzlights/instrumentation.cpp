@@ -68,8 +68,8 @@ void printAndClearCountPoints() {
   if (gLastCountPointPrint >= 0) {
     const int64_t period = curTime - gLastCountPointPrint;
     for (size_t i = 0; i < kNumCountPoints; i++) {
-      jll_info("%12s: %lld counts/s", CountPointToString(static_cast<CountPoint>(i)),
-               gCountPointDatas[i] * 1000000 / period);
+      jll_info("%12s: %f counts/s", CountPointToString(static_cast<CountPoint>(i)),
+               1000000.0 * gCountPointDatas[i] / period);
     }
   }
   gLastCountPointPrint = curTime;
