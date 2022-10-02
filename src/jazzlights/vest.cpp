@@ -122,10 +122,9 @@ class FastLedRenderer : public Renderer {
   CLEDController* ledController_;
 };
 
-EspWiFi network(JL_WIFI_SSID, JL_WIFI_PASSWORD);
 #if JAZZLIGHTS_ARDUINO_ETHERNET
 NetworkDeviceId GetEthernetDeviceId() {
-  NetworkDeviceId deviceId = network.getLocalDeviceId();
+  NetworkDeviceId deviceId = EspWiFi::get()->getLocalDeviceId();
   deviceId.data()[5]++;
   if (deviceId.data()[5] == 0) {
     deviceId.data()[4]++;
@@ -303,7 +302,7 @@ void vestSetup(void) {
 #if ESP32_BLE
   player.connect(Esp32BleNetwork::get());
 #endif  // ESP32_BLE
-  player.connect(&network);
+  player.connect(EspWiFi::get());
 #if JAZZLIGHTS_ARDUINO_ETHERNET
   player.connect(&ethernetNetwork);
 #endif  // JAZZLIGHTS_ARDUINO_ETHERNET
@@ -330,7 +329,7 @@ void vestLoop(void) {
 #else  // CORE2AWS
   SAVE_TIME_POINT(Core2);
   // Read, debounce, and process the buttons, and perform actions based on button state.
-  doButtons(player, network,
+  doButtons(player, *EspWiFi::get(),
 #if ESP32_BLE
             *Esp32BleNetwork::get(),
 #endif  // ESP32_BLE
@@ -366,7 +365,7 @@ void vestLoop(void) {
 #endif            // !JL_FASTLED_ASYNC
 }
 
-std::string wifiStatus(Milliseconds currentTime) { return network.statusStr(currentTime); }
+std::string wifiStatus(Milliseconds currentTime) { return EspWiFi::get()->statusStr(currentTime); }
 
 std::string bleStatus(Milliseconds currentTime) {
 #if ESP32_BLE
@@ -378,7 +377,7 @@ std::string bleStatus(Milliseconds currentTime) {
 
 std::string otherStatus(Player& player, Milliseconds currentTime) {
   char otherStatusStr[100] = "Leading";
-  if (player.followedNextHopNetwork() == &network) {
+  if (player.followedNextHopNetwork() == EspWiFi::get()) {
     snprintf(otherStatusStr, sizeof(otherStatusStr) - 1, "Following Wi-Fi nh=%u", player.currentNumHops());
   }
 #if ESP32_BLE

@@ -422,6 +422,7 @@ Esp32BleNetwork::Esp32BleNetwork() {
   ESP_ERROR_CHECK(esp_ble_gap_set_scan_params(&scanParams));
 }
 
+// static
 Esp32BleNetwork* Esp32BleNetwork::get() {
   static Esp32BleNetwork static_instance;
   return &static_instance;

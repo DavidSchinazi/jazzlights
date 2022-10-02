@@ -236,6 +236,12 @@ std::string EspWiFi::statusStr(Milliseconds currentTime) {
   return "error";
 }
 
+// static
+EspWiFi* EspWiFi::get() {
+  static EspWiFi sSingleton(JL_WIFI_SSID, JL_WIFI_PASSWORD);
+  return &sSingleton;
+}
+
 }  // namespace jazzlights
 
 #endif  // JAZZLIGHTS_ESP_WIFI

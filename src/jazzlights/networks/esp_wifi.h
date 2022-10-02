@@ -25,7 +25,7 @@ namespace jazzlights {
 
 class EspWiFi : public UdpNetwork {
  public:
-  EspWiFi(const char* ssid, const char* pass);
+  static EspWiFi* get();
 
   NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
   int recv(void* buf, size_t bufsize, std::string* details) override;
@@ -47,6 +47,7 @@ class EspWiFi : public UdpNetwork {
   std::string statusStr(Milliseconds currentTime);
 
  private:
+  EspWiFi(const char* ssid, const char* pass);
   static constexpr wl_status_t kUninitialized = static_cast<wl_status_t>(123);
   static std::string WiFiStatusToString(wl_status_t status);
   int port_ = DEFAULT_UDP_PORT;
