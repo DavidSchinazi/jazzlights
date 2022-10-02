@@ -122,7 +122,7 @@ class FastLedRenderer : public Renderer {
   CLEDController* ledController_;
 };
 
-EspWiFi network("FISHLIGHT", "155155155");
+EspWiFi network(JL_WIFI_SSID, JL_WIFI_PASSWORD);
 #if JAZZLIGHTS_ARDUINO_ETHERNET
 NetworkDeviceId GetEthernetDeviceId() {
   NetworkDeviceId deviceId = network.getLocalDeviceId();
