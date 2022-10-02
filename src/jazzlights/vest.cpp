@@ -44,6 +44,8 @@ namespace jazzlights {
 static std::mutex gLockedLedMutex;
 #endif  // JL_FASTLED_ASYNC
 
+Network* GetWiFiNetwork() { return ArduinoEspWiFiNetwork::get(); }
+
 class FastLedRenderer : public Renderer {
  public:
   explicit FastLedRenderer(size_t numLeds) : ledMemorySize_(numLeds * sizeof(CRGB)) {
@@ -124,7 +126,7 @@ class FastLedRenderer : public Renderer {
 
 #if JAZZLIGHTS_ARDUINO_ETHERNET
 NetworkDeviceId GetEthernetDeviceId() {
-  NetworkDeviceId deviceId = ArduinoEspWiFiNetwork::get()->getLocalDeviceId();
+  NetworkDeviceId deviceId = GetWiFiNetwork()->getLocalDeviceId();
   deviceId.data()[5]++;
   if (deviceId.data()[5] == 0) {
     deviceId.data()[4]++;
@@ -302,7 +304,7 @@ void vestSetup(void) {
 #if ESP32_BLE
   player.connect(Esp32BleNetwork::get());
 #endif  // ESP32_BLE
-  player.connect(ArduinoEspWiFiNetwork::get());
+  player.connect(GetWiFiNetwork());
 #if JAZZLIGHTS_ARDUINO_ETHERNET
   player.connect(&ethernetNetwork);
 #endif  // JAZZLIGHTS_ARDUINO_ETHERNET
@@ -329,7 +331,7 @@ void vestLoop(void) {
 #else  // CORE2AWS
   SAVE_TIME_POINT(Core2);
   // Read, debounce, and process the buttons, and perform actions based on button state.
-  doButtons(player, *ArduinoEspWiFiNetwork::get(),
+  doButtons(player, *GetWiFiNetwork(),
 #if ESP32_BLE
             *Esp32BleNetwork::get(),
 #endif  // ESP32_BLE
@@ -365,7 +367,7 @@ void vestLoop(void) {
 #endif            // !JL_FASTLED_ASYNC
 }
 
-std::string wifiStatus(Milliseconds currentTime) { return ArduinoEspWiFiNetwork::get()->getStatusStr(currentTime); }
+std::string wifiStatus(Milliseconds currentTime) { return GetWiFiNetwork()->getStatusStr(currentTime); }
 
 std::string bleStatus(Milliseconds currentTime) {
 #if ESP32_BLE
@@ -377,7 +379,7 @@ std::string bleStatus(Milliseconds currentTime) {
 
 std::string otherStatus(Player& player, Milliseconds currentTime) {
   char otherStatusStr[100] = "Leading";
-  if (player.followedNextHopNetwork() == ArduinoEspWiFiNetwork::get()) {
+  if (player.followedNextHopNetwork() == GetWiFiNetwork()) {
     snprintf(otherStatusStr, sizeof(otherStatusStr) - 1, "Following Wi-Fi nh=%u", player.currentNumHops());
   }
 #if ESP32_BLE
