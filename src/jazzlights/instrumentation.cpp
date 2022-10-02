@@ -181,4 +181,23 @@ void printInstrumentationInfo(Milliseconds currentTime) {
 
 #endif  // JL_INSTRUMENTATION || JL_TIMING
 
+/* Here are some common tasks seen on an ATOM Matrix for future reference:
+      loopTask: num=08 priority=01 core=+1
+          IDLE: num=05 priority=00 core=+0
+          IDLE: num=06 priority=00 core=+1
+           tiT: num=15 priority=18 core=-1
+          ipc0: num=01 priority=24 core=+0
+          ipc1: num=02 priority=24 core=+1
+arduino_events: num=17 priority=19 core=+1
+       sys_evt: num=16 priority=20 core=+0
+          wifi: num=18 priority=23 core=+0
+     esp_timer: num=03 priority=22 core=+0
+       FastLED: num=14 priority=24 core=+0
+          hciT: num=12 priority=22 core=+0
+  btController: num=10 priority=23 core=+0
+      BTU_TASK: num=13 priority=20 core=+0
+      BTC_TASK: num=11 priority=19 core=+0
+       Tmr Svc: num=07 priority=01 core=+0
+*/
+
 }  // namespace jazzlights
