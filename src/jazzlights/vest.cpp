@@ -315,7 +315,7 @@ void vestSetup(void) {
 
 #if JL_FASTLED_ASYNC
   // The Arduino loop is pinned to core 1 so we pin FastLED writes to core 0.
-  BaseType_t ret = xTaskCreatePinnedToCore(fastLedTaskFunction, "FastLED", 4000 /*configMINIMAL_STACK_SIZE*/,
+  BaseType_t ret = xTaskCreatePinnedToCore(fastLedTaskFunction, "FastLED", configMINIMAL_STACK_SIZE + 400,
                                            /*parameters=*/nullptr,
                                            /*priority=*/30, &gFastLedTaskHandle, /*coreID=*/0);
   if (ret != pdPASS) { jll_fatal("Failed to create FastLED task"); }
