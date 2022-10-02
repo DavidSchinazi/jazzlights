@@ -135,6 +135,7 @@ class Network {
   virtual std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds currentTime) = 0;
   // Called once per Arduino loop.
   virtual void runLoopImpl(Milliseconds currentTime) = 0;
+  virtual std::string getStatusStr(Milliseconds currentTime) const = 0;
   NetworkStatus getStatus() const { return status_; }
 
  private:

@@ -217,7 +217,7 @@ void EspWiFi::send(void* buf, size_t bufsize) {
 #endif  // ENABLE_ESP_WIFI_SENDING
 }
 
-std::string EspWiFi::statusStr(Milliseconds currentTime) {
+std::string EspWiFi::getStatusStr(Milliseconds currentTime) const {
   switch (getStatus()) {
     case INITIALIZING: return "init";
     case DISCONNECTED: return "disconnected";

@@ -365,11 +365,11 @@ void vestLoop(void) {
 #endif            // !JL_FASTLED_ASYNC
 }
 
-std::string wifiStatus(Milliseconds currentTime) { return EspWiFi::get()->statusStr(currentTime); }
+std::string wifiStatus(Milliseconds currentTime) { return EspWiFi::get()->getStatusStr(currentTime); }
 
 std::string bleStatus(Milliseconds currentTime) {
 #if ESP32_BLE
-  return Esp32BleNetwork::get()->statusStr(currentTime);
+  return Esp32BleNetwork::get()->getStatusStr(currentTime);
 #else   // ESP32_BLE
   return "Not supported";
 #endif  // ESP32_BLE

@@ -448,7 +448,7 @@ std::string Esp32BleNetwork::StateToString(Esp32BleNetwork::State state) {
 #undef CASE_STATE_RETURN_STRING
 }
 
-std::string Esp32BleNetwork::statusStr(Milliseconds currentTime) {
+std::string Esp32BleNetwork::getStatusStr(Milliseconds currentTime) const {
   char statStr[100] = {};
   const Milliseconds lastRcv = getLastReceiveTime();
   snprintf(statStr, sizeof(statStr) - 1, "%dms", (lastRcv >= 0 ? currentTime - getLastReceiveTime() : -1));

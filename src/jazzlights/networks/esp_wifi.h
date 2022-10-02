@@ -32,6 +32,7 @@ class EspWiFi : public UdpNetwork {
   void send(void* buf, size_t bufsize) override;
   NetworkDeviceId getLocalDeviceId() override { return localDeviceId_; }
   const char* networkName() const override { return "EspWiFi"; }
+  std::string getStatusStr(Milliseconds currentTime) const override;
 
   struct Credentials {
     const char* ssid;
@@ -43,8 +44,6 @@ class EspWiFi : public UdpNetwork {
     const char* gateway;
     const char* subnetMask;
   };
-
-  std::string statusStr(Milliseconds currentTime);
 
  private:
   EspWiFi(const char* ssid, const char* pass);

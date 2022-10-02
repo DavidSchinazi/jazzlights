@@ -39,8 +39,7 @@ class Esp32BleNetwork : public Network {
   const char* networkName() const override { return "ESP32BLE"; }
   bool shouldEcho() const override { return true; }
   Milliseconds getLastReceiveTime() const override { return lastReceiveTime_; }
-
-  std::string statusStr(Milliseconds currentTime);
+  std::string getStatusStr(Milliseconds currentTime) const override;
 
  protected:
   void runLoopImpl(Milliseconds currentTime) override;
