@@ -22,9 +22,9 @@
 #include "jazzlights/core2.h"
 #include "jazzlights/fastled_wrapper.h"
 #include "jazzlights/instrumentation.h"
-#include "jazzlights/networks/arduinoethernet.h"
+#include "jazzlights/networks/arduino_esp_wifi.h"
+#include "jazzlights/networks/arduino_ethernet.h"
 #include "jazzlights/networks/esp32_ble.h"
-#include "jazzlights/networks/esp_wifi.h"
 #include "jazzlights/player.h"
 
 #if CORE2AWS
@@ -124,7 +124,7 @@ class FastLedRenderer : public Renderer {
 
 #if JAZZLIGHTS_ARDUINO_ETHERNET
 NetworkDeviceId GetEthernetDeviceId() {
-  NetworkDeviceId deviceId = EspWiFi::get()->getLocalDeviceId();
+  NetworkDeviceId deviceId = ArduinoEspWiFiNetwork::get()->getLocalDeviceId();
   deviceId.data()[5]++;
   if (deviceId.data()[5] == 0) {
     deviceId.data()[4]++;
@@ -302,7 +302,7 @@ void vestSetup(void) {
 #if ESP32_BLE
   player.connect(Esp32BleNetwork::get());
 #endif  // ESP32_BLE
-  player.connect(EspWiFi::get());
+  player.connect(ArduinoEspWiFiNetwork::get());
 #if JAZZLIGHTS_ARDUINO_ETHERNET
   player.connect(&ethernetNetwork);
 #endif  // JAZZLIGHTS_ARDUINO_ETHERNET
@@ -329,7 +329,7 @@ void vestLoop(void) {
 #else  // CORE2AWS
   SAVE_TIME_POINT(Core2);
   // Read, debounce, and process the buttons, and perform actions based on button state.
-  doButtons(player, *EspWiFi::get(),
+  doButtons(player, *ArduinoEspWiFiNetwork::get(),
 #if ESP32_BLE
             *Esp32BleNetwork::get(),
 #endif  // ESP32_BLE
@@ -365,7 +365,7 @@ void vestLoop(void) {
 #endif            // !JL_FASTLED_ASYNC
 }
 
-std::string wifiStatus(Milliseconds currentTime) { return EspWiFi::get()->getStatusStr(currentTime); }
+std::string wifiStatus(Milliseconds currentTime) { return ArduinoEspWiFiNetwork::get()->getStatusStr(currentTime); }
 
 std::string bleStatus(Milliseconds currentTime) {
 #if ESP32_BLE
@@ -377,7 +377,7 @@ std::string bleStatus(Milliseconds currentTime) {
 
 std::string otherStatus(Player& player, Milliseconds currentTime) {
   char otherStatusStr[100] = "Leading";
-  if (player.followedNextHopNetwork() == EspWiFi::get()) {
+  if (player.followedNextHopNetwork() == ArduinoEspWiFiNetwork::get()) {
     snprintf(otherStatusStr, sizeof(otherStatusStr) - 1, "Following Wi-Fi nh=%u", player.currentNumHops());
   }
 #if ESP32_BLE

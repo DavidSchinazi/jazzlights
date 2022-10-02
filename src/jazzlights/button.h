@@ -2,8 +2,8 @@
 #define JAZZLIGHTS_BUTTON_H
 
 #include "jazzlights/config.h"
+#include "jazzlights/networks/arduino_esp_wifi.h"
 #include "jazzlights/networks/esp32_ble.h"
-#include "jazzlights/networks/esp_wifi.h"
 #include "jazzlights/player.h"
 
 #if WEARABLE

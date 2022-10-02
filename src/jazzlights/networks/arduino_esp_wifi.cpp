@@ -1,4 +1,4 @@
-#include "jazzlights/networks/esp_wifi.h"
+#include "jazzlights/networks/arduino_esp_wifi.h"
 
 #if JAZZLIGHTS_ESP_WIFI
 
@@ -10,7 +10,7 @@
 
 namespace jazzlights {
 
-std::string EspWiFi::WiFiStatusToString(wl_status_t status) {
+std::string ArduinoEspWiFiNetwork::WiFiStatusToString(wl_status_t status) {
   if (status == kUninitialized) { return "UNINITIALIZED"; }
   switch (status) {
     case WL_NO_SHIELD: return "WL_NO_SHIELD";
@@ -27,7 +27,7 @@ std::string EspWiFi::WiFiStatusToString(wl_status_t status) {
   return s.str();
 }
 
-EspWiFi::EspWiFi(const char* ssid, const char* pass) : creds_{ssid, pass} {
+ArduinoEspWiFiNetwork::ArduinoEspWiFiNetwork(const char* ssid, const char* pass) : creds_{ssid, pass} {
   uint8_t macAddress[6] = {};
   localDeviceId_ = NetworkDeviceId(WiFi.macAddress(&macAddress[0]));
 }
@@ -51,7 +51,7 @@ void WiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
 }
 #endif  // ESP32
 
-NetworkStatus EspWiFi::update(NetworkStatus status, Milliseconds currentTime) {
+NetworkStatus ArduinoEspWiFiNetwork::update(NetworkStatus status, Milliseconds currentTime) {
   const wl_status_t newWiFiStatus = WiFi.status();
   if (newWiFiStatus != currentWiFiStatus_) {
     jll_info("%u %s Wi-Fi status changing from %s to %s", currentTime, networkName(),
@@ -188,10 +188,10 @@ err:
   return CONNECTION_FAILED;
 }
 
-int EspWiFi::recv(void* buf, size_t bufsize, std::string* details) {
+int ArduinoEspWiFiNetwork::recv(void* buf, size_t bufsize, std::string* details) {
   int cb = udp_.parsePacket();
   if (cb <= 0) {
-    jll_debug("EspWiFi::recv returned %d status = %s", cb, NetworkStatusToString(status()).c_str());
+    jll_debug("ArduinoEspWiFiNetwork::recv returned %d status = %s", cb, NetworkStatusToString(status()).c_str());
     return 0;
   }
   std::ostringstream s;
@@ -204,7 +204,7 @@ int EspWiFi::recv(void* buf, size_t bufsize, std::string* details) {
 #define ENABLE_ESP_WIFI_SENDING 1
 #endif  // ENABLE_ESP_WIFI_SENDING
 
-void EspWiFi::send(void* buf, size_t bufsize) {
+void ArduinoEspWiFiNetwork::send(void* buf, size_t bufsize) {
 #if ENABLE_ESP_WIFI_SENDING
   IPAddress ip;
   ip.fromString(mcastAddr_);
@@ -217,7 +217,7 @@ void EspWiFi::send(void* buf, size_t bufsize) {
 #endif  // ENABLE_ESP_WIFI_SENDING
 }
 
-std::string EspWiFi::getStatusStr(Milliseconds currentTime) const {
+std::string ArduinoEspWiFiNetwork::getStatusStr(Milliseconds currentTime) const {
   switch (getStatus()) {
     case INITIALIZING: return "init";
     case DISCONNECTED: return "disconnected";
@@ -237,8 +237,8 @@ std::string EspWiFi::getStatusStr(Milliseconds currentTime) const {
 }
 
 // static
-EspWiFi* EspWiFi::get() {
-  static EspWiFi sSingleton(JL_WIFI_SSID, JL_WIFI_PASSWORD);
+ArduinoEspWiFiNetwork* ArduinoEspWiFiNetwork::get() {
+  static ArduinoEspWiFiNetwork sSingleton(JL_WIFI_SSID, JL_WIFI_PASSWORD);
   return &sSingleton;
 }
 

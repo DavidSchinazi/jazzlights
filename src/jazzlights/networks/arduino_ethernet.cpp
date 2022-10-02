@@ -1,4 +1,4 @@
-#include "jazzlights/networks/arduinoethernet.h"
+#include "jazzlights/networks/arduino_ethernet.h"
 
 #include <sstream>
 
