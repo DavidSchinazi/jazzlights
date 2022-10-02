@@ -243,9 +243,9 @@ uint8_t getReceiveTimeBrightness(Milliseconds lastReceiveTime, Milliseconds curr
   return 255 - static_cast<uint8_t>(timeSinceReceive * 256 / kReceiveMaxTime);
 }
 
-void atomScreenNetwork(Player& player, const EspWiFi& wifiNetwork,
+void atomScreenNetwork(Player& player, const Network& wifiNetwork,
 #if ESP32_BLE
-                       const Esp32BleNetwork& bleNetwork,
+                       const Network& bleNetwork,
 #endif  // ESP32_BLE
                        Milliseconds currentMillis) {
   // Change top-right Atom matrix screen LED based on network status.
@@ -290,9 +290,9 @@ void atomScreenNetwork(Player& player, const EspWiFi& wifiNetwork,
 // 15 16 17 18 19
 // 20 21 22 23 24
 
-void atomScreenUnlocked(Player& player, const EspWiFi& wifiNetwork,
+void atomScreenUnlocked(Player& player, const Network& wifiNetwork,
 #if ESP32_BLE
-                        const Esp32BleNetwork& bleNetwork,
+                        const Network& bleNetwork,
 #endif  // ESP32_BLE
                         Milliseconds currentMillis) {
   const CRGB* icon = atomScreenLEDs;
@@ -334,9 +334,9 @@ void atomScreenClear() {
   for (int i = 0; i < ATOM_SCREEN_NUM_LEDS; i++) { atomScreenLEDs[i] = CRGB::Black; }
 }
 
-void atomScreenLong(Player& player, const EspWiFi& wifiNetwork,
+void atomScreenLong(Player& player, const Network& wifiNetwork,
 #if ESP32_BLE
-                    const Esp32BleNetwork& bleNetwork,
+                    const Network& bleNetwork,
 #endif  // ESP32_BLE
                     Milliseconds currentMillis) {
   atomScreenClear();
@@ -348,9 +348,9 @@ void atomScreenLong(Player& player, const EspWiFi& wifiNetwork,
                     currentMillis);
 }
 
-void atomScreenShort(Player& player, const EspWiFi& wifiNetwork,
+void atomScreenShort(Player& player, const Network& wifiNetwork,
 #if ESP32_BLE
-                     const Esp32BleNetwork& bleNetwork,
+                     const Network& bleNetwork,
 #endif  // ESP32_BLE
                      Milliseconds currentMillis) {
   atomScreenClear();
@@ -439,9 +439,9 @@ void setupButtons() {
 #endif  // ATOM_MATRIX_SCREEN
 }
 
-void doButtons(Player& player, const EspWiFi& wifiNetwork,
+void doButtons(Player& player, const Network& wifiNetwork,
 #if ESP32_BLE
-               const Esp32BleNetwork& bleNetwork,
+               const Network& bleNetwork,
 #endif  // ESP32_BLE
                Milliseconds currentMillis) {
   updateButtons(currentMillis);  // Read, debounce, and process the buttons
