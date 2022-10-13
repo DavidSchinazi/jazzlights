@@ -167,4 +167,4 @@ The vest is made of three continuous LED stands:
   * 108 LEDs for front right (18 x 6) 
 The total makes a 18 high by 20 wide matrix of 360 LEDs.
 
-[![Vest Wiring](images/vestwiring.png)](images/vestwiring.html)
+[![Vest Wiring](images/vestwiring.png)](https://davidschinazi.com/vest/wiring2021.html)
