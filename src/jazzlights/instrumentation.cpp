@@ -185,7 +185,7 @@ void printInstrumentationInfo(Milliseconds currentTime) {
       loopTask: num=08 priority=01 core=+1
           IDLE: num=05 priority=00 core=+0
           IDLE: num=06 priority=00 core=+1
-           tiT: num=15 priority=18 core=-1
+           tiT: num=15 priority=18 core=+0
           ipc0: num=01 priority=24 core=+0
           ipc1: num=02 priority=24 core=+1
 arduino_events: num=17 priority=19 core=+1
