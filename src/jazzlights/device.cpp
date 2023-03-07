@@ -17,11 +17,11 @@
 #include <mutex>
 #endif  // JL_FASTLED_ASYNC
 
-#include "jazzlights/button.h"
 #include "jazzlights/core2.h"
 #include "jazzlights/device_pixelmap.h"
 #include "jazzlights/fastled_wrapper.h"
 #include "jazzlights/instrumentation.h"
+#include "jazzlights/menu.h"
 #include "jazzlights/networks/arduino_esp_wifi.h"
 #include "jazzlights/networks/arduino_ethernet.h"
 #include "jazzlights/networks/esp32_ble.h"
