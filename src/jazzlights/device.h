@@ -17,7 +17,7 @@ void deviceLoop(void);
 
 std::string wifiStatus(Milliseconds currentTime);
 std::string bleStatus(Milliseconds currentTime);
-std::string otherStatus(Player& player, Milliseconds currentTime);
+std::string otherStatus(PatternPlayer& player, Milliseconds currentTime);
 
 }  // namespace jazzlights
 

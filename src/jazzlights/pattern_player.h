@@ -5,9 +5,9 @@
 #include "jazzlights/effect.h"
 #include "jazzlights/layout.h"
 #include "jazzlights/network.h"
-#include "jazzlights/pseudorandom.h"
 #include "jazzlights/registry.h"
 #include "jazzlights/renderer.h"
+#include "jazzlights/util/pseudorandom.h"
 
 #ifndef START_SPECIAL
 #define START_SPECIAL 0
@@ -19,19 +19,19 @@ enum : Milliseconds {
   kEffectDuration = 10 * ONE_SECOND,
 };
 
-class Player {
+class PatternPlayer {
  public:
-  Player();
-  ~Player();
+  PatternPlayer();
+  ~PatternPlayer();
 
   // Disallow copy, allow move
-  Player(const Player&) = delete;
-  Player& operator=(const Player&) = delete;
+  PatternPlayer(const PatternPlayer&) = delete;
+  PatternPlayer& operator=(const PatternPlayer&) = delete;
 
   // Constructing the player
-  Player& clearStrands();
-  Player& addStrand(const Layout& l, Renderer& r);
-  Player& connect(Network* n);
+  PatternPlayer& clearStrands();
+  PatternPlayer& addStrand(const Layout& l, Renderer& r);
+  PatternPlayer& connect(Network* n);
 
   /**
    * Prepare for rendering

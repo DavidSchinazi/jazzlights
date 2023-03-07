@@ -11,7 +11,7 @@
 namespace jazzlights {
 
 void setupButtons();
-void doButtons(Player& player, const Network& wifiNetwork,
+void doButtons(PatternPlayer& player, const Network& wifiNetwork,
 #if ESP32_BLE
                const Network& bleNetwork,
 #endif  // ESP32_BLE

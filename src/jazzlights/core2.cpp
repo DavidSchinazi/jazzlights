@@ -250,11 +250,11 @@ void hideSystemMenuButtons() {
   screenMinusButton.hide();
 }
 
-void setDefaultPrecedence(Player& player, Milliseconds currentTime) {
+void setDefaultPrecedence(PatternPlayer& player, Milliseconds currentTime) {
   player.updatePrecedence(4000, 1000, currentTime);
 }
 
-void setOverridePrecedence(Player& player, Milliseconds currentTime) {
+void setOverridePrecedence(PatternPlayer& player, Milliseconds currentTime) {
   player.updatePrecedence(36000, 5000, currentTime);
 }
 
@@ -379,7 +379,7 @@ class PatternControlMenu {
     draw();
     return false;
   }
-  void overridePressed(Player& player, Milliseconds currentTime) {
+  void overridePressed(PatternPlayer& player, Milliseconds currentTime) {
     overrideEnabled_ = !overrideEnabled_;
     overrideButton.off = overrideEnabled_ ? idleEnabledCol : idleCol;
     overrideButton.setLabel(overrideEnabled_ ? "Override ON" : "Override");
@@ -389,7 +389,7 @@ class PatternControlMenu {
       setDefaultPrecedence(player, currentTime);
     }
   }
-  bool confirmPressed(Player& player, Milliseconds currentTime) {
+  bool confirmPressed(PatternPlayer& player, Milliseconds currentTime) {
     const char* confirmLabel;
     if (state_ == State::kPattern) {
       State nextState = kSelectablePatterns[selectedPatternIndex_].nextState;
@@ -418,13 +418,14 @@ class PatternControlMenu {
   }
 
  private:
-  bool setPattern(Player& player, PatternBits patternBits, Milliseconds currentTime) {
+  bool setPattern(PatternPlayer& player, PatternBits patternBits, Milliseconds currentTime) {
     patternBits = randomizePatternBits(patternBits);
     player.setPattern(patternBits, currentTime);
     state_ = State::kOff;
     return true;
   }
-  bool setPatternWithPalette(Player& player, PatternBits patternBits, uint8_t palette, Milliseconds currentTime) {
+  bool setPatternWithPalette(PatternPlayer& player, PatternBits patternBits, uint8_t palette,
+                             Milliseconds currentTime) {
     if (patternBits == 0x00FF0000) {  // forced palette.
       player.forcePalette(palette, currentTime);
       state_ = State::kOff;
@@ -433,7 +434,7 @@ class PatternControlMenu {
     player.stopForcePalette(currentTime);
     return setPattern(player, patternBits | (palette << 13), currentTime);
   }
-  bool setPatternWithColor(Player& player, PatternBits patternBits, uint8_t color, Milliseconds currentTime) {
+  bool setPatternWithColor(PatternPlayer& player, PatternBits patternBits, uint8_t color, Milliseconds currentTime) {
     player.stopForcePalette(currentTime);
     if (patternBits == 0x70000 && color == 0) {  // glow-black is just solid-black.
       return setPattern(player, 0, currentTime);
@@ -521,7 +522,7 @@ class PatternControlMenu {
 };
 PatternControlMenu gPatternControlMenu;
 
-void core2SetupStart(Player& player, Milliseconds currentTime) {
+void core2SetupStart(PatternPlayer& player, Milliseconds currentTime) {
   M5.begin(/*LCDEnable=*/true, /*SDEnable=*/false,
            /*SerialEnable=*/false, /*I2CEnable=*/false,
            /*mode=*/kMBusModeOutput);
@@ -549,14 +550,14 @@ void core2SetupStart(Player& player, Milliseconds currentTime) {
   setDefaultPrecedence(player, currentTime);
 }
 
-void startMainMenu(Player& player, Milliseconds currentTime) {
+void startMainMenu(PatternPlayer& player, Milliseconds currentTime) {
   gScreenMode = ScreenMode::kMainMenu;
   M5.Lcd.fillScreen(BLACK);
   drawMainMenuButtons();
   core2ScreenRenderer.setEnabled(true);
 }
 
-void core2SetupEnd(Player& player, Milliseconds currentTime) {
+void core2SetupEnd(PatternPlayer& player, Milliseconds currentTime) {
   gCurrentPatternName = player.currentEffectName();
   if (gScreenMode == ScreenMode::kMainMenu) {
     startMainMenu(player, currentTime);
@@ -577,7 +578,7 @@ void lockScreen(Milliseconds currentTime) {
   M5.Lcd.fillScreen(BLACK);
 }
 
-void patternControlButtonPressed(Player& player, Milliseconds currentTime) {
+void patternControlButtonPressed(PatternPlayer& player, Milliseconds currentTime) {
   gScreenMode = ScreenMode::kPatternControlMenu;
   gLastScreenInteractionTime = currentTime;
   hideMainMenuButtons();
@@ -587,7 +588,7 @@ void patternControlButtonPressed(Player& player, Milliseconds currentTime) {
   gPatternControlMenu.draw();
 }
 
-void confirmButtonPressed(Player& player, Milliseconds currentTime) {
+void confirmButtonPressed(PatternPlayer& player, Milliseconds currentTime) {
   gLastScreenInteractionTime = currentTime;
   if (gPatternControlMenu.confirmPressed(player, currentTime)) {
     hidePatternControlMenuButtons();
@@ -607,7 +608,7 @@ void drawSystemTextLine(uint8_t i, const char* text) {
   M5.Lcd.drawString(text, x, y);
 }
 
-void drawSystemTextLines(Player& player, Milliseconds currentTime) {
+void drawSystemTextLines(PatternPlayer& player, Milliseconds currentTime) {
   size_t i = 0;
   char line[100] = {};
   // LED Brighness.
@@ -627,7 +628,7 @@ void drawSystemTextLines(Player& player, Milliseconds currentTime) {
   drawSystemTextLine(i++, line);
 }
 
-void core2Loop(Player& player, Milliseconds currentTime) {
+void core2Loop(PatternPlayer& player, Milliseconds currentTime) {
   M5.Touch.update();
   M5.Buttons.update();
   if (M5.background.wasPressed()) {

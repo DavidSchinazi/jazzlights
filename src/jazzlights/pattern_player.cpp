@@ -261,39 +261,39 @@ Effect* patternFromBits(PatternBits pattern) {
 
 std::string patternName(PatternBits pattern) { return patternFromBits(pattern)->effectName(pattern); }
 
-Player::Player() {
+PatternPlayer::PatternPlayer() {
   frame_.predictableRandom = &predictableRandom_;
   // Work around a heap corruption issue that causes an abort when running realloc.
   effectContextSize_ = 1000;
   effectContext_ = malloc(effectContextSize_);
 }
 
-Player::~Player() {
+PatternPlayer::~PatternPlayer() {
   free(effectContext_);
   effectContext_ = nullptr;
   effectContextSize_ = 0;
 }
 
-Player& Player::clearStrands() {
+PatternPlayer& PatternPlayer::clearStrands() {
   strandCount_ = 0;
   return *this;
 }
 
-Player& Player::addStrand(const Layout& l, Renderer& r) {
+PatternPlayer& PatternPlayer::addStrand(const Layout& l, Renderer& r) {
   constexpr size_t MAX_STRANDS = sizeof(strands_) / sizeof(*strands_);
   if (strandCount_ >= MAX_STRANDS) { jll_fatal("Trying to add too many strands, max=%zu", MAX_STRANDS); }
   strands_[strandCount_++] = {&l, &r};
   return *this;
 }
 
-Player& Player::connect(Network* n) {
+PatternPlayer& PatternPlayer::connect(Network* n) {
   jll_info("Connecting network %s", n->networkName());
   networks_.push_back(n);
   ready_ = false;
   return *this;
 }
 
-void Player::begin(Milliseconds currentTime) {
+void PatternPlayer::begin(Milliseconds currentTime) {
   xyIndexStore_.Reset();
   frame_.pixelCount = 0;
   frame_.viewport.origin.x = 0;
@@ -341,7 +341,7 @@ void Player::begin(Milliseconds currentTime) {
   nextPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
 }
 
-void Player::updatePrecedence(Precedence basePrecedence, Precedence precedenceGain, Milliseconds currentTime) {
+void PatternPlayer::updatePrecedence(Precedence basePrecedence, Precedence precedenceGain, Milliseconds currentTime) {
   if (basePrecedence == basePrecedence_ && precedenceGain == precedenceGain_) { return; }
   basePrecedence_ = basePrecedence;
   precedenceGain_ = precedenceGain;
@@ -351,7 +351,7 @@ void Player::updatePrecedence(Precedence basePrecedence, Precedence precedenceGa
   for (Network* network : networks_) { network->triggerSendAsap(currentTime); }
 }
 
-void Player::handleSpecial(Milliseconds currentTime) {
+void PatternPlayer::handleSpecial(Milliseconds currentTime) {
   static constexpr PatternBits kSpecialPatternBits[] = {
       0x00100000,  // calibration.
       0x00000000,  // black.
@@ -368,7 +368,7 @@ void Player::handleSpecial(Milliseconds currentTime) {
   jll_info("%u Starting special mode %zu", currentTime, specialMode_);
 }
 
-void Player::stopSpecial(Milliseconds currentTime) {
+void PatternPlayer::stopSpecial(Milliseconds currentTime) {
   if (specialMode_ == 0) { return; }
   jll_info("%u Stopping special mode", currentTime);
   specialMode_ = 0;
@@ -383,7 +383,7 @@ void Player::triggerPatternOverride(Milliseconds currentTime) {
 }
 #endif  // FAIRY_WAND
 
-bool Player::render(Milliseconds currentTime) {
+bool PatternPlayer::render(Milliseconds currentTime) {
   if (!ready_) { begin(currentTime); }
 
   // First listen on all networks.
@@ -458,9 +458,9 @@ bool Player::render(Milliseconds currentTime) {
   return true;
 }
 
-std::string Player::currentEffectName() const { return patternName(lastBegunPattern_); }
+std::string PatternPlayer::currentEffectName() const { return patternName(lastBegunPattern_); }
 
-void Player::next(Milliseconds currentTime) {
+void PatternPlayer::next(Milliseconds currentTime) {
   jll_info("%u next command received: switching from %s (%4x) to %s (%4x), currentLeader=" DEVICE_ID_FMT, currentTime,
            patternName(currentPattern_).c_str(), currentPattern_, patternName(nextPattern_).c_str(), nextPattern_,
            DEVICE_ID_HEX(currentLeader_));
@@ -481,7 +481,7 @@ void Player::next(Milliseconds currentTime) {
   for (Network* network : networks_) { network->triggerSendAsap(currentTime); }
 }
 
-void Player::setPattern(PatternBits pattern, Milliseconds currentTime) {
+void PatternPlayer::setPattern(PatternBits pattern, Milliseconds currentTime) {
   jll_info("%u set pattern command received: switching from %s (%4x) to %s (%4x), currentLeader=" DEVICE_ID_FMT,
            currentTime, patternName(currentPattern_).c_str(), currentPattern_, patternName(pattern).c_str(), pattern,
            DEVICE_ID_HEX(currentLeader_));
@@ -501,21 +501,21 @@ void Player::setPattern(PatternBits pattern, Milliseconds currentTime) {
   for (Network* network : networks_) { network->triggerSendAsap(currentTime); }
 }
 
-void Player::forcePalette(uint8_t palette, Milliseconds currentTime) {
+void PatternPlayer::forcePalette(uint8_t palette, Milliseconds currentTime) {
   jll_info("%u Forcing palette %u", currentTime, palette);
   paletteIsForced_ = true;
   forcedPalette_ = palette;
   setPattern(enforceForcedPalette(currentPattern_), currentTime);
 }
 
-void Player::stopForcePalette(Milliseconds currentTime) {
+void PatternPlayer::stopForcePalette(Milliseconds currentTime) {
   if (!paletteIsForced_) { return; }
   jll_info("%u Stop forcing palette %u", currentTime, forcedPalette_);
   paletteIsForced_ = false;
   forcedPalette_ = 0;
 }
 
-PatternBits Player::enforceForcedPalette(PatternBits pattern) {
+PatternBits PatternPlayer::enforceForcedPalette(PatternBits pattern) {
   if (paletteIsForced_) { pattern = applyPalette(pattern, forcedPalette_); }
   return pattern;
 }
@@ -543,12 +543,13 @@ Precedence addPrecedenceGain(Precedence startPrecedence, Precedence gain) {
 
 static constexpr Milliseconds kInputDuration = 10 * 60 * 1000;  // 10min.
 
-Precedence Player::getLocalPrecedence(Milliseconds currentTime) {
+Precedence PatternPlayer::getLocalPrecedence(Milliseconds currentTime) {
   return addPrecedenceGain(basePrecedence_,
                            getPrecedenceGain(lastUserInputTime_, currentTime, kInputDuration, precedenceGain_));
 }
 
-Player::OriginatorEntry* Player::getOriginatorEntry(NetworkDeviceId originator, Milliseconds /*currentTime*/) {
+PatternPlayer::OriginatorEntry* PatternPlayer::getOriginatorEntry(NetworkDeviceId originator,
+                                                                  Milliseconds /*currentTime*/) {
   OriginatorEntry* entry = nullptr;
   for (OriginatorEntry& e : originatorEntries_) {
     if (e.originator == originator) { return &e; }
@@ -566,7 +567,7 @@ static_assert(kOriginationTimeDiscard < kEffectDuration,
               "Inverting these can lead to keeping an originator "
               "past the end of its intended next pattern.");
 
-void Player::checkLeaderAndPattern(Milliseconds currentTime) {
+void PatternPlayer::checkLeaderAndPattern(Milliseconds currentTime) {
   // Remove elements that have aged out.
   originatorEntries_.remove_if([currentTime](const OriginatorEntry& e) {
     if (currentTime > e.lastOriginationTime + kOriginationTimeDiscard) {
@@ -683,7 +684,7 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
   }
 }
 
-void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentTime) {
+void PatternPlayer::handleReceivedMessage(NetworkMessage message, Milliseconds currentTime) {
   jll_debug("%u handleReceivedMessage %s", currentTime, networkMessageToString(message, currentTime).c_str());
   if (message.sender == localDeviceId_) {
     jll_debug("%u Ignoring received message that we sent %s", currentTime,
@@ -900,21 +901,21 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
   lastLEDWriteTime_ = -1;
 }
 
-void Player::loopOne(Milliseconds currentTime) {
+void PatternPlayer::loopOne(Milliseconds currentTime) {
   if (loop_) { return; }
   jll_info("%u Looping", currentTime);
   loop_ = true;
   nextPattern_ = currentPattern_;
 }
 
-void Player::stopLooping(Milliseconds currentTime) {
+void PatternPlayer::stopLooping(Milliseconds currentTime) {
   if (!loop_) { return; }
   jll_info("%u Stopping loop", currentTime);
   loop_ = false;
   nextPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
 }
 
-const char* Player::command(const char* req) {
+const char* PatternPlayer::command(const char* req) {
   static char res[256];
   const size_t MAX_CMD_LEN = 16;
   bool responded = false;

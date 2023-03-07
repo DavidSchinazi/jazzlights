@@ -120,7 +120,7 @@ enum atomMenuMode {
 
 atomMenuMode menuMode = kNext;
 
-void nextMode(Player& /*player*/, const Milliseconds /*currentMillis*/) {
+void nextMode(PatternPlayer& /*player*/, const Milliseconds /*currentMillis*/) {
   switch (menuMode) {
     case kNext: menuMode = kPrevious; break;
     case kPrevious: menuMode = kBrightness; break;
@@ -129,7 +129,7 @@ void nextMode(Player& /*player*/, const Milliseconds /*currentMillis*/) {
   };
 }
 
-void modeAct(Player& player, const Milliseconds currentMillis) {
+void modeAct(PatternPlayer& player, const Milliseconds currentMillis) {
   switch (menuMode) {
     case kNext:
       jll_info("%u Next button has been hit", currentMillis);
@@ -243,7 +243,7 @@ uint8_t getReceiveTimeBrightness(Milliseconds lastReceiveTime, Milliseconds curr
   return 255 - static_cast<uint8_t>(timeSinceReceive * 256 / kReceiveMaxTime);
 }
 
-void atomScreenNetwork(Player& player, const Network& wifiNetwork,
+void atomScreenNetwork(PatternPlayer& player, const Network& wifiNetwork,
 #if ESP32_BLE
                        const Network& bleNetwork,
 #endif  // ESP32_BLE
@@ -290,7 +290,7 @@ void atomScreenNetwork(Player& player, const Network& wifiNetwork,
 // 15 16 17 18 19
 // 20 21 22 23 24
 
-void atomScreenUnlocked(Player& player, const Network& wifiNetwork,
+void atomScreenUnlocked(PatternPlayer& player, const Network& wifiNetwork,
 #if ESP32_BLE
                         const Network& bleNetwork,
 #endif  // ESP32_BLE
@@ -334,7 +334,7 @@ void atomScreenClear() {
   for (int i = 0; i < ATOM_SCREEN_NUM_LEDS; i++) { atomScreenLEDs[i] = CRGB::Black; }
 }
 
-void atomScreenLong(Player& player, const Network& wifiNetwork,
+void atomScreenLong(PatternPlayer& player, const Network& wifiNetwork,
 #if ESP32_BLE
                     const Network& bleNetwork,
 #endif  // ESP32_BLE
@@ -348,7 +348,7 @@ void atomScreenLong(Player& player, const Network& wifiNetwork,
                     currentMillis);
 }
 
-void atomScreenShort(Player& player, const Network& wifiNetwork,
+void atomScreenShort(PatternPlayer& player, const Network& wifiNetwork,
 #if ESP32_BLE
                      const Network& bleNetwork,
 #endif  // ESP32_BLE
@@ -439,7 +439,7 @@ void setupButtons() {
 #endif  // ATOM_MATRIX_SCREEN
 }
 
-void doButtons(Player& player, const Network& wifiNetwork,
+void doButtons(PatternPlayer& player, const Network& wifiNetwork,
 #if ESP32_BLE
                const Network& bleNetwork,
 #endif  // ESP32_BLE

@@ -145,7 +145,7 @@ NetworkDeviceId GetEthernetDeviceId() {
 }
 ArduinoEthernetNetwork ethernetNetwork(GetEthernetDeviceId());
 #endif  // JL_ARDUINO_ETHERNET
-Player player;
+PatternPlayer player;
 
 std::unique_ptr<FastLedRenderer> mainDeviceRenderer;
 #if LEDNUM2
@@ -345,7 +345,7 @@ void deviceLoop(void) {
   SAVE_TIME_POINT(Bluetooth);
 
   const bool shouldRender = player.render(currentTime);
-  SAVE_TIME_POINT(Player);
+  SAVE_TIME_POINT(PatternPlayer);
   if (!shouldRender) { return; }
   {
 #if JL_FASTLED_ASYNC
@@ -377,7 +377,7 @@ std::string bleStatus(Milliseconds currentTime) {
 #endif  // ESP32_BLE
 }
 
-std::string otherStatus(Player& player, Milliseconds currentTime) {
+std::string otherStatus(PatternPlayer& player, Milliseconds currentTime) {
   char otherStatusStr[100] = "Leading";
   if (player.followedNextHopNetwork() == GetWiFiNetwork()) {
     snprintf(otherStatusStr, sizeof(otherStatusStr) - 1, "Following Wi-Fi nh=%u", player.currentNumHops());
