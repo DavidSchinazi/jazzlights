@@ -1,4 +1,4 @@
-#include "jazzlights/device_pixelmap.h"
+#include "jazzlights/devices/device_pixelmap.h"
 
 #if RENDERABLE
 

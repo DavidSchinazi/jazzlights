@@ -2,7 +2,7 @@
 
 #include "jazzlights/config.h"
 #include "jazzlights/networks/unix_udp.h"
-#include "jazzlights/player.h"
+#include "jazzlights/pattern_player.h"
 #include "sysinfo.h"
 #include "tgloader.h"
 

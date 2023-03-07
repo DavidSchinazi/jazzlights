@@ -1,7 +1,7 @@
 #ifndef TGPLAYER_LOADER_HPP
 #define TGPLAYER_LOADER_HPP
 
-#include "jazzlights/player.h"
+#include "jazzlights/pattern_player.h"
 
 namespace jazzlights {
 

@@ -3,7 +3,7 @@
 
 #if RENDERABLE && CORE2AWS
 
-#include "jazzlights/player.h"
+#include "jazzlights/pattern_player.h"
 
 namespace jazzlights {
 

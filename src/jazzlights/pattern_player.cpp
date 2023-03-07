@@ -1,4 +1,4 @@
-#include "jazzlights/player.h"
+#include "jazzlights/pattern_player.h"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -8,7 +8,7 @@
 #include <set>
 #include <sstream>
 
-#include "jazzlights/device_pixelmap.h"
+#include "jazzlights/devices/device_pixelmap.h"
 #include "jazzlights/effects/coloredbursts.h"
 #include "jazzlights/effects/flame.h"
 #include "jazzlights/effects/glitter.h"

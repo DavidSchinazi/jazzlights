@@ -4,7 +4,7 @@
 #include "jazzlights/config.h"
 #include "jazzlights/networks/arduino_esp_wifi.h"
 #include "jazzlights/networks/esp32_ble.h"
-#include "jazzlights/player.h"
+#include "jazzlights/pattern_player.h"
 
 #if RENDERABLE
 

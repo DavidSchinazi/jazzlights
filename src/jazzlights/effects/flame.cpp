@@ -3,7 +3,7 @@
 #include <assert.h>
 
 #include "jazzlights/config.h"
-#include "jazzlights/player.h"
+#include "jazzlights/pattern_player.h"
 #include "jazzlights/util/color.h"
 #include "jazzlights/util/math.h"
 
