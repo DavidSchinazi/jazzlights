@@ -1,6 +1,6 @@
 #include "jazzlights/config.h"
 
-#ifdef JAZZLIGHTS_PLATFORMIO
+#ifdef JL_PLATFORMIO
 
 #include <Arduino.h>
 
@@ -10,4 +10,4 @@ void setup() { jazzlights::deviceSetup(); }
 
 void loop() { jazzlights::deviceLoop(); }
 
-#endif  // JAZZLIGHTS_PLATFORMIO
+#endif  // JL_PLATFORMIO

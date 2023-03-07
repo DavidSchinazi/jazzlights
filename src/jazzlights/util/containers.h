@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_UTIL_CONTAIN_HPP
-#define JAZZLIGHTS_UTIL_CONTAIN_HPP
+#ifndef JL_UTIL_CONTAIN_HPP
+#define JL_UTIL_CONTAIN_HPP
 namespace jazzlights {
 
 template <typename T>
@@ -44,4 +44,4 @@ T* end(Slice<T>& c) {
 }
 
 }  // namespace jazzlights
-#endif  // JAZZLIGHTS_UTIL_CONTAIN_HPP
+#endif  // JL_UTIL_CONTAIN_HPP

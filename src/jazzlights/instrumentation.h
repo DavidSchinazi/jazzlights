@@ -1,8 +1,8 @@
 #include "jazzlights/config.h"
 #include "jazzlights/util/time.h"
 
-#ifndef JAZZLIGHTS_INSTRUMENTATION_H
-#define JAZZLIGHTS_INSTRUMENTATION_H
+#ifndef JL_INSTRUMENTATION_H
+#define JL_INSTRUMENTATION_H
 
 namespace jazzlights {
 
@@ -69,4 +69,4 @@ inline void ledWriteEnd() {}
 
 }  // namespace jazzlights
 
-#endif  // JAZZLIGHTS_INSTRUMENTATION_H
+#endif  // JL_INSTRUMENTATION_H

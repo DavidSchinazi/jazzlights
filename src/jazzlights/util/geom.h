@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_GEOM_H
-#define JAZZLIGHTS_GEOM_H
+#ifndef JL_GEOM_H
+#define JL_GEOM_H
 #include <cmath>
 
 #include "jazzlights/util/math.h"
@@ -122,19 +122,19 @@ struct Transform {
 
 static constexpr Transform IDENTITY = {
     .matrix = {1, 0, 0, 1},
-      .offset = {0, 0  }
+      .offset = {0, 0}
 };
 static constexpr Transform ROTATE_LEFT = {
     .matrix = {0, 1, -1, 0},
-      .offset = {0, 0   }
+      .offset = {0, 0}
 };
 static constexpr Transform ROTATE_RIGHT = {
     .matrix = {0, -1, 1, 0},
-      .offset = {0,  0  }
+      .offset = {0, 0}
 };
 static constexpr Transform FLIP_HORIZ = {
     .matrix = {-1, 0, 0, 1},
-      .offset = { 0, 0  }
+      .offset = {0, 0}
 };
 
 template <typename T, typename R>
@@ -143,4 +143,4 @@ R rotateLeft(const T& v) {
 }
 
 }  // namespace jazzlights
-#endif  // JAZZLIGHTS_GEOM_H
+#endif  // JL_GEOM_H

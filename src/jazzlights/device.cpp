@@ -124,7 +124,7 @@ class FastLedRenderer : public Renderer {
   CLEDController* ledController_;
 };
 
-#if JAZZLIGHTS_ARDUINO_ETHERNET
+#if JL_ARDUINO_ETHERNET
 NetworkDeviceId GetEthernetDeviceId() {
   NetworkDeviceId deviceId = GetWiFiNetwork()->getLocalDeviceId();
   deviceId.data()[5]++;
@@ -144,7 +144,7 @@ NetworkDeviceId GetEthernetDeviceId() {
   return deviceId;
 }
 ArduinoEthernetNetwork ethernetNetwork(GetEthernetDeviceId());
-#endif  // JAZZLIGHTS_ARDUINO_ETHERNET
+#endif  // JL_ARDUINO_ETHERNET
 Player player;
 
 std::unique_ptr<FastLedRenderer> mainDeviceRenderer;
@@ -305,9 +305,9 @@ void deviceSetup(void) {
   player.connect(Esp32BleNetwork::get());
 #endif  // ESP32_BLE
   player.connect(GetWiFiNetwork());
-#if JAZZLIGHTS_ARDUINO_ETHERNET
+#if JL_ARDUINO_ETHERNET
   player.connect(&ethernetNetwork);
-#endif  // JAZZLIGHTS_ARDUINO_ETHERNET
+#endif  // JL_ARDUINO_ETHERNET
   player.begin(currentTime);
 
 #if CORE2AWS

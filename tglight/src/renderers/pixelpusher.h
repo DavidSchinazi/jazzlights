@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_RENDERERS_PIXELPUSHER_H
-#define JAZZLIGHTS_RENDERERS_PIXELPUSHER_H
+#ifndef JL_RENDERERS_PIXELPUSHER_H
+#define JL_RENDERERS_PIXELPUSHER_H
 #include <netinet/in.h>
 
 #include "jazzlights/renderer.h"
@@ -25,4 +25,4 @@ class PixelPusher : public Renderer {
 };
 
 }  // namespace jazzlights
-#endif  // JAZZLIGHTS_RENDERERS_PIXELPUSHER_H
+#endif  // JL_RENDERERS_PIXELPUSHER_H

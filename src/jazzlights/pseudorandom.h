@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_PredictableRandom_H
-#define JAZZLIGHTS_PredictableRandom_H
+#ifndef JL_PredictableRandom_H
+#define JL_PredictableRandom_H
 
 #include <cstddef>
 #include <cstdint>
@@ -64,4 +64,4 @@ class UnpredictableRandom : public Random {
 
 }  // namespace jazzlights
 
-#endif  // JAZZLIGHTS_PredictableRandom_H
+#endif  // JL_PredictableRandom_H

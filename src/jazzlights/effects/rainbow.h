@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_EFFECTS_RAINBOW_H
-#define JAZZLIGHTS_EFFECTS_RAINBOW_H
+#ifndef JL_EFFECTS_RAINBOW_H
+#define JL_EFFECTS_RAINBOW_H
 
 #include <algorithm>
 
@@ -57,4 +57,4 @@ class Rainbow : public Effect {
 };
 
 }  // namespace jazzlights
-#endif  // JAZZLIGHTS_EFFECTS_RAINBOW_H
+#endif  // JL_EFFECTS_RAINBOW_H

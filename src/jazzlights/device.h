@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_VEST_H
-#define JAZZLIGHTS_VEST_H
+#ifndef JL_VEST_H
+#define JL_VEST_H
 
 #include "jazzlights/config.h"
 
@@ -23,4 +23,4 @@ std::string otherStatus(Player& player, Milliseconds currentTime);
 
 #endif  // RENDERABLE
 
-#endif  // JAZZLIGHTS_VEST_H
+#endif  // JL_VEST_H

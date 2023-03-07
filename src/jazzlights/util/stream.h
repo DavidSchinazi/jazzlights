@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_STREAM_H
-#define JAZZLIGHTS_STREAM_H
+#ifndef JL_STREAM_H
+#define JL_STREAM_H
 #include "jazzlights/util/meta.h"
 
 namespace jazzlights {
@@ -92,4 +92,4 @@ MappedInputStream<StreamT, FuncT> map(StreamT& stream, const FuncT& func) {
 }
 
 }  // namespace jazzlights
-#endif  // JAZZLIGHTS_STREAM_H
+#endif  // JL_STREAM_H

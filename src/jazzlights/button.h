@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_BUTTON_H
-#define JAZZLIGHTS_BUTTON_H
+#ifndef JL_BUTTON_H
+#define JL_BUTTON_H
 
 #include "jazzlights/config.h"
 #include "jazzlights/networks/arduino_esp_wifi.h"
@@ -25,4 +25,4 @@ uint8_t getBrightness();
 
 #endif  // RENDERABLE
 
-#endif  // JAZZLIGHTS_BUTTON_H
+#endif  // JL_BUTTON_H

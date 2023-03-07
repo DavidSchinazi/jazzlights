@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_EFFECTS_PLASMA_H
-#define JAZZLIGHTS_EFFECTS_PLASMA_H
+#ifndef JL_EFFECTS_PLASMA_H
+#define JL_EFFECTS_PLASMA_H
 
 #include "jazzlights/effect.h"
 #include "jazzlights/palette.h"
@@ -46,4 +46,4 @@ class SpinPlasma : public EffectWithPaletteAndState<SpinPlasmaState> {
 
 }  // namespace jazzlights
 
-#endif  // JAZZLIGHTS_EFFECTS_PLASMA_H
+#endif  // JL_EFFECTS_PLASMA_H

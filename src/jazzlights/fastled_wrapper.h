@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_FASTLED_WRAPPER_H
-#define JAZZLIGHTS_FASTLED_WRAPPER_H
+#ifndef JL_FASTLED_WRAPPER_H
+#define JL_FASTLED_WRAPPER_H
 
 #include "jazzlights/config.h"
 
@@ -325,4 +325,4 @@ inline int16_t lerp15by16(int16_t a, int16_t b, uint16_t frac) {
 // Define our own due to <https://github.com/FastLED/FastLED/issues/1435>.
 extern const TProgmemRGBPalette16 JLLavaColors_p FL_PROGMEM;
 
-#endif  // JAZZLIGHTS_FASTLED_WRAPPER_H
+#endif  // JL_FASTLED_WRAPPER_H

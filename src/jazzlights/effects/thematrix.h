@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_EFFECT_THEMATRIX_H
-#define JAZZLIGHTS_EFFECT_THEMATRIX_H
+#ifndef JL_EFFECT_THEMATRIX_H
+#define JL_EFFECT_THEMATRIX_H
 
 #include "jazzlights/effect.h"
 #include "jazzlights/pseudorandom.h"
@@ -89,4 +89,4 @@ class TheMatrix : public XYIndexStateEffect<MatrixState, uint8_t> {
 
 }  // namespace jazzlights
 
-#endif  // JAZZLIGHTS_EFFECT_THEMATRIX_H
+#endif  // JL_EFFECT_THEMATRIX_H

@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_PLAYER_H
-#define JAZZLIGHTS_PLAYER_H
+#ifndef JL_PLAYER_H
+#define JL_PLAYER_H
 #include <vector>
 
 #include "jazzlights/effect.h"
@@ -190,4 +190,4 @@ class Player {
 };
 
 }  // namespace jazzlights
-#endif  // JAZZLIGHTS_PLAYER_H
+#endif  // JL_PLAYER_H

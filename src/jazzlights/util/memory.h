@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_UTIL_MEMORY_HPP
-#define JAZZLIGHTS_UTIL_MEMORY_HPP
+#ifndef JL_UTIL_MEMORY_HPP
+#define JL_UTIL_MEMORY_HPP
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -103,4 +103,4 @@ unique_ptr<T> make_unique(Args&&... args) {
 }
 
 }  // namespace jazzlights
-#endif  // JAZZLIGHTS_UTIL_MEMORY_HPP
+#endif  // JL_UTIL_MEMORY_HPP

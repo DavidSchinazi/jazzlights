@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_CONFIG_H
-#define JAZZLIGHTS_CONFIG_H
+#ifndef JL_CONFIG_H
+#define JL_CONFIG_H
 
 #ifndef RENDERABLE
 #define RENDERABLE 0
@@ -116,4 +116,4 @@
 #define JL_WIFI_SSID "FISHLIGHT"
 #define JL_WIFI_PASSWORD "155155155"
 
-#endif  // JAZZLIGHTS_CONFIG_H
+#endif  // JL_CONFIG_H

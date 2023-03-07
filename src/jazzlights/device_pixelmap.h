@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_BOARD_H
-#define JAZZLIGHTS_BOARD_H
+#ifndef JL_BOARD_H
+#define JL_BOARD_H
 
 #include "jazzlights/config.h"
 
@@ -77,4 +77,4 @@ const Layout* GetLayout2();
 
 #endif  // RENDERABLE
 
-#endif  // JAZZLIGHTS_BOARD_H
+#endif  // JL_BOARD_H

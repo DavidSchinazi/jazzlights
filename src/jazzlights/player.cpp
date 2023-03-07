@@ -329,7 +329,7 @@ void Player::begin(Milliseconds currentTime) {
       "%u Starting JazzLights player %s (v%s); "
       "basePrecedence %u precedenceGain %u strands: %zu%s, "
       "pixels: %d, %s " DEVICE_ID_FMT " w %f h %f ox %f oy %f xv %zu yv %zu",
-      currentTime, BOOT_MESSAGE, JAZZLIGHTS_VERSION, basePrecedence_, precedenceGain_, strandCount_,
+      currentTime, BOOT_MESSAGE, JL_VERSION, basePrecedence_, precedenceGain_, strandCount_,
       strandCount_ < 1 ? " (CONTROLLER ONLY!)" : "", frame_.pixelCount, !networks_.empty() ? "networked" : "standalone",
       DEVICE_ID_HEX(localDeviceId_), frame_.viewport.size.width, frame_.viewport.size.height, frame_.viewport.origin.x,
       frame_.viewport.origin.y, xyIndexStore_.xValuesCount(), xyIndexStore_.yValuesCount());

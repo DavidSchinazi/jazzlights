@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_EFFECTS_HIPHOTIC_H
-#define JAZZLIGHTS_EFFECTS_HIPHOTIC_H
+#ifndef JL_EFFECTS_HIPHOTIC_H
+#define JL_EFFECTS_HIPHOTIC_H
 
 #include "jazzlights/effect.h"
 #include "jazzlights/palette.h"
@@ -40,4 +40,4 @@ class Hiphotic : public EffectWithPaletteAndState<HiphoticState> {
 
 }  // namespace jazzlights
 
-#endif  // JAZZLIGHTS_EFFECTS_HIPHOTIC_H
+#endif  // JL_EFFECTS_HIPHOTIC_H

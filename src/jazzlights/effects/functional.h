@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_EFFECT_FUNCTIONAL_H
-#define JAZZLIGHTS_EFFECT_FUNCTIONAL_H
+#ifndef JL_EFFECT_FUNCTIONAL_H
+#define JL_EFFECT_FUNCTIONAL_H
 #include "jazzlights/effect.h"
 #include "jazzlights/util/meta.h"
 
@@ -40,4 +40,4 @@ constexpr FrameFuncEffect<F> effect(const std::string& name, const F& f) {
 }
 
 }  // namespace jazzlights
-#endif  // JAZZLIGHTS_EFFECT_FUNCTIONAL_H
+#endif  // JL_EFFECT_FUNCTIONAL_H

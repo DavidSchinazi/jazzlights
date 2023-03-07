@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_TEXT_H
-#define JAZZLIGHTS_TEXT_H
+#ifndef JL_TEXT_H
+#define JL_TEXT_H
 
 #include "jazzlights/config.h"
 
@@ -21,4 +21,4 @@ bool displayText(const std::string& text, CRGB pixels[MATRIX_SIZE], CRGB textCol
 
 #endif  // ATOM_MATRIX_SCREEN
 
-#endif  // JAZZLIGHTS_TEXT_H
+#endif  // JL_TEXT_H

@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_TIME_H
-#define JAZZLIGHTS_TIME_H
+#ifndef JL_TIME_H
+#define JL_TIME_H
 #include <stdint.h>
 
 namespace jazzlights {
@@ -21,4 +21,4 @@ typedef int32_t FramesPerSecond;
 
 }  // namespace jazzlights
 
-#endif  // JAZZLIGHTS_TIME_H
+#endif  // JL_TIME_H

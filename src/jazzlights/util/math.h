@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_MATH_H
-#define JAZZLIGHTS_MATH_H
+#ifndef JL_MATH_H
+#define JL_MATH_H
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <stddef.h>
@@ -53,4 +53,4 @@ inline int jlbeatsin(uint16_t beats_per_minute, uint32_t elapsedTime, int lowest
 
 }  // namespace jazzlights
 
-#endif  // JAZZLIGHTS_PROTO_H
+#endif  // JL_PROTO_H

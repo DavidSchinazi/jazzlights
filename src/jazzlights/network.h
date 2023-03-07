@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_NETWORK_H
-#define JAZZLIGHTS_NETWORK_H
+#ifndef JL_NETWORK_H
+#define JL_NETWORK_H
 #include <stdio.h>
 #include <string.h>  // memcpy, size_t
 
@@ -191,4 +191,4 @@ uint16_t readUint16(const uint8_t* data);
 
 }  // namespace jazzlights
 
-#endif  // JAZZLIGHTS_NETWORK_H
+#endif  // JL_NETWORK_H

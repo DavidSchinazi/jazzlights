@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_LAYOUTS_REVERSEMAP_H
-#define JAZZLIGHTS_LAYOUTS_REVERSEMAP_H
+#ifndef JL_LAYOUTS_REVERSEMAP_H
+#define JL_LAYOUTS_REVERSEMAP_H
 #include "jazzlights/layouts/pixelmap.h"
 
 namespace jazzlights {
@@ -23,4 +23,4 @@ struct ReverseMap : public PixelMap {
 };
 
 }  // namespace jazzlights
-#endif  // JAZZLIGHTS_LAYOUTS_REVERSEMAP_H
+#endif  // JL_LAYOUTS_REVERSEMAP_H

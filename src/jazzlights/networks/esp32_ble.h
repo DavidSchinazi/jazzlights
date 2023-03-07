@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_NETWORKS_ESP32BLE_H
-#define JAZZLIGHTS_NETWORKS_ESP32BLE_H
+#ifndef JL_NETWORKS_ESP32BLE_H
+#define JL_NETWORKS_ESP32BLE_H
 
 #ifndef ESP32_BLE
 #ifdef ESP32
@@ -100,4 +100,4 @@ class Esp32BleNetwork : public Network {
 }  // namespace jazzlights
 
 #endif  // ESP32_BLE
-#endif  // JAZZLIGHTS_NETWORKS_ESP32BLE_H
+#endif  // JL_NETWORKS_ESP32BLE_H
