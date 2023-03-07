@@ -1,6 +1,6 @@
 #include "jazzlights/board.h"
 
-#if WEARABLE
+#if RENDERABLE
 
 #if ORANGE_VEST || IS_STAFF || GECKO_FOOT || IS_CAPTAIN_HAT || IS_ROBOT || IS_CABOOSE_WALL
 #include "jazzlights/layouts/pixelmap.h"
@@ -1375,4 +1375,4 @@ const Layout* GetLayout2() { return &pixels2; }
 
 }  // namespace jazzlights
 
-#endif  // WEARABLE
+#endif  // RENDERABLE

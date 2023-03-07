@@ -3,7 +3,7 @@
 
 #include "jazzlights/config.h"
 
-#if WEARABLE
+#if RENDERABLE
 
 // Fixes flickering <https://github.com/FastLED/FastLED/issues/306>.
 #define FASTLED_ALLOW_INTERRUPTS 0
@@ -18,7 +18,7 @@
 
 #include <FastLED.h>
 
-#else  // WEARABLE
+#else  // RENDERABLE
 
 // We mainly use FastLED to communicate with LEDs on embedded devices. However, we also use some of FastLED's data types
 // and math functions in the rest of our code. To avoid requiring a dependency on FastLED on platforms where we don't
@@ -48,7 +48,7 @@ struct CRGB {
   };
 
   inline CRGB(uint32_t colorcode) __attribute__((always_inline))
-  : r((colorcode >> 16) & 0xFF), g((colorcode >> 8) & 0xFF), b((colorcode >> 0) & 0xFF) {}
+      : r((colorcode >> 16) & 0xFF), g((colorcode >> 8) & 0xFF), b((colorcode >> 0) & 0xFF) {}
 
   typedef enum {
     AliceBlue = 0xF0F8FF,
@@ -320,7 +320,7 @@ inline int16_t lerp15by16(int16_t a, int16_t b, uint16_t frac) {
   }
 }
 
-#endif  // WEARABLE
+#endif  // RENDERABLE
 
 // Define our own due to <https://github.com/FastLED/FastLED/issues/1435>.
 extern const TProgmemRGBPalette16 JLLavaColors_p FL_PROGMEM;

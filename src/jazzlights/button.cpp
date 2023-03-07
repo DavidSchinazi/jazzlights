@@ -3,7 +3,7 @@
 #include "jazzlights/fastled_wrapper.h"
 #include "jazzlights/text.h"
 
-#if WEARABLE
+#if RENDERABLE
 
 #include <Arduino.h>
 
@@ -634,4 +634,4 @@ uint8_t getBrightness() { return brightnessList[brightnessCursor]; }
 
 }  // namespace jazzlights
 
-#endif  // WEARABLE
+#endif  // RENDERABLE

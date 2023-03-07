@@ -2,7 +2,7 @@
 
 #include "jazzlights/config.h"
 
-#if WEARABLE && CORE2AWS
+#if RENDERABLE && CORE2AWS
 
 #include <M5Core2.h>
 
@@ -883,4 +883,4 @@ void core2Loop(Player& player, Milliseconds currentTime) {
 
 }  // namespace jazzlights
 
-#endif  // CORE2AWS && WEARABLE
+#endif  // CORE2AWS && RENDERABLE

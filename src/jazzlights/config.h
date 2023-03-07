@@ -1,15 +1,15 @@
 #ifndef JAZZLIGHTS_CONFIG_H
 #define JAZZLIGHTS_CONFIG_H
 
-#ifndef WEARABLE
-#define WEARABLE 0
-#endif  // WEARABLE
+#ifndef RENDERABLE
+#define RENDERABLE 0
+#endif  // RENDERABLE
 
 // Pick which vest to build here.
 #if !defined(CAMP_SIGN) && !defined(IS_ROPELIGHT) && !defined(ORANGE_VEST) && !defined(HAMMER) && \
     !defined(IS_GUPPY) && !defined(GECKO_FOOT) && !defined(FAIRY_WAND) && !defined(IS_STAFF) &&   \
     !defined(IS_CAPTAIN_HAT) && !defined(IS_GAUNTLET) && !defined(IS_ROBOT) && !defined(IS_CABOOSE_WALL)
-#define ORANGE_VEST WEARABLE
+#define ORANGE_VEST RENDERABLE
 #endif
 
 #ifndef ORANGE_VEST

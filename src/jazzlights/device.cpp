@@ -2,7 +2,7 @@
 
 #include "jazzlights/config.h"
 
-#if WEARABLE
+#if RENDERABLE
 
 #ifndef JL_FASTLED_ASYNC
 #ifdef ESP32
@@ -392,4 +392,4 @@ std::string otherStatus(Player& player, Milliseconds currentTime) {
 
 }  // namespace jazzlights
 
-#endif  // WEARABLE
+#endif  // RENDERABLE

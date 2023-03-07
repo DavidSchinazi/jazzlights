@@ -6,7 +6,7 @@
 #include "jazzlights/networks/esp32_ble.h"
 #include "jazzlights/player.h"
 
-#if WEARABLE
+#if RENDERABLE
 
 namespace jazzlights {
 
@@ -23,6 +23,6 @@ uint8_t getBrightness();
 
 }  // namespace jazzlights
 
-#endif  // WEARABLE
+#endif  // RENDERABLE
 
 #endif  // JAZZLIGHTS_BUTTON_H

@@ -1,7 +1,7 @@
 #ifndef JAZZLIGHTS_CORE2_H
 #define JAZZLIGHTS_CORE2_H
 
-#if WEARABLE && CORE2AWS
+#if RENDERABLE && CORE2AWS
 
 #include "jazzlights/player.h"
 
@@ -14,5 +14,5 @@ uint8_t getBrightness();
 
 }  // namespace jazzlights
 
-#endif  // WEARABLE && CORE2AWS
+#endif  // RENDERABLE && CORE2AWS
 #endif  // JAZZLIGHTS_CORE2_H

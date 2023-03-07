@@ -3,7 +3,7 @@
 
 #include "jazzlights/config.h"
 
-#if WEARABLE
+#if RENDERABLE
 
 #include "jazzlights/layout.h"
 
@@ -75,6 +75,6 @@ const Layout* GetLayout2();
 
 }  // namespace jazzlights
 
-#endif  // WEARABLE
+#endif  // RENDERABLE
 
 #endif  // JAZZLIGHTS_BOARD_H
