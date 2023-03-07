@@ -12,8 +12,8 @@
 
 namespace jazzlights {
 
-void vestSetup(void);
-void vestLoop(void);
+void deviceSetup(void);
+void deviceLoop(void);
 
 std::string wifiStatus(Milliseconds currentTime);
 std::string bleStatus(Milliseconds currentTime);

@@ -1,4 +1,4 @@
-#include "jazzlights/vest.h"
+#include "jazzlights/device.h"
 
 #include "jazzlights/config.h"
 
@@ -147,9 +147,9 @@ ArduinoEthernetNetwork ethernetNetwork(GetEthernetDeviceId());
 #endif  // JAZZLIGHTS_ARDUINO_ETHERNET
 Player player;
 
-std::unique_ptr<FastLedRenderer> mainVestRenderer;
+std::unique_ptr<FastLedRenderer> mainDeviceRenderer;
 #if LEDNUM2
-std::unique_ptr<FastLedRenderer> mainVestRenderer2;
+std::unique_ptr<FastLedRenderer> mainDeviceRenderer2;
 #endif  // LEDNUM2
 
 void sendLedsToFastLed() {
@@ -161,9 +161,9 @@ void sendLedsToFastLed() {
 #if JL_FASTLED_ASYNC
     const std::lock_guard<std::mutex> lock(gLockedLedMutex);
 #endif  // JL_FASTLED_ASYNC
-    shouldWrite = mainVestRenderer->copyLedsFromLockedToFastLed();
+    shouldWrite = mainDeviceRenderer->copyLedsFromLockedToFastLed();
 #if LEDNUM2
-    shouldWrite2 = mainVestRenderer2->copyLedsFromLockedToFastLed();
+    shouldWrite2 = mainDeviceRenderer2->copyLedsFromLockedToFastLed();
 #endif  // LEDNUM2
   }
   SAVE_COUNT_POINT(LedPrintLoop);
@@ -176,9 +176,9 @@ void sendLedsToFastLed() {
   uint32_t brightness = getBrightness();  // May be reduced if this exceeds our power budget with the current pattern
 
 #if MAX_MILLIWATTS
-  uint32_t powerAtFullBrightness = mainVestRenderer->GetPowerAtFullBrightness();
+  uint32_t powerAtFullBrightness = mainDeviceRenderer->GetPowerAtFullBrightness();
 #if LEDNUM2
-  powerAtFullBrightness += mainVestRenderer->GetPowerAtFullBrightness2();
+  powerAtFullBrightness += mainDeviceRenderer->GetPowerAtFullBrightness2();
 #endif  // LEDNUM2
   const uint32_t powerAtDesiredBrightness =
       powerAtFullBrightness * brightness / 256;  // Forecast power at our current desired brightness
@@ -196,10 +196,10 @@ void sendLedsToFastLed() {
 
   ledWriteStart();
   SAVE_COUNT_POINT(LedPrintSend);
-  if (shouldWrite) { mainVestRenderer->sendToLeds(brightness); }
+  if (shouldWrite) { mainDeviceRenderer->sendToLeds(brightness); }
   SAVE_TIME_POINT(MainLED);
 #if LEDNUM2
-  if (shouldWrite2) { mainVestRenderer2->sendToLeds(brightness); }
+  if (shouldWrite2) { mainDeviceRenderer2->sendToLeds(brightness); }
 #endif  // LEDNUM2
   ledWriteEnd();
   SAVE_TIME_POINT(SecondLED);
@@ -221,7 +221,7 @@ void fastLedTaskFunction(void* /*parameters*/) {
 }
 #endif  // JL_FASTLED_ASYNC
 
-void vestSetup(void) {
+void deviceSetup(void) {
   Milliseconds currentTime = timeMillis();
   Serial.begin(115200);
 #if CORE2AWS
@@ -254,7 +254,7 @@ void vestSetup(void) {
   // worked while 4MHz caused visible glitches. We chose 2MHz because that allows us to run the robot at 100FPS while
   // 1MHz doesn't. Empirical data indicates that for the 378 LEDs in the robot (310 on side and 68 in head), 1MHz
   // takes 10.7ms to render while 2MHz takes 5.7ms.
-  mainVestRenderer =
+  mainDeviceRenderer =
       std::move(FastLedRenderer::Create</*CHIPSET=*/WS2801, /*DATA_PIN=*/26, /*CLOCK_PIN=*/32, /*RGB_ORDER=*/GBR,
                                         /*SPI_SPEED=*/kSpiSpeed>(LEDNUM));
 #elif CABOOSE_LIGHTS
@@ -264,28 +264,28 @@ void vestSetup(void) {
   // Atom Matrix Red = 5VDC = TCL Red
   // Atom Matrix Yellow (G26) = Data = TCL Green
   // Atom Matrix White (G32) = Clock = TCL Yellow
-  mainVestRenderer = std::move(FastLedRenderer::Create</*CHIPSET=*/P9813, /*DATA_PIN=*/26, /*CLOCK_PIN=*/32,
-                                                       /*RGB_ORDER=*/RGB>(LEDNUM));
+  mainDeviceRenderer = std::move(FastLedRenderer::Create</*CHIPSET=*/P9813, /*DATA_PIN=*/26, /*CLOCK_PIN=*/32,
+                                                         /*RGB_ORDER=*/RGB>(LEDNUM));
 #elif IS_STAFF
-  mainVestRenderer = std::move(FastLedRenderer::Create<WS2811, LED_PIN, RGB>(LEDNUM));
+  mainDeviceRenderer = std::move(FastLedRenderer::Create<WS2811, LED_PIN, RGB>(LEDNUM));
 #elif IS_ROPELIGHT
-  mainVestRenderer = std::move(FastLedRenderer::Create<WS2811, LED_PIN, BRG>(LEDNUM));
-#else  // Vest.
-  mainVestRenderer = std::move(FastLedRenderer::Create<WS2812B, LED_PIN, GRB>(LEDNUM));
+  mainDeviceRenderer = std::move(FastLedRenderer::Create<WS2811, LED_PIN, BRG>(LEDNUM));
+#else  // Device.
+  mainDeviceRenderer = std::move(FastLedRenderer::Create<WS2812B, LED_PIN, GRB>(LEDNUM));
 #endif
 #if LEDNUM2
 #if GECKO_SCALES
-  mainVestRenderer2 =
+  mainDeviceRenderer2 =
       std::move(FastLedRenderer::Create</*CHIPSET=*/WS2801, /*DATA_PIN=*/21, /*CLOCK_PIN=*/32, /*RGB_ORDER=*/GBR,
                                         /*SPI_SPEED=*/kSpiSpeed>(LEDNUM2));
 #else   // GECKO_SCALES
-  mainVestRenderer2 = std::move(FastLedRenderer::Create<WS2812B, LED_PIN2, GRB>(LEDNUM2));
+  mainDeviceRenderer2 = std::move(FastLedRenderer::Create<WS2812B, LED_PIN2, GRB>(LEDNUM2));
 #endif  // GECKO_SCALES
 #endif  // LEDNUM2
 
-  player.addStrand(*GetLayout(), *mainVestRenderer);
+  player.addStrand(*GetLayout(), *mainDeviceRenderer);
 #if LEDNUM2
-  player.addStrand(*GetLayout2(), *mainVestRenderer2);
+  player.addStrand(*GetLayout2(), *mainDeviceRenderer2);
 #endif  // LEDNUM2
 #if IS_ROBOT
   player.setBasePrecedence(20000);
@@ -323,7 +323,7 @@ void vestSetup(void) {
 #endif  // JL_FASTLED_ASYNC
 }
 
-void vestLoop(void) {
+void deviceLoop(void) {
   SAVE_TIME_POINT(LoopStart);
   Milliseconds currentTime = timeMillis();
 #if CORE2AWS
@@ -351,9 +351,9 @@ void vestLoop(void) {
 #if JL_FASTLED_ASYNC
     const std::lock_guard<std::mutex> lock(gLockedLedMutex);
 #endif  // JL_FASTLED_ASYNC
-    mainVestRenderer->copyLedsFromPlayerToLocked();
+    mainDeviceRenderer->copyLedsFromPlayerToLocked();
 #if LEDNUM2
-    mainVestRenderer2->copyLedsFromPlayerToLocked();
+    mainDeviceRenderer2->copyLedsFromPlayerToLocked();
 #endif  // LEDNUM2
   }
 

@@ -6,9 +6,9 @@
 
 #include <M5Core2.h>
 
+#include "jazzlights/device.h"
 #include "jazzlights/fastled_wrapper.h"
 #include "jazzlights/layouts/matrix.h"
-#include "jazzlights/vest.h"
 
 namespace jazzlights {
 

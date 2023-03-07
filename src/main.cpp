@@ -4,10 +4,10 @@
 
 #include <Arduino.h>
 
-#include "jazzlights/vest.h"
+#include "jazzlights/device.h"
 
- void setup() { jazzlights::vestSetup(); }
+void setup() { jazzlights::deviceSetup(); }
 
-void loop() { jazzlights::vestLoop(); }
+void loop() { jazzlights::deviceLoop(); }
 
 #endif  // JAZZLIGHTS_PLATFORMIO
