@@ -17,9 +17,9 @@
 #include <mutex>
 #endif  // JL_FASTLED_ASYNC
 
-#include "jazzlights/board.h"
 #include "jazzlights/button.h"
 #include "jazzlights/core2.h"
+#include "jazzlights/device_pixelmap.h"
 #include "jazzlights/fastled_wrapper.h"
 #include "jazzlights/instrumentation.h"
 #include "jazzlights/networks/arduino_esp_wifi.h"

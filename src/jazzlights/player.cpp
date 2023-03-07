@@ -8,7 +8,7 @@
 #include <set>
 #include <sstream>
 
-#include "jazzlights/board.h"
+#include "jazzlights/device_pixelmap.h"
 #include "jazzlights/effects/coloredbursts.h"
 #include "jazzlights/effects/flame.h"
 #include "jazzlights/effects/glitter.h"
