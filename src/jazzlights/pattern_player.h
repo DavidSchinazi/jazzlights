@@ -2,8 +2,8 @@
 #define JL_PLAYER_H
 #include <vector>
 
-#include "jazzlights/effect.h"
-#include "jazzlights/layout.h"
+#include "jazzlights/effects/effect.h"
+#include "jazzlights/layouts/layout.h"
 #include "jazzlights/network.h"
 #include "jazzlights/registry.h"
 #include "jazzlights/renderer.h"

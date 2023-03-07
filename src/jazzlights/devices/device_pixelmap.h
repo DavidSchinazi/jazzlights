@@ -5,7 +5,7 @@
 
 #if RENDERABLE
 
-#include "jazzlights/layout.h"
+#include "jazzlights/layouts/layout.h"
 
 namespace jazzlights {
 

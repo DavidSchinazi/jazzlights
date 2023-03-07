@@ -6,7 +6,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "jazzlights/pseudorandom.h"
+#include "jazzlights/util/pseudorandom.h"
 #include "jazzlights/util/log.h"
 
 #ifndef ESP32_BLE_DEBUG_OVERRIDE

@@ -1,4 +1,4 @@
-#include "jazzlights/text.h"
+#include "jazzlights/menu/text.h"
 
 #if ATOM_MATRIX_SCREEN
 

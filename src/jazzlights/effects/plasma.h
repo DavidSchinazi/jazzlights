@@ -1,8 +1,8 @@
 #ifndef JL_EFFECTS_PLASMA_H
 #define JL_EFFECTS_PLASMA_H
 
-#include "jazzlights/effect.h"
-#include "jazzlights/palette.h"
+#include "jazzlights/effects/effect.h"
+#include "jazzlights/effects/palette.h"
 #include "jazzlights/util/math.h"
 
 namespace jazzlights {

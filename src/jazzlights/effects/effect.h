@@ -2,7 +2,7 @@
 #define JL_EFFECT_H
 #include <string>
 
-#include "jazzlights/frame.h"
+#include "jazzlights/effects/frame.h"
 #include "jazzlights/util/color.h"
 #include "jazzlights/util/geom.h"
 #include "jazzlights/util/log.h"

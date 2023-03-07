@@ -1,7 +1,7 @@
-#include "jazzlights/menu.h"
+#include "jazzlights/menu/menu.h"
 
 #include "jazzlights/fastled_wrapper.h"
-#include "jazzlights/text.h"
+#include "jazzlights/menu/text.h"
 
 #if RENDERABLE
 

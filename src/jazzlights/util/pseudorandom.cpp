@@ -1,4 +1,4 @@
-#include "jazzlights/pseudorandom.h"
+#include "jazzlights/util/pseudorandom.h"
 
 #include <limits>
 

@@ -17,15 +17,15 @@
 #include <mutex>
 #endif  // JL_FASTLED_ASYNC
 
-#include "jazzlights/core2.h"
+#include "jazzlights/devices/core2.h"
 #include "jazzlights/devices/device_pixelmap.h"
 #include "jazzlights/fastled_wrapper.h"
-#include "jazzlights/instrumentation.h"
-#include "jazzlights/menu.h"
+#include "jazzlights/menu/menu.h"
 #include "jazzlights/networks/arduino_esp_wifi.h"
 #include "jazzlights/networks/arduino_ethernet.h"
 #include "jazzlights/networks/esp32_ble.h"
 #include "jazzlights/pattern_player.h"
+#include "jazzlights/util/instrumentation.h"
 
 #if CORE2AWS
 #define LED_PIN 32

@@ -1,6 +1,6 @@
 #ifndef JL_LAYOUTS_PIXELMAP_H
 #define JL_LAYOUTS_PIXELMAP_H
-#include "jazzlights/layout.h"
+#include "jazzlights/layouts/layout.h"
 #include "jazzlights/util/math.h"
 
 namespace jazzlights {

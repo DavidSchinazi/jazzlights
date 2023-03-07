@@ -7,9 +7,9 @@
 
 namespace jazzlights {
 
-void core2SetupStart(Player& player, Milliseconds currentTime);
-void core2SetupEnd(Player& player, Milliseconds currentTime);
-void core2Loop(Player& player, Milliseconds currentTime);
+void core2SetupStart(PatternPlayer& player, Milliseconds currentTime);
+void core2SetupEnd(PatternPlayer& player, Milliseconds currentTime);
+void core2Loop(PatternPlayer& player, Milliseconds currentTime);
 uint8_t getBrightness();
 
 }  // namespace jazzlights

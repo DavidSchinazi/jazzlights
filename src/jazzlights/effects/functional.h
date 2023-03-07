@@ -1,6 +1,6 @@
 #ifndef JL_EFFECT_FUNCTIONAL_H
 #define JL_EFFECT_FUNCTIONAL_H
-#include "jazzlights/effect.h"
+#include "jazzlights/effects/effect.h"
 #include "jazzlights/util/meta.h"
 
 namespace jazzlights {

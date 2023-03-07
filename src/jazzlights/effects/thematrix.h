@@ -1,9 +1,9 @@
 #ifndef JL_EFFECT_THEMATRIX_H
 #define JL_EFFECT_THEMATRIX_H
 
-#include "jazzlights/effect.h"
-#include "jazzlights/pseudorandom.h"
+#include "jazzlights/effects/effect.h"
 #include "jazzlights/util/color.h"
+#include "jazzlights/util/pseudorandom.h"
 
 namespace jazzlights {
 
