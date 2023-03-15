@@ -4,7 +4,7 @@
 
 namespace jazzlights {
 
-Player player;
+PatternPlayer player;
 Matrix pixels(100, 100);
 
 class NoopRenderer : public Renderer {

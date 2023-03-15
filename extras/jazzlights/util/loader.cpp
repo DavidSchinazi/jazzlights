@@ -1,4 +1,4 @@
-#include "jazzlights/util/loader.h"
+#include "loader.h"
 
 #include <sstream>
 #include <vector>
@@ -68,7 +68,7 @@ Layout& Loader::loadLayout(const cpptoml::table& cfg) {
   throw std::runtime_error("unknown layout type '" + type + "'");
 }
 
-void Loader::loadPlayer(Player& player, const cpptoml::table& cfg) {
+void Loader::loadPatternPlayer(PatternPlayer& player, const cpptoml::table& cfg) {
   ledr_ = cfg.get_as<Meters>("ledr").value_or(1.0 / 60.0);
   cpptoml::option<Precedence> basePrecedence = cfg.get_as<Precedence>("baseprecedence");
   if (basePrecedence) { player.setBasePrecedence(*basePrecedence); }
@@ -95,12 +95,12 @@ void Loader::loadPlayer(Player& player, const cpptoml::table& cfg) {
   }
 }
 
-void Loader::load(const char* file, Player& player) {
+void Loader::load(const char* file, PatternPlayer& player) {
   jll_info("jazzlights::Loader loading: %s", file);
   try {
     auto config = cpptoml::parse_file(file);
     // cout << (*config) << endl;
-    loadPlayer(player, *config);
+    loadPatternPlayer(player, *config);
   } catch (const std::runtime_error& err) { jll_fatal("Couldn't parse %s: %s", file, err.what()); }
 }
 
