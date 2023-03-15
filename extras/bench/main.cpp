@@ -1,5 +1,5 @@
 #include "jazzlights/layouts/matrix.h"
-#include "jazzlights/player.h"
+#include "jazzlights/pattern_player.h"
 #include "jazzlights/util/log.h"
 
 namespace jazzlights {

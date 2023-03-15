@@ -1,7 +1,7 @@
 #ifndef JAZZLIGHTS_UTIL_LOADER_HPP
 #define JAZZLIGHTS_UTIL_LOADER_HPP
 
-#include "jazzlights/player.h"
+#include "jazzlights/pattern_player.h"
 #include "jazzlights/util/cpptoml.h"
 
 namespace jazzlights {

@@ -1,7 +1,7 @@
 #ifndef JAZZLIGHTS_GUI_HPP
 #define JAZZLIGHTS_GUI_HPP
 
-#include "jazzlights/player.h"
+#include "jazzlights/pattern_player.h"
 
 namespace jazzlights {
 

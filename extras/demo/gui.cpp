@@ -10,7 +10,7 @@
 
 #include "glrenderer.h"
 #include "jazzlights/config.h"
-#include "jazzlights/player.h"
+#include "jazzlights/pattern_player.h"
 
 namespace jazzlights {
 
