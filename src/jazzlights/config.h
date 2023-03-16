@@ -117,6 +117,10 @@
 #define M5STAMP_PICO 0
 #endif  // M5STAMP_PICO
 
+#ifndef M5STAMP_C3U
+#define M5STAMP_C3U 0
+#endif  // M5STAMP_C3U
+
 #define JL_WIFI_SSID "FISHLIGHT"
 #define JL_WIFI_PASSWORD "155155155"
 

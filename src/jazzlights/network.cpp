@@ -18,13 +18,16 @@
 #include <sys/types.h>
 #include <unistd.h>
 #else
+#ifndef ntohl
 constexpr uint32_t ntohl(uint32_t n) {
   return ((n & 0xFF) << 24) | ((n & 0xFF00) << 8) | ((n & 0xFF0000) >> 8) | ((n & 0xFF000000) >> 24);
 }
-
+#endif  // ntohl
+#ifndef htonl
 constexpr uint32_t htonl(uint32_t n) {
   return ((n & 0xFF) << 24) | ((n & 0xFF00) << 8) | ((n & 0xFF0000) >> 8) | ((n & 0xFF000000) >> 24);
 }
+#endif  // htonl
 #endif
 
 namespace jazzlights {

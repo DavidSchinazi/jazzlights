@@ -32,10 +32,12 @@
 #elif defined(ESP32)
 #if M5STAMP_PICO
 #define LED_PIN 32
-#else  // M5STAMP_PICO
+#elif M5STAMP_C3U
+#define LED_PIN 1
+#else  // M5STAMP
 #define LED_PIN 26
 #define LED_PIN2 32
-#endif  // M5STAMP_PICO
+#endif  // M5STAMP
 #elif defined(ESP8266)
 #define LED_PIN 5
 #else
