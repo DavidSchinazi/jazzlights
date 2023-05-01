@@ -185,7 +185,10 @@ void drawSystemButton(Button& b, ButtonColors bc) {
   jll_info("drawing system button bg 0x%x outline 0x%x text 0x%x", bc.bg, bc.outline, bc.text);
   // First call default draw function to draw button text, outline, and background.
   M5Buttons::drawFunction(b, bc);
-  // TODO add custom system info.
+  // Then add custom system info.
+  M5.Lcd.setTextColor(bc.text, bc.bg);
+  M5.Lcd.setTextDatum(BC_DATUM);  // Bottom Center.
+  M5.Lcd.drawString(BOOT_MESSAGE, /*x=*/240, /*y=*/210);
 }
 
 void drawMainMenuButtons() {
