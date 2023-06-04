@@ -38,7 +38,10 @@ void setLEDs(uint32_t milli, CRGB* leds, size_t numLeds, CRGB colorA, CRGB color
   }
 }
 
-#define ADD_LEDS(n, pin) c##n = &FastLED.addLeds<WS2812, /*DATA_PIN=*/pin, GRB>(leds##n, numLeds##n);
+//#define ADD_LEDS(n, pin) c##n = &FastLED.addLeds<WS2812, /*DATA_PIN=*/pin, GRB>(leds##n, numLeds##n);
+#define ADD_LEDS(n, pin)                                                                                    \
+  c##n = &FastLED.addLeds<WS2801, /*DATA_PIN=*/pin, /*CLOCK_PIN=*/32, GRB, /*SPI_SPEED=*/DATA_RATE_MHZ(1)>( \
+      leds##n, numLeds##n);
 
 #define LOG_TIME(s)                           \
   milli2 = millis();                          \
@@ -50,7 +53,7 @@ void setLEDs(uint32_t milli, CRGB* leds, size_t numLeds, CRGB colorA, CRGB color
   c##n->showLeds(brightness); \
   LOG_TIME(show##n)
 
-#define LED_SIZE 216
+#define LED_SIZE 360
 
 ALLOCATE_LED(1, LED_SIZE)
 ALLOCATE_LED(2, LED_SIZE)
