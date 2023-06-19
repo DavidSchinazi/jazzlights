@@ -249,8 +249,8 @@ void vestSetup(void) {
   // M5 black wire = Ground = scale (2) = scale pigtail black (also connect 12VDC power supply ground here)
   // M5 red wire = 5VDC power supply - not connected to scale pigtail
   // M5 yellow wire = G26 = Data = scale (1) = scale pigtail yellow/green
-  // M5 white wire = G32 = Clock = scale (3) = scale pigtail blue in some cases, brown in others
-  // 12VDC power supply = scale (4) = scale pigtail brown in some cases, blue in others
+  // M5 white wire = G32 = Clock = scale (3) = scale pigtail green (or blue in some cases, brown in others)
+  // 12VDC power supply = scale (4) = scale pigtail red (or brown in some cases, blue in others)
   // IMPORTANT: it appears that on some pigtails brown and blue are inverted.
   // Separately, on the two-wire pigtails for power injection, blue is 12VDC and brown is Ground.
   // IMPORTANT: the two-wire pigtail is unfortunately reversible, and needs to be plugged in such
