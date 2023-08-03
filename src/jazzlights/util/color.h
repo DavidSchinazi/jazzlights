@@ -57,7 +57,7 @@ struct RgbaColor : RgbColor {
   constexpr RgbaColor(uint32_t c) : RgbColor(c), alpha(0xFF - ((c >> 24) & 0xFF)) {}
   RgbaColor(HslColor c);
   constexpr bool operator==(const RgbaColor& other) const {
-    return static_cast<const RgbColor&>(*this) == other && other.alpha == alpha;
+    return static_cast<const RgbColor&>(*this) == static_cast<const RgbColor&>(other) && other.alpha == alpha;
   }
 
   constexpr bool operator!=(const RgbaColor& other) const { return !(*this == other); }
