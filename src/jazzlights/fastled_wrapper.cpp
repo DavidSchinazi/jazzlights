@@ -1,6 +1,6 @@
 #include "jazzlights/fastled_wrapper.h"
 
-#if !WEARABLE
+#ifndef ARDUINO
 
 extern const TProgmemRGBPalette16 CloudColors_p FL_PROGMEM = {                             //
     CRGB::Blue,      CRGB::DarkBlue, CRGB::DarkBlue,  CRGB::DarkBlue,                      //
@@ -33,7 +33,7 @@ extern const TProgmemRGBPalette16 HeatColors_p FL_PROGMEM = {                   
     0xFF9900, 0xFFCC00, 0xFFFF00, 0xFFFF33,                                                //
     0xFFFF66, 0xFFFF99, 0xFFFFCC, 0xFFFFFF};                                               //
 
-#endif  // !WEARABLE
+#endif  // !ARDUINO
 
 extern const TProgmemRGBPalette16 JLLavaColors_p FL_PROGMEM = {  //
     CRGB::Black,   CRGB::Maroon,  CRGB::Black,  CRGB::Maroon,    //

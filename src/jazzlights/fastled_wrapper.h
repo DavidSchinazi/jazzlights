@@ -3,7 +3,7 @@
 
 #include "jazzlights/config.h"
 
-#if WEARABLE
+#ifdef ARDUINO
 
 // Fixes flickering <https://github.com/FastLED/FastLED/issues/306>.
 #define FASTLED_ALLOW_INTERRUPTS 0
@@ -18,7 +18,7 @@
 
 #include <FastLED.h>
 
-#else  // WEARABLE
+#else  // ARDUINO
 
 // We mainly use FastLED to communicate with LEDs on embedded devices. However, we also use some of FastLED's data types
 // and math functions in the rest of our code. To avoid requiring a dependency on FastLED on platforms where we don't
@@ -320,7 +320,7 @@ inline int16_t lerp15by16(int16_t a, int16_t b, uint16_t frac) {
   }
 }
 
-#endif  // WEARABLE
+#endif  // ARDUINO
 
 // Define our own due to <https://github.com/FastLED/FastLED/issues/1435>.
 extern const TProgmemRGBPalette16 JLLavaColors_p FL_PROGMEM;
