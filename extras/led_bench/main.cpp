@@ -15,7 +15,7 @@
 // 200 LEDs = 12 ms =  83 fps
 // 150 LEDs = 10 ms = 100 fps
 
-#ifdef JAZZLIGHTS_PLATFORMIO
+#ifdef ARDUINO
 
 #include <Arduino.h>
 
@@ -117,4 +117,4 @@ void loop() {
   // jazzlights::vestLoop();
 }
 
-#endif  // JAZZLIGHTS_PLATFORMIO
+#endif  // ARDUINO
