@@ -189,6 +189,72 @@ void writeUint16(uint8_t* data, uint16_t number);
 uint32_t readUint32(const uint8_t* data);
 uint16_t readUint16(const uint8_t* data);
 
+class NetworkReader {
+ public:
+  explicit NetworkReader(const uint8_t* data, size_t size) : data_(data), size_(size) {}
+
+  bool ReadUint8(uint8_t* out) {
+    if (sizeof(*out) > size_ || pos_ > size_ - sizeof(*out)) { return false; }
+    *out = data_[pos_];
+    pos_ += sizeof(*out);
+    return true;
+  }
+
+  bool ReadUint16(uint16_t* out) {
+    if (sizeof(*out) > size_ || pos_ > size_ - sizeof(*out)) { return false; }
+    *out = (data_[pos_] << 8) | (data_[pos_ + 1]);
+    pos_ += sizeof(*out);
+    return true;
+  }
+
+  bool ReadUint32(uint32_t* out) {
+    if (sizeof(*out) > size_ || pos_ > size_ - sizeof(*out)) { return false; }
+    *out = (data_[pos_] << 24) | (data_[pos_ + 1] << 16) | (data_[pos_ + 2] << 8) | (data_[pos_ + 3]);
+    pos_ += sizeof(*out);
+    return true;
+  }
+
+ private:
+  const uint8_t* data_;
+  const size_t size_;
+  size_t pos_ = 0;
+};
+
+class NetworkWriter {
+ public:
+  explicit NetworkWriter(uint8_t* data, size_t size) : data_(data), size_(size) {}
+
+  bool WriteUint8(uint8_t in) {
+    if (sizeof(in) > size_ || pos_ > size_ - sizeof(in)) { return false; }
+    data_[pos_] = in;
+    pos_ += sizeof(in);
+    return true;
+  }
+
+  bool WriteUint16(uint16_t in) {
+    if (sizeof(in) > size_ || pos_ > size_ - sizeof(in)) { return false; }
+    data_[pos_] = static_cast<uint8_t>((in & 0xFF00) >> 8);
+    data_[pos_ + 1] = static_cast<uint8_t>((in & 0x00FF));
+    pos_ += sizeof(in);
+    return true;
+  }
+
+  bool WriteUint32(uint32_t in) {
+    if (sizeof(in) > size_ || pos_ > size_ - sizeof(in)) { return false; }
+    data_[pos_] = static_cast<uint8_t>((in & 0xFF000000) >> 24);
+    data_[pos_ + 1] = static_cast<uint8_t>((in & 0x00FF0000) >> 16);
+    data_[pos_ + 2] = static_cast<uint8_t>((in & 0x0000FF00) >> 8);
+    data_[pos_ + 3] = static_cast<uint8_t>((in & 0x000000FF));
+    pos_ += sizeof(in);
+    return true;
+  }
+
+ private:
+  uint8_t* data_;
+  const size_t size_;
+  size_t pos_ = 0;
+};
+
 }  // namespace jazzlights
 
 #endif  // JAZZLIGHTS_NETWORK_H
