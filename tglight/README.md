@@ -1,5 +1,19 @@
 # TechnoGecko LED Control Software
 
+## List of tglight features
+
+* Webpage
+	- get current pattern
+	- go to next pattern
+	- get status string
+* Config in toml
+	- vehicle pixel maps in .toml files
+	- python scripts to generate .toml files
+* Pixelpusher
+	- send to pixelpusher
+	- discover nearby pixelpushers
+	- pizel.rc files for pixelpushers
+
 ## Setting up Raspberry Pi boxes
 
 ### Hardware
