@@ -887,3 +887,33 @@ void core2Loop(Player& player, Milliseconds currentTime) {
 }  // namespace jazzlights
 
 #endif  // CORE2AWS && WEARABLE
+
+/*
+  GPIO pins on Core2AWS for vehicles
+   0 = NS4168-LRCK = PortE1c
+   1 = USB_CP2104 RXD = PortD1c
+   2 = NS4168-DATA = PortE1b = PortE2c
+   3 = USB_CP2104 TXD = PortD2c
+   4 = TF CS
+   5 = LCD CS
+  13 = W5500 RST = PortC1
+  14 = PortC2
+  15 = LCD DC
+  18 = W5500 SCLK = LCD SCLK = TF SCLK
+  19 = W5500 MISO = PortE2a
+  21 = internal I2C SDA = PortD2b
+  22 = internal I2C SCL = PortD1b
+  23 = W5500 MOSI = LCD MOSI = TF MOSI
+  25 = LED (only when AWS expansion is used) = PortE2b
+  26 = W5500 CS = PortB2
+  27 = PortE1a
+  32 = PortA1
+  33 = PortA2
+  34 = W5500 INTn = PortD1a
+  35 = PortD2a
+  36 = PortB1
+  38 = LCD MISO = TF MISO
+
+  Good: A1,A2,B1,C2,D2a,E1a,E2b -- total of 7 pins
+  Taken by W5500 ethernet: B2,C1,D1
+*/
