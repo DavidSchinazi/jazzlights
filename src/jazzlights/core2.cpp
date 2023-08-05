@@ -4,6 +4,10 @@
 
 #if WEARABLE && CORE2AWS
 
+#ifndef CORE2AWS_LCD_ENABLED
+#define CORE2AWS_LCD_ENABLED 1
+#endif  // CORE2AWS_LCD_ENABLED
+
 #include <M5Core2.h>
 
 #include "jazzlights/fastled_wrapper.h"
@@ -11,6 +15,8 @@
 #include "jazzlights/vest.h"
 
 namespace jazzlights {
+
+#if CORE2AWS_LCD_ENABLED
 
 constexpr uint8_t kDefaultOnBrightness = 12;
 constexpr uint8_t kMinOnBrightness = 1;
@@ -884,6 +890,13 @@ void core2Loop(Player& player, Milliseconds currentTime) {
 #endif  // BUTTON_LOCK
 }
 
+#else   // CORE2AWS_LCD_ENABLED
+void core2SetupStart(Player& player, Milliseconds currentTime) {}
+void core2SetupEnd(Player& player, Milliseconds currentTime) {}
+void core2Loop(Player& player, Milliseconds currentTime) {}
+uint8_t getBrightness() { return 0; }
+#endif  // CORE2AWS_LCD_ENABLED
+
 }  // namespace jazzlights
 
 #endif  // CORE2AWS && WEARABLE
@@ -896,11 +909,11 @@ void core2Loop(Player& player, Milliseconds currentTime) {
    3 = USB_CP2104 TXD = PortD2c
    4 = TF CS
    5 = LCD CS
-  13 = W5500 RST = PortC1
+  13 = PortC1
   14 = PortC2
   15 = LCD DC
   18 = W5500 SCLK = LCD SCLK = TF SCLK
-  19 = W5500 MISO = PortE2a
+  19 = W5500 RST = PortE2a
   21 = internal I2C SDA = PortD2b
   22 = internal I2C SCL = PortD1b
   23 = W5500 MOSI = LCD MOSI = TF MOSI
@@ -912,8 +925,22 @@ void core2Loop(Player& player, Milliseconds currentTime) {
   34 = W5500 INTn = PortD1a
   35 = PortD2a
   36 = PortB1
-  38 = LCD MISO = TF MISO
+  38 = LCD MISO = TF MISO = W5500 MISO
 
-  Good: A1,A2,B1,C2,D2a,E1a,E2b -- total of 7 pins
-  Taken by W5500 ethernet: B2,C1,D1
+  Good: A1,A2,B1,C1,C2,D2a,E1a,E2b -- total of 8 pins
+  Taken by W5500 ethernet: B2,D1
+
+  https://docs.m5stack.com/en/core/core2_for_aws
+  https://docs.m5stack.com/en/base/lan_v12
+
+  Note that the pinout docs for the ethernet Core2 base are wrong:
+  bus position | Core2 pin | W5500 module pin
+             9 |        38 | 19 = W5500 MISO
+            15 |        13 | 16
+            16 |        14 | 17
+            19 |        32 |  2
+            20 |        33 |  5
+            21 |        27 | 12
+            22 |        19 | 13 = W5500 RST
+            23 |         2 | 15
 */
