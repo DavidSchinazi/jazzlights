@@ -132,6 +132,8 @@ class FastLedRenderer : public Renderer {
 
 #if JAZZLIGHTS_ARDUINO_ETHERNET
 NetworkDeviceId GetEthernetDeviceId() {
+  // The W5500 chip we use doesn't come with a MAC address, so we
+  // tell it to use the ESP32's Wi-Fi MAC address plus one.
   NetworkDeviceId deviceId = GetWiFiNetwork()->getLocalDeviceId();
   deviceId.data()[5]++;
   if (deviceId.data()[5] == 0) {
