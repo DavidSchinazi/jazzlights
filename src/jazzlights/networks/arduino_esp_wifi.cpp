@@ -229,7 +229,7 @@ std::string ArduinoEspWiFiNetwork::getStatusStr(Milliseconds currentTime) const 
       const Milliseconds lastRcv = getLastReceiveTime();
       char statStr[100] = {};
       snprintf(statStr, sizeof(statStr) - 1, "%s %u.%u.%u.%u - %ums", creds_.ssid, ip[0], ip[1], ip[2], ip[3],
-               (lastRcv >= 0 ? currentTime - getLastReceiveTime() : -1));
+               (lastRcv >= 0 ? currentTime - lastRcv : -1));
       return std::string(statStr);
     }
   }
