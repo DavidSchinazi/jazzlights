@@ -36,10 +36,30 @@ std::string EthernetHardwareStatusToString(EthernetHardwareStatus hwStatus) {
 }  // namespace
 
 ArduinoEthernetNetwork::ArduinoEthernetNetwork(NetworkDeviceId localDeviceId) : localDeviceId_(localDeviceId) {
+#if CORE2AWS_ETHERNET
+  // These pins work with the M5Stack Core2AWS connected to the Ethernet W5500 module.
+  // https://docs.m5stack.com/en/core/core2_for_aws
+  // https://docs.m5stack.com/en/base/lan_v12
+  // Note that the pinout docs for the ethernet Core2 base are wrong:
+  // bus position | Core2 pin | W5500 module pin
+  //            9 |        38 | 19 = W5500 MISO
+  //           15 |        13 | 16
+  //           16 |        14 | 17
+  //           19 |        32 |  2
+  //           20 |        33 |  5
+  //           21 |        27 | 12
+  //           22 |        19 | 13 = W5500 RST
+  //           23 |         2 | 15
+  // For that reason we need to set MISO to 38 and not 19.
+  // Luckily 38 matches the MISO for the Core2 LCD and TF card reader.
+  SPI.begin(/*SCLK=*/18, /*MISO=*/38, /*MOSI=*/23, /*SS/CS=*/-1);
+  Ethernet.init(/*SS/CS=*/26);
+#else   // CORE2AWS_ETHERNET
   // These pins work with the M5Stack ATOM Matrix (or ATOM Lite) connected to the ATOM PoE Kit.
   // https://shop.m5stack.com/products/atom-poe-kit-with-w5500-hy601742e
-  SPI.begin(/*SCK=*/22, /*MISO=*/23, /*MOSI=*/33, /*SS=*/-1);
-  Ethernet.init(/*=CS*/ 19);
+  SPI.begin(/*SCLK=*/22, /*MISO=*/23, /*MOSI=*/33, /*SS/CS=*/-1);
+  Ethernet.init(/*SS/CS=*/19);
+#endif  // CORE2AWS_ETHERNET
 }
 
 NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status, Milliseconds currentTime) {
@@ -48,6 +68,9 @@ NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status, Milliseconds 
       EthernetHardwareStatus hwStatus = Ethernet.hardwareStatus();
       if (hwStatus == EthernetNoHardware) {
         jll_error("%u %s Failed to communicate with Ethernet hardware", currentTime, networkName());
+        // In some cases this will fail because the W5500 chip hasn't booted yet.
+        // Currently, this is fixed by the automatic reconnect attempt 10s later.
+        // TODO try much sooner to avoid waiting 10s.
         return CONNECTION_FAILED;
       }
       jll_info("%u %s Ethernet detected hardware status %s with MAC address " DEVICE_ID_FMT, currentTime, networkName(),
@@ -93,6 +116,25 @@ NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status, Milliseconds 
       return status;
   }
   return status;
+}
+
+std::string ArduinoEthernetNetwork::getStatusStr(Milliseconds currentTime) const {
+  switch (getStatus()) {
+    case INITIALIZING: return "init";
+    case DISCONNECTED: return "disconnected";
+    case CONNECTING: return "connecting";
+    case DISCONNECTING: return "disconnecting";
+    case CONNECTION_FAILED: return "failed";
+    case CONNECTED: {
+      IPAddress ip = Ethernet.localIP();
+      const Milliseconds lastRcv = getLastReceiveTime();
+      char statStr[100] = {};
+      snprintf(statStr, sizeof(statStr) - 1, "%u.%u.%u.%u - %ums", ip[0], ip[1], ip[2], ip[3],
+               (lastRcv >= 0 ? currentTime - lastRcv : -1));
+      return std::string(statStr);
+    }
+  }
+  return "error";
 }
 
 int ArduinoEthernetNetwork::recv(void* buf, size_t bufsize, std::string* /*details*/) {

@@ -1,6 +1,14 @@
 #ifndef JAZZLIGHTS_NETWORK_ARDUINO_ETHERNET_H
 #define JAZZLIGHTS_NETWORK_ARDUINO_ETHERNET_H
 
+#ifndef CORE2AWS_ETHERNET
+#define CORE2AWS_ETHERNET 0
+#endif  // CORE2AWS_ETHERNET
+
+#if CORE2AWS_ETHERNET && !defined(JAZZLIGHTS_ARDUINO_ETHERNET)
+#define JAZZLIGHTS_ARDUINO_ETHERNET 1
+#endif
+
 #ifndef JAZZLIGHTS_ARDUINO_ETHERNET
 #define JAZZLIGHTS_ARDUINO_ETHERNET 0
 #endif  // JAZZLIGHTS_ARDUINO_ETHERNET
@@ -23,6 +31,7 @@ class ArduinoEthernetNetwork : public UdpNetwork {
   void send(void* buf, size_t bufsize) override;
   NetworkDeviceId getLocalDeviceId() override { return localDeviceId_; }
   const char* networkName() const override { return "ArduinoEthernet"; }
+  std::string getStatusStr(Milliseconds currentTime) const override;
 
  private:
   NetworkDeviceId localDeviceId_;
