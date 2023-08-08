@@ -18,6 +18,7 @@ strands = [
     'numY': 7,
     'startMidWay': False,
     'specialStart': True,
+    'controller': 10102,
     'strip': 0,
     # x = [7.5 .. 13.9] with diff 0.3 
     # on lower y =  [0.2 .. 1.72] with diff 0.25
@@ -32,10 +33,23 @@ strands = [
     'numY': 2,
     'startMidWay': True,
     'specialStart': False,
+    'controller': 10102,
     'strip': 1,
     # x = [14.3 .. 16.59] with diff 0.15
     # on lower y =  [1.0  .. 1.14] with diff 0.14
     # on higher y = [1.07 .. 1.21] with diff 0.14
+  },
+  {
+    'comment': 'Caboose outside wall new 12V WS2801',
+    'maxX': 6.6,
+    'maxY': 1.72,
+    'minY': 0.0,
+    'numX': 10,
+    'numY': 6,
+    'startMidWay': True,
+    'specialStart': False,
+    'controller': 10106,
+    'strip': 0,
   },
 ]
 
@@ -76,8 +90,9 @@ for strand in strands:
 
   s = '# {name} ({num} LEDs)\n'.format(name=strand['comment'], num=len(l)*2)
   s += '[[strand]]\n'
-  s += 'renderers = [{type="pixelpusher", addr="10.1.64.102", controller=10102, group=10001, port=7331, '
-  s += 'strip={}'.format(strand['strip']) + '}]\n'
+  s += 'renderers = [{'
+  s += 'type="pixelpusher", addr="10.1.64.102", controller={c}, group=10001, port=7331, strip={s}'.format(c=strand['controller'], s=strand['strip'])
+  s += '}]\n'
   s += 'layout = {type="pixelmap", coords=['
   for c in l:
     # print("({:.2f}, {:.2f})".format(c[0], c[1]))
