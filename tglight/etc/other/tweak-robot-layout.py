@@ -10,7 +10,7 @@ startUp = True
 
 strands = [
   {
-    'comment': 'Robot outside wall',
+    'comment': 'Robot outside wall plus flipper',
     'controller': 10102,
     'address': '10.1.64.102',
     'strip': 0,
@@ -23,6 +23,15 @@ strands = [
         'numY': 7,
         'startMidWay': False,
         'specialStart': True,
+      },
+      {
+        'maxX': robotWallMaxX - 7.2,
+        'maxY': 1.62,
+        'minY': 0.0,
+        'numX': 5,
+        'numY': 7,
+        'startMidWay': False,
+        'specialStart': False,
       },
     ]
     # x = [7.5 .. 13.9] with diff 0.3 
