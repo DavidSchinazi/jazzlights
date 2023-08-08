@@ -138,6 +138,11 @@ std::string ArduinoEthernetNetwork::getStatusStr(Milliseconds currentTime) const
 }
 
 int ArduinoEthernetNetwork::recv(void* buf, size_t bufsize, std::string* /*details*/) {
+  // TODO: figure out why udp_.parsePacket() sometimes blocks for multiple seconds or indefinitely.
+  // From observing logs it looks like it sometimes returns way more than what would be expected in a single packet even
+  // though it's supposed to return how many bytes are available in the next packet. From looking at the source code for
+  // EthernetUDP::parsePacket() there's a while loop with a comment about infinite looping which is incredibly
+  // suspicious.
   int cb = udp_.parsePacket();
   if (cb <= 0) { return 0; }
   return udp_.read((unsigned char*)buf, bufsize);
