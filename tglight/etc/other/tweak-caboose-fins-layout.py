@@ -44,7 +44,7 @@ poleInfos = {
     ['red', '4L', 39, 14.33],
     ['red', '5L', 27, 13.33],
     ['red', '6L', 38, 14.25],
-    ['red', '7L', 40, 16],
+    ['red', '7L', 32, 14],
     ['red', '8L', 43, 20],
   ],
   'rightTail': [
@@ -53,7 +53,7 @@ poleInfos = {
     ['green', '3R', 35, 16],
     ['green', '4R', 30, 16],
     ['green', '5R', 36, 13.33],
-    ['green', '6R', 38, 14.17],
+    ['green', '6R', 44, 16],
     ['green', '7R', 35, 16],
     ['green', '8R', 41, 20],
   ],
@@ -69,7 +69,7 @@ poleInfos = {
     ['orange', 'D7', 45, 20],
     ['orange', 'D8', 41, 20],
     ['orange', 'D9', 39, 20],
-    ['orange', 'D10', 32, 20],
+    ['orange', 'D10', 22, 17],
     ['orange', 'D11', 36, 20],
     ['orange', 'D12', 43, 20],
   ],
@@ -104,8 +104,8 @@ comments = {
   'rightTail': 'Caboose right tail fins',
   'dorsalA': 'Caboose dorsal fins D1 + D2 + D3 + D4 + D5 + D6',
   'dorsalB': 'Caboose dorsal fins D7 + D8 + D9 + D10 + D11 + D12',
-  'leftFlipper': 'Caboose left flipper',
-  'rightFlipper': 'Caboose right flipper',
+  'leftFlipper': 'Caboose left flipper old 5V P9813',
+  'rightFlipper': 'Caboose right flipper old 5V P9813',
 }
 
 strips = {
@@ -127,12 +127,12 @@ strips = {
 printPrevious = False
 
 for poleSet in poleInfos.keys():
-  print('#', comments[poleSet])
   isHorizontal = 'tail' in poleSet.lower() or 'flipper' in poleSet.lower()
   poleInfo = poleInfos[poleSet]
   previousLayout = previousLayouts[poleSet]
   numPixels = len(previousLayout) // 3
   if printPrevious:
+    print('#', comments[poleSet])
     if isHorizontal:
       curY = None
       d = {}
@@ -217,12 +217,15 @@ for poleSet in poleInfos.keys():
       y += yDiff
     else:
       x += xDiff
+  if not printPrevious:
+    print('# {name} ({num} LEDs)'.format(name=comments[poleSet], num=len(l)))
   # print('new layout', l)
-  s = '[[strand]]\n'
-  s += 'renderers = [{type="pixelpusher", addr="10.1.64.103", controller=10103, group=10001, port=5078, '
+  cs = '' if 'flipper' not in comments[poleSet] else '# '
+  s = cs + '[[strand]]\n'
+  s += cs + 'renderers = [{type="pixelpusher", addr="10.1.64.103", controller=10103, group=10001, port=5078, '
   s += 'strip={}, '.format(strips[poleSet])
   s += 'reversegb=true}]\n'
-  s += 'layout = {type="pixelmap", coords=['
+  s += cs + 'layout = {type="pixelmap", coords=['
   for c in l:
     s += "{:.2f}, {:.2f}, 0.0,   ".format(c[0], c[1])
   s = s[:-4]
