@@ -12,11 +12,12 @@ strands = [
   {
     'comment': 'Robot outside wall',
     'controller': 10102,
+    'address': '10.1.64.102',
     'strip': 0,
     'segments': [
       {
         'maxX': robotWallMaxX,
-        'maxY': 1.72,
+        'maxY': 1.62,
         'minY': 0.0,
         'numX': 24,
         'numY': 7,
@@ -31,6 +32,7 @@ strands = [
   {
     'comment': 'Robot head',
     'controller': 10102,
+    'address': '10.1.64.102',
     'strip': 1,
     'segments': [
       {
@@ -50,14 +52,60 @@ strands = [
   {
     'comment': 'Caboose outside wall new 12V WS2801',
     'controller': 10106,
+    'address': '10.1.64.106',
     'strip': 0,
     'segments': [
       {
         'maxX': 6.6,
-        'maxY': 1.72,
+        'maxY': 1.38,
         'minY': 0.0,
         'numX': 10,
         'numY': 6,
+        'startMidWay': True,
+        'specialStart': False,
+      },
+      {
+        'maxX': 3.6,
+        'maxY': 1.62,
+        'minY': 0.00,
+        'numX': 2,
+        'numY': 7,
+        'startMidWay': True,
+        'specialStart': False,
+      },
+      {
+        'maxX': 3.0,
+        'maxY': 1.88,
+        'minY': 0.00,
+        'numX': 8,
+        'numY': 8,
+        'startMidWay': True,
+        'specialStart': False,
+      },
+      {
+        'maxX': 0.6,
+        'maxY': 1.88,
+        'minY': 0.25,
+        'numX': 1,
+        'numY': 7,
+        'startMidWay': True,
+        'specialStart': False,
+      },
+      {
+        'maxX': 0.3,
+        'maxY': 2.0,
+        'minY': 0.63,
+        'numX': 1,
+        'numY': 6,
+        'startMidWay': True,
+        'specialStart': False,
+      },
+      {
+        'maxX': 0.0,
+        'maxY': 1.88,
+        'minY': 1.0,
+        'numX': 1,
+        'numY': 4,
         'startMidWay': True,
         'specialStart': False,
       },
@@ -68,6 +116,7 @@ strands = [
 for strand in strands:
   l = []
   for segment in strand['segments']:
+    # print('## STARTING SEGMENT')
     maxX = segment['maxX']
     maxY = segment['maxY']
     minY = segment['minY']
@@ -93,6 +142,7 @@ for strand in strands:
           thisMinY = 1.26
       yMult = -1.0 if up else 1.0
       for yi in range(maxyi):
+        # print("# ({:.2f}, {:.2f})".format(x, y))
         l.append((x, y))
         y += yDiff * yMult
       if up:
@@ -104,7 +154,7 @@ for strand in strands:
   s = '# {name} ({num} LEDs)\n'.format(name=strand['comment'], num=len(l)*2)
   s += '[[strand]]\n'
   s += 'renderers = [{'
-  s += 'type="pixelpusher", addr="10.1.64.102", controller={c}, group=10001, port=7331, strip={s}'.format(c=strand['controller'], s=strand['strip'])
+  s += 'type="pixelpusher", addr="{a}", controller={c}, group=10001, port=7331, strip={s}'.format(c=strand['controller'], s=strand['strip'], a=strand['address'])
   s += '}]\n'
   s += 'layout = {type="pixelmap", coords=['
   for c in l:
