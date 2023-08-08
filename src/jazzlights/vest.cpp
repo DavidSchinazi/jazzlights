@@ -238,7 +238,13 @@ void vestSetup(void) {
   setupButtons();
 #endif  // CORE2AWS
 
-#if GECKO_SCALES
+#if IS_CABOOSE_NEW_WALL
+  // See GECKO_SCALES section below for details.
+  constexpr uint32_t kSpiSpeed = DATA_RATE_MHZ(1);
+  mainVestRenderer =
+      std::move(FastLedRenderer::Create</*CHIPSET=*/WS2801, /*DATA_PIN=*/25, /*CLOCK_PIN=*/27, /*RGB_ORDER=*/GBR,
+                                        /*SPI_SPEED=*/kSpiSpeed>(LEDNUM));
+#elif GECKO_SCALES
   // Note to self for future reference: we were able to get the 2018 Gecko Robot scales to light
   // up correctly with the M5Stack ATOM Matrix without any level shifters.
   // Wiring of the 2018 Gecko Robot scales: (1) = Data, (2) = Ground, (3) = Clock, (4) = 12VDC
@@ -277,12 +283,16 @@ void vestSetup(void) {
 #elif IS_STAFF
   mainVestRenderer = std::move(FastLedRenderer::Create<WS2811, LED_PIN, RGB>(LEDNUM));
 #elif IS_ROPELIGHT
-  mainVestRenderer = std::move(FastLedRenderer::Create<WS2811, LED_PIN, BRG>(LEDNUM));
+  mainVestRenderer = std::move(FastLedRenderer::Create<WS2812, LED_PIN, BRG>(LEDNUM));
 #else  // Vest.
   mainVestRenderer = std::move(FastLedRenderer::Create<WS2812B, LED_PIN, GRB>(LEDNUM));
 #endif
 #if LEDNUM2
-#if GECKO_SCALES
+#if IS_CABOOSE_NEW_WALL
+  mainVestRenderer2 =
+      std::move(FastLedRenderer::Create</*CHIPSET=*/WS2801, /*DATA_PIN=*/13, /*CLOCK_PIN=*/32, /*RGB_ORDER=*/GBR,
+                                        /*SPI_SPEED=*/kSpiSpeed>(LEDNUM2));
+#elif GECKO_SCALES
   mainVestRenderer2 =
       std::move(FastLedRenderer::Create</*CHIPSET=*/WS2801, /*DATA_PIN=*/21, /*CLOCK_PIN=*/32, /*RGB_ORDER=*/GBR,
                                         /*SPI_SPEED=*/kSpiSpeed>(LEDNUM2));
@@ -298,6 +308,9 @@ void vestSetup(void) {
 #if IS_ROBOT
   player.setBasePrecedence(20000);
   player.setPrecedenceGain(5000);
+#elif IS_CABOOSE_NEW_WALL
+  player.setBasePrecedence(15000);
+  player.setPrecedenceGain(2500);
 #elif GECKO_FOOT
   player.setBasePrecedence(2500);
   player.setPrecedenceGain(1000);

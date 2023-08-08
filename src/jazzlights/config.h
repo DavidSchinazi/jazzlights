@@ -6,9 +6,10 @@
 #endif  // WEARABLE
 
 // Pick which vest to build here.
-#if !defined(CAMP_SIGN) && !defined(IS_ROPELIGHT) && !defined(ORANGE_VEST) && !defined(HAMMER) && \
-    !defined(IS_GUPPY) && !defined(GECKO_FOOT) && !defined(FAIRY_WAND) && !defined(IS_STAFF) &&   \
-    !defined(IS_CAPTAIN_HAT) && !defined(IS_GAUNTLET) && !defined(IS_ROBOT) && !defined(IS_CABOOSE_WALL)
+#if !defined(CAMP_SIGN) && !defined(IS_ROPELIGHT) && !defined(ORANGE_VEST) && !defined(HAMMER) &&           \
+    !defined(IS_GUPPY) && !defined(GECKO_FOOT) && !defined(FAIRY_WAND) && !defined(IS_STAFF) &&             \
+    !defined(IS_CAPTAIN_HAT) && !defined(IS_GAUNTLET) && !defined(IS_ROBOT) && !defined(IS_CABOOSE_WALL) && \
+    !defined(IS_CABOOSE_NEW_WALL)
 #define ORANGE_VEST WEARABLE
 #endif
 
@@ -35,6 +36,10 @@
 #ifndef IS_ROBOT
 #define IS_ROBOT 0
 #endif  // IS_ROBOT
+
+#ifndef IS_CABOOSE_NEW_WALL
+#define IS_CABOOSE_NEW_WALL 0
+#endif  // IS_CABOOSE_NEW_WALL
 
 #ifndef CAMP_SIGN
 #define CAMP_SIGN 0

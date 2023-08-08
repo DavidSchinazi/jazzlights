@@ -32,7 +32,12 @@ namespace jazzlights {
 #if IS_ROBOT
 #define LEDNUM 310
 #define LEDNUM2 68
-#endif  // IS_STAFF
+#endif  // IS_ROBOT
+
+#if IS_CABOOSE_NEW_WALL
+#define LEDNUM 310
+// #define LEDNUM2 310
+#endif  // IS_CABOOSE_NEW_WALL
 
 #if IS_GUPPY
 #define LEDNUM 300
@@ -59,7 +64,7 @@ namespace jazzlights {
 #define LEDNUM 300
 #endif  // IS_ROPELIGHT
 
-#if CAMP_SIGN || HAMMER || GECKO_FOOT || IS_ROBOT || IS_CABOOSE_WALL
+#if CAMP_SIGN || HAMMER || GECKO_FOOT || IS_ROBOT || IS_CABOOSE_WALL || IS_CABOOSE_NEW_WALL
 #define FIRST_BRIGHTNESS MAX_BRIGHTNESS
 #endif  // CAMP_SIGN
 
