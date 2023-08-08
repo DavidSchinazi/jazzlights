@@ -102,10 +102,8 @@ for head in [False, True]:
       maxyi = 2
     else:
       maxyi = 7
-      if xi == 0 or xi == 2:
+      if xi <= 2:
         maxyi = 3
-      elif xi == 1:
-        maxyi = 2
       if xi == 0:
         thisMinY = 1.26
     yMult = -1.0 if up else 1.0
