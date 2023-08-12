@@ -186,7 +186,7 @@ void sendLedsToFastLed() {
 #if MAX_MILLIWATTS
   uint32_t powerAtFullBrightness = mainVestRenderer->GetPowerAtFullBrightness();
 #if LEDNUM2
-  powerAtFullBrightness += mainVestRenderer->GetPowerAtFullBrightness2();
+  powerAtFullBrightness += mainVestRenderer2->GetPowerAtFullBrightness();
 #endif  // LEDNUM2
   const uint32_t powerAtDesiredBrightness =
       powerAtFullBrightness * brightness / 256;  // Forecast power at our current desired brightness
@@ -207,7 +207,12 @@ void sendLedsToFastLed() {
   if (shouldWrite) { mainVestRenderer->sendToLeds(brightness); }
   SAVE_TIME_POINT(MainLED);
 #if LEDNUM2
-  if (shouldWrite2) { mainVestRenderer2->sendToLeds(brightness); }
+  if (shouldWrite2) {
+#if BRIGHTER2
+    brightness += (255 - brightness) / 2;
+#endif  // BRIGHTER2
+    mainVestRenderer2->sendToLeds(brightness);
+  }
 #endif  // LEDNUM2
   ledWriteEnd();
   SAVE_TIME_POINT(SecondLED);

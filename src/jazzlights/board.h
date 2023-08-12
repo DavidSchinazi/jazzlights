@@ -54,6 +54,7 @@ namespace jazzlights {
 #if IS_STAFF
 #define LEDNUM 36
 #define LEDNUM2 33
+#define BRIGHTER2 1
 #endif  // IS_STAFF
 
 #if IS_CAPTAIN_HAT
@@ -73,6 +74,10 @@ const Layout* GetLayout();
 #ifndef LEDNUM2
 #define LEDNUM2 0
 #endif  // LEDNUM2
+
+#ifndef BRIGHTER2
+#define BRIGHTER2 0
+#endif  // BRIGHTER2
 
 #if LEDNUM2
 const Layout* GetLayout2();
