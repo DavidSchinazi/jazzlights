@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Test program that can receive updates over IP multicast and display them in raw form.
 # See also transmitter, implemented in sender.py
@@ -35,7 +35,7 @@ def main():
   #host = socket.gethostbyname(socket.gethostname()) # Eye Pi4 returns 127.0.0.1
   host = get_ip()
   print ('host: {}'.format(host))
-  sock.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_IF, socket.inet_aton(host))
+  #sock.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_IF, socket.inet_aton(host))
   sock.setsockopt(socket.SOL_IP, socket.IP_ADD_MEMBERSHIP, 
                    socket.inet_aton(MCAST_GRP) + socket.inet_aton(host))
 
