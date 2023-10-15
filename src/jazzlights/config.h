@@ -6,10 +6,8 @@
 #endif  // WEARABLE
 
 // Pick which vest to build here.
-#if !defined(CAMP_SIGN) && !defined(IS_ROPELIGHT) && !defined(ORANGE_VEST) && !defined(HAMMER) &&           \
-    !defined(IS_GUPPY) && !defined(GECKO_FOOT) && !defined(FAIRY_WAND) && !defined(IS_STAFF) &&             \
-    !defined(IS_CAPTAIN_HAT) && !defined(IS_GAUNTLET) && !defined(IS_ROBOT) && !defined(IS_CABOOSE_WALL) && \
-    !defined(IS_CABOOSE_NEW_WALL)
+#if !defined(IS_ROPELIGHT) && !defined(ORANGE_VEST) && !defined(HAMMER) && !defined(FAIRY_WAND) && \
+    !defined(IS_STAFF) && !defined(IS_CAPTAIN_HAT) && !defined(IS_GAUNTLET)
 #define ORANGE_VEST WEARABLE
 #endif
 
@@ -24,30 +22,6 @@
 #ifndef IS_GAUNTLET
 #define IS_GAUNTLET 0
 #endif  // IS_GAUNTLET
-
-#ifndef GECKO_FOOT
-#define GECKO_FOOT 0
-#endif  // GECKO_FOOT
-
-#ifndef IS_CABOOSE_WALL
-#define IS_CABOOSE_WALL 0
-#endif  // IS_CABOOSE_WALL
-
-#ifndef IS_ROBOT
-#define IS_ROBOT 0
-#endif  // IS_ROBOT
-
-#ifndef IS_CABOOSE_NEW_WALL
-#define IS_CABOOSE_NEW_WALL 0
-#endif  // IS_CABOOSE_NEW_WALL
-
-#ifndef CAMP_SIGN
-#define CAMP_SIGN 0
-#endif  // CAMP_SIGN
-
-#ifndef IS_GUPPY
-#define IS_GUPPY 0
-#endif  // IS_GUPPY
 
 #ifndef HAMMER
 #define HAMMER 0
@@ -77,14 +51,6 @@
 #define ATOM_MATRIX_SCREEN 0
 #endif  // ESP32
 #endif  // ATOM_MATRIX_SCREEN
-
-#ifndef GECKO_SCALES
-#define GECKO_SCALES 0
-#endif  // GECKO_SCALES
-
-#ifndef CABOOSE_LIGHTS
-#define CABOOSE_LIGHTS 0
-#endif  // CABOOSE_LIGHTS
 
 #ifndef IS_STAFF
 #define IS_STAFF 0

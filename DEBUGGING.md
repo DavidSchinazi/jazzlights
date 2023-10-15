@@ -9,20 +9,11 @@ Then `xtensa-esp32-elf-addr2line` will be in the PATH and can be used as follows
 
 Otherwise the location of `xtensa-esp32-elf-addr2line` can be found by running `find $HOME/.espressif/tools/xtensa-esp32-elf/ -name xtensa-esp32-elf-addr2line`
 
-# To run from the command line
-
-## PlatformIO build for ESP32
+# To build from the command line
 
 Run from `jazzlights`:
 ```
 pio run -e atom_matrix_dev -t upload && pio device monitor -e atom_matrix_dev
-```
-
-## Rust build for tglight
-
-Run from `jazzlights/tglight`:
-```
-cargo run -- --timestamp --config ./etc/robot/tglight.toml
 ```
 
 # To build all available PlatformIO environments
@@ -34,18 +25,18 @@ Run from `jazzlights`:
 for e in $(pio project config | grep 'env:' | grep -v extends | sed 's/env://g') ; do pio run -e "$e" || break ; done
 ```
 
-# To copy this git directory over SSH from a laptop to the Robot box without Internet connectivity
+# To copy this git directory over SSH from a laptop to a Raspberry Pi without Internet connectivity
 
 First run once on your laptop:
 ```
-git remote add robotlight02 robotlight02:/root/jazzlights
+git remote add pi pi:/root/jazzlights
 ```
 
 Also remember to make sure the destination filesystem is readable!
 
 Then to copy the local main branch over:
 ```
-git push robotlight02 main:main
+git push pi main:main
 ```
 
 # To tweak the ESP-IDF settings for instrumentation
