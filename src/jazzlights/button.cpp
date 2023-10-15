@@ -26,31 +26,7 @@ uint8_t brightnessLastWrite = 255;
 #if defined(ESP32)
 #define NUMBUTTONS 1
 uint8_t buttonPins[NUMBUTTONS] = {39};
-#elif defined(ESP8266)
-// D0 = GPIO 16
-// D1 = GPIO  5
-// D2 = GPIO  4
-// D3 = GPIO  0 = bottom-right button
-// D4 = GPIO  2
-// 3.3V
-// GND
-// D5 = GPIO 14 = top-right button
-// D6 = GPIO 12 = bottom-left button
-// D7 = GPIO 13 = top-left button
-// D8 = GPIO 15
-// D9 = GPIO  3
-// D10 = GPIO 1
-// GND
-// 3.3V
-
-// Button settings
-#define NUMBUTTONS 4
-#define MODEBUTTON 13
-#define BRIGHTNESSBUTTON 14
-#define WIFIBUTTON 12
-#define SPECIALBUTTON 0
-uint8_t buttonPins[NUMBUTTONS] = {MODEBUTTON, BRIGHTNESSBUTTON, WIFIBUTTON, SPECIALBUTTON};
-#endif  // ESPxx
+#endif  // ESP32
 
 // Button state tranitions:
 // Button starts in BTN_IDLE.
@@ -543,88 +519,7 @@ void doButtons(Player& player, const Network& wifiNetwork,
                      currentMillis);
   atomScreenDisplay(currentMillis);
 #endif  // ATOM_MATRIX_SCREEN
-#elif defined(ESP8266)
-  const uint8_t btn0 = buttonStatus(0, currentMillis);
-  const uint8_t btn1 = buttonStatus(1, currentMillis);
-  const uint8_t btn2 = buttonStatus(2, currentMillis);
-  const uint8_t btn3 = buttonStatus(3, currentMillis);
-
-#if BUTTON_LOCK
-  static uint8_t buttonLockState = 0;
-  static uint32_t lastUnlockTime = 0;
-
-  if (buttonLockState == 4 && currentMillis - lastUnlockTime > lockDelay) { buttonLockState = 0; }
-
-  if (buttonLockState == 0 && btn0 == BTN_RELEASED) {
-    buttonLockState++;
-    return;
-  }
-  if (buttonLockState == 1 && btn3 == BTN_RELEASED) {
-    buttonLockState++;
-    return;
-  }
-  if (buttonLockState == 2 && btn2 == BTN_RELEASED) {
-    buttonLockState++;
-    return;
-  }
-  if (buttonLockState == 3 && btn1 == BTN_RELEASED) {
-    buttonLockState++;
-    lastUnlockTime = currentMillis;
-    return;
-  }
-
-  if (buttonLockState < 4) { return; }
-
-  lastUnlockTime = currentMillis;
-#endif  // BUTTON_LOCK
-
-  // Check the mode button (for switching between effects)
-  switch (btn0) {
-    case BTN_RELEASED:
-      jll_info("Next button has been hit");
-      player.stopSpecial(currentMillis);
-      player.stopLooping(currentMillis);
-      player.next(currentMillis);
-      break;
-
-    case BTN_LONGPRESS: jll_info("Ignoring next button long press"); break;
-  }
-
-  // Check the brightness adjust button
-  switch (btn1) {
-    case BTN_RELEASED:
-      brightnessCursor++;
-      if (brightnessCursor >= NUM_BRIGHTNESSES) { brightnessCursor = 0; }
-      jll_info("Brightness button has been hit %u", brightnessList[brightnessCursor]);
-      break;
-
-    case BTN_LONGPRESS:  // button was held down for a while
-      brightnessCursor = FIRST_BRIGHTNESS;
-      jll_info("Brightness button long press %u", brightnessList[brightnessCursor]);
-      break;
-  }
-
-  // Check the back button
-  switch (btn2) {
-    case BTN_RELEASED:
-      jll_info("Back button has been hit");
-      player.stopSpecial(currentMillis);
-      player.loopOne(currentMillis);
-      break;
-
-    case BTN_LONGPRESS: jll_info("Ignoring back button long press"); break;
-  }
-
-  // Check the special button
-  switch (btn3) {
-    case BTN_RELEASED:
-      jll_info("Special button has been hit");
-      player.handleSpecial(currentMillis);
-      break;
-
-    case BTN_LONGPRESS: jll_info("Ignoring special button long press"); break;
-  }
-#endif  // ESPxx
+#endif  // ESP32
 #endif  // !BUTTONS_DISABLED
 }
 

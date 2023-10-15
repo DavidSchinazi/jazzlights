@@ -4,18 +4,16 @@
 #include "jazzlights/network.h"
 
 #ifndef JAZZLIGHTS_ESP_WIFI
-#if defined(ESP8266) || defined(ESP32)
+#if defined(ESP32)
 #define JAZZLIGHTS_ESP_WIFI 1
-#else  // defined(ESP8266) || defined(ESP32)
+#else  // ESP32
 #define JAZZLIGHTS_ESP_WIFI 0
-#endif  // defined(ESP8266) || defined(ESP32)
+#endif  // ESP32
 #endif  // JAZZLIGHTS_ESP_WIFI
 
 #if JAZZLIGHTS_ESP_WIFI
 
-#if defined(ESP8266)
-#include <ESP8266WiFi.h>
-#elif defined(ESP32)
+#if defined(ESP32)
 #include <WiFi.h>
 #endif
 

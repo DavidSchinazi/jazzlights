@@ -7,7 +7,7 @@
 namespace jazzlights {
 
 // I originally tried integer math, but it seems like it doesn't make
-// much difference neither on PC nor on ESP8266 board.
+// much difference neither on PC nor on arduino.
 //
 // Most likely this is because the main performance hog by far is conversion
 // between RGB & HSL spaces, which I do in floating-point anyway. And I

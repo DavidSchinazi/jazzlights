@@ -141,10 +141,6 @@ uint32_t UnpredictableRandom::GetRandom32bits() {
   return result;
 #elif defined(ESP32)
   return esp_random();
-#elif defined(ESP8266)
-  const uint32_t randOne = static_cast<uint32_t>(rand());
-  const uint32_t randTwo = static_cast<uint32_t>(rand());
-  return randOne ^ ((randTwo << 16) | (randTwo >> 16));
 #else
 #error "Unsupported platform"
 #endif

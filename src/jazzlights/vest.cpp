@@ -38,8 +38,6 @@
 #define LED_PIN 26
 #define LED_PIN2 32
 #endif  // M5STAMP
-#elif defined(ESP8266)
-#define LED_PIN 5
 #else
 #error "Unexpected board"
 #endif

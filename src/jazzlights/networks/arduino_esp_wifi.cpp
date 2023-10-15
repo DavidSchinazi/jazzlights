@@ -121,11 +121,7 @@ NetworkStatus ArduinoEspWiFiNetwork::update(NetworkStatus status, Milliseconds c
         case WL_CONNECTED: {
           IPAddress mcaddr;
           mcaddr.fromString(mcastAddr_);
-#if defined(ESP8266)
-          int res = udp_.beginMulticast(WiFi.localIP(), mcaddr, port_);
-#elif defined(ESP32)
           int res = udp_.beginMulticast(mcaddr, port_);
-#endif
           if (!res) {
             jll_error("%u %s can't begin multicast on port %d, multicast group %s", currentTime, networkName(), port_,
                       mcastAddr_);
