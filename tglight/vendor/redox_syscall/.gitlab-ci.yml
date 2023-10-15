@@ -1,5 +1,0 @@
-image: "redoxos/redoxer"
-
-build:
-    script:
-     - redoxer build

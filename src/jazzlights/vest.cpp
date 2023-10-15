@@ -243,49 +243,7 @@ void vestSetup(void) {
   setupButtons();
 #endif  // CORE2AWS
 
-#if IS_CABOOSE_NEW_WALL
-  // See GECKO_SCALES section below for details.
-  constexpr uint32_t kSpiSpeed = DATA_RATE_MHZ(1);
-  mainVestRenderer =
-      std::move(FastLedRenderer::Create</*CHIPSET=*/WS2801, /*DATA_PIN=*/25, /*CLOCK_PIN=*/27, /*RGB_ORDER=*/GBR,
-                                        /*SPI_SPEED=*/kSpiSpeed>(LEDNUM));
-#elif GECKO_SCALES
-  // Note to self for future reference: we were able to get the 2018 Gecko Robot scales to light
-  // up correctly with the M5Stack ATOM Matrix without any level shifters.
-  // Wiring of the 2018 Gecko Robot scales: (1) = Data, (2) = Ground, (3) = Clock, (4) = 12VDC
-  // if we number the wires on the male connector (assuming notch is up top):
-  // (1)  (4)
-  // (2)  (3)
-  // conversely on the female connector (also assuming notch is up top):
-  // (4)  (1)
-  // (3)  (2)
-  // M5 black wire = Ground = scale (2) = scale pigtail black (also connect 12VDC power supply ground here)
-  // M5 red wire = 5VDC power supply - not connected to scale pigtail
-  // M5 yellow wire = G26 = Data = scale (1) = scale pigtail yellow/green
-  // M5 white wire = G32 = Clock = scale (3) = scale pigtail green (or blue in some cases, brown in others)
-  // 12VDC power supply = scale (4) = scale pigtail red (or brown in some cases, blue in others)
-  // IMPORTANT: it appears that on some pigtails brown and blue are inverted.
-  // Separately, on the two-wire pigtails for power injection, blue is 12VDC and brown is Ground.
-  // IMPORTANT: the two-wire pigtail is unfortunately reversible, and needs to be plugged in such
-  // that the YL inscription is on the male end of the three-way power-injection splitter.
-  constexpr uint32_t kSpiSpeed = DATA_RATE_MHZ(2);
-  // The FastLED default for WS2801 is 1MHz. Empirically without long runs of wire it appeared that 2MHz and 3MHz both
-  // worked while 4MHz caused visible glitches. We chose 2MHz because that allows us to run the robot at 100FPS while
-  // 1MHz doesn't. Empirical data indicates that for the 378 LEDs in the robot (310 on side and 68 in head), 1MHz
-  // takes 10.7ms to render while 2MHz takes 5.7ms.
-  mainVestRenderer =
-      std::move(FastLedRenderer::Create</*CHIPSET=*/WS2801, /*DATA_PIN=*/26, /*CLOCK_PIN=*/32, /*RGB_ORDER=*/GBR,
-                                        /*SPI_SPEED=*/kSpiSpeed>(LEDNUM));
-#elif CABOOSE_LIGHTS
-  // The caboose uses Total Control Lighing from Cool Neon.
-  // https://www.coolneon.com/tutorials-2/total-control-lighting/total-control-lighting-faq/
-  // Atom Matrix Black = Ground = TCL Blue
-  // Atom Matrix Red = 5VDC = TCL Red
-  // Atom Matrix Yellow (G26) = Data = TCL Green
-  // Atom Matrix White (G32) = Clock = TCL Yellow
-  mainVestRenderer = std::move(FastLedRenderer::Create</*CHIPSET=*/P9813, /*DATA_PIN=*/26, /*CLOCK_PIN=*/32,
-                                                       /*RGB_ORDER=*/RGB>(LEDNUM));
-#elif IS_STAFF
+#if IS_STAFF
   mainVestRenderer = std::move(FastLedRenderer::Create<WS2811, LED_PIN, RGB>(LEDNUM));
 #elif IS_ROPELIGHT
   mainVestRenderer = std::move(FastLedRenderer::Create<WS2812, LED_PIN, BRG>(LEDNUM));
@@ -293,33 +251,15 @@ void vestSetup(void) {
   mainVestRenderer = std::move(FastLedRenderer::Create<WS2812B, LED_PIN, GRB>(LEDNUM));
 #endif
 #if LEDNUM2
-#if IS_CABOOSE_NEW_WALL
-  mainVestRenderer2 =
-      std::move(FastLedRenderer::Create</*CHIPSET=*/WS2801, /*DATA_PIN=*/13, /*CLOCK_PIN=*/32, /*RGB_ORDER=*/GBR,
-                                        /*SPI_SPEED=*/kSpiSpeed>(LEDNUM2));
-#elif GECKO_SCALES
-  mainVestRenderer2 =
-      std::move(FastLedRenderer::Create</*CHIPSET=*/WS2801, /*DATA_PIN=*/21, /*CLOCK_PIN=*/32, /*RGB_ORDER=*/GBR,
-                                        /*SPI_SPEED=*/kSpiSpeed>(LEDNUM2));
-#else   // GECKO_SCALES
   mainVestRenderer2 = std::move(FastLedRenderer::Create<WS2812B, LED_PIN2, GRB>(LEDNUM2));
-#endif  // GECKO_SCALES
 #endif  // LEDNUM2
 
   player.addStrand(*GetLayout(), *mainVestRenderer);
 #if LEDNUM2
   player.addStrand(*GetLayout2(), *mainVestRenderer2);
 #endif  // LEDNUM2
-#if IS_ROBOT
-  player.setBasePrecedence(20000);
-  player.setPrecedenceGain(5000);
-#elif IS_CABOOSE_NEW_WALL
-  player.setBasePrecedence(15000);
-  player.setPrecedenceGain(2500);
-#elif GECKO_FOOT
-  player.setBasePrecedence(2500);
-  player.setPrecedenceGain(1000);
-#elif FAIRY_WAND || IS_STAFF || IS_CAPTAIN_HAT
+
+#if FAIRY_WAND || IS_STAFF || IS_CAPTAIN_HAT
   player.setBasePrecedence(500);
   player.setPrecedenceGain(100);
 #else

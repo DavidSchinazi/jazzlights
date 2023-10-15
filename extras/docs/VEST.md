@@ -1,10 +1,8 @@
 # Orange Vest
 
-The Orange Vest is the current design for TechnoGecko crew wearables.
-They feature 360 individually addressable LEDs that change patterns
-dynamically in sync with the main vehicle. The first vest using this
-design was built in 2017, we then built 8 crew vests in 2018 and
-dozens in 2021.
+The Orange Vest features 360 individually addressable LEDs that change patterns
+dynamically in sync with other vests like it. The first vest using this design
+was built in 2017.
 
 ![Vest](images/vest.gif)
 
@@ -15,7 +13,7 @@ dozens in 2021.
     * Either buy furry fabric by the yard and make your own
     * Otherwise there are options on Amazon like [this one](https://www.amazon.com/gp/product/B077N7SZMH)
   * LED Strips (3x 16.4ft WS2812B 150 Pixels Waterproof Black PCB 30 LEDs/m)
-    * We bulk-order them for camp cut to the right lengths
+    * We bulk-order them cut to the right lengths
     * Otherwise you can get them on [Amazon](https://www.amazon.com/gp/product/B01LSF4Q00)
       but you'll need to cut them to the right length and solder JST connectors on the ends
   * Controller: M5Stack ATOM Matrix ESP32

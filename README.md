@@ -1,10 +1,7 @@
 # JazzLights Library
 
-This library contains the LED software that runs on
-[TechnoGecko](https://www.technogecko.org/) vehicles and furry LED vests.
+This library contains the LED software for various syncing projects such as furry LED vests.
 The Arduino software is C++ built using [PlatformIO](https://platformio.org/).
-The Raspberry Pi version for vehicles currently uses Rust,
-though we are planning on switching those to Arduino.
 
 ## Installation on Arduino for vests
 
@@ -19,12 +16,6 @@ To install the software on an M5Stack ATOM Matrix
 you can run: `pio run -e atom_matrix -t upload`
 
 This project focuses on the M5Stack ATOM Matrix but other ESP32 and ESP8266 boards are also supported.
-
-## Installation on Raspberry Pi for vehicles
-
-First [install the rust/cargo toolchain](https://www.rust-lang.org/tools/install),
-then from the `jazzlights/tglight` directory you can run
-`cargo run -- --timestamp --config ./etc/tglight-from-robot.toml`
 
 ## Debugging
 

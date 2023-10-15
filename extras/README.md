@@ -27,6 +27,5 @@ Summary for macOS:
 
 ```
     jazzlights/extras/build/jazzlights-demo jazzlights/extras/demo/matrix.toml
-    jazzlights/extras/build/jazzlights-demo jazzlights/tglight/etc/robot/tglight.toml
     jazzlights/extras/build/jazzlights-bench
 ```

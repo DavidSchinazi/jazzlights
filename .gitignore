@@ -10,6 +10,3 @@ build/
 !.vscode/extensions.json
 !.vscode/*.code-snippets
 sdkconfig.*.old
-tglight/build/
-tglight/dist/
-tglight/target/
