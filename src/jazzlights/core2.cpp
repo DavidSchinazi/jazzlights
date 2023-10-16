@@ -2,7 +2,7 @@
 
 #include "jazzlights/config.h"
 
-#if WEARABLE && CORE2AWS
+#if CORE2AWS
 
 #ifndef CORE2AWS_LCD_ENABLED
 #define CORE2AWS_LCD_ENABLED 1
@@ -899,7 +899,7 @@ uint8_t getBrightness() { return 0; }
 
 }  // namespace jazzlights
 
-#endif  // CORE2AWS && WEARABLE
+#endif  // CORE2AWS
 
 /*
   GPIO pins on Core2AWS for vehicles
