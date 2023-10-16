@@ -3,7 +3,7 @@
 
 #include "jazzlights/config.h"
 
-#if WEARABLE
+#ifdef ARDUINO
 
 #include <string>
 
@@ -21,6 +21,6 @@ std::string otherStatus(Player& player, Milliseconds currentTime);
 
 }  // namespace jazzlights
 
-#endif  // WEARABLE
+#endif  // ARDUINO
 
 #endif  // JAZZLIGHTS_VEST_H

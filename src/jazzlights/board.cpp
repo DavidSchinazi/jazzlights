@@ -1,6 +1,6 @@
 #include "jazzlights/board.h"
 
-#if WEARABLE
+#ifdef ARDUINO
 
 #if ORANGE_VEST || IS_STAFF || IS_CAPTAIN_HAT
 #include "jazzlights/layouts/pixelmap.h"
@@ -576,4 +576,4 @@ const Layout* GetLayout2() { return &pixels2; }
 
 }  // namespace jazzlights
 
-#endif  // WEARABLE
+#endif  // ARDUINO

@@ -1,14 +1,14 @@
 #ifndef JAZZLIGHTS_CONFIG_H
 #define JAZZLIGHTS_CONFIG_H
 
-#ifndef WEARABLE
-#define WEARABLE 0
-#endif  // WEARABLE
-
 // Pick which vest to build here.
 #if !defined(IS_ROPELIGHT) && !defined(ORANGE_VEST) && !defined(HAMMER) && !defined(FAIRY_WAND) && \
     !defined(IS_STAFF) && !defined(IS_CAPTAIN_HAT) && !defined(IS_GAUNTLET)
-#define ORANGE_VEST WEARABLE
+#ifdef ARDUINO
+#define ORANGE_VEST 1
+#else  // ARDUINO
+#define ORANGE_VEST 0
+#endif  // ARDUINO
 #endif
 
 #ifndef ORANGE_VEST

@@ -3,7 +3,7 @@
 
 #include "jazzlights/config.h"
 
-#if WEARABLE
+#ifdef ARDUINO
 
 #include "jazzlights/layout.h"
 
@@ -59,6 +59,6 @@ const Layout* GetLayout2();
 
 }  // namespace jazzlights
 
-#endif  // WEARABLE
+#endif  // ARDUINO
 
 #endif  // JAZZLIGHTS_BOARD_H

@@ -6,7 +6,7 @@
 #include "jazzlights/networks/esp32_ble.h"
 #include "jazzlights/player.h"
 
-#if WEARABLE
+#ifdef ARDUINO
 
 namespace jazzlights {
 
@@ -23,6 +23,6 @@ uint8_t getBrightness();
 
 }  // namespace jazzlights
 
-#endif  // WEARABLE
+#endif  // ARDUINO
 
 #endif  // JAZZLIGHTS_BUTTON_H
