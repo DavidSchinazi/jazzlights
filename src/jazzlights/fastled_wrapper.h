@@ -201,6 +201,7 @@ struct CRGB {
 
 typedef uint32_t TProgmemRGBPalette16[16];
 extern const TProgmemRGBPalette16 CloudColors_p FL_PROGMEM;
+extern const TProgmemRGBPalette16 LavaColors_p FL_PROGMEM;
 extern const TProgmemRGBPalette16 OceanColors_p FL_PROGMEM;
 extern const TProgmemRGBPalette16 ForestColors_p FL_PROGMEM;
 extern const TProgmemRGBPalette16 RainbowColors_p FL_PROGMEM;

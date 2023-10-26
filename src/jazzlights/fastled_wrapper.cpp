@@ -7,6 +7,11 @@ extern const TProgmemRGBPalette16 CloudColors_p FL_PROGMEM = {                  
     CRGB::DarkBlue,  CRGB::DarkBlue, CRGB::DarkBlue,  CRGB::DarkBlue,                      //
     CRGB::Blue,      CRGB::DarkBlue, CRGB::SkyBlue,   CRGB::SkyBlue,                       //
     CRGB::LightBlue, CRGB::White,    CRGB::LightBlue, CRGB::SkyBlue};                      //
+extern const TProgmemRGBPalette16 LavaColors_p FL_PROGMEM = {                              //
+    CRGB::Black,   CRGB::Maroon,  CRGB::Black,  CRGB::Maroon,                              //
+    CRGB::DarkRed, CRGB::DarkRed, CRGB::Maroon, CRGB::DarkRed,                             //
+    CRGB::DarkRed, CRGB::DarkRed, CRGB::Red,    CRGB::Orange,                              //
+    CRGB::White,   CRGB::Orange,  CRGB::Red,    CRGB::DarkRed};                            //
 extern const TProgmemRGBPalette16 OceanColors_p FL_PROGMEM = {                             //
     CRGB::MidnightBlue, CRGB::DarkBlue,   CRGB::MidnightBlue, CRGB::Navy,                  //
     CRGB::DarkBlue,     CRGB::MediumBlue, CRGB::SeaGreen,     CRGB::Teal,                  //
