@@ -8,6 +8,7 @@ using PixelsPerMeter = double;
 class Matrix : public Layout {
  public:
   constexpr Matrix(int w, int h) : width_(w), height_(h) {}
+  constexpr Matrix(int w, int h, PixelsPerMeter r) : width_(w), height_(h), resolution_(r) {}
 
   Matrix(const Matrix& other)
       : Layout(),
