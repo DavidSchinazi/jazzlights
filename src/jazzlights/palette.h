@@ -62,7 +62,7 @@ static inline OurColorPalette PaletteFromPattern(PatternBits pattern) {
 static inline const TProgmemRGBPalette16* FastLEDPaletteFromOurColorPalette(OurColorPalette ocp) {
   switch (ocp) {
     case OCPcloud: return &CloudColors_p;
-    case OCPlava: return &JLLavaColors_p;
+    case OCPlava: return &LavaColors_p;
     case OCPocean: return &OceanColors_p;
     case OCPforest: return &ForestColors_p;
     case OCPrainbow: return &RainbowColors_p;

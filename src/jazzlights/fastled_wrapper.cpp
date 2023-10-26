@@ -34,9 +34,3 @@ extern const TProgmemRGBPalette16 HeatColors_p FL_PROGMEM = {                   
     0xFFFF66, 0xFFFF99, 0xFFFFCC, 0xFFFFFF};                                               //
 
 #endif  // !ARDUINO
-
-extern const TProgmemRGBPalette16 JLLavaColors_p FL_PROGMEM = {  //
-    CRGB::Black,   CRGB::Maroon,  CRGB::Black,  CRGB::Maroon,    //
-    CRGB::DarkRed, CRGB::DarkRed, CRGB::Maroon, CRGB::DarkRed,   //
-    CRGB::DarkRed, CRGB::DarkRed, CRGB::Red,    CRGB::Orange,    //
-    CRGB::White,   CRGB::Orange,  CRGB::Red,    CRGB::DarkRed};  //

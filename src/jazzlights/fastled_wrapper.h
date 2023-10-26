@@ -317,7 +317,4 @@ inline int16_t lerp15by16(int16_t a, int16_t b, uint16_t frac) {
 
 #endif  // ARDUINO
 
-// Define our own due to <https://github.com/FastLED/FastLED/issues/1435>.
-extern const TProgmemRGBPalette16 JLLavaColors_p FL_PROGMEM;
-
 #endif  // JAZZLIGHTS_FASTLED_WRAPPER_H
