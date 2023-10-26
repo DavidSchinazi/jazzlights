@@ -26,6 +26,6 @@ Summary for macOS:
 # Run
 
 ```
-    jazzlights/extras/build/jazzlights-demo jazzlights/extras/demo/matrix.toml
+    jazzlights/extras/build/jazzlights-demo
     jazzlights/extras/build/jazzlights-bench
 ```

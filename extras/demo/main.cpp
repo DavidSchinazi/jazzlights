@@ -3,41 +3,24 @@
 
 #include "glrenderer.h"
 #include "gui.h"
+#include "jazzlights/layouts/matrix.h"
 #include "jazzlights/networks/unix_udp.h"
-#include "jazzlights/util/loader.h"
 
 namespace jazzlights {
 
-class DemoLoader : public Loader {
-  Renderer& loadRenderer(const Layout& layout, const cpptoml::table&, int strandidx) override {
-    static std::vector<std::unique_ptr<Renderer>> renderers;
-    static int laststrandidx = -1;
-    if (laststrandidx == strandidx) { return *renderers.back(); }
-    laststrandidx = strandidx;
-    renderers.emplace_back(std::make_unique<GLRenderer>(layout, ledRadius()));
-    return *renderers.back();
-  }
-};
-
-int runMain(int argn, char** argv) {
-  if (argn < 2) {
-    printf("Usage: %s <config>\n", argv[0]);
-    exit(-1);
-  }
-  bool fullscreen = false;
-  const char* config = argv[1];
-
-  Player player;
+int runMain(int /*argn*/, char** /*argv*/) {
+  Matrix layout(/*w=*/494, /*h=*/306);
+  GLRenderer renderer(layout);
   UnixUdpNetwork network;
-
+  Player player;
   player.setBasePrecedence(30000);
   player.setPrecedenceGain(5000);
-  DemoLoader().load(config, player);
+  player.addStrand(layout, renderer);
   player.setRandomizeLocalDeviceId(true);
   player.connect(&network);
   player.begin(timeMillis());
 
-  return runGui("JazzLights Demo", player, player.bounds(), fullscreen);
+  return runGui("JazzLights Demo", player, player.bounds());
 }
 
 }  // namespace jazzlights
