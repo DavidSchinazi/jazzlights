@@ -544,7 +544,7 @@ constexpr Point pixelMap[] = {
 
 static_assert(LEDNUM == sizeof(pixelMap) / sizeof(pixelMap[0]), "bad LEDNUM");
 
-PixelMap pixels(sizeof(pixelMap) / sizeof(pixelMap[0]), pixelMap);
+PixelMap pixels(LEDNUM, pixelMap);
 
 #endif  // IS_CAPTAIN_HAT
 
