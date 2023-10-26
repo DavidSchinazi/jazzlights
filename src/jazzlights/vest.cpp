@@ -32,6 +32,10 @@
 #error "Unexpected board"
 #endif
 
+#ifndef BRIGHTER2
+#define BRIGHTER2 0
+#endif  // BRIGHTER2
+
 namespace jazzlights {
 
 static std::mutex gLockedLedMutex;
@@ -142,36 +146,24 @@ ArduinoEthernetNetwork ethernetNetwork(GetEthernetDeviceId());
 Player player;
 
 std::unique_ptr<FastLedRenderer> mainVestRenderer;
-#if LEDNUM2
 std::unique_ptr<FastLedRenderer> mainVestRenderer2;
-#endif  // LEDNUM2
 
 void sendLedsToFastLed() {
   bool shouldWrite;
-#if LEDNUM2
-  bool shouldWrite2;
-#endif  // LEDNUM2
+  bool shouldWrite2 = false;
   {
     const std::lock_guard<std::mutex> lock(gLockedLedMutex);
     shouldWrite = mainVestRenderer->copyLedsFromLockedToFastLed();
-#if LEDNUM2
-    shouldWrite2 = mainVestRenderer2->copyLedsFromLockedToFastLed();
-#endif  // LEDNUM2
+    if (mainVestRenderer2) { shouldWrite2 = mainVestRenderer2->copyLedsFromLockedToFastLed(); }
   }
   SAVE_COUNT_POINT(LedPrintLoop);
-#if LEDNUM2
   if (!shouldWrite && !shouldWrite2) { return; }
-#else   // LEDNUM2
-  if (!shouldWrite) { return; }
-#endif  // LEDNUM2
 
   uint32_t brightness = getBrightness();  // May be reduced if this exceeds our power budget with the current pattern
 
 #if MAX_MILLIWATTS
   uint32_t powerAtFullBrightness = mainVestRenderer->GetPowerAtFullBrightness();
-#if LEDNUM2
-  powerAtFullBrightness += mainVestRenderer2->GetPowerAtFullBrightness();
-#endif  // LEDNUM2
+  if (mainVestRenderer2) { powerAtFullBrightness += mainVestRenderer2->GetPowerAtFullBrightness(); }
   const uint32_t powerAtDesiredBrightness =
       powerAtFullBrightness * brightness / 256;  // Forecast power at our current desired brightness
   player.powerLimited = (powerAtDesiredBrightness > MAX_MILLIWATTS);
@@ -190,14 +182,12 @@ void sendLedsToFastLed() {
   SAVE_COUNT_POINT(LedPrintSend);
   if (shouldWrite) { mainVestRenderer->sendToLeds(brightness); }
   SAVE_TIME_POINT(MainLED);
-#if LEDNUM2
   if (shouldWrite2) {
 #if BRIGHTER2
     brightness += (255 - brightness) / 2;
 #endif  // BRIGHTER2
     mainVestRenderer2->sendToLeds(brightness);
   }
-#endif  // LEDNUM2
   ledWriteEnd();
   SAVE_TIME_POINT(SecondLED);
 }
@@ -226,20 +216,18 @@ void vestSetup(void) {
 #endif  // CORE2AWS
 
 #if IS_STAFF
-  mainVestRenderer = std::move(FastLedRenderer::Create<WS2811, LED_PIN, RGB>(LEDNUM));
+  mainVestRenderer = std::move(FastLedRenderer::Create<WS2811, LED_PIN, RGB>(GetLayout()->pixelCount()));
 #elif IS_ROPELIGHT
-  mainVestRenderer = std::move(FastLedRenderer::Create<WS2812, LED_PIN, BRG>(LEDNUM));
+  mainVestRenderer = std::move(FastLedRenderer::Create<WS2812, LED_PIN, BRG>(GetLayout()->pixelCount()));
 #else  // Vest.
-  mainVestRenderer = std::move(FastLedRenderer::Create<WS2812B, LED_PIN, GRB>(LEDNUM));
+  mainVestRenderer = std::move(FastLedRenderer::Create<WS2812B, LED_PIN, GRB>(GetLayout()->pixelCount()));
 #endif
-#if LEDNUM2
-  mainVestRenderer2 = std::move(FastLedRenderer::Create<WS2812B, LED_PIN2, GRB>(LEDNUM2));
-#endif  // LEDNUM2
-
   player.addStrand(*GetLayout(), *mainVestRenderer);
-#if LEDNUM2
-  player.addStrand(*GetLayout2(), *mainVestRenderer2);
-#endif  // LEDNUM2
+
+  if (GetLayout2()) {
+    mainVestRenderer2 = std::move(FastLedRenderer::Create<WS2812B, LED_PIN2, GRB>(GetLayout2()->pixelCount()));
+    player.addStrand(*GetLayout2(), *mainVestRenderer2);
+  }
 
 #if FAIRY_WAND || IS_STAFF || IS_CAPTAIN_HAT
   player.setBasePrecedence(500);
@@ -296,9 +284,7 @@ void vestLoop(void) {
   {
     const std::lock_guard<std::mutex> lock(gLockedLedMutex);
     mainVestRenderer->copyLedsFromPlayerToLocked();
-#if LEDNUM2
-    mainVestRenderer2->copyLedsFromPlayerToLocked();
-#endif  // LEDNUM2
+    if (mainVestRenderer2) { mainVestRenderer2->copyLedsFromPlayerToLocked(); }
   }
 
   // Notify the FastLED task that there is new data to write.
