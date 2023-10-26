@@ -4,18 +4,8 @@
 
 #ifdef ARDUINO
 
-#ifndef JL_FASTLED_ASYNC
-#ifdef ESP32
-#define JL_FASTLED_ASYNC 1
-#else  // ESP32
-#define JL_FASTLED_ASYNC 0
-#endif  // ESP32
-#endif  // JL_FASTLED_ASYNC
-
 #include <memory>
-#if JL_FASTLED_ASYNC
 #include <mutex>
-#endif  // JL_FASTLED_ASYNC
 
 #include "jazzlights/board.h"
 #include "jazzlights/button.h"
@@ -44,9 +34,7 @@
 
 namespace jazzlights {
 
-#if JL_FASTLED_ASYNC
 static std::mutex gLockedLedMutex;
-#endif  // JL_FASTLED_ASYNC
 
 Network* GetWiFiNetwork() { return ArduinoEspWiFiNetwork::get(); }
 
@@ -164,9 +152,7 @@ void sendLedsToFastLed() {
   bool shouldWrite2;
 #endif  // LEDNUM2
   {
-#if JL_FASTLED_ASYNC
     const std::lock_guard<std::mutex> lock(gLockedLedMutex);
-#endif  // JL_FASTLED_ASYNC
     shouldWrite = mainVestRenderer->copyLedsFromLockedToFastLed();
 #if LEDNUM2
     shouldWrite2 = mainVestRenderer2->copyLedsFromLockedToFastLed();
@@ -216,7 +202,6 @@ void sendLedsToFastLed() {
   SAVE_TIME_POINT(SecondLED);
 }
 
-#if JL_FASTLED_ASYNC
 TaskHandle_t gFastLedTaskHandle = nullptr;
 // Index 0 is normally reserved by FreeRTOS for stream and message buffers. However, the default precompiled FreeRTOS
 // kernel for arduino/esp-idf only allows a single notification, so we use index 0 here. We don't use stream or message
@@ -230,7 +215,6 @@ void fastLedTaskFunction(void* /*parameters*/) {
     (void)ulTaskGenericNotifyTake(kFastLedNotificationIndex, pdTRUE, portMAX_DELAY);
   }
 }
-#endif  // JL_FASTLED_ASYNC
 
 void vestSetup(void) {
   Milliseconds currentTime = timeMillis();
@@ -278,13 +262,11 @@ void vestSetup(void) {
   core2SetupEnd(player, currentTime);
 #endif  // CORE2AWS
 
-#if JL_FASTLED_ASYNC
   // The Arduino loop is pinned to core 1 so we pin FastLED writes to core 0.
   BaseType_t ret = xTaskCreatePinnedToCore(fastLedTaskFunction, "FastLED", configMINIMAL_STACK_SIZE + 400,
                                            /*parameters=*/nullptr,
                                            /*priority=*/30, &gFastLedTaskHandle, /*coreID=*/0);
   if (ret != pdPASS) { jll_fatal("Failed to create FastLED task"); }
-#endif  // JL_FASTLED_ASYNC
 }
 
 void vestLoop(void) {
@@ -312,23 +294,17 @@ void vestLoop(void) {
   SAVE_TIME_POINT(Player);
   if (!shouldRender) { return; }
   {
-#if JL_FASTLED_ASYNC
     const std::lock_guard<std::mutex> lock(gLockedLedMutex);
-#endif  // JL_FASTLED_ASYNC
     mainVestRenderer->copyLedsFromPlayerToLocked();
 #if LEDNUM2
     mainVestRenderer2->copyLedsFromPlayerToLocked();
 #endif  // LEDNUM2
   }
 
-#if JL_FASTLED_ASYNC
   // Notify the FastLED task that there is new data to write.
   (void)xTaskGenericNotify(gFastLedTaskHandle, kFastLedNotificationIndex,
                            /*notification_value=*/0, eNoAction, /*previousNotificationValue=*/nullptr);
   vTaskDelay(1);  // Yield.
-#else             // !JL_FASTLED_ASYNC
-  sendLedsToFastLed();
-#endif            // !JL_FASTLED_ASYNC
 }
 
 std::string wifiStatus(Milliseconds currentTime) { return GetWiFiNetwork()->getStatusStr(currentTime); }
