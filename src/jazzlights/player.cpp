@@ -452,7 +452,10 @@ bool Player::render(Milliseconds currentTime) {
   effect->rewind(frame_);
   for (Strand* s = strands_; s < strands_ + strandCount_; ++s) {
     auto pixels = points(*s->layout);
-    auto colors = map(pixels, [&](Pixel px) -> Color { return effect->color(frame_, px); });
+    auto colors = map(pixels, [&](Pixel px) -> Color {
+      if (IsEmpty(px.coord)) { return Color(/*black*/); }
+      return effect->color(frame_, px);
+    });
     if (s->renderer) { s->renderer->render(colors); }
   }
   return true;

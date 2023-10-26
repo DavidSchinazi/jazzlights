@@ -33,6 +33,11 @@ using Point3D = Vector3D;
 using Point = Point2D;
 using Origin = Point2D;
 
+constexpr Coord EmptyCoord() { return std::numeric_limits<Coord>::quiet_NaN(); }
+constexpr Point EmptyPoint() { return {EmptyCoord(), EmptyCoord()}; }
+constexpr bool IsEmpty(Coord c) { return std::isnan(c); }
+constexpr bool IsEmpty(Point p) { return IsEmpty(p.x) && IsEmpty(p.y); }
+
 struct Dimensions {
   Coord width;
   Coord height;

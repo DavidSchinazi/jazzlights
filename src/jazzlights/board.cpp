@@ -537,11 +537,12 @@ constexpr Point pixelMap[] = {
     { 1.00, 0.00},
     { 0.00, 0.00},
     { 1.00, 0.00},
+    EmptyPoint(),
+    EmptyPoint(),  EmptyPoint(),  EmptyPoint(),  EmptyPoint(),  EmptyPoint(),  EmptyPoint(),  EmptyPoint(),
+    EmptyPoint(),  EmptyPoint(),  EmptyPoint(),  EmptyPoint(),
 };
 
-// Intentionally use 48 instead of LEDNUM to keep last 12 LEDs black.
-static_assert(48 == sizeof(pixelMap) / sizeof(pixelMap[0]), "bad LEDNUM");
-static_assert(LEDNUM == 60, "bad LEDNUM");
+static_assert(LEDNUM == sizeof(pixelMap) / sizeof(pixelMap[0]), "bad LEDNUM");
 
 PixelMap pixels(sizeof(pixelMap) / sizeof(pixelMap[0]), pixelMap);
 
