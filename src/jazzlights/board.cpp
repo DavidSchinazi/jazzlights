@@ -6,11 +6,11 @@
 #include "jazzlights/layouts/pixelmap.h"
 #endif
 
-#if HAMMER || FAIRY_WAND
+#if FAIRY_WAND
 #include "jazzlights/layouts/reversemap.h"
 #endif
 
-#if IS_ROPELIGHT || IS_GAUNTLET
+#if IS_ROPELIGHT || IS_GAUNTLET || HAMMER
 #include "jazzlights/layouts/matrix.h"
 #endif
 
@@ -394,13 +394,7 @@ Matrix pixels(/*w=*/20, /*h=*/15);
 #endif  // IS_GAUNTLET
 
 #if HAMMER
-
-constexpr int pixelMap[] = {
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-};
-
-ReverseMap<LEDNUM> pixels(pixelMap, /*MATRIX_WIDTH=*/1, /*MATRIX_HEIGHT=*/20);
-
+Matrix pixels(/*w=*/LEDNUM, /*h=*/1);
 #endif  // HAMMER
 
 #if FAIRY_WAND
