@@ -224,10 +224,12 @@ void vestSetup(void) {
 #endif
   player.addStrand(*GetLayout(), *mainVestRenderer);
 
+#ifdef LED_PIN2
   if (GetLayout2()) {
     mainVestRenderer2 = std::move(FastLedRenderer::Create<WS2812B, LED_PIN2, GRB>(GetLayout2()->pixelCount()));
     player.addStrand(*GetLayout2(), *mainVestRenderer2);
   }
+#endif  // LED_PIN2
 
 #if FAIRY_WAND || IS_STAFF || IS_CAPTAIN_HAT
   player.setBasePrecedence(500);
