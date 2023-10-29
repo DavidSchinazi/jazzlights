@@ -14,7 +14,7 @@ def printLayout(l, num=""):
     s = s[:-3]
   s += '\n};'
   s += '\n\n'
-  s += '#define LEDNUM{num} {lednum}'.format(num=num, lednum=len(l))
+  s += 'static_assert(JL_LENGTH(pixelMap{num}) == {lednum}, "bad size");'.format(num=num, lednum=len(l))
   print(s)
 
 l = []

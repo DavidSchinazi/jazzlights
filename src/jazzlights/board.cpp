@@ -10,38 +10,7 @@
 #include "jazzlights/layouts/matrix.h"
 #endif
 
-#if ORANGE_VEST
-#define LEDNUM 360
-#endif  // ORANGE_VEST
-
-#if IS_GAUNTLET
-#define LEDNUM 300
-#endif  // IS_GAUNTLET
-
-#if HAMMER
-#define LEDNUM 20
-#endif  // HAMMER
-
-#if FAIRY_WAND
-#define LEDNUM 9
-#endif  // FAIRY_WAND
-
-#if IS_STAFF
-#define LEDNUM 36
-#define LEDNUM2 33
-#endif  // IS_STAFF
-
-#if IS_CAPTAIN_HAT
-#define LEDNUM 60
-#endif  // IS_CAPTAIN_HAT
-
-#if IS_ROPELIGHT
-#define LEDNUM 300
-#endif  // IS_ROPELIGHT
-
-#ifndef LEDNUM2
-#define LEDNUM2 0
-#endif  // LEDNUM2
+#define JL_LENGTH(_a) (sizeof(_a) / sizeof((_a)[0]))
 
 namespace jazzlights {
 
@@ -412,9 +381,8 @@ constexpr Point pixelMap[] = {
     {19.0,  1.0},
 };
 
-static_assert(LEDNUM == sizeof(pixelMap) / sizeof(pixelMap[0]), "bad LEDNUM");
-
-PixelMap pixels(LEDNUM, pixelMap);
+static_assert(JL_LENGTH(pixelMap) == 360, "bad size");
+PixelMap pixels(JL_LENGTH(pixelMap), pixelMap);
 
 #endif  // ORANGE_VEST
 
@@ -423,14 +391,11 @@ Matrix pixels(/*w=*/20, /*h=*/15);
 #endif  // IS_GAUNTLET
 
 #if HAMMER
-Matrix pixels(/*w=*/LEDNUM, /*h=*/1);
+Matrix pixels(/*w=*/20, /*h=*/1);
 #endif  // HAMMER
 
 #if FAIRY_WAND
-static constexpr int kMatrixWidth = 3;
-static constexpr int kMatrixHeight = 3;
-static_assert(LEDNUM == kMatrixWidth * kMatrixHeight, "bad LEDNUM");
-Matrix pixels(/*w=*/kMatrixWidth, /*h=*/kMatrixHeight, /*resolution=*/1.0);
+Matrix pixels(/*w=*/3, /*h=*/3, /*resolution=*/1.0);
 #endif  // FAIRY_WAND
 
 #if IS_STAFF
@@ -474,9 +439,8 @@ constexpr Point pixelMap[] = {
     {2.00, 36.00},
 };
 
-static_assert(LEDNUM == sizeof(pixelMap) / sizeof(pixelMap[0]), "bad LEDNUM");
-
-PixelMap pixels(LEDNUM, pixelMap);
+static_assert(JL_LENGTH(pixelMap) == 36, "bad size");
+PixelMap pixels(JL_LENGTH(pixelMap), pixelMap);
 
 constexpr Point pixelMap2[] = {
     {0.00,  0.00},
@@ -514,9 +478,8 @@ constexpr Point pixelMap2[] = {
     {0.00, -4.00},
 };
 
-static_assert(LEDNUM2 == sizeof(pixelMap2) / sizeof(pixelMap2[0]), "bad LEDNUM2");
-
-PixelMap pixels2(LEDNUM2, pixelMap2);
+static_assert(JL_LENGTH(pixelMap2) == 33, "bad size");
+PixelMap pixels2(JL_LENGTH(pixelMap2), pixelMap2);
 
 #endif  // IS_STAFF
 
@@ -575,14 +538,13 @@ constexpr Point pixelMap[] = {
     EmptyPoint(),  EmptyPoint(),  EmptyPoint(),  EmptyPoint(),
 };
 
-static_assert(LEDNUM == sizeof(pixelMap) / sizeof(pixelMap[0]), "bad LEDNUM");
-
-PixelMap pixels(LEDNUM, pixelMap);
+static_assert(JL_LENGTH(pixelMap) == 60, "bad size");
+PixelMap pixels(JL_LENGTH(pixelMap), pixelMap);
 
 #endif  // IS_CAPTAIN_HAT
 
 #if IS_ROPELIGHT
-Matrix pixels(/*w=*/LEDNUM, /*h=*/1);
+Matrix pixels(/*w=*/300, /*h=*/1);
 #endif  // IS_ROPELIGHT
 
 }  // namespace
@@ -590,11 +552,11 @@ Matrix pixels(/*w=*/LEDNUM, /*h=*/1);
 const Layout* GetLayout() { return &pixels; }
 
 const Layout* GetLayout2() {
-#if LEDNUM2
+#if IS_STAFF
   return &pixels2;
-#else   // LEDNUM2
+#else   // IS_STAFF
   return nullptr;
-#endif  // LEDNUM2
+#endif  // IS_STAFF
 }
 
 }  // namespace jazzlights
