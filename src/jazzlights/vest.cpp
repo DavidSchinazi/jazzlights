@@ -10,6 +10,7 @@
 #include "jazzlights/board.h"
 #include "jazzlights/button.h"
 #include "jazzlights/core2.h"
+#include "jazzlights/fastled_renderer.h"
 #include "jazzlights/fastled_wrapper.h"
 #include "jazzlights/instrumentation.h"
 #include "jazzlights/networks/arduino_esp_wifi.h"
@@ -41,84 +42,6 @@ namespace jazzlights {
 static std::mutex gLockedLedMutex;
 
 Network* GetWiFiNetwork() { return ArduinoEspWiFiNetwork::get(); }
-
-class FastLedRenderer : public Renderer {
- public:
-  explicit FastLedRenderer(size_t numLeds) : ledMemorySize_(numLeds * sizeof(CRGB)) {
-    ledsPlayer_ = reinterpret_cast<CRGB*>(calloc(ledMemorySize_, 1));
-    ledsLocked_ = reinterpret_cast<CRGB*>(calloc(ledMemorySize_, 1));
-    ledsFastLed_ = reinterpret_cast<CRGB*>(calloc(ledMemorySize_, 1));
-    if (ledsPlayer_ == nullptr || ledsLocked_ == nullptr || ledsFastLed_ == nullptr) {
-      jll_fatal("Failed to allocate %zu*%zu", numLeds, sizeof(CRGB));
-    }
-  }
-  ~FastLedRenderer() {
-    free(ledsPlayer_);
-    free(ledsLocked_);
-    free(ledsFastLed_);
-  }
-
-  // 4 wires with specified data rate.
-  template <ESPIChipsets CHIPSET, uint8_t DATA_PIN, uint8_t CLOCK_PIN, EOrder RGB_ORDER, uint32_t SPI_DATA_RATE>
-  static std::unique_ptr<FastLedRenderer> Create(size_t numLeds) {
-    std::unique_ptr<FastLedRenderer> r = std::unique_ptr<FastLedRenderer>(new FastLedRenderer(numLeds));
-    r->ledController_ =
-        &FastLED.addLeds<CHIPSET, DATA_PIN, CLOCK_PIN, RGB_ORDER, SPI_DATA_RATE>(r->ledsFastLed_, numLeds);
-    return r;
-  }
-
-  // 4 wires with default data rate.
-  template <ESPIChipsets CHIPSET, uint8_t DATA_PIN, uint8_t CLOCK_PIN, EOrder RGB_ORDER>
-  static std::unique_ptr<FastLedRenderer> Create(size_t numLeds) {
-    std::unique_ptr<FastLedRenderer> r = std::unique_ptr<FastLedRenderer>(new FastLedRenderer(numLeds));
-    r->ledController_ = &FastLED.addLeds<CHIPSET, DATA_PIN, CLOCK_PIN, RGB_ORDER>(r->ledsFastLed_, numLeds);
-    return r;
-  }
-
-  // 3 wires.
-  template <template <uint8_t DATA_PIN, EOrder RGB_ORDER> class CHIPSET, uint8_t DATA_PIN, EOrder RGB_ORDER>
-  static std::unique_ptr<FastLedRenderer> Create(size_t numLeds) {
-    std::unique_ptr<FastLedRenderer> r = std::unique_ptr<FastLedRenderer>(new FastLedRenderer(numLeds));
-    r->ledController_ = &FastLED.addLeds<CHIPSET, DATA_PIN, RGB_ORDER>(r->ledsFastLed_, numLeds);
-    return r;
-  }
-
-  void render(InputStream<Color>& colors) override {
-    size_t i = 0;
-    for (auto color : colors) {
-      RgbaColor rgba = color.asRgba();
-      ledsPlayer_[i] = CRGB(rgba.red, rgba.green, rgba.blue);
-      i++;
-    }
-  }
-
-  uint32_t GetPowerAtFullBrightness() const {
-    return calculate_unscaled_power_mW(ledController_->leds(), ledController_->size());
-  }
-
-  void copyLedsFromPlayerToLocked() {
-    freshLedLockedDataAvailable_ = true;
-    memcpy(ledsLocked_, ledsPlayer_, ledMemorySize_);
-  }
-  bool copyLedsFromLockedToFastLed() {
-    const bool freshData = freshLedLockedDataAvailable_;
-    if (freshData) {
-      memcpy(ledsFastLed_, ledsLocked_, ledMemorySize_);
-      freshLedLockedDataAvailable_ = false;
-    }
-    return freshData;
-  }
-
-  void sendToLeds(uint8_t brightness = 255) { ledController_->showLeds(brightness); }
-
- private:
-  size_t ledMemorySize_;
-  CRGB* ledsPlayer_;
-  bool freshLedLockedDataAvailable_ = false;
-  CRGB* ledsLocked_;  // Protected by gLockedLedMutex.
-  CRGB* ledsFastLed_;
-  CLEDController* ledController_;
-};
 
 #if JAZZLIGHTS_ARDUINO_ETHERNET
 NetworkDeviceId GetEthernetDeviceId() {
