@@ -3,6 +3,7 @@
 #ifdef ARDUINO
 
 #include "jazzlights/button.h"
+#include "jazzlights/core2.h"
 #include "jazzlights/instrumentation.h"
 #include "jazzlights/util/log.h"
 
