@@ -22,7 +22,6 @@ inline void printInstrumentationInfo(Milliseconds /*currentTime*/) {}
   X(Player)             \
   X(Brightness)         \
   X(MainLED)            \
-  X(SecondLED)          \
   X(NumTimePoints)  // Leave this as last member.
 
 enum TimePoint {
