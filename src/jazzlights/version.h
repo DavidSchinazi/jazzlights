@@ -1,3 +1,0 @@
-#ifndef JAZZLIGHTS_VERSION
-#define JAZZLIGHTS_VERSION "0.7.4"
-#endif
