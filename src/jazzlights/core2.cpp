@@ -11,6 +11,8 @@
 #include <M5Core2.h>
 
 #include "jazzlights/layouts/matrix.h"
+#include "jazzlights/networks/arduino_esp_wifi.h"
+#include "jazzlights/networks/esp32_ble.h"
 #include "jazzlights/vest.h"
 
 namespace jazzlights {
@@ -613,6 +615,29 @@ void drawSystemTextLine(uint8_t i, const char* text) {
   M5.Lcd.setTextColor(WHITE, BLACK);
   M5.Lcd.fillRect(x, y, /*w=*/155, /*h=*/kSytemLineHeight, BLACK);
   M5.Lcd.drawString(text, x, y);
+}
+
+std::string wifiStatus(Milliseconds currentTime) { return ArduinoEspWiFiNetwork::get()->getStatusStr(currentTime); }
+
+std::string bleStatus(Milliseconds currentTime) {
+#if ESP32_BLE
+  return Esp32BleNetwork::get()->getStatusStr(currentTime);
+#else   // ESP32_BLE
+  return "Not supported";
+#endif  // ESP32_BLE
+}
+
+std::string otherStatus(Player& player, Milliseconds currentTime) {
+  char otherStatusStr[100] = "Leading";
+  if (player.followedNextHopNetwork() == ArduinoEspWiFiNetwork::get()) {
+    snprintf(otherStatusStr, sizeof(otherStatusStr) - 1, "Following Wi-Fi nh=%u", player.currentNumHops());
+  }
+#if ESP32_BLE
+  else if (player.followedNextHopNetwork() == Esp32BleNetwork::get()) {
+    snprintf(otherStatusStr, sizeof(otherStatusStr) - 1, "Following BLE nh=%u", player.currentNumHops());
+  }
+#endif  // ESP32_BLE
+  return std::string(otherStatusStr);
 }
 
 void drawSystemTextLines(Player& player, Milliseconds currentTime) {

@@ -38,13 +38,11 @@
 
 namespace jazzlights {
 
-Network* GetWiFiNetwork() { return ArduinoEspWiFiNetwork::get(); }
-
 #if JAZZLIGHTS_ARDUINO_ETHERNET
 NetworkDeviceId GetEthernetDeviceId() {
   // The W5500 chip we use doesn't come with a MAC address, so we
   // tell it to use the ESP32's Wi-Fi MAC address plus one.
-  NetworkDeviceId deviceId = GetWiFiNetwork()->getLocalDeviceId();
+  NetworkDeviceId deviceId = ArduinoEspWiFiNetwork::get()->getLocalDeviceId();
   deviceId.data()[5]++;
   if (deviceId.data()[5] == 0) {
     deviceId.data()[4]++;
@@ -98,7 +96,7 @@ void vestSetup(void) {
 #if ESP32_BLE
   player.connect(Esp32BleNetwork::get());
 #endif  // ESP32_BLE
-  player.connect(GetWiFiNetwork());
+  player.connect(ArduinoEspWiFiNetwork::get());
 #if JAZZLIGHTS_ARDUINO_ETHERNET
   player.connect(&ethernetNetwork);
 #endif  // JAZZLIGHTS_ARDUINO_ETHERNET
@@ -119,7 +117,7 @@ void vestLoop(void) {
 #else  // CORE2AWS
   SAVE_TIME_POINT(Core2);
   // Read, debounce, and process the buttons, and perform actions based on button state.
-  doButtons(player, *GetWiFiNetwork(),
+  doButtons(player, *ArduinoEspWiFiNetwork::get(),
 #if ESP32_BLE
             *Esp32BleNetwork::get(),
 #endif  // ESP32_BLE
@@ -135,29 +133,6 @@ void vestLoop(void) {
   const bool shouldRender = player.render(currentTime);
   SAVE_TIME_POINT(Player);
   if (shouldRender) { runner.Render(); }
-}
-
-std::string wifiStatus(Milliseconds currentTime) { return GetWiFiNetwork()->getStatusStr(currentTime); }
-
-std::string bleStatus(Milliseconds currentTime) {
-#if ESP32_BLE
-  return Esp32BleNetwork::get()->getStatusStr(currentTime);
-#else   // ESP32_BLE
-  return "Not supported";
-#endif  // ESP32_BLE
-}
-
-std::string otherStatus(Player& player, Milliseconds currentTime) {
-  char otherStatusStr[100] = "Leading";
-  if (player.followedNextHopNetwork() == GetWiFiNetwork()) {
-    snprintf(otherStatusStr, sizeof(otherStatusStr) - 1, "Following Wi-Fi nh=%u", player.currentNumHops());
-  }
-#if ESP32_BLE
-  else if (player.followedNextHopNetwork() == Esp32BleNetwork::get()) {
-    snprintf(otherStatusStr, sizeof(otherStatusStr) - 1, "Following BLE nh=%u", player.currentNumHops());
-  }
-#endif  // ESP32_BLE
-  return std::string(otherStatusStr);
 }
 
 }  // namespace jazzlights
