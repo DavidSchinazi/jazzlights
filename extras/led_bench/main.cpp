@@ -19,7 +19,7 @@
 
 #include <Arduino.h>
 
-#include "jazzlights/vest.h"
+#include "jazzlights/fastled_wrapper.h"
 
 #define ALLOCATE_LED(n, num)         \
   constexpr size_t numLeds##n = num; \
@@ -38,7 +38,7 @@ void setLEDs(uint32_t milli, CRGB* leds, size_t numLeds, CRGB colorA, CRGB color
   }
 }
 
-//#define ADD_LEDS(n, pin) c##n = &FastLED.addLeds<WS2812, /*DATA_PIN=*/pin, GRB>(leds##n, numLeds##n);
+// #define ADD_LEDS(n, pin) c##n = &FastLED.addLeds<WS2812, /*DATA_PIN=*/pin, GRB>(leds##n, numLeds##n);
 #define ADD_LEDS(n, pin)                                                                                    \
   c##n = &FastLED.addLeds<WS2801, /*DATA_PIN=*/pin, /*CLOCK_PIN=*/32, GRB, /*SPI_SPEED=*/DATA_RATE_MHZ(1)>( \
       leds##n, numLeds##n);
@@ -76,7 +76,6 @@ void setup() {
   ADD_LEDS(7, 23)
   ADD_LEDS(8, 33)
   // ADD_LEDS(9, 32)
-  // jazzlights::vestSetup();
   uint32_t milli = millis(), milli2;
   SHOW_LEDS(1)
   SHOW_LEDS(2)
@@ -114,7 +113,6 @@ void loop() {
   */
   SHOW_LEDS(8)
   // SHOW_LEDS(9)
-  // jazzlights::vestLoop();
 }
 
 #endif  // ARDUINO
