@@ -86,6 +86,25 @@ std::string networkMessageToString(const NetworkMessage& message, Milliseconds c
   return rv;
 }
 
+NetworkDeviceId NetworkDeviceId::PlusOne() const {
+  NetworkDeviceId deviceId = *this;
+  deviceId.data()[5]++;
+  if (deviceId.data()[5] == 0) {
+    deviceId.data()[4]++;
+    if (deviceId.data()[4] == 0) {
+      deviceId.data()[3]++;
+      if (deviceId.data()[3] == 0) {
+        deviceId.data()[2]++;
+        if (deviceId.data()[2] == 0) {
+          deviceId.data()[1]++;
+          if (deviceId.data()[1] == 0) { deviceId.data()[0]++; }
+        }
+      }
+    }
+  }
+  return deviceId;
+}
+
 NetworkStatus Network::status() const { return status_; }
 
 void Network::reconnect(Milliseconds currentTime) {

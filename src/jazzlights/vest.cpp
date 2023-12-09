@@ -39,27 +39,7 @@
 namespace jazzlights {
 
 #if JAZZLIGHTS_ARDUINO_ETHERNET
-NetworkDeviceId GetEthernetDeviceId() {
-  // The W5500 chip we use doesn't come with a MAC address, so we
-  // tell it to use the ESP32's Wi-Fi MAC address plus one.
-  NetworkDeviceId deviceId = ArduinoEspWiFiNetwork::get()->getLocalDeviceId();
-  deviceId.data()[5]++;
-  if (deviceId.data()[5] == 0) {
-    deviceId.data()[4]++;
-    if (deviceId.data()[4] == 0) {
-      deviceId.data()[3]++;
-      if (deviceId.data()[3] == 0) {
-        deviceId.data()[2]++;
-        if (deviceId.data()[2] == 0) {
-          deviceId.data()[1]++;
-          if (deviceId.data()[1] == 0) { deviceId.data()[0]++; }
-        }
-      }
-    }
-  }
-  return deviceId;
-}
-ArduinoEthernetNetwork ethernetNetwork(GetEthernetDeviceId());
+ArduinoEthernetNetwork ethernetNetwork(ArduinoEspWiFiNetwork::get()->getLocalDeviceId().PlusOne());
 #endif  // JAZZLIGHTS_ARDUINO_ETHERNET
 Player player;
 FastLedRunner runner(&player);

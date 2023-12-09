@@ -58,6 +58,8 @@ class NetworkDeviceId {
   const uint8_t* data() const { return &data_[0]; }
   uint8_t* data() { return &data_[0]; }
 
+  NetworkDeviceId PlusOne() const;
+
  private:
   static constexpr size_t kNetworkDeviceIdSize = 6;
   uint8_t data_[kNetworkDeviceIdSize];
