@@ -1,4 +1,4 @@
-#include "jazzlights/board.h"
+#include "jazzlights/layout_data.h"
 
 #ifdef ARDUINO
 

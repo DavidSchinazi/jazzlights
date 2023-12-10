@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_BOARD_H
-#define JAZZLIGHTS_BOARD_H
+#ifndef JL_LAYOUT_DATA_H
+#define JL_LAYOUT_DATA_H
 
 #include "jazzlights/config.h"
 
@@ -16,4 +16,4 @@ const Layout* GetLayout2();
 
 #endif  // ARDUINO
 
-#endif  // JAZZLIGHTS_BOARD_H
+#endif  // JL_LAYOUT_DATA_H

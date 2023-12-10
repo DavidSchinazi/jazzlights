@@ -7,11 +7,11 @@
 #include <memory>
 #include <mutex>
 
-#include "jazzlights/board.h"
 #include "jazzlights/button.h"
 #include "jazzlights/core2.h"
 #include "jazzlights/fastled_runner.h"
 #include "jazzlights/instrumentation.h"
+#include "jazzlights/layout_data.h"
 #include "jazzlights/networks/arduino_esp_wifi.h"
 #include "jazzlights/networks/arduino_ethernet.h"
 #include "jazzlights/networks/esp32_ble.h"
