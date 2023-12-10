@@ -1,4 +1,4 @@
-#include "jazzlights/vest.h"
+#include "jazzlights/arduino_loop.h"
 
 #include "jazzlights/config.h"
 
@@ -44,7 +44,7 @@ ArduinoEthernetNetwork ethernetNetwork(ArduinoEspWiFiNetwork::get()->getLocalDev
 Player player;
 FastLedRunner runner(&player);
 
-void vestSetup(void) {
+void arduinoSetup(void) {
   Milliseconds currentTime = timeMillis();
   Serial.begin(115200);
 #if CORE2AWS
@@ -89,7 +89,7 @@ void vestSetup(void) {
   runner.Start();
 }
 
-void vestLoop(void) {
+void arduinoLoop(void) {
   SAVE_TIME_POINT(LoopStart);
   Milliseconds currentTime = timeMillis();
 #if CORE2AWS

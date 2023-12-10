@@ -5,15 +5,10 @@
 
 #ifdef ARDUINO
 
-#include <string>
-
-#include "jazzlights/player.h"
-#include "jazzlights/util/time.h"
-
 namespace jazzlights {
 
-void vestSetup(void);
-void vestLoop(void);
+void arduinoSetup(void);
+void arduinoLoop(void);
 
 }  // namespace jazzlights
 

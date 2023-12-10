@@ -2,13 +2,11 @@
 
 #ifdef ARDUINO
 
-#include <Arduino.h>
+#include "jazzlights/arduino_loop.h"
 
-#include "jazzlights/vest.h"
+void setup() { jazzlights::arduinoSetup(); }
 
-void setup() { jazzlights::vestSetup(); }
-
-void loop() { jazzlights::vestLoop(); }
+void loop() { jazzlights::arduinoLoop(); }
 
 #else  // ARDUINO
 
