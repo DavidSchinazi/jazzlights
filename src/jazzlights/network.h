@@ -124,6 +124,9 @@ class Network {
   // A static name for this network class suitable for logging.
   virtual const char* networkName() const = 0;
 
+  // A static name for this network class suitable for displaying when screen size is limited.
+  virtual const char* shortNetworkName() const = 0;
+
   // Whether we should advertise patterns on this network if that's where we received them.
   virtual bool shouldEcho() const = 0;
 

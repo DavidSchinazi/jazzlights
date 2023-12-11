@@ -31,6 +31,7 @@ class Esp32WiFiNetwork : public Network {
   NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
   NetworkDeviceId getLocalDeviceId() override { return localDeviceId_; }
   const char* networkName() const override { return "Esp32WiFi"; }
+  const char* shortNetworkName() const override { return "WiFi"; }
   std::string getStatusStr(Milliseconds currentTime) const override;
   void setMessageToSend(const NetworkMessage& messageToSend, Milliseconds currentTime) override;
   void disableSending(Milliseconds currentTime) override;

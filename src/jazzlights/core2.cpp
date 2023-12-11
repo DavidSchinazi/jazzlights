@@ -627,15 +627,11 @@ std::string bleStatus(Milliseconds currentTime) {
 }
 
 std::string otherStatus(Player& player, Milliseconds currentTime) {
-  char otherStatusStr[100] = "Leading";
-  if (player.followedNextHopNetwork() == ArduinoEspWiFiNetwork::get()) {
-    snprintf(otherStatusStr, sizeof(otherStatusStr) - 1, "Following Wi-Fi nh=%u", player.currentNumHops());
-  }
-#if ESP32_BLE
-  else if (player.followedNextHopNetwork() == Esp32BleNetwork::get()) {
-    snprintf(otherStatusStr, sizeof(otherStatusStr) - 1, "Following BLE nh=%u", player.currentNumHops());
-  }
-#endif  // ESP32_BLE
+  const Network* followedNextHopNetwork = player.followedNextHopNetwork();
+  if (followedNextHopNetwork == nullptr) { return std::string("Leading"); }
+  char otherStatusStr[100] = {};
+  snprintf(otherStatusStr, sizeof(otherStatusStr) - 1, "Following %s nh=%u", followedNextHopNetwork->shortNetworkName(),
+           player.currentNumHops());
   return std::string(otherStatusStr);
 }
 

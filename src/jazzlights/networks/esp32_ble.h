@@ -37,6 +37,7 @@ class Esp32BleNetwork : public Network {
   // Get this device's BLE MAC address.
   NetworkDeviceId getLocalDeviceId() override { return localDeviceId_; }
   const char* networkName() const override { return "ESP32BLE"; }
+  const char* shortNetworkName() const override { return "BLE"; }
   bool shouldEcho() const override { return true; }
   Milliseconds getLastReceiveTime() const override { return lastReceiveTime_; }
   std::string getStatusStr(Milliseconds currentTime) const override;
