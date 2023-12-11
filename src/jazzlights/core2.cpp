@@ -13,7 +13,6 @@
 #include "jazzlights/layouts/matrix.h"
 #include "jazzlights/networks/arduino_esp_wifi.h"
 #include "jazzlights/networks/esp32_ble.h"
-#include "jazzlights/vest.h"
 
 namespace jazzlights {
 
