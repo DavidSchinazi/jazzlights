@@ -11,11 +11,7 @@
 namespace jazzlights {
 
 void setupButtons();
-void doButtons(Player& player, const Network& wifiNetwork,
-#if ESP32_BLE
-               const Network& bleNetwork,
-#endif  // ESP32_BLE
-               Milliseconds currentMillis);
+void doButtons(Player& player, const Network& wifiNetwork, const Network& bleNetwork, Milliseconds currentMillis);
 
 #if !CORE2AWS
 uint8_t getBrightness();

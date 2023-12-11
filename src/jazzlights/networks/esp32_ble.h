@@ -1,15 +1,15 @@
 #ifndef JL_NETWORKS_ESP32_BLE_H
 #define JL_NETWORKS_ESP32_BLE_H
 
-#ifndef ESP32_BLE
-#ifdef ESP32
-#define ESP32_BLE 1
-#else  // ESP32
-#define ESP32_BLE 0
-#endif  // ESP32
-#endif  // ESP32_BLE
+#ifdef ARDUINO
 
-#if ESP32_BLE
+#ifndef JL_DISABLE_BLUETOOTH
+#define JL_DISABLE_BLUETOOTH 0
+#endif  // JL_DISABLE_BLUETOOTH
+
+#include "jazzlights/network.h"
+
+#if !JL_DISABLE_BLUETOOTH
 
 #include <Arduino.h>
 #include <BLEDevice.h>
@@ -17,9 +17,6 @@
 #include <atomic>
 #include <list>
 #include <mutex>
-
-#include "jazzlights/network.h"
-#include "jazzlights/util/time.h"
 
 namespace jazzlights {
 
@@ -99,6 +96,31 @@ class Esp32BleNetwork : public Network {
 };
 
 }  // namespace jazzlights
+#else   // JL_DISABLE_BLUETOOTH
 
-#endif  // ESP32_BLE
+namespace jazzlights {
+// This version of Esp32BleNetwork is a no-op designed to allow disabling all Bluetooth support without having to modify
+// the rest of the codebase.
+class Esp32BleNetwork : public Network {
+ public:
+  static Esp32BleNetwork* get();
+
+  void setMessageToSend(const NetworkMessage& /*messageToSend*/, Milliseconds /*currentTime*/) override {}
+  void disableSending(Milliseconds /*currentTime*/) override {}
+  void triggerSendAsap(Milliseconds /*currentTime*/) override {}
+  NetworkDeviceId getLocalDeviceId() override { return NetworkDeviceId(); }
+  const char* networkName() const override { return "NoOpESP32BLE"; }
+  const char* shortNetworkName() const override { return "!BLE"; }
+  bool shouldEcho() const override { return false; }
+  Milliseconds getLastReceiveTime() const override { return -1; }
+  std::string getStatusStr(Milliseconds currentTime) const override { return "Compiled Out"; }
+
+ protected:
+  void runLoopImpl(Milliseconds /*currentTime*/) override {}
+  NetworkStatus update(NetworkStatus /*status*/, Milliseconds /*currentTime*/) override { return CONNECTED; }
+  std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds currentTime) override { return {}; }
+};
+}  // namespace jazzlights
+#endif  // JL_DISABLE_BLUETOOTH
+#endif  // ARDUINO
 #endif  // JL_NETWORKS_ESP32_BLE_H

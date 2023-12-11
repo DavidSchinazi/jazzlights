@@ -73,9 +73,7 @@ void arduinoSetup(void) {
   player.setPrecedenceGain(1000);
 #endif
 
-#if ESP32_BLE
   player.connect(Esp32BleNetwork::get());
-#endif  // ESP32_BLE
   player.connect(ArduinoEspWiFiNetwork::get());
 #if JAZZLIGHTS_ARDUINO_ETHERNET
   player.connect(&ethernetNetwork);
@@ -94,20 +92,13 @@ void arduinoLoop(void) {
   Milliseconds currentTime = timeMillis();
 #if CORE2AWS
   core2Loop(player, currentTime);
-#else  // CORE2AWS
+#else   // CORE2AWS
   SAVE_TIME_POINT(Core2);
   // Read, debounce, and process the buttons, and perform actions based on button state.
-  doButtons(player, *ArduinoEspWiFiNetwork::get(),
-#if ESP32_BLE
-            *Esp32BleNetwork::get(),
-#endif  // ESP32_BLE
-            currentTime);
+  doButtons(player, *ArduinoEspWiFiNetwork::get(), *Esp32BleNetwork::get(), currentTime);
 #endif  // CORE2AWS
   SAVE_TIME_POINT(Buttons);
-
-#if ESP32_BLE
   Esp32BleNetwork::get()->runLoop(currentTime);
-#endif  // ESP32_BLE
   SAVE_TIME_POINT(Bluetooth);
 
   const bool shouldRender = player.render(currentTime);

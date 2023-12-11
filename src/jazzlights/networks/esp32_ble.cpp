@@ -1,6 +1,7 @@
 #include "esp32_ble.h"
 
-#if ESP32_BLE
+#ifdef ARDUINO
+#if !JL_DISABLE_BLUETOOTH
 
 #include <cmath>
 #include <string>
@@ -422,12 +423,6 @@ Esp32BleNetwork::Esp32BleNetwork() {
   ESP_ERROR_CHECK(esp_ble_gap_set_scan_params(&scanParams));
 }
 
-// static
-Esp32BleNetwork* Esp32BleNetwork::get() {
-  static Esp32BleNetwork static_instance;
-  return &static_instance;
-}
-
 void Esp32BleNetwork::runLoopImpl(Milliseconds currentTime) { MaybeUpdateAdvertisingState(currentTime); }
 
 std::string Esp32BleNetwork::StateToString(Esp32BleNetwork::State state) {
@@ -457,4 +452,16 @@ std::string Esp32BleNetwork::getStatusStr(Milliseconds currentTime) const {
 
 }  // namespace jazzlights
 
-#endif  // ESP32_BLE
+#endif  // !JL_DISABLE_BLUETOOTH
+
+namespace jazzlights {
+
+// static
+Esp32BleNetwork* Esp32BleNetwork::get() {
+  static Esp32BleNetwork static_instance;
+  return &static_instance;
+}
+
+}  // namespace jazzlights
+
+#endif  // ARDUINO

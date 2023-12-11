@@ -618,13 +618,7 @@ void drawSystemTextLine(uint8_t i, const char* text) {
 
 std::string wifiStatus(Milliseconds currentTime) { return ArduinoEspWiFiNetwork::get()->getStatusStr(currentTime); }
 
-std::string bleStatus(Milliseconds currentTime) {
-#if ESP32_BLE
-  return Esp32BleNetwork::get()->getStatusStr(currentTime);
-#else   // ESP32_BLE
-  return "Not supported";
-#endif  // ESP32_BLE
-}
+std::string bleStatus(Milliseconds currentTime) { return Esp32BleNetwork::get()->getStatusStr(currentTime); }
 
 std::string otherStatus(Player& player, Milliseconds currentTime) {
   const Network* followedNextHopNetwork = player.followedNextHopNetwork();
