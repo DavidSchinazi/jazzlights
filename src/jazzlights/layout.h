@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_LAYOUT_H
-#define JAZZLIGHTS_LAYOUT_H
+#ifndef JL_LAYOUT_H
+#define JL_LAYOUT_H
 
 #include "jazzlights/types.h"
 #include "jazzlights/util/geom.h"
@@ -73,4 +73,4 @@ inline Box bounds(const Layout& layout) {
 
 }  // namespace jazzlights
 
-#endif  // JAZZLIGHTS_LAYOUT_H
+#endif  // JL_LAYOUT_H

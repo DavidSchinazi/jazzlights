@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_VEST_H
-#define JAZZLIGHTS_VEST_H
+#ifndef JL_ARDUINO_LOOP_H
+#define JL_ARDUINO_LOOP_H
 
 #include "jazzlights/config.h"
 
@@ -14,4 +14,4 @@ void arduinoLoop(void);
 
 #endif  // ARDUINO
 
-#endif  // JAZZLIGHTS_VEST_H
+#endif  // JL_ARDUINO_LOOP_H

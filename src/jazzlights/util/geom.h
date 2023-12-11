@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_GEOM_H
-#define JAZZLIGHTS_GEOM_H
+#ifndef JL_UTIL_GEOM_H
+#define JL_UTIL_GEOM_H
 #include <cmath>
 
 #include "jazzlights/util/math.h"
@@ -148,4 +148,4 @@ R rotateLeft(const T& v) {
 }
 
 }  // namespace jazzlights
-#endif  // JAZZLIGHTS_GEOM_H
+#endif  // JL_UTIL_GEOM_H

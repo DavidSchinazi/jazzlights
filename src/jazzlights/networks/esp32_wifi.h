@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_NETWORKS_ESP32_WIFI_H
-#define JAZZLIGHTS_NETWORKS_ESP32_WIFI_H
+#ifndef JL_NETWORKS_ESP32_WIFI_H
+#define JL_NETWORKS_ESP32_WIFI_H
 
 #include "jazzlights/network.h"
 
@@ -63,4 +63,4 @@ class Esp32WiFiNetwork : public Network {
 }  // namespace jazzlights
 
 #endif  // JAZZLIGHTS_ESP32_WIFI
-#endif  // JAZZLIGHTS_NETWORKS_ESP32_WIFI_H
+#endif  // JL_NETWORKS_ESP32_WIFI_H

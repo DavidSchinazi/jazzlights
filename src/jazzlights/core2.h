@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_CORE2_H
-#define JAZZLIGHTS_CORE2_H
+#ifndef JL_CORE2_H
+#define JL_CORE2_H
 
 #if CORE2AWS
 
@@ -15,4 +15,4 @@ uint8_t getBrightness();
 }  // namespace jazzlights
 
 #endif  // CORE2AWS
-#endif  // JAZZLIGHTS_CORE2_H
+#endif  // JL_CORE2_H

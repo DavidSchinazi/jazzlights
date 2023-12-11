@@ -1,5 +1,6 @@
-#ifndef JAZZLIGHTS_REGISTRY_HPP
-#define JAZZLIGHTS_REGISTRY_HPP
+#ifndef JL_REGISTRY_H
+#define JL_REGISTRY_H
+
 #include "jazzlights/util/meta.h"
 
 namespace jazzlights {
@@ -33,4 +34,4 @@ T& clone(const T& v) {
 }
 
 }  // namespace jazzlights
-#endif  // JAZZLIGHTS_REGISTRY_HPP
+#endif  // JL_REGISTRY_H

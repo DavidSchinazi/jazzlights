@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_COLOR_H
-#define JAZZLIGHTS_COLOR_H
+#ifndef JL_UTIL_COLOR_H
+#define JL_UTIL_COLOR_H
 
 #include <stdint.h>
 #include <string.h>
@@ -221,4 +221,4 @@ inline std::ostream& operator<<(std::ostream& out, const HslColor& c) {
 }  // namespace jazzlights
 
 #endif  // ARDUINO
-#endif  // JAZZLIGHTS_COLOR_H
+#endif  // JL_UTIL_COLOR_H

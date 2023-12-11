@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_EFFECTS_GLOW_H
-#define JAZZLIGHTS_EFFECTS_GLOW_H
+#ifndef JL_EFFECTS_GLOW_H
+#define JL_EFFECTS_GLOW_H
 #include "jazzlights/effects/functional.h"
 #include "jazzlights/util/color.h"
 #include "jazzlights/util/math.h"
@@ -45,4 +45,4 @@ auto glow = [](Color color, const std::string& name) {
 };
 
 }  // namespace jazzlights
-#endif  // JAZZLIGHTS_EFFECTS_GLOW_H
+#endif  // JL_EFFECTS_GLOW_H

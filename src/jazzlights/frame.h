@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_FRAME_HPP
-#define JAZZLIGHTS_FRAME_HPP
+#ifndef JL_FRAME_H
+#define JL_FRAME_H
 
 #include <vector>
 
@@ -59,4 +59,4 @@ inline T& cast_context(const Frame& frame) {
 }
 
 }  // namespace jazzlights
-#endif  // JAZZLIGHTS_FRAME_HPP
+#endif  // JL_FRAME_H

@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_FASTLED_WRAPPER_H
-#define JAZZLIGHTS_FASTLED_WRAPPER_H
+#ifndef JL_FASTLED_WRAPPER_H
+#define JL_FASTLED_WRAPPER_H
 
 #include "jazzlights/config.h"
 
@@ -318,4 +318,4 @@ inline int16_t lerp15by16(int16_t a, int16_t b, uint16_t frac) {
 
 #endif  // ARDUINO
 
-#endif  // JAZZLIGHTS_FASTLED_WRAPPER_H
+#endif  // JL_FASTLED_WRAPPER_H

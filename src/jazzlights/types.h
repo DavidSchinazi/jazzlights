@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_TYPES_H
-#define JAZZLIGHTS_TYPES_H
+#ifndef JL_TYPES_H
+#define JL_TYPES_H
 
 #include <cstdint>
 #include <vector>
@@ -56,4 +56,4 @@ class XYIndexStore {
 
 }  // namespace jazzlights
 
-#endif  // JAZZLIGHTS_TYPES_H
+#endif  // JL_TYPES_H

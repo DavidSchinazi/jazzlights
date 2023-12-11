@@ -1,5 +1,6 @@
-#ifndef JAZZLIGHTS_RENDERER_H
-#define JAZZLIGHTS_RENDERER_H
+#ifndef JL_RENDERER_H
+#define JL_RENDERER_H
+
 #include "jazzlights/util/color.h"
 #include "jazzlights/util/geom.h"
 #include "jazzlights/util/log.h"
@@ -17,4 +18,4 @@ class Renderer {
 };
 
 }  // namespace jazzlights
-#endif  // JAZZLIGHTS_RENDERER_H
+#endif  // JL_RENDERER_H

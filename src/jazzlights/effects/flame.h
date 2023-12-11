@@ -1,5 +1,6 @@
-#ifndef JAZZLIGHTS_EFFECT_FLAME_H
-#define JAZZLIGHTS_EFFECT_FLAME_H
+#ifndef JL_EFFECTS_FLAME_H
+#define JL_EFFECTS_FLAME_H
+
 #include "jazzlights/effects/functional.h"
 namespace jazzlights {
 
@@ -18,4 +19,4 @@ class Flame : public XYIndexStateEffect<FlameState, uint8_t> {
 inline Flame flame() { return Flame(); }
 
 }  // namespace jazzlights
-#endif  // JAZZLIGHTS_EFFECT_FLAME_H
+#endif  // JL_EFFECTS_FLAME_H

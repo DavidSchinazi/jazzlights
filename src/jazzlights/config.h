@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_CONFIG_H
-#define JAZZLIGHTS_CONFIG_H
+#ifndef JL_CONFIG_H
+#define JL_CONFIG_H
 
 // Pick which vest to build here.
 #if !defined(IS_ROPELIGHT) && !defined(ORANGE_VEST) && !defined(HAMMER) && !defined(FAIRY_WAND) && \
@@ -95,4 +95,4 @@
 #define JL_WIFI_SSID "FISHLIGHT"
 #define JL_WIFI_PASSWORD "155155155"
 
-#endif  // JAZZLIGHTS_CONFIG_H
+#endif  // JL_CONFIG_H

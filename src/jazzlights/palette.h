@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_PALETTE_H
-#define JAZZLIGHTS_PALETTE_H
+#ifndef JL_PALETTE_H
+#define JL_PALETTE_H
 
 #include <cstdint>
 
@@ -201,4 +201,4 @@ class EffectWithPaletteXYIndexAndState : public XYIndexStateEffect<EffectWithPal
 
 }  // namespace jazzlights
 
-#endif  // JAZZLIGHTS_PALETTE_H
+#endif  // JL_PALETTE_H

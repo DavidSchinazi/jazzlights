@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_LOG_H
-#define JAZZLIGHTS_LOG_H
+#ifndef JL_UTIL_LOG_H
+#define JL_UTIL_LOG_H
 
 namespace jazzlights {
 
@@ -37,4 +37,4 @@ __attribute__((format(printf, 1, 2))) void arduinoLog(const char* format, ...);
 
 }  // namespace jazzlights
 
-#endif  // JAZZLIGHTS_LOG_H
+#endif  // JL_UTIL_LOG_H

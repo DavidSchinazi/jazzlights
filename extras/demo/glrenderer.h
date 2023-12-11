@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_RENDERERS_OPENGL_H
-#define JAZZLIGHTS_RENDERERS_OPENGL_H
+#ifndef JL_EXTRAS_DEMO_GLRENDERER_H
+#define JL_EXTRAS_DEMO_GLRENDERER_H
 
 #include "jazzlights/layout.h"
 #include "jazzlights/renderer.h"
@@ -19,4 +19,4 @@ class GLRenderer : public Renderer {
 
 }  // namespace jazzlights
 
-#endif  // JAZZLIGHTS_RENDERERS_OPENGL_H
+#endif  // JL_EXTRAS_DEMO_GLRENDERER_H

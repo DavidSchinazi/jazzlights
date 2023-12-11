@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_FASTLED_RENDERER_H
-#define JAZZLIGHTS_FASTLED_RENDERER_H
+#ifndef JL_FASTLED_RENDERER_H
+#define JL_FASTLED_RENDERER_H
 
 #ifdef ARDUINO
 
@@ -63,4 +63,4 @@ class FastLedRenderer : public Renderer {
 
 #endif  // ARDUINO
 
-#endif  // JAZZLIGHTS_FASTLED_RENDERER_H
+#endif  // JL_FASTLED_RENDERER_H

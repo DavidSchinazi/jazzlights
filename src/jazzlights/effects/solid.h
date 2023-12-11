@@ -1,5 +1,6 @@
-#ifndef JAZZLIGHTS_EFFECTS_SOLID_H
-#define JAZZLIGHTS_EFFECTS_SOLID_H
+#ifndef JL_EFFECTS_SOLID_H
+#define JL_EFFECTS_SOLID_H
+
 #include "jazzlights/effects/functional.h"
 
 namespace jazzlights {
@@ -9,4 +10,4 @@ auto solid = [](Color color, const std::string& name) {
 };
 
 }  // namespace jazzlights
-#endif  // JAZZLIGHTS_EFFECTS_SOLID_H
+#endif  // JL_EFFECTS_SOLID_H

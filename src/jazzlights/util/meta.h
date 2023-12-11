@@ -2,8 +2,8 @@
 //
 // Based on the code in FBL library of Zircon/Fuchsia project,
 // see https://fuchsia.googlesource.com/zircon/+/master/LICENSE
-#ifndef JAZZLIGHTS_TYPE_SUPPORT_H
-#define JAZZLIGHTS_TYPE_SUPPORT_H
+#ifndef JL_UTIL_META_H
+#define JL_UTIL_META_H
 #include <stddef.h>
 
 namespace jazzlights {
@@ -147,4 +147,4 @@ struct enable_if<true, T> {
 };
 
 }  // namespace jazzlights
-#endif  // JAZZLIGHTS_TYPE_SUPPORT_H
+#endif  // JL_UTIL_META_H

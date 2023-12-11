@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_EFFECTS_THREESINE_H
-#define JAZZLIGHTS_EFFECTS_THREESINE_H
+#ifndef JL_EFFECTS_THREESINE_H
+#define JL_EFFECTS_THREESINE_H
 #include "jazzlights/effects/functional.h"
 #include "jazzlights/util/math.h"
 
@@ -27,4 +27,4 @@ auto threesine = []() {
 };
 
 }  // namespace jazzlights
-#endif  // JAZZLIGHTS_EFFECTS_THREESINE_H
+#endif  // JL_EFFECTS_THREESINE_H

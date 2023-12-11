@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_NETWORK_UDPSOCKET_H
-#define JAZZLIGHTS_NETWORK_UDPSOCKET_H
+#ifndef JL_NETWORKS_UNIX_UDP_H
+#define JL_NETWORKS_UNIX_UDP_H
 
 #ifndef ARDUINO
 
@@ -40,4 +40,4 @@ class UnixUdpNetwork : public UdpNetwork {
 
 #endif  // ARDUINO
 
-#endif  // JAZZLIGHTS_NETWORK_UDPSOCKET_H
+#endif  // JL_NETWORKS_UNIX_UDP_H

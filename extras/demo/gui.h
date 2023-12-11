@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_GUI_HPP
-#define JAZZLIGHTS_GUI_HPP
+#ifndef JL_EXTRAS_DEMO_GUI_H
+#define JL_EXTRAS_DEMO_GUI_H
 
 #include "jazzlights/player.h"
 
@@ -9,4 +9,4 @@ int runGui(const char* winTitle, Player& player, Box viewport, bool fullscreen =
 
 }  // namespace jazzlights
 
-#endif  // JAZZLIGHTS_GUI_HPP
+#endif  // JL_EXTRAS_DEMO_GUI_H

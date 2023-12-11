@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_FASTLED_RUNNER_H
-#define JAZZLIGHTS_FASTLED_RUNNER_H
+#ifndef JL_FASTLED_RUNNER_H
+#define JL_FASTLED_RUNNER_H
 
 #ifdef ARDUINO
 
@@ -63,4 +63,4 @@ class FastLedRunner {
 
 #endif  // ARDUINO
 
-#endif  // JAZZLIGHTS_FASTLED_RUNNER_H
+#endif  // JL_FASTLED_RUNNER_H

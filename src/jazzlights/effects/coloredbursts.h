@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_EFFECTS_COLOREDBURSTS_H
-#define JAZZLIGHTS_EFFECTS_COLOREDBURSTS_H
+#ifndef JL_EFFECTS_COLOREDBURSTS_H
+#define JL_EFFECTS_COLOREDBURSTS_H
 
 #include "jazzlights/effect.h"
 #include "jazzlights/fastled_wrapper.h"
@@ -169,4 +169,4 @@ class ColoredBursts : public EffectWithPaletteXYIndexAndState<ColoredBurstsState
 
 }  // namespace jazzlights
 
-#endif  // JAZZLIGHTS_EFFECTS_COLOREDBURSTS_H
+#endif  // JL_EFFECTS_COLOREDBURSTS_H
