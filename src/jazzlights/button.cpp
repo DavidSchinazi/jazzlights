@@ -4,6 +4,7 @@
 #include "jazzlights/text.h"
 
 #ifdef ARDUINO
+#if JL_ATOM_MATRIX
 
 #include <Arduino.h>
 
@@ -23,10 +24,8 @@ CRGB atomScreenLEDsAllZero[ATOM_SCREEN_NUM_LEDS] = {};
 uint8_t brightnessLastWrite = 255;
 #endif  // ATOM_MATRIX_SCREEN
 
-#if defined(ESP32)
 #define NUMBUTTONS 1
 uint8_t buttonPins[NUMBUTTONS] = {39};
-#endif  // ESP32
 
 // Button state tranitions:
 // Button starts in BTN_IDLE.
@@ -480,10 +479,9 @@ void doButtons(Player& player, const Network& wifiNetwork, const Network& bleNet
 #endif  // !BUTTONS_DISABLED
 }
 
-#if !CORE2AWS
 uint8_t getBrightness() { return brightnessList[brightnessCursor]; }
-#endif  // !CORE2AWS
 
 }  // namespace jazzlights
 
+#endif  // JL_ATOM_MATRIX
 #endif  // ARDUINO

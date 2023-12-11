@@ -1,6 +1,7 @@
 #ifndef JL_CORE2_H
 #define JL_CORE2_H
 
+#ifdef ARDUINO
 #if CORE2AWS
 
 #include "jazzlights/player.h"
@@ -15,4 +16,5 @@ uint8_t getBrightness();
 }  // namespace jazzlights
 
 #endif  // CORE2AWS
+#endif  // ARDUINO
 #endif  // JL_CORE2_H

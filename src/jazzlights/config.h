@@ -19,6 +19,8 @@
 #define CORE2AWS 0
 #endif  // CORE2AWS
 
+#define JL_ATOM_MATRIX (!CORE2AWS)
+
 #ifndef IS_GAUNTLET
 #define IS_GAUNTLET 0
 #endif  // IS_GAUNTLET

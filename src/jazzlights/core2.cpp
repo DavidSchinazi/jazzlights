@@ -2,6 +2,7 @@
 
 #include "jazzlights/config.h"
 
+#ifdef ARDUINO
 #if CORE2AWS
 
 #ifndef CORE2AWS_LCD_ENABLED
@@ -913,6 +914,7 @@ uint8_t getBrightness() { return 0; }
 }  // namespace jazzlights
 
 #endif  // CORE2AWS
+#endif  // ARDUINO
 
 /*
   GPIO pins on Core2AWS for vehicles

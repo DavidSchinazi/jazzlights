@@ -19,17 +19,13 @@
 
 #if CORE2AWS
 #define LED_PIN 32
-#elif defined(ESP32)
-#if M5STAMP_PICO
+#elif M5STAMP_PICO
 #define LED_PIN 32
 #elif M5STAMP_C3U
 #define LED_PIN 1
-#else  // M5STAMP
+#else
 #define LED_PIN 26
 #define LED_PIN2 32
-#endif  // M5STAMP
-#else
-#error "Unexpected board"
 #endif
 
 #ifndef BRIGHTER2
