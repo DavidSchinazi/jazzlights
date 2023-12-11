@@ -2,9 +2,9 @@
 
 #ifdef ARDUINO
 
-#include "jazzlights/button.h"
-#include "jazzlights/core2.h"
 #include "jazzlights/instrumentation.h"
+#include "jazzlights/ui_atom.h"
+#include "jazzlights/ui_core2.h"
 #include "jazzlights/util/log.h"
 
 namespace jazzlights {

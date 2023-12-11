@@ -1,4 +1,4 @@
-#include "jazzlights/button.h"
+#include "jazzlights/ui_atom.h"
 
 #include "jazzlights/fastled_wrapper.h"
 #include "jazzlights/text.h"
