@@ -43,11 +43,7 @@ FastLedRunner runner(&player);
 void arduinoSetup(void) {
   Milliseconds currentTime = timeMillis();
   Serial.begin(115200);
-#if CORE2AWS
-  core2SetupStart(player, currentTime);
-#else   // CORE2AWS
-  setupButtons();
-#endif  // CORE2AWS
+  arduinoUiInitialSetup(player, currentTime);
 
 #if IS_STAFF
   runner.AddLeds<WS2811, LED_PIN, RGB>(*GetLayout());
@@ -76,9 +72,7 @@ void arduinoSetup(void) {
 #endif  // JAZZLIGHTS_ARDUINO_ETHERNET
   player.begin(currentTime);
 
-#if CORE2AWS
-  core2SetupEnd(player, currentTime);
-#endif  // CORE2AWS
+  arduinoUiFinalSetup(player, currentTime);
 
   runner.Start();
 }
@@ -86,14 +80,8 @@ void arduinoSetup(void) {
 void arduinoLoop(void) {
   SAVE_TIME_POINT(LoopStart);
   Milliseconds currentTime = timeMillis();
-#if CORE2AWS
-  core2Loop(player, currentTime);
-#else   // CORE2AWS
-  SAVE_TIME_POINT(Core2);
-  // Read, debounce, and process the buttons, and perform actions based on button state.
-  doButtons(player, *ArduinoEspWiFiNetwork::get(), *Esp32BleNetwork::get(), currentTime);
-#endif  // CORE2AWS
-  SAVE_TIME_POINT(Buttons);
+  arduinoUiLoop(player, *ArduinoEspWiFiNetwork::get(), *Esp32BleNetwork::get(), currentTime);
+  SAVE_TIME_POINT(UserInterface);
   Esp32BleNetwork::get()->runLoop(currentTime);
   SAVE_TIME_POINT(Bluetooth);
 

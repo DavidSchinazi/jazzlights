@@ -8,9 +8,9 @@
 
 namespace jazzlights {
 
-void core2SetupStart(Player& player, Milliseconds currentTime);
-void core2SetupEnd(Player& player, Milliseconds currentTime);
-void core2Loop(Player& player, Milliseconds currentTime);
+void arduinoUiInitialSetup(Player& player, Milliseconds currentTime);
+void arduinoUiFinalSetup(Player& player, Milliseconds currentTime);
+void arduinoUiLoop(Player& player, const Network& wifiNetwork, const Network& bleNetwork, Milliseconds currentTime);
 uint8_t getBrightness();
 
 }  // namespace jazzlights

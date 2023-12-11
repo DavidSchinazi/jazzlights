@@ -531,7 +531,7 @@ class PatternControlMenu {
 };
 PatternControlMenu gPatternControlMenu;
 
-void core2SetupStart(Player& player, Milliseconds currentTime) {
+void arduinoUiInitialSetup(Player& player, Milliseconds currentTime) {
   M5.begin(/*LCDEnable=*/true, /*SDEnable=*/false,
            /*SerialEnable=*/false, /*I2CEnable=*/false,
            /*mode=*/kMBusModeOutput);
@@ -566,7 +566,7 @@ void startMainMenu(Player& player, Milliseconds currentTime) {
   core2ScreenRenderer.setEnabled(true);
 }
 
-void core2SetupEnd(Player& player, Milliseconds currentTime) {
+void arduinoUiFinalSetup(Player& player, Milliseconds currentTime) {
   gCurrentPatternName = player.currentEffectName();
   if (gScreenMode == ScreenMode::kMainMenu) {
     startMainMenu(player, currentTime);
@@ -650,7 +650,8 @@ void drawSystemTextLines(Player& player, Milliseconds currentTime) {
   drawSystemTextLine(i++, line);
 }
 
-void core2Loop(Player& player, Milliseconds currentTime) {
+void arduinoUiLoop(Player& player, const Network& /*wifiNetwork*/, const Network& /*bleNetwork*/,
+                   Milliseconds currentTime) {
   M5.Touch.update();
   M5.Buttons.update();
   if (M5.background.wasPressed()) {
@@ -905,9 +906,10 @@ void core2Loop(Player& player, Milliseconds currentTime) {
 }
 
 #else   // CORE2AWS_LCD_ENABLED
-void core2SetupStart(Player& player, Milliseconds currentTime) {}
-void core2SetupEnd(Player& player, Milliseconds currentTime) {}
-void core2Loop(Player& player, Milliseconds currentTime) {}
+void arduinoUiInitialSetup(Player& /*player*/, Milliseconds /*currentTime*/) {}
+void arduinoUiFinalSetup(Player& /*player*/, Milliseconds /*currentTime*/) {}
+void arduinoUiLoop(Player& /*player*/, const Network& /*wifiNetwork*/, const Network& /*bleNetwork*/,
+                   Milliseconds /*currentTime*/) {}
 uint8_t getBrightness() { return 0; }
 #endif  // CORE2AWS_LCD_ENABLED
 

@@ -16,8 +16,7 @@ inline void printInstrumentationInfo(Milliseconds /*currentTime*/) {}
 
 #define ALL_TIME_POINTS \
   X(LoopStart)          \
-  X(Core2)              \
-  X(Buttons)            \
+  X(UserInterface)      \
   X(Bluetooth)          \
   X(Player)             \
   X(Brightness)         \

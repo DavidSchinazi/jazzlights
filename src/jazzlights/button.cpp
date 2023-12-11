@@ -379,7 +379,7 @@ uint8_t buttonStatus(uint8_t buttonNum, const Milliseconds currentMillis) {
   return tempStatus;
 }
 
-void setupButtons() {
+void arduinoUiInitialSetup(Player& /*player*/, Milliseconds /*currentTime*/) {
   for (uint8_t i = 0; i < sizeof(buttonPins) / sizeof(buttonPins[0]); i++) { pinMode(buttonPins[i], INPUT_PULLUP); }
 #if ATOM_MATRIX_SCREEN
   atomMatrixScreenController = &FastLED.addLeds<WS2812, /*DATA_PIN=*/27, GRB>(atomScreenLEDs, ATOM_SCREEN_NUM_LEDS);
@@ -387,7 +387,9 @@ void setupButtons() {
 #endif  // ATOM_MATRIX_SCREEN
 }
 
-void doButtons(Player& player, const Network& wifiNetwork, const Network& bleNetwork, Milliseconds currentMillis) {
+void arduinoUiFinalSetup(Player& /*player*/, Milliseconds /*currentTime*/) {}
+
+void arduinoUiLoop(Player& player, const Network& wifiNetwork, const Network& bleNetwork, Milliseconds currentMillis) {
   updateButtons(currentMillis);  // Read, debounce, and process the buttons
 #if !BUTTONS_DISABLED
 #if defined(ESP32)
@@ -405,7 +407,6 @@ void doButtons(Player& player, const Network& wifiNetwork, const Network& bleNet
 #endif  // FAIRY_WAND
 
 #if BUTTON_LOCK
-  // jll_info("doButtons start");
   // 0 Locked and awaiting click; 1 Awaiting long press; 2 Awaiting click; 3 Awaiting long press; 4 Awaiting release; 5
   // Unlocked
   static uint8_t buttonLockState = 0;
