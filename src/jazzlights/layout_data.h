@@ -5,6 +5,8 @@
 
 #ifdef ARDUINO
 
+#define JL_LENGTH(_a) (sizeof(_a) / sizeof((_a)[0]))
+
 #include "jazzlights/layout.h"
 
 namespace jazzlights {
