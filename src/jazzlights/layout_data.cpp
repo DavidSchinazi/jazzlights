@@ -2,11 +2,11 @@
 
 #ifdef ARDUINO
 
-#if ORANGE_VEST || IS_STAFF || IS_CAPTAIN_HAT
+#if IS_VEST || IS_STAFF || IS_CAPTAIN_HAT
 #include "jazzlights/layouts/pixelmap.h"
 #endif
 
-#if IS_ROPELIGHT || IS_GAUNTLET || HAMMER || FAIRY_WAND
+#if IS_ROPELIGHT || IS_GAUNTLET || IS_HAMMER || IS_FAIRY_WAND
 #include "jazzlights/layouts/matrix.h"
 #endif
 
@@ -16,7 +16,7 @@ namespace jazzlights {
 
 namespace {
 
-#if ORANGE_VEST
+#if IS_VEST
 
 constexpr Point pixelMap[] = {
     { 0.0,  0.0},
@@ -384,19 +384,19 @@ constexpr Point pixelMap[] = {
 static_assert(JL_LENGTH(pixelMap) == 360, "bad size");
 PixelMap pixels(JL_LENGTH(pixelMap), pixelMap);
 
-#endif  // ORANGE_VEST
+#endif  // IS_VEST
 
 #if IS_GAUNTLET
 Matrix pixels(/*w=*/20, /*h=*/15);
 #endif  // IS_GAUNTLET
 
-#if HAMMER
+#if IS_HAMMER
 Matrix pixels(/*w=*/20, /*h=*/1);
-#endif  // HAMMER
+#endif  // IS_HAMMER
 
-#if FAIRY_WAND
+#if IS_FAIRY_WAND
 Matrix pixels(/*w=*/3, /*h=*/3, /*resolution=*/1.0);
-#endif  // FAIRY_WAND
+#endif  // IS_FAIRY_WAND
 
 #if IS_STAFF
 

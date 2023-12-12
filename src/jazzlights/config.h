@@ -2,18 +2,18 @@
 #define JL_CONFIG_H
 
 // Pick which vest to build here.
-#if !defined(IS_ROPELIGHT) && !defined(ORANGE_VEST) && !defined(HAMMER) && !defined(FAIRY_WAND) && \
+#if !defined(IS_ROPELIGHT) && !defined(IS_VEST) && !defined(IS_HAMMER) && !defined(IS_FAIRY_WAND) && \
     !defined(IS_STAFF) && !defined(IS_CAPTAIN_HAT) && !defined(IS_GAUNTLET)
 #ifdef ARDUINO
-#define ORANGE_VEST 1
+#define IS_VEST 1
 #else  // ARDUINO
-#define ORANGE_VEST 0
+#define IS_VEST 0
 #endif  // ARDUINO
 #endif
 
-#ifndef ORANGE_VEST
-#define ORANGE_VEST 0
-#endif  // ORANGE_VEST
+#ifndef IS_VEST
+#define IS_VEST 0
+#endif  // IS_VEST
 
 #ifndef CORE2AWS
 #define CORE2AWS 0
@@ -25,13 +25,13 @@
 #define IS_GAUNTLET 0
 #endif  // IS_GAUNTLET
 
-#ifndef HAMMER
-#define HAMMER 0
-#endif  // HAMMER
+#ifndef IS_HAMMER
+#define IS_HAMMER 0
+#endif  // IS_HAMMER
 
-#ifndef FAIRY_WAND
-#define FAIRY_WAND 0
-#endif  // FAIRY_WAND
+#ifndef IS_FAIRY_WAND
+#define IS_FAIRY_WAND 0
+#endif  // IS_FAIRY_WAND
 
 #ifndef IS_ROPELIGHT
 #define IS_ROPELIGHT 0

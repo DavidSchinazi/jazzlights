@@ -56,7 +56,7 @@ void arduinoSetup(void) {
   if (GetLayout2()) { runner.AddLeds<WS2812B, LED_PIN2, GRB>(*GetLayout2()); }
 #endif  // LED_PIN2
 
-#if FAIRY_WAND || IS_STAFF || IS_CAPTAIN_HAT
+#if IS_FAIRY_WAND || IS_STAFF || IS_CAPTAIN_HAT
   player.setBasePrecedence(500);
   player.setPrecedenceGain(100);
 #else
