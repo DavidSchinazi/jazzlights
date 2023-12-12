@@ -1,7 +1,7 @@
-#include "jazzlights/ui_atom.h"
+#include "jazzlights/ui.h"
+// This comment prevents automatic header reordering.
 
-#include "jazzlights/fastled_wrapper.h"
-#include "jazzlights/text.h"
+#include "jazzlights/config.h"
 
 #ifdef ARDUINO
 #if JL_ATOM_MATRIX
@@ -9,6 +9,9 @@
 #include <Arduino.h>
 
 #include <cstdint>
+
+#include "jazzlights/fastled_wrapper.h"
+#include "jazzlights/text.h"
 
 namespace jazzlights {
 

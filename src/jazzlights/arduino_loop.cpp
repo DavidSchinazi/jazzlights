@@ -14,8 +14,7 @@
 #include "jazzlights/networks/arduino_ethernet.h"
 #include "jazzlights/networks/esp32_ble.h"
 #include "jazzlights/player.h"
-#include "jazzlights/ui_atom.h"
-#include "jazzlights/ui_core2.h"
+#include "jazzlights/ui.h"
 
 #if CORE2AWS
 #define LED_PIN 32

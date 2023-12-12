@@ -1,4 +1,5 @@
-#include "jazzlights/ui_core2.h"
+#include "jazzlights/ui.h"
+// This comment prevents automatic header reordering.
 
 #include "jazzlights/config.h"
 
