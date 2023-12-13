@@ -68,9 +68,10 @@ void FastLedRunner::SendLedsToFastLed() {
   SAVE_COUNT_POINT(LedPrintSend);
   for (size_t i = 0; i < renderers_.size(); i++) {
     uint32_t b = brightness;
-#if BRIGHTER2
+#if JL_IS_CONFIG(STAFF)
+    // Make the second strand of LEDs (the top piece of the staff) brighter.
     if (i > 0) { b += (255 - b) / 2; }
-#endif  // BRIGHTER2
+#endif  // STAFF
     if (shouldWrite[i]) { renderers_[i]->sendToLeds(b); }
   }
   SAVE_TIME_POINT(MainLED);

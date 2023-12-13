@@ -27,10 +27,6 @@
 #error "Unexpected controller"
 #endif
 
-#ifndef BRIGHTER2
-#define BRIGHTER2 0
-#endif  // BRIGHTER2
-
 namespace jazzlights {
 
 #if JL_ARDUINO_ETHERNET
