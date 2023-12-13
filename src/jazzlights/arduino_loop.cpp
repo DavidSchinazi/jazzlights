@@ -33,9 +33,9 @@
 
 namespace jazzlights {
 
-#if JAZZLIGHTS_ARDUINO_ETHERNET
+#if JL_ARDUINO_ETHERNET
 ArduinoEthernetNetwork ethernetNetwork(ArduinoEspWiFiNetwork::get()->getLocalDeviceId().PlusOne());
-#endif  // JAZZLIGHTS_ARDUINO_ETHERNET
+#endif  // JL_ARDUINO_ETHERNET
 Player player;
 FastLedRunner runner(&player);
 
@@ -66,9 +66,9 @@ void arduinoSetup(void) {
 
   player.connect(Esp32BleNetwork::get());
   player.connect(ArduinoEspWiFiNetwork::get());
-#if JAZZLIGHTS_ARDUINO_ETHERNET
+#if JL_ARDUINO_ETHERNET
   player.connect(&ethernetNetwork);
-#endif  // JAZZLIGHTS_ARDUINO_ETHERNET
+#endif  // JL_ARDUINO_ETHERNET
   player.begin(currentTime);
 
   arduinoUiFinalSetup(player, currentTime);
