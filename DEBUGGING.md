@@ -22,7 +22,7 @@ This is useful to load all dependencies locally so you can build them later with
 
 Run from `jazzlights`:
 ```
-for e in $(pio project config | grep 'env:' | grep -v extends | sed 's/env://g') ; do pio run -e "$e" || break ; done
+for e in $(pio project config | grep 'env:' | grep -v extends | sed 's/env://g') ; do if [ "${e:0:1}" != "_" ] ; then pio run -e "$e" || break ; fi ; done
 ```
 
 # To copy this git directory over SSH from a laptop to a Raspberry Pi without Internet connectivity
