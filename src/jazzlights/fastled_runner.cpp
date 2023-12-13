@@ -1,5 +1,7 @@
 #include "jazzlights/fastled_runner.h"
 
+#include "jazzlights/config.h"
+
 #ifdef ARDUINO
 
 #include "jazzlights/instrumentation.h"
@@ -7,6 +9,22 @@
 #include "jazzlights/util/log.h"
 
 namespace jazzlights {
+
+#if JL_IS_CONFIG(STAFF)
+// Significantly reduce power limit since this is 24V and 6 LEDs per pixel.
+#define JL_MAX_MILLIWATTS 300
+#elif JL_IS_CONFIG(ROPELIGHT)
+// Ropelight is generally connected to an independent large power source.
+#define JL_MAX_MILLIWATTS 0
+#elif JL_DEV
+// Reduce power limit to 4W for host-connected development to avoid overloading USB port.
+#define JL_MAX_MILLIWATTS 4200
+#else
+// Default power limit for USB-powered devices is 9W.
+#define JL_MAX_MILLIWATTS 9200
+// Note that these power levels are approximate. The FastLED power calculation algorithm is not entirely accurate, and
+// probably not calibrated for the LED strips we use.
+#endif
 
 // Index 0 is normally reserved by FreeRTOS for stream and message buffers. However, the default precompiled FreeRTOS
 // kernel for arduino/esp-idf only allows a single notification, so we use index 0 here. We don't use stream or message
@@ -27,23 +45,23 @@ void FastLedRunner::SendLedsToFastLed() {
   SAVE_COUNT_POINT(LedPrintLoop);
   if (!shouldWriteToAtLeastOne) { return; }
 
-  uint32_t brightness = getBrightness();  // May be reduced if this exceeds our power budget with the current pattern
+  uint32_t brightness = getBrightness();  // May be reduced if this exceeds our power budget with the current pattern.
 
-#if MAX_MILLIWATTS
+#if JL_MAX_MILLIWATTS > 0
   uint32_t powerAtFullBrightness = 0;
   for (auto& renderer : renderers_) { powerAtFullBrightness += renderer->GetPowerAtFullBrightness(); }
   const uint32_t powerAtDesiredBrightness =
-      powerAtFullBrightness * brightness / 256;  // Forecast power at our current desired brightness
-  player_->powerLimited = (powerAtDesiredBrightness > MAX_MILLIWATTS);
-  if (player_->powerLimited) { brightness = brightness * MAX_MILLIWATTS / powerAtDesiredBrightness; }
+      powerAtFullBrightness * brightness / 256;  // Forecast power at our current desired brightness.
+  player_->powerLimited = (powerAtDesiredBrightness > JL_MAX_MILLIWATTS);
+  if (player_->powerLimited) { brightness = brightness * JL_MAX_MILLIWATTS / powerAtDesiredBrightness; }
 
   jll_debug("pf%6u    pd%5u    bu%4u    bs%4u    mW%5u    mA%5u%s", powerAtFullBrightness,
-            powerAtDesiredBrightness,     // Full-brightness power, desired-brightness power
-            getBrightness(), brightness,  // Desired and selected brightness
+            powerAtDesiredBrightness,     // Full-brightness power, desired-brightness power.
+            getBrightness(), brightness,  // Desired and selected brightness.
             powerAtFullBrightness * brightness / 256,
-            powerAtFullBrightness * brightness / 256 / 5,  // Selected power & current
+            powerAtFullBrightness * brightness / 256 / 5,  // Selected power & current.
             player_->powerLimited ? " (limited)" : "");
-#endif  // MAX_MILLIWATTS
+#endif  // JL_MAX_MILLIWATTS
   SAVE_TIME_POINT(Brightness);
 
   ledWriteStart();
