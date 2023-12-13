@@ -3,8 +3,8 @@
 
 #include "jazzlights/config.h"
 
-#ifdef ARDUINO
-#if JL_ATOM_MATRIX
+#if JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_LITE) || JL_IS_CONTROLLER(M5STAMP_PICO) || \
+    JL_IS_CONTROLLER(M5STAMP_C3U)
 
 #include <Arduino.h>
 
@@ -487,5 +487,4 @@ uint8_t getBrightness() { return brightnessList[brightnessCursor]; }
 
 }  // namespace jazzlights
 
-#endif  // JL_ATOM_MATRIX
-#endif  // ARDUINO
+#endif

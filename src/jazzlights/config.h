@@ -1,6 +1,15 @@
 #ifndef JL_CONFIG_H
 #define JL_CONFIG_H
 
+// Misc macros.
+#define JL_MERGE_TOKENS_INTERNAL(a_, b_) a_##b_
+#define JL_MERGE_TOKENS(a_, b_) JL_MERGE_TOKENS_INTERNAL(a_, b_)
+
+// Configurations.
+#ifndef JL_CONFIG
+#error "Preprocessor macro JL_CONFIG must be defined using compiler flags"
+#endif  // JL_CONFIG
+
 // All of these configs MUST have a distinct number.
 #define JL_CONFIG_NONE 0
 #define JL_CONFIG_VEST 1
@@ -11,20 +20,22 @@
 #define JL_CONFIG_HAMMER 6
 #define JL_CONFIG_FAIRY_WAND 7
 
-#define JL_MERGE_TOKENS_INTERNAL(a_, b_) a_##b_
-#define JL_MERGE_TOKENS(a_, b_) JL_MERGE_TOKENS_INTERNAL(a_, b_)
-
-#ifndef JL_CONFIG
-#error "Preprocessor macro JL_CONFIG must be defined using compiler flags"
-#endif  // JL_CONFIG
-
 #define JL_IS_CONFIG(config_) (JL_MERGE_TOKENS(JL_CONFIG_, JL_CONFIG) == JL_MERGE_TOKENS(JL_CONFIG_, config_))
 
-#ifndef CORE2AWS
-#define CORE2AWS 0
-#endif  // CORE2AWS
+// Controllers.
+#ifndef JL_CONTROLLER
+#error "Preprocessor macro JL_CONTROLLER must be defined using compiler flags"
+#endif  // JL_CONTROLLER
 
-#define JL_ATOM_MATRIX (!CORE2AWS)
+#define JL_CONTROLLER_NATIVE 0
+#define JL_CONTROLLER_ATOM_MATRIX 1
+#define JL_CONTROLLER_ATOM_LITE 2
+#define JL_CONTROLLER_CORE2AWS 3
+#define JL_CONTROLLER_M5STAMP_PICO 4
+#define JL_CONTROLLER_M5STAMP_C3U 5
+
+#define JL_IS_CONTROLLER(controller_) \
+  (JL_MERGE_TOKENS(JL_CONTROLLER_, JL_CONTROLLER) == JL_MERGE_TOKENS(JL_CONTROLLER_, controller_))
 
 // Choose whether to enable button lock.
 #ifndef BUTTON_LOCK
@@ -66,14 +77,6 @@
 #ifndef JL_INSTRUMENTATION
 #define JL_INSTRUMENTATION 0
 #endif  // JL_INSTRUMENTATION
-
-#ifndef M5STAMP_PICO
-#define M5STAMP_PICO 0
-#endif  // M5STAMP_PICO
-
-#ifndef M5STAMP_C3U
-#define M5STAMP_C3U 0
-#endif  // M5STAMP_C3U
 
 #define JL_WIFI_SSID "FISHLIGHT"
 #define JL_WIFI_PASSWORD "155155155"

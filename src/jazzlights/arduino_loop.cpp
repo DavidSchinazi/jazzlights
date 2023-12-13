@@ -16,15 +16,15 @@
 #include "jazzlights/player.h"
 #include "jazzlights/ui.h"
 
-#if CORE2AWS
+#if JL_IS_CONTROLLER(CORE2AWS) || JL_IS_CONTROLLER(M5STAMP_PICO)
 #define LED_PIN 32
-#elif M5STAMP_PICO
-#define LED_PIN 32
-#elif M5STAMP_C3U
+#elif JL_IS_CONTROLLER(M5STAMP_C3U)
 #define LED_PIN 1
-#else
+#elif JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_LITE)
 #define LED_PIN 26
 #define LED_PIN2 32
+#else
+#error "Unexpected controller"
 #endif
 
 #ifndef BRIGHTER2
