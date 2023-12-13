@@ -10,13 +10,13 @@
 namespace jazzlights {
 
 namespace {
-#if IS_CAPTAIN_HAT
+#if JL_IS_CONFIG(CAPTAIN_HAT)
 constexpr uint8_t kIgnitionMin = 0;
 constexpr uint8_t kIgnitionMax = 15;
-#else   // IS_CAPTAIN_HAT
+#else   // CAPTAIN_HAT
 constexpr uint8_t kIgnitionMin = 160;
 constexpr uint8_t kIgnitionMax = 255;
-#endif  // IS_CAPTAIN_HAT
+#endif  // CAPTAIN_HAT
 }  // namespace
 
 RgbaColor heatColor(uint8_t temperature) {

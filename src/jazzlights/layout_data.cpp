@@ -1,27 +1,27 @@
 #include "jazzlights/layout_data.h"
 
-#if IS_GAUNTLET || IS_HAMMER || IS_FAIRY_WAND || IS_ROPELIGHT
+#if JL_IS_CONFIG(GAUNTLET) || JL_IS_CONFIG(HAMMER) || JL_IS_CONFIG(FAIRY_WAND) || JL_IS_CONFIG(ROPELIGHT)
 
 #include "jazzlights/layouts/matrix.h"
 
 namespace jazzlights {
 namespace {
 
-#if IS_GAUNTLET
+#if JL_IS_CONFIG(GAUNTLET)
 Matrix pixels(/*w=*/20, /*h=*/15);
-#endif  // IS_GAUNTLET
+#endif  // GAUNTLET
 
-#if IS_HAMMER
+#if JL_IS_CONFIG(HAMMER)
 Matrix pixels(/*w=*/20, /*h=*/1);
-#endif  // IS_HAMMER
+#endif  // HAMMER
 
-#if IS_FAIRY_WAND
+#if JL_IS_CONFIG(FAIRY_WAND)
 Matrix pixels(/*w=*/3, /*h=*/3, /*resolution=*/1.0);
-#endif  // IS_FAIRY_WAND
+#endif  // FAIRY_WAND
 
-#if IS_ROPELIGHT
+#if JL_IS_CONFIG(ROPELIGHT)
 Matrix pixels(/*w=*/300, /*h=*/1);
-#endif  // IS_ROPELIGHT
+#endif  // ROPELIGHT
 
 }  // namespace
 

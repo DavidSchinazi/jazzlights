@@ -402,12 +402,12 @@ void arduinoUiLoop(Player& player, const Network& wifiNetwork, const Network& bl
   if (atomScreenMessage(btn, currentMillis)) { return; }
 #endif  // ATOM_MATRIX_SCREEN
 
-#if IS_FAIRY_WAND
+#if JL_IS_CONFIG(FAIRY_WAND)
   atomScreenClear();
   atomScreenDisplay(currentMillis);
   if (BTN_EVENT(btn)) { player.triggerPatternOverride(currentMillis); }
   return;
-#endif  // IS_FAIRY_WAND
+#endif  // FAIRY_WAND
 
 #if BUTTON_LOCK
   // 0 Locked and awaiting click; 1 Awaiting long press; 2 Awaiting click; 3 Awaiting long press; 4 Awaiting release; 5

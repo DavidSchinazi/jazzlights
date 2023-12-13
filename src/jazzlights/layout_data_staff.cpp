@@ -1,6 +1,6 @@
 #include "jazzlights/layout_data.h"
 
-#if IS_STAFF
+#if JL_IS_CONFIG(STAFF)
 
 #include "jazzlights/layouts/pixelmap.h"
 
@@ -95,4 +95,4 @@ const Layout* GetLayout2() { return &pixels2; }
 
 }  // namespace jazzlights
 
-#endif  // IS_STAFF
+#endif  // STAFF

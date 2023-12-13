@@ -44,11 +44,11 @@ void arduinoSetup(void) {
   Serial.begin(115200);
   arduinoUiInitialSetup(player, currentTime);
 
-#if IS_STAFF
+#if JL_IS_CONFIG(STAFF)
   runner.AddLeds<WS2811, LED_PIN, RGB>(*GetLayout());
-#elif IS_ROPELIGHT
+#elif JL_IS_CONFIG(ROPELIGHT)
   runner.AddLeds<WS2812, LED_PIN, BRG>(*GetLayout());
-#else  // Vest.
+#else
   runner.AddLeds<WS2812B, LED_PIN, GRB>(*GetLayout());
 #endif
 
@@ -56,7 +56,7 @@ void arduinoSetup(void) {
   if (GetLayout2()) { runner.AddLeds<WS2812B, LED_PIN2, GRB>(*GetLayout2()); }
 #endif  // LED_PIN2
 
-#if IS_FAIRY_WAND || IS_STAFF || IS_CAPTAIN_HAT
+#if JL_IS_CONFIG(WAND) || JL_IS_CONFIG(STAFF) || JL_IS_CONFIG(CAPTAIN_HAT)
   player.setBasePrecedence(500);
   player.setPrecedenceGain(100);
 #else

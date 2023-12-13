@@ -1,6 +1,6 @@
 #include "jazzlights/layout_data.h"
 
-#if IS_VEST
+#if JL_IS_CONFIG(VEST)
 
 #include "jazzlights/layouts/pixelmap.h"
 
@@ -380,4 +380,4 @@ const Layout* GetLayout2() { return nullptr; }
 
 }  // namespace jazzlights
 
-#endif  // IS_VEST
+#endif  // VEST

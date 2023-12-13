@@ -101,9 +101,9 @@ class Player {
   void handleSpecial(Milliseconds currentTime);
   void stopSpecial(Milliseconds currentTime);
   size_t getSpecial() const { return specialMode_; }
-#if IS_FAIRY_WAND
+#if JL_IS_CONFIG(FAIRY_WAND)
   void triggerPatternOverride(Milliseconds currentTime);
-#endif  // IS_FAIRY_WAND
+#endif  // FAIRY_WAND
 
   bool powerLimited = false;
 
@@ -161,9 +161,9 @@ class Player {
 
   bool loop_ = false;
   size_t specialMode_ = START_SPECIAL;
-#if IS_FAIRY_WAND
+#if JL_IS_CONFIG(FAIRY_WAND)
   Milliseconds overridePatternStartTime_ = -1;
-#endif  // IS_FAIRY_WAND
+#endif  // FAIRY_WAND
 
   std::vector<Network*> networks_;
   std::list<OriginatorEntry> originatorEntries_;

@@ -1,41 +1,30 @@
 #ifndef JL_CONFIG_H
 #define JL_CONFIG_H
 
-// Pick which vest to build here.
-#if !defined(IS_ROPELIGHT) && !defined(IS_VEST) && !defined(IS_HAMMER) && !defined(IS_FAIRY_WAND) && \
-    !defined(IS_STAFF) && !defined(IS_CAPTAIN_HAT) && !defined(IS_GAUNTLET)
-#ifdef ARDUINO
-#define IS_VEST 1
-#else  // ARDUINO
-#define IS_VEST 0
-#endif  // ARDUINO
-#endif
+// All of these configs MUST have a distinct number.
+#define JL_CONFIG_NONE 0
+#define JL_CONFIG_VEST 1
+#define JL_CONFIG_GAUNTLET 2
+#define JL_CONFIG_STAFF 3
+#define JL_CONFIG_CAPTAIN_HAT 4
+#define JL_CONFIG_ROPELIGHT 5
+#define JL_CONFIG_HAMMER 6
+#define JL_CONFIG_FAIRY_WAND 7
 
-#ifndef IS_VEST
-#define IS_VEST 0
-#endif  // IS_VEST
+#define JL_MERGE_TOKENS_INTERNAL(a_, b_) a_##b_
+#define JL_MERGE_TOKENS(a_, b_) JL_MERGE_TOKENS_INTERNAL(a_, b_)
+
+#ifndef JL_CONFIG
+#error "Preprocessor macro JL_CONFIG must be defined using compiler flags"
+#endif  // JL_CONFIG
+
+#define JL_IS_CONFIG(config_) (JL_MERGE_TOKENS(JL_CONFIG_, JL_CONFIG) == JL_MERGE_TOKENS(JL_CONFIG_, config_))
 
 #ifndef CORE2AWS
 #define CORE2AWS 0
 #endif  // CORE2AWS
 
 #define JL_ATOM_MATRIX (!CORE2AWS)
-
-#ifndef IS_GAUNTLET
-#define IS_GAUNTLET 0
-#endif  // IS_GAUNTLET
-
-#ifndef IS_HAMMER
-#define IS_HAMMER 0
-#endif  // IS_HAMMER
-
-#ifndef IS_FAIRY_WAND
-#define IS_FAIRY_WAND 0
-#endif  // IS_FAIRY_WAND
-
-#ifndef IS_ROPELIGHT
-#define IS_ROPELIGHT 0
-#endif  // IS_ROPELIGHT
 
 // Choose whether to enable button lock.
 #ifndef BUTTON_LOCK
@@ -53,14 +42,6 @@
 #define ATOM_MATRIX_SCREEN 0
 #endif  // ESP32
 #endif  // ATOM_MATRIX_SCREEN
-
-#ifndef IS_STAFF
-#define IS_STAFF 0
-#endif  // IS_STAFF
-
-#ifndef IS_CAPTAIN_HAT
-#define IS_CAPTAIN_HAT 0
-#endif  // IS_CAPTAIN_HAT
 
 #ifndef BOOT_NAME
 #define BOOT_NAME X

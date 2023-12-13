@@ -66,9 +66,9 @@ auto follow_strand_effect = effect("follow-strand", [](const Frame& frame) {
 });
 
 auto calibration_effect = effect("calibration", [](const Frame& frame) {
-#if IS_VEST
+#if JL_IS_CONFIG(VEST)
   const bool blink = ((frame.time % 1000) < 500);
-#endif  // IS_VEST
+#endif  // VEST
   return [=](const Pixel& pt) -> Color {
     XYIndex xyIndex = frame.xyIndexStore->FromPixel(pt);
     const int32_t green = 0x00ff00, blue = 0x0000ff, red = 0xff0000;
@@ -80,7 +80,7 @@ auto calibration_effect = effect("calibration", [](const Frame& frame) {
 
     const int y = xyIndex.yIndex;
     int32_t col = yColors[y % numYColors];
-#if IS_VEST
+#if JL_IS_CONFIG(VEST)
     const int x = xyIndex.xIndex;
     if (blink) {
       if (y == 0 && (x == 0 || x == 11 || x == 26)) {
@@ -89,12 +89,12 @@ auto calibration_effect = effect("calibration", [](const Frame& frame) {
         col = 0;
       }
     }
-#endif  // IS_VEST
+#endif  // VEST
     return Color(col);
   };
 });
 
-#if IS_FAIRY_WAND
+#if JL_IS_CONFIG(FAIRY_WAND)
 constexpr Milliseconds kOverridePatternDuration = 8000;
 auto override_effect = effect("fairy-wand", [](const Frame& frame) {
   bool blink;
@@ -116,7 +116,7 @@ auto override_effect = effect("fairy-wand", [](const Frame& frame) {
     return Color(blink ? white : black);
   };
 });
-#endif  // IS_FAIRY_WAND
+#endif  // FAIRY_WAND
 
 auto black_effect = solid(BLACK, "black");
 auto red_effect = solid(RED, "red");
@@ -374,12 +374,12 @@ void Player::stopSpecial(Milliseconds currentTime) {
   nextPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
 }
 
-#if IS_FAIRY_WAND
+#if JL_IS_CONFIG(FAIRY_WAND)
 void Player::triggerPatternOverride(Milliseconds currentTime) {
   jll_info("%u Triggering pattern override", currentTime);
   overridePatternStartTime_ = currentTime;
 }
-#endif  // IS_FAIRY_WAND
+#endif  // FAIRY_WAND
 
 bool Player::render(Milliseconds currentTime) {
   if (!ready_) { begin(currentTime); }
@@ -406,12 +406,12 @@ bool Player::render(Milliseconds currentTime) {
     frame_.time = currentTime - currentPatternStartTime_;
   }
   const Effect* effect = patternFromBits(frame_.pattern);
-#if IS_FAIRY_WAND
+#if JL_IS_CONFIG(FAIRY_WAND)
   if (overridePatternStartTime_ >= 0 && currentTime - overridePatternStartTime_ < kOverridePatternDuration) {
     frame_.time = currentTime - overridePatternStartTime_;
     effect = &override_effect;
   }
-#endif  // IS_FAIRY_WAND
+#endif  // FAIRY_WAND
 
   // Ensure effectContext_ is big enough for this effect.
   const size_t effectContextSize = effect->contextSize(frame_);

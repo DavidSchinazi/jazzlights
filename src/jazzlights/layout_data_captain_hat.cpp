@@ -1,6 +1,6 @@
 #include "jazzlights/layout_data.h"
 
-#if IS_CAPTAIN_HAT
+#if JL_IS_CONFIG(CAPTAIN_HAT)
 
 #include "jazzlights/layouts/pixelmap.h"
 
@@ -71,4 +71,4 @@ const Layout* GetLayout2() { return nullptr; }
 
 }  // namespace jazzlights
 
-#endif  // IS_CAPTAIN_HAT
+#endif  // CAPTAIN_HAT
