@@ -81,11 +81,17 @@ const uint8_t brightnessList[] = {2, 4, 8, 16, 32, 64, 128, 255};
 #define NUM_BRIGHTNESSES (sizeof(brightnessList) / sizeof(brightnessList[0]))
 #define MAX_BRIGHTNESS (NUM_BRIGHTNESSES - 1)
 
-#ifndef FIRST_BRIGHTNESS
-#define FIRST_BRIGHTNESS 4
-#endif  // FIRST_BRIGHTNESS
+#if JL_DEV
+static constexpr uint8_t kInitialBrightnessCursor = 0;
+#elif JL_IS_CONFIG(STAFF)
+static constexpr uint8_t kInitialBrightnessCursor = 3;
+#elif JL_IS_CONFIG(HAMMER)
+static constexpr uint8_t kInitialBrightnessCursor = 7;
+#else
+static constexpr uint8_t kInitialBrightnessCursor = 4;
+#endif
 
-uint8_t brightnessCursor = FIRST_BRIGHTNESS;
+uint8_t brightnessCursor = kInitialBrightnessCursor;
 
 #if ATOM_MATRIX_SCREEN
 

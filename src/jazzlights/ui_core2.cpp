@@ -143,11 +143,11 @@ constexpr Milliseconds kLockDelay = 60000;
 constexpr Milliseconds kUnlockingTime = 5000;
 Milliseconds gLastScreenInteractionTime = -1;
 
-#if defined(FIRST_BRIGHTNESS) && FIRST_BRIGHTNESS == 0
+#if JL_DEV
 uint8_t gLedBrightness = 2;
-#else
+#else   // JL_DEV
 uint8_t gLedBrightness = 32;
-#endif
+#endif  // JL_DEV
 
 uint8_t getBrightness() { return gLedBrightness; }
 
