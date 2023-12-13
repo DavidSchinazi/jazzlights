@@ -51,11 +51,11 @@ enum class ScreenMode {
   kSystemMenu,
 };
 ScreenMode gScreenMode =
-#if BUTTON_LOCK
+#if JL_BUTTON_LOCK
     ScreenMode::kOff;
-#else   // BUTTON_LOCK
+#else   // JL_BUTTON_LOCK
     ScreenMode::kMainMenu;
-#endif  // BUTTON_LOCK
+#endif  // JL_BUTTON_LOCK
 
 Matrix core2ScreenPixels(40, 30);
 
@@ -670,15 +670,15 @@ void arduinoUiLoop(Player& player, const Network& /*wifiNetwork*/, const Network
       case ScreenMode::kOff: {
         gLastScreenInteractionTime = currentTime;
         setCore2ScreenBrightness(gOnBrightness);
-#if BUTTON_LOCK
+#if JL_BUTTON_LOCK
         jll_info("%u starting unlock sequence from button press", currentTime);
         gScreenMode = ScreenMode::kLocked1;
         unlock1Button.draw();
-#else   // BUTTON_LOCK
+#else   // JL_BUTTON_LOCK
         jll_info("%u unlocking from button press", currentTime);
         startMainMenu(player, currentTime);
         gLastScreenInteractionTime = currentTime;
-#endif  // BUTTON_LOCK
+#endif  // JL_BUTTON_LOCK
       } break;
       case ScreenMode::kMainMenu: {
         gScreenMode = ScreenMode::kFullScreenPattern;
@@ -893,7 +893,7 @@ void arduinoUiLoop(Player& player, const Network& /*wifiNetwork*/, const Network
       patternControlButton.draw();
     }
   }
-#if BUTTON_LOCK
+#if JL_BUTTON_LOCK
   if (gLastScreenInteractionTime >= 0) {
     Milliseconds lockTime = kLockDelay;
     if (gScreenMode == ScreenMode::kLocked1 || gScreenMode == ScreenMode::kLocked2) { lockTime = kUnlockingTime; }
@@ -902,7 +902,7 @@ void arduinoUiLoop(Player& player, const Network& /*wifiNetwork*/, const Network
       lockScreen(currentTime);
     }
   }
-#endif  // BUTTON_LOCK
+#endif  // JL_BUTTON_LOCK
 }
 
 #else   // CORE2AWS_LCD_ENABLED

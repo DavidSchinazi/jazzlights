@@ -5,6 +5,10 @@
 
 #ifdef ARDUINO
 
+#ifndef JL_BUTTON_LOCK
+#define JL_BUTTON_LOCK (!JL_DEV)
+#endif  // JL_BUTTON_LOCK
+
 #include "jazzlights/network.h"
 #include "jazzlights/player.h"
 

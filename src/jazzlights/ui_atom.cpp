@@ -409,7 +409,7 @@ void arduinoUiLoop(Player& player, const Network& wifiNetwork, const Network& bl
   return;
 #endif  // FAIRY_WAND
 
-#if BUTTON_LOCK
+#if JL_BUTTON_LOCK
   // 0 Locked and awaiting click; 1 Awaiting long press; 2 Awaiting click; 3 Awaiting long press; 4 Awaiting release; 5
   // Unlocked
   static uint8_t buttonLockState = 0;
@@ -454,7 +454,7 @@ void arduinoUiLoop(Player& player, const Network& wifiNetwork, const Network& bl
   } else if (btn != BTN_IDLE) {
     lockButtonTime = currentMillis + lockDelay;
   }
-#endif  // BUTTON_LOCK
+#endif  // JL_BUTTON_LOCK
 
   switch (btn) {
     case BTN_RELEASED:

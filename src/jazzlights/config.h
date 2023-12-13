@@ -37,10 +37,9 @@
 #define JL_IS_CONTROLLER(controller_) \
   (JL_MERGE_TOKENS(JL_CONTROLLER_, JL_CONTROLLER) == JL_MERGE_TOKENS(JL_CONTROLLER_, controller_))
 
-// Choose whether to enable button lock.
-#ifndef BUTTON_LOCK
-#define BUTTON_LOCK 1
-#endif  // BUTTON_LOCK
+#ifndef JL_DEV
+#define JL_DEV 0
+#endif  // JL_DEV
 
 #ifndef GLOW_ONLY
 #define GLOW_ONLY 0
