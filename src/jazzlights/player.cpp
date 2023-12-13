@@ -339,6 +339,11 @@ void Player::begin(Milliseconds currentTime) {
   nextPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
 #if defined(JL_START_SPECIAL) && JL_START_SPECIAL
   handleSpecial(currentTime);
+#elif JL_IS_CONFIG(HAMMER)
+  // Hammer defaults to looping glow-red pattern.
+  currentPattern_ = 0x00080000;
+  nextPattern_ = currentPattern_;
+  loop_ = true;
 #endif  // JL_START_SPECIAL
 }
 
