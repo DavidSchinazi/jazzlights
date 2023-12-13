@@ -13,7 +13,7 @@ If you've installed PlatformIO more than a few weeks ago, make sure to update yo
 
 To install the software on an M5Stack ATOM Matrix
 ([available for purchase here](https://shop.m5stack.com/collections/m5-atom/products/atom-matrix-esp32-development-kit)),
-you can run: `pio run -e atom_matrix -t upload`
+you can run: `pio run -e vest -t upload`
 
 This project focuses on the M5Stack ATOM Matrix but other ESP32 boards are also supported.
 
