@@ -337,6 +337,9 @@ void Player::begin(Milliseconds currentTime) {
   currentPatternStartTime_ = currentTime;
   currentPattern_ = enforceForcedPalette(0xef74ab26);
   nextPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
+#if defined(JL_START_SPECIAL) && JL_START_SPECIAL
+  handleSpecial(currentTime);
+#endif  // JL_START_SPECIAL
 }
 
 void Player::updatePrecedence(Precedence basePrecedence, Precedence precedenceGain, Milliseconds currentTime) {

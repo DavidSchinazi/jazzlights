@@ -10,10 +10,6 @@
 #include "jazzlights/registry.h"
 #include "jazzlights/renderer.h"
 
-#ifndef START_SPECIAL
-#define START_SPECIAL 0
-#endif  // START_SPECIAL
-
 namespace jazzlights {
 
 enum : Milliseconds {
@@ -160,7 +156,7 @@ class Player {
   bool shouldBeginPattern_ = true;
 
   bool loop_ = false;
-  size_t specialMode_ = START_SPECIAL;
+  size_t specialMode_ = 0;
 #if JL_IS_CONFIG(FAIRY_WAND)
   Milliseconds overridePatternStartTime_ = -1;
 #endif  // FAIRY_WAND
