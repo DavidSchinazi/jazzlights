@@ -36,7 +36,7 @@ std::string EthernetHardwareStatusToString(EthernetHardwareStatus hwStatus) {
 }  // namespace
 
 ArduinoEthernetNetwork::ArduinoEthernetNetwork(NetworkDeviceId localDeviceId) : localDeviceId_(localDeviceId) {
-#if CORE2AWS_ETHERNET
+#if JL_CORE2AWS_ETHERNET
   // These pins work with the M5Stack Core2AWS connected to the Ethernet W5500 module.
   // https://docs.m5stack.com/en/core/core2_for_aws
   // https://docs.m5stack.com/en/base/lan_v12
@@ -54,12 +54,12 @@ ArduinoEthernetNetwork::ArduinoEthernetNetwork(NetworkDeviceId localDeviceId) : 
   // Luckily 38 matches the MISO for the Core2 LCD and TF card reader.
   SPI.begin(/*SCLK=*/18, /*MISO=*/38, /*MOSI=*/23, /*SS/CS=*/-1);
   Ethernet.init(/*SS/CS=*/26);
-#else   // CORE2AWS_ETHERNET
+#else   // JL_CORE2AWS_ETHERNET
   // These pins work with the M5Stack ATOM Matrix (or ATOM Lite) connected to the ATOM PoE Kit.
   // https://shop.m5stack.com/products/atom-poe-kit-with-w5500-hy601742e
   SPI.begin(/*SCLK=*/22, /*MISO=*/23, /*MOSI=*/33, /*SS/CS=*/-1);
   Ethernet.init(/*SS/CS=*/19);
-#endif  // CORE2AWS_ETHERNET
+#endif  // JL_CORE2AWS_ETHERNET
 }
 
 NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status, Milliseconds currentTime) {
