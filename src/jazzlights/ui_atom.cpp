@@ -15,9 +15,9 @@
 
 namespace jazzlights {
 
-#ifndef BUTTONS_DISABLED
-#define BUTTONS_DISABLED 0
-#endif  // BUTTONS_DISABLED
+#ifndef JL_BUTTONS_DISABLED
+#define JL_BUTTONS_DISABLED 0
+#endif  // JL_BUTTONS_DISABLED
 
 #if ATOM_MATRIX_SCREEN
 #define ATOM_SCREEN_NUM_LEDS 25
@@ -400,8 +400,7 @@ void arduinoUiFinalSetup(Player& /*player*/, Milliseconds /*currentTime*/) {}
 
 void arduinoUiLoop(Player& player, const Network& wifiNetwork, const Network& bleNetwork, Milliseconds currentMillis) {
   updateButtons(currentMillis);  // Read, debounce, and process the buttons
-#if !BUTTONS_DISABLED
-#if defined(ESP32)
+#if !JL_BUTTONS_DISABLED
   uint8_t btn = buttonStatus(0, currentMillis);
 
 #if ATOM_MATRIX_SCREEN
@@ -485,8 +484,7 @@ void arduinoUiLoop(Player& player, const Network& wifiNetwork, const Network& bl
   atomScreenUnlocked(player, wifiNetwork, bleNetwork, currentMillis);
   atomScreenDisplay(currentMillis);
 #endif  // ATOM_MATRIX_SCREEN
-#endif  // ESP32
-#endif  // !BUTTONS_DISABLED
+#endif  // !JL_BUTTONS_DISABLED
 }
 
 uint8_t getBrightness() { return brightnessList[brightnessCursor]; }
