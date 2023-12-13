@@ -52,3 +52,57 @@ pio run -e vest_instrumentation -t menuconfig
 pio run -e ds33_dev_a -t upload && pio device monitor -e ds33_dev_a
 pio run -e ds33_dev_b -t upload && pio device monitor -e ds33_dev_b
 ```
+
+# Instrumentation
+
+The `vest_instrumentation` PlatformIO build config allows building a vest with a custom-built version
+of FreeRTOS that has additional debugging / instrumentation information available.
+
+
+Note that on macOS, this requires installing gawk from brew and putting it on PATH.
+```
+brew install gsed gawk jq
+export PATH="/opt/homebrew/opt/gawk/libexec/gnubin:$PATH"
+```
+
+This requires installing the `esp-idf` tools:
+
+```
+git clone --recursive https://github.com/espressif/esp-idf.git
+cd esp-idf
+./install.sh esp32
+. ./export.sh
+```
+
+Additionally, this mode leverages the `sdkconfig.vest_instrumentation` file in this repository. That file was
+originally generated manually but with hopes of updating it by pulling the default sdkconfig from
+[here](https://github.com/espressif/arduino-esp32/blob/master/tools/sdk/esp32/sdkconfig). However, that file was removed when
+[arduino-esp32 updated to esp-idf v5.1](https://github.com/espressif/arduino-esp32/commit/6f7a1ca76ada4d705d79ce863450c91349327a79)'
+(previous version was
+[here](https://github.com/espressif/arduino-esp32/blob/082a61ebe476384941bf4e38ce0363f928adba12/tools/sdk/esp32/sdkconfig)).
+In order to get the default sdkconfig, we now need to generate it ourselves. That can be done with the commands below.
+
+First, determine which version of esp-idf is used by default. There should be a line like the following in the output of
+`pio run`:
+
+```
+framework-espidf @ 3.40405.230623 (4.4.5)
+```
+
+In that example we'd use the 4.4 release branch:
+
+```
+# Skip the clone if you already installed esp-idf above.
+git clone --recursive https://github.com/espressif/esp-idf.git
+cd esp-idf
+git checkout --recurse-submodules --force release/v4.4
+./install.sh esp32
+. ./export.sh
+cd
+git clone https://github.com/espressif/esp32-arduino-lib-builder
+cd esp32-arduino-lib-builder
+git checkout --recurse-submodules --force release/v4.4
+./build.sh -t esp32 -b idf_libs -A idf-release/v4.4 -I release/v4.4
+# Then the sdkconfig will be in one of these locations:
+ls out/tools/sdk/esp32/sdkconfig out/tools/esp32-arduino-libs/esp32/sdkconfig
+```
