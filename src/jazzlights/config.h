@@ -41,10 +41,6 @@
 #define JL_DEV 0
 #endif  // JL_DEV
 
-#ifndef GLOW_ONLY
-#define GLOW_ONLY 0
-#endif  // GLOW_ONLY
-
 #ifndef ATOM_MATRIX_SCREEN
 #ifdef ESP32
 #define ATOM_MATRIX_SCREEN 1
