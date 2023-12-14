@@ -16,14 +16,15 @@ jobs:
       run: |
           sudo apt update
           sudo apt install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev wayland-protocols libwayland-dev libxkbcommon-dev libglu1-mesa-dev freeglut3-dev mesa-common-dev
-    - name: Download GLFW3 Dependency
-      run: curl -OL https://github.com/glfw/glfw/releases/download/3.3.9/glfw-3.3.9.zip
-    - name: Extract GLFW3 Dependency
-      run: unzip glfw-3.3.9.zip
-    - name: Prepare GLFW3 Dependency CMake files
-      run: cmake -S glfw-3.3.9 -B glfw-3.3.9/build
-    - name: Install GLFW3 Dependency
-      run: sudo make -C glfw-3.3.9/build install
+    - name: Download and Install GLFW3 Dependency
+      run: |
+          GLFW_VERSION=$(curl -Ls https://api.github.com/repos/glfw/glfw/releases/latest | grep tag_name | sed 's/.*:[^"]"\([^"]*\)".*/\1/')
+          echo ${GLFW_VERSION}
+          curl -OLs https://github.com/glfw/glfw/releases/download/${GLFW_VERSION}/glfw-${GLFW_VERSION}.zip
+          rm -rf glfw-${GLFW_VERSION} >/dev/null 2>&1
+          unzip -q glfw-${GLFW_VERSION}.zip
+          cmake -S glfw-${GLFW_VERSION} -B glfw-${GLFW_VERSION}/build
+          sudo make -C glfw-${GLFW_VERSION}/build install
     - name: Prepare CMake Files
       run: cmake -S extras -B extras/build
     - name: Build
