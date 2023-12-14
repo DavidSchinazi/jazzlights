@@ -127,3 +127,8 @@ CONFIG_FREERTOS_VTASKLIST_INCLUDE_COREID=y
 CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS=y
 CONFIG_FREERTOS_RUN_TIME_STATS_USING_ESP_TIMER=y
 ```
+
+In an ideal world, we'd prefer to replace `sdkconfig` with `sdkconfig.defaults` as documented
+[here](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/kconfig.html#using-sdkconfig-defaults).
+However, that doesn't currently work with PlatformIO environments, see
+[this issue](https://github.com/platformio/platform-espressif32/issues/638).
