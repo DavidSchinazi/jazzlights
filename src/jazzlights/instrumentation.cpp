@@ -44,7 +44,7 @@ void printAndClearTimePoints() {
   for (size_t i = 0; i < kNumTimePoints; i++) { totalTimePointsSum += gTimePointDatas[i].sumTimes; }
   const int64_t minPercentOffset = totalTimePointsSum / 200;
   for (size_t i = 0; i < kNumTimePoints; i++) {
-    jll_info("%12s: %2lld%% %8lld", TimePointToString(static_cast<TimePoint>(i)),
+    jll_info("%15s: %2lld%% %8lld", TimePointToString(static_cast<TimePoint>(i)),
              (gTimePointDatas[i].sumTimes * 100 + minPercentOffset) / totalTimePointsSum, gTimePointDatas[i].sumTimes);
   }
   for (size_t i = 0; i < kNumTimePoints; i++) { gTimePointDatas[i] = TimePointData(); }
