@@ -83,7 +83,7 @@ originally generated manually but with hopes of updating it by pulling the defau
 In order to get the default sdkconfig, we now need to generate it ourselves. That can be done with the commands below.
 
 First, determine which version of esp-idf is used by default. There should be a line like the following in the output of
-`pio run`:
+`pio run -e vest_instrumentation`:
 
 ```
 framework-espidf @ 3.40405.230623 (4.4.5)
@@ -105,4 +105,30 @@ git checkout --recurse-submodules --force release/v4.4
 ./build.sh -t esp32 -b idf_libs -A idf-release/v4.4 -I release/v4.4
 # Then the sdkconfig will be in one of these locations:
 ls out/tools/sdk/esp32/sdkconfig out/tools/esp32-arduino-libs/esp32/sdkconfig
+```
+
+Then we copy it to this project and make the required edits:
+
+```
+cp esp32-arduino-lib-builder/out/tools/esp32-arduino-libs/esp32/sdkconfig jazzlights/sdkconfig.vest_instrumentation
+cd jazzlights
+# Close Visual Studio
+rm -rf .pio build
+# Open Visual Studio (required to reinitialize .pio directory)
+pio run -e vest_instrumentation -t menuconfig
+```
+
+We need the following changes made:
+
+```
+# CONFIG_PARTITION_TABLE_SINGLE_APP is not set
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="atom_matrix_partition_table.csv"
+CONFIG_PARTITION_TABLE_FILENAME="atom_matrix_partition_table.csv"
+
+CONFIG_FREERTOS_USE_TRACE_FACILITY=y
+CONFIG_FREERTOS_USE_STATS_FORMATTING_FUNCTIONS=y
+CONFIG_FREERTOS_VTASKLIST_INCLUDE_COREID=y
+CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS=y
+CONFIG_FREERTOS_RUN_TIME_STATS_USING_ESP_TIMER=y
 ```
