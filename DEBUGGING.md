@@ -74,16 +74,12 @@ cd esp-idf
 . ./export.sh
 ```
 
-Additionally, this mode leverages the `sdkconfig.vest_instrumentation` file in this repository. That file was
-originally generated manually but with hopes of updating it by pulling the default sdkconfig from
-[here](https://github.com/espressif/arduino-esp32/blob/master/tools/sdk/esp32/sdkconfig). However, that file was removed when
-[arduino-esp32 updated to esp-idf v5.1](https://github.com/espressif/arduino-esp32/commit/6f7a1ca76ada4d705d79ce863450c91349327a79)'
-(previous version was
-[here](https://github.com/espressif/arduino-esp32/blob/082a61ebe476384941bf4e38ce0363f928adba12/tools/sdk/esp32/sdkconfig)).
-In order to get the default sdkconfig, we now need to generate it ourselves. That can be done with the commands below.
+Additionally, this mode leverages the `sdkconfig.vest_instrumentation` file in this repository. To keep this file up
+to date with changes to the `esp-idf` and `arduino-esp32 projects`, we need to generate it ourselves. That can be
+done with the commands below.
 
-First, determine which version of esp-idf is used by default. There should be a line like the following in the output of
-`pio run -e vest_instrumentation`:
+First, determine which version of esp-idf is used by default. There should be a line like the following in the output
+of `pio run -e vest_instrumentation`:
 
 ```
 framework-espidf @ 3.40405.230623 (4.4.5)
@@ -118,7 +114,7 @@ rm -rf .pio build
 pio run -e vest_instrumentation -t menuconfig
 ```
 
-We need the following changes made:
+We then need the following changes made to enable instrumentation:
 
 ```
 CONFIG_FREERTOS_USE_TRACE_FACILITY=y
