@@ -10,67 +10,16 @@
 #include <cstdint>
 
 #include "jazzlights/fastled_wrapper.h"
+#include "jazzlights/gpio_button.h"
 #include "jazzlights/text.h"
 
 namespace jazzlights {
-
-#ifndef JL_BUTTONS_DISABLED
-#define JL_BUTTONS_DISABLED 0
-#endif  // JL_BUTTONS_DISABLED
 
 #define ATOM_SCREEN_NUM_LEDS 25
 CRGB atomScreenLEDs[ATOM_SCREEN_NUM_LEDS] = {};
 CRGB atomScreenLEDsLastWrite[ATOM_SCREEN_NUM_LEDS] = {};
 CRGB atomScreenLEDsAllZero[ATOM_SCREEN_NUM_LEDS] = {};
 uint8_t brightnessLastWrite = 255;
-
-#define NUMBUTTONS 1
-uint8_t buttonPins[NUMBUTTONS] = {39};
-
-// Button state tranitions:
-// Button starts in BTN_IDLE.
-// BTN_IDLE: When pressed, goes to BTN_DEBOUNCING state for BTN_DEBOUNCETIME (20 ms).
-// BTN_DEBOUNCING: After BTN_DEBOUNCETIME move to BTN_PRESSED state.
-// BTN_PRESSED: If button no longer pressed, go to BTN_RELEASED state
-// else if button still held after BTN_LONGPRESSTIME go to BTN_LONGPRESS state.
-// BTN_RELEASED: After client consumes BTN_RELEASED event, state retuns to BTN_IDLE.
-// BTN_LONGPRESS: After client consumes BTN_LONGPRESS event,
-// if button no longer pressed, return to BTN_IDLE state
-// else if button still held go to BTN_HOLDING state,
-// and if button still held after another BTN_LONGPRESSTIME,
-// set button event time to now and return a BTN_LONGLONGPRESS
-// to the client, remaining in BTN_HOLDING state.
-// This causes the BTN_LONGLONGPRESS events to autorepeat at intervals of
-// BTN_LONGPRESSTIME for as long as the button continues to be held.
-//
-// Note that the BTN_PRESSED state is transitory.
-// The client is not guaranteed to be informed of the BTN_PRESSED state if
-// the button moves quickly to BTN_RELEASED state before the client notices.
-// This is fine, since clients are supposed to act on the BTN_RELEASED state, not BTN_PRESSED.
-
-#define BTN_IDLE 0
-#define BTN_DEBOUNCING 1
-#define BTN_PRESSED 2
-#define BTN_RELEASED 3
-#define BTN_LONGPRESS 4
-#define BTN_HOLDING 5
-#define BTN_LONGLONGPRESS 6
-
-// BTN_IDLE, BTN_DEBOUNCING, BTN_PRESSED, BTN_HOLDING are states, which will be returned continuously for as long as
-// that state remains BTN_RELEASED, BTN_LONGPRESS, BTN_LONGLONGPRESS are one-shot events, which will be delivered just
-// once each time they occur
-#define BTN_STATE(X) ((X) == BTN_IDLE || (X) == BTN_DEBOUNCING || (X) == BTN_PRESSED || (X) == BTN_HOLDING)
-#define BTN_EVENT(X) ((X) == BTN_RELEASED || (X) == BTN_LONGPRESS || (X) == BTN_LONGLONGPRESS)
-// BTN_SHORT_PRESS_COMPLETE indicates states where a short press is over -- either
-// because the button was released, or the button is still held and has transitioned
-// into one of the long-press states (BTN_LONGPRESS, BTN_HOLDING, BTN_LONGLONGPRESS)
-#define BTN_SHORT_PRESS_COMPLETE(X) ((X) >= BTN_RELEASED)
-
-#define BTN_DEBOUNCETIME 20
-#define BTN_LONGPRESSTIME 1000
-
-Milliseconds buttonEvents[NUMBUTTONS];
-uint8_t buttonStatuses[NUMBUTTONS];
 
 static constexpr Milliseconds lockDelay = 10000;  // Ten seconds
 
@@ -334,55 +283,8 @@ bool atomScreenMessage(uint8_t btn, const Milliseconds currentMillis) {
   return displayingBootMessage;
 }
 
-void updateButtons(const Milliseconds currentMillis) {
-  for (int i = 0; i < NUMBUTTONS; i++) {
-    switch (buttonStatuses[i]) {
-      case BTN_IDLE:
-        if (digitalRead(buttonPins[i]) == LOW) {
-          buttonEvents[i] = currentMillis;
-          buttonStatuses[i] = BTN_DEBOUNCING;
-        }
-        break;
-
-      case BTN_DEBOUNCING:
-        if (currentMillis - buttonEvents[i] >= BTN_DEBOUNCETIME) { buttonStatuses[i] = BTN_PRESSED; }
-        break;
-
-      case BTN_PRESSED:
-        if (digitalRead(buttonPins[i]) == HIGH) {
-          buttonStatuses[i] = BTN_RELEASED;
-        } else if (currentMillis - buttonEvents[i] >= BTN_LONGPRESSTIME) {
-          buttonEvents[i] = currentMillis;  // Record the time that we decided to count this as a long press
-          buttonStatuses[i] = BTN_LONGPRESS;
-        }
-        break;
-
-      case BTN_RELEASED: break;
-
-      case BTN_LONGPRESS: break;
-    }
-  }
-}
-
-uint8_t buttonStatus(uint8_t buttonNum, const Milliseconds currentMillis) {
-  uint8_t tempStatus = buttonStatuses[buttonNum];
-  if (tempStatus == BTN_RELEASED) {
-    buttonStatuses[buttonNum] = BTN_IDLE;
-  } else if (tempStatus >= BTN_LONGPRESS) {
-    if (digitalRead(buttonPins[buttonNum]) == HIGH) {
-      buttonStatuses[buttonNum] = BTN_IDLE;
-    } else if (currentMillis - buttonEvents[buttonNum] < BTN_LONGPRESSTIME) {
-      buttonStatuses[buttonNum] = BTN_HOLDING;
-    } else {
-      buttonEvents[buttonNum] = currentMillis;
-      tempStatus = BTN_LONGLONGPRESS;
-    }
-  }
-  return tempStatus;
-}
-
-void arduinoUiInitialSetup(Player& /*player*/, Milliseconds /*currentTime*/) {
-  for (uint8_t i = 0; i < sizeof(buttonPins) / sizeof(buttonPins[0]); i++) { pinMode(buttonPins[i], INPUT_PULLUP); }
+void arduinoUiInitialSetup(Player& /*player*/, Milliseconds currentTime) {
+  setupButtons(currentTime);
   atomMatrixScreenController = &FastLED.addLeds<WS2812, /*DATA_PIN=*/27, GRB>(atomScreenLEDs, ATOM_SCREEN_NUM_LEDS);
   atomScreenClear();
 }
