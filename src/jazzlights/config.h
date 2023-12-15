@@ -42,10 +42,6 @@
 #define JL_DEV 0
 #endif  // JL_DEV
 
-#ifndef JL_ATOM_MATRIX_SCREEN
-#define JL_ATOM_MATRIX_SCREEN JL_IS_CONTROLLER(ATOM_MATRIX)
-#endif  // JL_ATOM_MATRIX_SCREEN
-
 #ifndef BOOT_NAME
 #define BOOT_NAME X
 #endif  // BOOT_NAME

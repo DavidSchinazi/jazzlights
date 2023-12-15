@@ -1,6 +1,6 @@
 #include "jazzlights/text.h"
 
-#if JL_ATOM_MATRIX_SCREEN
+#if JL_IS_CONTROLLER(ATOM_MATRIX)
 
 namespace jazzlights {
 
@@ -148,4 +148,4 @@ bool displayText(const std::string& text, CRGB pixels[MATRIX_SIZE], CRGB textCol
 
 }  // namespace jazzlights
 
-#endif  // JL_ATOM_MATRIX_SCREEN
+#endif  // JL_IS_CONTROLLER(ATOM_MATRIX)

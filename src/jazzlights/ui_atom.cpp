@@ -3,8 +3,7 @@
 
 #include "jazzlights/config.h"
 
-#if JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_LITE) || JL_IS_CONTROLLER(M5STAMP_PICO) || \
-    JL_IS_CONTROLLER(M5STAMP_C3U) || JL_IS_CONTROLLER(ATOM_S3)
+#if JL_IS_CONTROLLER(ATOM_MATRIX)
 
 #include <Arduino.h>
 
@@ -19,13 +18,11 @@ namespace jazzlights {
 #define JL_BUTTONS_DISABLED 0
 #endif  // JL_BUTTONS_DISABLED
 
-#if JL_ATOM_MATRIX_SCREEN
 #define ATOM_SCREEN_NUM_LEDS 25
 CRGB atomScreenLEDs[ATOM_SCREEN_NUM_LEDS] = {};
 CRGB atomScreenLEDsLastWrite[ATOM_SCREEN_NUM_LEDS] = {};
 CRGB atomScreenLEDsAllZero[ATOM_SCREEN_NUM_LEDS] = {};
 uint8_t brightnessLastWrite = 255;
-#endif  // JL_ATOM_MATRIX_SCREEN
 
 #define NUMBUTTONS 1
 uint8_t buttonPins[NUMBUTTONS] = {39};
@@ -92,8 +89,6 @@ static constexpr uint8_t kInitialBrightnessCursor = 4;
 #endif
 
 uint8_t brightnessCursor = kInitialBrightnessCursor;
-
-#if JL_ATOM_MATRIX_SCREEN
 
 enum atomMenuMode {
   kNext,
@@ -339,8 +334,6 @@ bool atomScreenMessage(uint8_t btn, const Milliseconds currentMillis) {
   return displayingBootMessage;
 }
 
-#endif  // JL_ATOM_MATRIX_SCREEN
-
 void updateButtons(const Milliseconds currentMillis) {
   for (int i = 0; i < NUMBUTTONS; i++) {
     switch (buttonStatuses[i]) {
@@ -390,10 +383,8 @@ uint8_t buttonStatus(uint8_t buttonNum, const Milliseconds currentMillis) {
 
 void arduinoUiInitialSetup(Player& /*player*/, Milliseconds /*currentTime*/) {
   for (uint8_t i = 0; i < sizeof(buttonPins) / sizeof(buttonPins[0]); i++) { pinMode(buttonPins[i], INPUT_PULLUP); }
-#if JL_ATOM_MATRIX_SCREEN
   atomMatrixScreenController = &FastLED.addLeds<WS2812, /*DATA_PIN=*/27, GRB>(atomScreenLEDs, ATOM_SCREEN_NUM_LEDS);
   atomScreenClear();
-#endif  // JL_ATOM_MATRIX_SCREEN
 }
 
 void arduinoUiFinalSetup(Player& /*player*/, Milliseconds /*currentTime*/) {}
@@ -402,10 +393,7 @@ void arduinoUiLoop(Player& player, const Network& wifiNetwork, const Network& bl
   updateButtons(currentMillis);  // Read, debounce, and process the buttons
 #if !JL_BUTTONS_DISABLED
   uint8_t btn = buttonStatus(0, currentMillis);
-
-#if JL_ATOM_MATRIX_SCREEN
   if (atomScreenMessage(btn, currentMillis)) { return; }
-#endif  // JL_ATOM_MATRIX_SCREEN
 
 #if JL_IS_CONFIG(FAIRY_WAND)
   atomScreenClear();
@@ -462,28 +450,14 @@ void arduinoUiLoop(Player& player, const Network& wifiNetwork, const Network& bl
 #endif  // JL_BUTTON_LOCK
 
   switch (btn) {
-    case BTN_RELEASED:
-#if JL_ATOM_MATRIX_SCREEN
-      modeAct(player, currentMillis);
-#endif  // JL_ATOM_MATRIX_SCREEN
-      break;
+    case BTN_RELEASED: modeAct(player, currentMillis); break;
 
-    case BTN_LONGPRESS:
-#if JL_ATOM_MATRIX_SCREEN
-      nextMode(player, currentMillis);
-#endif  // JL_ATOM_MATRIX_SCREEN
-      break;
+    case BTN_LONGPRESS: nextMode(player, currentMillis); break;
 
-    case BTN_LONGLONGPRESS:
-#if JL_ATOM_MATRIX_SCREEN
-      menuMode = kSpecial;
-#endif  // JL_ATOM_MATRIX_SCREEN
-      break;
+    case BTN_LONGLONGPRESS: menuMode = kSpecial; break;
   }
-#if JL_ATOM_MATRIX_SCREEN
   atomScreenUnlocked(player, wifiNetwork, bleNetwork, currentMillis);
   atomScreenDisplay(currentMillis);
-#endif  // JL_ATOM_MATRIX_SCREEN
 #endif  // !JL_BUTTONS_DISABLED
 }
 
