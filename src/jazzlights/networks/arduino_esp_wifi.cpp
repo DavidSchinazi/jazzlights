@@ -1,6 +1,7 @@
 #include "jazzlights/networks/arduino_esp_wifi.h"
 
-#if JAZZLIGHTS_ESP_WIFI
+#ifdef ARDUINO
+#if JL_ESP_WIFI
 
 #include <sstream>
 
@@ -32,7 +33,6 @@ ArduinoEspWiFiNetwork::ArduinoEspWiFiNetwork(const char* ssid, const char* pass)
   localDeviceId_ = NetworkDeviceId(WiFi.macAddress(&macAddress[0]));
 }
 
-#ifdef ESP32
 void WiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
   switch (event) {
     case ARDUINO_EVENT_WIFI_READY: jll_info("Wi-Fi ready"); break;
@@ -49,7 +49,6 @@ void WiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
     default: break;
   }
 }
-#endif  // ESP32
 
 NetworkStatus ArduinoEspWiFiNetwork::update(NetworkStatus status, Milliseconds currentTime) {
   const wl_status_t newWiFiStatus = WiFi.status();
@@ -92,13 +91,11 @@ NetworkStatus ArduinoEspWiFiNetwork::update(NetworkStatus status, Milliseconds c
         snm.fromString(staticConf_->subnetMask);
         WiFi.config(ip, gw, snm);
       }
-#ifdef ESP32
       WiFi.onEvent(WiFiEvent, ARDUINO_EVENT_WIFI_READY);
       WiFi.onEvent(WiFiEvent, ARDUINO_EVENT_WIFI_STA_CONNECTED);
       WiFi.onEvent(WiFiEvent, ARDUINO_EVENT_WIFI_STA_GOT_IP);
       WiFi.onEvent(WiFiEvent, ARDUINO_EVENT_WIFI_STA_LOST_IP);
       WiFi.onEvent(WiFiEvent, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
-#endif  // ESP32
       wl_status_t beginWiFiStatus = WiFi.begin(creds_.ssid, creds_.pass);
       jll_info("%u %s Wi-Fi begin to %s returned %s", currentTime, networkName(), creds_.ssid,
                WiFiStatusToString(beginWiFiStatus).c_str());
@@ -240,4 +237,5 @@ ArduinoEspWiFiNetwork* ArduinoEspWiFiNetwork::get() {
 
 }  // namespace jazzlights
 
-#endif  // JAZZLIGHTS_ESP_WIFI
+#endif  // JL_ESP_WIFI
+#endif  // ARDUINO

@@ -42,13 +42,9 @@
 #define JL_DEV 0
 #endif  // JL_DEV
 
-#ifndef ATOM_MATRIX_SCREEN
-#ifdef ESP32
-#define ATOM_MATRIX_SCREEN 1
-#else  // ESP32
-#define ATOM_MATRIX_SCREEN 0
-#endif  // ESP32
-#endif  // ATOM_MATRIX_SCREEN
+#ifndef JL_ATOM_MATRIX_SCREEN
+#define JL_ATOM_MATRIX_SCREEN JL_IS_CONTROLLER(ATOM_MATRIX)
+#endif  // JL_ATOM_MATRIX_SCREEN
 
 #ifndef BOOT_NAME
 #define BOOT_NAME X

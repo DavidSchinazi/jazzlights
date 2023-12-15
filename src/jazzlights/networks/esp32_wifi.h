@@ -1,21 +1,19 @@
 #ifndef JL_NETWORKS_ESP32_WIFI_H
 #define JL_NETWORKS_ESP32_WIFI_H
 
+#ifdef ARDUINO
+
 #include "jazzlights/network.h"
 
 // Esp32WiFiNetwork is currently work-in-progress.
 // TODO: finish this and use it to replace ArduinoEspWiFiNetwork.
-#define JAZZLIGHTS_ESP32_WIFI 0
+#define JL_ESP32_WIFI 0
 
-#ifndef JAZZLIGHTS_ESP32_WIFI
-#ifdef ESP32
-#define JAZZLIGHTS_ESP32_WIFI 1
-#else  // ESP32
-#define JAZZLIGHTS_ESP32_WIFI 0
-#endif  // ESP32
-#endif  // JAZZLIGHTS_ESP32_WIFI
+#ifndef JL_ESP32_WIFI
+#define JL_ESP32_WIFI 1
+#endif  // JL_ESP32_WIFI
 
-#if JAZZLIGHTS_ESP32_WIFI
+#if JL_ESP32_WIFI
 
 #include <WiFi.h>
 
@@ -63,5 +61,6 @@ class Esp32WiFiNetwork : public Network {
 
 }  // namespace jazzlights
 
-#endif  // JAZZLIGHTS_ESP32_WIFI
+#endif  // JL_ESP32_WIFI
+#endif  // ARDUINO
 #endif  // JL_NETWORKS_ESP32_WIFI_H
