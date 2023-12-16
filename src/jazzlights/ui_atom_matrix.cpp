@@ -8,12 +8,14 @@
 #include <Arduino.h>
 
 #include <cstdint>
+#include <memory>
 
 #include "jazzlights/fastled_wrapper.h"
 #include "jazzlights/gpio_button.h"
 #include "jazzlights/text.h"
 
 namespace jazzlights {
+namespace {
 
 #define ATOM_SCREEN_NUM_LEDS 25
 CRGB atomScreenLEDs[ATOM_SCREEN_NUM_LEDS] = {};
@@ -21,7 +23,8 @@ CRGB atomScreenLEDsLastWrite[ATOM_SCREEN_NUM_LEDS] = {};
 CRGB atomScreenLEDsAllZero[ATOM_SCREEN_NUM_LEDS] = {};
 uint8_t brightnessLastWrite = 255;
 
-static constexpr Milliseconds lockDelay = 10000;  // Ten seconds
+static constexpr Milliseconds kButtonLockTimeout = 10000;                     // 10s.
+static constexpr Milliseconds kButtonLockTimeoutDuringUnlockSequence = 4000;  // 4s.
 
 const uint8_t brightnessList[] = {2, 4, 8, 16, 32, 64, 128, 255};
 #define NUM_BRIGHTNESSES (sizeof(brightnessList) / sizeof(brightnessList[0]))
@@ -263,104 +266,150 @@ void atomScreenShort(Player& player, const Network& wifiNetwork, const Network& 
   atomScreenNetwork(player, wifiNetwork, bleNetwork, currentMillis);
 }
 
-bool atomScreenMessage(uint8_t btn, const Milliseconds currentMillis) {
-  static bool displayingBootMessage = true;
-  if (!displayingBootMessage) { return false; }
-  if (btn != BTN_IDLE) {
-    displayingBootMessage = false;
-    jll_info("%u Stopping boot message due to button press", currentMillis);
-    return false;
+static constexpr uint8_t kButtonPin = 39;
+
+class AtomMatrixUI : public Button::Interface {
+ public:
+  explicit AtomMatrixUI(Player& player, Milliseconds currentTime)
+      : player_(player), button_(kButtonPin, *this, currentTime) {}
+  bool IsLocked() { return buttonLockState_ < 5; }
+  void HandleUnlockSequence(bool wasLongPress, Milliseconds currentMillis) {
+    if (!IsLocked()) { return; }
+    // If we don’t receive the correct button event for the state we’re currently in, return immediately to state 0.
+    // In odd states (1,3) we want a long press; in even states (0,2) we want a short press.
+    if (((buttonLockState_ % 2) == 1) != wasLongPress) {
+      buttonLockState_ = 0;
+    } else {
+      buttonLockState_++;
+      // To reject accidental presses, exit unlock sequence if four seconds without progress
+      lockButtonTime_ = currentMillis + kButtonLockTimeoutDuringUnlockSequence;
+    }
   }
-  static Milliseconds bootMessageStartTime = -1;
-  if (bootMessageStartTime < 0) { bootMessageStartTime = currentMillis; }
-  displayingBootMessage =
-      displayText(BOOT_MESSAGE, atomScreenLEDs, CRGB::Red, CRGB::Black, currentMillis - bootMessageStartTime);
-  if (!displayingBootMessage) {
-    jll_info("%u Done displaying boot message", currentMillis);
-  } else {
+  void ShortPress(uint8_t pin, Milliseconds currentMillis) override {
+    if (pin != kButtonPin) { return; }
+    jll_info("%u ShortPress", currentMillis);
+    HandleUnlockSequence(/*wasLongPress=*/false, currentMillis);
+    if (IsLocked()) { return; }
+
+    modeAct(player_, currentMillis);
+  }
+  void LongPress(uint8_t pin, Milliseconds currentMillis) override {
+    if (pin != kButtonPin) { return; }
+    jll_info("%u LongPress", currentMillis);
+    HandleUnlockSequence(/*wasLongPress=*/true, currentMillis);
+    if (IsLocked()) { return; }
+
+    nextMode(player_, currentMillis);
+  }
+  void HeldDown(uint8_t pin, Milliseconds currentMillis) override {
+    if (pin != kButtonPin) { return; }
+    jll_info("%u HeldDown", currentMillis);
+    if (IsLocked()) {
+      // Button was held too long, go back to beginning of unlock sequence.
+      buttonLockState_ = 0;
+      return;
+    }
+    menuMode = kSpecial;
+  }
+
+  bool atomScreenMessage(const Milliseconds currentMillis) {
+    if (!displayingBootMessage_) { return false; }
+    if (button_.IsPressed(currentMillis)) {
+      jll_info("%u Stopping boot message due to button press", currentMillis);
+      displayingBootMessage_ = false;
+    } else {
+      static Milliseconds bootMessageStartTime = -1;
+      if (bootMessageStartTime < 0) { bootMessageStartTime = currentMillis; }
+      displayingBootMessage_ =
+          displayText(BOOT_MESSAGE, atomScreenLEDs, CRGB::Red, CRGB::Black, currentMillis - bootMessageStartTime);
+      if (!displayingBootMessage_) {
+        jll_info("%u Done displaying boot message", currentMillis);
+      } else {
+        atomScreenDisplay(currentMillis);
+      }
+    }
+    return displayingBootMessage_;
+  }
+
+  void RunLoop(const Network& wifiNetwork, const Network& bleNetwork, Milliseconds currentMillis) {
+    button_.RunLoop(currentMillis);
+
+    if (atomScreenMessage(currentMillis)) { return; }
+
+#if JL_IS_CONFIG(FAIRY_WAND)
+    atomScreenClear();
+    atomScreenDisplay(currentMillis);
+    if (BTN_EVENT(btn)) { player.triggerPatternOverride(currentMillis); }
+    return;
+#endif  // FAIRY_WAND
+
+#if JL_BUTTON_LOCK
+
+    // If idle-time expired, return to ‘locked’ state
+    if (buttonLockState_ != 0 && currentMillis - lockButtonTime_ >= 0) {
+      jll_info("%u Locking buttons", currentMillis);
+      buttonLockState_ = 0;
+    }
+
+    if (IsLocked()) {
+      // We show a blank display:
+      // 1. When in fully locked mode, with the button not pressed
+      // 2. When the button has been pressed long enough to register as a long press, and we want to signal the user to
+      // let go now
+      // 3. In the final transition from state 4 (awaiting release) to state 5 (unlocked)
+      if ((buttonLockState_ == 0 && !button_.IsPressed(currentMillis)) ||
+          button_.HasBeenPressedLongEnoughForLongPress(currentMillis) || buttonLockState_ >= 4) {
+        atomScreenClear();
+      } else if ((buttonLockState_ % 2) == 1) {
+        // In odd  states (1,3) we show "L".
+        atomScreenLong(player_, wifiNetwork, bleNetwork, currentMillis);
+      } else {
+        // In even states (0,2) we show "S".
+        atomScreenShort(player_, wifiNetwork, bleNetwork, currentMillis);
+      }
+      atomScreenDisplay(currentMillis);
+
+      // In lock state 4, wait for release of the button, and then move to state 5 (fully unlocked)
+      if (buttonLockState_ < 4 || button_.IsPressed(currentMillis)) { return; }
+      buttonLockState_ = 5;
+      lockButtonTime_ = currentMillis + kButtonLockTimeout;
+    } else if (button_.IsPressed(currentMillis)) {
+      lockButtonTime_ = currentMillis + kButtonLockTimeout;
+    }
+#endif  // JL_BUTTON_LOCK
+    atomScreenUnlocked(player_, wifiNetwork, bleNetwork, currentMillis);
     atomScreenDisplay(currentMillis);
   }
-  return displayingBootMessage;
-}
 
-void arduinoUiInitialSetup(Player& /*player*/, Milliseconds currentTime) {
-  setupButtons(currentTime);
+ private:
+  Player& player_;
+  Button button_;
+  bool displayingBootMessage_ = true;
+  // Definitions of the button lock states:
+  // 0 Awaiting short press
+  // 1 Awaiting long press
+  // 2 Awaiting short press
+  // 3 Awaiting long press
+  // 4 Awaiting release
+  // 5 Unlocked
+  uint8_t buttonLockState_ = 0;
+  Milliseconds lockButtonTime_ = 0;  // Time at which we'll lock the buttons.
+};
+
+std::unique_ptr<AtomMatrixUI> gUi;
+}  // namespace
+
+void arduinoUiInitialSetup(Player& player, Milliseconds currentTime) {
+  gUi.reset(new AtomMatrixUI(player, currentTime));
   atomMatrixScreenController = &FastLED.addLeds<WS2812, /*DATA_PIN=*/27, GRB>(atomScreenLEDs, ATOM_SCREEN_NUM_LEDS);
   atomScreenClear();
 }
 
 void arduinoUiFinalSetup(Player& /*player*/, Milliseconds /*currentTime*/) {}
 
-void arduinoUiLoop(Player& player, const Network& wifiNetwork, const Network& bleNetwork, Milliseconds currentMillis) {
-  updateButtons(currentMillis);  // Read, debounce, and process the buttons
-#if !JL_BUTTONS_DISABLED
-  uint8_t btn = buttonStatus(0, currentMillis);
-  if (atomScreenMessage(btn, currentMillis)) { return; }
-
-#if JL_IS_CONFIG(FAIRY_WAND)
-  atomScreenClear();
-  atomScreenDisplay(currentMillis);
-  if (BTN_EVENT(btn)) { player.triggerPatternOverride(currentMillis); }
-  return;
-#endif  // FAIRY_WAND
-
-#if JL_BUTTON_LOCK
-  // 0 Locked and awaiting click; 1 Awaiting long press; 2 Awaiting click; 3 Awaiting long press; 4 Awaiting release; 5
-  // Unlocked
-  static uint8_t buttonLockState = 0;
-  static Milliseconds lockButtonTime = 0;
-
-  // If idle-time expired, return to ‘locked’ state
-  if (buttonLockState != 0 && currentMillis - lockButtonTime >= 0) { buttonLockState = 0; }
-
-  if (buttonLockState < 5) {
-    if (BTN_EVENT(btn)) {
-      // If we don’t receive the correct button event for the state we’re currently in, return immediately to state 0.
-      // In odd states (1,3) we want a long press; in even states (0,2) we want a brief press-and-release.
-      if (btn != ((buttonLockState & 1) ? BTN_LONGPRESS : BTN_RELEASED)) {
-        buttonLockState = 0;
-      } else {
-        buttonLockState++;
-        // To reject accidental presses, exit unlock sequence if four seconds without progress
-        lockButtonTime = currentMillis + 4000;
-      }
-    }
-
-    // We show a blank display:
-    // 1. When in fully locked mode, with the button not pressed
-    // 2. When the button has been pressed long enough to register as a long press, and we want to signal the user to
-    // let go now
-    // 3. In the final transition from state 4 (awaiting release) to state 5 (unlocked)
-    if ((buttonLockState == 0 && btn == BTN_IDLE) || BTN_SHORT_PRESS_COMPLETE(btn) || buttonLockState >= 4) {
-      atomScreenClear();
-    } else if (buttonLockState & 1) {
-      // In odd  states (1,3) we show "L".
-      atomScreenLong(player, wifiNetwork, bleNetwork, currentMillis);
-    } else {
-      // In even states (0,2) we show "S".
-      atomScreenShort(player, wifiNetwork, bleNetwork, currentMillis);
-    }
-    atomScreenDisplay(currentMillis);
-
-    // In lock state 4, wait for release of the button, and then move to state 5 (fully unlocked)
-    if (buttonLockState < 4 || btn != BTN_IDLE) { return; }
-    buttonLockState = 5;
-    lockButtonTime = currentMillis + lockDelay;
-  } else if (btn != BTN_IDLE) {
-    lockButtonTime = currentMillis + lockDelay;
-  }
-#endif  // JL_BUTTON_LOCK
-
-  switch (btn) {
-    case BTN_RELEASED: modeAct(player, currentMillis); break;
-
-    case BTN_LONGPRESS: nextMode(player, currentMillis); break;
-
-    case BTN_LONGLONGPRESS: menuMode = kSpecial; break;
-  }
-  atomScreenUnlocked(player, wifiNetwork, bleNetwork, currentMillis);
-  atomScreenDisplay(currentMillis);
-#endif  // !JL_BUTTONS_DISABLED
+void arduinoUiLoop(Player& /*player*/, const Network& wifiNetwork, const Network& bleNetwork,
+                   Milliseconds currentMillis) {
+  gUi->RunLoop(wifiNetwork, bleNetwork, currentMillis);
 }
 
 uint8_t getBrightness() { return brightnessList[brightnessCursor]; }

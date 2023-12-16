@@ -7,65 +7,70 @@
 #include "jazzlights/util/time.h"
 
 namespace jazzlights {
+namespace {
+static constexpr Milliseconds kDebounceTime = 20;
+static constexpr Milliseconds kLongPressTime = 1000;
+}  // namespace
 
-#define NUMBUTTONS 1
-uint8_t buttonPins[NUMBUTTONS] = {39};
+// Arduino's digitalRead() function can return spurious results sometimes. In particular when transitioning from
+// not-pressed to pressed, it might rapidly alternate between the two a few times before settling on the correct value.
+// To avoid reacting to these, we debounce the digital reads and only react after the value has settled for
+// kDebounceTime. See <https://docs.arduino.cc/built-in-examples/digital/Debounce> for details.
 
-#define BTN_DEBOUNCETIME 20
-#define BTN_LONGPRESSTIME 1000
-
-Milliseconds buttonEvents[NUMBUTTONS];
-uint8_t buttonStatuses[NUMBUTTONS];
-
-void updateButtons(const Milliseconds currentMillis) {
-  for (int i = 0; i < NUMBUTTONS; i++) {
-    switch (buttonStatuses[i]) {
-      case BTN_IDLE:
-        if (digitalRead(buttonPins[i]) == LOW) {
-          buttonEvents[i] = currentMillis;
-          buttonStatuses[i] = BTN_DEBOUNCING;
-        }
-        break;
-
-      case BTN_DEBOUNCING:
-        if (currentMillis - buttonEvents[i] >= BTN_DEBOUNCETIME) { buttonStatuses[i] = BTN_PRESSED; }
-        break;
-
-      case BTN_PRESSED:
-        if (digitalRead(buttonPins[i]) == HIGH) {
-          buttonStatuses[i] = BTN_RELEASED;
-        } else if (currentMillis - buttonEvents[i] >= BTN_LONGPRESSTIME) {
-          buttonEvents[i] = currentMillis;  // Record the time that we decided to count this as a long press
-          buttonStatuses[i] = BTN_LONGPRESS;
-        }
-        break;
-
-      case BTN_RELEASED: break;
-
-      case BTN_LONGPRESS: break;
-    }
-  }
+Button::Button(uint8_t pin, Interface& interface, Milliseconds currentMillis)
+    : interface_(interface),
+      lastRawChange_(currentMillis),
+      lastEvent_(currentMillis),
+      isPressedRaw_(false),
+      isPressedDebounced_(false),
+      isHeld_(false),
+      pin_(pin) {
+  pinMode(pin_, INPUT_PULLUP);
 }
 
-uint8_t buttonStatus(uint8_t buttonNum, const Milliseconds currentMillis) {
-  uint8_t tempStatus = buttonStatuses[buttonNum];
-  if (tempStatus == BTN_RELEASED) {
-    buttonStatuses[buttonNum] = BTN_IDLE;
-  } else if (tempStatus >= BTN_LONGPRESS) {
-    if (digitalRead(buttonPins[buttonNum]) == HIGH) {
-      buttonStatuses[buttonNum] = BTN_IDLE;
-    } else if (currentMillis - buttonEvents[buttonNum] < BTN_LONGPRESSTIME) {
-      buttonStatuses[buttonNum] = BTN_HOLDING;
+void Button::RunLoop(Milliseconds currentMillis) {
+  const bool newIsPressed = (digitalRead(pin_) == LOW);
+  if (newIsPressed != isPressedRaw_) {
+    // Start debounce timer.
+    isPressedRaw_ = newIsPressed;
+    lastRawChange_ = currentMillis;
+  }
+  if (currentMillis - lastRawChange_ > kDebounceTime) {
+    // Button has been in this state longer than the debounce time.
+    if (newIsPressed != isPressedDebounced_) {
+      // Button is transitioning states (with debouncing taken into account).
+      isPressedDebounced_ = newIsPressed;
+      if (isPressedDebounced_) {
+        // Button was just pressed, record time.
+        lastEvent_ = currentMillis;
+      } else {
+        // Button was just released.
+        if (!isHeld_ && currentMillis - lastEvent_ < kLongPressTime) {
+          // Button was released after a short duration.
+          lastEvent_ = currentMillis;
+          interface_.ShortPress(pin_, currentMillis);
+        }
+        isHeld_ = false;
+      }
+    }
+  }
+  if (isPressedDebounced_ && currentMillis - lastEvent_ >= kLongPressTime) {
+    // Button has been held down for kLongPressTime since last event.
+    lastEvent_ = currentMillis;
+    if (!isHeld_) {
+      // Button has been held down for the first kLongPressTime.
+      isHeld_ = true;
+      interface_.LongPress(pin_, currentMillis);
     } else {
-      buttonEvents[buttonNum] = currentMillis;
-      tempStatus = BTN_LONGLONGPRESS;
+      // Button has been held down for another kLongPressTime.
+      interface_.HeldDown(pin_, currentMillis);
     }
   }
-  return tempStatus;
 }
 
-void setupButtons(Milliseconds /*currentTime*/) {
-  for (uint8_t i = 0; i < sizeof(buttonPins) / sizeof(buttonPins[0]); i++) { pinMode(buttonPins[i], INPUT_PULLUP); }
+bool Button::IsPressed(Milliseconds /*currentMillis*/) { return isPressedDebounced_; }
+bool Button::HasBeenPressedLongEnoughForLongPress(Milliseconds currentMillis) {
+  return isPressedDebounced_ && (isHeld_ || currentMillis - lastEvent_ >= kLongPressTime);
 }
 
 }  // namespace jazzlights
