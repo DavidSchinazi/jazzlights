@@ -25,6 +25,10 @@ class Core2AwsUi : public ArduinoUi {
   void RunLoop(Milliseconds currentTime) override;
 
  private:
+  void DrawSystemTextLines(Milliseconds currentTime);
+
+  uint8_t ledBrightness_;
+  uint8_t onBrightness_;
 };
 
 #else   // CORE2AWS_LCD_ENABLED
