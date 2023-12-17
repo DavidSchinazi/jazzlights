@@ -12,8 +12,7 @@ void arduinoUiInitialSetup(Player& /*player*/, Milliseconds /*currentTime*/) {}
 
 void arduinoUiFinalSetup(Player& /*player*/, Milliseconds /*currentTime*/) {}
 
-void arduinoUiLoop(Player& /*player*/, const Network& /*wifiNetwork*/, const Network& /*bleNetwork*/,
-                   Milliseconds /*currentMillis*/) {}
+void arduinoUiLoop(Player& /*player*/, Milliseconds /*currentMillis*/) {}
 
 #if JL_DEV
 static constexpr uint8_t kBrightness = 2;

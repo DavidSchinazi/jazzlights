@@ -78,7 +78,7 @@ void arduinoSetup(void) {
 void arduinoLoop(void) {
   SAVE_TIME_POINT(LoopStart);
   Milliseconds currentTime = timeMillis();
-  arduinoUiLoop(player, *ArduinoEspWiFiNetwork::get(), *Esp32BleNetwork::get(), currentTime);
+  arduinoUiLoop(player, currentTime);
   SAVE_TIME_POINT(UserInterface);
   Esp32BleNetwork::get()->runLoop(currentTime);
   SAVE_TIME_POINT(Bluetooth);

@@ -16,7 +16,7 @@ namespace jazzlights {
 
 void arduinoUiInitialSetup(Player& player, Milliseconds currentTime);
 void arduinoUiFinalSetup(Player& player, Milliseconds currentTime);
-void arduinoUiLoop(Player& player, const Network& wifiNetwork, const Network& bleNetwork, Milliseconds currentMillis);
+void arduinoUiLoop(Player& player, Milliseconds currentMillis);
 uint8_t getBrightness();
 
 }  // namespace jazzlights

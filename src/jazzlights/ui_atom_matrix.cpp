@@ -12,6 +12,8 @@
 
 #include "jazzlights/fastled_wrapper.h"
 #include "jazzlights/gpio_button.h"
+#include "jazzlights/networks/arduino_esp_wifi.h"
+#include "jazzlights/networks/esp32_ble.h"
 #include "jazzlights/text.h"
 
 namespace jazzlights {
@@ -174,11 +176,10 @@ uint8_t getReceiveTimeBrightness(Milliseconds lastReceiveTime, Milliseconds curr
   return 255 - static_cast<uint8_t>(timeSinceReceive * 256 / kReceiveMaxTime);
 }
 
-void atomScreenNetwork(Player& player, const Network& wifiNetwork, const Network& bleNetwork,
-                       Milliseconds currentMillis) {
+void atomScreenNetwork(Player& player, Milliseconds currentMillis) {
   // Change top-right Atom matrix screen LED based on network status.
   CRGB wifiStatusColor = CRGB::Black;
-  switch (wifiNetwork.status()) {
+  switch (ArduinoEspWiFiNetwork::get()->status()) {
     case INITIALIZING: wifiStatusColor = CRGB::Pink; break;
     case DISCONNECTED: wifiStatusColor = CRGB::Purple; break;
     case CONNECTING: wifiStatusColor = CRGB::Yellow; break;
@@ -188,18 +189,19 @@ void atomScreenNetwork(Player& player, const Network& wifiNetwork, const Network
   }
   atomScreenLEDs[4] = wifiStatusColor;
   CRGB followedNetworkColor = CRGB::Red;
-  if (player.followedNextHopNetwork() == &wifiNetwork) {
+  if (player.followedNextHopNetwork() == ArduinoEspWiFiNetwork::get()) {
     switch (player.currentNumHops()) {
       case 1: followedNetworkColor = CRGB(0, 255, 0); break;
       case 2: followedNetworkColor = CRGB(128, 255, 0); break;
       default: followedNetworkColor = CRGB(255, 255, 0); break;
     }
   }
-  const uint8_t wifiBrightness = getReceiveTimeBrightness(wifiNetwork.getLastReceiveTime(), currentMillis);
+  const uint8_t wifiBrightness =
+      getReceiveTimeBrightness(ArduinoEspWiFiNetwork::get()->getLastReceiveTime(), currentMillis);
   atomScreenLEDs[9] = CRGB(255 - wifiBrightness, wifiBrightness, 0);
-  const uint8_t bleBrightness = getReceiveTimeBrightness(bleNetwork.getLastReceiveTime(), currentMillis);
+  const uint8_t bleBrightness = getReceiveTimeBrightness(Esp32BleNetwork::get()->getLastReceiveTime(), currentMillis);
   atomScreenLEDs[14] = CRGB(255 - bleBrightness, 0, bleBrightness);
-  if (player.followedNextHopNetwork() == &bleNetwork) {
+  if (player.followedNextHopNetwork() == Esp32BleNetwork::get()) {
     switch (player.currentNumHops()) {
       case 1: followedNetworkColor = CRGB(0, 0, 255); break;
       case 2: followedNetworkColor = CRGB(128, 0, 255); break;
@@ -216,8 +218,7 @@ void atomScreenNetwork(Player& player, const Network& wifiNetwork, const Network
 // 15 16 17 18 19
 // 20 21 22 23 24
 
-void atomScreenUnlocked(Player& player, const Network& wifiNetwork, const Network& bleNetwork,
-                        Milliseconds currentMillis) {
+void atomScreenUnlocked(Player& player, Milliseconds currentMillis) {
   const CRGB* icon = atomScreenLEDs;
   switch (menuMode) {
     case kNext: icon = menuIconNext; break;
@@ -246,24 +247,23 @@ void atomScreenUnlocked(Player& player, const Network& wifiNetwork, const Networ
       }
     }
   }
-  atomScreenNetwork(player, wifiNetwork, bleNetwork, currentMillis);
+  atomScreenNetwork(player, currentMillis);
 }
 
 void atomScreenClear() {
   for (int i = 0; i < ATOM_SCREEN_NUM_LEDS; i++) { atomScreenLEDs[i] = CRGB::Black; }
 }
 
-void atomScreenLong(Player& player, const Network& wifiNetwork, const Network& bleNetwork, Milliseconds currentMillis) {
+void atomScreenLong(Player& player, Milliseconds currentMillis) {
   atomScreenClear();
   for (int i : {0, 5, 10, 15, 20, 21, 22}) { atomScreenLEDs[i] = CRGB::Gold; }
-  atomScreenNetwork(player, wifiNetwork, bleNetwork, currentMillis);
+  atomScreenNetwork(player, currentMillis);
 }
 
-void atomScreenShort(Player& player, const Network& wifiNetwork, const Network& bleNetwork,
-                     Milliseconds currentMillis) {
+void atomScreenShort(Player& player, Milliseconds currentMillis) {
   atomScreenClear();
   for (int i : {2, 1, 0, 5, 10, 11, 12, 17, 22, 21, 20}) { atomScreenLEDs[i] = CRGB::Gold; }
-  atomScreenNetwork(player, wifiNetwork, bleNetwork, currentMillis);
+  atomScreenNetwork(player, currentMillis);
 }
 
 static constexpr uint8_t kButtonPin = 39;
@@ -331,7 +331,7 @@ class AtomMatrixUI : public Button::Interface {
     return displayingBootMessage_;
   }
 
-  void RunLoop(const Network& wifiNetwork, const Network& bleNetwork, Milliseconds currentMillis) {
+  void RunLoop(Milliseconds currentMillis) {
     button_.RunLoop(currentMillis);
 
     if (atomScreenMessage(currentMillis)) { return; }
@@ -362,10 +362,10 @@ class AtomMatrixUI : public Button::Interface {
         atomScreenClear();
       } else if ((buttonLockState_ % 2) == 1) {
         // In odd  states (1,3) we show "L".
-        atomScreenLong(player_, wifiNetwork, bleNetwork, currentMillis);
+        atomScreenLong(player_, currentMillis);
       } else {
         // In even states (0,2) we show "S".
-        atomScreenShort(player_, wifiNetwork, bleNetwork, currentMillis);
+        atomScreenShort(player_, currentMillis);
       }
       atomScreenDisplay(currentMillis);
 
@@ -377,7 +377,7 @@ class AtomMatrixUI : public Button::Interface {
       lockButtonTime_ = currentMillis + kButtonLockTimeout;
     }
 #endif  // JL_BUTTON_LOCK
-    atomScreenUnlocked(player_, wifiNetwork, bleNetwork, currentMillis);
+    atomScreenUnlocked(player_, currentMillis);
     atomScreenDisplay(currentMillis);
   }
 
@@ -407,10 +407,7 @@ void arduinoUiInitialSetup(Player& player, Milliseconds currentTime) {
 
 void arduinoUiFinalSetup(Player& /*player*/, Milliseconds /*currentTime*/) {}
 
-void arduinoUiLoop(Player& /*player*/, const Network& wifiNetwork, const Network& bleNetwork,
-                   Milliseconds currentMillis) {
-  gUi->RunLoop(wifiNetwork, bleNetwork, currentMillis);
-}
+void arduinoUiLoop(Player& /*player*/, Milliseconds currentMillis) { gUi->RunLoop(currentMillis); }
 
 uint8_t getBrightness() { return brightnessList[brightnessCursor]; }
 

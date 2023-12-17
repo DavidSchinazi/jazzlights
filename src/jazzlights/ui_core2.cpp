@@ -650,8 +650,7 @@ void drawSystemTextLines(Player& player, Milliseconds currentTime) {
   drawSystemTextLine(i++, line);
 }
 
-void arduinoUiLoop(Player& player, const Network& /*wifiNetwork*/, const Network& /*bleNetwork*/,
-                   Milliseconds currentTime) {
+void arduinoUiLoop(Player& player, Milliseconds currentTime) {
   M5.Touch.update();
   M5.Buttons.update();
   if (M5.background.wasPressed()) {
@@ -908,8 +907,7 @@ void arduinoUiLoop(Player& player, const Network& /*wifiNetwork*/, const Network
 #else   // CORE2AWS_LCD_ENABLED
 void arduinoUiInitialSetup(Player& /*player*/, Milliseconds /*currentTime*/) {}
 void arduinoUiFinalSetup(Player& /*player*/, Milliseconds /*currentTime*/) {}
-void arduinoUiLoop(Player& /*player*/, const Network& /*wifiNetwork*/, const Network& /*bleNetwork*/,
-                   Milliseconds /*currentTime*/) {}
+void arduinoUiLoop(Player& /*player*/, Milliseconds /*currentTime*/) {}
 uint8_t getBrightness() { return 0; }
 #endif  // CORE2AWS_LCD_ENABLED
 
