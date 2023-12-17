@@ -24,6 +24,8 @@ class AtomS3Ui : public ArduinoUi, public GpioButton::Interface {
 
  private:
   void UpdateScreen(Milliseconds currentTime);
+  bool IsLocked();
+  void HandleUnlockSequence(bool wasLongPress, Milliseconds currentTime);
 
   enum class MenuMode {
     kNext,
@@ -34,6 +36,15 @@ class AtomS3Ui : public ArduinoUi, public GpioButton::Interface {
   MenuMode menuMode_ = MenuMode::kNext;
   uint8_t brightnessCursor_;
   GpioButton button_;
+  // Definitions of the button lock states:
+  // 0 Awaiting short press
+  // 1 Awaiting long press
+  // 2 Awaiting short press
+  // 3 Awaiting long press
+  // 4 Awaiting release
+  // 5 Unlocked
+  uint8_t buttonLockState_ = 0;
+  Milliseconds lockButtonTime_ = 0;  // Time at which we'll lock the buttons.
 };
 
 }  // namespace jazzlights
