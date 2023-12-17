@@ -80,12 +80,15 @@ void AtomS3Ui::RunLoop(Milliseconds currentTime) {
     // 3. In the final transition from state 4 (awaiting release) to state 5 (unlocked)
     if ((buttonLockState_ == 0 && !button_.IsPressed(currentTime)) ||
         button_.HasBeenPressedLongEnoughForLongPress(currentTime) || buttonLockState_ >= 4) {
+      M5.Display.sleep();
       M5.Display.clearDisplay();
     } else if ((buttonLockState_ % 2) == 1) {
       // In odd  states (1,3) we show "L".
+      M5.Display.wakeup();
       M5.Display.clearDisplay(::ORANGE);
     } else {
       // In even states (0,2) we show "S".
+      M5.Display.wakeup();
       M5.Display.clearDisplay(::CYAN);
     }
 
@@ -160,6 +163,7 @@ void AtomS3Ui::HeldDown(uint8_t pin, Milliseconds currentTime) {
 }
 
 void AtomS3Ui::UpdateScreen(Milliseconds currentTime) {
+  M5.Display.wakeup();
   switch (menuMode_) {
     case MenuMode::kNext: {
       M5.Display.clearDisplay(::BLUE);
