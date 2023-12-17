@@ -1,4 +1,4 @@
-#include "jazzlights/ui_atom_matrix.h"
+#include "jazzlights/ui/ui_atom_matrix.h"
 
 #include "jazzlights/config.h"
 
@@ -10,10 +10,10 @@
 #include <memory>
 
 #include "jazzlights/fastled_wrapper.h"
-#include "jazzlights/gpio_button.h"
 #include "jazzlights/networks/arduino_esp_wifi.h"
 #include "jazzlights/networks/esp32_ble.h"
 #include "jazzlights/text.h"
+#include "jazzlights/ui/gpio_button.h"
 
 namespace jazzlights {
 namespace {

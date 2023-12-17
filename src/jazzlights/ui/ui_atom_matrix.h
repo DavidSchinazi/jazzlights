@@ -1,7 +1,7 @@
 #ifndef JL_UI_ATOM_MATRIX_H
 #define JL_UI_ATOM_MATRIX_H
 
-#include "jazzlights/ui.h"
+#include "jazzlights/ui/ui.h"
 
 #ifdef ARDUINO
 #if JL_IS_CONTROLLER(ATOM_MATRIX)
@@ -9,7 +9,7 @@
 #define ATOM_SCREEN_NUM_LEDS 25
 
 #include "jazzlights/fastled_wrapper.h"
-#include "jazzlights/gpio_button.h"
+#include "jazzlights/ui/gpio_button.h"
 
 namespace jazzlights {
 

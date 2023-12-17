@@ -14,9 +14,10 @@
 #include "jazzlights/networks/arduino_ethernet.h"
 #include "jazzlights/networks/esp32_ble.h"
 #include "jazzlights/player.h"
-#include "jazzlights/ui.h"
-#include "jazzlights/ui_atom_matrix.h"
-#include "jazzlights/ui_core2.h"
+#include "jazzlights/ui/ui.h"
+#include "jazzlights/ui/ui_atom_matrix.h"
+#include "jazzlights/ui/ui_core2.h"
+#include "jazzlights/ui/ui_disabled.h"
 
 #if JL_IS_CONTROLLER(CORE2AWS) || JL_IS_CONTROLLER(M5STAMP_PICO)
 #define LED_PIN 32

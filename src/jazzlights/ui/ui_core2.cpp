@@ -1,4 +1,4 @@
-#include "jazzlights/ui_core2.h"
+#include "jazzlights/ui/ui_core2.h"
 
 #include "jazzlights/config.h"
 

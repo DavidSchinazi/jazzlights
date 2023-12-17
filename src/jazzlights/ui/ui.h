@@ -26,14 +26,6 @@ class ArduinoUi {
   Player& player_;
 };
 
-class NoOpUi : public ArduinoUi {
- public:
-  explicit NoOpUi(Player& player, Milliseconds currentTime) : ArduinoUi(player, currentTime) {}
-  void InitialSetup(Milliseconds currentTime) override;
-  void FinalSetup(Milliseconds /*currentTime*/) override {}
-  void RunLoop(Milliseconds /*currentTime*/) override {}
-};
-
 }  // namespace jazzlights
 
 #endif  // ARDUINO

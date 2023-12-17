@@ -1,7 +1,7 @@
 #ifndef JL_UI_CORE2_H
 #define JL_UI_CORE2_H
 
-#include "jazzlights/ui.h"
+#include "jazzlights/ui/ui.h"
 
 #ifdef ARDUINO
 #if JL_IS_CONTROLLER(CORE2AWS)
@@ -10,7 +10,7 @@
 #define CORE2AWS_LCD_ENABLED 1
 #endif  // CORE2AWS_LCD_ENABLED
 
-#include "jazzlights/gpio_button.h"
+#include "jazzlights/ui/ui_disabled.h"
 
 namespace jazzlights {
 

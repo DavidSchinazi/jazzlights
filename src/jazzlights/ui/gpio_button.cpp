@@ -1,4 +1,4 @@
-#include "jazzlights/gpio_button.h"
+#include "jazzlights/ui/gpio_button.h"
 
 #ifdef ARDUINO
 

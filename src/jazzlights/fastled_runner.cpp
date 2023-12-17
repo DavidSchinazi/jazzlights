@@ -5,7 +5,7 @@
 #ifdef ARDUINO
 
 #include "jazzlights/instrumentation.h"
-#include "jazzlights/ui.h"
+#include "jazzlights/ui/ui.h"
 #include "jazzlights/util/log.h"
 
 namespace jazzlights {
