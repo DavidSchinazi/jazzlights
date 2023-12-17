@@ -16,6 +16,7 @@
 #include "jazzlights/player.h"
 #include "jazzlights/ui/ui.h"
 #include "jazzlights/ui/ui_atom_matrix.h"
+#include "jazzlights/ui/ui_atom_s3.h"
 #include "jazzlights/ui/ui_core2.h"
 #include "jazzlights/ui/ui_disabled.h"
 
@@ -40,13 +41,18 @@ ArduinoEthernetNetwork ethernetNetwork(ArduinoEspWiFiNetwork::get()->getLocalDev
 #endif  // JL_ARDUINO_ETHERNET
 Player player;
 FastLedRunner runner(&player);
+
 #if JL_IS_CONTROLLER(ATOM_MATRIX)
-AtomMatrixUi ui(player, timeMillis());
+typedef AtomMatrixUi ArduinoUiImpl;
+#elif JL_IS_CONTROLLER(ATOM_S3)
+typedef AtomS3Ui ArduinoUiImpl;
 #elif JL_IS_CONTROLLER(CORE2AWS)
-Core2AwsUi ui(player, timeMillis());
+typedef Core2AwsUi ArduinoUiImpl;
 #else
-NoOpUi ui(player, timeMillis());
+typedef NoOpUi ArduinoUiImpl;
 #endif
+
+ArduinoUiImpl ui(player, timeMillis());
 
 void arduinoSetup(void) {
   Milliseconds currentTime = timeMillis();
