@@ -1,5 +1,4 @@
-#include "jazzlights/ui.h"
-// This comment prevents automatic header reordering.
+#include "jazzlights/ui_atom_matrix.h"
 
 #include "jazzlights/config.h"
 
@@ -268,146 +267,125 @@ void atomScreenShort(Player& player, Milliseconds currentMillis) {
 
 static constexpr uint8_t kButtonPin = 39;
 
-class AtomMatrixUI : public Button::Interface {
- public:
-  explicit AtomMatrixUI(Player& player, Milliseconds currentTime)
-      : player_(player), button_(kButtonPin, *this, currentTime) {}
-  bool IsLocked() { return buttonLockState_ < 5; }
-  void HandleUnlockSequence(bool wasLongPress, Milliseconds currentMillis) {
-    if (!IsLocked()) { return; }
-    // If we don’t receive the correct button event for the state we’re currently in, return immediately to state 0.
-    // In odd states (1,3) we want a long press; in even states (0,2) we want a short press.
-    if (((buttonLockState_ % 2) == 1) != wasLongPress) {
-      buttonLockState_ = 0;
+}  // namespace
+
+AtomMatrixUi::AtomMatrixUi(Player& player, Milliseconds currentTime)
+    : ArduinoUi(player, currentTime), button_(kButtonPin, *this, currentTime) {}
+
+bool AtomMatrixUi::IsLocked() { return buttonLockState_ < 5; }
+void AtomMatrixUi::HandleUnlockSequence(bool wasLongPress, Milliseconds currentMillis) {
+  if (!IsLocked()) { return; }
+  // If we don’t receive the correct button event for the state we’re currently in, return immediately to state 0.
+  // In odd states (1,3) we want a long press; in even states (0,2) we want a short press.
+  if (((buttonLockState_ % 2) == 1) != wasLongPress) {
+    buttonLockState_ = 0;
+  } else {
+    buttonLockState_++;
+    // To reject accidental presses, exit unlock sequence if four seconds without progress
+    lockButtonTime_ = currentMillis + kButtonLockTimeoutDuringUnlockSequence;
+  }
+}
+void AtomMatrixUi::ShortPress(uint8_t pin, Milliseconds currentMillis) {
+  if (pin != kButtonPin) { return; }
+  jll_info("%u ShortPress", currentMillis);
+  HandleUnlockSequence(/*wasLongPress=*/false, currentMillis);
+  if (IsLocked()) { return; }
+
+  modeAct(player_, currentMillis);
+}
+void AtomMatrixUi::LongPress(uint8_t pin, Milliseconds currentMillis) {
+  if (pin != kButtonPin) { return; }
+  jll_info("%u LongPress", currentMillis);
+  HandleUnlockSequence(/*wasLongPress=*/true, currentMillis);
+  if (IsLocked()) { return; }
+
+  nextMode(player_, currentMillis);
+}
+void AtomMatrixUi::HeldDown(uint8_t pin, Milliseconds currentMillis) {
+  if (pin != kButtonPin) { return; }
+  jll_info("%u HeldDown", currentMillis);
+  if (IsLocked()) {
+    // Button was held too long, go back to beginning of unlock sequence.
+    buttonLockState_ = 0;
+    return;
+  }
+  menuMode = kSpecial;
+}
+
+bool AtomMatrixUi::atomScreenMessage(const Milliseconds currentMillis) {
+  if (!displayingBootMessage_) { return false; }
+  if (button_.IsPressed(currentMillis)) {
+    jll_info("%u Stopping boot message due to button press", currentMillis);
+    displayingBootMessage_ = false;
+  } else {
+    static Milliseconds bootMessageStartTime = -1;
+    if (bootMessageStartTime < 0) { bootMessageStartTime = currentMillis; }
+    displayingBootMessage_ =
+        displayText(BOOT_MESSAGE, atomScreenLEDs, CRGB::Red, CRGB::Black, currentMillis - bootMessageStartTime);
+    if (!displayingBootMessage_) {
+      jll_info("%u Done displaying boot message", currentMillis);
     } else {
-      buttonLockState_++;
-      // To reject accidental presses, exit unlock sequence if four seconds without progress
-      lockButtonTime_ = currentMillis + kButtonLockTimeoutDuringUnlockSequence;
+      atomScreenDisplay(currentMillis);
     }
   }
-  void ShortPress(uint8_t pin, Milliseconds currentMillis) override {
-    if (pin != kButtonPin) { return; }
-    jll_info("%u ShortPress", currentMillis);
-    HandleUnlockSequence(/*wasLongPress=*/false, currentMillis);
-    if (IsLocked()) { return; }
+  return displayingBootMessage_;
+}
 
-    modeAct(player_, currentMillis);
-  }
-  void LongPress(uint8_t pin, Milliseconds currentMillis) override {
-    if (pin != kButtonPin) { return; }
-    jll_info("%u LongPress", currentMillis);
-    HandleUnlockSequence(/*wasLongPress=*/true, currentMillis);
-    if (IsLocked()) { return; }
+void AtomMatrixUi::RunLoop(Milliseconds currentMillis) {
+  button_.RunLoop(currentMillis);
 
-    nextMode(player_, currentMillis);
-  }
-  void HeldDown(uint8_t pin, Milliseconds currentMillis) override {
-    if (pin != kButtonPin) { return; }
-    jll_info("%u HeldDown", currentMillis);
-    if (IsLocked()) {
-      // Button was held too long, go back to beginning of unlock sequence.
-      buttonLockState_ = 0;
-      return;
-    }
-    menuMode = kSpecial;
-  }
-
-  bool atomScreenMessage(const Milliseconds currentMillis) {
-    if (!displayingBootMessage_) { return false; }
-    if (button_.IsPressed(currentMillis)) {
-      jll_info("%u Stopping boot message due to button press", currentMillis);
-      displayingBootMessage_ = false;
-    } else {
-      static Milliseconds bootMessageStartTime = -1;
-      if (bootMessageStartTime < 0) { bootMessageStartTime = currentMillis; }
-      displayingBootMessage_ =
-          displayText(BOOT_MESSAGE, atomScreenLEDs, CRGB::Red, CRGB::Black, currentMillis - bootMessageStartTime);
-      if (!displayingBootMessage_) {
-        jll_info("%u Done displaying boot message", currentMillis);
-      } else {
-        atomScreenDisplay(currentMillis);
-      }
-    }
-    return displayingBootMessage_;
-  }
-
-  void RunLoop(Milliseconds currentMillis) {
-    button_.RunLoop(currentMillis);
-
-    if (atomScreenMessage(currentMillis)) { return; }
+  if (atomScreenMessage(currentMillis)) { return; }
 
 #if JL_IS_CONFIG(FAIRY_WAND)
-    atomScreenClear();
-    atomScreenDisplay(currentMillis);
-    if (BTN_EVENT(btn)) { player.triggerPatternOverride(currentMillis); }
-    return;
+  atomScreenClear();
+  atomScreenDisplay(currentMillis);
+  if (BTN_EVENT(btn)) { player.triggerPatternOverride(currentMillis); }
+  return;
 #endif  // FAIRY_WAND
 
 #if JL_BUTTON_LOCK
 
-    // If idle-time expired, return to ‘locked’ state
-    if (buttonLockState_ != 0 && currentMillis - lockButtonTime_ >= 0) {
-      jll_info("%u Locking buttons", currentMillis);
-      buttonLockState_ = 0;
-    }
-
-    if (IsLocked()) {
-      // We show a blank display:
-      // 1. When in fully locked mode, with the button not pressed
-      // 2. When the button has been pressed long enough to register as a long press, and we want to signal the user to
-      // let go now
-      // 3. In the final transition from state 4 (awaiting release) to state 5 (unlocked)
-      if ((buttonLockState_ == 0 && !button_.IsPressed(currentMillis)) ||
-          button_.HasBeenPressedLongEnoughForLongPress(currentMillis) || buttonLockState_ >= 4) {
-        atomScreenClear();
-      } else if ((buttonLockState_ % 2) == 1) {
-        // In odd  states (1,3) we show "L".
-        atomScreenLong(player_, currentMillis);
-      } else {
-        // In even states (0,2) we show "S".
-        atomScreenShort(player_, currentMillis);
-      }
-      atomScreenDisplay(currentMillis);
-
-      // In lock state 4, wait for release of the button, and then move to state 5 (fully unlocked)
-      if (buttonLockState_ < 4 || button_.IsPressed(currentMillis)) { return; }
-      buttonLockState_ = 5;
-      lockButtonTime_ = currentMillis + kButtonLockTimeout;
-    } else if (button_.IsPressed(currentMillis)) {
-      lockButtonTime_ = currentMillis + kButtonLockTimeout;
-    }
-#endif  // JL_BUTTON_LOCK
-    atomScreenUnlocked(player_, currentMillis);
-    atomScreenDisplay(currentMillis);
+  // If idle-time expired, return to ‘locked’ state
+  if (buttonLockState_ != 0 && currentMillis - lockButtonTime_ >= 0) {
+    jll_info("%u Locking buttons", currentMillis);
+    buttonLockState_ = 0;
   }
 
- private:
-  Player& player_;
-  Button button_;
-  bool displayingBootMessage_ = true;
-  // Definitions of the button lock states:
-  // 0 Awaiting short press
-  // 1 Awaiting long press
-  // 2 Awaiting short press
-  // 3 Awaiting long press
-  // 4 Awaiting release
-  // 5 Unlocked
-  uint8_t buttonLockState_ = 0;
-  Milliseconds lockButtonTime_ = 0;  // Time at which we'll lock the buttons.
-};
+  if (IsLocked()) {
+    // We show a blank display:
+    // 1. When in fully locked mode, with the button not pressed
+    // 2. When the button has been pressed long enough to register as a long press, and we want to signal the user to
+    // let go now
+    // 3. In the final transition from state 4 (awaiting release) to state 5 (unlocked)
+    if ((buttonLockState_ == 0 && !button_.IsPressed(currentMillis)) ||
+        button_.HasBeenPressedLongEnoughForLongPress(currentMillis) || buttonLockState_ >= 4) {
+      atomScreenClear();
+    } else if ((buttonLockState_ % 2) == 1) {
+      // In odd  states (1,3) we show "L".
+      atomScreenLong(player_, currentMillis);
+    } else {
+      // In even states (0,2) we show "S".
+      atomScreenShort(player_, currentMillis);
+    }
+    atomScreenDisplay(currentMillis);
 
-std::unique_ptr<AtomMatrixUI> gUi;
-}  // namespace
+    // In lock state 4, wait for release of the button, and then move to state 5 (fully unlocked)
+    if (buttonLockState_ < 4 || button_.IsPressed(currentMillis)) { return; }
+    buttonLockState_ = 5;
+    lockButtonTime_ = currentMillis + kButtonLockTimeout;
+  } else if (button_.IsPressed(currentMillis)) {
+    lockButtonTime_ = currentMillis + kButtonLockTimeout;
+  }
+#endif  // JL_BUTTON_LOCK
+  atomScreenUnlocked(player_, currentMillis);
+  atomScreenDisplay(currentMillis);
+}
 
-void arduinoUiInitialSetup(Player& player, Milliseconds currentTime) {
-  gUi.reset(new AtomMatrixUI(player, currentTime));
+void AtomMatrixUi::InitialSetup(Milliseconds /*currentTime*/) {
   atomMatrixScreenController = &FastLED.addLeds<WS2812, /*DATA_PIN=*/27, GRB>(atomScreenLEDs, ATOM_SCREEN_NUM_LEDS);
   atomScreenClear();
 }
-
-void arduinoUiFinalSetup(Player& /*player*/, Milliseconds /*currentTime*/) {}
-
-void arduinoUiLoop(Player& /*player*/, Milliseconds currentMillis) { gUi->RunLoop(currentMillis); }
+void AtomMatrixUi::FinalSetup(Milliseconds currentTime) {}
 
 uint8_t getBrightness() { return brightnessList[brightnessCursor]; }
 

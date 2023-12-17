@@ -10,7 +10,7 @@
 namespace jazzlights {
 
 // Allows tracking buttons connected to Arduino GPIO pins.
-class Button {
+class GpioButton {
  public:
   // Virtual interface class that will receive button callbacks.
   class Interface {
@@ -25,7 +25,7 @@ class Button {
   };
 
   // Starts tracking a button connected to a GPIO pin.
-  explicit Button(uint8_t pin, Interface& interface, Milliseconds currentMillis);
+  explicit GpioButton(uint8_t pin, Interface& interface, Milliseconds currentMillis);
 
   // Needs to be called on every iteration of the Arduino run loop.
   void RunLoop(Milliseconds currentMillis);

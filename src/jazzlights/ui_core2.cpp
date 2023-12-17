@@ -1,13 +1,8 @@
-#include "jazzlights/ui.h"
-// This comment prevents automatic header reordering.
+#include "jazzlights/ui_core2.h"
 
 #include "jazzlights/config.h"
 
 #if JL_IS_CONTROLLER(CORE2AWS)
-
-#ifndef CORE2AWS_LCD_ENABLED
-#define CORE2AWS_LCD_ENABLED 1
-#endif  // CORE2AWS_LCD_ENABLED
 
 #include <M5Core2.h>
 
@@ -531,7 +526,9 @@ class PatternControlMenu {
 };
 PatternControlMenu gPatternControlMenu;
 
-void arduinoUiInitialSetup(Player& player, Milliseconds currentTime) {
+Core2AwsUi::Core2AwsUi(Player& player, Milliseconds currentTime) : ArduinoUi(player, currentTime) {}
+
+void Core2AwsUi::InitialSetup(Milliseconds currentTime) {
   M5.begin(/*LCDEnable=*/true, /*SDEnable=*/false,
            /*SerialEnable=*/false, /*I2CEnable=*/false,
            /*mode=*/kMBusModeOutput);
@@ -555,8 +552,8 @@ void arduinoUiInitialSetup(Player& player, Milliseconds currentTime) {
   unlock1Button.drawFn = drawButtonButOnlyInLocked1;
   unlock2Button.drawFn = drawButtonButOnlyInLocked2;
   setupButtonsDrawZone();
-  player.addStrand(core2ScreenPixels, core2ScreenRenderer);
-  setDefaultPrecedence(player, currentTime);
+  player_.addStrand(core2ScreenPixels, core2ScreenRenderer);
+  setDefaultPrecedence(player_, currentTime);
 }
 
 void startMainMenu(Player& player, Milliseconds currentTime) {
@@ -566,10 +563,10 @@ void startMainMenu(Player& player, Milliseconds currentTime) {
   core2ScreenRenderer.setEnabled(true);
 }
 
-void arduinoUiFinalSetup(Player& player, Milliseconds currentTime) {
-  gCurrentPatternName = player.currentEffectName();
+void Core2AwsUi::FinalSetup(Milliseconds currentTime) {
+  gCurrentPatternName = player_.currentEffectName();
   if (gScreenMode == ScreenMode::kMainMenu) {
-    startMainMenu(player, currentTime);
+    startMainMenu(player_, currentTime);
   } else {
     hideMainMenuButtons();
     core2ScreenRenderer.setEnabled(false);
@@ -650,7 +647,7 @@ void drawSystemTextLines(Player& player, Milliseconds currentTime) {
   drawSystemTextLine(i++, line);
 }
 
-void arduinoUiLoop(Player& player, Milliseconds currentTime) {
+void Core2AwsUi::RunLoop(Milliseconds currentTime) {
   M5.Touch.update();
   M5.Buttons.update();
   if (M5.background.wasPressed()) {
@@ -675,7 +672,7 @@ void arduinoUiLoop(Player& player, Milliseconds currentTime) {
         unlock1Button.draw();
 #else   // JL_BUTTON_LOCK
         jll_info("%u unlocking from button press", currentTime);
-        startMainMenu(player, currentTime);
+        startMainMenu(player_, currentTime);
         gLastScreenInteractionTime = currentTime;
 #endif  // JL_BUTTON_LOCK
       } break;
@@ -692,7 +689,7 @@ void arduinoUiLoop(Player& player, Milliseconds currentTime) {
       case ScreenMode::kFullScreenPattern: {
         jll_info("%u full screen pattern pressed", currentTime);
         core2ScreenRenderer.setFullScreen(false);
-        startMainMenu(player, currentTime);
+        startMainMenu(player_, currentTime);
         gLastScreenInteractionTime = currentTime;
       } break;
       case ScreenMode::kPatternControlMenu: {
@@ -710,19 +707,19 @@ void arduinoUiLoop(Player& player, Milliseconds currentTime) {
     jll_info("%u next pressed", currentTime);
     if (gScreenMode == ScreenMode::kMainMenu) {
       gLastScreenInteractionTime = currentTime;
-      player.next(currentTime);
+      player_.next(currentTime);
     }
   }
   if (loopButton.wasPressed()) {
     if (gScreenMode == ScreenMode::kMainMenu) {
       jll_info("%u loop pressed", currentTime);
       gLastScreenInteractionTime = currentTime;
-      if (player.isLooping()) {
-        player.stopLooping(currentTime);
+      if (player_.isLooping()) {
+        player_.stopLooping(currentTime);
         loopButton.setLabel("Loop");
         loopButton.off = idleCol;
       } else {
-        player.loopOne(currentTime);
+        player_.loopOne(currentTime);
         loopButton.setLabel("Looping");
         loopButton.off = idleEnabledCol;
       }
@@ -734,7 +731,7 @@ void arduinoUiLoop(Player& player, Milliseconds currentTime) {
   if (patternControlButton.wasPressed()) {
     if (gScreenMode == ScreenMode::kMainMenu) {
       jll_info("%u pattern control button pressed", currentTime);
-      patternControlButtonPressed(player, currentTime);
+      patternControlButtonPressed(player_, currentTime);
     } else {
       jll_info("%u ignoring pattern control button pressed", currentTime);
     }
@@ -748,7 +745,7 @@ void arduinoUiLoop(Player& player, Milliseconds currentTime) {
       core2ScreenRenderer.setEnabled(false);
       M5.Lcd.fillScreen(BLACK);
       drawSystemMenuButtons();
-      drawSystemTextLines(player, currentTime);
+      drawSystemTextLines(player_, currentTime);
     } else {
       jll_info("%u ignoring system button pressed", currentTime);
     }
@@ -760,7 +757,7 @@ void arduinoUiLoop(Player& player, Milliseconds currentTime) {
       gLastScreenInteractionTime = currentTime;
       hidePatternControlMenuButtons();
       hideSystemMenuButtons();
-      startMainMenu(player, currentTime);
+      startMainMenu(player_, currentTime);
     } else {
       jll_info("%u ignoring back button pressed", currentTime);
     }
@@ -787,7 +784,7 @@ void arduinoUiLoop(Player& player, Milliseconds currentTime) {
     if (gScreenMode == ScreenMode::kPatternControlMenu) {
       jll_info("%u override button pressed", currentTime);
       gLastScreenInteractionTime = currentTime;
-      gPatternControlMenu.overridePressed(player, currentTime);
+      gPatternControlMenu.overridePressed(player_, currentTime);
     } else {
       jll_info("%u ignoring override button pressed", currentTime);
     }
@@ -795,7 +792,7 @@ void arduinoUiLoop(Player& player, Milliseconds currentTime) {
   if (confirmButton.wasPressed()) {
     if (gScreenMode == ScreenMode::kPatternControlMenu) {
       jll_info("%u confirm button pressed", currentTime);
-      confirmButtonPressed(player, currentTime);
+      confirmButtonPressed(player_, currentTime);
     } else {
       jll_info("%u ignoring confirm button pressed", currentTime);
     }
@@ -821,14 +818,14 @@ void arduinoUiLoop(Player& player, Milliseconds currentTime) {
     if (gScreenMode == ScreenMode::kLocked2) {
       jll_info("%u unlock2 button pressed", currentTime);
       unlock2Button.hide();
-      startMainMenu(player, currentTime);
+      startMainMenu(player_, currentTime);
     } else if (gScreenMode == ScreenMode::kMainMenu) {
       jll_info("%u unlock2 button unexpectedly pressed in main menu, treating as pattern control button", currentTime);
-      patternControlButtonPressed(player, currentTime);
+      patternControlButtonPressed(player_, currentTime);
     } else if (gScreenMode == ScreenMode::kPatternControlMenu) {
       jll_info("%u unlock2 button unexpectedly pressed in pattern control menu, treating as confirm button",
                currentTime);
-      confirmButtonPressed(player, currentTime);
+      confirmButtonPressed(player_, currentTime);
     } else if (gScreenMode == ScreenMode::kSystemMenu) {
       jll_info("%u unlock2 button unexpectedly pressed in system menu, treating as shutdown button", currentTime);
       M5.shutdown();
@@ -846,7 +843,7 @@ void arduinoUiLoop(Player& player, Milliseconds currentTime) {
       unlock2Button.draw();
     } else if (gScreenMode == ScreenMode::kMainMenu) {
       jll_info("%u unlock1 button unexpectedly pressed in main menu, treating as next button", currentTime);
-      player.next(currentTime);
+      player_.next(currentTime);
     } else {
       jll_info("%u ignoring unlock1 button pressed", currentTime);
     }
@@ -856,7 +853,7 @@ void arduinoUiLoop(Player& player, Milliseconds currentTime) {
     if (gLedBrightness < 255 && gScreenMode == ScreenMode::kSystemMenu) {
       gLedBrightness++;
       jll_info("%u setting LED brightness to %u", currentTime, gLedBrightness);
-      drawSystemTextLines(player, currentTime);
+      drawSystemTextLines(player_, currentTime);
     }
   }
   if (ledMinusButton.wasPressed()) {
@@ -864,7 +861,7 @@ void arduinoUiLoop(Player& player, Milliseconds currentTime) {
     if (gLedBrightness > 0 && gScreenMode == ScreenMode::kSystemMenu) {
       gLedBrightness--;
       jll_info("%u setting LED brightness to %u", currentTime, gLedBrightness);
-      drawSystemTextLines(player, currentTime);
+      drawSystemTextLines(player_, currentTime);
     }
   }
   if (screenPlusButton.wasPressed()) {
@@ -872,7 +869,7 @@ void arduinoUiLoop(Player& player, Milliseconds currentTime) {
     if (gOnBrightness < kMaxOnBrightness && gScreenMode == ScreenMode::kSystemMenu) {
       gOnBrightness++;
       setCore2ScreenBrightness(gOnBrightness);
-      drawSystemTextLines(player, currentTime);
+      drawSystemTextLines(player_, currentTime);
     }
   }
   if (screenMinusButton.wasPressed()) {
@@ -880,11 +877,11 @@ void arduinoUiLoop(Player& player, Milliseconds currentTime) {
     if (gOnBrightness > kMinOnBrightness && gScreenMode == ScreenMode::kSystemMenu) {
       gOnBrightness--;
       setCore2ScreenBrightness(gOnBrightness);
-      drawSystemTextLines(player, currentTime);
+      drawSystemTextLines(player_, currentTime);
     }
   }
 
-  std::string patternName = player.currentEffectName();
+  std::string patternName = player_.currentEffectName();
   if (patternName != gCurrentPatternName) {
     gCurrentPatternName = patternName;
     if (gScreenMode == ScreenMode::kMainMenu) {
@@ -905,9 +902,6 @@ void arduinoUiLoop(Player& player, Milliseconds currentTime) {
 }
 
 #else   // CORE2AWS_LCD_ENABLED
-void arduinoUiInitialSetup(Player& /*player*/, Milliseconds /*currentTime*/) {}
-void arduinoUiFinalSetup(Player& /*player*/, Milliseconds /*currentTime*/) {}
-void arduinoUiLoop(Player& /*player*/, Milliseconds /*currentTime*/) {}
 uint8_t getBrightness() { return 0; }
 #endif  // CORE2AWS_LCD_ENABLED
 

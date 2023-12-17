@@ -15,6 +15,8 @@
 #include "jazzlights/networks/esp32_ble.h"
 #include "jazzlights/player.h"
 #include "jazzlights/ui.h"
+#include "jazzlights/ui_atom_matrix.h"
+#include "jazzlights/ui_core2.h"
 
 #if JL_IS_CONTROLLER(CORE2AWS) || JL_IS_CONTROLLER(M5STAMP_PICO)
 #define LED_PIN 32
@@ -37,11 +39,18 @@ ArduinoEthernetNetwork ethernetNetwork(ArduinoEspWiFiNetwork::get()->getLocalDev
 #endif  // JL_ARDUINO_ETHERNET
 Player player;
 FastLedRunner runner(&player);
+#if JL_IS_CONTROLLER(ATOM_MATRIX)
+AtomMatrixUi ui(player, timeMillis());
+#elif JL_IS_CONTROLLER(CORE2AWS)
+Core2AwsUi ui(player, timeMillis());
+#else
+NoOpUi ui(player, timeMillis());
+#endif
 
 void arduinoSetup(void) {
   Milliseconds currentTime = timeMillis();
   Serial.begin(115200);
-  arduinoUiInitialSetup(player, currentTime);
+  ui.InitialSetup(currentTime);
 
 #if JL_IS_CONFIG(STAFF)
   runner.AddLeds<WS2811, LED_PIN, RGB>(*GetLayout());
@@ -70,7 +79,7 @@ void arduinoSetup(void) {
 #endif  // JL_ARDUINO_ETHERNET
   player.begin(currentTime);
 
-  arduinoUiFinalSetup(player, currentTime);
+  ui.FinalSetup(currentTime);
 
   runner.Start();
 }
@@ -78,7 +87,7 @@ void arduinoSetup(void) {
 void arduinoLoop(void) {
   SAVE_TIME_POINT(LoopStart);
   Milliseconds currentTime = timeMillis();
-  arduinoUiLoop(player, currentTime);
+  ui.RunLoop(currentTime);
   SAVE_TIME_POINT(UserInterface);
   Esp32BleNetwork::get()->runLoop(currentTime);
   SAVE_TIME_POINT(Bluetooth);
