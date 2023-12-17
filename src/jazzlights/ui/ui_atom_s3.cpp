@@ -82,14 +82,28 @@ void AtomS3Ui::RunLoop(Milliseconds currentTime) {
         button_.HasBeenPressedLongEnoughForLongPress(currentTime) || buttonLockState_ >= 4) {
       M5.Display.sleep();
       M5.Display.clearDisplay();
+      displayLongPress_ = false;
+      displayShortPress_ = false;
     } else if ((buttonLockState_ % 2) == 1) {
       // In odd  states (1,3) we show "L".
-      M5.Display.wakeup();
-      M5.Display.clearDisplay(::ORANGE);
+      if (!displayLongPress_) {
+        displayLongPress_ = true;
+        M5.Display.wakeup();
+        M5.Display.clearDisplay(::ORANGE);
+        M5.Display.setTextColor(::BLACK, ::ORANGE);
+        M5.Display.drawCenterString("Long Press", 64, 51, &fonts::Font4);
+      }
+      displayShortPress_ = false;
     } else {
       // In even states (0,2) we show "S".
-      M5.Display.wakeup();
-      M5.Display.clearDisplay(::CYAN);
+      if (!displayShortPress_) {
+        displayShortPress_ = true;
+        M5.Display.wakeup();
+        M5.Display.clearDisplay(::CYAN);
+        M5.Display.setTextColor(::BLACK, ::CYAN);
+        M5.Display.drawCenterString("Short Press", 64, 51, &fonts::Font4);
+      }
+      displayLongPress_ = false;
     }
 
     // In lock state 4, wait for release of the button, and then move to state 5 (fully unlocked)
@@ -164,18 +178,28 @@ void AtomS3Ui::HeldDown(uint8_t pin, Milliseconds currentTime) {
 
 void AtomS3Ui::UpdateScreen(Milliseconds currentTime) {
   M5.Display.wakeup();
+  displayLongPress_ = false;
+  displayShortPress_ = false;
   switch (menuMode_) {
     case MenuMode::kNext: {
       M5.Display.clearDisplay(::BLUE);
+      M5.Display.setTextColor(::WHITE, ::BLUE);
+      M5.Display.drawCenterString("Next", 64, 51, &fonts::Font4);
     } break;
     case MenuMode::kPrevious: {
       M5.Display.clearDisplay(::RED);
+      M5.Display.setTextColor(::WHITE, ::RED);
+      M5.Display.drawCenterString("Loop", 64, 51, &fonts::Font4);
     } break;
     case MenuMode::kBrightness: {
       M5.Display.clearDisplay(::YELLOW);
+      M5.Display.setTextColor(::BLACK, ::YELLOW);
+      M5.Display.drawCenterString("Bright", 64, 51, &fonts::Font4);
     } break;
     case MenuMode::kSpecial: {
       M5.Display.clearDisplay(::PURPLE);
+      M5.Display.setTextColor(::WHITE, ::PURPLE);
+      M5.Display.drawCenterString("Special", 64, 51, &fonts::Font4);
     } break;
   }
 }

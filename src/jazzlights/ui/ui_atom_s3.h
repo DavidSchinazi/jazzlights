@@ -45,6 +45,8 @@ class AtomS3Ui : public ArduinoUi, public GpioButton::Interface {
   // 5 Unlocked
   uint8_t buttonLockState_ = 0;
   Milliseconds lockButtonTime_ = 0;  // Time at which we'll lock the buttons.
+  bool displayShortPress_ = false;
+  bool displayLongPress_ = false;
 };
 
 }  // namespace jazzlights
