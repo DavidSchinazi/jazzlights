@@ -23,8 +23,17 @@ class AtomS3Ui : public ArduinoUi, public GpioButton::Interface {
   void HeldDown(uint8_t pin, Milliseconds currentTime) override;
 
  private:
+  void UpdateScreen(Milliseconds currentTime);
+
+  enum class MenuMode {
+    kNext,
+    kPrevious,
+    kBrightness,
+    kSpecial,
+  };
+  MenuMode menuMode_ = MenuMode::kNext;
+  uint8_t brightnessCursor_;
   GpioButton button_;
-  bool foo_ = false;
 };
 
 }  // namespace jazzlights

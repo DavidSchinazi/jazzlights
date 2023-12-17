@@ -185,7 +185,7 @@ void AtomMatrixUi::ScreenUnlocked(Milliseconds currentTime) {
         default: icon = menuIconSpecialOff; break;
       }
     } break;
-  };
+  }
   for (int i = 0; i < ATOM_SCREEN_NUM_LEDS; i++) { screenLEDs_[i] = icon[i]; }
   if (menuMode_ == MenuMode::kBrightness) {
     for (int i = 0; i < 8; i++) {
@@ -264,7 +264,7 @@ void AtomMatrixUi::ShortPress(uint8_t pin, Milliseconds currentTime) {
       jll_info("%u Special button has been hit", currentTime);
       player_.handleSpecial(currentTime);
       break;
-  };
+  }
 }
 
 void AtomMatrixUi::LongPress(uint8_t pin, Milliseconds currentTime) {
@@ -279,7 +279,7 @@ void AtomMatrixUi::LongPress(uint8_t pin, Milliseconds currentTime) {
     case MenuMode::kPrevious: menuMode_ = MenuMode::kBrightness; break;
     case MenuMode::kBrightness: menuMode_ = MenuMode::kNext; break;
     case MenuMode::kSpecial: menuMode_ = MenuMode::kNext; break;
-  };
+  }
 }
 
 void AtomMatrixUi::HeldDown(uint8_t pin, Milliseconds currentTime) {
