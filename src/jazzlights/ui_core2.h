@@ -7,7 +7,7 @@
 #if JL_IS_CONTROLLER(CORE2AWS)
 
 #ifndef CORE2AWS_LCD_ENABLED
-#define CORE2AWS_LCD_ENABLED 0
+#define CORE2AWS_LCD_ENABLED 1
 #endif  // CORE2AWS_LCD_ENABLED
 
 #include "jazzlights/gpio_button.h"

@@ -101,7 +101,10 @@ class Player {
   void triggerPatternOverride(Milliseconds currentTime);
 #endif  // FAIRY_WAND
 
-  bool powerLimited = false;
+  bool IsPowerLimited() const { return powerLimited_; }
+  void SetPowerLimited(bool powerLimited) { powerLimited_ = powerLimited; }
+  uint8_t GetBrightness() const { return brightness_; }
+  void SetBrightness(uint8_t brightness) { brightness_ = brightness; }
 
   void setBasePrecedence(Precedence basePrecedence) { basePrecedence_ = basePrecedence; }
   void setPrecedenceGain(Precedence precedenceGain) { precedenceGain_ = precedenceGain; }
@@ -137,6 +140,8 @@ class Player {
   PatternBits enforceForcedPalette(PatternBits pattern);
 
   bool ready_ = false;
+  bool powerLimited_ = false;
+  uint8_t brightness_ = 255;
 
   struct Strand {
     const Layout* layout;

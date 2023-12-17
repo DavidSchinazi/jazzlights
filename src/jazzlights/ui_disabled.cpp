@@ -3,17 +3,10 @@
 
 #include "jazzlights/config.h"
 
-#if JL_IS_CONTROLLER(ATOM_LITE) || JL_IS_CONTROLLER(M5STAMP_PICO) || JL_IS_CONTROLLER(M5STAMP_C3U) || \
-    JL_IS_CONTROLLER(ATOM_S3)
+#ifdef ARDUINO
 
 namespace jazzlights {
-
-void arduinoUiInitialSetup(Player& /*player*/, Milliseconds /*currentTime*/) {}
-
-void arduinoUiFinalSetup(Player& /*player*/, Milliseconds /*currentTime*/) {}
-
-void arduinoUiLoop(Player& /*player*/, Milliseconds /*currentMillis*/) {}
-
+namespace {
 #if JL_DEV
 static constexpr uint8_t kBrightness = 2;
 #elif JL_IS_CONFIG(STAFF)
@@ -23,9 +16,10 @@ static constexpr uint8_t kBrightness = 255;
 #else
 static constexpr uint8_t kBrightness = 32;
 #endif
+}  // namespace
 
-uint8_t getBrightness() { return kBrightness; }
+void NoOpUi::InitialSetup(Milliseconds /*currentTime*/) { player_.SetBrightness(kBrightness); }
 
 }  // namespace jazzlights
 
-#endif
+#endif  // ARDUINO

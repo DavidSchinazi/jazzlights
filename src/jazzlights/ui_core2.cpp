@@ -144,8 +144,6 @@ uint8_t gLedBrightness = 2;
 uint8_t gLedBrightness = 32;
 #endif  // JL_DEV
 
-uint8_t getBrightness() { return gLedBrightness; }
-
 void setupButtonsDrawZone() {
   constexpr int16_t kButtonDrawOffset = 3;
   for (Button* b : Button::instances) {
@@ -529,6 +527,7 @@ PatternControlMenu gPatternControlMenu;
 Core2AwsUi::Core2AwsUi(Player& player, Milliseconds currentTime) : ArduinoUi(player, currentTime) {}
 
 void Core2AwsUi::InitialSetup(Milliseconds currentTime) {
+  player_.SetBrightness(gLedBrightness);
   M5.begin(/*LCDEnable=*/true, /*SDEnable=*/false,
            /*SerialEnable=*/false, /*I2CEnable=*/false,
            /*mode=*/kMBusModeOutput);
@@ -853,6 +852,7 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
     if (gLedBrightness < 255 && gScreenMode == ScreenMode::kSystemMenu) {
       gLedBrightness++;
       jll_info("%u setting LED brightness to %u", currentTime, gLedBrightness);
+      player_.SetBrightness(gLedBrightness);
       drawSystemTextLines(player_, currentTime);
     }
   }
@@ -861,6 +861,7 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
     if (gLedBrightness > 0 && gScreenMode == ScreenMode::kSystemMenu) {
       gLedBrightness--;
       jll_info("%u setting LED brightness to %u", currentTime, gLedBrightness);
+      player_.SetBrightness(gLedBrightness);
       drawSystemTextLines(player_, currentTime);
     }
   }
@@ -901,8 +902,6 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
 #endif  // JL_BUTTON_LOCK
 }
 
-#else   // CORE2AWS_LCD_ENABLED
-uint8_t getBrightness() { return 0; }
 #endif  // CORE2AWS_LCD_ENABLED
 
 }  // namespace jazzlights

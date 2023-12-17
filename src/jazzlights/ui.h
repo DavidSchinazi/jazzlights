@@ -29,12 +29,10 @@ class ArduinoUi {
 class NoOpUi : public ArduinoUi {
  public:
   explicit NoOpUi(Player& player, Milliseconds currentTime) : ArduinoUi(player, currentTime) {}
-  void InitialSetup(Milliseconds /*currentTime*/) override {}
+  void InitialSetup(Milliseconds currentTime) override;
   void FinalSetup(Milliseconds /*currentTime*/) override {}
   void RunLoop(Milliseconds /*currentMillis*/) override {}
 };
-
-uint8_t getBrightness();
 
 }  // namespace jazzlights
 

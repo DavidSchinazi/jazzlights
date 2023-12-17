@@ -77,6 +77,7 @@ void modeAct(Player& player, const Milliseconds currentMillis) {
     case kBrightness:
       brightnessCursor = (brightnessCursor + 1 < NUM_BRIGHTNESSES) ? brightnessCursor + 1 : 0;
       jll_info("%u Brightness button has been hit %u", currentMillis, brightnessList[brightnessCursor]);
+      player.SetBrightness(brightnessList[brightnessCursor]);
       break;
     case kSpecial:
       jll_info("%u Special button has been hit", currentMillis);
@@ -241,7 +242,7 @@ void atomScreenUnlocked(Player& player, Milliseconds currentMillis) {
       static const uint8_t brightnessDial[] = {06, 07, 12, 17, 16, 15, 10, 05};
       if (brightnessCursor < i) {
         atomScreenLEDs[brightnessDial[i]] = CRGB::Black;
-      } else if (player.powerLimited) {
+      } else if (player.IsPowerLimited()) {
         atomScreenLEDs[brightnessDial[i]] = CRGB::Red;
       }
     }
@@ -384,10 +385,10 @@ void AtomMatrixUi::RunLoop(Milliseconds currentMillis) {
 void AtomMatrixUi::InitialSetup(Milliseconds /*currentTime*/) {
   atomMatrixScreenController = &FastLED.addLeds<WS2812, /*DATA_PIN=*/27, GRB>(atomScreenLEDs, ATOM_SCREEN_NUM_LEDS);
   atomScreenClear();
+  player_.SetBrightness(brightnessList[brightnessCursor]);
 }
-void AtomMatrixUi::FinalSetup(Milliseconds currentTime) {}
 
-uint8_t getBrightness() { return brightnessList[brightnessCursor]; }
+void AtomMatrixUi::FinalSetup(Milliseconds /*currentTime*/) {}
 
 }  // namespace jazzlights
 
