@@ -52,7 +52,7 @@ enum atomMenuMode {
 
 atomMenuMode menuMode = kNext;
 
-void nextMode(Player& /*player*/, const Milliseconds /*currentMillis*/) {
+void nextMode(Player& /*player*/, const Milliseconds /*currentTime*/) {
   switch (menuMode) {
     case kNext: menuMode = kPrevious; break;
     case kPrevious: menuMode = kBrightness; break;
@@ -61,27 +61,27 @@ void nextMode(Player& /*player*/, const Milliseconds /*currentMillis*/) {
   };
 }
 
-void modeAct(Player& player, const Milliseconds currentMillis) {
+void modeAct(Player& player, const Milliseconds currentTime) {
   switch (menuMode) {
     case kNext:
-      jll_info("%u Next button has been hit", currentMillis);
-      player.stopSpecial(currentMillis);
-      player.stopLooping(currentMillis);
-      player.next(currentMillis);
+      jll_info("%u Next button has been hit", currentTime);
+      player.stopSpecial(currentTime);
+      player.stopLooping(currentTime);
+      player.next(currentTime);
       break;
     case kPrevious:
-      jll_info("%u Back button has been hit", currentMillis);
-      player.stopSpecial(currentMillis);
-      player.loopOne(currentMillis);
+      jll_info("%u Back button has been hit", currentTime);
+      player.stopSpecial(currentTime);
+      player.loopOne(currentTime);
       break;
     case kBrightness:
       brightnessCursor = (brightnessCursor + 1 < NUM_BRIGHTNESSES) ? brightnessCursor + 1 : 0;
-      jll_info("%u Brightness button has been hit %u", currentMillis, brightnessList[brightnessCursor]);
+      jll_info("%u Brightness button has been hit %u", currentTime, brightnessList[brightnessCursor]);
       player.SetBrightness(brightnessList[brightnessCursor]);
       break;
     case kSpecial:
-      jll_info("%u Special button has been hit", currentMillis);
-      player.handleSpecial(currentMillis);
+      jll_info("%u Special button has been hit", currentTime);
+      player.handleSpecial(currentTime);
       break;
   };
 }
@@ -149,14 +149,14 @@ static const CRGB menuIconSpecialWhite[ATOM_SCREEN_NUM_LEDS] = {
 
 CLEDController* atomMatrixScreenController = nullptr;
 
-void atomScreenDisplay(const Milliseconds currentMillis) {
+void atomScreenDisplay(const Milliseconds currentTime) {
   // M5Stack recommends not setting the atom screen brightness greater
   // than 20 to avoid melting the screen/cover over the LEDs.
   // Extract bits 6,7,8,9 from milliseconds timer to get a value that cycles from 0 to 15 every second
   // For t values 0..7 we subtract that from 20 to get brightness 20..13
   // For t values 8..15 we add that to 4 to get brightness 12..19
   // This gives us a brightness that starts at 20, dims to 12, and then brightens back to 20 every second
-  const uint32_t t = (currentMillis >> 6) & 0xF;
+  const uint32_t t = (currentTime >> 6) & 0xF;
   uint8_t brightness = t & 8 ? 4 + t : 20 - t;
   if (memcmp(atomScreenLEDs, atomScreenLEDsAllZero, sizeof(atomScreenLEDs)) == 0) { brightness = 0; }
   if (brightness == brightnessLastWrite &&
@@ -168,15 +168,15 @@ void atomScreenDisplay(const Milliseconds currentMillis) {
   atomMatrixScreenController->showLeds(brightness);
 }
 
-uint8_t getReceiveTimeBrightness(Milliseconds lastReceiveTime, Milliseconds currentMillis) {
+uint8_t getReceiveTimeBrightness(Milliseconds lastReceiveTime, Milliseconds currentTime) {
   if (lastReceiveTime < 0) { return 0; }
   constexpr Milliseconds kReceiveMaxTime = 10000;
-  const Milliseconds timeSinceReceive = currentMillis - lastReceiveTime;
+  const Milliseconds timeSinceReceive = currentTime - lastReceiveTime;
   if (timeSinceReceive >= kReceiveMaxTime) { return 0; }
   return 255 - static_cast<uint8_t>(timeSinceReceive * 256 / kReceiveMaxTime);
 }
 
-void atomScreenNetwork(Player& player, Milliseconds currentMillis) {
+void atomScreenNetwork(Player& player, Milliseconds currentTime) {
   // Change top-right Atom matrix screen LED based on network status.
   CRGB wifiStatusColor = CRGB::Black;
   switch (ArduinoEspWiFiNetwork::get()->status()) {
@@ -197,9 +197,9 @@ void atomScreenNetwork(Player& player, Milliseconds currentMillis) {
     }
   }
   const uint8_t wifiBrightness =
-      getReceiveTimeBrightness(ArduinoEspWiFiNetwork::get()->getLastReceiveTime(), currentMillis);
+      getReceiveTimeBrightness(ArduinoEspWiFiNetwork::get()->getLastReceiveTime(), currentTime);
   atomScreenLEDs[9] = CRGB(255 - wifiBrightness, wifiBrightness, 0);
-  const uint8_t bleBrightness = getReceiveTimeBrightness(Esp32BleNetwork::get()->getLastReceiveTime(), currentMillis);
+  const uint8_t bleBrightness = getReceiveTimeBrightness(Esp32BleNetwork::get()->getLastReceiveTime(), currentTime);
   atomScreenLEDs[14] = CRGB(255 - bleBrightness, 0, bleBrightness);
   if (player.followedNextHopNetwork() == Esp32BleNetwork::get()) {
     switch (player.currentNumHops()) {
@@ -218,7 +218,7 @@ void atomScreenNetwork(Player& player, Milliseconds currentMillis) {
 // 15 16 17 18 19
 // 20 21 22 23 24
 
-void atomScreenUnlocked(Player& player, Milliseconds currentMillis) {
+void atomScreenUnlocked(Player& player, Milliseconds currentTime) {
   const CRGB* icon = atomScreenLEDs;
   switch (menuMode) {
     case kNext: icon = menuIconNext; break;
@@ -247,23 +247,23 @@ void atomScreenUnlocked(Player& player, Milliseconds currentMillis) {
       }
     }
   }
-  atomScreenNetwork(player, currentMillis);
+  atomScreenNetwork(player, currentTime);
 }
 
 void atomScreenClear() {
   for (int i = 0; i < ATOM_SCREEN_NUM_LEDS; i++) { atomScreenLEDs[i] = CRGB::Black; }
 }
 
-void atomScreenLong(Player& player, Milliseconds currentMillis) {
+void atomScreenLong(Player& player, Milliseconds currentTime) {
   atomScreenClear();
   for (int i : {0, 5, 10, 15, 20, 21, 22}) { atomScreenLEDs[i] = CRGB::Gold; }
-  atomScreenNetwork(player, currentMillis);
+  atomScreenNetwork(player, currentTime);
 }
 
-void atomScreenShort(Player& player, Milliseconds currentMillis) {
+void atomScreenShort(Player& player, Milliseconds currentTime) {
   atomScreenClear();
   for (int i : {2, 1, 0, 5, 10, 11, 12, 17, 22, 21, 20}) { atomScreenLEDs[i] = CRGB::Gold; }
-  atomScreenNetwork(player, currentMillis);
+  atomScreenNetwork(player, currentTime);
 }
 
 static constexpr uint8_t kButtonPin = 39;
@@ -274,7 +274,7 @@ AtomMatrixUi::AtomMatrixUi(Player& player, Milliseconds currentTime)
     : ArduinoUi(player, currentTime), button_(kButtonPin, *this, currentTime) {}
 
 bool AtomMatrixUi::IsLocked() { return buttonLockState_ < 5; }
-void AtomMatrixUi::HandleUnlockSequence(bool wasLongPress, Milliseconds currentMillis) {
+void AtomMatrixUi::HandleUnlockSequence(bool wasLongPress, Milliseconds currentTime) {
   if (!IsLocked()) { return; }
   // If we don’t receive the correct button event for the state we’re currently in, return immediately to state 0.
   // In odd states (1,3) we want a long press; in even states (0,2) we want a short press.
@@ -283,28 +283,28 @@ void AtomMatrixUi::HandleUnlockSequence(bool wasLongPress, Milliseconds currentM
   } else {
     buttonLockState_++;
     // To reject accidental presses, exit unlock sequence if four seconds without progress
-    lockButtonTime_ = currentMillis + kButtonLockTimeoutDuringUnlockSequence;
+    lockButtonTime_ = currentTime + kButtonLockTimeoutDuringUnlockSequence;
   }
 }
-void AtomMatrixUi::ShortPress(uint8_t pin, Milliseconds currentMillis) {
+void AtomMatrixUi::ShortPress(uint8_t pin, Milliseconds currentTime) {
   if (pin != kButtonPin) { return; }
-  jll_info("%u ShortPress", currentMillis);
-  HandleUnlockSequence(/*wasLongPress=*/false, currentMillis);
+  jll_info("%u ShortPress", currentTime);
+  HandleUnlockSequence(/*wasLongPress=*/false, currentTime);
   if (IsLocked()) { return; }
 
-  modeAct(player_, currentMillis);
+  modeAct(player_, currentTime);
 }
-void AtomMatrixUi::LongPress(uint8_t pin, Milliseconds currentMillis) {
+void AtomMatrixUi::LongPress(uint8_t pin, Milliseconds currentTime) {
   if (pin != kButtonPin) { return; }
-  jll_info("%u LongPress", currentMillis);
-  HandleUnlockSequence(/*wasLongPress=*/true, currentMillis);
+  jll_info("%u LongPress", currentTime);
+  HandleUnlockSequence(/*wasLongPress=*/true, currentTime);
   if (IsLocked()) { return; }
 
-  nextMode(player_, currentMillis);
+  nextMode(player_, currentTime);
 }
-void AtomMatrixUi::HeldDown(uint8_t pin, Milliseconds currentMillis) {
+void AtomMatrixUi::HeldDown(uint8_t pin, Milliseconds currentTime) {
   if (pin != kButtonPin) { return; }
-  jll_info("%u HeldDown", currentMillis);
+  jll_info("%u HeldDown", currentTime);
   if (IsLocked()) {
     // Button was held too long, go back to beginning of unlock sequence.
     buttonLockState_ = 0;
@@ -313,42 +313,42 @@ void AtomMatrixUi::HeldDown(uint8_t pin, Milliseconds currentMillis) {
   menuMode = kSpecial;
 }
 
-bool AtomMatrixUi::atomScreenMessage(const Milliseconds currentMillis) {
+bool AtomMatrixUi::atomScreenMessage(const Milliseconds currentTime) {
   if (!displayingBootMessage_) { return false; }
-  if (button_.IsPressed(currentMillis)) {
-    jll_info("%u Stopping boot message due to button press", currentMillis);
+  if (button_.IsPressed(currentTime)) {
+    jll_info("%u Stopping boot message due to button press", currentTime);
     displayingBootMessage_ = false;
   } else {
     static Milliseconds bootMessageStartTime = -1;
-    if (bootMessageStartTime < 0) { bootMessageStartTime = currentMillis; }
+    if (bootMessageStartTime < 0) { bootMessageStartTime = currentTime; }
     displayingBootMessage_ =
-        displayText(BOOT_MESSAGE, atomScreenLEDs, CRGB::Red, CRGB::Black, currentMillis - bootMessageStartTime);
+        displayText(BOOT_MESSAGE, atomScreenLEDs, CRGB::Red, CRGB::Black, currentTime - bootMessageStartTime);
     if (!displayingBootMessage_) {
-      jll_info("%u Done displaying boot message", currentMillis);
+      jll_info("%u Done displaying boot message", currentTime);
     } else {
-      atomScreenDisplay(currentMillis);
+      atomScreenDisplay(currentTime);
     }
   }
   return displayingBootMessage_;
 }
 
-void AtomMatrixUi::RunLoop(Milliseconds currentMillis) {
-  button_.RunLoop(currentMillis);
+void AtomMatrixUi::RunLoop(Milliseconds currentTime) {
+  button_.RunLoop(currentTime);
 
-  if (atomScreenMessage(currentMillis)) { return; }
+  if (atomScreenMessage(currentTime)) { return; }
 
 #if JL_IS_CONFIG(FAIRY_WAND)
   atomScreenClear();
-  atomScreenDisplay(currentMillis);
-  if (BTN_EVENT(btn)) { player.triggerPatternOverride(currentMillis); }
+  atomScreenDisplay(currentTime);
+  if (BTN_EVENT(btn)) { player.triggerPatternOverride(currentTime); }
   return;
 #endif  // FAIRY_WAND
 
 #if JL_BUTTON_LOCK
 
   // If idle-time expired, return to ‘locked’ state
-  if (buttonLockState_ != 0 && currentMillis - lockButtonTime_ >= 0) {
-    jll_info("%u Locking buttons", currentMillis);
+  if (buttonLockState_ != 0 && currentTime - lockButtonTime_ >= 0) {
+    jll_info("%u Locking buttons", currentTime);
     buttonLockState_ = 0;
   }
 
@@ -358,28 +358,28 @@ void AtomMatrixUi::RunLoop(Milliseconds currentMillis) {
     // 2. When the button has been pressed long enough to register as a long press, and we want to signal the user to
     // let go now
     // 3. In the final transition from state 4 (awaiting release) to state 5 (unlocked)
-    if ((buttonLockState_ == 0 && !button_.IsPressed(currentMillis)) ||
-        button_.HasBeenPressedLongEnoughForLongPress(currentMillis) || buttonLockState_ >= 4) {
+    if ((buttonLockState_ == 0 && !button_.IsPressed(currentTime)) ||
+        button_.HasBeenPressedLongEnoughForLongPress(currentTime) || buttonLockState_ >= 4) {
       atomScreenClear();
     } else if ((buttonLockState_ % 2) == 1) {
       // In odd  states (1,3) we show "L".
-      atomScreenLong(player_, currentMillis);
+      atomScreenLong(player_, currentTime);
     } else {
       // In even states (0,2) we show "S".
-      atomScreenShort(player_, currentMillis);
+      atomScreenShort(player_, currentTime);
     }
-    atomScreenDisplay(currentMillis);
+    atomScreenDisplay(currentTime);
 
     // In lock state 4, wait for release of the button, and then move to state 5 (fully unlocked)
-    if (buttonLockState_ < 4 || button_.IsPressed(currentMillis)) { return; }
+    if (buttonLockState_ < 4 || button_.IsPressed(currentTime)) { return; }
     buttonLockState_ = 5;
-    lockButtonTime_ = currentMillis + kButtonLockTimeout;
-  } else if (button_.IsPressed(currentMillis)) {
-    lockButtonTime_ = currentMillis + kButtonLockTimeout;
+    lockButtonTime_ = currentTime + kButtonLockTimeout;
+  } else if (button_.IsPressed(currentTime)) {
+    lockButtonTime_ = currentTime + kButtonLockTimeout;
   }
 #endif  // JL_BUTTON_LOCK
-  atomScreenUnlocked(player_, currentMillis);
-  atomScreenDisplay(currentMillis);
+  atomScreenUnlocked(player_, currentTime);
+  atomScreenDisplay(currentTime);
 }
 
 void AtomMatrixUi::InitialSetup(Milliseconds /*currentTime*/) {

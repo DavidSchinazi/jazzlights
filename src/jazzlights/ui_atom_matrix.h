@@ -16,16 +16,16 @@ class AtomMatrixUi : public ArduinoUi, public GpioButton::Interface {
   // From ArduinoUi.
   void InitialSetup(Milliseconds currentTime) override;
   void FinalSetup(Milliseconds currentTime) override;
-  void RunLoop(Milliseconds currentMillis) override;
+  void RunLoop(Milliseconds currentTime) override;
   // From GpioButton::Interface.
-  void ShortPress(uint8_t pin, Milliseconds currentMillis) override;
-  void LongPress(uint8_t pin, Milliseconds currentMillis) override;
-  void HeldDown(uint8_t pin, Milliseconds currentMillis) override;
+  void ShortPress(uint8_t pin, Milliseconds currentTime) override;
+  void LongPress(uint8_t pin, Milliseconds currentTime) override;
+  void HeldDown(uint8_t pin, Milliseconds currentTime) override;
 
  private:
   bool IsLocked();
-  void HandleUnlockSequence(bool wasLongPress, Milliseconds currentMillis);
-  bool atomScreenMessage(const Milliseconds currentMillis);
+  void HandleUnlockSequence(bool wasLongPress, Milliseconds currentTime);
+  bool atomScreenMessage(const Milliseconds currentTime);
 
   GpioButton button_;
   bool displayingBootMessage_ = true;

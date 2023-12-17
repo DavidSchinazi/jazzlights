@@ -20,7 +20,7 @@ class ArduinoUi {
 
   virtual void InitialSetup(Milliseconds currentTime) = 0;
   virtual void FinalSetup(Milliseconds currentTime) = 0;
-  virtual void RunLoop(Milliseconds currentMillis) = 0;
+  virtual void RunLoop(Milliseconds currentTime) = 0;
 
  protected:
   Player& player_;
@@ -31,7 +31,7 @@ class NoOpUi : public ArduinoUi {
   explicit NoOpUi(Player& player, Milliseconds currentTime) : ArduinoUi(player, currentTime) {}
   void InitialSetup(Milliseconds currentTime) override;
   void FinalSetup(Milliseconds /*currentTime*/) override {}
-  void RunLoop(Milliseconds /*currentMillis*/) override {}
+  void RunLoop(Milliseconds /*currentTime*/) override {}
 };
 
 }  // namespace jazzlights

@@ -22,7 +22,7 @@ class Core2AwsUi : public ArduinoUi {
   // From ArduinoUi.
   void InitialSetup(Milliseconds currentTime) override;
   void FinalSetup(Milliseconds currentTime) override;
-  void RunLoop(Milliseconds currentMillis) override;
+  void RunLoop(Milliseconds currentTime) override;
 
  private:
 };

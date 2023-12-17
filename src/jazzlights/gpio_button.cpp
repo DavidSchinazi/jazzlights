@@ -17,10 +17,10 @@ static constexpr Milliseconds kLongPressTime = 1000;
 // To avoid reacting to these, we debounce the digital reads and only react after the value has settled for
 // kDebounceTime. See <https://docs.arduino.cc/built-in-examples/digital/Debounce> for details.
 
-GpioButton::GpioButton(uint8_t pin, Interface& interface, Milliseconds currentMillis)
+GpioButton::GpioButton(uint8_t pin, Interface& interface, Milliseconds currentTime)
     : interface_(interface),
-      lastRawChange_(currentMillis),
-      lastEvent_(currentMillis),
+      lastRawChange_(currentTime),
+      lastEvent_(currentTime),
       isPressedRaw_(false),
       isPressedDebounced_(false),
       isHeld_(false),
@@ -28,49 +28,49 @@ GpioButton::GpioButton(uint8_t pin, Interface& interface, Milliseconds currentMi
   pinMode(pin_, INPUT_PULLUP);
 }
 
-void GpioButton::RunLoop(Milliseconds currentMillis) {
+void GpioButton::RunLoop(Milliseconds currentTime) {
   const bool newIsPressed = (digitalRead(pin_) == LOW);
   if (newIsPressed != isPressedRaw_) {
     // Start debounce timer.
     isPressedRaw_ = newIsPressed;
-    lastRawChange_ = currentMillis;
+    lastRawChange_ = currentTime;
   }
-  if (currentMillis - lastRawChange_ > kDebounceTime) {
+  if (currentTime - lastRawChange_ > kDebounceTime) {
     // GpioButton has been in this state longer than the debounce time.
     if (newIsPressed != isPressedDebounced_) {
       // GpioButton is transitioning states (with debouncing taken into account).
       isPressedDebounced_ = newIsPressed;
       if (isPressedDebounced_) {
         // GpioButton was just pressed, record time.
-        lastEvent_ = currentMillis;
+        lastEvent_ = currentTime;
       } else {
         // GpioButton was just released.
-        if (!isHeld_ && currentMillis - lastEvent_ < kLongPressTime) {
+        if (!isHeld_ && currentTime - lastEvent_ < kLongPressTime) {
           // GpioButton was released after a short duration.
-          lastEvent_ = currentMillis;
-          interface_.ShortPress(pin_, currentMillis);
+          lastEvent_ = currentTime;
+          interface_.ShortPress(pin_, currentTime);
         }
         isHeld_ = false;
       }
     }
   }
-  if (isPressedDebounced_ && currentMillis - lastEvent_ >= kLongPressTime) {
+  if (isPressedDebounced_ && currentTime - lastEvent_ >= kLongPressTime) {
     // GpioButton has been held down for kLongPressTime since last event.
-    lastEvent_ = currentMillis;
+    lastEvent_ = currentTime;
     if (!isHeld_) {
       // GpioButton has been held down for the first kLongPressTime.
       isHeld_ = true;
-      interface_.LongPress(pin_, currentMillis);
+      interface_.LongPress(pin_, currentTime);
     } else {
       // GpioButton has been held down for another kLongPressTime.
-      interface_.HeldDown(pin_, currentMillis);
+      interface_.HeldDown(pin_, currentTime);
     }
   }
 }
 
-bool GpioButton::IsPressed(Milliseconds /*currentMillis*/) { return isPressedDebounced_; }
-bool GpioButton::HasBeenPressedLongEnoughForLongPress(Milliseconds currentMillis) {
-  return isPressedDebounced_ && (isHeld_ || currentMillis - lastEvent_ >= kLongPressTime);
+bool GpioButton::IsPressed(Milliseconds /*currentTime*/) { return isPressedDebounced_; }
+bool GpioButton::HasBeenPressedLongEnoughForLongPress(Milliseconds currentTime) {
+  return isPressedDebounced_ && (isHeld_ || currentTime - lastEvent_ >= kLongPressTime);
 }
 
 }  // namespace jazzlights
