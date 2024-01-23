@@ -23,7 +23,78 @@ static constexpr uint8_t kInitialBrightnessCursor = 7;
 #else
 static constexpr uint8_t kInitialBrightnessCursor = 4;
 #endif
+
+static void DisplayCenteredText(const char* text, int textColor, int backgroundColor) {
+  M5.Display.clearDisplay(backgroundColor);
+  M5.Display.setTextColor(textColor, backgroundColor);
+  M5.Display.drawCenterString(text, /*x=*/64, /*y=*/51, &fonts::Font4);
+}
+static void DisplayCenteredText(const std::string& text, int textColor, int backgroundColor) {
+  DisplayCenteredText(text.c_str(), textColor, backgroundColor);
+}
+
 }  // namespace
+
+void AtomS3Ui::Display(const DisplayContents& contents, Milliseconds currentTime) {
+  if (lastDisplayedContents_ == contents) {
+    // Do not display if nothing has changed.
+    return;
+  }
+  if ((lastDisplayedContents_.mode == DisplayContents::Mode::kUninitialized ||
+       lastDisplayedContents_.mode == DisplayContents::Mode::kOff) &&
+      (contents.mode != DisplayContents::Mode::kUninitialized) && (contents.mode != DisplayContents::Mode::kOff)) {
+    // Turn screen on if it was previously off.
+    M5.Display.wakeup();
+  }
+  switch (contents.mode) {
+    case DisplayContents::Mode::kUninitialized: break;
+    case DisplayContents::Mode::kOff: {
+      M5.Display.clearDisplay();
+      M5.Display.sleep();
+    } break;
+    case DisplayContents::Mode::kLockedShort: {
+      DisplayCenteredText("Short Press", ::BLACK, ::CYAN);
+    } break;
+    case DisplayContents::Mode::kLockedLong: {
+      DisplayCenteredText("Long Press", ::BLACK, ::ORANGE);
+    } break;
+    case DisplayContents::Mode::kNext: {
+      DisplayCenteredText("Next", ::WHITE, ::BLUE);
+    } break;
+    case DisplayContents::Mode::kLoop: {
+      DisplayCenteredText("Loop", ::WHITE, ::RED);
+    } break;
+    case DisplayContents::Mode::kBrightness: {
+      DisplayCenteredText("Bright", ::BLACK, ::YELLOW);
+      M5.Display.drawCenterString(std::to_string(contents.c.brightness.brightness).c_str(), /*x=*/64, /*y=*/80,
+                                  &fonts::Font4);
+    } break;
+    case DisplayContents::Mode::kSpecial: {
+      DisplayCenteredText("Special", ::WHITE, ::PURPLE);
+    } break;
+  }
+  lastDisplayedContents_ = contents;
+}
+
+void AtomS3Ui::UpdateScreen(Milliseconds currentTime) {
+  DisplayContents contents;
+  switch (menuMode_) {
+    case MenuMode::kNext: {
+      contents = DisplayContents(DisplayContents::Mode::kNext);
+    } break;
+    case MenuMode::kLoop: {
+      contents = DisplayContents(DisplayContents::Mode::kLoop);
+    } break;
+    case MenuMode::kBrightness: {
+      contents = DisplayContents(DisplayContents::Mode::kBrightness);
+      contents.c.brightness.brightness = player_.GetBrightness();
+    } break;
+    case MenuMode::kSpecial: {
+      contents = DisplayContents(DisplayContents::Mode::kSpecial);
+    } break;
+  }
+  Display(contents, currentTime);
+}
 
 AtomS3Ui::AtomS3Ui(Player& player, Milliseconds currentTime)
     : ArduinoUi(player, currentTime),
@@ -54,24 +125,22 @@ void AtomS3Ui::HandleUnlockSequence(bool wasLongPress, Milliseconds currentTime)
 void AtomS3Ui::InitialSetup(Milliseconds currentTime) {
   auto cfg = M5.config();
   M5.begin(cfg);
-
   M5.Display.init();
+  Display(DisplayContents(DisplayContents::Mode::kOff), currentTime);
 }
 
-void AtomS3Ui::FinalSetup(Milliseconds currentTime) { UpdateScreen(currentTime); }
+void AtomS3Ui::FinalSetup(Milliseconds /*currentTime*/) {}
 
 void AtomS3Ui::RunLoop(Milliseconds currentTime) {
   button_.RunLoop(currentTime);
   M5.update();
 
 #if JL_BUTTON_LOCK
-
   // If idle-time expired, return to ‘locked’ state
   if (buttonLockState_ != 0 && currentTime - lockButtonTime_ >= 0) {
     jll_info("%u Locking buttons", currentTime);
     buttonLockState_ = 0;
   }
-
   if (IsLocked()) {
     // We show a blank display:
     // 1. When in fully locked mode, with the button not pressed
@@ -80,41 +149,24 @@ void AtomS3Ui::RunLoop(Milliseconds currentTime) {
     // 3. In the final transition from state 4 (awaiting release) to state 5 (unlocked)
     if ((buttonLockState_ == 0 && !button_.IsPressed(currentTime)) ||
         button_.HasBeenPressedLongEnoughForLongPress(currentTime) || buttonLockState_ >= 4) {
-      M5.Display.sleep();
-      M5.Display.clearDisplay();
-      displayLongPress_ = false;
-      displayShortPress_ = false;
+      Display(DisplayContents(DisplayContents::Mode::kOff), currentTime);
     } else if ((buttonLockState_ % 2) == 1) {
       // In odd  states (1,3) we show "L".
-      if (!displayLongPress_) {
-        displayLongPress_ = true;
-        M5.Display.wakeup();
-        M5.Display.clearDisplay(::ORANGE);
-        M5.Display.setTextColor(::BLACK, ::ORANGE);
-        M5.Display.drawCenterString("Long Press", 64, 51, &fonts::Font4);
-      }
-      displayShortPress_ = false;
+      Display(DisplayContents(DisplayContents::Mode::kLockedLong), currentTime);
     } else {
       // In even states (0,2) we show "S".
-      if (!displayShortPress_) {
-        displayShortPress_ = true;
-        M5.Display.wakeup();
-        M5.Display.clearDisplay(::CYAN);
-        M5.Display.setTextColor(::BLACK, ::CYAN);
-        M5.Display.drawCenterString("Short Press", 64, 51, &fonts::Font4);
-      }
-      displayLongPress_ = false;
+      Display(DisplayContents(DisplayContents::Mode::kLockedShort), currentTime);
     }
 
     // In lock state 4, wait for release of the button, and then move to state 5 (fully unlocked)
     if (buttonLockState_ < 4 || button_.IsPressed(currentTime)) { return; }
     buttonLockState_ = 5;
     lockButtonTime_ = currentTime + kButtonLockTimeout;
-    UpdateScreen(currentTime);
   } else if (button_.IsPressed(currentTime)) {
     lockButtonTime_ = currentTime + kButtonLockTimeout;
   }
 #endif  // JL_BUTTON_LOCK
+  UpdateScreen(currentTime);
 }
 
 void AtomS3Ui::ShortPress(uint8_t pin, Milliseconds currentTime) {
@@ -131,8 +183,8 @@ void AtomS3Ui::ShortPress(uint8_t pin, Milliseconds currentTime) {
       player_.stopLooping(currentTime);
       player_.next(currentTime);
       break;
-    case MenuMode::kPrevious:
-      jll_info("%u Back button has been hit", currentTime);
+    case MenuMode::kLoop:
+      jll_info("%u Loop button has been hit", currentTime);
       player_.stopSpecial(currentTime);
       player_.loopOne(currentTime);
       break;
@@ -146,6 +198,7 @@ void AtomS3Ui::ShortPress(uint8_t pin, Milliseconds currentTime) {
       player_.handleSpecial(currentTime);
       break;
   }
+  UpdateScreen(currentTime);
 }
 
 void AtomS3Ui::LongPress(uint8_t pin, Milliseconds currentTime) {
@@ -156,8 +209,8 @@ void AtomS3Ui::LongPress(uint8_t pin, Milliseconds currentTime) {
 
   // Move to next menu mode.
   switch (menuMode_) {
-    case MenuMode::kNext: menuMode_ = MenuMode::kPrevious; break;
-    case MenuMode::kPrevious: menuMode_ = MenuMode::kBrightness; break;
+    case MenuMode::kNext: menuMode_ = MenuMode::kLoop; break;
+    case MenuMode::kLoop: menuMode_ = MenuMode::kBrightness; break;
     case MenuMode::kBrightness: menuMode_ = MenuMode::kNext; break;
     case MenuMode::kSpecial: menuMode_ = MenuMode::kNext; break;
   }
@@ -176,32 +229,36 @@ void AtomS3Ui::HeldDown(uint8_t pin, Milliseconds currentTime) {
   UpdateScreen(currentTime);
 }
 
-void AtomS3Ui::UpdateScreen(Milliseconds currentTime) {
-  M5.Display.wakeup();
-  displayLongPress_ = false;
-  displayShortPress_ = false;
-  switch (menuMode_) {
-    case MenuMode::kNext: {
-      M5.Display.clearDisplay(::BLUE);
-      M5.Display.setTextColor(::WHITE, ::BLUE);
-      M5.Display.drawCenterString("Next", 64, 51, &fonts::Font4);
-    } break;
-    case MenuMode::kPrevious: {
-      M5.Display.clearDisplay(::RED);
-      M5.Display.setTextColor(::WHITE, ::RED);
-      M5.Display.drawCenterString("Loop", 64, 51, &fonts::Font4);
-    } break;
-    case MenuMode::kBrightness: {
-      M5.Display.clearDisplay(::YELLOW);
-      M5.Display.setTextColor(::BLACK, ::YELLOW);
-      M5.Display.drawCenterString("Bright", 64, 51, &fonts::Font4);
-    } break;
-    case MenuMode::kSpecial: {
-      M5.Display.clearDisplay(::PURPLE);
-      M5.Display.setTextColor(::WHITE, ::PURPLE);
-      M5.Display.drawCenterString("Special", 64, 51, &fonts::Font4);
-    } break;
+AtomS3Ui::DisplayContents& AtomS3Ui::DisplayContents::operator=(const DisplayContents& other) {
+  mode = other.mode;
+  switch (mode) {
+    case Mode::kUninitialized: break;
+    case Mode::kOff: break;
+    case Mode::kLockedShort: break;
+    case Mode::kLockedLong: break;
+    case Mode::kNext: break;
+    case Mode::kLoop: break;
+    case Mode::kBrightness: c.brightness.brightness = other.c.brightness.brightness; break;
+    case Mode::kSpecial: break;
   }
+  return *this;
+}
+
+bool AtomS3Ui::DisplayContents::operator==(const DisplayContents& other) const {
+  if (mode != other.mode) { return false; }
+  switch (mode) {
+    case Mode::kUninitialized: return true;
+    case Mode::kOff: return true;
+    case Mode::kLockedShort: return true;
+    case Mode::kLockedLong: return true;
+    case Mode::kNext: return true;
+    case Mode::kLoop: return true;
+    case Mode::kBrightness:
+      if (c.brightness.brightness != other.c.brightness.brightness) { return false; }
+      return true;
+    case Mode::kSpecial: return true;
+  }
+  return false;
 }
 
 }  // namespace jazzlights

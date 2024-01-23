@@ -23,16 +23,47 @@ class AtomS3Ui : public ArduinoUi, public GpioButton::Interface {
   void HeldDown(uint8_t pin, Milliseconds currentTime) override;
 
  private:
+  struct DisplayContents {
+   public:
+    enum class Mode {
+      kUninitialized,
+      kOff,
+      kLockedShort,
+      kLockedLong,
+      kNext,
+      kLoop,
+      kBrightness,
+      kSpecial,
+    };
+
+    DisplayContents() : mode(Mode::kUninitialized) {}
+    explicit DisplayContents(Mode m) : mode(m) {}
+    DisplayContents(const DisplayContents& other) { *this = other; }
+    DisplayContents& operator=(const DisplayContents& other);
+    bool operator==(const DisplayContents& other) const;
+    bool operator!=(const DisplayContents& other) const { return !(*this == other); }
+
+    Mode mode;
+    union {
+      struct {
+        uint8_t brightness;
+      } brightness;
+    } c;
+  };
+
+  void Display(const DisplayContents& contents, Milliseconds currentTime);
   void UpdateScreen(Milliseconds currentTime);
   bool IsLocked();
   void HandleUnlockSequence(bool wasLongPress, Milliseconds currentTime);
 
   enum class MenuMode {
     kNext,
-    kPrevious,
+    kLoop,
     kBrightness,
     kSpecial,
   };
+
+  DisplayContents lastDisplayedContents_;
   MenuMode menuMode_ = MenuMode::kNext;
   uint8_t brightnessCursor_;
   GpioButton button_;
@@ -45,8 +76,6 @@ class AtomS3Ui : public ArduinoUi, public GpioButton::Interface {
   // 5 Unlocked
   uint8_t buttonLockState_ = 0;
   Milliseconds lockButtonTime_ = 0;  // Time at which we'll lock the buttons.
-  bool displayShortPress_ = false;
-  bool displayLongPress_ = false;
 };
 
 }  // namespace jazzlights
