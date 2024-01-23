@@ -65,6 +65,24 @@ auto follow_strand_effect = effect("follow-strand", [](const Frame& frame) {
   };
 });
 
+auto mapping_pattern = effect("mapping", [](const Frame& frame) {
+  const int pixelNum = (frame.pattern >> 8) & 0xFFFF;
+  const bool blink = ((frame.time % 1000) < 500);
+  return [=](const Pixel& pt) -> Color {
+    if (pt.index < pixelNum) {
+      return RED;
+    } else if (pt.index == pixelNum) {
+      if (blink) {
+        return BLUE;
+      } else {
+        return BLACK;
+      }
+    } else {
+      return GREEN;
+    }
+  };
+});
+
 auto calibration_effect = effect("calibration", [](const Frame& frame) {
 #if JL_IS_CONFIG(VEST)
   const bool blink = ((frame.time % 1000) < 500);
@@ -194,7 +212,7 @@ Effect* patternFromBits(PatternBits pattern) {
   if (patternIsReserved(pattern)) {
     const uint8_t byte1 = (pattern >> 24) & 0xFF;
     const uint8_t byte2 = (pattern >> 16) & 0xFF;
-    if (byte1 == 0) {
+    if (byte1 == 0x00) {
       switch (byte2) {
         case 0x00: return &black_effect;
         case 0x01: return &red_effect;
@@ -221,6 +239,8 @@ Effect* patternFromBits(PatternBits pattern) {
           // is received over the network, it will be treated like any other unknown reserved effect.
           break;
       }
+    } else if (byte1 == 0x01) {
+      return &mapping_pattern;
     }
     return &red_effect;
   } else {

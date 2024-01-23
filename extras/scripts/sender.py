@@ -62,6 +62,9 @@ def randomizePattern(patternBytes, randomize=True):
   return patternBytes
 
 def getPatternBytes(patternName):
+  if patternName.startswith('mapping-'):
+    pixelNum = int(patternName[len('mapping-'):])
+    return 0x01000000 + (pixelNum << 8)
   patternBytes = None
   paletteName = ''
   if patternName.startswith('sp-'):
