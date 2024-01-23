@@ -213,9 +213,13 @@ Effect* patternFromBits(PatternBits pattern) {
         case 0x0E: return &white_glow_effect;
         case 0x0F: return &synctest;
         case 0x10: return &calibration_effect;
-        case 0x11:
-          return &follow_strand_effect;
-          // 0xFF is reserved for looping through all patterns from palette.
+        case 0x11: return &follow_strand_effect;
+        case 0xFF:
+          // 0xFF is reserved for looping through all the patterns from a given palette. This is currently only used in
+          // the Core2 UI, where the "all-palette" menu option passes the value 0x00FF0000 internally. That code
+          // modifies this special value before passing it to the player, so we don't expect to ever see it here. If it
+          // is received over the network, it will be treated like any other unknown reserved effect.
+          break;
       }
     }
     return &red_effect;
