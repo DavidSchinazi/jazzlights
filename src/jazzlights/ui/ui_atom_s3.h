@@ -48,6 +48,9 @@ class AtomS3Ui : public ArduinoUi, public GpioButton::Interface {
       struct {
         uint8_t brightness;
       } brightness;
+      struct {
+        PatternBits currentEffect;
+      } next;
     } c;
   };
 

@@ -467,6 +467,7 @@ bool Player::render(Milliseconds currentTime) {
   return true;
 }
 
+PatternBits Player::currentEffect() const { return lastBegunPattern_; }
 std::string Player::currentEffectName() const { return patternName(lastBegunPattern_); }
 
 void Player::next(Milliseconds currentTime) {

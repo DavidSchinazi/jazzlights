@@ -60,6 +60,8 @@ void AtomS3Ui::Display(const DisplayContents& contents, Milliseconds currentTime
     } break;
     case DisplayContents::Mode::kNext: {
       DisplayCenteredText("Next", ::WHITE, ::BLUE);
+      M5.Display.drawCenterString(patternName(contents.c.next.currentEffect).c_str(), /*x=*/64, /*y=*/80,
+                                  &fonts::Font2);
     } break;
     case DisplayContents::Mode::kLoop: {
       DisplayCenteredText("Loop", ::WHITE, ::RED);
@@ -81,6 +83,7 @@ void AtomS3Ui::UpdateScreen(Milliseconds currentTime) {
   switch (menuMode_) {
     case MenuMode::kNext: {
       contents = DisplayContents(DisplayContents::Mode::kNext);
+      contents.c.next.currentEffect = player_.currentEffect();
     } break;
     case MenuMode::kLoop: {
       contents = DisplayContents(DisplayContents::Mode::kLoop);
@@ -236,7 +239,7 @@ AtomS3Ui::DisplayContents& AtomS3Ui::DisplayContents::operator=(const DisplayCon
     case Mode::kOff: break;
     case Mode::kLockedShort: break;
     case Mode::kLockedLong: break;
-    case Mode::kNext: break;
+    case Mode::kNext: c.next.currentEffect = other.c.next.currentEffect; break;
     case Mode::kLoop: break;
     case Mode::kBrightness: c.brightness.brightness = other.c.brightness.brightness; break;
     case Mode::kSpecial: break;
@@ -251,7 +254,9 @@ bool AtomS3Ui::DisplayContents::operator==(const DisplayContents& other) const {
     case Mode::kOff: return true;
     case Mode::kLockedShort: return true;
     case Mode::kLockedLong: return true;
-    case Mode::kNext: return true;
+    case Mode::kNext:
+      if (c.next.currentEffect != other.c.next.currentEffect) { return false; }
+      return true;
     case Mode::kLoop: return true;
     case Mode::kBrightness:
       if (c.brightness.brightness != other.c.brightness.brightness) { return false; }

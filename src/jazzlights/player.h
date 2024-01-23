@@ -112,6 +112,7 @@ class Player {
   void setRandomizeLocalDeviceId(bool val) { randomizeLocalDeviceId_ = val; }
 
   PredictableRandom* predictableRandom() { return &predictableRandom_; }
+  PatternBits currentEffect() const;
   std::string currentEffectName() const;
   const Network* followedNextHopNetwork() const { return followedNextHopNetwork_; }
   NumHops currentNumHops() const { return currentNumHops_; }
@@ -190,6 +191,8 @@ class Player {
   Milliseconds lastFpsProbeTime_ = 0;
   uint64_t framesSinceFpsProbe_ = 0;
 };
+
+std::string patternName(PatternBits pattern);
 
 }  // namespace jazzlights
 #endif  // JL_PLAYER_H
