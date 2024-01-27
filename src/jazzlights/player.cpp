@@ -154,10 +154,10 @@ auto yellow_glow_effect = glow(YELLOW, "glow-yellow");
 auto white_glow_effect = glow(WHITE, "glow-white");
 
 auto synctest = effect("synctest", [](const Frame& frame) {
-  return [=](const Pixel& /*pt*/) -> Color {
-    Color colors[] = {0xff0000, 0x00ff00, 0x0000ff, 0xffffff};
-    return colors[int(frame.time / 1000) % 4];
-  };
+  constexpr Color colors[] = {RED, GREEN, BLUE, WHITE};
+  const size_t index = static_cast<size_t>(frame.time / 1000) % (sizeof(colors) / sizeof(colors[0]));
+  const Color color = colors[index];
+  return [=](const Pixel& /*pt*/) -> Color { return color; };
 });
 
 constexpr bool patternIsReserved(PatternBits pattern) {
