@@ -25,7 +25,6 @@
 #include "jazzlights/util/containers.h"
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/math.h"
-#include "jazzlights/util/memory.h"
 #include "jazzlights/util/stream.h"
 #include "jazzlights/util/time.h"
 
