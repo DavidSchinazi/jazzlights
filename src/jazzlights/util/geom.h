@@ -100,52 +100,5 @@ inline Box merge(const Box& a, const Point& p) {
   };
 }
 
-inline Dimensions scaleToFit(const Dimensions& src, const Dimensions& dst) {
-  auto scale = std::min(dst.width / src.width, dst.height / src.height);
-  return {src.width * scale, src.height * scale};
-}
-
-inline Point translateInto(Point pos, const Box& src, const Box& dst) {
-  auto scale = std::min(dst.size.width / src.size.width, dst.size.height / src.size.height);
-  return {dst.origin.x + scale * (pos.x - src.origin.x), dst.origin.y + scale * (pos.y - src.origin.y)};
-}
-
-struct Transform {
-  Box operator()(const Box& v) const { return {(*this)(v.size), (*this)(v.origin)}; }
-
-  Dimensions operator()(const Dimensions& v) const {
-    return {std::abs(matrix[0] * v.width + matrix[1] * v.height), std::abs(matrix[2] * v.width + matrix[3] * v.height)};
-  }
-
-  Point operator()(const Point& v) const {
-    return {matrix[0] * v.x + matrix[1] * v.y + offset.x, matrix[2] * v.x + matrix[3] * v.y + offset.y};
-  }
-
-  Coord matrix[4];
-  Point offset;
-};
-
-static constexpr Transform IDENTITY = {
-    .matrix = {1, 0, 0, 1},
-      .offset = {0, 0  }
-};
-static constexpr Transform ROTATE_LEFT = {
-    .matrix = {0, 1, -1, 0},
-      .offset = {0, 0   }
-};
-static constexpr Transform ROTATE_RIGHT = {
-    .matrix = {0, -1, 1, 0},
-      .offset = {0,  0  }
-};
-static constexpr Transform FLIP_HORIZ = {
-    .matrix = {-1, 0, 0, 1},
-      .offset = { 0, 0  }
-};
-
-template <typename T, typename R>
-R rotateLeft(const T& v) {
-  return transform(ROTATE_LEFT, v);
-}
-
 }  // namespace jazzlights
 #endif  // JL_UTIL_GEOM_H
