@@ -22,7 +22,6 @@
 #include "jazzlights/instrumentation.h"
 #include "jazzlights/pseudorandom.h"
 #include "jazzlights/registry.h"
-#include "jazzlights/util/containers.h"
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/math.h"
 #include "jazzlights/util/stream.h"
