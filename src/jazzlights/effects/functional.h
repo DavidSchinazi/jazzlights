@@ -6,38 +6,45 @@
 
 namespace jazzlights {
 
-template <typename F>
-class FrameFuncEffect : public Effect {
+using PixelColorFunc = std::function<Color(const Pixel&)>;
+using FrameToPixelColorFuncFunc = std::function<PixelColorFunc(const Frame&)>;
+// The FunctionalEffect class takes as input a FrameToPixelColorFuncFunc.
+// For every time period, it calls its FrameToPixelColorFuncFunc with the frame to get a PixelColorFunc.
+// The PixelColorFunc is saved in the frame context, and then it is called for every pixel.
+class FunctionalEffect : public Effect {
  public:
-  using ContextT = typename function_traits<F>::return_type;
+  FunctionalEffect(const std::string& name, const FrameToPixelColorFuncFunc& f) : name_(name), frameFunc_(f) {}
 
-  FrameFuncEffect(const std::string& name, const F& f) : name_(name), initFrame_(f) {}
+  FunctionalEffect(const FunctionalEffect& other) = default;
 
-  FrameFuncEffect(const FrameFuncEffect& other) = default;
+  size_t contextSize(const Frame& /*frame*/) const override { return sizeof(PixelColorFunc); }
 
-  size_t contextSize(const Frame& /*frame*/) const override { return sizeof(ContextT); }
-
-  void begin(const Frame& frame) const override { new (frame.context) ContextT(initFrame_(frame)); }
+  void begin(const Frame& frame) const override {
+    // Note that this call to new does not allocate heap memory.
+    // It calls frameFunc_(frame) and places the result in the frame context.
+    new (GetPixelColorFuncMemory(frame)) PixelColorFunc(frameFunc_(frame));
+  }
 
   void rewind(const Frame& frame) const override {
-    static_cast<ContextT*>(frame.context)->~ContextT();
-    new (frame.context) ContextT(initFrame_(frame));
+    // Call the destructor for the PixelColorFunc currently saved in the frame context.
+    GetPixelColorFuncMemory(frame)->~PixelColorFunc();
+    begin(frame);
   }
 
-  Color color(const Frame& frame, const Pixel& px) const override {
-    return (*static_cast<ContextT*>(frame.context))(px);
-  }
+  Color color(const Frame& frame, const Pixel& px) const override { return (*GetPixelColorFuncMemory(frame))(px); }
 
   std::string effectName(PatternBits /*pattern*/) const override { return name_; }
 
  private:
-  std::string name_;
-  F initFrame_;
+  PixelColorFunc* GetPixelColorFuncMemory(const Frame& frame) const {
+    return static_cast<PixelColorFunc*>(frame.context);
+  }
+  const std::string name_;
+  const FrameToPixelColorFuncFunc frameFunc_;
 };
 
-template <typename F>
-constexpr FrameFuncEffect<F> effect(const std::string& name, const F& f) {
-  return FrameFuncEffect<F>(name, f);
+inline FunctionalEffect effect(const std::string& name, const FrameToPixelColorFuncFunc& f) {
+  return FunctionalEffect(name, f);
 }
 
 }  // namespace jazzlights
