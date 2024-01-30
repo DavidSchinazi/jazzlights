@@ -200,7 +200,7 @@ class EffectWithPaletteXYIndexAndState : public XYIndexStateEffect<EffectWithPal
   }
 
  private:
-  mutable OurColorPalette ocp_;
+  mutable OurColorPalette ocp_ = OCPrainbow;
 };
 
 }  // namespace jazzlights

@@ -151,6 +151,8 @@ auto cyan_glow_effect = glow(CYAN, "glow-cyan");
 auto yellow_glow_effect = glow(YELLOW, "glow-yellow");
 auto white_glow_effect = glow(WHITE, "glow-white");
 
+auto threesine_pattern = clone(threesine());
+
 auto synctest = effect("synctest", [](const Frame& frame) {
   constexpr Color colors[] = {RED, GREEN, BLUE, WHITE};
   const size_t index = static_cast<size_t>(frame.time / 1000) % (sizeof(colors) / sizeof(colors[0]));
@@ -196,17 +198,18 @@ PatternBits applyPalette(PatternBits pattern, uint8_t palette) {
   return pattern;
 }
 
-auto spin_pattern = clone(SpinPlasma());
-auto hiphotic_pattern = clone(Hiphotic());
-auto metaballs_pattern = clone(Metaballs());
-auto colored_bursts_pattern = clone(ColoredBursts());
-auto flame_pattern = clone(flame());
-auto glitter_pattern = clone(Glitter());
-auto thematrix_pattern = clone(TheMatrix());
-auto threesine_pattern = clone(threesine());
-auto rainbow_pattern = clone(Rainbow());
+static const Effect* patternFromBits(PatternBits pattern) {
+  // Static definitions of all patterns.
+  static const SpinPlasma spin_pattern;
+  static const Hiphotic hiphotic_pattern;
+  static const Metaballs metaballs_pattern;
+  static ColoredBursts colored_bursts_pattern;
+  static Flame flame_pattern;
+  static const Glitter glitter_pattern;
+  static TheMatrix thematrix_pattern;
+  static const Rainbow rainbow_pattern;
 
-Effect* patternFromBits(PatternBits pattern) {
+  // Pattern selection from bits.
   if (patternIsReserved(pattern)) {
     const uint8_t byte1 = (pattern >> 24) & 0xFF;
     const uint8_t byte2 = (pattern >> 16) & 0xFF;

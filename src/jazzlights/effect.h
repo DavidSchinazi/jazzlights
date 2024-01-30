@@ -68,11 +68,11 @@ class XYIndexStateEffect : public Effect {
   PER_PIXEL_TYPE* pixelState(const Frame& frame) const {
     return reinterpret_cast<PER_PIXEL_TYPE*>(reinterpret_cast<uint8_t*>(frame.context) + sizeof(STATE));
   }
-  mutable size_t x_;
-  mutable size_t y_;
-  mutable size_t w_;
-  mutable size_t h_;
-  mutable PER_PIXEL_TYPE* pixelState_;
+  mutable size_t x_ = 0;
+  mutable size_t y_ = 0;
+  mutable size_t w_ = 0;
+  mutable size_t h_ = 0;
+  mutable PER_PIXEL_TYPE* pixelState_ = nullptr;
 };
 
 struct EmptyState {};

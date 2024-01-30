@@ -16,7 +16,5 @@ class Flame : public XYIndexStateEffect<FlameState, uint8_t> {
   std::string effectName(PatternBits /*pattern*/) const override { return "flame"; }
 };
 
-inline Flame flame() { return Flame(); }
-
 }  // namespace jazzlights
 #endif  // JL_EFFECTS_FLAME_H
