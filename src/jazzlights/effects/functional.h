@@ -21,16 +21,17 @@ class FunctionalEffect : public Effect {
 
   size_t contextSize(const Frame& /*frame*/) const override { return sizeof(PixelColorFunc); }
 
-  void begin(const Frame& frame) const override {
+  void begin(const Frame& /*frame*/) const override {}
+
+  void rewind(const Frame& frame) const override {
     // Note that this call to new does not allocate heap memory.
     // It calls frameFunc_(frame) and places the result in the frame context.
     new (GetPixelColorFuncMemory(frame)) PixelColorFunc(frameFunc_(frame));
   }
 
-  void rewind(const Frame& frame) const override {
+  void afterColors(const Frame& frame) const override {
     // Call the destructor for the PixelColorFunc currently saved in the frame context.
     GetPixelColorFuncMemory(frame)->~PixelColorFunc();
-    begin(frame);
   }
 
   Color color(const Frame& frame, const Pixel& px) const override { return (*GetPixelColorFuncMemory(frame))(px); }

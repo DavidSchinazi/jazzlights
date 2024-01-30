@@ -489,6 +489,7 @@ bool Player::render(Milliseconds currentTime) {
     });
     if (s->renderer) { s->renderer->render(colors); }
   }
+  effect->afterColors(frame_);
   return true;
 }
 

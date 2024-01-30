@@ -109,8 +109,6 @@ inline std::string PaletteNameFromPattern(PatternBits pattern) {
 
 template <typename STATE>
 class EffectWithPaletteAndState : public Effect {
-  static_assert(std::is_trivially_destructible<STATE>::value, "STATE must be trivially destructible");
-
  public:
   virtual std::string effectNamePrefix(PatternBits pattern) const = 0;
   virtual size_t extraContextSize(const Frame& frame) const {
@@ -150,6 +148,10 @@ class EffectWithPaletteAndState : public Effect {
   void rewind(const Frame& frame) const override {
     EffectWithPaletteState* state = reinterpret_cast<EffectWithPaletteState*>(frame.context);
     innerRewind(frame, &state->innerState);
+  }
+
+  void afterColors(const Frame& frame) const override {
+    static_assert(std::is_trivially_destructible<STATE>::value, "STATE must be trivially destructible");
   }
 
  private:

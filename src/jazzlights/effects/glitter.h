@@ -27,6 +27,10 @@ class Glitter : public Effect {
     state->hue = state->startHue + hueOffset;
   }
 
+  void afterColors(const Frame& frame) const override {
+    static_assert(std::is_trivially_destructible<GlitterState>::value, "GlitterState must be trivially destructible");
+  }
+
   Color color(const Frame& frame, const Pixel& /*px*/) const override {
     GlitterState* state = reinterpret_cast<GlitterState*>(frame.context);
     return HslColor(state->hue, 255, frame.predictableRandom->GetRandomByte());
@@ -38,7 +42,6 @@ class Glitter : public Effect {
     bool backwards;
     uint8_t hue;
   };
-  static_assert(std::is_trivially_destructible<GlitterState>::value, "GlitterState must be trivially destructible");
 };
 
 }  // namespace jazzlights

@@ -14,18 +14,22 @@ class Effect {
  public:
   virtual ~Effect() = default;
 
+  // The Player will first call contextSize() before any other calls.
   virtual size_t contextSize(const Frame& frame) const = 0;
-  virtual Color color(const Frame& frame, const Pixel& px) const = 0;
+  // Then the Player ensures that frame.context can hold that much memory and calls begin().
   virtual void begin(const Frame& frame) const = 0;
+  // Then, for each separate point in time to render, the Player calls rewind().
   virtual void rewind(const Frame& frame) const = 0;
+  // Then, for each pixel, the player calls color().
+  virtual Color color(const Frame& frame, const Pixel& px) const = 0;
+  // After the calls to color(), and only once per time period to render, the Player calls afterColors().
+  // Every call to rewind() is matched with exactly one call to afterColors().
+  virtual void afterColors(const Frame& frame) const = 0;
   virtual std::string effectName(PatternBits pattern) const = 0;
 };
 
 template <typename STATE, typename PER_PIXEL_TYPE>
 class XYIndexStateEffect : public Effect {
-  static_assert(std::is_trivially_destructible<STATE>::value, "STATE must be trivially destructible");
-  static_assert(std::is_trivially_destructible<PER_PIXEL_TYPE>::value, "PER_PIXEL_TYPE must be trivially destructible");
-
  public:
   virtual void innerBegin(const Frame& frame, STATE* state) const = 0;
   virtual void innerRewind(const Frame& frame, STATE* state) const = 0;
@@ -34,19 +38,28 @@ class XYIndexStateEffect : public Effect {
   size_t contextSize(const Frame& frame) const override {
     return sizeof(STATE) + sizeof(PER_PIXEL_TYPE) * width(frame) * height(frame);
   }
+
   Color color(const Frame& frame, const Pixel& px) const override {
     XYIndex xyIndex = frame.xyIndexStore->FromPixel(px);
     x_ = xyIndex.xIndex;
     y_ = xyIndex.yIndex;
     return innerColor(frame, state(frame), px);
   }
+
   void begin(const Frame& frame) const override {
     saveFrame(frame);
     innerBegin(frame, state(frame));
   }
+
   void rewind(const Frame& frame) const override {
     saveFrame(frame);
     innerRewind(frame, state(frame));
+  }
+
+  void afterColors(const Frame& frame) const override {
+    static_assert(std::is_trivially_destructible<STATE>::value, "STATE must be trivially destructible");
+    static_assert(std::is_trivially_destructible<PER_PIXEL_TYPE>::value,
+                  "PER_PIXEL_TYPE must be trivially destructible");
   }
 
  protected:
