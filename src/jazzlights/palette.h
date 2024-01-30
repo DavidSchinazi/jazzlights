@@ -150,7 +150,7 @@ class EffectWithPaletteAndState : public Effect {
     innerRewind(frame, &state->innerState);
   }
 
-  void afterColors(const Frame& frame) const override {
+  void afterColors(const Frame& /*frame*/) const override {
     static_assert(std::is_trivially_destructible<STATE>::value, "STATE must be trivially destructible");
   }
 
@@ -173,7 +173,10 @@ class EffectWithPaletteXYIndexAndState : public XYIndexStateEffect<EffectWithPal
   static_assert(std::is_trivially_destructible<STATE>::value, "STATE must be trivially destructible");
 
  protected:
-  RgbColor colorFromPalette(uint8_t innerColor) const { return colorFromOurPalette(ocp_, innerColor); }
+  RgbColor colorFromPalette(const Frame& frame, uint8_t innerColor) const {
+    EffectWithPaletteState<STATE>* s = XYIndexStateEffect<EffectWithPaletteState<STATE>, PER_PIXEL_TYPE>::state(frame);
+    return colorFromOurPalette(s->ocp, innerColor);
+  }
 
  public:
   virtual std::string effectNamePrefix(PatternBits pattern) const = 0;
@@ -192,17 +195,12 @@ class EffectWithPaletteXYIndexAndState : public XYIndexStateEffect<EffectWithPal
 
   void innerBegin(const Frame& frame, EffectWithPaletteState<STATE>* state) const override {
     state->ocp = PaletteFromPattern(frame.pattern);
-    ocp_ = state->ocp;
     innerBegin(frame, &state->innerState);
   }
 
   void innerRewind(const Frame& frame, EffectWithPaletteState<STATE>* state) const override {
-    ocp_ = state->ocp;
     innerRewind(frame, &state->innerState);
   }
-
- private:
-  mutable OurColorPalette ocp_ = OCPrainbow;
 };
 
 }  // namespace jazzlights

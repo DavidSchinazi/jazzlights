@@ -36,57 +36,43 @@ class XYIndexStateEffect : public Effect {
   virtual Color innerColor(const Frame& frame, STATE* state, const Pixel& px) const = 0;
 
   size_t contextSize(const Frame& frame) const override {
-    return sizeof(STATE) + sizeof(PER_PIXEL_TYPE) * width(frame) * height(frame);
+    return sizeof(XYIndex) + sizeof(STATE) + sizeof(PER_PIXEL_TYPE) * width(frame) * height(frame);
   }
 
   Color color(const Frame& frame, const Pixel& px) const override {
-    XYIndex xyIndex = frame.xyIndexStore->FromPixel(px);
-    x_ = xyIndex.xIndex;
-    y_ = xyIndex.yIndex;
+    *pos(frame) = frame.xyIndexStore->FromPixel(px);
     return innerColor(frame, state(frame), px);
   }
 
-  void begin(const Frame& frame) const override {
-    saveFrame(frame);
-    innerBegin(frame, state(frame));
-  }
+  void begin(const Frame& frame) const override { innerBegin(frame, state(frame)); }
 
-  void rewind(const Frame& frame) const override {
-    saveFrame(frame);
-    innerRewind(frame, state(frame));
-  }
+  void rewind(const Frame& frame) const override { innerRewind(frame, state(frame)); }
 
-  void afterColors(const Frame& frame) const override {
+  void afterColors(const Frame& /*frame*/) const override {
     static_assert(std::is_trivially_destructible<STATE>::value, "STATE must be trivially destructible");
     static_assert(std::is_trivially_destructible<PER_PIXEL_TYPE>::value,
                   "PER_PIXEL_TYPE must be trivially destructible");
   }
 
  protected:
-  size_t x() const { return x_; }
-  size_t y() const { return y_; }
-  size_t w() const { return w_; }
-  size_t h() const { return h_; }
-  PER_PIXEL_TYPE& ps(size_t x, size_t y) const { return pixelState_[y * w() + x]; }
-  PER_PIXEL_TYPE& ps() const { return ps(x(), y()); }
+  size_t x(const Frame& f) const { return pos(f)->xIndex; }
+  size_t y(const Frame& f) const { return pos(f)->yIndex; }
+  size_t w(const Frame& f) const { return width(f); }
+  size_t h(const Frame& f) const { return height(f); }
+  PER_PIXEL_TYPE& ps(const Frame& f, size_t x, size_t y) const { return pixelState(f)[y * w(f) + x]; }
+  PER_PIXEL_TYPE& ps(const Frame& f) const { return ps(f, x(f), y(f)); }
+  STATE* state(const Frame& frame) const {
+    return reinterpret_cast<STATE*>(reinterpret_cast<uint8_t*>(frame.context) + sizeof(XYIndex));
+  }
 
  private:
-  void saveFrame(const Frame& frame) const {
-    w_ = width(frame);
-    h_ = height(frame);
-    pixelState_ = pixelState(frame);
-  }
   size_t width(const Frame& frame) const { return frame.xyIndexStore->xValuesCount(); }
   size_t height(const Frame& frame) const { return frame.xyIndexStore->yValuesCount(); }
-  STATE* state(const Frame& frame) const { return static_cast<STATE*>(frame.context); }
+  XYIndex* pos(const Frame& frame) const { return reinterpret_cast<XYIndex*>(frame.context); }
   PER_PIXEL_TYPE* pixelState(const Frame& frame) const {
-    return reinterpret_cast<PER_PIXEL_TYPE*>(reinterpret_cast<uint8_t*>(frame.context) + sizeof(STATE));
+    return reinterpret_cast<PER_PIXEL_TYPE*>(reinterpret_cast<uint8_t*>(frame.context) + sizeof(XYIndex) +
+                                             sizeof(STATE));
   }
-  mutable size_t x_ = 0;
-  mutable size_t y_ = 0;
-  mutable size_t w_ = 0;
-  mutable size_t h_ = 0;
-  mutable PER_PIXEL_TYPE* pixelState_ = nullptr;
 };
 
 struct EmptyState {};

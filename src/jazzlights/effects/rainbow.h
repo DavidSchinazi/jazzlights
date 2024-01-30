@@ -39,7 +39,7 @@ class Rainbow : public Effect {
     state->initialHue = state->startHue + hueOffset;
   }
 
-  void afterColors(const Frame& frame) const override {
+  void afterColors(const Frame& /*frame*/) const override {
     static_assert(std::is_trivially_destructible<RainbowState>::value, "RainbowState must be trivially destructible");
   }
 

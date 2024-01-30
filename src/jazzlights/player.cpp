@@ -203,10 +203,10 @@ static const Effect* patternFromBits(PatternBits pattern) {
   static const SpinPlasma spin_pattern;
   static const Hiphotic hiphotic_pattern;
   static const Metaballs metaballs_pattern;
-  static ColoredBursts colored_bursts_pattern;
-  static Flame flame_pattern;
+  static const ColoredBursts colored_bursts_pattern;
+  static const Flame flame_pattern;
   static const Glitter glitter_pattern;
-  static TheMatrix thematrix_pattern;
+  static const TheMatrix thematrix_pattern;
   static const Rainbow rainbow_pattern;
 
   // Pattern selection from bits.

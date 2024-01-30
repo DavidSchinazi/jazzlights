@@ -56,34 +56,34 @@ RgbaColor heatColor(uint8_t temperature) {
   return RgbaColor(r, g, b);
 }
 
-void Flame::innerBegin(const Frame& /*frame*/, FlameState* state) const {
-  memset(&ps(0, 0), 0, sizeof(uint8_t) * w() * h());
-  state->maxDim = 1012 / h() + 12;
+void Flame::innerBegin(const Frame& f, FlameState* state) const {
+  memset(&ps(f, 0, 0), 0, sizeof(uint8_t) * w(f) * h(f));
+  state->maxDim = 1012 / h(f) + 12;
 }
 
-void Flame::innerRewind(const Frame& frame, FlameState* state) const {
-  for (size_t x = 0; x < w(); x++) {
+void Flame::innerRewind(const Frame& f, FlameState* state) const {
+  for (size_t x = 0; x < w(f); x++) {
     // Step 1.  Cool down every cell a little
-    for (size_t y = 0; y < h(); y++) {
-      ps(x, y) = qsub8(ps(x, y), frame.predictableRandom->GetRandomNumberBetween(0, state->maxDim));
+    for (size_t y = 0; y < h(f); y++) {
+      ps(f, x, y) = qsub8(ps(f, x, y), f.predictableRandom->GetRandomNumberBetween(0, state->maxDim));
     }
 
     // Step 2.  Heat from each cell drifts 'up' and diffuses a little
-    for (size_t y2 = h() - 1; y2 >= 3; y2--) {
-      ps(x, y2) = (static_cast<uint16_t>(ps(x, y2 - 1)) + static_cast<uint16_t>(ps(x, y2 - 2)) +
-                   static_cast<uint16_t>(ps(x, y2 - 3))) /
-                  3;
+    for (size_t y2 = h(f) - 1; y2 >= 3; y2--) {
+      ps(f, x, y2) = (static_cast<uint16_t>(ps(f, x, y2 - 1)) + static_cast<uint16_t>(ps(f, x, y2 - 2)) +
+                      static_cast<uint16_t>(ps(f, x, y2 - 3))) /
+                     3;
     }
-    ps(x, 2) = (static_cast<uint16_t>(ps(x, 1)) + static_cast<uint16_t>(ps(x, 0))) / 2;
-    ps(x, 1) = ps(x, 0);
+    ps(f, x, 2) = (static_cast<uint16_t>(ps(f, x, 1)) + static_cast<uint16_t>(ps(f, x, 0))) / 2;
+    ps(f, x, 1) = ps(f, x, 0);
 
     // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
-    ps(x, 0) = frame.predictableRandom->GetRandomNumberBetween(kIgnitionMin, kIgnitionMax);
+    ps(f, x, 0) = f.predictableRandom->GetRandomNumberBetween(kIgnitionMin, kIgnitionMax);
   }
 }
 
-Color Flame::innerColor(const Frame& /*frame*/, FlameState* /*state*/, const Pixel& /*px*/) const {
-  return Color(heatColor(ps(x(), h() - 1 - y()))).lightnessToAlpha();
+Color Flame::innerColor(const Frame& f, FlameState* /*state*/, const Pixel& /*px*/) const {
+  return Color(heatColor(ps(f, x(f), h(f) - 1 - y(f)))).lightnessToAlpha();
 }
 
 }  // namespace jazzlights

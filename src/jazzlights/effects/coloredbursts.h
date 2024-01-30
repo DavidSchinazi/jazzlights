@@ -37,36 +37,35 @@ class ColoredBursts : public EffectWithPaletteXYIndexAndState<ColoredBurstsState
  public:
   std::string effectNamePrefix(PatternBits /*pattern*/) const override { return "bursts"; }
 
-  ColorWithPalette innerColor(const Frame& /*frame*/, ColoredBurstsState* /*state*/,
-                              const Pixel& /*px*/) const override {
-    return ColorWithPalette::OverrideColor(ps());
+  ColorWithPalette innerColor(const Frame& f, ColoredBurstsState* /*state*/, const Pixel& /*px*/) const override {
+    return ColorWithPalette::OverrideColor(ps(f));
   }
 
-  void innerBegin(const Frame& frame, ColoredBurstsState* state) const override {
+  void innerBegin(const Frame& f, ColoredBurstsState* state) const override {
     state->dot = false;
     state->grad = true;
     state->hue = 0;
-    state->numLines = frame.predictableRandom->GetRandomNumberBetween(5, 10);
-    uint8_t fadeAmount = frame.predictableRandom->GetRandomNumberBetween(20, 50);
+    state->numLines = f.predictableRandom->GetRandomNumberBetween(5, 10);
+    uint8_t fadeAmount = f.predictableRandom->GetRandomNumberBetween(20, 50);
     state->fadeScale = 255 - fadeAmount;
     state->curInit1 = false;
     for (uint8_t i = 0; i < state->numLines; i++) { state->curInit2[i] = false; }
-    state->speed = frame.predictableRandom->GetRandomNumberBetween(3, 10);
+    state->speed = f.predictableRandom->GetRandomNumberBetween(3, 10);
     // Start all pixels black.
-    for (size_t x = 0; x < w(); x++) {
-      for (size_t y = 0; y < h(); y++) { ps(x, y) = RgbColor(0, 0, 0); }
+    for (size_t x = 0; x < w(f); x++) {
+      for (size_t y = 0; y < h(f); y++) { ps(f, x, y) = RgbColor(0, 0, 0); }
     }
   }
 
-  void innerRewind(const Frame& frame, ColoredBurstsState* state) const override {
+  void innerRewind(const Frame& f, ColoredBurstsState* state) const override {
     state->hue++;
     // Slightly fade all pixels.
-    for (size_t x = 0; x < w(); x++) {
-      for (size_t y = 0; y < h(); y++) { ps(x, y) = nscale8(ps(x, y), state->fadeScale); }
+    for (size_t x = 0; x < w(f); x++) {
+      for (size_t y = 0; y < h(f); y++) { ps(f, x, y) = nscale8(ps(f, x, y), state->fadeScale); }
     }
 
-    int x1 = jlbeatsin(2 + state->speed, frame.time, 0, (w() - 1));
-    int y1 = jlbeatsin(5 + state->speed, frame.time, 0, (h() - 1));
+    int x1 = jlbeatsin(2 + state->speed, f.time, 0, (w(f) - 1));
+    int y1 = jlbeatsin(5 + state->speed, f.time, 0, (h(f) - 1));
     int& curX1 = state->curX1;
     int& curY1 = state->curY1;
     if (!state->curInit1) {
@@ -90,9 +89,9 @@ class ColoredBursts : public EffectWithPaletteXYIndexAndState<ColoredBurstsState
     }
 
     for (uint8_t i = 0; i < state->numLines; i++) {
-      int x2 = jlbeatsin(1 + state->speed, frame.time, 0, (w() - 1), i * 24);
-      int y2 = jlbeatsin(3 + state->speed, frame.time, 0, (h() - 1), i * 48 + 64);
-      RgbColor color = colorFromPalette(i * 255 / state->numLines + state->hue);
+      int x2 = jlbeatsin(1 + state->speed, f.time, 0, (w(f) - 1), i * 24);
+      int y2 = jlbeatsin(3 + state->speed, f.time, 0, (h(f) - 1), i * 48 + 64);
+      RgbColor color = colorFromPalette(f, i * 255 / state->numLines + state->hue);
       int& curX2 = state->curX2[i];
       int& curY2 = state->curY2[i];
       if (!state->curInit2[i]) {
@@ -115,7 +114,7 @@ class ColoredBursts : public EffectWithPaletteXYIndexAndState<ColoredBurstsState
       for (int x1t = x1Min; x1t <= x1Max; x1t++) {
         for (int x2t = x2Min; x2t <= x2Max; x2t++) {
           for (int y1t = y1Min; y1t <= y1Max; y1t++) {
-            for (int y2t = y2Min; y2t <= y2Max; y2t++) { drawLine(state, x1t, x2t, y1t, y2t, color); }
+            for (int y2t = y2Min; y2t <= y2Max; y2t++) { drawLine(f, state, x1t, x2t, y1t, y2t, color); }
           }
         }
       }
@@ -128,7 +127,7 @@ class ColoredBursts : public EffectWithPaletteXYIndexAndState<ColoredBurstsState
   }
 
  private:
-  void drawLine(ColoredBurstsState* state, int x1, int x2, int y1, int y2, RgbColor color) const {
+  void drawLine(const Frame& f, ColoredBurstsState* state, int x1, int x2, int y1, int y2, RgbColor color) const {
     int xsteps = std::abs(x1 - y1) + 1;
     int ysteps = std::abs(x2 - y2) + 1;
     bool steppingX = xsteps >= ysteps;
@@ -137,32 +136,32 @@ class ColoredBursts : public EffectWithPaletteXYIndexAndState<ColoredBurstsState
     for (int i = 1; i <= steps; i++) {
       int dx = x1 + (x2 - x1) * i / steps;
       int dy = y1 + (y2 - y1) * i / steps;
-      ps(dx, dy) += color;
-      if (state->grad) { ps(dx, dy) %= (i * 255 / steps); }
+      ps(f, dx, dy) += color;
+      if (state->grad) { ps(f, dx, dy) %= (i * 255 / steps); }
       if (steppingX) {
         if (dx < x1 && dx < x2) {
-          ps(dx + 1, dy) += color;
-          if (state->grad) { ps(dx + 1, dy) %= (i * 255 / steps); }
+          ps(f, dx + 1, dy) += color;
+          if (state->grad) { ps(f, dx + 1, dy) %= (i * 255 / steps); }
         }
         if (dx > x1 && dx > x2) {
-          ps(dx - 1, dy) += color;
-          if (state->grad) { ps(dx - 1, dy) %= (i * 255 / steps); }
+          ps(f, dx - 1, dy) += color;
+          if (state->grad) { ps(f, dx - 1, dy) %= (i * 255 / steps); }
         }
       } else {
         if (dy < y1 && dy < y2) {
-          ps(dx, dy + 1) += color;
-          if (state->grad) { ps(dx, dy + 1) %= (i * 255 / steps); }
+          ps(f, dx, dy + 1) += color;
+          if (state->grad) { ps(f, dx, dy + 1) %= (i * 255 / steps); }
         }
         if (dy > y1 && dy > y2) {
-          ps(dx, dy - 1) += color;
-          if (state->grad) { ps(dx, dy - 1) %= (i * 255 / steps); }
+          ps(f, dx, dy - 1) += color;
+          if (state->grad) { ps(f, dx, dy - 1) %= (i * 255 / steps); }
         }
       }
     }
 
     if (state->dot) {  // add white point at the ends of line
-      ps(x1, y1) += CRGB::White;
-      ps(x2, y2) += CRGB::White;
+      ps(f, x1, y1) += CRGB::White;
+      ps(f, x2, y2) += CRGB::White;
     }
   }
 };
