@@ -1,6 +1,8 @@
 #ifndef JL_EFFECTS_FUNCTIONAL_H
 #define JL_EFFECTS_FUNCTIONAL_H
 
+#include <functional>
+
 #include "jazzlights/effect.h"
 #include "jazzlights/util/meta.h"
 
