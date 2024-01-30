@@ -51,12 +51,5 @@ constexpr Point rightbottom(const Frame& frame) {
 
 inline Coord diagonal(const Frame& frame) { return distance(lefttop(frame), rightbottom(frame)); }
 
-inline uint8_t* ucontext(const Frame& frame) { return reinterpret_cast<uint8_t*>(frame.context); }
-
-template <typename T>
-inline T& cast_context(const Frame& frame) {
-  return *reinterpret_cast<T*>(frame.context);
-}
-
 }  // namespace jazzlights
 #endif  // JL_FRAME_H
