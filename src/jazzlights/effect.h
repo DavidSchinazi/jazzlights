@@ -24,6 +24,7 @@ class Effect {
 template <typename STATE, typename PER_PIXEL_TYPE>
 class XYIndexStateEffect : public Effect {
   static_assert(std::is_trivially_destructible<STATE>::value, "STATE must be trivially destructible");
+  static_assert(std::is_trivially_destructible<PER_PIXEL_TYPE>::value, "PER_PIXEL_TYPE must be trivially destructible");
 
  public:
   virtual void innerBegin(const Frame& frame, STATE* state) const = 0;
@@ -79,6 +80,8 @@ struct EmptyState {};
 
 template <typename PER_PIXEL_TYPE>
 class XYIndexEffect : public XYIndexStateEffect<EmptyState, PER_PIXEL_TYPE> {
+  static_assert(std::is_trivially_destructible<PER_PIXEL_TYPE>::value, "PER_PIXEL_TYPE must be trivially destructible");
+
  public:
   virtual void innerBegin(const Frame& frame) const = 0;
   virtual void innerRewind(const Frame& frame) const = 0;
