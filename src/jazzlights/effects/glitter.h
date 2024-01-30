@@ -38,6 +38,7 @@ class Glitter : public Effect {
     bool backwards;
     uint8_t hue;
   };
+  static_assert(std::is_trivially_destructible<GlitterState>::value, "GlitterState must be trivially destructible");
 };
 
 }  // namespace jazzlights

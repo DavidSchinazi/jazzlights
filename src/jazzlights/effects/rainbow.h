@@ -54,6 +54,7 @@ class Rainbow : public Effect {
     bool backwards;
     uint8_t initialHue;
   };
+  static_assert(std::is_trivially_destructible<RainbowState>::value, "RainbowState must be trivially destructible");
 };
 
 }  // namespace jazzlights

@@ -109,7 +109,8 @@ inline std::string PaletteNameFromPattern(PatternBits pattern) {
 
 template <typename STATE>
 class EffectWithPaletteAndState : public Effect {
- protected:
+  static_assert(std::is_trivially_destructible<STATE>::value, "STATE must be trivially destructible");
+
  public:
   virtual std::string effectNamePrefix(PatternBits pattern) const = 0;
   virtual size_t extraContextSize(const Frame& frame) const {
@@ -160,12 +161,15 @@ class EffectWithPaletteAndState : public Effect {
 
 template <typename STATE>
 struct EffectWithPaletteState {
+  static_assert(std::is_trivially_destructible<STATE>::value, "STATE must be trivially destructible");
   OurColorPalette ocp;
   STATE innerState;
 };
 
 template <typename STATE, typename PER_PIXEL_TYPE>
 class EffectWithPaletteXYIndexAndState : public XYIndexStateEffect<EffectWithPaletteState<STATE>, PER_PIXEL_TYPE> {
+  static_assert(std::is_trivially_destructible<STATE>::value, "STATE must be trivially destructible");
+
  protected:
   RgbColor colorFromPalette(uint8_t innerColor) const { return colorFromOurPalette(ocp_, innerColor); }
 
