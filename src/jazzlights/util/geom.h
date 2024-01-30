@@ -72,9 +72,12 @@ constexpr Coord height(const Box& b) { return b.size.height; }
 
 constexpr Point center(Box b) { return {b.origin.x + b.size.width / 2, b.origin.y + b.size.height / 2}; }
 
-inline Point operator+(const Point& a, const Point& b) { return {a.x + b.x, a.y + b.y}; }
+constexpr Point operator+(const Point& a, const Point& b) { return {a.x + b.x, a.y + b.y}; }
 
-inline Point operator*(double k, const Point& v) { return {Coord(k * v.x), Coord(k * v.y)}; }
+constexpr Point operator*(double k, const Point& v) { return {Coord(k * v.x), Coord(k * v.y)}; }
+
+// The functions below are inline instead of constexpr because we need to support C++11,
+// and std::min/max became constexpr in C++14, and sqrt became constexpr in C++26.
 
 inline double distance(Point a, Point b) { return sqrt(square(a.x - b.x) + square(a.y - b.y)); }
 
