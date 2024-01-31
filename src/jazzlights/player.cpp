@@ -40,15 +40,15 @@ int comparePrecedence(Precedence leftPrecedence, const NetworkDeviceId& leftDevi
 }
 
 auto follow_strand_effect = effect("follow-strand", [](const Frame& frame) {
-  constexpr int32_t green = 0x00ff00, blue = 0x0000ff, red = 0xff0000, black = 0;
-  constexpr int32_t colors[] = {
-      red,   red,   red,   black, black, black, black, black, black, green, green, green, black, black,
-      black, black, black, black, blue,  blue,  blue,  black, black, black, black, black, black,
-  };
-  constexpr int numColors = sizeof(colors) / sizeof(colors[0]);
   const int offset = frame.time / 100;
   const bool blink = ((frame.time % 1000) < 500);
-  return [=](const Pixel& pt) -> Color {
+  return [offset, blink](const Pixel& pt) -> Color {
+    constexpr int32_t green = 0x00ff00, blue = 0x0000ff, red = 0xff0000, black = 0;
+    constexpr int32_t colors[] = {
+        red,   red,   red,   black, black, black, black, black, black, green, green, green, black, black,
+        black, black, black, black, blue,  blue,  blue,  black, black, black, black, black, black,
+    };
+    constexpr int numColors = sizeof(colors) / sizeof(colors[0]);
     const int reverseIndex = (-pt.index % numColors) + numColors - 1;
     int32_t col = colors[(offset + reverseIndex) % numColors];
     if (pt.index == 0 ||
@@ -66,7 +66,7 @@ auto follow_strand_effect = effect("follow-strand", [](const Frame& frame) {
 auto mapping_pattern = effect("mapping", [](const Frame& frame) {
   const int pixelNum = (frame.pattern >> 8) & 0xFFFF;
   const bool blink = ((frame.time % 1000) < 500);
-  return [=](const Pixel& pt) -> Color {
+  return [pixelNum, blink](const Pixel& pt) -> Color {
     if (pt.index < pixelNum) {
       return RED;
     } else if (pt.index == pixelNum) {
@@ -82,10 +82,8 @@ auto mapping_pattern = effect("mapping", [](const Frame& frame) {
 });
 
 auto calibration_effect = effect("calibration", [](const Frame& frame) {
-#if JL_IS_CONFIG(VEST)
   const bool blink = ((frame.time % 1000) < 500);
-#endif  // VEST
-  return [=](const Pixel& pt) -> Color {
+  return [&frame, blink](const Pixel& pt) -> Color {
     XYIndex xyIndex = frame.xyIndexStore->FromPixel(pt);
     const int32_t green = 0x00ff00, blue = 0x0000ff, red = 0xff0000;
     const int32_t yellow = green | red, purple = red | blue, white = 0xffffff;
@@ -105,6 +103,8 @@ auto calibration_effect = effect("calibration", [](const Frame& frame) {
         col = 0;
       }
     }
+#else   // VEST
+    (void)blink;
 #endif  // VEST
     return Color(col);
   };
@@ -127,7 +127,7 @@ auto override_effect = effect("fairy-wand", [](const Frame& frame) {
   } else {
     blink = false;
   }
-  return [=](const Pixel& /*pt*/) -> Color {
+  return [blink](const Pixel& /*pt*/) -> Color {
     constexpr int32_t white = 0xffffff, black = 0;
     return Color(blink ? white : black);
   };
@@ -206,7 +206,7 @@ static const Effect* patternFromBits(PatternBits pattern) {
     constexpr Color colors[] = {RED, GREEN, BLUE, WHITE};
     const size_t index = static_cast<size_t>(frame.time / 1000) % (sizeof(colors) / sizeof(colors[0]));
     const Color color = colors[index];
-    return [=](const Pixel& /*pt*/) -> Color { return color; };
+    return [color](const Pixel& /*pt*/) -> Color { return color; };
   });
 
   // Pattern selection from bits.
@@ -488,7 +488,7 @@ bool Player::render(Milliseconds currentTime) {
   effect->rewind(frame_);
   for (Strand* s = strands_; s < strands_ + strandCount_; ++s) {
     auto pixels = points(*s->layout);
-    auto colors = map(pixels, [&](Pixel px) -> Color {
+    auto colors = map(pixels, [effect, this](Pixel px) -> Color {
       if (IsEmpty(px.coord)) { return Color(/*black*/); }
       return effect->color(frame_, px);
     });

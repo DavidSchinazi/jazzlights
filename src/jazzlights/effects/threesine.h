@@ -6,13 +6,11 @@
 namespace jazzlights {
 
 auto threesine = []() {
-  return effect("threesine", [=](const Frame& frame) {
-    Coord w = width(frame);
-    Coord h = height(frame);
-
-    uint8_t sineOffset = 256 * frame.time / 8000;
-
-    return [=](const Pixel& px) -> Color {
+  return effect("threesine", [](const Frame& frame) {
+    const Coord w = width(frame);
+    const Coord h = height(frame);
+    const uint8_t sineOffset = 256 * frame.time / 8000;
+    return [w, h, sineOffset](const Pixel& px) -> Color {
       // Calculate "sine" waves with varying periods
       // sin8 is used for speed; cos8, quadwave8, or triwave8 would also work
       // here

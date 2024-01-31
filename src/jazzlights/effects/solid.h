@@ -6,7 +6,8 @@
 namespace jazzlights {
 
 auto solid = [](Color color, const std::string& name) {
-  return effect(name, [=](const Frame& /*frame*/) { return [=](const Pixel& /*pt*/) -> Color { return color; }; });
+  return effect(name,
+                [color](const Frame& /*frame*/) { return [color](const Pixel& /*pt*/) -> Color { return color; }; });
 };
 
 }  // namespace jazzlights
