@@ -56,10 +56,7 @@ RgbaColor heatColor(uint8_t temperature) {
   return RgbaColor(r, g, b);
 }
 
-void Flame::innerBegin(const Frame& f, FlameState* state) const {
-  memset(&ps(f, 0, 0), 0, sizeof(uint8_t) * w(f) * h(f));
-  state->maxDim = 1012 / h(f) + 12;
-}
+void Flame::innerBegin(const Frame& f, FlameState* state) const { state->maxDim = 1012 / h(f) + 12; }
 
 void Flame::innerRewind(const Frame& f, FlameState* state) const {
   for (size_t x = 0; x < w(f); x++) {

@@ -28,8 +28,7 @@ class TheMatrix : public XYIndexStateEffect<MatrixState, uint8_t> {
     state->fadeRate = f.predictableRandom->GetRandomNumberBetween(10, 40);
     state->maxTicks = f.predictableRandom->GetRandomNumberBetween(1, 5);
     state->currentTicks = 0;
-    memset(&ps(f, 0, 0), 0, sizeof(uint8_t) * w(f) * h(f));
-    // Progess the effect 2*h times to get pixels on all rows.
+    // Progress the effect 2*h times to get pixels on all rows.
     for (size_t y = 0; y < 2 * h(f); y++) { progressEffect(f, state); }
   }
   void innerRewind(const Frame& frame, MatrixState* state) const override {

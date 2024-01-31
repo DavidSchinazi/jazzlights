@@ -140,6 +140,7 @@ class EffectWithPaletteAndState : public Effect {
   }
 
   void begin(const Frame& frame) const override {
+    new (frame.context) EffectWithPaletteState;  // Default-initialize the state.
     EffectWithPaletteState* state = reinterpret_cast<EffectWithPaletteState*>(frame.context);
     state->ocp = PaletteFromPattern(frame.pattern);
     innerBegin(frame, &state->innerState);
@@ -163,15 +164,12 @@ class EffectWithPaletteAndState : public Effect {
 
 template <typename STATE>
 struct EffectWithPaletteState {
-  static_assert(std::is_trivially_destructible<STATE>::value, "STATE must be trivially destructible");
   OurColorPalette ocp;
   STATE innerState;
 };
 
 template <typename STATE, typename PER_PIXEL_TYPE>
 class EffectWithPaletteXYIndexAndState : public XYIndexStateEffect<EffectWithPaletteState<STATE>, PER_PIXEL_TYPE> {
-  static_assert(std::is_trivially_destructible<STATE>::value, "STATE must be trivially destructible");
-
  protected:
   RgbColor colorFromPalette(const Frame& frame, uint8_t innerColor) const {
     EffectWithPaletteState<STATE>* s = XYIndexStateEffect<EffectWithPaletteState<STATE>, PER_PIXEL_TYPE>::state(frame);

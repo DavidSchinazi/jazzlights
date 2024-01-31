@@ -15,6 +15,7 @@ class Glitter : public Effect {
   size_t contextSize(const Frame& /*frame*/) const override { return sizeof(GlitterState); }
 
   void begin(const Frame& frame) const override {
+    new (frame.context) GlitterState;  // Default-initialize the state.
     GlitterState* state = reinterpret_cast<GlitterState*>(frame.context);
     state->startHue = frame.predictableRandom->GetRandomByte();
     state->backwards = frame.predictableRandom->GetRandomByte() & 1;

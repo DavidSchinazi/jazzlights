@@ -17,6 +17,7 @@ class Rainbow : public Effect {
   size_t contextSize(const Frame& /*frame*/) const override { return sizeof(RainbowState); }
 
   void begin(const Frame& frame) const override {
+    new (frame.context) RainbowState;  // Default-initialize the state.
     RainbowState* state = reinterpret_cast<RainbowState*>(frame.context);
     state->startHue = frame.predictableRandom->GetRandomByte();
     state->origin.x =

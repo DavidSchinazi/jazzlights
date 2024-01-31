@@ -44,7 +44,12 @@ class XYIndexStateEffect : public Effect {
     return innerColor(frame, state(frame), px);
   }
 
-  void begin(const Frame& frame) const override { innerBegin(frame, state(frame)); }
+  void begin(const Frame& frame) const override {
+    new (pos(frame)) XYIndex;                                          // Default-initialize the position.
+    new (state(frame)) STATE;                                          // Default-initialize the state.
+    new (pixels(frame)) PER_PIXEL_TYPE[width(frame) * height(frame)];  // Default-initialize the per-pixel data.
+    innerBegin(frame, state(frame));
+  }
 
   void rewind(const Frame& frame) const override { innerRewind(frame, state(frame)); }
 
@@ -59,7 +64,7 @@ class XYIndexStateEffect : public Effect {
   size_t y(const Frame& f) const { return pos(f)->yIndex; }
   size_t w(const Frame& f) const { return width(f); }
   size_t h(const Frame& f) const { return height(f); }
-  PER_PIXEL_TYPE& ps(const Frame& f, size_t x, size_t y) const { return pixelState(f)[y * w(f) + x]; }
+  PER_PIXEL_TYPE& ps(const Frame& f, size_t x, size_t y) const { return pixels(f)[y * w(f) + x]; }
   PER_PIXEL_TYPE& ps(const Frame& f) const { return ps(f, x(f), y(f)); }
   STATE* state(const Frame& frame) const {
     return reinterpret_cast<STATE*>(reinterpret_cast<uint8_t*>(frame.context) + sizeof(XYIndex));
@@ -69,7 +74,7 @@ class XYIndexStateEffect : public Effect {
   size_t width(const Frame& frame) const { return frame.xyIndexStore->xValuesCount(); }
   size_t height(const Frame& frame) const { return frame.xyIndexStore->yValuesCount(); }
   XYIndex* pos(const Frame& frame) const { return reinterpret_cast<XYIndex*>(frame.context); }
-  PER_PIXEL_TYPE* pixelState(const Frame& frame) const {
+  PER_PIXEL_TYPE* pixels(const Frame& frame) const {
     return reinterpret_cast<PER_PIXEL_TYPE*>(reinterpret_cast<uint8_t*>(frame.context) + sizeof(XYIndex) +
                                              sizeof(STATE));
   }
@@ -79,8 +84,6 @@ struct EmptyState {};
 
 template <typename PER_PIXEL_TYPE>
 class XYIndexEffect : public XYIndexStateEffect<EmptyState, PER_PIXEL_TYPE> {
-  static_assert(std::is_trivially_destructible<PER_PIXEL_TYPE>::value, "PER_PIXEL_TYPE must be trivially destructible");
-
  public:
   virtual void innerBegin(const Frame& frame) const = 0;
   virtual void innerRewind(const Frame& frame) const = 0;

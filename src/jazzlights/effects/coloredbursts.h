@@ -51,10 +51,7 @@ class ColoredBursts : public EffectWithPaletteXYIndexAndState<ColoredBurstsState
     state->curInit1 = false;
     for (uint8_t i = 0; i < state->numLines; i++) { state->curInit2[i] = false; }
     state->speed = f.predictableRandom->GetRandomNumberBetween(3, 10);
-    // Start all pixels black.
-    for (size_t x = 0; x < w(f); x++) {
-      for (size_t y = 0; y < h(f); y++) { ps(f, x, y) = RgbColor(0, 0, 0); }
-    }
+    // All pixels are default-initialized to black using RgbColor's default constructor.
   }
 
   void innerRewind(const Frame& f, ColoredBurstsState* state) const override {
