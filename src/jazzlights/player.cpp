@@ -134,32 +134,6 @@ auto override_effect = effect("fairy-wand", [](const Frame& frame) {
 });
 #endif  // FAIRY_WAND
 
-auto black_effect = solid(BLACK, "black");
-auto red_effect = solid(RED, "red");
-auto green_effect = solid(GREEN, "green");
-auto blue_effect = solid(BLUE, "blue");
-auto purple_effect = solid(PURPLE, "purple");
-auto cyan_effect = solid(CYAN, "cyan");
-auto yellow_effect = solid(YELLOW, "yellow");
-auto white_effect = solid(WHITE, "white");
-
-auto red_glow_effect = glow(RED, "glow-red");
-auto green_glow_effect = glow(GREEN, "glow-green");
-auto blue_glow_effect = glow(BLUE, "glow-blue");
-auto purple_glow_effect = glow(PURPLE, "glow-purple");
-auto cyan_glow_effect = glow(CYAN, "glow-cyan");
-auto yellow_glow_effect = glow(YELLOW, "glow-yellow");
-auto white_glow_effect = glow(WHITE, "glow-white");
-
-auto threesine_pattern = clone(threesine());
-
-auto synctest = effect("synctest", [](const Frame& frame) {
-  constexpr Color colors[] = {RED, GREEN, BLUE, WHITE};
-  const size_t index = static_cast<size_t>(frame.time / 1000) % (sizeof(colors) / sizeof(colors[0]));
-  const Color color = colors[index];
-  return [=](const Pixel& /*pt*/) -> Color { return color; };
-});
-
 constexpr bool patternIsReserved(PatternBits pattern) {
   // Patterns with lowest byte zero are reserved.
   return (pattern & 0xFF) == 0;
@@ -208,6 +182,32 @@ static const Effect* patternFromBits(PatternBits pattern) {
   static const Glitter glitter_pattern;
   static const TheMatrix thematrix_pattern;
   static const Rainbow rainbow_pattern;
+
+  static const FunctionalEffect black_effect = solid(BLACK, "black");
+  static const FunctionalEffect red_effect = solid(RED, "red");
+  static const FunctionalEffect green_effect = solid(GREEN, "green");
+  static const FunctionalEffect blue_effect = solid(BLUE, "blue");
+  static const FunctionalEffect purple_effect = solid(PURPLE, "purple");
+  static const FunctionalEffect cyan_effect = solid(CYAN, "cyan");
+  static const FunctionalEffect yellow_effect = solid(YELLOW, "yellow");
+  static const FunctionalEffect white_effect = solid(WHITE, "white");
+
+  static const FunctionalEffect red_glow_effect = glow(RED, "glow-red");
+  static const FunctionalEffect green_glow_effect = glow(GREEN, "glow-green");
+  static const FunctionalEffect blue_glow_effect = glow(BLUE, "glow-blue");
+  static const FunctionalEffect purple_glow_effect = glow(PURPLE, "glow-purple");
+  static const FunctionalEffect cyan_glow_effect = glow(CYAN, "glow-cyan");
+  static const FunctionalEffect yellow_glow_effect = glow(YELLOW, "glow-yellow");
+  static const FunctionalEffect white_glow_effect = glow(WHITE, "glow-white");
+
+  static const FunctionalEffect threesine_pattern = clone(threesine());
+
+  static const FunctionalEffect synctest = effect("synctest", [](const Frame& frame) {
+    constexpr Color colors[] = {RED, GREEN, BLUE, WHITE};
+    const size_t index = static_cast<size_t>(frame.time / 1000) % (sizeof(colors) / sizeof(colors[0]));
+    const Color color = colors[index];
+    return [=](const Pixel& /*pt*/) -> Color { return color; };
+  });
 
   // Pattern selection from bits.
   if (patternIsReserved(pattern)) {
