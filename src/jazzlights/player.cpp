@@ -286,9 +286,9 @@ std::string patternName(PatternBits pattern) { return patternFromBits(pattern)->
 
 Player::Player() {
   frame_.predictableRandom = &predictableRandom_;
-  // Work around a heap corruption issue that causes an abort when running realloc.
-  effectContextSize_ = 1000;
-  effectContext_ = malloc(effectContextSize_);
+  // Work around a heap corruption issue that causes an abort when increasing the size of the memory.
+  effectContextSize_ = 1024;
+  effectContext_ = aligned_alloc(kMaxStateAlignment, effectContextSize_);
 }
 
 Player::~Player() {
@@ -452,8 +452,13 @@ bool Player::render(Milliseconds currentTime) {
     jll_info("%u realloc context size from %zu to %zu (%s w %f h %f xv %zu yv %zu)", currentTime, effectContextSize_,
              effectContextSize, effect->effectName(frame_.pattern).c_str(), frame_.viewport.size.width,
              frame_.viewport.size.height, xyIndexStore_.xValuesCount(), xyIndexStore_.yValuesCount());
+    // realloc doesn't support alignment requirements, so we need to use aligned_alloc and copy the data ourselves.
+    size_t previousContextSize = effectContextSize_;
+    void* previousContext = effectContext_;
     effectContextSize_ = effectContextSize;
-    effectContext_ = realloc(effectContext_, effectContextSize_);
+    effectContext_ = aligned_alloc(kMaxStateAlignment, effectContextSize_);
+    memcpy(effectContext_, previousContext, previousContextSize);
+    free(previousContext);
   }
   frame_.context = effectContext_;
 

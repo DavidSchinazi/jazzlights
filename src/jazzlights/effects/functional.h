@@ -40,6 +40,7 @@ class FunctionalEffect : public Effect {
 
  private:
   PixelColorFunc* GetPixelColorFuncMemory(const Frame& frame) const {
+    static_assert(alignof(PixelColorFunc) <= kMaxStateAlignment, "Need to increase kMaxStateAlignment");
     return static_cast<PixelColorFunc*>(frame.context);
   }
   const std::string name_;

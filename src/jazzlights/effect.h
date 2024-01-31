@@ -10,6 +10,10 @@
 
 namespace jazzlights {
 
+enum : size_t {
+  kMaxStateAlignment = 8,
+};
+
 class Effect {
  public:
   virtual ~Effect() = default;
@@ -36,7 +40,7 @@ class XYIndexStateEffect : public Effect {
   virtual Color innerColor(const Frame& frame, STATE* state, const Pixel& px) const = 0;
 
   size_t contextSize(const Frame& frame) const override {
-    return sizeof(XYIndex) + sizeof(STATE) + sizeof(PER_PIXEL_TYPE) * width(frame) * height(frame);
+    return offsetof(XYIndexState, pixels) + sizeof(PER_PIXEL_TYPE) * width(frame) * height(frame);
   }
 
   Color color(const Frame& frame, const Pixel& px) const override {
@@ -45,8 +49,7 @@ class XYIndexStateEffect : public Effect {
   }
 
   void begin(const Frame& frame) const override {
-    new (pos(frame)) XYIndex;                                          // Default-initialize the position.
-    new (state(frame)) STATE;                                          // Default-initialize the state.
+    new (xyindexState(frame)) XYIndexState;                            // Default-initialize the position and state.
     new (pixels(frame)) PER_PIXEL_TYPE[width(frame) * height(frame)];  // Default-initialize the per-pixel data.
     innerBegin(frame, state(frame));
   }
@@ -66,18 +69,22 @@ class XYIndexStateEffect : public Effect {
   size_t h(const Frame& f) const { return height(f); }
   PER_PIXEL_TYPE& ps(const Frame& f, size_t x, size_t y) const { return pixels(f)[y * w(f) + x]; }
   PER_PIXEL_TYPE& ps(const Frame& f) const { return ps(f, x(f), y(f)); }
-  STATE* state(const Frame& frame) const {
-    return reinterpret_cast<STATE*>(reinterpret_cast<uint8_t*>(frame.context) + sizeof(XYIndex));
-  }
+  STATE* state(const Frame& frame) const { return &xyindexState(frame)->state; }
 
  private:
+  struct XYIndexState {
+    XYIndex pos;
+    STATE state;
+    PER_PIXEL_TYPE pixels[];
+  };
+  XYIndexState* xyindexState(const Frame& frame) const {
+    static_assert(alignof(XYIndexState) <= kMaxStateAlignment, "Need to increase kMaxStateAlignment");
+    return static_cast<XYIndexState*>(frame.context);
+  }
   size_t width(const Frame& frame) const { return frame.xyIndexStore->xValuesCount(); }
   size_t height(const Frame& frame) const { return frame.xyIndexStore->yValuesCount(); }
-  XYIndex* pos(const Frame& frame) const { return reinterpret_cast<XYIndex*>(frame.context); }
-  PER_PIXEL_TYPE* pixels(const Frame& frame) const {
-    return reinterpret_cast<PER_PIXEL_TYPE*>(reinterpret_cast<uint8_t*>(frame.context) + sizeof(XYIndex) +
-                                             sizeof(STATE));
-  }
+  XYIndex* pos(const Frame& frame) const { return &(xyindexState(frame)->pos); }
+  PER_PIXEL_TYPE* pixels(const Frame& frame) const { return xyindexState(frame)->pixels; }
 };
 
 struct EmptyState {};

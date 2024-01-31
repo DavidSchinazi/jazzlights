@@ -130,9 +130,8 @@ class EffectWithPaletteAndState : public Effect {
   }
 
   Color color(const Frame& frame, const Pixel& px) const override {
-    EffectWithPaletteState* state = reinterpret_cast<EffectWithPaletteState*>(frame.context);
-    const ColorWithPalette colorWithPalette = innerColor(frame, px, &state->innerState);
-    return colorWithPalette.colorFromPalette(state->ocp);
+    const ColorWithPalette colorWithPalette = innerColor(frame, px, &state(frame)->innerState);
+    return colorWithPalette.colorFromPalette(state(frame)->ocp);
   }
 
   size_t contextSize(const Frame& frame) const override {
@@ -140,16 +139,12 @@ class EffectWithPaletteAndState : public Effect {
   }
 
   void begin(const Frame& frame) const override {
-    new (frame.context) EffectWithPaletteState;  // Default-initialize the state.
-    EffectWithPaletteState* state = reinterpret_cast<EffectWithPaletteState*>(frame.context);
-    state->ocp = PaletteFromPattern(frame.pattern);
-    innerBegin(frame, &state->innerState);
+    new (state(frame)) EffectWithPaletteState;  // Default-initialize the state.
+    state(frame)->ocp = PaletteFromPattern(frame.pattern);
+    innerBegin(frame, &state(frame)->innerState);
   }
 
-  void rewind(const Frame& frame) const override {
-    EffectWithPaletteState* state = reinterpret_cast<EffectWithPaletteState*>(frame.context);
-    innerRewind(frame, &state->innerState);
-  }
+  void rewind(const Frame& frame) const override { innerRewind(frame, &state(frame)->innerState); }
 
   void afterColors(const Frame& /*frame*/) const override {
     static_assert(std::is_trivially_destructible<STATE>::value, "STATE must be trivially destructible");
@@ -160,6 +155,10 @@ class EffectWithPaletteAndState : public Effect {
     OurColorPalette ocp;
     STATE innerState;
   };
+  EffectWithPaletteState* state(const Frame& frame) const {
+    static_assert(alignof(EffectWithPaletteState) <= kMaxStateAlignment, "Need to increase kMaxStateAlignment");
+    return static_cast<EffectWithPaletteState*>(frame.context);
+  }
 };
 
 template <typename STATE>

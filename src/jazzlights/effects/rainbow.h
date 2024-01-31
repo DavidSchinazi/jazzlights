@@ -17,27 +17,25 @@ class Rainbow : public Effect {
   size_t contextSize(const Frame& /*frame*/) const override { return sizeof(RainbowState); }
 
   void begin(const Frame& frame) const override {
-    new (frame.context) RainbowState;  // Default-initialize the state.
-    RainbowState* state = reinterpret_cast<RainbowState*>(frame.context);
-    state->startHue = frame.predictableRandom->GetRandomByte();
-    state->origin.x =
+    new (state(frame)) RainbowState;  // Default-initialize the state.
+    state(frame)->startHue = frame.predictableRandom->GetRandomByte();
+    state(frame)->origin.x =
         frame.viewport.origin.x + frame.predictableRandom->GetRandomDoubleBetween(0, frame.viewport.size.width);
-    state->origin.y =
+    state(frame)->origin.y =
         frame.viewport.origin.y + frame.predictableRandom->GetRandomDoubleBetween(0, frame.viewport.size.height);
-    state->maxDistance = std::max({
-        distance(state->origin, lefttop(frame)),
-        distance(state->origin, righttop(frame)),
-        distance(state->origin, leftbottom(frame)),
-        distance(state->origin, rightbottom(frame)),
+    state(frame)->maxDistance = std::max({
+        distance(state(frame)->origin, lefttop(frame)),
+        distance(state(frame)->origin, righttop(frame)),
+        distance(state(frame)->origin, leftbottom(frame)),
+        distance(state(frame)->origin, rightbottom(frame)),
     });
-    state->backwards = frame.predictableRandom->GetRandomByte() & 1;
+    state(frame)->backwards = frame.predictableRandom->GetRandomByte() & 1;
   }
 
   void rewind(const Frame& frame) const override {
-    RainbowState* state = reinterpret_cast<RainbowState*>(frame.context);
     uint8_t hueOffset = 256 * frame.time / 1500;
-    if (state->backwards) { hueOffset = 255 - hueOffset; }
-    state->initialHue = state->startHue + hueOffset;
+    if (state(frame)->backwards) { hueOffset = 255 - hueOffset; }
+    state(frame)->initialHue = state(frame)->startHue + hueOffset;
   }
 
   void afterColors(const Frame& /*frame*/) const override {
@@ -45,9 +43,8 @@ class Rainbow : public Effect {
   }
 
   Color color(const Frame& frame, const Pixel& px) const override {
-    RainbowState* state = reinterpret_cast<RainbowState*>(frame.context);
-    const double d = distance(px.coord, state->origin);
-    const uint8_t hue = (state->initialHue + int32_t(255 * d / state->maxDistance)) % 255;
+    const double d = distance(px.coord, state(frame)->origin);
+    const uint8_t hue = (state(frame)->initialHue + int32_t(255 * d / state(frame)->maxDistance)) % 255;
     return HslColor(hue, 240, 255);
   }
 
@@ -59,6 +56,10 @@ class Rainbow : public Effect {
     bool backwards;
     uint8_t initialHue;
   };
+  RainbowState* state(const Frame& frame) const {
+    static_assert(alignof(RainbowState) <= kMaxStateAlignment, "Need to increase kMaxStateAlignment");
+    return static_cast<RainbowState*>(frame.context);
+  }
 };
 
 }  // namespace jazzlights

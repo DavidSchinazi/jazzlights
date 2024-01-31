@@ -15,17 +15,15 @@ class Glitter : public Effect {
   size_t contextSize(const Frame& /*frame*/) const override { return sizeof(GlitterState); }
 
   void begin(const Frame& frame) const override {
-    new (frame.context) GlitterState;  // Default-initialize the state.
-    GlitterState* state = reinterpret_cast<GlitterState*>(frame.context);
-    state->startHue = frame.predictableRandom->GetRandomByte();
-    state->backwards = frame.predictableRandom->GetRandomByte() & 1;
+    new (state(frame)) GlitterState;  // Default-initialize the state.
+    state(frame)->startHue = frame.predictableRandom->GetRandomByte();
+    state(frame)->backwards = frame.predictableRandom->GetRandomByte() & 1;
   }
 
   void rewind(const Frame& frame) const override {
-    GlitterState* state = reinterpret_cast<GlitterState*>(frame.context);
     uint8_t hueOffset = 256 * frame.time / kEffectDuration;
-    if (state->backwards) { hueOffset = 255 - hueOffset; }
-    state->hue = state->startHue + hueOffset;
+    if (state(frame)->backwards) { hueOffset = 255 - hueOffset; }
+    state(frame)->hue = state(frame)->startHue + hueOffset;
   }
 
   void afterColors(const Frame& /*frame*/) const override {
@@ -33,8 +31,7 @@ class Glitter : public Effect {
   }
 
   Color color(const Frame& frame, const Pixel& /*px*/) const override {
-    GlitterState* state = reinterpret_cast<GlitterState*>(frame.context);
-    return HslColor(state->hue, 255, frame.predictableRandom->GetRandomByte());
+    return HslColor(state(frame)->hue, 255, frame.predictableRandom->GetRandomByte());
   }
 
  private:
@@ -43,6 +40,10 @@ class Glitter : public Effect {
     bool backwards;
     uint8_t hue;
   };
+  GlitterState* state(const Frame& frame) const {
+    static_assert(alignof(GlitterState) <= kMaxStateAlignment, "Need to increase kMaxStateAlignment");
+    return static_cast<GlitterState*>(frame.context);
+  }
 };
 
 }  // namespace jazzlights
