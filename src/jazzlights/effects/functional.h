@@ -15,9 +15,14 @@ using FrameToPixelColorFuncFunc = std::function<PixelColorFunc(const Frame&)>;
 // The PixelColorFunc is saved in the frame context, and then it is called for every pixel.
 class FunctionalEffect : public Effect {
  public:
-  FunctionalEffect(const std::string& name, const FrameToPixelColorFuncFunc& f) : name_(name), frameFunc_(f) {}
+  explicit FunctionalEffect(const std::string& name, const FrameToPixelColorFuncFunc& f) : name_(name), frameFunc_(f) {}
 
-  FunctionalEffect(const FunctionalEffect& other) = default;
+  // Disallow copy constructor and assignment.
+  FunctionalEffect(const FunctionalEffect&) = delete;
+  FunctionalEffect& operator=(const FunctionalEffect&) = delete;
+  FunctionalEffect& operator=(FunctionalEffect&&) = delete;
+  // But allow move constructor.
+  FunctionalEffect(FunctionalEffect&&) = default;
 
   size_t contextSize(const Frame& /*frame*/) const override { return sizeof(PixelColorFunc); }
 
