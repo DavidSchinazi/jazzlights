@@ -8,16 +8,21 @@
 #include <set>
 #include <sstream>
 
-#include "jazzlights/effects/coloredbursts.h"
+#include "jazzlights/effects/calibration.h"
+#include "jazzlights/effects/colored_bursts.h"
+#include "jazzlights/effects/fairy_wand.h"
 #include "jazzlights/effects/flame.h"
+#include "jazzlights/effects/follow_strand.h"
 #include "jazzlights/effects/glitter.h"
 #include "jazzlights/effects/glow.h"
 #include "jazzlights/effects/hiphotic.h"
+#include "jazzlights/effects/mapping.h"
 #include "jazzlights/effects/metaballs.h"
 #include "jazzlights/effects/plasma.h"
 #include "jazzlights/effects/rainbow.h"
 #include "jazzlights/effects/solid.h"
-#include "jazzlights/effects/thematrix.h"
+#include "jazzlights/effects/sync_test.h"
+#include "jazzlights/effects/the_matrix.h"
 #include "jazzlights/effects/threesine.h"
 #include "jazzlights/instrumentation.h"
 #include "jazzlights/pseudorandom.h"
@@ -37,101 +42,6 @@ int comparePrecedence(Precedence leftPrecedence, const NetworkDeviceId& leftDevi
   }
   return leftDeviceId.compare(rightDeviceId);
 }
-
-FunctionalEffect follow_strand_effect = effect("follow-strand", [](const Frame& frame) {
-  const int offset = frame.time / 100;
-  const bool blink = ((frame.time % 1000) < 500);
-  return [offset, blink](const Pixel& pt) -> Color {
-    constexpr int32_t green = 0x00ff00, blue = 0x0000ff, red = 0xff0000, black = 0;
-    constexpr int32_t colors[] = {
-        red,   red,   red,   black, black, black, black, black, black, green, green, green, black, black,
-        black, black, black, black, blue,  blue,  blue,  black, black, black, black, black, black,
-    };
-    constexpr int numColors = sizeof(colors) / sizeof(colors[0]);
-    const int reverseIndex = (-pt.index % numColors) + numColors - 1;
-    int32_t col = colors[(offset + reverseIndex) % numColors];
-    if (pt.index == 0 ||
-        (fabs(pt.coord.x - pt.layout->at(0).x) < 0.001 && fabs(pt.coord.y - pt.layout->at(0).y) < 0.001)) {
-      col = blink ? 0xffffff : 0;
-    } else if (pt.index == pt.layout->pixelCount() - 1 ||
-               (fabs(pt.coord.x - pt.layout->at(pt.layout->pixelCount() - 1).x) < 0.001 &&
-                fabs(pt.coord.y - pt.layout->at(pt.layout->pixelCount() - 1).y) < 0.001)) {
-      col = blink ? 0xff00ff : 0;
-    }
-    return Color(col);
-  };
-});
-
-FunctionalEffect mapping_pattern = effect("mapping", [](const Frame& frame) {
-  const int pixelNum = (frame.pattern >> 8) & 0xFFFF;
-  const bool blink = ((frame.time % 1000) < 500);
-  return [pixelNum, blink](const Pixel& pt) -> Color {
-    if (pt.index < pixelNum) {
-      return RED;
-    } else if (pt.index == pixelNum) {
-      if (blink) {
-        return BLUE;
-      } else {
-        return BLACK;
-      }
-    } else {
-      return GREEN;
-    }
-  };
-});
-
-FunctionalEffect calibration_effect = effect("calibration", [](const Frame& frame) {
-  const bool blink = ((frame.time % 1000) < 500);
-  return [&frame, blink](const Pixel& pt) -> Color {
-    XYIndex xyIndex = frame.xyIndexStore->FromPixel(pt);
-    const int32_t green = 0x00ff00, blue = 0x0000ff, red = 0xff0000;
-    const int32_t yellow = green | red, purple = red | blue, white = 0xffffff;
-    const int32_t orange = 0xffcc00;
-    constexpr int32_t yColors[19] = {red,    green, blue,   yellow, purple, orange, white, blue, yellow, red,
-                                     purple, green, orange, white,  yellow, purple, green, blue, red};
-    constexpr int numYColors = sizeof(yColors) / sizeof(yColors[0]);
-
-    const int y = xyIndex.yIndex;
-    int32_t col = yColors[y % numYColors];
-#if JL_IS_CONFIG(VEST)
-    const int x = xyIndex.xIndex;
-    if (blink) {
-      if (y == 0 && (x == 0 || x == 11 || x == 26)) {
-        col = 0;
-      } else if (y == 1 && (x == 10 || x == 25 || x == 36)) {
-        col = 0;
-      }
-    }
-#else   // VEST
-    (void)blink;
-#endif  // VEST
-    return Color(col);
-  };
-});
-
-#if JL_IS_CONFIG(FAIRY_WAND)
-constexpr Milliseconds kOverridePatternDuration = 8000;
-FunctionalEffect override_effect = effect("fairy-wand", [](const Frame& frame) {
-  bool blink;
-  if (frame.time < 1000) {
-    blink = ((frame.time % 500) < 250);
-  } else if (frame.time < 2000) {
-    blink = ((frame.time % 250) < 125);
-  } else if (frame.time < 3000) {
-    blink = ((frame.time % 125) < 63);
-  } else if (frame.time < 4000) {
-    blink = ((frame.time % 63) < 32);
-  } else if (frame.time < 7000) {
-    blink = true;
-  } else {
-    blink = false;
-  }
-  return [blink](const Pixel& /*pt*/) -> Color {
-    constexpr int32_t white = 0xffffff, black = 0;
-    return Color(blink ? white : black);
-  };
-});
-#endif  // FAIRY_WAND
 
 constexpr bool patternIsReserved(PatternBits pattern) {
   // Patterns with lowest byte zero are reserved.
@@ -181,7 +91,11 @@ static const Effect* patternFromBits(PatternBits pattern) {
   static const Glitter glitter_pattern;
   static const TheMatrix thematrix_pattern;
   static const Rainbow rainbow_pattern;
-
+  static const FunctionalEffect threesine_pattern = threesine();
+  static const FunctionalEffect follow_strand_effect = follow_strand();
+  static const FunctionalEffect mapping_effect = mapping();
+  static const FunctionalEffect calibration_effect = calibration();
+  static const FunctionalEffect sync_test_effect = sync_test();
   static const FunctionalEffect black_effect = solid(BLACK, "black");
   static const FunctionalEffect red_effect = solid(RED, "red");
   static const FunctionalEffect green_effect = solid(GREEN, "green");
@@ -190,7 +104,6 @@ static const Effect* patternFromBits(PatternBits pattern) {
   static const FunctionalEffect cyan_effect = solid(CYAN, "cyan");
   static const FunctionalEffect yellow_effect = solid(YELLOW, "yellow");
   static const FunctionalEffect white_effect = solid(WHITE, "white");
-
   static const FunctionalEffect red_glow_effect = glow(RED, "glow-red");
   static const FunctionalEffect green_glow_effect = glow(GREEN, "glow-green");
   static const FunctionalEffect blue_glow_effect = glow(BLUE, "glow-blue");
@@ -198,15 +111,6 @@ static const Effect* patternFromBits(PatternBits pattern) {
   static const FunctionalEffect cyan_glow_effect = glow(CYAN, "glow-cyan");
   static const FunctionalEffect yellow_glow_effect = glow(YELLOW, "glow-yellow");
   static const FunctionalEffect white_glow_effect = glow(WHITE, "glow-white");
-
-  static const FunctionalEffect threesine_pattern = threesine();
-
-  static const FunctionalEffect synctest = effect("synctest", [](const Frame& frame) {
-    constexpr Color colors[] = {RED, GREEN, BLUE, WHITE};
-    const size_t index = static_cast<size_t>(frame.time / 1000) % (sizeof(colors) / sizeof(colors[0]));
-    const Color color = colors[index];
-    return [color](const Pixel& /*pt*/) -> Color { return color; };
-  });
 
   // Pattern selection from bits.
   if (patternIsReserved(pattern)) {
@@ -229,7 +133,7 @@ static const Effect* patternFromBits(PatternBits pattern) {
         case 0x0C: return &cyan_glow_effect;
         case 0x0D: return &yellow_glow_effect;
         case 0x0E: return &white_glow_effect;
-        case 0x0F: return &synctest;
+        case 0x0F: return &sync_test_effect;
         case 0x10: return &calibration_effect;
         case 0x11: return &follow_strand_effect;
         case 0xFF:
@@ -240,7 +144,7 @@ static const Effect* patternFromBits(PatternBits pattern) {
           break;
       }
     } else if (byte1 == 0x01) {
-      return &mapping_pattern;
+      return &mapping_effect;
     }
     return &red_effect;
   } else {
@@ -439,9 +343,11 @@ bool Player::render(Milliseconds currentTime) {
   }
   const Effect* effect = patternFromBits(frame_.pattern);
 #if JL_IS_CONFIG(FAIRY_WAND)
+  constexpr Milliseconds kOverridePatternDuration = 8000;
+  static const FunctionalEffect fairy_wand_effect = fairy_wand();
   if (overridePatternStartTime_ >= 0 && currentTime - overridePatternStartTime_ < kOverridePatternDuration) {
     frame_.time = currentTime - overridePatternStartTime_;
-    effect = &override_effect;
+    effect = &fairy_wand_effect;
   }
 #endif  // FAIRY_WAND
 

@@ -318,9 +318,9 @@ void AtomMatrixUi::RunLoop(Milliseconds currentTime) {
   if (ScreenMessage(currentTime)) { return; }
 
 #if JL_IS_CONFIG(FAIRY_WAND)
-  atomScreenClear();
+  ScreenClear(currentTime);
   ScreenDisplay(currentTime);
-  if (BTN_EVENT(btn)) { player.triggerPatternOverride(currentTime); }
+  if (button_.IsPressed(currentTime)) { player_.triggerPatternOverride(currentTime); }
   return;
 #endif  // FAIRY_WAND
 
