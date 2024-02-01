@@ -21,7 +21,6 @@
 #include "jazzlights/effects/threesine.h"
 #include "jazzlights/instrumentation.h"
 #include "jazzlights/pseudorandom.h"
-#include "jazzlights/registry.h"
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/math.h"
 #include "jazzlights/util/stream.h"
@@ -39,7 +38,7 @@ int comparePrecedence(Precedence leftPrecedence, const NetworkDeviceId& leftDevi
   return leftDeviceId.compare(rightDeviceId);
 }
 
-auto follow_strand_effect = effect("follow-strand", [](const Frame& frame) {
+FunctionalEffect follow_strand_effect = effect("follow-strand", [](const Frame& frame) {
   const int offset = frame.time / 100;
   const bool blink = ((frame.time % 1000) < 500);
   return [offset, blink](const Pixel& pt) -> Color {
@@ -63,7 +62,7 @@ auto follow_strand_effect = effect("follow-strand", [](const Frame& frame) {
   };
 });
 
-auto mapping_pattern = effect("mapping", [](const Frame& frame) {
+FunctionalEffect mapping_pattern = effect("mapping", [](const Frame& frame) {
   const int pixelNum = (frame.pattern >> 8) & 0xFFFF;
   const bool blink = ((frame.time % 1000) < 500);
   return [pixelNum, blink](const Pixel& pt) -> Color {
@@ -81,7 +80,7 @@ auto mapping_pattern = effect("mapping", [](const Frame& frame) {
   };
 });
 
-auto calibration_effect = effect("calibration", [](const Frame& frame) {
+FunctionalEffect calibration_effect = effect("calibration", [](const Frame& frame) {
   const bool blink = ((frame.time % 1000) < 500);
   return [&frame, blink](const Pixel& pt) -> Color {
     XYIndex xyIndex = frame.xyIndexStore->FromPixel(pt);
@@ -112,7 +111,7 @@ auto calibration_effect = effect("calibration", [](const Frame& frame) {
 
 #if JL_IS_CONFIG(FAIRY_WAND)
 constexpr Milliseconds kOverridePatternDuration = 8000;
-auto override_effect = effect("fairy-wand", [](const Frame& frame) {
+FunctionalEffect override_effect = effect("fairy-wand", [](const Frame& frame) {
   bool blink;
   if (frame.time < 1000) {
     blink = ((frame.time % 500) < 250);
@@ -200,7 +199,7 @@ static const Effect* patternFromBits(PatternBits pattern) {
   static const FunctionalEffect yellow_glow_effect = glow(YELLOW, "glow-yellow");
   static const FunctionalEffect white_glow_effect = glow(WHITE, "glow-white");
 
-  static const FunctionalEffect threesine_pattern = clone(threesine());
+  static const FunctionalEffect threesine_pattern = threesine();
 
   static const FunctionalEffect synctest = effect("synctest", [](const Frame& frame) {
     constexpr Color colors[] = {RED, GREEN, BLUE, WHITE};

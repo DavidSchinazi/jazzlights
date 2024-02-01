@@ -7,7 +7,6 @@
 #include "jazzlights/layout.h"
 #include "jazzlights/network.h"
 #include "jazzlights/pseudorandom.h"
-#include "jazzlights/registry.h"
 #include "jazzlights/renderer.h"
 
 namespace jazzlights {

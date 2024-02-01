@@ -15,7 +15,7 @@ uint8_t fade_sub_color(uint8_t channel, uint8_t intensity) {
 }
 }  // namespace
 
-auto glow = [](Color color, const std::string& name) {
+inline FunctionalEffect glow(Color color, const std::string& name) {
   return effect(name, [color](const Frame& frame) {
     constexpr uint32_t period = 2500;
     constexpr uint32_t half_low_time = 10;

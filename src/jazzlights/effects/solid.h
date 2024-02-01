@@ -5,7 +5,7 @@
 
 namespace jazzlights {
 
-auto solid = [](Color color, const std::string& name) {
+inline FunctionalEffect solid(Color color, const std::string& name) {
   return effect(name,
                 [color](const Frame& /*frame*/) { return [color](const Pixel& /*pt*/) -> Color { return color; }; });
 };
