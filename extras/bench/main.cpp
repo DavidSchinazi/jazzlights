@@ -12,8 +12,8 @@ class NoopRenderer : public Renderer {
   NoopRenderer() = default;
 
   void render(InputStream<Color>& colors) override {
-    for (auto color : colors) {
-      auto rgba = color.asRgba();
+    for (Color color : colors) {
+      RgbaColor rgba = color.asRgba();
       (void)rgba.red;
       (void)rgba.green;
       (void)rgba.blue;

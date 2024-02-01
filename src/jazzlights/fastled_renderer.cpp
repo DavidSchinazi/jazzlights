@@ -23,7 +23,7 @@ FastLedRenderer::~FastLedRenderer() {
 
 void FastLedRenderer::render(InputStream<Color>& colors) {
   size_t i = 0;
-  for (auto color : colors) {
+  for (Color color : colors) {
     RgbaColor rgba = color.asRgba();
     ledsPlayer_[i] = CRGB(rgba.red, rgba.green, rgba.blue);
     i++;

@@ -19,7 +19,7 @@ static void renderLed(double cx, double cy, double r, jazzlights::RgbaColor colo
 GLRenderer::GLRenderer(const Layout& l, Meters r) : layout_(l), ledRadius_(r) {}
 
 void GLRenderer::render(InputStream<Color>& colors) {
-  auto pti = begin(layout_);
+  LayoutIterator pti = begin(layout_);
   auto cli = colors.begin();
   while (cli != colors.end() && pti != end(layout_)) {
     Point pos = (*pti).coord;
