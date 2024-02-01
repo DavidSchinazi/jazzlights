@@ -143,6 +143,7 @@ void printInstrumentationInfo(Milliseconds currentTime) {
   UBaseType_t numTasks = uxTaskGetNumberOfTasks();
   // Add 10 in case some tasks get created while this is getting executed.
   TaskStatus_t* tastStatuses = reinterpret_cast<TaskStatus_t*>(calloc(numTasks + 10, sizeof(TaskStatus_t)));
+  if (tastStatuses == nullptr) { jll_fatal("Failed to allocate %zu*%zu", numTasks + 10, sizeof(TaskStatus_t)); }
   uint32_t totalRuntime = 0;
   numTasks = uxTaskGetSystemState(tastStatuses, numTasks, &totalRuntime);
   jll_info("%u INSTRUMENTATION for %u tasks:", currentTime, numTasks);

@@ -14,6 +14,9 @@ enum : size_t {
   kMaxStateAlignment = 8,
 };
 
+static_assert((kMaxStateAlignment & (kMaxStateAlignment - 1)) == 0, "kMaxStateAlignment must be a power of 2");
+static_assert(kMaxStateAlignment >= sizeof(void*), "kMaxStateAlignment must be bigger than pointer");
+
 class Effect {
  public:
   virtual ~Effect() = default;

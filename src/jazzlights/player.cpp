@@ -192,6 +192,9 @@ Player::Player() {
   // Work around a heap corruption issue that causes an abort when increasing the size of the memory.
   effectContextSize_ = 1024;
   effectContext_ = aligned_alloc(kMaxStateAlignment, effectContextSize_);
+  if (effectContext_ == nullptr) {
+    jll_fatal("aligned_alloc(%zu, %zu) failed", kMaxStateAlignment, effectContextSize_);
+  }
 }
 
 Player::~Player() {
@@ -352,8 +355,12 @@ bool Player::render(Milliseconds currentTime) {
 #endif  // FAIRY_WAND
 
   // Ensure effectContext_ is big enough for this effect.
-  const size_t effectContextSize = effect->contextSize(frame_);
+  size_t effectContextSize = effect->contextSize(frame_);
   if (effectContextSize > effectContextSize_) {
+    if ((effectContextSize % kMaxStateAlignment) != 0) {
+      // aligned_alloc required the allocation size to be a multiple of the alignment.
+      effectContextSize += kMaxStateAlignment - (effectContextSize % kMaxStateAlignment);
+    }
     jll_info("%u realloc context size from %zu to %zu (%s w %f h %f xv %zu yv %zu)", currentTime, effectContextSize_,
              effectContextSize, effect->effectName(frame_.pattern).c_str(), frame_.viewport.size.width,
              frame_.viewport.size.height, xyIndexStore_.xValuesCount(), xyIndexStore_.yValuesCount());
@@ -362,6 +369,9 @@ bool Player::render(Milliseconds currentTime) {
     void* previousContext = effectContext_;
     effectContextSize_ = effectContextSize;
     effectContext_ = aligned_alloc(kMaxStateAlignment, effectContextSize_);
+    if (effectContext_ == nullptr) {
+      jll_fatal("%u aligned_alloc(%zu, %zu) failed", currentTime, kMaxStateAlignment, effectContextSize_);
+    }
     memcpy(effectContext_, previousContext, previousContextSize);
     free(previousContext);
   }
