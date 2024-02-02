@@ -7,7 +7,7 @@ namespace jazzlights {
 
 inline FunctionalEffect follow_strand() {
   return effect("follow-strand", [](const Frame& frame) {
-    const int offset = frame.time / 100;
+    const size_t offset = frame.time / 100;
     const bool blink = ((frame.time % 1000) < 500);
     return [offset, blink](const Pixel& pt) -> Color {
       constexpr int32_t green = 0x00ff00, blue = 0x0000ff, red = 0xff0000, black = 0;
@@ -15,8 +15,8 @@ inline FunctionalEffect follow_strand() {
           red,   red,   red,   black, black, black, black, black, black, green, green, green, black, black,
           black, black, black, black, blue,  blue,  blue,  black, black, black, black, black, black,
       };
-      constexpr int numColors = sizeof(colors) / sizeof(colors[0]);
-      const int reverseIndex = (-pt.index % numColors) + numColors - 1;
+      constexpr size_t numColors = sizeof(colors) / sizeof(colors[0]);
+      const size_t reverseIndex = (-pt.index % numColors) + numColors - 1;
       int32_t col = colors[(offset + reverseIndex) % numColors];
       if (pt.index == 0 ||
           (fabs(pt.coord.x - pt.layout->at(0).x) < 0.001 && fabs(pt.coord.y - pt.layout->at(0).y) < 0.001)) {

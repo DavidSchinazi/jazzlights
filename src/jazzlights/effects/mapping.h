@@ -7,7 +7,7 @@ namespace jazzlights {
 
 inline FunctionalEffect mapping() {
   return effect("mapping", [](const Frame& frame) {
-    const int pixelNum = (frame.pattern >> 8) & 0xFFFF;
+    const size_t pixelNum = (frame.pattern >> 8) & 0xFFFF;
     const bool blink = ((frame.time % 1000) < 500);
     return [pixelNum, blink](const Pixel& pt) -> Color {
       if (pt.index < pixelNum) {

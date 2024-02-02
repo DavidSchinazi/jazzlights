@@ -17,10 +17,10 @@ inline FunctionalEffect calibration() {
                                        purple, green, orange, white,  yellow, purple, green, blue, red};
       constexpr int numYColors = sizeof(yColors) / sizeof(yColors[0]);
 
-      const int y = xyIndex.yIndex;
+      const size_t y = xyIndex.yIndex;
       int32_t col = yColors[y % numYColors];
 #if JL_IS_CONFIG(VEST)
-      const int x = xyIndex.xIndex;
+      const size_t x = xyIndex.xIndex;
       if (blink) {
         if (y == 0 && (x == 0 || x == 11 || x == 26)) {
           col = 0;

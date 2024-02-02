@@ -28,8 +28,8 @@ namespace {
 constexpr uint8_t kAdvType = 0xDF;
 
 void convertToHex(char* target, size_t targetLength, const uint8_t* source, uint8_t sourceLength) {
-  if (targetLength <= sourceLength * 2) { return; }
-  for (int i = 0; i < sourceLength; i++) {
+  if (targetLength <= static_cast<size_t>(sourceLength) * 2) { return; }
+  for (uint8_t i = 0; i < sourceLength; i++) {
     sprintf(target, "%.2x", (char)*source);
     source++;
     target += 2;

@@ -11,7 +11,6 @@ namespace jazzlights {
 
 class Renderer {
  public:
-  Renderer() = default;
   virtual ~Renderer() = default;
 
   virtual void render(InputStream<Color>& colors) = 0;

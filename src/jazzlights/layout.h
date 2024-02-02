@@ -17,8 +17,8 @@ class Layout {
   virtual ~Layout() = default;
   Layout& operator=(const Layout& other) = delete;
 
-  virtual int pixelCount() const = 0;
-  virtual Point at(int i) const = 0;
+  virtual size_t pixelCount() const = 0;
+  virtual Point at(size_t i) const = 0;
 };
 
 class LayoutIterator {
@@ -26,7 +26,7 @@ class LayoutIterator {
   using value_type = Pixel;
   using reference_type = Pixel&;
 
-  LayoutIterator(const Layout& l, int i) : layout_(&l), index_(i) {}
+  LayoutIterator(const Layout& l, size_t i) : layout_(&l), index_(i) {}
 
   Pixel operator*() const {
     Pixel px;
@@ -54,7 +54,7 @@ class LayoutIterator {
 
  private:
   const Layout* layout_;
-  int index_;
+  size_t index_;
 };
 
 inline LayoutIterator begin(const Layout& l) { return LayoutIterator(l, 0); }

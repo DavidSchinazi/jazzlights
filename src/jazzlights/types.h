@@ -23,7 +23,7 @@ class Layout;
 
 struct Pixel {
   const Layout* layout = nullptr;
-  int index = 0;
+  size_t index = 0;
   Point coord;
 };
 

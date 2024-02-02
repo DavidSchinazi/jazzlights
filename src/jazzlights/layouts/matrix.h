@@ -8,8 +8,8 @@ using PixelsPerMeter = double;
 
 class Matrix : public Layout {
  public:
-  constexpr Matrix(int w, int h) : width_(w), height_(h) {}
-  constexpr Matrix(int w, int h, PixelsPerMeter r) : width_(w), height_(h), resolution_(r) {}
+  constexpr Matrix(size_t w, size_t h) : width_(w), height_(h) {}
+  constexpr Matrix(size_t w, size_t h, PixelsPerMeter r) : width_(w), height_(h), resolution_(r) {}
 
   Matrix(const Matrix& other)
       : Layout(),
@@ -41,11 +41,11 @@ class Matrix : public Layout {
 
   Dimensions size() const { return {width_ / resolution_, height_ / resolution_}; }
 
-  int pixelCount() const override { return width_ * height_; }
+  size_t pixelCount() const override { return width_ * height_; }
 
-  Point at(int index) const override {
-    int x = (index % width_);
-    int y = (index / width_);
+  Point at(size_t index) const override {
+    size_t x = (index % width_);
+    size_t y = (index / width_);
     if ((flags_ & ZIGZAG) && y % 2 == 0) { x = width_ - x - 1; }
     return {origin_.x + x / resolution_, origin_.y + y / resolution_};
   }
@@ -53,8 +53,8 @@ class Matrix : public Layout {
  private:
   enum { PROGRESSIVE = 0, ZIGZAG = 1 };
 
-  int width_;
-  int height_;
+  size_t width_;
+  size_t height_;
   Point origin_ = {0, 0};
   PixelsPerMeter resolution_ = 60.0;
   uint32_t flags_ = 0;

@@ -20,7 +20,7 @@ struct Frame {
   Box viewport;
   void* context = nullptr;
   Milliseconds time;
-  int pixelCount;
+  size_t pixelCount;
 };
 
 constexpr Coord width(const Frame& frame) { return frame.viewport.size.width; }

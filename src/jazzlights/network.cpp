@@ -61,7 +61,7 @@ std::string NetworkStatusToString(NetworkStatus status) {
 std::string displayBitsAsBinary(PatternBits p) {
   static_assert(sizeof(p) == 4, "32bits");
   char bits[33] = {};
-  for (int b = 0; b < 32; b++) {
+  for (uint8_t b = 0; b < 32; b++) {
     if ((p >> b) & 1) {
       bits[b] = '.';
     } else {
