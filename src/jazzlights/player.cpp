@@ -400,15 +400,15 @@ bool Player::render(Milliseconds currentTime) {
   // Actually render the pixels.
   predictableRandom_.ResetWithFrameTime(frame_, effect->effectName(frame_.pattern).c_str());
   effect->rewind(frame_);
+  Pixel px;
   for (Strand* s = strands_; s < strands_ + strandCount_; ++s) {
+    px.layout = s->layout;
     const size_t numPixels = s->layout->pixelCount();
     for (size_t index = 0; index < numPixels; index++) {
-      Pixel px;
-      px.layout = s->layout;
-      px.index = index;
-      px.coord = s->layout->at(index);
       Color color;
+      px.coord = s->layout->at(index);
       if (!IsEmpty(px.coord)) {
+        px.index = index;
         color = effect->color(frame_, px);
       } else {
         color = BLACK;
