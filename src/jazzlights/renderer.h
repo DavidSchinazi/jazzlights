@@ -2,10 +2,6 @@
 #define JL_RENDERER_H
 
 #include "jazzlights/util/color.h"
-#include "jazzlights/util/geom.h"
-#include "jazzlights/util/log.h"
-#include "jazzlights/util/stream.h"
-#include "jazzlights/util/time.h"
 
 namespace jazzlights {
 

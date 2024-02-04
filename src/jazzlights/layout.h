@@ -4,11 +4,8 @@
 #include "jazzlights/types.h"
 #include "jazzlights/util/geom.h"
 #include "jazzlights/util/math.h"
-#include "jazzlights/util/stream.h"
 
 namespace jazzlights {
-
-using PixelsPerMeter = double;
 
 class Layout {
  public:
@@ -21,53 +18,10 @@ class Layout {
   virtual Point at(size_t i) const = 0;
 };
 
-class LayoutIterator {
- public:
-  using value_type = Pixel;
-  using reference_type = Pixel&;
-
-  LayoutIterator(const Layout& l, size_t i) : layout_(&l), index_(i) {}
-
-  Pixel operator*() const {
-    Pixel px;
-    px.layout = layout_;
-    px.index = index_;
-    px.coord = layout_->at(index_);
-    return px;
-  }
-
-  bool operator==(const LayoutIterator& other) const { return layout_ == other.layout_ && index_ == other.index_; }
-
-  bool operator!=(const LayoutIterator& other) { return !(*this == other); }
-
-  size_t operator-(const LayoutIterator& other) const { return index_ - other.index_; }
-
-  LayoutIterator& operator++() {
-    index_++;
-    return *this;
-  }
-
-  LayoutIterator& operator++(int) {
-    index_++;
-    return *this;
-  }
-
- private:
-  const Layout* layout_;
-  size_t index_;
-};
-
-inline LayoutIterator begin(const Layout& l) { return LayoutIterator(l, 0); }
-
-inline LayoutIterator end(const Layout& l) { return LayoutIterator(l, l.pixelCount()); }
-
-inline RangeInputStream<LayoutIterator> points(const Layout& l) {
-  return RangeInputStream<LayoutIterator>(begin(l), end(l));
-}
-
 inline Box bounds(const Layout& layout) {
   Box bb;
-  for (auto pt : layout) { bb = merge(bb, pt.coord); }
+  const size_t numPixels = layout.pixelCount();
+  for (size_t index = 0; index < numPixels; index++) { bb = merge(bb, layout.at(index)); }
   return bb;
 }
 
