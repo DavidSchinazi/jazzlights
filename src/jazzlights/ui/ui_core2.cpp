@@ -116,33 +116,31 @@ class Core2ScreenRenderer : public Renderer {
     }
     */
   }
-  void render(InputStream<Color>& pixelColors) override {
+  void renderPixel(size_t index, Color color) override {
     if (!enabled_) { return; }
-    size_t i = 0;
-    uint16_t rowColors16[320 * 8];
-    for (Color color : pixelColors) {
-      RgbColor rgb = color.asRgb();
-      uint16_t color16 =
-          ((uint16_t)(rgb.red & 0xF8) << 8) | ((uint16_t)(rgb.green & 0xFC) << 3) | ((rgb.blue & 0xF8) >> 3);
-      int32_t x = i % 40;
-      int32_t y = i / 40;
-      int32_t factor = fullScreen_ ? 8 : 4;
-      for (size_t xi = 0; xi < factor; xi++) {
-        for (size_t yi = 0; yi < factor; yi++) { rowColors16[x * factor + xi + yi * 40 * factor] = color16; }
-      }
-      if (x == 39) {
-        bool swap = M5.Lcd.getSwapBytes();
-        M5.Lcd.setSwapBytes(true);
-        M5.Lcd.pushImage(/*x0=*/0, /*y0=*/y * factor, /*w=*/40 * factor, /*h=*/factor, rowColors16);
-        M5.Lcd.setSwapBytes(swap);
-      }
-      i++;
+    RgbColor rgb = color.asRgb();
+    uint16_t color16 =
+        ((uint16_t)(rgb.red & 0xF8) << 8) | ((uint16_t)(rgb.green & 0xFC) << 3) | ((rgb.blue & 0xF8) >> 3);
+    int32_t x = index % 40;
+    int32_t y = index / 40;
+    int32_t factor = fullScreen_ ? 8 : 4;
+    for (size_t xi = 0; xi < factor; xi++) {
+      for (size_t yi = 0; yi < factor; yi++) { rowColors16_[x * factor + xi + yi * 40 * factor] = color16; }
+    }
+    if (x == 39) {
+      bool swap = M5.Lcd.getSwapBytes();
+      M5.Lcd.setSwapBytes(true);
+      M5.Lcd.pushImage(/*x0=*/0, /*y0=*/y * factor, /*w=*/40 * factor, /*h=*/factor, rowColors16_);
+      M5.Lcd.setSwapBytes(swap);
     }
   }
 
  private:
   bool enabled_ = true;
   bool fullScreen_ = false;
+  // We only process 8 rows in memory at a time because the entire image does not fit on the stack or in SRAM.
+  // One potential alternative would be to keep the image in PSRAM but that would not necessarily be faster.
+  uint16_t rowColors16_[320 * 8] = {};
 };
 
 }  // namespace

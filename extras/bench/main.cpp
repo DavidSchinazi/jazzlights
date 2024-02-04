@@ -11,13 +11,11 @@ class NoopRenderer : public Renderer {
  public:
   NoopRenderer() = default;
 
-  void render(InputStream<Color>& colors) override {
-    for (Color color : colors) {
-      RgbaColor rgba = color.asRgba();
-      (void)rgba.red;
-      (void)rgba.green;
-      (void)rgba.blue;
-    }
+  void renderPixel(size_t /*index*/, Color color) override {
+    RgbaColor rgba = color.asRgba();
+    (void)rgba.red;
+    (void)rgba.green;
+    (void)rgba.blue;
   }
 };
 

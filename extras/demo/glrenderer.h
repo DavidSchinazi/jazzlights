@@ -10,7 +10,7 @@ class GLRenderer : public Renderer {
  public:
   explicit GLRenderer(const Layout& l, Meters ledRadius = 1.0 / 60.0);
 
-  void render(InputStream<Color>& pixelColors) override;
+  void renderPixel(size_t index, Color color) override;
 
  private:
   const Layout& layout_;

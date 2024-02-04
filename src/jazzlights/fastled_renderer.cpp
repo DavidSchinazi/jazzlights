@@ -21,13 +21,9 @@ FastLedRenderer::~FastLedRenderer() {
   free(ledsFastLed_);
 }
 
-void FastLedRenderer::render(InputStream<Color>& colors) {
-  size_t i = 0;
-  for (Color color : colors) {
-    RgbaColor rgba = color.asRgba();
-    ledsPlayer_[i] = CRGB(rgba.red, rgba.green, rgba.blue);
-    i++;
-  }
+void FastLedRenderer::renderPixel(size_t index, Color color) {
+  RgbaColor rgba = color.asRgba();
+  ledsPlayer_[index] = CRGB(rgba.red, rgba.green, rgba.blue);
 }
 
 uint32_t FastLedRenderer::GetPowerAtFullBrightness() const {

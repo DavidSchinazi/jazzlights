@@ -402,12 +402,20 @@ bool Player::render(Milliseconds currentTime) {
   predictableRandom_.ResetWithFrameTime(frame_, effect->effectName(frame_.pattern).c_str());
   effect->rewind(frame_);
   for (Strand* s = strands_; s < strands_ + strandCount_; ++s) {
-    auto pixels = points(*s->layout);
-    auto colors = map(pixels, [effect, this](Pixel px) -> Color {
-      if (IsEmpty(px.coord)) { return Color(/*black*/); }
-      return effect->color(frame_, px);
-    });
-    if (s->renderer) { s->renderer->render(colors); }
+    const size_t numPixels = s->layout->pixelCount();
+    for (size_t index = 0; index < numPixels; index++) {
+      Pixel px;
+      px.layout = s->layout;
+      px.index = index;
+      px.coord = s->layout->at(index);
+      Color color;
+      if (!IsEmpty(px.coord)) {
+        color = effect->color(frame_, px);
+      } else {
+        color = BLACK;
+      }
+      s->renderer->renderPixel(index, color);
+    }
   }
   effect->afterColors(frame_);
   return true;

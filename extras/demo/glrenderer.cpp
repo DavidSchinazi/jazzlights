@@ -18,16 +18,9 @@ static void renderLed(double cx, double cy, double r, jazzlights::RgbaColor colo
 
 GLRenderer::GLRenderer(const Layout& l, Meters r) : layout_(l), ledRadius_(r) {}
 
-void GLRenderer::render(InputStream<Color>& colors) {
-  LayoutIterator pti = begin(layout_);
-  auto cli = colors.begin();
-  while (cli != colors.end() && pti != end(layout_)) {
-    Point pos = (*pti).coord;
-    Color color = *cli;
-    renderLed(pos.x, pos.y, ledRadius_, color.asRgba());
-    ++pti;
-    ++cli;
-  }
+void GLRenderer::renderPixel(size_t index, Color color) {
+  Point pos = layout_.at(index);
+  renderLed(pos.x, pos.y, ledRadius_, color.asRgba());
 }
 
 }  // namespace jazzlights
