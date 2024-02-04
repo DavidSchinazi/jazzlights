@@ -93,7 +93,7 @@ def main(stdscr):
   curses.cbreak()  # Disable line buffering.
   stdscr.nodelay(True)  # Make getch() non-blocking.
   stdscr.addstr(0, 10, 'JazzLights Mapping Tool')
-  stdscr.addstr(1, 2, 'Use up/down arrows to change pixel.')
+  stdscr.addstr(1, 2, 'Use arrows to change pixel.')
   stdscr.addstr(2, 2, 'Press q to exit.')
   stdscr.refresh()
   key = ''
@@ -110,6 +110,15 @@ def main(stdscr):
             if pixelNum > 0:
               pixelNum -= 1
               updateDisplay(stdscr)
+        elif key == curses.KEY_RIGHT:
+            pixelNum += 10
+            updateDisplay(stdscr)
+        elif key == curses.KEY_LEFT:
+            if pixelNum > 10:
+              pixelNum -= 10
+            else:
+              pixelNum = 0
+            updateDisplay(stdscr)
       if maybeSendPacket():
         updateDisplay(stdscr)
 
