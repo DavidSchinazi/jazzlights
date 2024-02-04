@@ -4,7 +4,6 @@
 #include <functional>
 
 #include "jazzlights/effect.h"
-#include "jazzlights/util/meta.h"
 
 namespace jazzlights {
 
