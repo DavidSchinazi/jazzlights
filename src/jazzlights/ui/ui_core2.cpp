@@ -96,26 +96,7 @@ class Core2ScreenRenderer : public Renderer {
   Core2ScreenRenderer() {}
   void setFullScreen(bool fullScreen) { fullScreen_ = fullScreen; }
   void toggleEnabled() { setEnabled(!enabled_); }
-  void setEnabled(bool enabled) {
-    enabled_ = enabled;
-    /*
-    if (enabled_) {
-      M5.Lcd.startWrite();
-      M5.Lcd.writecommand(ILI9341_DISPON);
-      M5.Lcd.endWrite();
-      M5.Lcd.wakeup();
-      M5.Lcd.setBrightness(80);
-      M5.Buttons.draw();
-    } else {
-      M5.Lcd.fillScreen(BLACK);
-      M5.Lcd.setBrightness(0);
-      M5.Lcd.sleep();
-      M5.Lcd.startWrite();
-      M5.Lcd.writecommand(ILI9341_DISPOFF);
-      M5.Lcd.endWrite();
-    }
-    */
-  }
+  void setEnabled(bool enabled) { enabled_ = enabled; }
   void renderPixel(size_t index, Color color) override {
     if (!enabled_) { return; }
     RgbColor rgb = color.asRgb();
