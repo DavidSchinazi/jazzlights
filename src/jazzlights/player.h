@@ -25,7 +25,6 @@ class Player {
   Player& operator=(const Player&) = delete;
 
   // Constructing the player
-  Player& clearStrands();
   Player& addStrand(const Layout& l, Renderer& r);
   Player& connect(Network* n);
 
@@ -144,12 +143,10 @@ class Player {
   uint8_t brightness_ = 255;
 
   struct Strand {
-    const Layout* layout;
-    Renderer* renderer;
+    const Layout& layout;
+    Renderer& renderer;
   };
-
-  Strand strands_[255];
-  size_t strandCount_ = 0;
+  std::vector<Strand> strands_;
 
   void* effectContext_ = nullptr;
   size_t effectContextSize_ = 0;

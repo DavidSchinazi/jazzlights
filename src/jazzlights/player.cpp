@@ -202,15 +202,8 @@ Player::~Player() {
   effectContextSize_ = 0;
 }
 
-Player& Player::clearStrands() {
-  strandCount_ = 0;
-  return *this;
-}
-
 Player& Player::addStrand(const Layout& l, Renderer& r) {
-  constexpr size_t MAX_STRANDS = sizeof(strands_) / sizeof(*strands_);
-  if (strandCount_ >= MAX_STRANDS) { jll_fatal("Trying to add too many strands, max=%zu", MAX_STRANDS); }
-  strands_[strandCount_++] = {&l, &r};
+  strands_.push_back({l, r});
   return *this;
 }
 
@@ -228,10 +221,10 @@ void Player::begin(Milliseconds currentTime) {
   frame_.viewport.origin.y = 0;
   frame_.viewport.size.height = 0;
   frame_.viewport.size.width = 0;
-  for (Strand* s = strands_; s < strands_ + strandCount_; ++s) {
-    frame_.viewport = merge(frame_.viewport, jazzlights::bounds(*s->layout));
-    frame_.pixelCount += s->layout->pixelCount();
-    xyIndexStore_.IngestLayout(s->layout);
+  for (const Strand& s : strands_) {
+    frame_.viewport = merge(frame_.viewport, jazzlights::bounds(s.layout));
+    frame_.pixelCount += s.layout.pixelCount();
+    xyIndexStore_.IngestLayout(&s.layout);
   }
   xyIndexStore_.Finalize(frame_.viewport);
   frame_.xyIndexStore = &xyIndexStore_;
@@ -257,8 +250,8 @@ void Player::begin(Milliseconds currentTime) {
       "%u Starting JazzLights player %s; "
       "basePrecedence %u precedenceGain %u strands: %zu%s, "
       "pixels: %zu, %s " DEVICE_ID_FMT " w %f h %f ox %f oy %f xv %zu yv %zu",
-      currentTime, BOOT_MESSAGE, basePrecedence_, precedenceGain_, strandCount_,
-      strandCount_ < 1 ? " (CONTROLLER ONLY!)" : "", frame_.pixelCount, !networks_.empty() ? "networked" : "standalone",
+      currentTime, BOOT_MESSAGE, basePrecedence_, precedenceGain_, strands_.size(),
+      strands_.empty() ? " (CONTROLLER ONLY!)" : "", frame_.pixelCount, !networks_.empty() ? "networked" : "standalone",
       DEVICE_ID_HEX(localDeviceId_), frame_.viewport.size.width, frame_.viewport.size.height, frame_.viewport.origin.x,
       frame_.viewport.origin.y, xyIndexStore_.xValuesCount(), xyIndexStore_.yValuesCount());
 
@@ -401,19 +394,19 @@ bool Player::render(Milliseconds currentTime) {
   predictableRandom_.ResetWithFrameTime(frame_, effect->effectName(frame_.pattern).c_str());
   effect->rewind(frame_);
   Pixel px;
-  for (Strand* s = strands_; s < strands_ + strandCount_; ++s) {
-    px.layout = s->layout;
-    const size_t numPixels = s->layout->pixelCount();
+  for (const Strand& s : strands_) {
+    px.layout = &s.layout;
+    const size_t numPixels = s.layout.pixelCount();
     for (size_t index = 0; index < numPixels; index++) {
       Color color;
-      px.coord = s->layout->at(index);
+      px.coord = s.layout.at(index);
       if (!IsEmpty(px.coord)) {
         px.index = index;
         color = effect->color(frame_, px);
       } else {
         color = BLACK;
       }
-      s->renderer->renderPixel(index, color);
+      s.renderer.renderPixel(index, color);
     }
   }
   effect->afterColors(frame_);
