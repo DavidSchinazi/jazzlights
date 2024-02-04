@@ -43,8 +43,8 @@ class ArduinoEspWiFiNetwork : public UdpNetwork {
   ArduinoEspWiFiNetwork(const char* ssid, const char* pass);
   static constexpr wl_status_t kUninitialized = static_cast<wl_status_t>(123);
   static std::string WiFiStatusToString(wl_status_t status);
-  int port_ = DEFAULT_UDP_PORT;
-  const char* mcastAddr_ = DEFAULT_MULTICAST_ADDR;
+  uint16_t port_ = DefaultUdpPort();
+  const char* mcastAddr_ = DefaultMulticastAddress();
   WiFiUDP udp_;
   Credentials creds_;
   StaticConf* staticConf_ = nullptr;

@@ -166,7 +166,7 @@ bool UnixUdpNetwork::setupSockets() {
   return !sockets_.empty();
 }
 
-UnixUdpNetwork::UnixUdpNetwork(int p, const char* addr) : port_(static_cast<uint16_t>(p)) {
+UnixUdpNetwork::UnixUdpNetwork(uint16_t port, const char* addr) : port_(port) {
   assert(strnlen(addr, sizeof(mcastAddrStr_) + 1) < sizeof(mcastAddrStr_));
   strncpy(mcastAddrStr_, addr, sizeof(mcastAddrStr_));
   int parsed = inet_aton(addr, &mcastAddr_);

@@ -36,8 +36,8 @@ class ArduinoEthernetNetwork : public UdpNetwork {
 
  private:
   NetworkDeviceId localDeviceId_;
-  uint16_t port_ = DEFAULT_UDP_PORT;
-  const char* mcastAddr_ = DEFAULT_MULTICAST_ADDR;
+  uint16_t port_ = DefaultUdpPort();
+  const char* mcastAddr_ = DefaultMulticastAddress();
   EthernetUDP udp_;
 };
 

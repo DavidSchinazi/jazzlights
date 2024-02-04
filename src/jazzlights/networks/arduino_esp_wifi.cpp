@@ -120,12 +120,12 @@ NetworkStatus ArduinoEspWiFiNetwork::update(NetworkStatus status, Milliseconds c
           mcaddr.fromString(mcastAddr_);
           int res = udp_.beginMulticast(mcaddr, port_);
           if (!res) {
-            jll_error("%u %s can't begin multicast on port %d, multicast group %s", currentTime, networkName(), port_,
+            jll_error("%u %s can't begin multicast on port %u, multicast group %s", currentTime, networkName(), port_,
                       mcastAddr_);
             goto err;
           }
           IPAddress ip = WiFi.localIP();
-          jll_info("%u %s connected to %s, IP: %d.%d.%d.%d, bound to port %d, multicast group: %s", currentTime,
+          jll_info("%u %s connected to %s, IP: %d.%d.%d.%d, bound to port %u, multicast group: %s", currentTime,
                    networkName(), creds_.ssid, ip[0], ip[1], ip[2], ip[3], port_, mcastAddr_);
           return CONNECTED;
         } break;

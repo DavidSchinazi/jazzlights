@@ -145,6 +145,9 @@ class Network {
   // Called once per Arduino loop.
   virtual void runLoopImpl(Milliseconds currentTime) = 0;
   NetworkStatus getStatus() const { return status_; }
+  // Default address and port for sync packets over IP.
+  static constexpr uint16_t DefaultUdpPort() { return 0xDF0D; }
+  static constexpr const char* DefaultMulticastAddress() { return "239.255.223.01"; }
 
  private:
   void checkStatus(Milliseconds currentTime);
@@ -186,9 +189,6 @@ class UdpNetwork : public Network {
   Milliseconds effectLastTxTime_ = 0;
   Milliseconds lastReceiveTime_ = -1;
 };
-
-static constexpr int DEFAULT_UDP_PORT = 0xDF0D;
-static constexpr const char* const DEFAULT_MULTICAST_ADDR = "239.255.223.01";
 
 void writeUint32(uint8_t* data, uint32_t number);
 void writeUint16(uint8_t* data, uint16_t number);
