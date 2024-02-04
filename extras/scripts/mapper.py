@@ -2,10 +2,16 @@
 
 # Test program that can send updates over IP multicast.
 
+import argparse
+import curses
 import socket
 import struct
 import time
-import curses
+
+parser = argparse.ArgumentParser()
+parser.add_argument('pixel_num', type=int, nargs='?', default=0)
+args = parser.parse_args()
+pixelNum = int(args.pixel_num)
 
 PORT = 0xDF0D
 MCADDR = '239.255.223.01'
@@ -39,7 +45,6 @@ lastSendErrorStr = ''
 MAX_ERROR_WINDOW = 5000
 numPacketsSent = 0
 numSendErrors = 0
-pixelNum = 0
 
 def maybeSendPacket():
   global lastSendErrorStr
@@ -92,7 +97,6 @@ def main(stdscr):
   stdscr.addstr(2, 2, 'Press q to exit.')
   stdscr.refresh()
   key = ''
-  pixelNum = 0
   updateDisplay(stdscr)
   while key != ord('q'):
       key = stdscr.getch()
