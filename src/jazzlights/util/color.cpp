@@ -5,8 +5,8 @@
 
 namespace jazzlights {
 
-// This is an "accurate" version of color conversions using double prceision
-// floating-points, should be pretty slow on arduino chips
+// This is an "accurate" version of color conversions using double precision
+// floating-point, should be pretty slow on arduino chips.
 HslColor::HslColor(RgbColor color) {
   double in_r = color.red / 255.0;
   double in_g = color.green / 255.0;
