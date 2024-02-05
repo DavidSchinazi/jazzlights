@@ -86,14 +86,16 @@ struct HslColor {
   uint8_t saturation;
   uint8_t lightness;
 
-  static constexpr uint8_t HUE_RED = 0;
-  static constexpr uint8_t HUE_ORANGE = 32;
-  static constexpr uint8_t HUE_YELLOW = 64;
-  static constexpr uint8_t HUE_GREEN = 96;
-  static constexpr uint8_t HUE_AQUA = 128;
-  static constexpr uint8_t HUE_BLUE = 160;
-  static constexpr uint8_t HUE_PURPLE = 192;
-  static constexpr uint8_t HUE_PINK = 224;
+  enum : uint8_t {
+    HUE_RED = 0,
+    HUE_ORANGE = 32,
+    HUE_YELLOW = 64,
+    HUE_GREEN = 96,
+    HUE_AQUA = 128,
+    HUE_BLUE = 160,
+    HUE_PURPLE = 192,
+    HUE_PINK = 224,
+  };
 };
 
 class Color {
@@ -169,21 +171,21 @@ class Color {
   };
 };
 
-static constexpr Color TRANSPARENT = RgbaColor(0, 0, 0, 0);
-static constexpr Color BLACK = Color(0x0);
-static constexpr Color RED = Color(0xff0000);
-static constexpr Color GREEN = Color(0x00ff00);
-static constexpr Color BLUE = Color(0x0000ff);
-static constexpr Color PURPLE = Color(0x9C27B0);
-static constexpr Color CYAN = Color(0x00BCD4);
-static constexpr Color YELLOW = Color(0xFFFF00);
-static constexpr Color WHITE = Color(0xffffff);
+static constexpr Color Transparent() { return RgbaColor(0, 0, 0, 0); }
+static constexpr Color Black() { return Color(0x0); }
+static constexpr Color Red() { return Color(0xff0000); }
+static constexpr Color Green() { return Color(0x00ff00); }
+static constexpr Color Blue() { return Color(0x0000ff); }
+static constexpr Color Purple() { return Color(0x9C27B0); }
+static constexpr Color Cyan() { return Color(0x00BCD4); }
+static constexpr Color Yellow() { return Color(0xFFFF00); }
+static constexpr Color White() { return Color(0xffffff); }
 
 inline Color alphaBlend(Color fg, Color bg) { return blend(fg.asRgba(), bg.asRgba()); }
 
 inline Color alphaLightnessBlend(Color fg, Color bg) { return blend(fg.asRgbAlphaLightness(), bg.asRgba()); }
 
-inline Color blackMask(Color fg, Color bg) { return fg != BLACK ? fg : bg; }
+inline Color blackMask(Color fg, Color bg) { return fg != Black() ? fg : bg; }
 
 inline RgbColor nscale8(RgbColor rgb, uint8_t scale) {
   if (scale == 255) { return rgb; }

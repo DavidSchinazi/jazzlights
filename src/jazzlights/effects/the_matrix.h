@@ -44,7 +44,7 @@ class TheMatrix : public XYIndexStateEffect<MatrixState, uint8_t> {
     if (p == kMatrixSpawn) {
       return RgbColor(175, 255, 175);
     } else if (p == 0) {
-      return BLACK;
+      return Black();
     } else {
       return nscale8(RgbColor(27, 130, 39), p);
     }

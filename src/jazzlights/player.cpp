@@ -97,21 +97,21 @@ static const Effect* patternFromBits(PatternBits pattern) {
   static const FunctionalEffect coloring_effect = coloring();
   static const FunctionalEffect calibration_effect = calibration();
   static const FunctionalEffect sync_test_effect = sync_test();
-  static const FunctionalEffect black_effect = solid(BLACK, "black");
-  static const FunctionalEffect red_effect = solid(RED, "red");
-  static const FunctionalEffect green_effect = solid(GREEN, "green");
-  static const FunctionalEffect blue_effect = solid(BLUE, "blue");
-  static const FunctionalEffect purple_effect = solid(PURPLE, "purple");
-  static const FunctionalEffect cyan_effect = solid(CYAN, "cyan");
-  static const FunctionalEffect yellow_effect = solid(YELLOW, "yellow");
-  static const FunctionalEffect white_effect = solid(WHITE, "white");
-  static const FunctionalEffect red_glow_effect = glow(RED, "glow-red");
-  static const FunctionalEffect green_glow_effect = glow(GREEN, "glow-green");
-  static const FunctionalEffect blue_glow_effect = glow(BLUE, "glow-blue");
-  static const FunctionalEffect purple_glow_effect = glow(PURPLE, "glow-purple");
-  static const FunctionalEffect cyan_glow_effect = glow(CYAN, "glow-cyan");
-  static const FunctionalEffect yellow_glow_effect = glow(YELLOW, "glow-yellow");
-  static const FunctionalEffect white_glow_effect = glow(WHITE, "glow-white");
+  static const FunctionalEffect black_effect = solid(Black(), "black");
+  static const FunctionalEffect red_effect = solid(Red(), "red");
+  static const FunctionalEffect green_effect = solid(Green(), "green");
+  static const FunctionalEffect blue_effect = solid(Blue(), "blue");
+  static const FunctionalEffect purple_effect = solid(Purple(), "purple");
+  static const FunctionalEffect cyan_effect = solid(Cyan(), "cyan");
+  static const FunctionalEffect yellow_effect = solid(Yellow(), "yellow");
+  static const FunctionalEffect white_effect = solid(White(), "white");
+  static const FunctionalEffect red_glow_effect = glow(Red(), "glow-red");
+  static const FunctionalEffect green_glow_effect = glow(Green(), "glow-green");
+  static const FunctionalEffect blue_glow_effect = glow(Blue(), "glow-blue");
+  static const FunctionalEffect purple_glow_effect = glow(Purple(), "glow-purple");
+  static const FunctionalEffect cyan_glow_effect = glow(Cyan(), "glow-cyan");
+  static const FunctionalEffect yellow_glow_effect = glow(Yellow(), "glow-yellow");
+  static const FunctionalEffect white_glow_effect = glow(White(), "glow-white");
 #if JL_IS_CONFIG(CLOUDS)
   static const Clouds clouds_effect = Clouds();
 #endif  // CLOUDS
@@ -416,7 +416,7 @@ bool Player::render(Milliseconds currentTime) {
         px.index = index;
         color = effect->color(frame_, px);
       } else {
-        color = BLACK;
+        color = Black();
       }
       s.renderer.renderPixel(index, color);
     }
