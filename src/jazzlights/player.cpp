@@ -9,6 +9,7 @@
 #include <sstream>
 
 #include "jazzlights/effects/calibration.h"
+#include "jazzlights/effects/clouds.h"
 #include "jazzlights/effects/colored_bursts.h"
 #include "jazzlights/effects/fairy_wand.h"
 #include "jazzlights/effects/flame.h"
@@ -93,6 +94,7 @@ static const Effect* patternFromBits(PatternBits pattern) {
   static const FunctionalEffect threesine_pattern = threesine();
   static const FunctionalEffect follow_strand_effect = follow_strand();
   static const FunctionalEffect mapping_effect = mapping();
+  static const FunctionalEffect coloring_effect = coloring();
   static const FunctionalEffect calibration_effect = calibration();
   static const FunctionalEffect sync_test_effect = sync_test();
   static const FunctionalEffect black_effect = solid(BLACK, "black");
@@ -110,6 +112,9 @@ static const Effect* patternFromBits(PatternBits pattern) {
   static const FunctionalEffect cyan_glow_effect = glow(CYAN, "glow-cyan");
   static const FunctionalEffect yellow_glow_effect = glow(YELLOW, "glow-yellow");
   static const FunctionalEffect white_glow_effect = glow(WHITE, "glow-white");
+#if JL_IS_CONFIG(CLOUDS)
+  static const Clouds clouds_effect = Clouds();
+#endif  // CLOUDS
 
   // Pattern selection from bits.
   if (patternIsReserved(pattern)) {
@@ -144,7 +149,14 @@ static const Effect* patternFromBits(PatternBits pattern) {
       }
     } else if (byte1 == 0x01) {
       return &mapping_effect;
+    } else if (byte1 >= 0x04 && byte1 < 0x08) {
+      return &coloring_effect;
     }
+#if JL_IS_CONFIG(CLOUDS)
+    else if (byte1 == 0xFF) {
+      return &clouds_effect;
+    }
+#endif  // CLOUDS
     return &red_effect;
   } else {
     if (patternbit(pattern, 1)) {      // 1x - palette
@@ -267,7 +279,7 @@ void Player::begin(Milliseconds currentTime) {
   currentPattern_ = 0x00080000;
   nextPattern_ = currentPattern_;
   loop_ = true;
-#endif  // JL_START_SPECIAL
+#endif
 }
 
 void Player::updatePrecedence(Precedence basePrecedence, Precedence precedenceGain, Milliseconds currentTime) {
@@ -472,6 +484,10 @@ void Player::stopForcePalette(Milliseconds currentTime) {
 }
 
 PatternBits Player::enforceForcedPalette(PatternBits pattern) {
+#if JL_IS_CONFIG(CLOUDS)
+  pattern &= 0xFFFFFF00;
+  pattern |= 0xFF000000;
+#endif
   if (paletteIsForced_) { pattern = applyPalette(pattern, forcedPalette_); }
   return pattern;
 }

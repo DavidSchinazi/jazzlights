@@ -6,6 +6,7 @@ import argparse
 import random
 import socket
 import struct
+from sys import exit
 import time
 
 palettes = {
@@ -64,7 +65,13 @@ def randomizePattern(patternBytes, randomize=True):
 def getPatternBytes(patternName):
   if patternName.startswith('mapping-'):
     pixelNum = int(patternName[len('mapping-'):])
-    return 0x01000000 + (pixelNum << 8)
+    return 0x01000000 | (pixelNum << 8)
+  elif patternName.startswith('coloring-'):
+    rgb = int(patternName[len('coloring-'):], 16)
+    r = ((rgb >> 16) & 0xFF) >> 2
+    g = ((rgb >> 8) & 0xFF) >> 2
+    b = (rgb & 0xFF) >> 2
+    return 0x04000000 | (r << 20) | (g << 14) | (b << 8)
   patternBytes = None
   paletteName = ''
   if patternName.startswith('sp-'):
@@ -95,7 +102,7 @@ def getPatternBytes(patternName):
 
 patternBytes = getPatternBytes(patternName)
 
-print('Using pattern {} ({:02X})'.format(patternName, patternBytes))
+print('Using pattern {} ({:08X})'.format(patternName, patternBytes))
 
 PORT = 0xDF0D
 MCADDR = '239.255.223.01'
@@ -134,7 +141,7 @@ while True:
   while getTimeMillis() - startTimeThisPattern >= PATTERN_DURATION:
     startTimeThisPattern += PATTERN_DURATION
     currentPattern = nextPattern
-    print('Using pattern {} ({:02X})'.format(patternName, currentPattern))
+    print('Using pattern {} ({:08X})'.format(patternName, currentPattern))
     nextPattern = randomizePattern(nextPattern, randomize)
   timeDeltaSinceStartOfCurrentPattern = getTimeMillis() - startTimeThisPattern
   messageToSend = struct.pack('!B6s6sHBHIIH',
@@ -151,4 +158,8 @@ while True:
       lastSendErrorStr = str(e)
       lastSendErrorPrintTime = errorTime
       print("Send failure: {}".format(lastSendErrorStr))
-  time.sleep(0.1)
+  try:
+    time.sleep(0.1)
+  except KeyboardInterrupt:
+    print()
+    exit(0)
