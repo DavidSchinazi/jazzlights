@@ -5,8 +5,12 @@
 #include <cstdint>
 
 #include "jazzlights/frame.h"
+#include "jazzlights/types.h"
+#include "jazzlights/util/time.h"
 
 namespace jazzlights {
+
+struct Frame;
 
 // Shared implementation, only meant to be used by subclasses.
 class Random {
