@@ -5,6 +5,7 @@
 
 #include "jazzlights/config.h"
 #include "jazzlights/effect.h"
+#include "jazzlights/layout_data_clouds.h"
 #include "jazzlights/util/math.h"
 
 #if JL_IS_CONFIG(CLOUDS)
@@ -47,7 +48,9 @@ class Clouds : public Effect {
 
   Color color(const Frame& frame, const Pixel& px) const override {
     static constexpr Color kBrightColor = Color(0xFCC97C);
-    static constexpr Color kDarkColor = BLACK;
+    static constexpr Color kDarkColor = Color(0x000000);
+    static constexpr Color kSkyColor = Color(0x000020);
+    if (px.layout != GetCloudsLayout()) { return kSkyColor; }
     for (uint8_t s = 0; s < state(frame)->numStrikes; s++) {
       const double progress = state(frame)->strikes[s].progress;
       if (progress < 0.5) { continue; }

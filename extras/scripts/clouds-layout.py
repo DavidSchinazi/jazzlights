@@ -2,11 +2,11 @@
 
 # Tool used to generate the layout for the captain hat.
 
-emptyX = -1
-emptyY = -1
+emptyX = -1337
+emptyY = -1337
 
-def printLayout(l, num=""):
-  s = '{\n  '
+def printLayout(l, name):
+  s = 'constexpr Point {name}PixelMap'.format(name=name) + '[] = {\n  '
   i = 0
   for (x, y) in l:
     if x == emptyX and y == emptyY:
@@ -20,7 +20,8 @@ def printLayout(l, num=""):
     s = s[:-3]
   s += '\n};'
   s += '\n\n'
-  s += 'static_assert(JL_LENGTH(pixelMap{num}) == {lednum}, "bad size");'.format(num=num, lednum=len(l))
+  s += 'static_assert(JL_LENGTH({name}PixelMap) == {lednum}, "bad size");\n'.format(name=name, lednum=len(l))
+  s += 'PixelMap {name}Pixels(JL_LENGTH({name}PixelMap), {name}PixelMap);\n\n'.format(name=name)
   print(s)
 
 ox = 0
@@ -49,7 +50,21 @@ for index in range(starts[-1]):
     l.append((emptyX, emptyY))
 cloudLengths[x] = y + 1
 
-printLayout(l)
+printLayout(l, "cloud")
+
+ceilings = [(42,46), (38,42), (10,32)]
+x = 0
+for ceil in ceilings:
+  x += 1
+  y = 0
+  l = []
+  for i in range(ceil[0]):
+    y -= 1
+    l.append((x,y))
+  for i in range(ceil[0], ceil[1]):
+    l.append((emptyX, emptyY))
+  printLayout(l, "ceiling{x}".format(x=x))
+
 
 print('\n\n  static uint8_t CloudLength(uint8_t cloudNum) {')
 print('    switch (cloudNum) {')
