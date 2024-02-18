@@ -90,8 +90,10 @@ PixelMap pixels2(JL_LENGTH(pixelMap2), pixelMap2);
 
 }  // namespace
 
-const Layout* GetLayout() { return &pixels; }
-const Layout* GetLayout2() { return &pixels2; }
+void AddLedsToRunner(FastLedRunner* runner) {
+  runner->AddLeds<WS2811, LED_PIN, RGB>(pixels);
+  runner->AddLeds<WS2812B, LED_PIN2, GRB>(pixels2);
+}
 
 }  // namespace jazzlights
 

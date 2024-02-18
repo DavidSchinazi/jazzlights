@@ -25,8 +25,13 @@ Matrix pixels(/*w=*/300, /*h=*/1);
 
 }  // namespace
 
-const Layout* GetLayout() { return &pixels; }
-const Layout* GetLayout2() { return nullptr; }
+void AddLedsToRunner(FastLedRunner* runner) {
+#if JL_IS_CONFIG(ROPELIGHT)
+  runner->AddLeds<WS2812, LED_PIN, BRG>(pixels);
+#else
+  runner->AddLeds<WS2812B, LED_PIN, GRB>(pixels);
+#endif
+}
 
 }  // namespace jazzlights
 

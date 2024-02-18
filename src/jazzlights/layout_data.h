@@ -7,12 +7,25 @@
 
 #define JL_LENGTH(_a) (sizeof(_a) / sizeof((_a)[0]))
 
-#include "jazzlights/layout.h"
+#include "jazzlights/fastled_runner.h"
+
+#if JL_IS_CONTROLLER(CORE2AWS) || JL_IS_CONTROLLER(M5STAMP_PICO)
+#define LED_PIN 32
+#elif JL_IS_CONTROLLER(M5STAMP_C3U)
+#define LED_PIN 1
+#elif JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_LITE)
+#define LED_PIN 26
+#define LED_PIN2 32
+#elif JL_IS_CONTROLLER(ATOM_S3)
+#define LED_PIN 2
+#define LED_PIN2 1
+#else
+#error "Unexpected controller"
+#endif
 
 namespace jazzlights {
 
-const Layout* GetLayout();
-const Layout* GetLayout2();
+void AddLedsToRunner(FastLedRunner* runner);
 
 }  // namespace jazzlights
 

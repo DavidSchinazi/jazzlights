@@ -66,8 +66,7 @@ PixelMap pixels(JL_LENGTH(pixelMap), pixelMap);
 
 }  // namespace
 
-const Layout* GetLayout() { return &pixels; }
-const Layout* GetLayout2() { return nullptr; }
+void AddLedsToRunner(FastLedRunner* runner) { runner->AddLeds<WS2812B, LED_PIN, GRB>(pixels); }
 
 }  // namespace jazzlights
 

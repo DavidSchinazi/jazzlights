@@ -20,20 +20,6 @@
 #include "jazzlights/ui/ui_core2.h"
 #include "jazzlights/ui/ui_disabled.h"
 
-#if JL_IS_CONTROLLER(CORE2AWS) || JL_IS_CONTROLLER(M5STAMP_PICO)
-#define LED_PIN 32
-#elif JL_IS_CONTROLLER(M5STAMP_C3U)
-#define LED_PIN 1
-#elif JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_LITE)
-#define LED_PIN 26
-#define LED_PIN2 32
-#elif JL_IS_CONTROLLER(ATOM_S3)
-#define LED_PIN 2
-#define LED_PIN2 1
-#else
-#error "Unexpected controller"
-#endif
-
 namespace jazzlights {
 
 #if JL_ARDUINO_ETHERNET
@@ -59,17 +45,7 @@ void arduinoSetup(void) {
   Serial.begin(115200);
   ui.InitialSetup(currentTime);
 
-#if JL_IS_CONFIG(STAFF)
-  runner.AddLeds<WS2811, LED_PIN, RGB>(*GetLayout());
-#elif JL_IS_CONFIG(ROPELIGHT)
-  runner.AddLeds<WS2812, LED_PIN, BRG>(*GetLayout());
-#else
-  runner.AddLeds<WS2812B, LED_PIN, GRB>(*GetLayout());
-#endif
-
-#ifdef LED_PIN2
-  if (GetLayout2()) { runner.AddLeds<WS2812B, LED_PIN2, GRB>(*GetLayout2()); }
-#endif  // LED_PIN2
+  AddLedsToRunner(&runner);
 
 #if JL_IS_CONFIG(WAND) || JL_IS_CONFIG(STAFF) || JL_IS_CONFIG(CAPTAIN_HAT)
   player.setBasePrecedence(500);
