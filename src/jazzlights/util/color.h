@@ -11,7 +11,6 @@ namespace jazzlights {
 
 struct HslColor;
 struct RgbColor;
-struct RgbaColor;
 
 inline void nscale8x3_video(uint8_t& r, uint8_t& g, uint8_t& b, uint8_t scale) {
   uint8_t nonzeroscale = (scale != 0) ? 1 : 0;
@@ -50,21 +49,6 @@ struct RgbColor {
   uint8_t blue;
 };
 
-struct RgbaColor : RgbColor {
-  constexpr RgbaColor() : RgbColor(), alpha(0xFF) {}
-  constexpr RgbaColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 0xFF) : RgbColor(r, g, b), alpha(a) {}
-  constexpr RgbaColor(RgbColor c, uint8_t a = 0xFF) : RgbColor(c), alpha(a) {}
-  constexpr RgbaColor(uint32_t c) : RgbColor(c), alpha(0xFF - ((c >> 24) & 0xFF)) {}
-  RgbaColor(HslColor c);
-  constexpr bool operator==(const RgbaColor& other) const {
-    return static_cast<const RgbColor&>(*this) == static_cast<const RgbColor&>(other) && other.alpha == alpha;
-  }
-
-  constexpr bool operator!=(const RgbaColor& other) const { return !(*this == other); }
-
-  uint8_t alpha;
-};
-
 struct HslColor {
   constexpr HslColor() : hue(0), saturation(0), lightness(0) {}
   constexpr HslColor(uint8_t h, uint8_t s, uint8_t l) : hue(h), saturation(s), lightness(l) {}
@@ -94,15 +78,13 @@ class Color {
  public:
   enum Space { RGBA, HSL };
 
-  constexpr Color() : space_(RGBA), rgba_(RgbaColor()) {}
-  constexpr Color(uint32_t c) : space_(RGBA), rgba_(RgbaColor(c)) {}
-  constexpr Color(const RgbaColor& c) : space_(RGBA), rgba_(c) {}
+  constexpr Color() : space_(RGBA), rgba_(RgbColor()) {}
+  constexpr Color(uint32_t c) : space_(RGBA), rgba_(RgbColor(c)) {}
   constexpr Color(const RgbColor& c) : space_(RGBA), rgba_(c) {}
   constexpr Color(const HslColor& c) : space_(HSL), hsl_(c) {}
 
   constexpr static Color rgb(uint32_t v) { return Color(v); }
   constexpr static Color rgb(uint8_t r, uint8_t g, uint8_t b) { return Color(RgbColor(r, g, b)); }
-  constexpr static Color rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a) { return Color(RgbaColor(r, g, b, a)); }
   constexpr static Color hsl(uint8_t h, uint8_t s, uint8_t l) { return Color(HslColor(h, s, l)); }
 
   constexpr bool operator==(const Color& other) const {
@@ -112,31 +94,15 @@ class Color {
 
   constexpr bool operator!=(const Color& other) const { return !(*this == other); }
 
-  Color& operator=(const RgbaColor& other) {
-    space_ = RGBA;
-    rgba_ = other;
-    return *this;
-  }
-
   Color& operator=(const HslColor& other) {
     space_ = HSL;
     hsl_ = other;
     return *this;
   }
 
-  RgbColor asRgb() const {
-    const RgbaColor rgba = asRgba();
-    return RgbColor(rgba.red, rgba.green, rgba.blue);
-  }
-
-  constexpr RgbaColor asRgba() const { return space_ == RGBA ? rgba_ : RgbaColor(hsl_); }
+  constexpr RgbColor asRgb() const { return space_ == RGBA ? rgba_ : RgbColor(hsl_); }
 
   constexpr HslColor asHsl() const { return space_ == RGBA ? HslColor(rgba_) : hsl_; }
-
-  RgbColor& convertToRgba() {
-    *this = asRgba();
-    return rgba_;
-  }
 
   HslColor& convertToHsl() {
     *this = asHsl();
@@ -146,7 +112,7 @@ class Color {
  private:
   Space space_;
   union {
-    RgbaColor rgba_;
+    RgbColor rgba_;
     HslColor hsl_;
   };
 };
@@ -170,7 +136,7 @@ inline RgbColor nscale8(RgbColor rgb, uint8_t scale) {
 }
 
 // With this: 15-16 fps on complex overlays
-// using Color = RgbaColor;
+// using Color = RgbColor;
 
 }  // namespace jazzlights
 
@@ -180,11 +146,6 @@ namespace jazzlights {
 
 inline std::ostream& operator<<(std::ostream& out, const RgbColor& c) {
   out << "RGB(" << int(c.red) << "," << int(c.green) << "," << int(c.blue) << ")";
-  return out;
-}
-
-inline std::ostream& operator<<(std::ostream& out, const RgbaColor& c) {
-  out << "RGBa(" << int(c.red) << "," << int(c.green) << "," << int(c.blue) << "," << int(c.alpha) << ")";
   return out;
 }
 
