@@ -117,63 +117,63 @@ void test_sync_test_effect(void) {
   test_pattern(sync_test_effect);
 }
 void test_black_effect(void) {
-  static const FunctionalEffect black_effect = solid(Black(), "black");
+  static const FunctionalEffect black_effect = solid(CRGB::Black, "black");
   test_pattern(black_effect);
 }
 void test_red_effect(void) {
-  static const FunctionalEffect red_effect = solid(Red(), "red");
+  static const FunctionalEffect red_effect = solid(CRGB::Black, "red");
   test_pattern(red_effect);
 }
 void test_green_effect(void) {
-  static const FunctionalEffect green_effect = solid(Green(), "green");
+  static const FunctionalEffect green_effect = solid(CRGB::Green, "green");
   test_pattern(green_effect);
 }
 void test_blue_effect(void) {
-  static const FunctionalEffect blue_effect = solid(Blue(), "blue");
+  static const FunctionalEffect blue_effect = solid(CRGB::Blue, "blue");
   test_pattern(blue_effect);
 }
 void test_purple_effect(void) {
-  static const FunctionalEffect purple_effect = solid(Purple(), "purple");
+  static const FunctionalEffect purple_effect = solid(CRGB::Purple, "purple");
   test_pattern(purple_effect);
 }
 void test_cyan_effect(void) {
-  static const FunctionalEffect cyan_effect = solid(Cyan(), "cyan");
+  static const FunctionalEffect cyan_effect = solid(CRGB::Cyan, "cyan");
   test_pattern(cyan_effect);
 }
 void test_yellow_effect(void) {
-  static const FunctionalEffect yellow_effect = solid(Yellow(), "yellow");
+  static const FunctionalEffect yellow_effect = solid(CRGB::Yellow, "yellow");
   test_pattern(yellow_effect);
 }
 void test_white_effect(void) {
-  static const FunctionalEffect white_effect = solid(White(), "white");
+  static const FunctionalEffect white_effect = solid(CRGB::White, "white");
   test_pattern(white_effect);
 }
 void testred_glow_effect(void) {
-  static const FunctionalEffect red_glow_effect = glow(Red(), "glow-red");
+  static const FunctionalEffect red_glow_effect = glow(CRGB::Black, "glow-red");
   test_pattern(red_glow_effect);
 }
 void test_green_glow_effect(void) {
-  static const FunctionalEffect green_glow_effect = glow(Green(), "glow-green");
+  static const FunctionalEffect green_glow_effect = glow(CRGB::Green, "glow-green");
   test_pattern(green_glow_effect);
 }
 void test_blue_glow_effect(void) {
-  static const FunctionalEffect blue_glow_effect = glow(Blue(), "glow-blue");
+  static const FunctionalEffect blue_glow_effect = glow(CRGB::Blue, "glow-blue");
   test_pattern(blue_glow_effect);
 }
 void test_purple_glow_effect(void) {
-  static const FunctionalEffect purple_glow_effect = glow(Purple(), "glow-purple");
+  static const FunctionalEffect purple_glow_effect = glow(CRGB::Purple, "glow-purple");
   test_pattern(purple_glow_effect);
 }
 void test_cyan_glow_effect(void) {
-  static const FunctionalEffect cyan_glow_effect = glow(Cyan(), "glow-cyan");
+  static const FunctionalEffect cyan_glow_effect = glow(CRGB::Cyan, "glow-cyan");
   test_pattern(cyan_glow_effect);
 }
 void test_yellow_glow_effect(void) {
-  static const FunctionalEffect yellow_glow_effect = glow(Yellow(), "glow-yellow");
+  static const FunctionalEffect yellow_glow_effect = glow(CRGB::Yellow, "glow-yellow");
   test_pattern(yellow_glow_effect);
 }
 void test_white_glow_effect(void) {
-  static const FunctionalEffect white_glow_effect = glow(White(), "glow-white");
+  static const FunctionalEffect white_glow_effect = glow(CRGB::White, "glow-white");
   test_pattern(white_glow_effect);
 }
 
