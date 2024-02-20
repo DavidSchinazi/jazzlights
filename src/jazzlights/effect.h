@@ -75,7 +75,14 @@ class XYIndexStateEffect : public Effect {
   size_t y(const Frame& f) const { return pos(f)->yIndex; }
   size_t w(const Frame& f) const { return width(f); }
   size_t h(const Frame& f) const { return height(f); }
-  PER_PIXEL_TYPE& ps(const Frame& f, size_t x, size_t y) const { return pixels(f)[y * w(f) + x]; }
+  PER_PIXEL_TYPE& ps(const Frame& f, size_t x, size_t y) const {
+#if JL_BOUNDS_CHECKS
+    if (x >= w(f) || y >= h(f)) {
+      jll_fatal("ATTEMPTING TO ACCESS BAD MEMORY x=%zu w=%zu y=%zu h=%zu", x, w(f), y, h(f));
+    }
+#endif  // JL_BOUNDS_CHECKS
+    return pixels(f)[y * w(f) + x];
+  }
   PER_PIXEL_TYPE& ps(const Frame& f) const { return ps(f, x(f), y(f)); }
   STATE* state(const Frame& frame) const { return &xyindexState(frame)->state; }
 
