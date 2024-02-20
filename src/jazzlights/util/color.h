@@ -56,14 +56,14 @@ struct Color {
 
 Color RgbColorFromHsv(uint8_t h, uint8_t s, uint8_t v);
 
-static constexpr Color Black() { return Color(0x0); }
-static constexpr Color Red() { return Color(0xff0000); }
-static constexpr Color Green() { return Color(0x00ff00); }
-static constexpr Color Blue() { return Color(0x0000ff); }
-static constexpr Color Purple() { return Color(0x9C27B0); }
-static constexpr Color Cyan() { return Color(0x00BCD4); }
-static constexpr Color Yellow() { return Color(0xFFFF00); }
-static constexpr Color White() { return Color(0xffffff); }
+static inline Color Black() { return Color(0x0); }
+static inline Color Red() { return Color(0xff0000); }
+static inline Color Green() { return Color(0x00ff00); }
+static inline Color Blue() { return Color(0x0000ff); }
+static inline Color Purple() { return Color(0x9C27B0); }
+static inline Color Cyan() { return Color(0x00BCD4); }
+static inline Color Yellow() { return Color(0xFFFF00); }
+static inline Color White() { return Color(0xffffff); }
 
 }  // namespace jazzlights
 
