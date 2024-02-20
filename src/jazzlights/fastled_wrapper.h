@@ -153,6 +153,46 @@ struct CRGB {
   inline CRGB(uint32_t colorcode) __attribute__((always_inline))
       : r((colorcode >> 16) & 0xFF), g((colorcode >> 8) & 0xFF), b((colorcode >> 0) & 0xFF) {}
 
+  inline CRGB(uint8_t ir, uint8_t ig, uint8_t ib) __attribute__((always_inline)) : r(ir), g(ig), b(ib) {}
+
+  inline CRGB() : CRGB(0) {}
+
+  inline CRGB& nscale8(uint8_t scaledown) {
+    r = scale8(r, scaledown);
+    g = scale8(g, scaledown);
+    b = scale8(b, scaledown);
+    return *this;
+  }
+
+  inline CRGB& nscale8(const CRGB& scaledown) {
+    r = scale8(r, scaledown.r);
+    g = scale8(g, scaledown.g);
+    b = scale8(b, scaledown.b);
+    return *this;
+  }
+
+  inline CRGB& nscale8_video(uint8_t scaledown) {
+    r = scale8_video(r, scaledown);
+    g = scale8_video(g, scaledown);
+    b = scale8_video(b, scaledown);
+    return *this;
+  }
+
+  inline CRGB& nscale8_video(const CRGB& scaledown) {
+    r = scale8_video(r, scaledown.r);
+    g = scale8_video(g, scaledown.g);
+    b = scale8_video(b, scaledown.b);
+    return *this;
+  }
+
+  inline CRGB& operator+=(const CRGB& rhs) {
+    r = qadd8(r, rhs.r);
+    g = qadd8(g, rhs.g);
+    b = qadd8(b, rhs.b);
+    return *this;
+  }
+  inline CRGB& operator%=(uint8_t scaledown) { return nscale8_video(scaledown); }
+
   typedef enum {
     AliceBlue = 0xF0F8FF,
     Amethyst = 0x9966CC,
@@ -306,6 +346,15 @@ struct CRGB {
     FairyLightNCC = 0xFF9D2A
   } HTMLColorCode;
 };
+
+inline CRGB operator+(const CRGB& p1, const CRGB& p2) {
+  return CRGB(qadd8(p1.r, p2.r), qadd8(p1.g, p2.g), qadd8(p1.b, p2.b));
+}
+inline CRGB operator%(const CRGB& p1, uint8_t d) {
+  CRGB retval(p1);
+  retval.nscale8_video(d);
+  return retval;
+}
 
 typedef uint32_t TProgmemRGBPalette16[16];
 extern const TProgmemRGBPalette16 CloudColors_p FL_PROGMEM;
