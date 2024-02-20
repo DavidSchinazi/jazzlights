@@ -5,6 +5,12 @@
 namespace jazzlights {
 
 Color RgbColorFromHsv(uint8_t h, uint8_t s, uint8_t v) {
+#ifdef ARDUINO
+  CHSV hsv(h, s, v);
+  CRGB rgb;
+  hsv2rgb_rainbow(hsv, rgb);
+  return Color(rgb.r, rgb.g, rgb.b);
+#else   // ARDUINO
   uint8_t region, remainder, p, q, t, rgb_r, rgb_g, rgb_b;
 
   if (s == 0) { return Color(v, v, v); }
@@ -49,6 +55,7 @@ Color RgbColorFromHsv(uint8_t h, uint8_t s, uint8_t v) {
       break;
   }
   return Color(rgb_r, rgb_g, rgb_b);
+#endif  // ARDUINO
 }
 
 }  // namespace jazzlights
