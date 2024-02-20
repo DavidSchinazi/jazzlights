@@ -11,10 +11,6 @@
 
 namespace jazzlights {
 
-enum : Milliseconds {
-  kEffectDuration = 10 * ONE_SECOND,
-};
-
 class Player {
  public:
   Player();

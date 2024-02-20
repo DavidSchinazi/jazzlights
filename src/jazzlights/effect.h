@@ -7,11 +7,16 @@
 #include "jazzlights/util/color.h"
 #include "jazzlights/util/geom.h"
 #include "jazzlights/util/log.h"
+#include "jazzlights/util/time.h"
 
 namespace jazzlights {
 
 enum : size_t {
   kMaxStateAlignment = 8,
+};
+
+enum : Milliseconds {
+  kEffectDuration = 10 * ONE_SECOND,
 };
 
 static_assert((kMaxStateAlignment & (kMaxStateAlignment - 1)) == 0, "kMaxStateAlignment must be a power of 2");
