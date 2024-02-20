@@ -72,20 +72,20 @@ static inline const TProgmemRGBPalette16* FastLEDPaletteFromOurColorPalette(OurC
   return FastLEDPaletteFromOurColorPalette(OCPrainbow);
 }
 
-static inline RgbColor colorFromOurPalette(OurColorPalette ocp, uint8_t color) {
+static inline Color colorFromOurPalette(OurColorPalette ocp, uint8_t color) {
   return (*FastLEDPaletteFromOurColorPalette(ocp))[color >> 4];
 }
 
 class ColorWithPalette {
  public:
   ColorWithPalette(uint8_t innerColor) : colorOverridden_(false), innerColor_(innerColor) {}
-  static ColorWithPalette OverrideColor(RgbColor overrideColor) {
+  static ColorWithPalette OverrideColor(Color overrideColor) {
     ColorWithPalette col = ColorWithPalette();
     col.overrideColor_ = overrideColor;
     return col;
   }
   static ColorWithPalette OverrideCRGB(CRGB overrideColor) { return OverrideColor(overrideColor); }
-  RgbColor colorFromPalette(OurColorPalette ocp) const {
+  Color colorFromPalette(OurColorPalette ocp) const {
     if (colorOverridden_) { return overrideColor_; }
     return colorFromOurPalette(ocp, innerColor_);
   }
@@ -94,7 +94,7 @@ class ColorWithPalette {
   explicit ColorWithPalette() : colorOverridden_(true) {}
   bool colorOverridden_;
   uint8_t innerColor_;
-  RgbColor overrideColor_;
+  Color overrideColor_;
 };
 
 inline std::string PaletteNameFromPattern(PatternBits pattern) {
@@ -170,7 +170,7 @@ struct EffectWithPaletteState {
 template <typename STATE, typename PER_PIXEL_TYPE>
 class EffectWithPaletteXYIndexAndState : public XYIndexStateEffect<EffectWithPaletteState<STATE>, PER_PIXEL_TYPE> {
  protected:
-  RgbColor colorFromPalette(const Frame& frame, uint8_t innerColor) const {
+  Color colorFromPalette(const Frame& frame, uint8_t innerColor) const {
     EffectWithPaletteState<STATE>* s = XYIndexStateEffect<EffectWithPaletteState<STATE>, PER_PIXEL_TYPE>::state(frame);
     return colorFromOurPalette(s->ocp, innerColor);
   }

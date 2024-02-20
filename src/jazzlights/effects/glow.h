@@ -36,8 +36,8 @@ inline FunctionalEffect glow(Color color, const std::string& name) {
     } else {
       intensity = max_intensity;
     }
-    const Color faded_color(RgbColor(fade_sub_color(color.red, intensity), fade_sub_color(color.green, intensity),
-                                     fade_sub_color(color.blue, intensity)));
+    const Color faded_color(fade_sub_color(color.red, intensity), fade_sub_color(color.green, intensity),
+                            fade_sub_color(color.blue, intensity));
     return [faded_color](const Pixel& /*pt*/) -> Color { return faded_color; };
   });
 };

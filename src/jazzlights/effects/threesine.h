@@ -19,7 +19,7 @@ inline FunctionalEffect threesine() {
       uint8_t sinDistanceG = qmul8(abs(px.coord.y * (255 / h) - sin8(sineOffset * 10 + xx * 16)), 2);
       uint8_t sinDistanceB = qmul8(abs(px.coord.y * (255 / h) - sin8(sineOffset * 11 + xx * 16)), 2);
 
-      return RgbColor(255 - sinDistanceR, 255 - sinDistanceG, 255 - sinDistanceB);
+      return Color(255 - sinDistanceR, 255 - sinDistanceG, 255 - sinDistanceB);
     };
   });
 };

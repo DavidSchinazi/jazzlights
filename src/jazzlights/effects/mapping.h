@@ -30,7 +30,7 @@ inline FunctionalEffect coloring() {
     const uint8_t red = ((frame.pattern >> 20) & 0x3F) << 2;
     const uint8_t green = ((frame.pattern >> 14) & 0x3F) << 2;
     const uint8_t blue = ((frame.pattern >> 8) & 0x3F) << 2;
-    RgbColor color(red, green, blue);
+    Color color(red, green, blue);
     return [color](const Pixel& /*pt*/) -> Color { return color; };
   });
 };

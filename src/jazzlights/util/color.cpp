@@ -5,14 +5,14 @@
 
 namespace jazzlights {
 
-RgbColor RgbColorFromHsv(uint8_t h, uint8_t s, uint8_t v) {
+Color RgbColorFromHsv(uint8_t h, uint8_t s, uint8_t v) {
 #ifndef FAST_HSL
   double in_h = 360 * h / 255.0, in_s = s / 255.0, in_v = v / 255.0;
   double hh, p, q, t, ff;
   long i;
   double out_r, out_g, out_b;
 
-  if (in_s <= 0.0) { return RgbColor(255 * in_v, 255 * in_v, 255 * in_v); }
+  if (in_s <= 0.0) { return Color(255 * in_v, 255 * in_v, 255 * in_v); }
   hh = in_h;
   if (hh >= 360.0) { hh = 0.0; }
   hh /= 60.0;
@@ -57,11 +57,11 @@ RgbColor RgbColorFromHsv(uint8_t h, uint8_t s, uint8_t v) {
       break;
   }
 
-  return RgbColor(255 * out_r, 255 * out_g, 255 * out_b);
+  return Color(255 * out_r, 255 * out_g, 255 * out_b);
 #else
   uint8_t region, remainder, p, q, t, rgb_r, rgb_g, rgb_b;
 
-  if (s == 0) { return RgbColor(v, v, v); }
+  if (s == 0) { return Color(v, v, v); }
 
   region = h / 43;
   remainder = (h - (region * 43)) * 6;
@@ -102,7 +102,7 @@ RgbColor RgbColorFromHsv(uint8_t h, uint8_t s, uint8_t v) {
       rgb_b = q;
       break;
   }
-  return RgbColor(rgb_r, rgb_g, rgb_b);
+  return Color(rgb_r, rgb_g, rgb_b);
 #endif
 }
 

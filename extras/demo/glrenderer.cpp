@@ -6,7 +6,7 @@ namespace jazzlights {
 
 static constexpr double TWO_PI = 2 * 3.1415926;
 
-static void renderLed(double cx, double cy, double r, jazzlights::RgbColor color, int segments = 6) {
+static void renderLed(double cx, double cy, double r, Color color, int segments = 6) {
   glColor3f(color.red / 255.f, color.green / 255.f, color.blue / 255.f);
   glBegin(GL_TRIANGLE_FAN);
   glVertex2f(cx, cy);
