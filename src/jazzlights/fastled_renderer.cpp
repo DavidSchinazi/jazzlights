@@ -21,9 +21,7 @@ FastLedRenderer::~FastLedRenderer() {
   free(ledsFastLed_);
 }
 
-void FastLedRenderer::renderPixel(size_t index, Color color) {
-  ledsPlayer_[index] = CRGB(color.red, color.green, color.blue);
-}
+void FastLedRenderer::renderPixel(size_t index, Color color) { ledsPlayer_[index] = color; }
 
 uint32_t FastLedRenderer::GetPowerAtFullBrightness() const {
   return calculate_unscaled_power_mW(ledController_->leds(), ledController_->size());

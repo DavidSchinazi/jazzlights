@@ -359,6 +359,8 @@ inline CRGB operator%(const CRGB& p1, uint8_t d) {
   return retval;
 }
 
+CRGB CHSV(uint8_t h, uint8_t s, uint8_t v);
+
 typedef uint32_t TProgmemRGBPalette16[16];
 extern const TProgmemRGBPalette16 CloudColors_p FL_PROGMEM;
 extern const TProgmemRGBPalette16 LavaColors_p FL_PROGMEM;
