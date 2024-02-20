@@ -19,7 +19,7 @@ constexpr uint8_t kIgnitionMax = 255;
 #endif  // CAPTAIN_HAT
 }  // namespace
 
-RgbaColor heatColor(uint8_t temperature) {
+RgbColor heatColor(uint8_t temperature) {
   uint8_t r, g, b;
   // return rgb(temperature,temperature,temperature);
 
@@ -53,7 +53,7 @@ RgbaColor heatColor(uint8_t temperature) {
     b = 0;         // no blue
   }
 
-  return RgbaColor(r, g, b);
+  return RgbColor(r, g, b);
 }
 
 void Flame::innerBegin(const Frame& f, FlameState* state) const { state->maxDim = 1012 / h(f) + 12; }
@@ -82,7 +82,7 @@ void Flame::innerRewind(const Frame& f, FlameState* state) const {
 }
 
 Color Flame::innerColor(const Frame& f, FlameState* /*state*/, const Pixel& /*px*/) const {
-  return Color(heatColor(ps(f, x(f), h(f) - 1 - y(f)))).lightnessToAlpha();
+  return heatColor(ps(f, x(f), h(f) - 1 - y(f)));
 }
 
 }  // namespace jazzlights

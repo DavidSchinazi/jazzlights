@@ -65,14 +65,6 @@ struct RgbaColor : RgbColor {
   uint8_t alpha;
 };
 
-inline RgbColor blend(RgbaColor fg, RgbaColor bg) {
-  unsigned int alpha = fg.alpha + 1;
-  unsigned int inv_alpha = 256 - fg.alpha;
-  return {static_cast<uint8_t>((alpha * fg.red + inv_alpha * bg.red) >> 8),
-          static_cast<uint8_t>((alpha * fg.green + inv_alpha * bg.green) >> 8),
-          static_cast<uint8_t>((alpha * fg.blue + inv_alpha * bg.blue) >> 8)};
-}
-
 struct HslColor {
   constexpr HslColor() : hue(0), saturation(0), lightness(0) {}
   constexpr HslColor(uint8_t h, uint8_t s, uint8_t l) : hue(h), saturation(s), lightness(l) {}
@@ -132,7 +124,10 @@ class Color {
     return *this;
   }
 
-  RgbColor asRgb() const { return blend(asRgba(), RgbaColor(0x0)); }
+  RgbColor asRgb() const {
+    const RgbaColor rgba = asRgba();
+    return RgbColor(rgba.red, rgba.green, rgba.blue);
+  }
 
   constexpr RgbaColor asRgba() const { return space_ == RGBA ? rgba_ : RgbaColor(hsl_); }
 
@@ -148,21 +143,6 @@ class Color {
     return hsl_;
   }
 
-  RgbaColor asRgbAlphaLightness() const {
-    if (space_ == RGBA) { return rgba_; }
-    // assert(space_ == HSL);
-    RgbaColor c = asRgba();
-    c.alpha = hsl_.lightness;
-    return c;
-  }
-
-  RgbaColor lightnessToAlpha() const {
-    HslColor hsl = asHsl();
-    RgbaColor c = asRgba();
-    c.alpha = hsl.lightness;
-    return c;
-  }
-
  private:
   Space space_;
   union {
@@ -171,7 +151,6 @@ class Color {
   };
 };
 
-static constexpr Color Transparent() { return RgbaColor(0, 0, 0, 0); }
 static constexpr Color Black() { return Color(0x0); }
 static constexpr Color Red() { return Color(0xff0000); }
 static constexpr Color Green() { return Color(0x00ff00); }
@@ -180,12 +159,6 @@ static constexpr Color Purple() { return Color(0x9C27B0); }
 static constexpr Color Cyan() { return Color(0x00BCD4); }
 static constexpr Color Yellow() { return Color(0xFFFF00); }
 static constexpr Color White() { return Color(0xffffff); }
-
-inline Color alphaBlend(Color fg, Color bg) { return blend(fg.asRgba(), bg.asRgba()); }
-
-inline Color alphaLightnessBlend(Color fg, Color bg) { return blend(fg.asRgbAlphaLightness(), bg.asRgba()); }
-
-inline Color blackMask(Color fg, Color bg) { return fg != Black() ? fg : bg; }
 
 inline RgbColor nscale8(RgbColor rgb, uint8_t scale) {
   if (scale == 255) { return rgb; }
