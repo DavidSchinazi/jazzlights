@@ -1,5 +1,6 @@
 #include "jazzlights/pseudorandom.h"
 
+#include <cstring>
 #include <limits>
 
 #if defined(linux) || defined(__linux) || defined(__linux__)
