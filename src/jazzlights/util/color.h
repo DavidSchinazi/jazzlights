@@ -92,10 +92,6 @@ class Color {
   constexpr Color(const RgbColor& c) : space_(RGBA), rgba_(c) {}
   constexpr Color(const HslColor& c) : space_(HSL), hsl_(c) {}
 
-  constexpr static Color rgb(uint32_t v) { return Color(v); }
-  constexpr static Color rgb(uint8_t r, uint8_t g, uint8_t b) { return Color(RgbColor(r, g, b)); }
-  constexpr static Color hsl(uint8_t h, uint8_t s, uint8_t l) { return Color(HslColor(h, s, l)); }
-
   constexpr bool operator==(const Color& other) const {
     return space_ == other.space_ &&
            ((space_ == RGBA && rgba_ == other.rgba_) || (space_ == HSL && hsl_ == other.hsl_));
@@ -110,13 +106,6 @@ class Color {
   }
 
   constexpr RgbColor asRgb() const { return space_ == RGBA ? rgba_ : RgbColor(hsl_); }
-
-  constexpr HslColor asHsl() const { return space_ == RGBA ? HslColor(rgba_) : hsl_; }
-
-  HslColor& convertToHsl() {
-    *this = asHsl();
-    return hsl_;
-  }
 
  private:
   Space space_;

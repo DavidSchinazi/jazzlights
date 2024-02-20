@@ -65,7 +65,7 @@ RgbColor::RgbColor(HslColor color) {
   long i;
   double out_r, out_g, out_b;
 
-  if (in_s <= 0.0) { return rgb(255 * in_v, 255 * in_v, 255 * in_v); }
+  if (in_s <= 0.0) { return RgbColor(255 * in_v, 255 * in_v, 255 * in_v); }
   hh = in_h;
   if (hh >= 360.0) { hh = 0.0; }
   hh /= 60.0;

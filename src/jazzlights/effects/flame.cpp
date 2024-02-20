@@ -21,7 +21,6 @@ constexpr uint8_t kIgnitionMax = 255;
 
 RgbColor heatColor(uint8_t temperature) {
   uint8_t r, g, b;
-  // return rgb(temperature,temperature,temperature);
 
   // Scale 'heat' down from 0-255 to 0-191,
   // which can then be easily divided into three
