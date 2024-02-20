@@ -1,7 +1,7 @@
 #ifndef JL_RENDERER_H
 #define JL_RENDERER_H
 
-#include "jazzlights/util/color.h"
+#include "jazzlights/fastled_wrapper.h"
 
 namespace jazzlights {
 

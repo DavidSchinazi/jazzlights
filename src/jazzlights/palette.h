@@ -5,7 +5,6 @@
 
 #include "jazzlights/effect.h"
 #include "jazzlights/fastled_wrapper.h"
-#include "jazzlights/util/color.h"
 
 namespace jazzlights {
 

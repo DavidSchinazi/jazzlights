@@ -3,7 +3,6 @@
 
 #include "jazzlights/effect.h"
 #include "jazzlights/pseudorandom.h"
-#include "jazzlights/util/color.h"
 
 namespace jazzlights {
 

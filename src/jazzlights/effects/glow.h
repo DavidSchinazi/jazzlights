@@ -1,7 +1,6 @@
 #ifndef JL_EFFECTS_GLOW_H
 #define JL_EFFECTS_GLOW_H
 #include "jazzlights/effects/functional.h"
-#include "jazzlights/util/color.h"
 #include "jazzlights/util/math.h"
 
 namespace jazzlights {
@@ -37,7 +36,7 @@ inline FunctionalEffect glow(CRGB color, const std::string& name) {
       intensity = max_intensity;
     }
     const CRGB faded_color(fade_sub_color(color.red, intensity), fade_sub_color(color.green, intensity),
-                            fade_sub_color(color.blue, intensity));
+                           fade_sub_color(color.blue, intensity));
     return [faded_color](const Pixel& /*pt*/) -> CRGB { return faded_color; };
   });
 };
