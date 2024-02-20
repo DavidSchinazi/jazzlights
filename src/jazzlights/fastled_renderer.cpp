@@ -22,8 +22,8 @@ FastLedRenderer::~FastLedRenderer() {
 }
 
 void FastLedRenderer::renderPixel(size_t index, Color color) {
-  RgbaColor rgba = color.asRgba();
-  ledsPlayer_[index] = CRGB(rgba.red, rgba.green, rgba.blue);
+  RgbColor rgb = color.asRgb();
+  ledsPlayer_[index] = CRGB(rgb.red, rgb.green, rgb.blue);
 }
 
 uint32_t FastLedRenderer::GetPowerAtFullBrightness() const {
