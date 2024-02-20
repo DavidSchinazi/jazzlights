@@ -8,7 +8,7 @@ namespace jazzlights {
 inline FunctionalEffect calibration() {
   return effect("calibration", [](const Frame& frame) {
     const bool blink = ((frame.time % 1000) < 500);
-    return [&frame, blink](const Pixel& pt) -> Color {
+    return [&frame, blink](const Pixel& pt) -> CRGB {
       XYIndex xyIndex = frame.xyIndexStore->FromPixel(pt);
       const int32_t green = 0x00ff00, blue = 0x0000ff, red = 0xff0000;
       const int32_t yellow = green | red, purple = red | blue, white = 0xffffff;
@@ -31,7 +31,7 @@ inline FunctionalEffect calibration() {
 #else   // VEST
     (void)blink;
 #endif  // VEST
-      return Color(col);
+      return CRGB(col);
     };
   });
 };

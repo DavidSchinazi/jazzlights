@@ -33,7 +33,7 @@ struct ColoredBurstsState {
   bool curInit2[kMaxColorsBurstLines];
 };
 
-class ColoredBursts : public EffectWithPaletteXYIndexAndState<ColoredBurstsState, Color> {
+class ColoredBursts : public EffectWithPaletteXYIndexAndState<ColoredBurstsState, CRGB> {
  public:
   std::string effectNamePrefix(PatternBits /*pattern*/) const override { return "bursts"; }
 
@@ -51,7 +51,7 @@ class ColoredBursts : public EffectWithPaletteXYIndexAndState<ColoredBurstsState
     state->curInit1 = false;
     for (uint8_t i = 0; i < state->numLines; i++) { state->curInit2[i] = false; }
     state->speed = f.predictableRandom->GetRandomNumberBetween(3, 10);
-    // All pixels are default-initialized to black using Color's default constructor.
+    // All pixels are default-initialized to black using CRGB's default constructor.
   }
 
   void innerRewind(const Frame& f, ColoredBurstsState* state) const override {
@@ -88,7 +88,7 @@ class ColoredBursts : public EffectWithPaletteXYIndexAndState<ColoredBurstsState
     for (uint8_t i = 0; i < state->numLines; i++) {
       int x2 = jlbeatsin(1 + state->speed, f.time, 0, (w(f) - 1), i * 24);
       int y2 = jlbeatsin(3 + state->speed, f.time, 0, (h(f) - 1), i * 48 + 64);
-      Color color = colorFromPalette(f, i * 255 / state->numLines + state->hue);
+      CRGB color = colorFromPalette(f, i * 255 / state->numLines + state->hue);
       int& curX2 = state->curX2[i];
       int& curY2 = state->curY2[i];
       if (!state->curInit2[i]) {
@@ -124,7 +124,7 @@ class ColoredBursts : public EffectWithPaletteXYIndexAndState<ColoredBurstsState
   }
 
  private:
-  void drawLine(const Frame& f, ColoredBurstsState* state, int x1, int x2, int y1, int y2, Color color) const {
+  void drawLine(const Frame& f, ColoredBurstsState* state, int x1, int x2, int y1, int y2, CRGB color) const {
     int xsteps = std::abs(x1 - y1) + 1;
     int ysteps = std::abs(x2 - y2) + 1;
     bool steppingX = xsteps >= ysteps;

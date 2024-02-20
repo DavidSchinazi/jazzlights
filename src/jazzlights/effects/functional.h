@@ -7,7 +7,7 @@
 
 namespace jazzlights {
 
-using PixelColorFunc = std::function<Color(const Pixel&)>;
+using PixelColorFunc = std::function<CRGB(const Pixel&)>;
 using FrameToPixelColorFuncFunc = std::function<PixelColorFunc(const Frame&)>;
 // The FunctionalEffect class takes as input a FrameToPixelColorFuncFunc.
 // For every time period, it calls its FrameToPixelColorFuncFunc with the frame to get a PixelColorFunc.
@@ -38,7 +38,7 @@ class FunctionalEffect : public Effect {
     GetPixelColorFuncMemory(frame)->~PixelColorFunc();
   }
 
-  Color color(const Frame& frame, const Pixel& px) const override { return (*GetPixelColorFuncMemory(frame))(px); }
+  CRGB color(const Frame& frame, const Pixel& px) const override { return (*GetPixelColorFuncMemory(frame))(px); }
 
   std::string effectName(PatternBits /*pattern*/) const override { return name_; }
 

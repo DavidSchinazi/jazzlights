@@ -10,7 +10,7 @@ inline FunctionalEffect follow_strand() {
   return effect("follow-strand", [](const Frame& frame) {
     const size_t offset = frame.time / 100;
     const bool blink = ((frame.time % 1000) < 500);
-    return [offset, blink](const Pixel& pt) -> Color {
+    return [offset, blink](const Pixel& pt) -> CRGB {
       constexpr int32_t green = 0x00ff00, blue = 0x0000ff, red = 0xff0000, black = 0;
       constexpr int32_t colors[] = {
           red,   red,   red,   black, black, black, black, black, black, green, green, green, black, black,
@@ -27,7 +27,7 @@ inline FunctionalEffect follow_strand() {
                   fabs(pt.coord.y - pt.layout->at(pt.layout->pixelCount() - 1).y) < 0.001)) {
         col = blink ? 0xff00ff : 0;
       }
-      return Color(col);
+      return CRGB(col);
     };
   });
 };

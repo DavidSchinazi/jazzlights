@@ -30,7 +30,7 @@ class Glitter : public Effect {
     static_assert(std::is_trivially_destructible<GlitterState>::value, "GlitterState must be trivially destructible");
   }
 
-  Color color(const Frame& frame, const Pixel& /*px*/) const override {
+  CRGB color(const Frame& frame, const Pixel& /*px*/) const override {
     return CHSV(state(frame)->hue, 255, frame.predictableRandom->GetRandomByte());
   }
 

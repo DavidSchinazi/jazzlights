@@ -15,7 +15,7 @@ uint8_t fade_sub_color(uint8_t channel, uint8_t intensity) {
 }
 }  // namespace
 
-inline FunctionalEffect glow(Color color, const std::string& name) {
+inline FunctionalEffect glow(CRGB color, const std::string& name) {
   return effect(name, [color](const Frame& frame) {
     constexpr uint32_t period = 2500;
     constexpr uint32_t half_low_time = 10;
@@ -36,9 +36,9 @@ inline FunctionalEffect glow(Color color, const std::string& name) {
     } else {
       intensity = max_intensity;
     }
-    const Color faded_color(fade_sub_color(color.red, intensity), fade_sub_color(color.green, intensity),
+    const CRGB faded_color(fade_sub_color(color.red, intensity), fade_sub_color(color.green, intensity),
                             fade_sub_color(color.blue, intensity));
-    return [faded_color](const Pixel& /*pt*/) -> Color { return faded_color; };
+    return [faded_color](const Pixel& /*pt*/) -> CRGB { return faded_color; };
   });
 };
 

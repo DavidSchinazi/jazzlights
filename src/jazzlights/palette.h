@@ -72,20 +72,20 @@ static inline const TProgmemRGBPalette16* FastLEDPaletteFromOurColorPalette(OurC
   return FastLEDPaletteFromOurColorPalette(OCPrainbow);
 }
 
-static inline Color colorFromOurPalette(OurColorPalette ocp, uint8_t color) {
+static inline CRGB colorFromOurPalette(OurColorPalette ocp, uint8_t color) {
   return (*FastLEDPaletteFromOurColorPalette(ocp))[color >> 4];
 }
 
 class ColorWithPalette {
  public:
   ColorWithPalette(uint8_t innerColor) : colorOverridden_(false), innerColor_(innerColor) {}
-  static ColorWithPalette OverrideColor(Color overrideColor) {
+  static ColorWithPalette OverrideColor(CRGB overrideColor) {
     ColorWithPalette col = ColorWithPalette();
     col.overrideColor_ = overrideColor;
     return col;
   }
   static ColorWithPalette OverrideCRGB(CRGB overrideColor) { return OverrideColor(overrideColor); }
-  Color colorFromPalette(OurColorPalette ocp) const {
+  CRGB colorFromPalette(OurColorPalette ocp) const {
     if (colorOverridden_) { return overrideColor_; }
     return colorFromOurPalette(ocp, innerColor_);
   }
@@ -94,7 +94,7 @@ class ColorWithPalette {
   explicit ColorWithPalette() : colorOverridden_(true) {}
   bool colorOverridden_;
   uint8_t innerColor_;
-  Color overrideColor_;
+  CRGB overrideColor_;
 };
 
 inline std::string PaletteNameFromPattern(PatternBits pattern) {
@@ -129,7 +129,7 @@ class EffectWithPaletteAndState : public Effect {
     return effectNamePrefix(pattern) + "-" + PaletteNameFromPattern(pattern);
   }
 
-  Color color(const Frame& frame, const Pixel& px) const override {
+  CRGB color(const Frame& frame, const Pixel& px) const override {
     const ColorWithPalette colorWithPalette = innerColor(frame, px, &state(frame)->innerState);
     return colorWithPalette.colorFromPalette(state(frame)->ocp);
   }
@@ -170,7 +170,7 @@ struct EffectWithPaletteState {
 template <typename STATE, typename PER_PIXEL_TYPE>
 class EffectWithPaletteXYIndexAndState : public XYIndexStateEffect<EffectWithPaletteState<STATE>, PER_PIXEL_TYPE> {
  protected:
-  Color colorFromPalette(const Frame& frame, uint8_t innerColor) const {
+  CRGB colorFromPalette(const Frame& frame, uint8_t innerColor) const {
     EffectWithPaletteState<STATE>* s = XYIndexStateEffect<EffectWithPaletteState<STATE>, PER_PIXEL_TYPE>::state(frame);
     return colorFromOurPalette(s->ocp, innerColor);
   }
@@ -185,7 +185,7 @@ class EffectWithPaletteXYIndexAndState : public XYIndexStateEffect<EffectWithPal
     return effectNamePrefix(pattern) + "-" + PaletteNameFromPattern(pattern);
   }
 
-  Color innerColor(const Frame& frame, EffectWithPaletteState<STATE>* state, const Pixel& px) const override {
+  CRGB innerColor(const Frame& frame, EffectWithPaletteState<STATE>* state, const Pixel& px) const override {
     const ColorWithPalette colorWithPalette = innerColor(frame, &state->innerState, px);
     return colorWithPalette.colorFromPalette(state->ocp);
   }

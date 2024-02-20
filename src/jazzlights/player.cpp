@@ -410,7 +410,7 @@ bool Player::render(Milliseconds currentTime) {
     px.layout = &s.layout;
     const size_t numPixels = s.layout.pixelCount();
     for (size_t index = 0; index < numPixels; index++) {
-      Color color;
+      CRGB color;
       px.coord = s.layout.at(index);
       if (!IsEmpty(px.coord)) {
         px.index = index;

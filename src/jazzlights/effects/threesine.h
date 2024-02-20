@@ -10,7 +10,7 @@ inline FunctionalEffect threesine() {
     const Coord w = width(frame);
     const Coord h = height(frame);
     const uint8_t sineOffset = 256 * frame.time / 8000;
-    return [w, h, sineOffset](const Pixel& px) -> Color {
+    return [w, h, sineOffset](const Pixel& px) -> CRGB {
       // Calculate "sine" waves with varying periods
       // sin8 is used for speed; cos8, quadwave8, or triwave8 would also work
       // here
@@ -19,7 +19,7 @@ inline FunctionalEffect threesine() {
       uint8_t sinDistanceG = qmul8(abs(px.coord.y * (255 / h) - sin8(sineOffset * 10 + xx * 16)), 2);
       uint8_t sinDistanceB = qmul8(abs(px.coord.y * (255 / h) - sin8(sineOffset * 11 + xx * 16)), 2);
 
-      return Color(255 - sinDistanceR, 255 - sinDistanceG, 255 - sinDistanceB);
+      return CRGB(255 - sinDistanceR, 255 - sinDistanceG, 255 - sinDistanceB);
     };
   });
 };

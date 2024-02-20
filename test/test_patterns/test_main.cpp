@@ -54,7 +54,7 @@ void test_pattern(const Effect& effect) {
   px.layout = &layout;
   px.index = 0;
   px.coord = {0.0, 0.0};
-  Color col = effect.color(frame, px);
+  CRGB col = effect.color(frame, px);
   effect.afterColors(frame);
   free(frame.context);
   frame.context = nullptr;

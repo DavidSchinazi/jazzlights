@@ -42,7 +42,7 @@ class Rainbow : public Effect {
     static_assert(std::is_trivially_destructible<RainbowState>::value, "RainbowState must be trivially destructible");
   }
 
-  Color color(const Frame& frame, const Pixel& px) const override {
+  CRGB color(const Frame& frame, const Pixel& px) const override {
     const double d = distance(px.coord, state(frame)->origin);
     const uint8_t hue = (state(frame)->initialHue + int32_t(255 * d / state(frame)->maxDistance)) % 255;
     return CHSV(hue, 240, 255);

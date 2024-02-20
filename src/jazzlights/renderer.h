@@ -9,7 +9,7 @@ class Renderer {
  public:
   virtual ~Renderer() = default;
 
-  virtual void renderPixel(size_t index, Color color) = 0;
+  virtual void renderPixel(size_t index, CRGB color) = 0;
 };
 
 }  // namespace jazzlights

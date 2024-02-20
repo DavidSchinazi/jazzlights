@@ -46,10 +46,10 @@ class Clouds : public Effect {
     static_assert(std::is_trivially_destructible<CloudsState>::value, "CloudsState must be trivially destructible");
   }
 
-  Color color(const Frame& frame, const Pixel& px) const override {
-    static constexpr Color kBrightColor = Color(0xFCC97C);
-    static constexpr Color kDarkColor = Color(0x000000);
-    static constexpr Color kSkyColor = Color(0x000020);
+  CRGB color(const Frame& frame, const Pixel& px) const override {
+    static constexpr CRGB kBrightColor = CRGB(0xFCC97C);
+    static constexpr CRGB kDarkColor = CRGB(0x000000);
+    static constexpr CRGB kSkyColor = CRGB(0x000020);
     if (px.layout != GetCloudsLayout()) { return kSkyColor; }
     for (uint8_t s = 0; s < state(frame)->numStrikes; s++) {
       const double progress = state(frame)->strikes[s].progress;

@@ -21,9 +21,9 @@ inline FunctionalEffect fairy_wand() {
     } else {
       blink = false;
     }
-    return [blink](const Pixel& /*pt*/) -> Color {
+    return [blink](const Pixel& /*pt*/) -> CRGB {
       constexpr int32_t white = 0xffffff, black = 0;
-      return Color(blink ? white : black);
+      return CRGB(blink ? white : black);
     };
   });
 };

@@ -37,7 +37,7 @@ class FastLedRenderer : public Renderer {
     return r;
   }
 
-  void renderPixel(size_t index, Color color) override;
+  void renderPixel(size_t index, CRGB color) override;
 
   uint32_t GetPowerAtFullBrightness() const;
 

@@ -9,7 +9,7 @@ inline FunctionalEffect mapping() {
   return effect("mapping", [](const Frame& frame) {
     const size_t pixelNum = (frame.pattern >> 8) & 0xFFFF;
     const bool blink = ((frame.time % 1000) < 500);
-    return [pixelNum, blink](const Pixel& pt) -> Color {
+    return [pixelNum, blink](const Pixel& pt) -> CRGB {
       if (pt.index < pixelNum) {
         return CRGB::Black;
       } else if (pt.index == pixelNum) {
@@ -30,8 +30,8 @@ inline FunctionalEffect coloring() {
     const uint8_t red = ((frame.pattern >> 20) & 0x3F) << 2;
     const uint8_t green = ((frame.pattern >> 14) & 0x3F) << 2;
     const uint8_t blue = ((frame.pattern >> 8) & 0x3F) << 2;
-    Color color(red, green, blue);
-    return [color](const Pixel& /*pt*/) -> Color { return color; };
+    CRGB color(red, green, blue);
+    return [color](const Pixel& /*pt*/) -> CRGB { return color; };
   });
 };
 

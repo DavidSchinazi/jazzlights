@@ -19,7 +19,7 @@ constexpr uint8_t kIgnitionMax = 255;
 #endif  // CAPTAIN_HAT
 }  // namespace
 
-Color heatColor(uint8_t temperature) {
+CRGB heatColor(uint8_t temperature) {
   uint8_t r, g, b;
 
   // Scale 'heat' down from 0-255 to 0-191,
@@ -52,7 +52,7 @@ Color heatColor(uint8_t temperature) {
     b = 0;         // no blue
   }
 
-  return Color(r, g, b);
+  return CRGB(r, g, b);
 }
 
 void Flame::innerBegin(const Frame& f, FlameState* state) const { state->maxDim = 1012 / h(f) + 12; }
@@ -80,7 +80,7 @@ void Flame::innerRewind(const Frame& f, FlameState* state) const {
   }
 }
 
-Color Flame::innerColor(const Frame& f, FlameState* /*state*/, const Pixel& /*px*/) const {
+CRGB Flame::innerColor(const Frame& f, FlameState* /*state*/, const Pixel& /*px*/) const {
   return heatColor(ps(f, x(f), h(f) - 1 - y(f)));
 }
 

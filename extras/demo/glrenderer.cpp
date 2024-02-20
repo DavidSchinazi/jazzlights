@@ -6,7 +6,7 @@ namespace jazzlights {
 
 static constexpr double TWO_PI = 2 * 3.1415926;
 
-static void renderLed(double cx, double cy, double r, Color color, int segments = 6) {
+static void renderLed(double cx, double cy, double r, CRGB color, int segments = 6) {
   glColor3f(color.red / 255.f, color.green / 255.f, color.blue / 255.f);
   glBegin(GL_TRIANGLE_FAN);
   glVertex2f(cx, cy);
@@ -18,7 +18,7 @@ static void renderLed(double cx, double cy, double r, Color color, int segments 
 
 GLRenderer::GLRenderer(const Layout& l, Meters r) : layout_(l), ledRadius_(r) {}
 
-void GLRenderer::renderPixel(size_t index, Color color) {
+void GLRenderer::renderPixel(size_t index, CRGB color) {
   Point pos = layout_.at(index);
   renderLed(pos.x, pos.y, ledRadius_, color);
 }

@@ -39,14 +39,14 @@ class TheMatrix : public XYIndexStateEffect<MatrixState, uint8_t> {
     progressEffect(frame, state);
   }
 
-  Color innerColor(const Frame& f, MatrixState* /*state*/, const Pixel& /*px*/) const override {
+  CRGB innerColor(const Frame& f, MatrixState* /*state*/, const Pixel& /*px*/) const override {
     const uint8_t p = ps(f, x(f), y(f));
     if (p == kMatrixSpawn) {
-      return Color(175, 255, 175);
+      return CRGB(175, 255, 175);
     } else if (p == 0) {
       return CRGB::Black;
     } else {
-      return Color(27, 130, 39).nscale8(p);
+      return CRGB(27, 130, 39).nscale8(p);
     }
   }
   std::string effectName(PatternBits /*pattern*/) const override { return "the-matrix"; }

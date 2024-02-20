@@ -10,7 +10,7 @@ Matrix pixels(100, 100);
 class NoopRenderer : public Renderer {
  public:
   NoopRenderer() = default;
-  void renderPixel(size_t /*index*/, Color /*color*/) override {}
+  void renderPixel(size_t /*index*/, CRGB /*color*/) override {}
 };
 
 NoopRenderer noopRenderer;

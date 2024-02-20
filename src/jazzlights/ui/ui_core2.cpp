@@ -97,7 +97,7 @@ class Core2ScreenRenderer : public Renderer {
   void setFullScreen(bool fullScreen) { fullScreen_ = fullScreen; }
   void toggleEnabled() { setEnabled(!enabled_); }
   void setEnabled(bool enabled) { enabled_ = enabled; }
-  void renderPixel(size_t index, Color color) override {
+  void renderPixel(size_t index, CRGB color) override {
     if (!enabled_) { return; }
     uint16_t color16 =
         ((uint16_t)(color.red & 0xF8) << 8) | ((uint16_t)(color.green & 0xFC) << 3) | ((color.blue & 0xF8) >> 3);
@@ -344,7 +344,7 @@ class PatternControlMenu {
       case State::kOff: confirmLabel = "Error Off"; break;
       case State::kPattern: confirmLabel = "Error Pattern"; break;
       case State::kPalette: confirmLabel = "Select Palette"; break;
-      case State::kColor: confirmLabel = "Select Color"; break;
+      case State::kColor: confirmLabel = "Select CRGB"; break;
       case State::kConfirmed: confirmLabel = "Confirm"; break;
     }
     confirmButton.setLabel(confirmLabel);
@@ -394,7 +394,7 @@ class PatternControlMenu {
       {     "synctest",   0x0F0000, State::kConfirmed},
       {  "calibration",   0x100000, State::kConfirmed},
       {"follow-strand",   0x110000, State::kConfirmed},
- // Color special patterns.
+ // CRGB special patterns.
       {        "solid",    0x00000,     State::kColor},
       {         "glow",    0x70000,     State::kColor},
  // All -palette pattern.

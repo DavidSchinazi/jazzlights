@@ -5,9 +5,9 @@
 
 namespace jazzlights {
 
-inline FunctionalEffect solid(Color color, const std::string& name) {
+inline FunctionalEffect solid(CRGB color, const std::string& name) {
   return effect(name,
-                [color](const Frame& /*frame*/) { return [color](const Pixel& /*pt*/) -> Color { return color; }; });
+                [color](const Frame& /*frame*/) { return [color](const Pixel& /*pt*/) -> CRGB { return color; }; });
 };
 
 }  // namespace jazzlights
