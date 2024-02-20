@@ -61,7 +61,6 @@ struct RgbColor {
 struct HslColor {
   constexpr HslColor() : hue(0), saturation(0), lightness(0) {}
   constexpr HslColor(uint8_t h, uint8_t s, uint8_t l) : hue(h), saturation(s), lightness(l) {}
-  HslColor(RgbColor c);
 
   constexpr bool operator==(const HslColor& other) const {
     return other.hue == hue && other.saturation == saturation && other.lightness == lightness;

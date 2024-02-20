@@ -5,55 +5,6 @@
 
 namespace jazzlights {
 
-// This is an "accurate" version of color conversions using double precision
-// floating-point, should be pretty slow on arduino chips.
-HslColor::HslColor(RgbColor color) {
-  double in_r = color.red / 255.0;
-  double in_g = color.green / 255.0;
-  double in_b = color.blue / 255.0;
-  double out_h, out_s, out_v;
-  double min, max, delta;
-
-  min = in_r < in_g ? in_r : in_g;
-  min = min < in_b ? min : in_b;
-
-  max = in_r > in_g ? in_r : in_g;
-  max = max > in_b ? max : in_b;
-
-  out_v = max;
-  delta = max - min;
-  if (delta < 0.00001) {
-    out_s = 0;
-    out_h = 0;
-    goto ret;
-  }
-  if (max > 0.0) {  // NOTE: if Max is == 0, this divide would cause a crash
-    out_s = (delta / max);
-  } else {
-    // if max is 0, then r = g = b = 0
-    // s = 0, v is undefined
-    out_s = 0.0;
-    out_h = NAN;  // its now undefined
-    goto ret;
-  }
-  if (in_r >= max) {                // > is bogus, just keeps compilor happy
-    out_h = (in_g - in_b) / delta;  // between yellow & magenta
-  } else if (in_g >= max) {
-    out_h = 2.0 + (in_b - in_r) / delta;  // between cyan & yellow
-  } else {
-    out_h = 4.0 + (in_r - in_g) / delta;  // between magenta & cyan
-  }
-
-  out_h *= 60.0;  // degrees
-
-  if (out_h < 0.0) { out_h += 360.0; }
-
-ret:
-  hue = 255 * out_h / 360.0;
-  saturation = 255 * out_s;
-  lightness = 255 * out_v;
-}
-
 RgbColor::RgbColor(HslColor color) {
 #ifndef FAST_HSL
   uint8_t h = color.hue;
