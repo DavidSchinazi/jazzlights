@@ -58,7 +58,7 @@ class ColoredBursts : public EffectWithPaletteXYIndexAndState<ColoredBurstsState
     state->hue++;
     // Slightly fade all pixels.
     for (size_t x = 0; x < w(f); x++) {
-      for (size_t y = 0; y < h(f); y++) { ps(f, x, y) = nscale8(ps(f, x, y), state->fadeScale); }
+      for (size_t y = 0; y < h(f); y++) { ps(f, x, y).nscale8(state->fadeScale); }
     }
 
     int x1 = jlbeatsin(2 + state->speed, f.time, 0, (w(f) - 1));

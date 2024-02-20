@@ -44,6 +44,15 @@ struct RgbColor {
     return *this;
   }
 
+  RgbColor& nscale8(uint8_t scale) {
+    if (scale == 255) { return *this; }
+    const uint16_t scale_fixed = scale + 1;
+    red = (((uint16_t)red) * scale_fixed) >> 8;
+    green = (((uint16_t)green) * scale_fixed) >> 8;
+    blue = (((uint16_t)blue) * scale_fixed) >> 8;
+    return *this;
+  }
+
   uint8_t red;
   uint8_t green;
   uint8_t blue;
@@ -125,15 +134,6 @@ static constexpr Color Purple() { return Color(0x9C27B0); }
 static constexpr Color Cyan() { return Color(0x00BCD4); }
 static constexpr Color Yellow() { return Color(0xFFFF00); }
 static constexpr Color White() { return Color(0xffffff); }
-
-inline RgbColor nscale8(RgbColor rgb, uint8_t scale) {
-  if (scale == 255) { return rgb; }
-  const uint16_t scale_fixed = scale + 1;
-  rgb.red = (((uint16_t)rgb.red) * scale_fixed) >> 8;
-  rgb.green = (((uint16_t)rgb.green) * scale_fixed) >> 8;
-  rgb.blue = (((uint16_t)rgb.blue) * scale_fixed) >> 8;
-  return rgb;
-}
 
 // With this: 15-16 fps on complex overlays
 // using Color = RgbColor;

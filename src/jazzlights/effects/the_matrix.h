@@ -46,7 +46,7 @@ class TheMatrix : public XYIndexStateEffect<MatrixState, uint8_t> {
     } else if (p == 0) {
       return Black();
     } else {
-      return nscale8(RgbColor(27, 130, 39), p);
+      return RgbColor(27, 130, 39).nscale8(p);
     }
   }
   std::string effectName(PatternBits /*pattern*/) const override { return "the-matrix"; }
