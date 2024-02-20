@@ -71,8 +71,10 @@ void Flame::innerRewind(const Frame& f, FlameState* state) const {
                       static_cast<uint16_t>(ps(f, x, y2 - 3))) /
                      3;
     }
-    ps(f, x, 2) = (static_cast<uint16_t>(ps(f, x, 1)) + static_cast<uint16_t>(ps(f, x, 0))) / 2;
-    ps(f, x, 1) = ps(f, x, 0);
+    if (h(f) > 2) {
+      ps(f, x, 2) = (static_cast<uint16_t>(ps(f, x, 1)) + static_cast<uint16_t>(ps(f, x, 0))) / 2;
+      ps(f, x, 1) = ps(f, x, 0);
+    }
 
     // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
     ps(f, x, 0) = f.predictableRandom->GetRandomNumberBetween(kIgnitionMin, kIgnitionMax);
