@@ -45,7 +45,7 @@ class Rainbow : public Effect {
   Color color(const Frame& frame, const Pixel& px) const override {
     const double d = distance(px.coord, state(frame)->origin);
     const uint8_t hue = (state(frame)->initialHue + int32_t(255 * d / state(frame)->maxDistance)) % 255;
-    return HslColor(hue, 240, 255);
+    return RgbColorFromHsv(hue, 240, 255);
   }
 
  private:

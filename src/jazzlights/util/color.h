@@ -9,7 +9,6 @@
 
 namespace jazzlights {
 
-struct HslColor;
 struct RgbColor;
 
 inline void nscale8x3_video(uint8_t& r, uint8_t& g, uint8_t& b, uint8_t scale) {
@@ -24,7 +23,6 @@ struct RgbColor {
   constexpr RgbColor(uint8_t r, uint8_t g, uint8_t b) : red(r), green(g), blue(b) {}
   constexpr RgbColor(uint32_t c) : red((c >> 16) & 0xFF), green((c >> 8) & 0xFF), blue(c & 0xFF) {}
   RgbColor(CRGB other) : RgbColor(other.r, other.g, other.b) {}
-  RgbColor(HslColor c);
 
   constexpr bool operator==(const RgbColor& other) const {
     return other.red == red && other.green == green && other.blue == blue;
@@ -58,60 +56,22 @@ struct RgbColor {
   uint8_t blue;
 };
 
-struct HslColor {
-  constexpr HslColor() : hue(0), saturation(0), lightness(0) {}
-  constexpr HslColor(uint8_t h, uint8_t s, uint8_t l) : hue(h), saturation(s), lightness(l) {}
-
-  constexpr bool operator==(const HslColor& other) const {
-    return other.hue == hue && other.saturation == saturation && other.lightness == lightness;
-  }
-
-  uint8_t hue;
-  uint8_t saturation;
-  uint8_t lightness;
-
-  enum : uint8_t {
-    HUE_RED = 0,
-    HUE_ORANGE = 32,
-    HUE_YELLOW = 64,
-    HUE_GREEN = 96,
-    HUE_AQUA = 128,
-    HUE_BLUE = 160,
-    HUE_PURPLE = 192,
-    HUE_PINK = 224,
-  };
-};
+RgbColor RgbColorFromHsv(uint8_t h, uint8_t s, uint8_t v);
 
 class Color {
  public:
-  enum Space { RGBA, HSL };
+  constexpr Color() : rgba_(RgbColor()) {}
+  constexpr Color(uint32_t c) : rgba_(RgbColor(c)) {}
+  constexpr Color(const RgbColor& c) : rgba_(c) {}
 
-  constexpr Color() : space_(RGBA), rgba_(RgbColor()) {}
-  constexpr Color(uint32_t c) : space_(RGBA), rgba_(RgbColor(c)) {}
-  constexpr Color(const RgbColor& c) : space_(RGBA), rgba_(c) {}
-  constexpr Color(const HslColor& c) : space_(HSL), hsl_(c) {}
-
-  constexpr bool operator==(const Color& other) const {
-    return space_ == other.space_ &&
-           ((space_ == RGBA && rgba_ == other.rgba_) || (space_ == HSL && hsl_ == other.hsl_));
-  }
+  constexpr bool operator==(const Color& other) const { return rgba_ == other.rgba_; }
 
   constexpr bool operator!=(const Color& other) const { return !(*this == other); }
 
-  Color& operator=(const HslColor& other) {
-    space_ = HSL;
-    hsl_ = other;
-    return *this;
-  }
-
-  constexpr RgbColor asRgb() const { return space_ == RGBA ? rgba_ : RgbColor(hsl_); }
+  constexpr RgbColor asRgb() const { return rgba_; }
 
  private:
-  Space space_;
-  union {
-    RgbColor rgba_;
-    HslColor hsl_;
-  };
+  RgbColor rgba_;
 };
 
 static constexpr Color Black() { return Color(0x0); }
@@ -134,11 +94,6 @@ namespace jazzlights {
 
 inline std::ostream& operator<<(std::ostream& out, const RgbColor& c) {
   out << "RGB(" << int(c.red) << "," << int(c.green) << "," << int(c.blue) << ")";
-  return out;
-}
-
-inline std::ostream& operator<<(std::ostream& out, const HslColor& c) {
-  out << "HSL(" << int(c.hue) << "," << int(c.saturation) << "," << int(c.lightness) << ")";
   return out;
 }
 

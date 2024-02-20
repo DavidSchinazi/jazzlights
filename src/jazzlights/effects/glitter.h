@@ -31,7 +31,7 @@ class Glitter : public Effect {
   }
 
   Color color(const Frame& frame, const Pixel& /*px*/) const override {
-    return HslColor(state(frame)->hue, 255, frame.predictableRandom->GetRandomByte());
+    return RgbColorFromHsv(state(frame)->hue, 255, frame.predictableRandom->GetRandomByte());
   }
 
  private:
