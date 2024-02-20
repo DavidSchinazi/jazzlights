@@ -3,50 +3,23 @@
 #ifndef ARDUINO
 
 CRGB CHSV(uint8_t h, uint8_t s, uint8_t v) {
-  uint8_t region, remainder, p, q, t, rgb_r, rgb_g, rgb_b;
-
   if (s == 0) { return CRGB(v, v, v); }
 
-  region = h / 43;
-  remainder = (h - (region * 43)) * 6;
+  const uint8_t region = h / 43;
+  const uint8_t remainder = (h - (region * 43)) * 6;
 
-  p = (v * (255 - s)) >> 8;
-  q = (v * (255 - ((s * remainder) >> 8))) >> 8;
-  t = (v * (255 - ((s * (255 - remainder)) >> 8))) >> 8;
+  const uint8_t p = (v * (255 - s)) >> 8;
+  const uint8_t q = (v * (255 - ((s * remainder) >> 8))) >> 8;
+  const uint8_t t = (v * (255 - ((s * (255 - remainder)) >> 8))) >> 8;
 
   switch (region) {
-    case 0:
-      rgb_r = v;
-      rgb_g = t;
-      rgb_b = p;
-      break;
-    case 1:
-      rgb_r = q;
-      rgb_g = v;
-      rgb_b = p;
-      break;
-    case 2:
-      rgb_r = p;
-      rgb_g = v;
-      rgb_b = t;
-      break;
-    case 3:
-      rgb_r = p;
-      rgb_g = q;
-      rgb_b = v;
-      break;
-    case 4:
-      rgb_r = t;
-      rgb_g = p;
-      rgb_b = v;
-      break;
-    default:
-      rgb_r = v;
-      rgb_g = p;
-      rgb_b = q;
-      break;
+    case 0: return CRGB(v, t, p);
+    case 1: return CRGB(q, v, p);
+    case 2: return CRGB(p, v, t);
+    case 3: return CRGB(p, q, v);
+    case 4: return CRGB(t, p, v);
+    default: return CRGB(v, p, q);
   }
-  return CRGB(rgb_r, rgb_g, rgb_b);
 }
 
 extern const TProgmemRGBPalette16 CloudColors_p FL_PROGMEM = {                             //
