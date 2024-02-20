@@ -150,8 +150,11 @@ struct CRGB {
     uint8_t raw[3];
   };
 
+  // Work around clang-format disagreement between CI and local copy.
+  // clang-format off
   inline CRGB(uint32_t colorcode) __attribute__((always_inline))
       : r((colorcode >> 16) & 0xFF), g((colorcode >> 8) & 0xFF), b((colorcode >> 0) & 0xFF) {}
+  // clang-format on
 
   inline CRGB(uint8_t ir, uint8_t ig, uint8_t ib) __attribute__((always_inline)) : r(ir), g(ig), b(ib) {}
 
