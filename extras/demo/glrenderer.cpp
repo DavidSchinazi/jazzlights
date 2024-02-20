@@ -20,7 +20,7 @@ GLRenderer::GLRenderer(const Layout& l, Meters r) : layout_(l), ledRadius_(r) {}
 
 void GLRenderer::renderPixel(size_t index, Color color) {
   Point pos = layout_.at(index);
-  renderLed(pos.x, pos.y, ledRadius_, color.asRgb());
+  renderLed(pos.x, pos.y, ledRadius_, color);
 }
 
 }  // namespace jazzlights

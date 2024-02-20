@@ -58,21 +58,7 @@ struct RgbColor {
 
 RgbColor RgbColorFromHsv(uint8_t h, uint8_t s, uint8_t v);
 
-class Color {
- public:
-  constexpr Color() : rgba_(RgbColor()) {}
-  constexpr Color(uint32_t c) : rgba_(RgbColor(c)) {}
-  constexpr Color(const RgbColor& c) : rgba_(c) {}
-
-  constexpr bool operator==(const Color& other) const { return rgba_ == other.rgba_; }
-
-  constexpr bool operator!=(const Color& other) const { return !(*this == other); }
-
-  constexpr RgbColor asRgb() const { return rgba_; }
-
- private:
-  RgbColor rgba_;
-};
+using Color = RgbColor;
 
 static constexpr Color Black() { return Color(0x0); }
 static constexpr Color Red() { return Color(0xff0000); }

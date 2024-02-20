@@ -99,9 +99,8 @@ class Core2ScreenRenderer : public Renderer {
   void setEnabled(bool enabled) { enabled_ = enabled; }
   void renderPixel(size_t index, Color color) override {
     if (!enabled_) { return; }
-    RgbColor rgb = color.asRgb();
     uint16_t color16 =
-        ((uint16_t)(rgb.red & 0xF8) << 8) | ((uint16_t)(rgb.green & 0xFC) << 3) | ((rgb.blue & 0xF8) >> 3);
+        ((uint16_t)(color.red & 0xF8) << 8) | ((uint16_t)(color.green & 0xFC) << 3) | ((color.blue & 0xF8) >> 3);
     int32_t x = index % 40;
     int32_t y = index / 40;
     int32_t factor = fullScreen_ ? 8 : 4;
