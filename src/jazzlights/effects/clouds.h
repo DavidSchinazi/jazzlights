@@ -47,9 +47,9 @@ class Clouds : public Effect {
   }
 
   CRGB color(const Frame& frame, const Pixel& px) const override {
-    static constexpr CRGB kBrightColor = CRGB(0xFCC97C);
-    static constexpr CRGB kDarkColor = CRGB(0x000000);
-    static constexpr CRGB kSkyColor = CRGB(0x000020);
+    static const CRGB kBrightColor = CRGB(0xFCC97C);
+    static const CRGB kDarkColor = CRGB(0x000000);
+    static const CRGB kSkyColor = CRGB(0x000020);
     if (px.layout != GetCloudsLayout()) { return kSkyColor; }
     for (uint8_t s = 0; s < state(frame)->numStrikes; s++) {
       const double progress = state(frame)->strikes[s].progress;
