@@ -14,6 +14,7 @@
 #include "jazzlights/networks/arduino_ethernet.h"
 #include "jazzlights/networks/esp32_ble.h"
 #include "jazzlights/player.h"
+#include "jazzlights/rest_server.h"
 #include "jazzlights/ui/ui.h"
 #include "jazzlights/ui/ui_atom_matrix.h"
 #include "jazzlights/ui/ui_atom_s3.h"
@@ -39,6 +40,10 @@ typedef NoOpUi ArduinoUiImpl;
 #endif
 
 ArduinoUiImpl ui(player, timeMillis());
+
+#if JL_IS_CONFIG(CLOUDS)
+RestServer rest_server(80, player);
+#endif  // JL_IS_CONFIG(CLOUDS)
 
 void arduinoSetup(void) {
   Milliseconds currentTime = timeMillis();
@@ -78,6 +83,12 @@ void arduinoLoop(void) {
   const bool shouldRender = player.render(currentTime);
   SAVE_TIME_POINT(Player);
   if (shouldRender) { runner.Render(); }
+#if JL_IS_CONFIG(CLOUDS)
+  if (ArduinoEspWiFiNetwork::get()->status() != INITIALIZING) {
+    // This can't be called until after the networks have been initialized.
+    rest_server.Start();
+  }
+#endif  // JL_IS_CONFIG(CLOUDS)
 }
 
 }  // namespace jazzlights
