@@ -111,6 +111,9 @@ class Player {
   const Network* followedNextHopNetwork() const { return followedNextHopNetwork_; }
   NumHops currentNumHops() const { return currentNumHops_; }
 
+  void set_enabled(bool enabled) { enabled_ = enabled; }
+  bool enabled() const { return enabled_; }
+
  private:
   void handleReceivedMessage(NetworkMessage message, Milliseconds currentTime);
 
@@ -134,6 +137,7 @@ class Player {
   void checkLeaderAndPattern(Milliseconds currentTime);
   PatternBits enforceForcedPalette(PatternBits pattern);
 
+  bool enabled_ = true;
   bool ready_ = false;
   bool powerLimited_ = false;
   uint8_t brightness_ = 255;

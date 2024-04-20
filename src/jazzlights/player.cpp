@@ -357,6 +357,10 @@ bool Player::render(Milliseconds currentTime) {
     effect = &fairy_wand_effect;
   }
 #endif  // FAIRY_WAND
+  if (!enabled()) {
+    // TODO save CPU by not computing anything when disabled.
+    effect = patternFromBits(0);
+  }
 
   // Ensure effectContext_ is big enough for this effect.
   size_t effectContextSize = effect->contextSize(frame_);
