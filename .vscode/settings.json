@@ -1,4 +1,8 @@
 {
   "cmake.configureOnOpen": true,
-  "editor.formatOnSave": true
+  "editor.formatOnSave": true,
+  "files.associations": {
+    "cerrno": "cpp",
+    "string": "cpp"
+  }
 }
