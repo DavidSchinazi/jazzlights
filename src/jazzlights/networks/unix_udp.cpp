@@ -205,13 +205,15 @@ int UnixUdpNetwork::recv(void* buf, size_t bufsize, std::string* /*details*/) {
     //      static_cast<uint64_t>(bufsize), fd, ifName.c_str());
     ssize_t n = recvfrom(fd, buf, bufsize, 0, reinterpret_cast<sockaddr*>(&fromaddr), &fromaddrlen);
     if (n < 0) {
-      if (errno == EWOULDBLOCK || errno == EAGAIN) {
+      const int errorCode = errno;
+      if (errorCode == EWOULDBLOCK || errorCode == EAGAIN) {
         continue;  // no data on nonblocking socket
       }
-      jll_error("Failed to receive data on UDP socket %d ifName %s: %s", fd, ifName.c_str(), strerror(errno));
+      jll_error("Failed to receive data on UDP socket %d ifName %s: %s", fd, ifName.c_str(), strerror(errorCode));
       invalidateSocket(ifName);
       setupSockets();
-      continue;  // error reading
+      // Exit loop since sockets_ has been modified, and that invalidates the loop iterator.
+      break;
     }
     fromstr = inet_ntoa(fromaddr.sin_addr);
     jll_debug("Received %ld bytes on UDP socket %d ifName %s from %s:%d", n, fd, ifName.c_str(), fromstr,
@@ -234,26 +236,29 @@ void UnixUdpNetwork::send(void* buf, size_t bufsize) {
     int fd = pair.second;
     ssize_t sendResult = sendto(fd, buf, bufsize, 0, (struct sockaddr*)&sin, sizeof(sin));
     if (sendResult < 0) {
-      if (errno == EWOULDBLOCK || errno == EAGAIN) {
+      const int errorCode = errno;
+      if (errorCode == EWOULDBLOCK || errorCode == EAGAIN) {
         continue;  // no room to enqueue data on nonblocking socket
       }
       jll_error("Failed to send %zu bytes on UDP socket %d ifName %s: %s", bufsize, fd, ifName.c_str(),
-                strerror(errno));
-      if (errno == ENETUNREACH) {
+                strerror(errorCode));
+      if (errorCode == ENETUNREACH) {
         // Do not invalidate the socket as we would immediately
         // recreate it and infinite loop.
         continue;
       }
       invalidateSocket(ifName);
       setupSockets();
-      continue;
+      // Exit loop since sockets_ has been modified, and that invalidates the loop iterator.
+      break;
     }
     if (static_cast<size_t>(sendResult) != bufsize) {
       jll_error("Incorrectly sent %zd bytes instead of %zu on UDP socket %d ifName %s: %s", sendResult, bufsize, fd,
                 ifName.c_str(), strerror(errno));
       invalidateSocket(ifName);
       setupSockets();
-      continue;
+      // Exit loop since sockets_ has been modified, and that invalidates the loop iterator.
+      break;
     }
     jll_debug("Sent %zu bytes on UDP socket %d ifName %s to %s:%d", bufsize, fd, ifName.c_str(), mcastAddrStr_, port_);
   }
