@@ -9,7 +9,7 @@
 namespace jazzlights {
 
 int runMain(int /*argn*/, char** /*argv*/) {
-  Matrix layout(/*w=*/494, /*h=*/306);
+  Matrix layout(/*w=*/400, /*h=*/300);
   GLRenderer renderer(layout);
   UnixUdpNetwork network;
   Player player;
