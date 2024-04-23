@@ -22,6 +22,62 @@ CRGB CHSV(uint8_t h, uint8_t s, uint8_t v) {
   }
 }
 
+CRGB ColorFromPalette(const TProgmemRGBPalette16& pal, uint8_t index, uint8_t brightness, TBlendType blendType) {
+  if (blendType == LINEARBLEND_NOWRAP) {
+    index = map8(index, 0, 239);  // Blend range is affected by lo4 blend of values, remap to avoid wrapping.
+  }
+
+  uint8_t hi4 = index >> 4;
+  uint8_t lo4 = index & 0x0F;
+
+  CRGB entry = pal[hi4];
+
+  uint8_t red1 = entry.red;
+  uint8_t green1 = entry.green;
+  uint8_t blue1 = entry.blue;
+
+  uint8_t blend = lo4 && (blendType != NOBLEND);
+
+  if (blend) {
+    if (hi4 == 15) {
+      entry = pal[0];
+    } else {
+      entry = pal[1 + hi4];
+    }
+
+    uint8_t f2 = lo4 << 4;
+    uint8_t f1 = 255 - f2;
+
+    uint8_t red2 = entry.red;
+    red1 = scale8(red1, f1);
+    red2 = scale8(red2, f2);
+    red1 += red2;
+
+    uint8_t green2 = entry.green;
+    green1 = scale8(green1, f1);
+    green2 = scale8(green2, f2);
+    green1 += green2;
+
+    uint8_t blue2 = entry.blue;
+    blue1 = scale8(blue1, f1);
+    blue2 = scale8(blue2, f2);
+    blue1 += blue2;
+  }
+
+  if (brightness == 0) {
+    red1 = 0;
+    green1 = 0;
+    blue1 = 0;
+  } else if (brightness != 255) {
+    brightness++;  // Adjust for rounding.
+    if (red1) { red1 = scale8(red1, brightness); }
+    if (green1) { green1 = scale8(green1, brightness); }
+    if (blue1) { blue1 = scale8(blue1, brightness); }
+  }
+
+  return CRGB(red1, green1, blue1);
+}
+
 extern const TProgmemRGBPalette16 CloudColors_p FL_PROGMEM = {                             //
     CRGB::Blue,      CRGB::DarkBlue, CRGB::DarkBlue,  CRGB::DarkBlue,                      //
     CRGB::DarkBlue,  CRGB::DarkBlue, CRGB::DarkBlue,  CRGB::DarkBlue,                      //

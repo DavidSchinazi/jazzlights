@@ -168,18 +168,18 @@ class PatternControlMenu {
       case State::kPattern: {
         state_ = State::kPattern;
         M5.Lcd.fillRect(x_, /*y=*/0, /*w=*/155, /*h=*/240, BLACK);
-        if (selectedPatternIndex_ < kNumRegularPatterns) {
-          for (uint8_t i = 0; i < kNumRegularPatterns; i++) {
+        if (selectedPatternIndex_ < kNumPatternsFirstPage) {
+          for (uint8_t i = 0; i < kNumPatternsFirstPage; i++) {
             drawPatternTextLine(i, kSelectablePatterns[i].name, i == selectedPatternIndex_);
           }
           M5.Lcd.setTextColor(WHITE, BLACK);
-          M5.Lcd.drawString("Special Patterns...", x_, kNumRegularPatterns * dy());
+          M5.Lcd.drawString("More Patterns...", x_, kNumPatternsFirstPage * dy());
         } else {
           M5.Lcd.setTextColor(WHITE, BLACK);
-          M5.Lcd.drawString("Regular Patterns...", x_, /*y=*/0);
-          for (uint8_t i = 0; i < kNumSpecialPatterns; i++) {
-            drawPatternTextLine(i + 1, kSelectablePatterns[i + kNumRegularPatterns].name,
-                                i + kNumRegularPatterns == selectedPatternIndex_);
+          M5.Lcd.drawString("Previous Patterns...", x_, /*y=*/0);
+          for (uint8_t i = 0; i < kNumPatternsSecondPage; i++) {
+            drawPatternTextLine(i + 1, kSelectablePatterns[i + kNumPatternsFirstPage].name,
+                                i + kNumPatternsFirstPage == selectedPatternIndex_);
           }
         }
       } break;
@@ -198,20 +198,20 @@ class PatternControlMenu {
   }
   void downPressed() {
     if (state_ == State::kPattern) {
-      if (selectedPatternIndex_ < kNumRegularPatterns - 1) {
+      if (selectedPatternIndex_ < kNumPatternsFirstPage - 1) {
         drawPatternTextLine(selectedPatternIndex_, kSelectablePatterns[selectedPatternIndex_].name, /*selected=*/false);
         selectedPatternIndex_++;
         drawPatternTextLine(selectedPatternIndex_, kSelectablePatterns[selectedPatternIndex_].name, /*selected=*/true);
         drawConfirmButton();
-      } else if (selectedPatternIndex_ == kNumRegularPatterns - 1) {
+      } else if (selectedPatternIndex_ == kNumPatternsFirstPage - 1) {
         selectedPatternIndex_++;
         draw();
-      } else if (selectedPatternIndex_ < kNumRegularPatterns + kNumSpecialPatterns - 1) {
-        drawPatternTextLine(1 + selectedPatternIndex_ - kNumRegularPatterns,
+      } else if (selectedPatternIndex_ < kNumPatternsFirstPage + kNumPatternsSecondPage - 1) {
+        drawPatternTextLine(1 + selectedPatternIndex_ - kNumPatternsFirstPage,
                             kSelectablePatterns[selectedPatternIndex_].name,
                             /*selected=*/false);
         selectedPatternIndex_++;
-        drawPatternTextLine(1 + selectedPatternIndex_ - kNumRegularPatterns,
+        drawPatternTextLine(1 + selectedPatternIndex_ - kNumPatternsFirstPage,
                             kSelectablePatterns[selectedPatternIndex_].name,
                             /*selected=*/true);
         drawConfirmButton();
@@ -234,22 +234,22 @@ class PatternControlMenu {
     if (state_ == State::kPattern) {
       if (selectedPatternIndex_ == 0) {
         // Do nothing.
-      } else if (selectedPatternIndex_ < kNumRegularPatterns) {
+      } else if (selectedPatternIndex_ < kNumPatternsFirstPage) {
         drawPatternTextLine(selectedPatternIndex_, kSelectablePatterns[selectedPatternIndex_].name,
                             /*selected=*/false);
         selectedPatternIndex_--;
         drawPatternTextLine(selectedPatternIndex_, kSelectablePatterns[selectedPatternIndex_].name,
                             /*selected=*/true);
         drawConfirmButton();
-      } else if (selectedPatternIndex_ == kNumRegularPatterns) {
+      } else if (selectedPatternIndex_ == kNumPatternsFirstPage) {
         selectedPatternIndex_--;
         draw();
       } else {
-        drawPatternTextLine(1 + selectedPatternIndex_ - kNumRegularPatterns,
+        drawPatternTextLine(1 + selectedPatternIndex_ - kNumPatternsFirstPage,
                             kSelectablePatterns[selectedPatternIndex_].name,
                             /*selected=*/false);
         selectedPatternIndex_--;
-        drawPatternTextLine(1 + selectedPatternIndex_ - kNumRegularPatterns,
+        drawPatternTextLine(1 + selectedPatternIndex_ - kNumPatternsFirstPage,
                             kSelectablePatterns[selectedPatternIndex_].name,
                             /*selected=*/true);
         drawConfirmButton();
@@ -323,7 +323,9 @@ class PatternControlMenu {
     return true;
   }
   bool setPatternWithPalette(Player& player, PatternBits patternBits, uint8_t palette, Milliseconds currentTime) {
-    if (patternBits == 0x00FF0000) {  // forced palette.
+    jll_info("%u setPatternWithPalette patternBits=%08x palette=%u combined=%08x", currentTime, patternBits, palette,
+             patternBits | (palette << 13));
+    if (patternBits == kAllPalettePattern) {  // forced palette.
       player.forcePalette(palette, currentTime);
       state_ = State::kOff;
       return true;
@@ -333,10 +335,10 @@ class PatternControlMenu {
   }
   bool setPatternWithColor(Player& player, PatternBits patternBits, uint8_t color, Milliseconds currentTime) {
     player.stopForcePalette(currentTime);
-    if (patternBits == 0x70000 && color == 0) {  // glow-black is just solid-black.
+    if (patternBits == 0x0700 && color == 0) {  // glow-black is just solid-black.
       return setPattern(player, 0, currentTime);
     }
-    return setPattern(player, patternBits + color * 0x10000, currentTime);
+    return setPattern(player, patternBits + color * 0x100, currentTime);
   }
   void drawConfirmButton() {
     const char* confirmLabel;
@@ -376,29 +378,31 @@ class PatternControlMenu {
     PatternBits bits;
     State nextState;
   };
-  static constexpr uint8_t kNumRegularPatterns = 5 + 4;
-  static constexpr uint8_t kNumSpecialPatterns = 3 + 2 + 1;
-  SelectablePattern kSelectablePatterns[kNumRegularPatterns + kNumSpecialPatterns] = {
-  // Non-palette regular patterns.
-      {        "flame", 0x60000001, State::kConfirmed},
-      {      "glitter", 0x40000001, State::kConfirmed},
-      {   "the-matrix", 0x30000001, State::kConfirmed},
-      {    "threesine", 0x20000001, State::kConfirmed},
-      {      "rainbow", 0x00000001, State::kConfirmed},
- // Palette regular patterns.
-      {  "spin-plasma", 0xE0000001,   State::kPalette},
-      {     "hiphotic", 0xC0000001,   State::kPalette},
-      {    "metaballs", 0xA0000001,   State::kPalette},
-      {       "bursts", 0x80000001,   State::kPalette},
+  static constexpr PatternBits kAllPalettePattern = 0x00000F30;
+  static constexpr uint8_t kNumPatternsFirstPage = 4 + 1 + 2;
+  static constexpr uint8_t kNumPatternsSecondPage = 3 + 3 + 2;
+  SelectablePattern kSelectablePatterns[kNumPatternsFirstPage + kNumPatternsSecondPage] = {
+  // Main patterns.
+      {      "rainbow",         0x00000001,   State::kPalette},
+      {        "flame",         0x40000001,   State::kPalette},
+      {  "spin-plasma",         0xC0000001,   State::kPalette},
+      {     "hiphotic",         0x80000001,   State::kPalette},
+ // All-palette pattern.
+      {  "all-palette", kAllPalettePattern,   State::kPalette},
+ // Legacy palette patterns.
+      {    "metaballs",         0x80000030,   State::kPalette},
+      {       "bursts",         0x00000030,   State::kPalette},
+ // Legacy non-palette patterns.
+      {      "glitter",             0x1200, State::kConfirmed},
+      {   "the-matrix",             0x1300, State::kConfirmed},
+      {    "threesine",             0x1400, State::kConfirmed},
  // Non-color special patterns.
-      {     "synctest",   0x0F0000, State::kConfirmed},
-      {  "calibration",   0x100000, State::kConfirmed},
-      {"follow-strand",   0x110000, State::kConfirmed},
+      {     "synctest",             0x0F00, State::kConfirmed},
+      {  "calibration",             0x1000, State::kConfirmed},
+      {"follow-strand",             0x1100, State::kConfirmed},
  // CRGB special patterns.
-      {        "solid",    0x00000,     State::kColor},
-      {         "glow",    0x70000,     State::kColor},
- // All -palette pattern.
-      {  "all-palette", 0x00FF0000,   State::kPalette},
+      {        "solid",             0x0000,     State::kColor},
+      {         "glow",             0x0700,     State::kColor},
   };
   static constexpr size_t kNumPalettes = 7;
   const char* kPaletteNames[kNumPalettes] = {

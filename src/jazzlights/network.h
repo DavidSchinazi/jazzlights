@@ -146,8 +146,15 @@ class Network {
   virtual void runLoopImpl(Milliseconds currentTime) = 0;
   NetworkStatus getStatus() const { return status_; }
   // Default address and port for sync packets over IP.
-  static constexpr uint16_t DefaultUdpPort() { return 0xDF0D; }
-  static constexpr const char* DefaultMulticastAddress() { return "239.255.223.01"; }
+  static constexpr uint16_t DefaultUdpPort() {
+    // We intentionally squat on the babel-dtls port. Hopefully Juliusz won't mind.
+    return 6699;
+  }
+  static constexpr const char* DefaultMulticastAddress() {
+    // We intentionally squat on an unused address.
+    // https://www.iana.org/assignments/multicast-addresses/multicast-addresses.xhtml#multicast-addresses-1
+    return "224.0.0.169";
+  }
 
  private:
   void checkStatus(Milliseconds currentTime);

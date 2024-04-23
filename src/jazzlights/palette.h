@@ -72,7 +72,7 @@ static inline const TProgmemRGBPalette16* FastLEDPaletteFromOurColorPalette(OurC
 }
 
 static inline CRGB colorFromOurPalette(OurColorPalette ocp, uint8_t color) {
-  return (*FastLEDPaletteFromOurColorPalette(ocp))[color >> 4];
+  return ColorFromPalette(*FastLEDPaletteFromOurColorPalette(ocp), color);
 }
 
 class ColorWithPalette {
@@ -149,6 +149,9 @@ class EffectWithPaletteAndState : public Effect {
     static_assert(std::is_trivially_destructible<STATE>::value, "STATE must be trivially destructible");
   }
 
+ protected:
+  OurColorPalette palette(const Frame& frame) const { return state(frame)->ocp; }
+
  private:
   struct EffectWithPaletteState {
     OurColorPalette ocp;
@@ -159,6 +162,8 @@ class EffectWithPaletteAndState : public Effect {
     return static_cast<EffectWithPaletteState*>(frame.context);
   }
 };
+
+using EffectWithPalette = EffectWithPaletteAndState<EmptyState>;
 
 template <typename STATE>
 struct EffectWithPaletteState {
@@ -172,6 +177,10 @@ class EffectWithPaletteXYIndexAndState : public XYIndexStateEffect<EffectWithPal
   CRGB colorFromPalette(const Frame& frame, uint8_t innerColor) const {
     EffectWithPaletteState<STATE>* s = XYIndexStateEffect<EffectWithPaletteState<STATE>, PER_PIXEL_TYPE>::state(frame);
     return colorFromOurPalette(s->ocp, innerColor);
+  }
+  OurColorPalette palette(const Frame& frame) const {
+    EffectWithPaletteState<STATE>* s = XYIndexStateEffect<EffectWithPaletteState<STATE>, PER_PIXEL_TYPE>::state(frame);
+    return s->ocp;
   }
 
  public:

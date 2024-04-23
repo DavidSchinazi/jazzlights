@@ -13,8 +13,8 @@ parser.add_argument('pixel_num', type=int, nargs='?', default=0)
 args = parser.parse_args()
 pixelNum = int(args.pixel_num)
 
-PORT = 0xDF0D
-MCADDR = '239.255.223.01'
+PORT = 6699
+MCADDR = '224.0.0.169'
 PATTERN_DURATION = 10000
 
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)

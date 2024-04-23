@@ -20,28 +20,30 @@ palettes = {
 }
 
 patterns = {
-  'black': 0x00000,
-  'red': 0x10000,
-  'green': 0x20000,
-  'blue': 0x30000,
-  'purple': 0x40000,
-  'cyan': 0x50000,
-  'yellow': 0x60000,
-  'white': 0x70000,
-  'glow-red': 0x80000,
-  'glow-green': 0x90000,
-  'glow-blue': 0xA0000,
-  'glow-purple': 0xB0000,
-  'glow-cyan': 0xC0000,
-  'glow-yellow': 0xD0000,
-  'glow-white': 0xE0000,
-  'synctest': 0xF0000,
-  'calibration': 0x100000,
-  'follow-strand': 0x110000,
-  'flame': 0x60000001,
-  'glitter': 0x40000001,
-  'the-matrix': 0x30000001,
-  'threesine': 0x20000001,
+  'black': 0x0,
+  'red': 0x100,
+  'green': 0x200,
+  'blue': 0x300,
+  'purple': 0x400,
+  'cyan': 0x500,
+  'yellow': 0x600,
+  'white': 0x700,
+  'glow-red': 0x800,
+  'glow-green': 0x900,
+  'glow-blue': 0xA00,
+  'glow-purple': 0xB00,
+  'glow-cyan': 0xC00,
+  'glow-yellow': 0xD00,
+  'glow-white': 0xE00,
+  'synctest': 0xF00,
+  'calibration': 0x1000,
+  'follow-strand': 0x1100,
+  'glitter': 0x1200,
+  'the-matrix': 0x1300,
+  'threesine': 0x1400,
+  'sp': 0xC0000001,
+  'hiphotic': 0x80000001,
+  'flame': 0x40000001,
   'rainbow': 0x00000001,
 }
 defaultName = 'glow-red'
@@ -55,11 +57,15 @@ patternName = args.pattern
 randomize = not args.norandom
 
 def randomizePattern(patternBytes, randomize=True):
-  if randomize and patternBytes & 0xFF != 0:
-    patternBytes &= 0xF000E000
-    patternBytes |= random.randrange(1, 1 << 8)
-    patternBytes |= random.randrange(0, 1 << 5) << 8
-    patternBytes |= random.randrange(0, 1 << 12) << 16
+  if randomize and ((patternBytes & 0xF) != 0 or (patternBytes & 0xFF) == 0x30):
+    reservedWithPalette = (patternBytes & 0xFF) == 0x30
+    patternBytes &= 0xC000E000 # 13-15 for palette and 30-31 for pattern
+    if reservedWithPalette:
+      patternBytes |= 0x030
+    else:
+      patternBytes |= random.randrange(1, 1 << 4)  # bits 0-3, but must not be all-zero
+      patternBytes |= random.randrange(0, 1 << 9) << 4  # bits 4-12
+    patternBytes |= random.randrange(0, 1 << 14) << 16  # bits 16-29
   return patternBytes
 
 def getPatternBytes(patternName):
@@ -68,24 +74,27 @@ def getPatternBytes(patternName):
     return 0x01000000 | (pixelNum << 8)
   elif patternName.startswith('coloring-'):
     rgb = int(patternName[len('coloring-'):], 16)
-    r = ((rgb >> 16) & 0xFF) >> 2
-    g = ((rgb >> 8) & 0xFF) >> 2
-    b = (rgb & 0xFF) >> 2
-    return 0x04000000 | (r << 20) | (g << 14) | (b << 8)
+    return 0x00000020 | (rgb << 8)
   patternBytes = None
   paletteName = ''
   if patternName.startswith('sp-'):
     paletteName = patternName[len('sp-'):]
-    patternBytes = 0xE0000001
-  elif patternName.startswith('hiphotic-'):
     patternBytes = 0xC0000001
+  elif patternName.startswith('hiphotic-'):
+    patternBytes = 0x80000001
     paletteName = patternName[len('hiphotic-'):]
   elif patternName.startswith('metaballs-'):
-    patternBytes = 0xA0000001
+    patternBytes = 0x80000030
     paletteName = patternName[len('metaballs-'):]
   elif patternName.startswith('bursts-'):
-    patternBytes = 0x80000001
+    patternBytes = 0x00000030
     paletteName = patternName[len('bursts-'):]
+  elif patternName.startswith('rainbow-'):
+    patternBytes = 0x00000001
+    paletteName = patternName[len('rainbow-'):]
+  elif patternName.startswith('flame-'):
+    patternBytes = 0x40000001
+    paletteName = patternName[len('flame-'):]
 
   paletteByte = palettes.get(paletteName.lower(), None)
   if patternBytes is not None and paletteByte is not None:
@@ -104,8 +113,8 @@ patternBytes = getPatternBytes(patternName)
 
 print('Using pattern {} ({:08X})'.format(patternName, patternBytes))
 
-PORT = 0xDF0D
-MCADDR = '239.255.223.01'
+PORT = 6699
+MCADDR = '224.0.0.169'
 PATTERN_DURATION = 10000
 
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)

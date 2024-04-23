@@ -25,7 +25,10 @@
 namespace jazzlights {
 namespace {
 
-constexpr uint8_t kAdvType = 0xDF;
+// Squat on an unused Bluetooth Advertising Data Type.
+// https://bitbucket.org/bluetooth-SIG/public/src/main/assigned_numbers/core/ad_types.yaml
+// https://www.bluetooth.com/specifications/assigned-numbers/
+constexpr uint8_t kAdvType = 0x96;
 
 void convertToHex(char* target, size_t targetLength, const uint8_t* source, uint8_t sourceLength) {
   if (targetLength <= static_cast<size_t>(sourceLength) * 2) { return; }
@@ -150,9 +153,7 @@ void Esp32BleNetwork::disableSending(Milliseconds currentTime) {
   hasDataToSend_ = false;
 }
 
-constexpr uint8_t kVersion = 0x10;
-constexpr uint8_t kVersionOffset = 0;
-constexpr uint8_t kOriginatorOffset = kVersionOffset + 1;
+constexpr uint8_t kOriginatorOffset = 0;
 constexpr uint8_t kPrecedenceOffset = kOriginatorOffset + 6;
 constexpr uint8_t kNumHopsOffset = kPrecedenceOffset + 2;
 constexpr uint8_t kOriginationTimeOffset = kNumHopsOffset + 1;
@@ -169,10 +170,6 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
   }
   if (innerPayloadLength < kPayloadLength) {
     ESP32_BLE_DEBUG("%u Ignoring received BLE with unexpected length %u", currentTime, innerPayloadLength);
-    return;
-  }
-  if ((innerPayload[kVersionOffset] & 0xF0) != kVersion) {
-    ESP32_BLE_DEBUG("%u Ignoring received BLE with unexpected prefix %02x", currentTime, innerPayload[kVersionOffset]);
     return;
   }
   NetworkMessage message;
@@ -242,7 +239,6 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_
     patternTimeDelta = 0xFFFF;
   }
 
-  innerPayload[kVersionOffset] = kVersion;
   messageToSend_.originator.writeTo(&innerPayload[kOriginatorOffset]);
   writeUint16(&innerPayload[kPrecedenceOffset], messageToSend_.precedence);
   innerPayload[kNumHopsOffset] = messageToSend_.numHops;

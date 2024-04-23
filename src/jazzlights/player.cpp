@@ -32,6 +32,12 @@
 #include "jazzlights/util/time.h"
 
 namespace jazzlights {
+namespace {
+// This value was intentionally selected by brute-forcing all possible values that start with rainbow-rainbow followed
+// by flame-heat and then sp-cloud, and then picking the one that will loop after the most iterations. This one loops
+// after 118284 iterations, which is more than 13 days.
+constexpr PatternBits kStartingPattern = 0x00b3db69;
+}  // namespace
 
 int comparePrecedence(Precedence leftPrecedence, const NetworkDeviceId& leftDeviceId, Precedence rightPrecedence,
                       const NetworkDeviceId& rightDeviceId) {
@@ -44,8 +50,8 @@ int comparePrecedence(Precedence leftPrecedence, const NetworkDeviceId& leftDevi
 }
 
 constexpr bool patternIsReserved(PatternBits pattern) {
-  // Patterns with lowest byte zero are reserved.
-  return (pattern & 0xFF) == 0;
+  // Patterns with lowest 4 bits set to zero are reserved.
+  return (pattern & 0xF) == 0;
 }
 
 PatternBits computeNextPattern(PatternBits pattern) {
@@ -61,7 +67,7 @@ PatternBits computeNextPattern(PatternBits pattern) {
   // move those around just because we can.
   const uint8_t shift_offset = (pattern / 16384) % 32;
   pattern = (pattern << shift_offset) | (pattern >> (32 - shift_offset));
-  if (pattern == 0) { pattern = 0xDF123456; }
+  if (pattern == 0) { pattern = kStartingPattern; }
   while (patternIsReserved(pattern)) {
     // Skip reserved patterns.
     pattern = computeNextPattern(pattern);
@@ -72,8 +78,6 @@ PatternBits computeNextPattern(PatternBits pattern) {
 PatternBits applyPalette(PatternBits pattern, uint8_t palette) {
   // Avoid any reserved patterns.
   while (patternIsReserved(pattern)) { pattern = computeNextPattern(pattern); }
-  // Set palette bit.
-  pattern |= 0x80000000;
   // Clear palette.
   pattern &= 0xFFFF1FFF;
   // Set palette.
@@ -98,14 +102,14 @@ static const Effect* patternFromBits(PatternBits pattern) {
   static const FunctionalEffect calibration_effect = calibration();
   static const FunctionalEffect sync_test_effect = sync_test();
   static const FunctionalEffect black_effect = solid(CRGB::Black, "black");
-  static const FunctionalEffect red_effect = solid(CRGB::Black, "red");
+  static const FunctionalEffect red_effect = solid(CRGB::Red, "red");
   static const FunctionalEffect green_effect = solid(CRGB::Green, "green");
   static const FunctionalEffect blue_effect = solid(CRGB::Blue, "blue");
   static const FunctionalEffect purple_effect = solid(CRGB::Purple, "purple");
   static const FunctionalEffect cyan_effect = solid(CRGB::Cyan, "cyan");
   static const FunctionalEffect yellow_effect = solid(CRGB::Yellow, "yellow");
   static const FunctionalEffect white_effect = solid(CRGB::White, "white");
-  static const FunctionalEffect red_glow_effect = glow(CRGB::Black, "glow-red");
+  static const FunctionalEffect red_glow_effect = glow(CRGB::Red, "glow-red");
   static const FunctionalEffect green_glow_effect = glow(CRGB::Green, "glow-green");
   static const FunctionalEffect blue_glow_effect = glow(CRGB::Blue, "glow-blue");
   static const FunctionalEffect purple_glow_effect = glow(CRGB::Purple, "glow-purple");
@@ -118,10 +122,10 @@ static const Effect* patternFromBits(PatternBits pattern) {
 
   // Pattern selection from bits.
   if (patternIsReserved(pattern)) {
-    const uint8_t byte1 = (pattern >> 24) & 0xFF;
-    const uint8_t byte2 = (pattern >> 16) & 0xFF;
-    if (byte1 == 0x00) {
-      switch (byte2) {
+    const uint8_t reserved_type = (pattern >> 4) & 0xF;
+    if (reserved_type == 0x0) {
+      // Reserved effects that don't use a palette.
+      switch ((pattern >> 8) & 0xFF) {
         case 0x00: return &black_effect;
         case 0x01: return &red_effect;
         case 0x02: return &green_effect;
@@ -140,56 +144,50 @@ static const Effect* patternFromBits(PatternBits pattern) {
         case 0x0F: return &sync_test_effect;
         case 0x10: return &calibration_effect;
         case 0x11: return &follow_strand_effect;
-        case 0xFF:
-          // 0xFF is reserved for looping through all the patterns from a given palette. This is currently only used in
-          // the Core2 UI, where the "all-palette" menu option passes the value 0x00FF0000 internally. That code
+        case 0x12: return &glitter_pattern;
+        case 0x13: return &thematrix_pattern;
+        case 0x14: return &threesine_pattern;
+      }
+    } else if (reserved_type == 0x1) {
+      return &mapping_effect;
+    } else if (reserved_type == 0x2) {
+      return &coloring_effect;
+    } else if (reserved_type == 0x3) {
+      // Reserved effects that use a palette.
+      switch ((pattern >> 8) & 0xF) {
+        case 0x0:  // Use the pattern bits.
+          if (patternbit(pattern, 1)) {
+            return &metaballs_pattern;
+          } else {
+            return &colored_bursts_pattern;
+          }
+          break;
+        case 0xF:
+          // 0xF is reserved for looping through all the patterns from a given palette. This is currently only used in
+          // the Core2 UI, where the "all-palette" menu option passes the value kAllPalettePattern internally. That code
           // modifies this special value before passing it to the player, so we don't expect to ever see it here. If it
           // is received over the network, it will be treated like any other unknown reserved effect.
           break;
       }
-    } else if (byte1 == 0x01) {
-      return &mapping_effect;
-    } else if (byte1 >= 0x04 && byte1 < 0x08) {
-      return &coloring_effect;
     }
 #if JL_IS_CONFIG(CLOUDS)
-    else if (byte1 == 0xFF) {
+    else if (reserved_type == 0xF) {
       return &clouds_effect;
     }
 #endif  // CLOUDS
     return &red_effect;
   } else {
-    if (patternbit(pattern, 1)) {      // 1x - palette
-      if (patternbit(pattern, 2)) {    // 11x - palette waves
-        if (patternbit(pattern, 3)) {  // 111x - spin
-          return &spin_pattern;
-        } else {  // 110x - hiphotic
-          return &hiphotic_pattern;
-        }
-      } else {                         // 10x - palette balls
-        if (patternbit(pattern, 3)) {  // 101x - metaballs
-          return &metaballs_pattern;
-        } else {  // 100x - colored bursts
-          return &colored_bursts_pattern;
-        }
+    if (patternbit(pattern, 1)) {
+      if (patternbit(pattern, 2)) {  // 11x - spin
+        return &spin_pattern;
+      } else {  // 10x - hiphotic
+        return &hiphotic_pattern;
       }
-    } else {                           // 0x - custom
-      if (patternbit(pattern, 2)) {    // 01x - sparkly
-        if (patternbit(pattern, 3)) {  // 011x - flame
-          return &flame_pattern;
-        } else {  // 010x - glitter
-          return &glitter_pattern;
-        }
-      } else {                           // 00x - shiny
-        if (patternbit(pattern, 3)) {    // 001x - threesine & the-matrix
-          if (patternbit(pattern, 4)) {  // 0011x - the-matrix
-            return &thematrix_pattern;
-          } else {  // 0010x - threesine
-            return &threesine_pattern;
-          }
-        } else {  // 00x - rainbow
-          return &rainbow_pattern;
-        }
+    } else {
+      if (patternbit(pattern, 2)) {  // 01x - flame
+        return &flame_pattern;
+      } else {  // 00x - rainbow
+        return &rainbow_pattern;
       }
     }
   }
@@ -270,7 +268,7 @@ void Player::begin(Milliseconds currentTime) {
   ready_ = true;
 
   currentPatternStartTime_ = currentTime;
-  currentPattern_ = enforceForcedPalette(0xef74ab26);
+  currentPattern_ = enforceForcedPalette(kStartingPattern);
   nextPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
 #if defined(JL_START_SPECIAL) && JL_START_SPECIAL
   handleSpecial(currentTime);
@@ -294,12 +292,12 @@ void Player::updatePrecedence(Precedence basePrecedence, Precedence precedenceGa
 
 void Player::handleSpecial(Milliseconds currentTime) {
   static constexpr PatternBits kSpecialPatternBits[] = {
-      0x00100000,  // calibration.
+      0x00001000,  // calibration.
       0x00000000,  // black.
-      0x00010000,  // red.
-      0x00020000,  // green.
-      0x00030000,  // blue.
-      0x00070000,  // white.
+      0x00000100,  // red.
+      0x00000200,  // green.
+      0x00000300,  // blue.
+      0x00000700,  // white.
   };
   specialMode_++;
   if (specialMode_ > sizeof(kSpecialPatternBits) / sizeof(kSpecialPatternBits[0])) { specialMode_ = 1; }
@@ -433,7 +431,7 @@ PatternBits Player::currentEffect() const { return lastBegunPattern_; }
 std::string Player::currentEffectName() const { return patternName(lastBegunPattern_); }
 
 void Player::next(Milliseconds currentTime) {
-  jll_info("%u next command received: switching from %s (%4x) to %s (%4x), currentLeader=" DEVICE_ID_FMT, currentTime,
+  jll_info("%u next command received: switching from %s (%08x) to %s (%08x), currentLeader=" DEVICE_ID_FMT, currentTime,
            patternName(currentPattern_).c_str(), currentPattern_, patternName(nextPattern_).c_str(), nextPattern_,
            DEVICE_ID_HEX(currentLeader_));
   lastUserInputTime_ = currentTime;
@@ -446,7 +444,7 @@ void Player::next(Milliseconds currentTime) {
     nextPattern_ = enforceForcedPalette(computeNextPattern(nextPattern_));
   }
   checkLeaderAndPattern(currentTime);
-  jll_info("%u next command processed: now current %s (%4x) next %s (%4x), currentLeader=" DEVICE_ID_FMT, currentTime,
+  jll_info("%u next command processed: now current %s (%08x) next %s (%08x), currentLeader=" DEVICE_ID_FMT, currentTime,
            patternName(currentPattern_).c_str(), currentPattern_, patternName(nextPattern_).c_str(), nextPattern_,
            DEVICE_ID_HEX(currentLeader_));
 
@@ -454,7 +452,7 @@ void Player::next(Milliseconds currentTime) {
 }
 
 void Player::setPattern(PatternBits pattern, Milliseconds currentTime) {
-  jll_info("%u set pattern command received: switching from %s (%4x) to %s (%4x), currentLeader=" DEVICE_ID_FMT,
+  jll_info("%u set pattern command received: switching from %s (%08x) to %s (%08x), currentLeader=" DEVICE_ID_FMT,
            currentTime, patternName(currentPattern_).c_str(), currentPattern_, patternName(pattern).c_str(), pattern,
            DEVICE_ID_HEX(currentLeader_));
   lastUserInputTime_ = currentTime;
@@ -466,7 +464,7 @@ void Player::setPattern(PatternBits pattern, Milliseconds currentTime) {
     nextPattern_ = enforceForcedPalette(computeNextPattern(pattern));
   }
   checkLeaderAndPattern(currentTime);
-  jll_info("%u set pattern command processed: now current %s (%4x) next %s (%4x), currentLeader=" DEVICE_ID_FMT,
+  jll_info("%u set pattern command processed: now current %s (%08x) next %s (%08x), currentLeader=" DEVICE_ID_FMT,
            currentTime, patternName(currentPattern_).c_str(), currentPattern_, patternName(nextPattern_).c_str(),
            nextPattern_, DEVICE_ID_HEX(currentLeader_));
 
@@ -604,7 +602,7 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
     lastOriginationTime = entry->lastOriginationTime;
     if (currentPattern_ != entry->currentPattern) {
       currentPattern_ = entry->currentPattern;
-      jll_info("%u Following " DEVICE_ID_FMT ".p%u nh=%u %s new currentPattern %s (%4x) %u FPS", currentTime,
+      jll_info("%u Following " DEVICE_ID_FMT ".p%u nh=%u %s new currentPattern %s (%08x) %u FPS", currentTime,
                DEVICE_ID_HEX(originator), precedence, currentNumHops_,
                (followedNextHopNetwork_ != nullptr ? followedNextHopNetwork_->networkName() : "null"),
                patternName(currentPattern_).c_str(), currentPattern_, fps());
@@ -625,7 +623,7 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
         currentPattern_ = nextPattern_;
         nextPattern_ = enforceForcedPalette(computeNextPattern(nextPattern_));
       }
-      jll_info("%u We (" DEVICE_ID_FMT ".p%u) are leading, new currentPattern %s (%4x) %u FPS", currentTime,
+      jll_info("%u We (" DEVICE_ID_FMT ".p%u) are leading, new currentPattern %s (%08x) %u FPS", currentTime,
                DEVICE_ID_HEX(localDeviceId_), precedence, patternName(currentPattern_).c_str(), currentPattern_, fps());
       printInstrumentationInfo(currentTime);
       lastLEDWriteTime_ = -1;
@@ -705,7 +703,7 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
     entry->patternStartTimeMovementCounter = 0;
     jll_info("%u Adding " DEVICE_ID_FMT ".p%u entry via " DEVICE_ID_FMT
              ".%s"
-             " nh %u ot %u current %s (%4x) next %s (%4x) elapsed %u",
+             " nh %u ot %u current %s (%08x) next %s (%08x) elapsed %u",
              currentTime, DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(entry->nextHopDevice),
              entry->nextHopNetwork->networkName(), entry->numHops, currentTime - entry->lastOriginationTime,
              patternName(entry->currentPattern).c_str(), entry->currentPattern, patternName(entry->nextPattern).c_str(),

@@ -27,9 +27,9 @@ inline FunctionalEffect mapping() {
 
 inline FunctionalEffect coloring() {
   return effect("coloring", [](const Frame& frame) {
-    const uint8_t red = ((frame.pattern >> 20) & 0x3F) << 2;
-    const uint8_t green = ((frame.pattern >> 14) & 0x3F) << 2;
-    const uint8_t blue = ((frame.pattern >> 8) & 0x3F) << 2;
+    const uint8_t red = (frame.pattern >> 24) & 0xFF;
+    const uint8_t green = (frame.pattern >> 16) & 0xFF;
+    const uint8_t blue = (frame.pattern >> 8) & 0xFF;
     CRGB color(red, green, blue);
     return [color](const Pixel& /*pt*/) -> CRGB { return color; };
   });

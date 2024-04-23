@@ -103,6 +103,13 @@ inline uint8_t qsub8(uint8_t i, uint8_t j) {
   return t;
 }
 
+inline uint8_t map8(uint8_t in, uint8_t rangeStart, uint8_t rangeEnd) {
+  uint8_t rangeWidth = rangeEnd - rangeStart;
+  uint8_t out = scale8(in, rangeWidth);
+  out += rangeStart;
+  return out;
+}
+
 constexpr inline int8_t abs8(int8_t i) { return i >= 0 ? i : -i; }
 
 constexpr inline int8_t avg7(int8_t i, int8_t j) { return ((i + j) >> 1) + (i & 0x1); }
@@ -369,6 +376,15 @@ extern const TProgmemRGBPalette16 ForestColors_p FL_PROGMEM;
 extern const TProgmemRGBPalette16 RainbowColors_p FL_PROGMEM;
 extern const TProgmemRGBPalette16 PartyColors_p FL_PROGMEM;
 extern const TProgmemRGBPalette16 HeatColors_p FL_PROGMEM;
+
+typedef enum {
+  NOBLEND = 0,
+  LINEARBLEND = 1,
+  LINEARBLEND_NOWRAP = 2,
+} TBlendType;
+
+CRGB ColorFromPalette(const TProgmemRGBPalette16& pal, uint8_t index, uint8_t brightness = 255,
+                      TBlendType blendType = LINEARBLEND);
 
 #endif  // ARDUINO
 

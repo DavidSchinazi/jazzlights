@@ -48,7 +48,7 @@
 #endif  // BOOT_NAME
 
 #ifndef REVISION
-#define REVISION 10
+#define REVISION 11
 #endif  // REVISION
 
 // Extra indirection ensures preprocessor expands macros in correct order.
@@ -79,7 +79,7 @@
 #endif  // ARDUINO
 #endif  // JL_BOUNDS_CHECKS
 
-#define JL_WIFI_SSID "FISHLIGHT"
-#define JL_WIFI_PASSWORD "155155155"
+#define JL_WIFI_SSID "JazzLights"
+#define JL_WIFI_PASSWORD "burningblink"
 
 #endif  // JL_CONFIG_H
