@@ -9,7 +9,7 @@
 namespace jazzlights {
 
 namespace {
-#if JL_IS_CONFIG(CAPTAIN_HAT)
+#if JL_IS_CONFIG(CAPTAIN_HAT) || JL_IS_CONFIG(SHOE)
 constexpr uint8_t kIgnitionMin = 0;
 constexpr uint8_t kIgnitionMax = 15;
 #else   // CAPTAIN_HAT
