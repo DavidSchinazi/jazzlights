@@ -1,5 +1,5 @@
-#ifndef JL_EFFECTS_RAINBOW_H
-#define JL_EFFECTS_RAINBOW_H
+#ifndef JL_EFFECTS_RINGS_H
+#define JL_EFFECTS_RINGS_H
 
 #include <algorithm>
 
@@ -8,7 +8,7 @@
 
 namespace jazzlights {
 
-struct RainbowState {
+struct RingsState {
   uint8_t startHue;
   Point origin;
   double maxDistance;
@@ -16,14 +16,14 @@ struct RainbowState {
   uint8_t initialHue;
 };
 
-class Rainbow : public EffectWithPaletteAndState<RainbowState> {
+class Rings : public EffectWithPaletteAndState<RingsState> {
  public:
-  Rainbow() = default;
+  Rings() = default;
 
-  std::string effectNamePrefix(PatternBits /*pattern*/) const override { return "rainbow"; }
+  std::string effectNamePrefix(PatternBits /*pattern*/) const override { return "rings"; }
 
-  void innerBegin(const Frame& frame, RainbowState* state) const override {
-    new (state) RainbowState;  // Default-initialize the state.
+  void innerBegin(const Frame& frame, RingsState* state) const override {
+    new (state) RingsState;  // Default-initialize the state.
     state->startHue = frame.predictableRandom->GetRandomByte();
     state->origin.x =
         frame.viewport.origin.x + frame.predictableRandom->GetRandomDoubleBetween(0, frame.viewport.size.width);
@@ -38,17 +38,17 @@ class Rainbow : public EffectWithPaletteAndState<RainbowState> {
     state->backwards = frame.predictableRandom->GetRandomByte() & 1;
   }
 
-  void innerRewind(const Frame& frame, RainbowState* state) const override {
+  void innerRewind(const Frame& frame, RingsState* state) const override {
     uint8_t hueOffset = 256 * frame.time / 1500;
     if (state->backwards) { hueOffset = 255 - hueOffset; }
     state->initialHue = state->startHue + hueOffset;
   }
 
-  ColorWithPalette innerColor(const Frame& /*frame*/, const Pixel& px, RainbowState* state) const override {
+  ColorWithPalette innerColor(const Frame& /*frame*/, const Pixel& px, RingsState* state) const override {
     const double d = distance(px.coord, state->origin);
     return (state->initialHue + int32_t(255 * d / state->maxDistance)) % 255;
   }
 };
 
 }  // namespace jazzlights
-#endif  // JL_EFFECTS_RAINBOW_H
+#endif  // JL_EFFECTS_RINGS_H

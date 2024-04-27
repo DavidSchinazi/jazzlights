@@ -12,7 +12,7 @@
 #include "jazzlights/effects/mapping.h"
 #include "jazzlights/effects/metaballs.h"
 #include "jazzlights/effects/plasma.h"
-#include "jazzlights/effects/rainbow.h"
+#include "jazzlights/effects/rings.h"
 #include "jazzlights/effects/solid.h"
 #include "jazzlights/effects/sync_test.h"
 #include "jazzlights/effects/the_matrix.h"
@@ -88,9 +88,9 @@ void test_thematrix_pattern(void) {
   static const TheMatrix thematrix_pattern;
   test_pattern(thematrix_pattern);
 }
-void test_rainbow_pattern(void) {
-  static const Rainbow rainbow_pattern;
-  test_pattern(rainbow_pattern);
+void test_rings_pattern(void) {
+  static const Rings rings_pattern;
+  test_pattern(rings_pattern);
 }
 void test_threesine_pattern(void) {
   static const FunctionalEffect threesine_pattern = threesine();
@@ -186,7 +186,7 @@ void run_unity_tests() {
   RUN_TEST(test_flame_pattern);
   RUN_TEST(test_glitter_pattern);
   RUN_TEST(test_thematrix_pattern);
-  RUN_TEST(test_rainbow_pattern);
+  RUN_TEST(test_rings_pattern);
   RUN_TEST(test_threesine_pattern);
   RUN_TEST(test_follow_strand_effect);
   RUN_TEST(test_mapping_effect);

@@ -20,7 +20,7 @@
 #include "jazzlights/effects/mapping.h"
 #include "jazzlights/effects/metaballs.h"
 #include "jazzlights/effects/plasma.h"
-#include "jazzlights/effects/rainbow.h"
+#include "jazzlights/effects/rings.h"
 #include "jazzlights/effects/solid.h"
 #include "jazzlights/effects/sync_test.h"
 #include "jazzlights/effects/the_matrix.h"
@@ -33,9 +33,9 @@
 
 namespace jazzlights {
 namespace {
-// This value was intentionally selected by brute-forcing all possible values that start with rainbow-rainbow followed
-// by flame-heat and then sp-cloud, and then picking the one that will loop after the most iterations. This one loops
-// after 118284 iterations, which is more than 13 days.
+// This value was intentionally selected by brute-forcing all possible values that start with rings-rainbow followed by
+// flame-heat and then sp-cloud, and then picking the one that will loop after the most iterations. This one loops after
+// 118284 iterations, which is more than 13 days.
 constexpr PatternBits kStartingPattern = 0x00b3db69;
 }  // namespace
 
@@ -94,7 +94,7 @@ static const Effect* patternFromBits(PatternBits pattern) {
   static const Flame flame_pattern;
   static const Glitter glitter_pattern;
   static const TheMatrix thematrix_pattern;
-  static const Rainbow rainbow_pattern;
+  static const Rings rings_pattern;
   static const FunctionalEffect threesine_pattern = threesine();
   static const FunctionalEffect follow_strand_effect = follow_strand();
   static const FunctionalEffect mapping_effect = mapping();
@@ -186,8 +186,8 @@ static const Effect* patternFromBits(PatternBits pattern) {
     } else {
       if (patternbit(pattern, 2)) {  // 01x - flame
         return &flame_pattern;
-      } else {  // 00x - rainbow
-        return &rainbow_pattern;
+      } else {  // 00x - rings
+        return &rings_pattern;
       }
     }
   }

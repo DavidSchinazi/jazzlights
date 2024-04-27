@@ -44,7 +44,7 @@ patterns = {
   'sp': 0xC0000001,
   'hiphotic': 0x80000001,
   'flame': 0x40000001,
-  'rainbow': 0x00000001,
+  'rings': 0x00000001,
 }
 defaultName = 'glow-red'
 
@@ -89,9 +89,9 @@ def getPatternBytes(patternName):
   elif patternName.startswith('bursts-'):
     patternBytes = 0x00000030
     paletteName = patternName[len('bursts-'):]
-  elif patternName.startswith('rainbow-'):
+  elif patternName.startswith('rings-'):
     patternBytes = 0x00000001
-    paletteName = patternName[len('rainbow-'):]
+    paletteName = patternName[len('rings-'):]
   elif patternName.startswith('flame-'):
     patternBytes = 0x40000001
     paletteName = patternName[len('flame-'):]

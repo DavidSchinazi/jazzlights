@@ -383,7 +383,7 @@ class PatternControlMenu {
   static constexpr uint8_t kNumPatternsSecondPage = 3 + 3 + 2;
   SelectablePattern kSelectablePatterns[kNumPatternsFirstPage + kNumPatternsSecondPage] = {
   // Main patterns.
-      {      "rainbow",         0x00000001,   State::kPalette},
+      {        "rings",         0x00000001,   State::kPalette},
       {        "flame",         0x40000001,   State::kPalette},
       {  "spin-plasma",         0xC0000001,   State::kPalette},
       {     "hiphotic",         0x80000001,   State::kPalette},
