@@ -57,7 +57,7 @@ def maybeSendPacket():
   if sendTime - lastSendTime < 100:
      return False
   lastSendTime = sendTime
-  currentPattern = 0x01000000 + (pixelNum << 8)
+  currentPattern = 0x00000010 + (pixelNum << 8)
   nextPattern = currentPattern
   timeDeltaSinceOrigination = 0
   timeDeltaSinceStartOfCurrentPattern = (getTimeMillis() - startTimeThisPattern) % 10000

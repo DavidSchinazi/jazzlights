@@ -71,7 +71,7 @@ def randomizePattern(patternBytes, randomize=True):
 def getPatternBytes(patternName):
   if patternName.startswith('mapping-'):
     pixelNum = int(patternName[len('mapping-'):])
-    return 0x01000000 | (pixelNum << 8)
+    return 0x00000010 | (pixelNum << 8)
   elif patternName.startswith('coloring-'):
     rgb = int(patternName[len('coloring-'):], 16)
     return 0x00000020 | (rgb << 8)
