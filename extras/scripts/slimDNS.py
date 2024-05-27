@@ -168,27 +168,26 @@ class SlimDNSServer:
     def __init__(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self._reply_buffer = None
         self._pending_question = None
-        self.answered = False
+        self.answer = []
 
-    def process_packet(self, buf, addr):
+    def process_packet(self, buf):
         # Process a single multicast DNS packet
-
-        (pkt_id, flags, qst_count, ans_count, _, _) = unpack_from("!HHHHHH", buf, 0)
-        o = 12
-        for _ in range(qst_count):
-            o = skip_question(buf, o)
-
-        # In theory we could do known answer suppression here
-        # We don't, BIWIOMS
-
-        if self._pending_question:
-            for i in range(ans_count):
+        if not self._pending_question or not buf:
+            return
+        try:
+            (_, _, qst_count, ans_count, _, _) = unpack_from("!HHHHHH", buf, 0)
+            o = 12
+            for _ in range(qst_count):
+                o = skip_question(buf, o)
+            for _ in range(ans_count):
                 if compare_q_and_a(self._pending_question, 0, buf, o):
-                    if self._answer_callback(buf[o : skip_answer(buf, o)]):
-                        self.answered = True
+                    a = buf[o : skip_answer(buf, o)]
+                    addr_offset = skip_name_at(a, 0) + 10
+                    self.answer.append(a[addr_offset : addr_offset + 4])
                 o = skip_answer(buf, o)
+        except Exception as e:
+            print("Error processing packet: {}".format(e))
 
     def process_waiting_packets(self):
         # Handle all the packets that can be read immediately and
@@ -199,35 +198,22 @@ class SlimDNSServer:
                 break
             buf, addr = self.sock.recvfrom(MAX_PACKET_SIZE)
             print("Received {} bytes from {}".format(len(buf), addr))
-            if buf:
-                try:
-                    self.process_packet(memoryview(buf), addr)
-                except IndexError:
-                    print("Index error processing packet; probably malformed data")
-                except Exception as e:
-                    print("Error processing packet: {}".format(e))
-                    # raise e
+            self.process_packet(memoryview(buf))
 
-    def handle_question(self, q, answer_callback, retry_count=3):
-        # Send our a (packed) question, and send matching replies to
-        # the answer_callback function.  This will stop after sending
-        # the given number of retries and waiting for the a timeout on
-        # each, or sooner if the answer_callback function returns True
+    def handle_question(self, q, retry_count=3):
+        self.answer = []
+        self._pending_question = q
         p = bytearray(len(q) + 12)
         pack_into("!HHHHHH", p, 0, 1, 0, 1, 0, 0, 0)
         p[12:] = q
 
-        self._pending_question = q
-        self._answer_callback = answer_callback
-        self.answered = False
-
         try:
             for _ in range(retry_count):
-                if self.answered:
+                if len(self.answer) > 0:
                     break
                 self.sock.sendto(p, (_MDNS_ADDR, _MDNS_PORT))
                 timeout = time.monotonic() + 1.0
-                while not self.answered:
+                while len(self.answer) == 0:
                     select_time = timeout - time.monotonic()
                     if select_time <= 0:
                         break
@@ -236,20 +222,13 @@ class SlimDNSServer:
                         self.process_waiting_packets()
         finally:
             self._pending_question = None
-            self._answer_callback = None
 
     def resolve_mdns_address(self, hostname):
         # Look up an IPv4 address for a hostname using mDNS.
         q = pack_question(hostname, _TYPE_A, _CLASS_IN)
-        answer = []
 
-        def _answer_handler(a):
-            addr_offset = skip_name_at(a, 0) + 10
-            answer.append(a[addr_offset : addr_offset + 4])
-            return True
-
-        self.handle_question(q, _answer_handler)
-        return bytes(answer[0]) if answer else None
+        self.handle_question(q)
+        return bytes(self.answer[0]) if len(self.answer) > 0 else None
 
 
 def print_resolution_for(host):
