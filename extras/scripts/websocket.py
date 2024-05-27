@@ -23,8 +23,9 @@ async def websocket_client():
     address = await resolve_mdns_async(host)
     print("Resolved {h} to {a}".format(h=host, a=address))
     uri = "ws://{a}:80/jazzlights-websocket".format(a=address)
-    print("Sending", message)
+    print("Connecting", uri)
     async with websockets.connect(uri) as ws:
+        print("Sending", message)
         await ws.send(message)
         response = await ws.recv()
         print("Received", response)
