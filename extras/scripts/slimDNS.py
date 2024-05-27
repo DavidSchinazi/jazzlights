@@ -1,15 +1,17 @@
-# This file was adapted from slimDNS by Nicko van Someren
-# https://github.com/nickovs/slimDNS
-# slimDNS is licensed under Apache-2.0
+#!/usr/bin/env python3
 
-from select import select
-from struct import pack_into, unpack_from
+# This file was originally based on slimDNS by Nicko van Someren.
+# https://github.com/nickovs/slimDNS
+# slimDNS is licensed under Apache-2.0.
+
+import asyncio
 import socket
-import time
+from struct import pack_into, unpack_from
+import sys
 
 
 # Ensure that a name is in the form of a list of encoded blocks of
-# bytes, typically starting as a qualified domain name
+# bytes, typically starting as a qualified domain name.
 def check_name(n):
     if isinstance(n, str):
         n = n.split(".")
@@ -19,7 +21,7 @@ def check_name(n):
     return n
 
 
-# Move the offset past the name to which it currently points
+# Move the offset past the name to which it currently points.
 def skip_name_at(buf, o):
     while True:
         l = buf[o]
@@ -34,7 +36,7 @@ def skip_name_at(buf, o):
     return o
 
 
-# Test if two possibly compressed names are equal
+# Test if two possibly compressed names are equal.
 def compare_packed_names(buf, o, packed_name, po=0):
     while packed_name[po] != 0:
         while buf[o] & 0xC0:
@@ -52,14 +54,14 @@ def compare_packed_names(buf, o, packed_name, po=0):
     return buf[o] == 0
 
 
-# Find the memory size needed to pack a name without compression
+# Find the memory size needed to pack a name without compression.
 def name_packed_len(name):
     return sum(len(i) + 1 for i in name) + 1
 
 
-# Pack a name into the start of the buffer
+# Pack a name into the start of the buffer.
 def pack_name(buf, name):
-    # We don't support writing with name compression, BIWIOMS
+    # We don't support writing with name compression.
     o = 0
     for part in name:
         pl = len(part)
@@ -69,9 +71,9 @@ def pack_name(buf, name):
     buf[o] = 0
 
 
-# Pack a question into a new array and return it as a memoryview
+# Pack a question into a new array and return it as a memoryview.
 def pack_question(name, qtype, qclass):
-    # Return a pre-packed question as a memoryview
+    # Return a pre-packed question as a memoryview.
     name = check_name(name)
     name_len = name_packed_len(name)
     buf = bytearray(name_len + 4)
@@ -80,7 +82,7 @@ def pack_question(name, qtype, qclass):
     return memoryview(buf)
 
 
-# Advance the offset past the question to which it points
+# Advance the offset past the question to which it points.
 def skip_question(buf, o):
     o = skip_name_at(buf, o)
     return o + 4
@@ -93,10 +95,9 @@ def skip_answer(buf, o):
     return o + 10 + rdlen
 
 
-# Test if a questing an answer. Note that this also works for
-# comparing a "known answer" in a packet to a local answer. The code
-# is asymetric to the extent that the questions my have a type or
-# class of ANY
+# Test if a question matches an answer. Note that this also works for comparing
+# a "known answer" in a packet to a local answer. The code is asymmetric to the
+# extent that the questions may have a type or class of ANY.
 def compare_q_and_a(q_buf, q_offset, a_buf, a_offset=0):
     if not compare_packed_names(q_buf, q_offset, a_buf, a_offset):
         return False
@@ -111,18 +112,36 @@ def compare_q_and_a(q_buf, q_offset, a_buf, a_offset=0):
     return q_class == r_class or q_class == _TYPE_ANY
 
 
-# The main SlimDNSServer class
-class SlimDNSServer:
-    def __init__(self):
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock.setblocking(False)
-        self._pending_question = None
+class MulticastDNSProtocol:
+    def __init__(self, hostname, loop):
+        _CLASS_IN = 1
+        _TYPE_A = 1
+        self.question = pack_question(hostname, _TYPE_A, _CLASS_IN)
+        self.packet_to_send = bytearray(len(self.question) + 12)
+        pack_into("!HHHHHH", self.packet_to_send, 0, 1, 0, 1, 0, 0, 0)
+        self.packet_to_send[12:] = self.question
         self.answer = []
+        self.future_done = loop.create_future()
+        self.transport = None
 
-    def process_packet(self, buf):
-        # Process a single multicast DNS packet
-        if not self._pending_question or not buf:
+    async def send_query(self):
+        for _ in range(3):
+            self.transport.sendto(self.packet_to_send, ("224.0.0.251", 5353))
+            try:
+                await asyncio.wait_for(asyncio.shield(self.future_done), 1)
+            except (TimeoutError, asyncio.exceptions.CancelledError):
+                pass
+            if len(self.answer) > 0:
+                return
+        # Timed out waiting for answer, closing the socket.
+        self.transport.close()
+
+    def connection_made(self, transport):
+        self.transport = transport
+
+    def datagram_received(self, buf, addr):
+        # print("Received {} bytes from {}".format(len(buf), addr))
+        if not self.question or not buf:
             return
         try:
             (_, _, qst_count, ans_count, _, _) = unpack_from("!HHHHHH", buf, 0)
@@ -130,70 +149,54 @@ class SlimDNSServer:
             for _ in range(qst_count):
                 o = skip_question(buf, o)
             for _ in range(ans_count):
-                if compare_q_and_a(self._pending_question, 0, buf, o):
+                if compare_q_and_a(self.question, 0, buf, o):
                     a = buf[o : skip_answer(buf, o)]
                     addr_offset = skip_name_at(a, 0) + 10
                     self.answer.append(a[addr_offset : addr_offset + 4])
                 o = skip_answer(buf, o)
         except Exception as e:
             print("Error processing packet: {}".format(e))
+        if len(self.answer) > 0:
+            # Got an answer, closing the socket.
+            self.transport.close()
 
-    def process_waiting_packets(self):
-        # Handle all packets in socket receive buffer.
-        while True:
-            try:
-                buf, addr = self.sock.recvfrom(2048)
-            except BlockingIOError:
-                break
-            print("Received {} bytes from {}".format(len(buf), addr))
-            self.process_packet(memoryview(buf))
+    def error_received(self, exc):
+        print("Error received:", exc)
+        self.transport.close()
 
-    def handle_question(self, q, retry_count=3):
-        self.answer = []
-        self._pending_question = q
-        p = bytearray(len(q) + 12)
-        pack_into("!HHHHHH", p, 0, 1, 0, 1, 0, 0, 0)
-        p[12:] = q
-
-        try:
-            for _ in range(retry_count):
-                if len(self.answer) > 0:
-                    break
-                try:
-                    print("Sending {} bytes".format(len(p)))
-                    self.sock.sendto(p, ("224.0.0.251", 5353))
-                except BlockingIOError:
-                    pass
-                timeout = time.monotonic() + 1.0
-                while len(self.answer) == 0:
-                    select_time = timeout - time.monotonic()
-                    if select_time <= 0:
-                        break
-                    (rr, _, _) = select([self.sock], [], [], select_time / 1000.0)
-                    if rr:
-                        self.process_waiting_packets()
-        finally:
-            self._pending_question = None
-
-    def resolve_mdns_address(self, hostname):
-        # Look up an IPv4 address for a hostname using mDNS.
-        _CLASS_IN = 1
-        _TYPE_A = 1
-        q = pack_question(hostname, _TYPE_A, _CLASS_IN)
-
-        self.handle_question(q)
-        return bytes(self.answer[0]) if len(self.answer) > 0 else None
+    def connection_lost(self, exc):
+        if not self.future_done.done():
+            self.future_done.set_result(True)
 
 
-def print_resolution_for(host):
-    server = SlimDNSServer()
-    address = server.resolve_mdns_address(host)
-    if address is None:
-        print("{} resolution failed".format(host))
-    else:
-        print("{} resolved to {}".format(host, ".".join(str(i) for i in address)))
+async def resolve_mdns_async(hostname):
+    loop = asyncio.get_running_loop()
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setblocking(False)
+    transport, protocol = await loop.create_datagram_endpoint(
+        lambda: MulticastDNSProtocol(hostname, loop),
+        sock=sock,
+    )
+    try:
+        await protocol.send_query()
+    finally:
+        transport.close()
+    if len(protocol.answer) > 0:
+        return ".".join(str(i) for i in protocol.answer[0])
+    return None
+
+
+def resolve_mdns_sync(hostname):
+    return asyncio.run(resolve_mdns_async(hostname))
 
 
 if __name__ == "__main__":
-    print_resolution_for("jazzlights-clouds.local")
-    print_resolution_for("jazzlights-nothing.local")
+    hostnames = sys.argv[1:]
+    if len(hostnames) == 0:
+        hostnames = ["jazzlights-clouds.local", "jazzlights-nothing.local"]
+    for hostname in hostnames:
+        address = resolve_mdns_sync(hostname)
+        if address is None:
+            print("{} resolution failed".format(hostname))
+        else:
+            print("{} resolved to {}".format(hostname, address))
