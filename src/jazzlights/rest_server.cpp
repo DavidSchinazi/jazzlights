@@ -26,21 +26,21 @@ static void sWebSocketEventHandler(AsyncWebSocket* server, AsyncWebSocketClient*
     case WS_EVT_DATA: {
       AwsFrameInfo* info = reinterpret_cast<AwsFrameInfo*>(arg);
       if (info->final && info->index == 0 && info->len == len) {
-        jll_info("WebSocket client #%u sent unfragmented %s message of length %llu", client->id(),
-                 ((info->opcode == WS_TEXT) ? "text" : "binary"), info->len);
+        jll_info("WebSocket received unfragmented %s message of length %llu from client #%u ",
+                 ((info->opcode == WS_TEXT) ? "text" : "binary"), info->len, client->id());
       } else {
-        jll_info("WebSocket client #%u sent fragmented %s message at index %llu of length %llu with%s FIN",
-                 client->id(), ((info->opcode == WS_TEXT) ? "text" : "binary"), info->index, info->len,
-                 (info->final ? "" : "out"));
+        jll_info("WebSocket received fragmented %s message at index %llu of length %llu with%s FIN from client #%u",
+                 ((info->opcode == WS_TEXT) ? "text" : "binary"), info->index, info->len, (info->final ? "" : "out"),
+                 client->id());
       }
     } break;
     case WS_EVT_PONG:
-      jll_info("WebSocket client #%u sent us pong of length %u: %s", client->id(), len,
-               (len ? reinterpret_cast<char*>(data) : "<empty>"));
+      jll_info("WebSocket received pong of length %u: %s from  client #%u", len,
+               (len ? reinterpret_cast<char*>(data) : "<empty>"), client->id());
       break;
     case WS_EVT_ERROR:
-      jll_info("WebSocket client #%u sent us error[%u]: %s", client->id(), *reinterpret_cast<uint16_t*>(arg),
-               reinterpret_cast<char*>(data));
+      jll_info("WebSocket received error[%u]: %s from client #%u", *reinterpret_cast<uint16_t*>(arg),
+               reinterpret_cast<char*>(data), client->id());
       break;
   }
 }
