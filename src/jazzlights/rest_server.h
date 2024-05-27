@@ -20,8 +20,20 @@ class RestServer {
   explicit RestServer(uint16_t port, Player& player);
 
  private:
+  void HandleMessage(AsyncWebSocketClient* client, uint8_t* data, size_t len);
+  void ShareStatus(AsyncWebSocketClient* client);
+  class WebSocket : public AsyncWebSocket {
+   public:
+    explicit WebSocket(const String& url, RestServer* rest_server) : AsyncWebSocket(url), rest_server_(rest_server) {}
+
+    static void EventHandler(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType type, void* arg,
+                             uint8_t* data, size_t len);
+
+   private:
+    RestServer* rest_server_;  // Unowned.
+  };
   AsyncWebServer server_;
-  AsyncWebSocket web_socket_;
+  WebSocket web_socket_;
   Player& player_;
   bool started_ = false;
 };

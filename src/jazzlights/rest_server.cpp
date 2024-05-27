@@ -14,9 +14,20 @@ static void sNotFoundHandler(AsyncWebServerRequest* request) {
   jll_info("RestServer got unexpected request for \"%s\"", request->url().c_str());
   request->send(404, "text/plain", String("Not found nope for ") + request->url());
 }
+}  // namespace
 
-static void sWebSocketEventHandler(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType type, void* arg,
-                                   uint8_t* data, size_t len) {
+enum class WSType : uint8_t {
+  kInvalid = 0,
+  kStatusRequest = 1,
+  kStatusShare = 2,
+  kTurnOn = 3,
+  kTurnOff = 4,
+};
+
+// static
+void RestServer::WebSocket::EventHandler(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType type,
+                                         void* arg, uint8_t* data, size_t len) {
+  WebSocket* web_socket = static_cast<WebSocket*>(server);
   switch (type) {
     case WS_EVT_CONNECT:
       jll_info("WebSocket client #%u connected from %s:%u", client->id(), client->remoteIP().toString().c_str(),
@@ -28,10 +39,12 @@ static void sWebSocketEventHandler(AsyncWebSocket* server, AsyncWebSocketClient*
       if (info->final && info->index == 0 && info->len == len) {
         jll_info("WebSocket received unfragmented %s message of length %llu from client #%u ",
                  ((info->opcode == WS_TEXT) ? "text" : "binary"), info->len, client->id());
+        web_socket->rest_server_->HandleMessage(client, data, len);
       } else {
         jll_info("WebSocket received fragmented %s message at index %llu of length %llu with%s FIN from client #%u",
                  ((info->opcode == WS_TEXT) ? "text" : "binary"), info->index, info->len, (info->final ? "" : "out"),
                  client->id());
+        // TODO buffer and handle fragmented messages.
       }
     } break;
     case WS_EVT_PONG:
@@ -44,9 +57,41 @@ static void sWebSocketEventHandler(AsyncWebSocket* server, AsyncWebSocketClient*
       break;
   }
 }
-}  // namespace
 
-RestServer::RestServer(uint16_t port, Player& player) : server_(port), web_socket_("/ws"), player_(player) {}
+void RestServer::HandleMessage(AsyncWebSocketClient* client, uint8_t* data, size_t len) {
+  jll_info("Handling message of length %zu from client #%u", len, client->id());
+  if (len == 0) { return; }
+  switch (static_cast<WSType>(data[0])) {
+    case WSType::kStatusRequest: {
+      jll_info("Got status request from client #%u", client->id());
+      ShareStatus(client);
+    } break;
+    case WSType::kTurnOn: {
+      jll_info("Got turn on request from client #%u", client->id());
+      player_.set_enabled(true);
+      ShareStatus(client);
+    } break;
+    case WSType::kTurnOff: {
+      jll_info("Got turn off request from client #%u", client->id());
+      player_.set_enabled(false);
+      ShareStatus(client);
+    } break;
+  }
+}
+
+void RestServer::ShareStatus(AsyncWebSocketClient* client) {
+  uint8_t response[2] = {};
+  response[0] = static_cast<uint8_t>(WSType::kStatusShare);
+  if (player_.enabled()) { response[1] |= 0x80; }
+  if (client != nullptr) {
+    client->binary(&response[0], sizeof(response));
+  } else {
+    web_socket_.binaryAll(&response[0], sizeof(response));
+  }
+}
+
+RestServer::RestServer(uint16_t port, Player& player)
+    : server_(port), web_socket_("/jazzlights-websocket", this), player_(player) {}
 
 void RestServer::Start() {
   if (started_) { return; }
@@ -102,7 +147,7 @@ void RestServer::Start() {
       });
   server_.onNotFound(sNotFoundHandler);
 
-  web_socket_.onEvent(sWebSocketEventHandler);
+  web_socket_.onEvent(WebSocket::EventHandler);
   server_.addHandler(&web_socket_);
 
   server_.begin();
