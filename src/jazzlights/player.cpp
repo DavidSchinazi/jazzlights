@@ -487,9 +487,9 @@ void Player::stopForcePalette(Milliseconds currentTime) {
 
 PatternBits Player::enforceForcedPalette(PatternBits pattern) {
 #if JL_IS_CONFIG(CLOUDS)
-  pattern &= 0xFFFFFF00;
-  pattern |= 0xFF000000;
-#endif
+  pattern &= 0xFFFFFFF0;
+  pattern |= 0x000000F0;
+#endif  // CLOUDS
   if (paletteIsForced_) { pattern = applyPalette(pattern, forcedPalette_); }
   return pattern;
 }
