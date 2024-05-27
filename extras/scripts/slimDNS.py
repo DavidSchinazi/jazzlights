@@ -168,6 +168,7 @@ class SlimDNSServer:
     def __init__(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.sock.setblocking(False)
         self._pending_question = None
         self.answer = []
 
@@ -190,13 +191,12 @@ class SlimDNSServer:
             print("Error processing packet: {}".format(e))
 
     def process_waiting_packets(self):
-        # Handle all the packets that can be read immediately and
-        # return as soon as none are waiting
+        # Handle all packets in socket receive buffer.
         while True:
-            readers, _, _ = select([self.sock], [], [], 0)
-            if not readers:
+            try:
+                buf, addr = self.sock.recvfrom(MAX_PACKET_SIZE)
+            except BlockingIOError:
                 break
-            buf, addr = self.sock.recvfrom(MAX_PACKET_SIZE)
             print("Received {} bytes from {}".format(len(buf), addr))
             self.process_packet(memoryview(buf))
 
@@ -211,7 +211,10 @@ class SlimDNSServer:
             for _ in range(retry_count):
                 if len(self.answer) > 0:
                     break
-                self.sock.sendto(p, (_MDNS_ADDR, _MDNS_PORT))
+                try:
+                    self.sock.sendto(p, (_MDNS_ADDR, _MDNS_PORT))
+                except BlockingIOError:
+                    pass
                 timeout = time.monotonic() + 1.0
                 while len(self.answer) == 0:
                     select_time = timeout - time.monotonic()
