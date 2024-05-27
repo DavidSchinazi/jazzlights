@@ -160,6 +160,7 @@ class SlimDNSServer:
                 if len(self.answer) > 0:
                     break
                 try:
+                    print("Sending {} bytes".format(len(p)))
                     self.sock.sendto(p, ("224.0.0.251", 5353))
                 except BlockingIOError:
                     pass
