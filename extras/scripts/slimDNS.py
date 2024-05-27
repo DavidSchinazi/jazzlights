@@ -7,48 +7,6 @@ from struct import pack_into, unpack_from
 import socket
 import time
 
-# The biggest packet we will process
-MAX_PACKET_SIZE = 2048
-
-MAX_NAME_SEARCH = 20
-
-# DNS constants
-
-_MDNS_ADDR = "224.0.0.251"
-_MDNS_PORT = 5353
-_DNS_TTL = 2 * 60  # two minute default TTL
-
-_FLAGS_QR_RESPONSE = 0x8000  # response
-
-_FLAGS_AA = 0x0400  # Authorative answer
-
-_CLASS_IN = 1
-_CLASS_ANY = 255
-_CLASS_MASK = 0x7FFF
-_CLASS_UNIQUE = 0x8000
-
-_TYPE_A = 1
-_TYPE_PTR = 12
-_TYPE_TXT = 16
-_TYPE_AAAA = 28
-_TYPE_SRV = 33
-_TYPE_ANY = 255
-
-
-# Convert a dotted IPv4 address string into four bytes, with some
-# sanity checks
-def dotted_ip_to_bytes(ip):
-    l = [int(i) for i in ip.split(".")]
-    if len(l) != 4 or any(i < 0 or i > 255 for i in l):
-        raise ValueError
-    return bytes(l)
-
-
-# Convert four bytes into a dotted IPv4 address string, without any
-# sanity checks
-def bytes_to_dotted_ip(a):
-    return ".".join(str(i) for i in a)
-
 
 # Ensure that a name is in the form of a list of encoded blocks of
 # bytes, typically starting as a qualified domain name
@@ -122,18 +80,6 @@ def pack_question(name, qtype, qclass):
     return memoryview(buf)
 
 
-# Pack an answer into a new array and return it as a memoryview
-def pack_answer(name, rtype, rclass, ttl, rdata):
-    # Return a pre-packed answer as a memoryview
-    name = check_name(name)
-    name_len = name_packed_len(name)
-    buf = bytearray(name_len + 10 + len(rdata))
-    pack_name(buf, name)
-    pack_into("!HHIH", buf, name_len, rtype, rclass, ttl, len(rdata))
-    buf[name_len + 10 :] = rdata
-    return memoryview(buf)
-
-
 # Advance the offset past the question to which it points
 def skip_question(buf, o):
     o = skip_name_at(buf, o)
@@ -156,8 +102,10 @@ def compare_q_and_a(q_buf, q_offset, a_buf, a_offset=0):
         return False
     (q_type, q_class) = unpack_from("!HH", q_buf, skip_name_at(q_buf, q_offset))
     (r_type, r_class) = unpack_from("!HH", a_buf, skip_name_at(a_buf, a_offset))
+    _TYPE_ANY = 255
     if not (q_type == r_type or q_type == _TYPE_ANY):
         return False
+    _CLASS_MASK = 0x7FFF
     q_class &= _CLASS_MASK
     r_class &= _CLASS_MASK
     return q_class == r_class or q_class == _TYPE_ANY
@@ -194,7 +142,7 @@ class SlimDNSServer:
         # Handle all packets in socket receive buffer.
         while True:
             try:
-                buf, addr = self.sock.recvfrom(MAX_PACKET_SIZE)
+                buf, addr = self.sock.recvfrom(2048)
             except BlockingIOError:
                 break
             print("Received {} bytes from {}".format(len(buf), addr))
@@ -212,7 +160,7 @@ class SlimDNSServer:
                 if len(self.answer) > 0:
                     break
                 try:
-                    self.sock.sendto(p, (_MDNS_ADDR, _MDNS_PORT))
+                    self.sock.sendto(p, ("224.0.0.251", 5353))
                 except BlockingIOError:
                     pass
                 timeout = time.monotonic() + 1.0
@@ -228,6 +176,8 @@ class SlimDNSServer:
 
     def resolve_mdns_address(self, hostname):
         # Look up an IPv4 address for a hostname using mDNS.
+        _CLASS_IN = 1
+        _TYPE_A = 1
         q = pack_question(hostname, _TYPE_A, _CLASS_IN)
 
         self.handle_question(q)
@@ -240,7 +190,7 @@ def print_resolution_for(host):
     if address is None:
         print("{} resolution failed".format(host))
     else:
-        print("{} resolved to {}".format(host, bytes_to_dotted_ip(address)))
+        print("{} resolved to {}".format(host, ".".join(str(i) for i in address)))
 
 
 if __name__ == "__main__":
