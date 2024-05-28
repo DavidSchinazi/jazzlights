@@ -11,4 +11,4 @@ build/
 !.vscode/*.code-snippets
 sdkconfig.*.old
 SCRATCH.md
-extras/scripts/__pycache__
+__pycache__/
