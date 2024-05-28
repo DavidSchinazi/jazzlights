@@ -1,6 +1,5 @@
 """Support for lights."""
 
-import logging
 from typing import Any
 
 import websockets
@@ -10,9 +9,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from .const import LOGGER
 from .resolve_mdns import resolve_mdns_async
 
-_LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -22,15 +21,15 @@ async def async_setup_entry(
     """Set up light."""
     host = "jazzlights-clouds.local"
     address = await resolve_mdns_async(host)
-    _LOGGER.error("Resolved %s to %s", host, address)
+    LOGGER.error("Resolved %s to %s", host, address)
     if address is None:
         address = "10.41.40.191"
     if address is not None:
         uri = f"ws://{address}:80/jazzlights-websocket"
-        _LOGGER.error("Connecting %s", uri)
+        LOGGER.error("Connecting %s", uri)
         ws = await websockets.connect(uri)
         clouds = JazzLight(ws)
-        _LOGGER.error("Q async_setup_entry")
+        LOGGER.error("Q async_setup_entry")
         async_add_entities([clouds])
 
 
@@ -47,7 +46,7 @@ class JazzLight(LightEntity):
         """Initialize light."""
         self._my_state = True
         self._ws = ws
-        _LOGGER.error("Init JazzLight")
+        LOGGER.error("Init JazzLight")
 
     @property
     def name(self) -> str:
@@ -66,12 +65,12 @@ class JazzLight(LightEntity):
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off the light."""
-        _LOGGER.error("Turning Light Off")
+        LOGGER.error("Turning Light Off")
         self._my_state = False
         await self._ws.send(b"\x04")
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn on the light."""
-        _LOGGER.error("Turning Light On")
+        LOGGER.error("Turning Light On")
         self._my_state = True
         await self._ws.send(b"\x03")
