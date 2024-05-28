@@ -2,15 +2,13 @@
 
 from typing import Any
 
-import websockets
-
 from homeassistant.components.light import ColorMode, LightEntity, LightEntityFeature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import LOGGER
-from .resolve_mdns import resolve_mdns_async
+from .websocket import JazzLightsWebSocketClient
 
 
 async def async_setup_entry(
@@ -20,21 +18,14 @@ async def async_setup_entry(
 ) -> None:
     """Set up light."""
     host = "jazzlights-clouds.local"
-    address = await resolve_mdns_async(host)
-    LOGGER.error("Resolved %s to %s", host, address)
-    if address is None:
-        address = "10.41.40.191"
-    if address is not None:
-        uri = f"ws://{address}:80/jazzlights-websocket"
-        LOGGER.error("Connecting %s", uri)
-        ws = await websockets.connect(uri)
-        clouds = JazzLight(ws)
-        LOGGER.error("Q async_setup_entry")
-        async_add_entities([clouds])
+    clouds = JazzLight(host)
+    async_add_entities([clouds])
 
 
 class JazzLight(LightEntity):
     """Defines a jazz light."""
+
+    should_poll = False
 
     _attr_color_mode = ColorMode.BRIGHTNESS
     _attr_translation_key = "main"
@@ -42,11 +33,21 @@ class JazzLight(LightEntity):
     _attr_supported_color_modes = {ColorMode.BRIGHTNESS}
     _attr_has_entity_name = True
 
-    def __init__(self, ws) -> None:
+    def __init__(self, hostname: str) -> None:
         """Initialize light."""
-        self._my_state = True
-        self._ws = ws
-        LOGGER.error("Init JazzLight")
+        self._client = None
+        self._hostname = hostname
+
+    async def async_added_to_hass(self) -> None:
+        """Run when this Entity has been added to HA."""
+        self._client = JazzLightsWebSocketClient(self._hostname)
+        self._client.register_callback(self.async_write_ha_state)
+        self._client.start()
+
+    async def async_will_remove_from_hass(self) -> None:
+        """Entity being removed from hass."""
+        if self._client:
+            self._client.remove_callback(self.async_write_ha_state)
 
     @property
     def name(self) -> str:
@@ -61,16 +62,14 @@ class JazzLight(LightEntity):
     @property
     def is_on(self) -> bool:
         """Return the state of the light."""
-        return self._my_state
+        return self._client and self._client.is_on
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off the light."""
         LOGGER.error("Turning Light Off")
-        self._my_state = False
-        await self._ws.send(b"\x04")
+        self._client.turn_off()
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn on the light."""
         LOGGER.error("Turning Light On")
-        self._my_state = True
-        await self._ws.send(b"\x03")
+        self._client.turn_on()
