@@ -7,9 +7,13 @@ import logging
 
 import websockets
 
-from .resolve_mdns import resolve_mdns_async
+if __package__:
+    from .const import LOGGER
+    from .resolve_mdns import resolve_mdns_async
+else:
+    from resolve_mdns import resolve_mdns_async
 
-_LOGGER = logging.getLogger(__name__)
+    LOGGER = logging.getLogger(__name__)
 
 
 class JazzLightsWebSocketClient:
@@ -32,7 +36,7 @@ class JazzLightsWebSocketClient:
         self._callbacks.discard(callback)
 
     async def _send(self, message) -> None:
-        _LOGGER.error("Sending %s", message)
+        LOGGER.error("Sending %s", message)
         if self._ws is not None:
             await self._ws.send(message)
 
@@ -60,25 +64,25 @@ class JazzLightsWebSocketClient:
     async def _run(self) -> None:
         while True:
             address = await resolve_mdns_async(self.hostname)
-            _LOGGER.error("Resolved %s to %s", self.hostname, address)
+            LOGGER.error("Resolved %s to %s", self.hostname, address)
             if address is None:
                 continue
             uri = f"ws://{address}:80/jazzlights-websocket"
-            _LOGGER.error("Connecting %s", uri)
+            LOGGER.error("Connecting %s", uri)
             self._ws = await websockets.connect(uri)
-            _LOGGER.error("Connected %s", uri)
+            LOGGER.error("Connected %s", uri)
             await self._ws.send(b"\x01")
             while True:
                 response = await self._ws.recv()
-                _LOGGER.error("Received %s", response)
+                LOGGER.error("Received %s", response)
                 if len(response) >= 2 and response[0] == 2:
                     self._is_on = response[1] & 0x80 != 0
                     if self._is_on:
-                        _LOGGER.error("Clouds are ON")
+                        LOGGER.error("Clouds are ON")
                     else:
-                        _LOGGER.error("Clouds are OFF")
+                        LOGGER.error("Clouds are OFF")
                     for callback in self._callbacks:
-                        _LOGGER.error("Calling a callback")
+                        LOGGER.error("Calling a callback")
                         callback()
 
     def start(self) -> None:
@@ -96,7 +100,7 @@ if __name__ == "__main__":
         while True:
             on = not on
             await asyncio.sleep(2)
-            _LOGGER.error("Turning %s", ("on" if on else "off"))
+            LOGGER.error("Turning %s", ("on" if on else "off"))
             if on:
                 client.turn_on()
             else:

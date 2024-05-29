@@ -12,7 +12,10 @@ import socket
 from struct import pack_into, unpack_from
 import sys
 
-_LOGGER = logging.getLogger(__name__)
+if __package__:
+    from .const import LOGGER
+else:
+    LOGGER = logging.getLogger(__name__)
 
 
 def check_name(n):
@@ -156,7 +159,7 @@ class MulticastDNSProtocol:
 
     def datagram_received(self, buf, addr):
         """DNS packet received."""
-        _LOGGER.debug("Received %u bytes from %s", len(buf), addr)
+        LOGGER.debug("Received %u bytes from %s", len(buf), addr)
         if not self.question or not buf:
             return
         try:
@@ -171,14 +174,14 @@ class MulticastDNSProtocol:
                     self.answer.append(a[addr_offset : addr_offset + 4])
                 o = skip_answer(buf, o)
         except IndexError:
-            _LOGGER.error("Received malformed DNS packet")
+            LOGGER.error("Received malformed DNS packet")
         if len(self.answer) > 0:
             # Got an answer, closing the socket.
             self.transport.close()
 
     def error_received(self, exc):
         """Error received on socket."""
-        _LOGGER.error("Error received: %s", exc)
+        LOGGER.error("Error received: %s", exc)
         self.transport.close()
 
     def connection_lost(self, exc):
@@ -217,6 +220,6 @@ if __name__ == "__main__":
     for host in hostnames:
         address = resolve_mdns_sync(host)
         if address is None:
-            _LOGGER.error("%s resolution failed", host)
+            LOGGER.error("%s resolution failed", host)
         else:
-            _LOGGER.error("%s resolved to %s", host, address)
+            LOGGER.error("%s resolved to %s", host, address)
