@@ -11,11 +11,9 @@ import logging
 import socket
 from struct import pack_into, unpack_from
 import sys
+import time
 
-if __package__:
-    from .const import LOGGER
-else:
-    LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 def check_name(n):
@@ -142,12 +140,21 @@ class MulticastDNSProtocol:
         self.future_done = loop.create_future()
         self.transport = None
 
-    async def send_query(self):
+    async def send_query(self, timeout: float | None = None):
         """Start sending mDNS packets."""
-        for _ in range(3):
+        if timeout is not None:
+            start_time = time.monotonic()
+        while True:
+            read_timeout = 1
+            if timeout is not None:
+                time_left = start_time + timeout - time.monotonic()
+                if time_left <= 0:
+                    return
+                read_timeout = min(read_timeout, time_left)
+            LOGGER.error("Sending %u bytes to multicast", len(self.packet_to_send))
             self.transport.sendto(self.packet_to_send, ("224.0.0.251", 5353))
             with contextlib.suppress(TimeoutError, asyncio.exceptions.CancelledError):
-                await asyncio.wait_for(asyncio.shield(self.future_done), 1)
+                await asyncio.wait_for(asyncio.shield(self.future_done), read_timeout)
             if len(self.answer) > 0:
                 return
         # Timed out waiting for answer, closing the socket.
@@ -159,7 +166,7 @@ class MulticastDNSProtocol:
 
     def datagram_received(self, buf, addr):
         """DNS packet received."""
-        LOGGER.debug("Received %u bytes from %s", len(buf), addr)
+        LOGGER.error("Received %u bytes from %s", len(buf), addr)
         if not self.question or not buf:
             return
         try:
@@ -178,6 +185,8 @@ class MulticastDNSProtocol:
         if len(self.answer) > 0:
             # Got an answer, closing the socket.
             self.transport.close()
+        else:
+            LOGGER.error("Ignoring DNS packet without positive answer")
 
     def error_received(self, exc):
         """Error received on socket."""
@@ -190,7 +199,7 @@ class MulticastDNSProtocol:
             self.future_done.set_result(True)
 
 
-async def resolve_mdns_async(hostname: str) -> str | None:
+async def resolve_mdns_async(hostname: str, timeout: float | None = None) -> str | None:
     """Resolve mDNS asynchronously."""
     loop = asyncio.get_running_loop()
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -200,7 +209,7 @@ async def resolve_mdns_async(hostname: str) -> str | None:
         sock=sock,
     )
     try:
-        await protocol.send_query()
+        await protocol.send_query(timeout=timeout)
     finally:
         transport.close()
     if len(protocol.answer) > 0:
@@ -208,9 +217,9 @@ async def resolve_mdns_async(hostname: str) -> str | None:
     return None
 
 
-def resolve_mdns_sync(hostname: str) -> str | None:
+def resolve_mdns_sync(hostname: str, timeout: float | None = 5) -> str | None:
     """Resolve mDNS synchronously."""
-    return asyncio.run(resolve_mdns_async(hostname))
+    return asyncio.run(resolve_mdns_async(hostname, timeout=timeout))
 
 
 if __name__ == "__main__":

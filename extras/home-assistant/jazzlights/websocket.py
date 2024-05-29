@@ -8,12 +8,11 @@ import logging
 import websockets
 
 if __package__:
-    from .const import LOGGER
     from .resolve_mdns import resolve_mdns_async
 else:
     from resolve_mdns import resolve_mdns_async
 
-    LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 class JazzLightsWebSocketClient:
@@ -75,45 +74,44 @@ class JazzLightsWebSocketClient:
 
     async def _run(self) -> None:
         self._should_restart = True
+        assert self._ws is None
+        address = await resolve_mdns_async(self.hostname)
+        LOGGER.error("Resolved %s to %s", self.hostname, address)
+        assert address is not None
+
+        uri = f"ws://{address}:80/jazzlights-websocket"
+        LOGGER.error("Connecting %s", uri)
+        assert self._ws is None
+        try:
+            ws = await websockets.connect(uri)
+        except websockets.exceptions.WebSocketException as e:
+            self._handle_failure(e)
+            return
+        assert self._ws is None
+        self._ws = ws
+        LOGGER.error("Connected %s", uri)
+        try:
+            await self._ws.send(b"\x01")
+        except websockets.exceptions.WebSocketException as e:
+            self._handle_failure(e)
+            return
         while True:
-            assert self._ws is None
-            address = await resolve_mdns_async(self.hostname)
-            LOGGER.error("Resolved %s to %s", self.hostname, address)
-            if address is None:
-                continue
-            uri = f"ws://{address}:80/jazzlights-websocket"
-            LOGGER.error("Connecting %s", uri)
-            assert self._ws is None
             try:
-                ws = await websockets.connect(uri)
+                response = await self._ws.recv()
             except websockets.exceptions.WebSocketException as e:
                 self._handle_failure(e)
                 return
-            assert self._ws is None
-            self._ws = ws
-            LOGGER.error("Connected %s", uri)
-            try:
-                await self._ws.send(b"\x01")
-            except websockets.exceptions.WebSocketException as e:
-                self._handle_failure(e)
-                return
-            while True:
-                try:
-                    response = await self._ws.recv()
-                except websockets.exceptions.WebSocketException as e:
-                    self._handle_failure(e)
-                    return
-                LOGGER.error("Received %s", response)
-                if len(response) >= 2 and response[0] == 2:
-                    self._is_on = response[1] & 0x80 != 0
-                    if self._is_on:
-                        LOGGER.error("Clouds are ON")
-                    else:
-                        LOGGER.error("Clouds are OFF")
-                    callbacks = self._callbacks.copy()
-                    for callback in callbacks:
-                        LOGGER.error("Calling a callback")
-                        callback()
+            LOGGER.error("Received %s", response)
+            if len(response) >= 2 and response[0] == 2:
+                self._is_on = response[1] & 0x80 != 0
+                if self._is_on:
+                    LOGGER.error("Clouds are ON")
+                else:
+                    LOGGER.error("Clouds are OFF")
+                callbacks = self._callbacks.copy()
+                for callback in callbacks:
+                    LOGGER.error("Calling a callback")
+                    callback()
 
     def start(self) -> None:
         """Start the client."""

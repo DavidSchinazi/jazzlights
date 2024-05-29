@@ -1,5 +1,6 @@
 """Support for lights."""
 
+import logging
 from typing import Any
 
 from homeassistant.components.light import ColorMode, LightEntity, LightEntityFeature
@@ -7,8 +8,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import LOGGER
 from .websocket import JazzLightsWebSocketClient
+
+LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
