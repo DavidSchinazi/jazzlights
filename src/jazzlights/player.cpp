@@ -430,7 +430,18 @@ bool Player::render(Milliseconds currentTime) {
 PatternBits Player::currentEffect() const { return lastBegunPattern_; }
 std::string Player::currentEffectName() const { return patternName(lastBegunPattern_); }
 
+#if JL_IS_CONFIG(CLOUDS)
+void Player::set_enabled(bool enabled) {
+  if (enabled_ == enabled) { return; }
+  enabled_ = enabled;
+  if (enabled_watcher_ != nullptr) { enabled_watcher_->OnEnabled(enabled_); }
+}
+#endif  // CLOUDS
+
 void Player::next(Milliseconds currentTime) {
+#if JL_IS_CONFIG(CLOUDS)
+  set_enabled(!enabled());
+#endif  // CLOUDS
   jll_info("%u next command received: switching from %s (%08x) to %s (%08x), currentLeader=" DEVICE_ID_FMT, currentTime,
            patternName(currentPattern_).c_str(), currentPattern_, patternName(nextPattern_).c_str(), nextPattern_,
            DEVICE_ID_HEX(currentLeader_));

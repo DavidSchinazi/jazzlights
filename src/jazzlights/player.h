@@ -111,8 +111,16 @@ class Player {
   const Network* followedNextHopNetwork() const { return followedNextHopNetwork_; }
   NumHops currentNumHops() const { return currentNumHops_; }
 
-  void set_enabled(bool enabled) { enabled_ = enabled; }
   bool enabled() const { return enabled_; }
+#if JL_IS_CONFIG(CLOUDS)
+  void set_enabled(bool enabled);
+  class EnabledWatcher {
+   public:
+    virtual ~EnabledWatcher() = default;
+    virtual void OnEnabled(bool enabled) = 0;
+  };
+  void set_enabled_watcher(EnabledWatcher* enabled_watcher) { enabled_watcher_ = enabled_watcher; }
+#endif  // CLOUDS
 
  private:
   void handleReceivedMessage(NetworkMessage message, Milliseconds currentTime);
@@ -161,7 +169,9 @@ class Player {
   size_t specialMode_ = 0;
 #if JL_IS_CONFIG(FAIRY_WAND)
   Milliseconds overridePatternStartTime_ = -1;
-#endif  // FAIRY_WAND
+#elif JL_IS_CONFIG(CLOUDS)
+  EnabledWatcher* enabled_watcher_ = nullptr;  // Unowned.
+#endif  // CLOUDS
 
   std::vector<Network*> networks_;
   std::list<OriginatorEntry> originatorEntries_;

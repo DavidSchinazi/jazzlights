@@ -90,6 +90,8 @@ void RestServer::ShareStatus(AsyncWebSocketClient* client) {
   }
 }
 
+void RestServer::OnEnabled(bool enabled) { ShareStatus(nullptr); }
+
 RestServer::RestServer(uint16_t port, Player& player)
     : server_(port), web_socket_("/jazzlights-websocket", this), player_(player) {}
 
@@ -106,6 +108,7 @@ void RestServer::Start() {
   jll_info("Initializing RestServer");
 
   Player* player = &player_;
+  player->set_enabled_watcher(this);
   constexpr const char* const enabled_path = "/jl-clouds-enabled";
   server_.on(enabled_path, HTTP_GET, [player](AsyncWebServerRequest* request) {
     const bool enabled = player->enabled();
