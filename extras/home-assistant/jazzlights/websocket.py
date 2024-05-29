@@ -80,7 +80,12 @@ class JazzLightsWebSocketClient:
             LOGGER.error("Connected %s", uri)
             await self._ws.send(b"\x01")
             while True:
-                response = await self._ws.recv()
+                try:
+                    response = await self._ws.recv()
+                except websockets.exceptions.WebSocketException as e:
+                    LOGGER.error("Restarting websocket which failed due to: %s", e)
+                    self.start()
+                    return
                 LOGGER.error("Received %s", response)
                 if len(response) >= 2 and response[0] == 2:
                     self._is_on = response[1] & 0x80 != 0
