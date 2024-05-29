@@ -81,7 +81,8 @@ class JazzLightsWebSocketClient:
                         LOGGER.error("Clouds are ON")
                     else:
                         LOGGER.error("Clouds are OFF")
-                    for callback in self._callbacks:
+                    callbacks = self._callbacks.copy()
+                    for callback in callbacks:
                         LOGGER.error("Calling a callback")
                         callback()
 
