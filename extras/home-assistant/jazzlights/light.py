@@ -40,6 +40,7 @@ class JazzLight(LightEntity):
 
     async def async_added_to_hass(self) -> None:
         """Run when this Entity has been added to HA."""
+        assert self._client is None
         self._client = JazzLightsWebSocketClient(self._hostname)
         self._client.register_callback(self.async_write_ha_state)
         self._client.start()
@@ -48,6 +49,8 @@ class JazzLight(LightEntity):
         """Entity being removed from hass."""
         if self._client:
             self._client.remove_callback(self.async_write_ha_state)
+            self._client.close()
+            self._client = None
 
     @property
     def name(self) -> str:

@@ -18,19 +18,26 @@ param = sys.argv[1] if len(sys.argv) > 1 else ""
 
 async def websocket_client_main():
     client = JazzLightsWebSocketClient("jazzlights-clouds.local")
+    future = asyncio.get_running_loop().create_future()
 
-    def my_callback():
-        client.remove_callback(my_callback)
+    def first_callback():
+        client.remove_callback(first_callback)
+        client.register_callback(second_callback)
         if param == "on":
             client.turn_on()
         elif param == "off":
             client.turn_off()
         else:
-            client.request_status()
+            client.toggle()
 
-    client.register_callback(my_callback)
+    def second_callback():
+        client.remove_callback(second_callback)
+        future.set_result(True)
+
+    client.register_callback(first_callback)
     client.start()
-    await asyncio.sleep(2)
+    await future
+    client.close()
 
 
 asyncio.run(websocket_client_main())

@@ -52,6 +52,13 @@ class JazzLightsWebSocketClient:
         """Turn off the light."""
         self.send(b"\x04")
 
+    def toggle(self) -> None:
+        """Toggle the light."""
+        if self.is_on:
+            self.turn_off()
+        else:
+            self.turn_on()
+
     def request_status(self) -> None:
         """Request a status update."""
         self.send(b"\x01")
@@ -89,6 +96,16 @@ class JazzLightsWebSocketClient:
     def start(self) -> None:
         """Start the client."""
         self._loop.create_task(self._run())
+
+    async def _close(self) -> None:
+        if self._ws is not None:
+            ws = self._ws
+            self._ws = None
+            await ws.close()
+
+    def close(self) -> None:
+        """Close the client."""
+        asyncio.run_coroutine_threadsafe(self._close(), self._loop)
 
 
 if __name__ == "__main__":
