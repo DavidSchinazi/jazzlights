@@ -2,8 +2,8 @@
 """JazzLights WebSocket client."""
 
 import asyncio
-import logging
 from collections.abc import Callable
+import logging
 
 import websockets
 

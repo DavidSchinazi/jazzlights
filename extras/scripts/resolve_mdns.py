@@ -9,8 +9,8 @@ import asyncio
 import contextlib
 import logging
 import socket
-import sys
 from struct import pack_into, unpack_from
+import sys
 
 _LOGGER = logging.getLogger(__name__)
 
