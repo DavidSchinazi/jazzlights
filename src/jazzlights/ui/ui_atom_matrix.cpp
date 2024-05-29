@@ -221,7 +221,13 @@ AtomMatrixUi::AtomMatrixUi(Player& player, Milliseconds currentTime)
       button_(kButtonPin, *this, currentTime),
       brightnessCursor_(kInitialBrightnessCursor) {}
 
-bool AtomMatrixUi::IsLocked() { return buttonLockState_ < 5; }
+bool AtomMatrixUi::IsLocked() {
+#if JL_BUTTON_LOCK
+  return buttonLockState_ < 5;
+#else   // JL_BUTTON_LOCK
+  return false;
+#endif  // JL_BUTTON_LOCK
+}
 
 void AtomMatrixUi::HandleUnlockSequence(bool wasLongPress, Milliseconds currentTime) {
   if (!IsLocked()) { return; }
