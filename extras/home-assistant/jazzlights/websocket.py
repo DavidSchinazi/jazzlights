@@ -26,6 +26,7 @@ class JazzLightsWebSocketClient:
         self._loop = asyncio.get_event_loop()
         self._ws = None
         self._is_on = False
+        self._should_restart = False
 
     def register_callback(self, callback: Callable[[], None]) -> None:
         """Register callback, called when Roller changes state."""
@@ -38,7 +39,11 @@ class JazzLightsWebSocketClient:
     async def _send(self, message) -> None:
         LOGGER.error("Sending %s", message)
         if self._ws is not None:
-            await self._ws.send(message)
+            try:
+                await self._ws.send(message)
+            except websockets.exceptions.WebSocketException as e:
+                self._handle_failure(e)
+                return
 
     def send(self, message) -> None:
         """Send message over WebSockets."""
@@ -69,22 +74,34 @@ class JazzLightsWebSocketClient:
         return self._is_on
 
     async def _run(self) -> None:
+        self._should_restart = True
         while True:
+            assert self._ws is None
             address = await resolve_mdns_async(self.hostname)
             LOGGER.error("Resolved %s to %s", self.hostname, address)
             if address is None:
                 continue
             uri = f"ws://{address}:80/jazzlights-websocket"
             LOGGER.error("Connecting %s", uri)
-            self._ws = await websockets.connect(uri)
+            assert self._ws is None
+            try:
+                ws = await websockets.connect(uri)
+            except websockets.exceptions.WebSocketException as e:
+                self._handle_failure(e)
+                return
+            assert self._ws is None
+            self._ws = ws
             LOGGER.error("Connected %s", uri)
-            await self._ws.send(b"\x01")
+            try:
+                await self._ws.send(b"\x01")
+            except websockets.exceptions.WebSocketException as e:
+                self._handle_failure(e)
+                return
             while True:
                 try:
                     response = await self._ws.recv()
                 except websockets.exceptions.WebSocketException as e:
-                    LOGGER.error("Restarting websocket which failed due to: %s", e)
-                    self.start()
+                    self._handle_failure(e)
                     return
                 LOGGER.error("Received %s", response)
                 if len(response) >= 2 and response[0] == 2:
@@ -100,17 +117,26 @@ class JazzLightsWebSocketClient:
 
     def start(self) -> None:
         """Start the client."""
-        self._loop.create_task(self._run())
+        asyncio.run_coroutine_threadsafe(self._run(), self._loop)
 
-    async def _close(self) -> None:
+    def _close(self, disable_restart: bool) -> None:
+        if disable_restart:
+            self._should_restart = False
         if self._ws is not None:
             ws = self._ws
             self._ws = None
-            await ws.close()
+            self._loop.create_task(ws.close())
+
+    def _handle_failure(self, e) -> None:
+        LOGGER.error("Restarting websocket which failed due to: %s", e)
+        self._close(disable_restart=False)
+        if self._should_restart:
+            # Start it as its own stack to avoid infinite recursion.
+            self._loop.create_task(self._run())
 
     def close(self) -> None:
         """Close the client."""
-        asyncio.run_coroutine_threadsafe(self._close(), self._loop)
+        asyncio.run_coroutine_threadsafe(self._close(disable_restart=True), self._loop)
 
 
 if __name__ == "__main__":
