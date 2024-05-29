@@ -2,8 +2,8 @@
 """JazzLights WebSocket client."""
 
 import asyncio
-from collections.abc import Callable
 import logging
+from collections.abc import Callable
 
 import websockets
 
@@ -84,7 +84,6 @@ class JazzLightsWebSocketClient:
     def start(self) -> None:
         """Start the client."""
         self._loop.create_task(self._run())
-
 
 
 if __name__ == "__main__":
