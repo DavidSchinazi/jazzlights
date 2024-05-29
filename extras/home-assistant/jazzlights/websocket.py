@@ -128,9 +128,10 @@ class JazzLightsWebSocketClient:
             self._loop.create_task(ws.close())
 
     def _handle_failure(self, e) -> None:
-        LOGGER.error("Restarting websocket which failed due to: %s", e)
+        LOGGER.error("Websocket failed: %s", e)
         self._close(disable_restart=False)
         if self._should_restart:
+            LOGGER.error("Restarting Websocket")
             # Start it as its own stack to avoid infinite recursion.
             self._loop.create_task(self._run())
 
