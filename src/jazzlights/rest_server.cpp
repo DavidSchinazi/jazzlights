@@ -116,45 +116,7 @@ void RestServer::Start() {
 
   Player* player = &player_;
   player->set_status_watcher(this);
-  constexpr const char* const enabled_path = "/jl-clouds-enabled";
-  server_.on(enabled_path, HTTP_GET, [player](AsyncWebServerRequest* request) {
-    const bool enabled = player->enabled();
-    jll_info("RestServer got GET request for \"%s\", replying %s", request->url().c_str(),
-             (enabled ? "true" : "false"));
-    const char* response;
-    if (enabled) {
-      response = "{\"is_active\": \"true\"}";
-    } else {
-      response = "{\"is_active\": \"false\"}";
-    }
-    request->send(200, "application/json", response);
-  });
-  server_.on(
-      enabled_path, HTTP_POST,
-      /*onRequest=*/
-      [player](AsyncWebServerRequest* request) {
-        jll_info("RestServer got POST request for \"%s\" but not doing anything with it here", request->url().c_str());
-        // request->send(200, "text/plain", "post");
-      },
-      /*onUpload=*/nullptr,
-      /*onBody=*/
-      [player](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
-        // TODO only do this if index == 0 and len == total
-        char body[1024] = {};
-        memcpy(body, data, std::min<size_t>(len, sizeof(body) - 1));
-        jll_info("RestServer got body request for \"%s\", len=%zu index=%zu total=%zu data=\"%s\"",
-                 request->url().c_str(), len, index, total, body);
-        // TODO actually parse the JSON
-        // Or even better just get rid of JSON entirely since we can have HomeAssistant send any string we want.
-        if (strncmp(body, "{\"active\": \"false\"}", sizeof(body)) == 0) {
-          jll_info("RestServer marking player as disabled");
-          player->set_enabled(false);
-        } else if (strncmp(body, "{\"active\": \"true\"}", sizeof(body)) == 0) {
-          jll_info("RestServer marking player as enabled");
-          player->set_enabled(true);
-        }
-        request->send(200);
-      });
+
   server_.onNotFound(sNotFoundHandler);
 
   web_socket_.onEvent(WebSocket::EventHandler);
