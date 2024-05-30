@@ -60,12 +60,12 @@ class JazzLight(LightEntity):
     @property
     def brightness(self) -> int | None:
         """Return the brightness of this light between 1..255."""
-        return 255
+        return self._client.brightness
 
     @property
     def is_on(self) -> bool:
         """Return the state of the light."""
-        return self._client and self._client.is_on
+        return self._client.is_on
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off the light."""

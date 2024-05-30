@@ -98,7 +98,7 @@ class Player {
   bool IsPowerLimited() const { return powerLimited_; }
   void SetPowerLimited(bool powerLimited) { powerLimited_ = powerLimited; }
   uint8_t GetBrightness() const { return brightness_; }
-  void SetBrightness(uint8_t brightness) { brightness_ = brightness; }
+  void SetBrightness(uint8_t brightness);
 
   void setBasePrecedence(Precedence basePrecedence) { basePrecedence_ = basePrecedence; }
   void setPrecedenceGain(Precedence precedenceGain) { precedenceGain_ = precedenceGain; }

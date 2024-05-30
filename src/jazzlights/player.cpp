@@ -438,6 +438,11 @@ void Player::set_enabled(bool enabled) {
 }
 #endif  // CLOUDS
 
+void Player::SetBrightness(uint8_t brightness) {
+  brightness_ = brightness;
+  if (enabled_watcher_ != nullptr) { enabled_watcher_->OnEnabled(enabled_); }
+}
+
 void Player::next(Milliseconds currentTime) {
 #if JL_IS_CONFIG(CLOUDS)
   set_enabled(!enabled());

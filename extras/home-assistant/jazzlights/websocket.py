@@ -33,6 +33,7 @@ class JazzLightsWebSocketClient:
         self._loop = asyncio.get_event_loop()
         self._ws = None
         self._is_on = False
+        self._brightness = 255
         self._should_restart = False
 
     def register_callback(self, callback: Callable[[], None]) -> None:
@@ -77,6 +78,11 @@ class JazzLightsWebSocketClient:
         self.send(struct.pack("!B", _TYPE_STATUS_REQUEST))
 
     @property
+    def brightness(self) -> int | None:
+        """Return the brightness of this light between 1..255."""
+        return self._brightness
+
+    @property
     def is_on(self) -> bool:
         """Return the state of the light."""
         return self._is_on
@@ -111,13 +117,13 @@ class JazzLightsWebSocketClient:
                 self._handle_failure(e)
                 return
             LOGGER.error("Received %s", response)
-            if len(response) >= 2 and response[0] == 2:
+            if len(response) >= 2 and response[0] == _TYPE_STATUS_SHARE:
                 self._is_on = response[1] & _STATUS_FLAG_ON != 0
-                brightness = response[2] if len(response) >= 2 else 255
+                self._brightness = response[2] if len(response) > 2 else 255
                 LOGGER.error(
                     "Clouds are %s, brightness=%u",
                     "ON" if self._is_on else "OFF",
-                    brightness,
+                    self._brightness,
                 )
                 callbacks = self._callbacks.copy()
                 for callback in callbacks:
