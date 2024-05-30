@@ -34,6 +34,7 @@ class JazzLightsWebSocketClient:
         self._is_on = False
         self._brightness = 255
         self._should_restart = False
+        self._assumed_state = True
 
     def register_callback(self, callback: Callable[[], None]) -> None:
         """Register callback, called when Roller changes state."""
@@ -109,6 +110,8 @@ class JazzLightsWebSocketClient:
         assert self._ws is None
         self._ws = ws
         LOGGER.error("Connected %s", uri)
+        self._assumed_state = False
+        self._notify_callbacks()
         try:
             await self._ws.send(struct.pack("!B", _TYPE_STATUS_REQUEST))
         except websockets.exceptions.WebSocketException as e:
@@ -129,16 +132,21 @@ class JazzLightsWebSocketClient:
                     "ON" if self._is_on else "OFF",
                     self._brightness,
                 )
-                callbacks = self._callbacks.copy()
-                for callback in callbacks:
-                    LOGGER.error("Calling a callback")
-                    callback()
+                self._notify_callbacks()
+
+    def _notify_callbacks(self) -> None:
+        callbacks = self._callbacks.copy()
+        for callback in callbacks:
+            LOGGER.error("Calling a callback")
+            callback()
 
     def start(self) -> None:
         """Start the client."""
         asyncio.run_coroutine_threadsafe(self._run(), self._loop)
 
     def _close(self, disable_restart: bool) -> None:
+        self._assumed_state = True
+        self._notify_callbacks()
         if disable_restart:
             self._should_restart = False
         if self._ws is not None:
@@ -157,6 +165,11 @@ class JazzLightsWebSocketClient:
     def close(self) -> None:
         """Close the client."""
         asyncio.run_coroutine_threadsafe(self._close(disable_restart=True), self._loop)
+
+    @property
+    def assumed_state(self) -> bool:
+        """Return true if we lost connectivity with the light."""
+        return self._assumed_state
 
 
 if __name__ == "__main__":

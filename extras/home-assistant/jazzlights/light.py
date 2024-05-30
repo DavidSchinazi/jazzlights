@@ -77,3 +77,8 @@ class JazzLight(LightEntity):
         brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
         LOGGER.error("Turning Light On with brightness=%u", brightness)
         self._client.turn_on(brightness=brightness)
+
+    @property
+    def assumed_state(self) -> bool:
+        """Return true if we lost connectivity with the light."""
+        return self._client.assumed_state if self._client else True
