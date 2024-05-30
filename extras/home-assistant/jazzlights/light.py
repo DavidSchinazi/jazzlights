@@ -30,8 +30,6 @@ class JazzLight(LightEntity):
     should_poll = False
 
     _attr_color_mode = ColorMode.BRIGHTNESS
-    _attr_translation_key = "main"
-    _attr_supported_features = LightEntityFeature.TRANSITION
     _attr_supported_color_modes = {ColorMode.BRIGHTNESS}
     _attr_has_entity_name = True
 
