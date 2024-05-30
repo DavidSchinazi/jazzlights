@@ -3,7 +3,7 @@
 import logging
 from typing import Any
 
-from homeassistant.components.light import ColorMode, LightEntity
+from homeassistant.components.light import ATTR_BRIGHTNESS, ColorMode, LightEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -74,5 +74,6 @@ class JazzLight(LightEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn on the light."""
-        LOGGER.error("Turning Light On")
-        self._client.turn_on()
+        brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
+        LOGGER.error("Turning Light On with brightness=%u", brightness)
+        self._client.turn_on(brightness=brightness)

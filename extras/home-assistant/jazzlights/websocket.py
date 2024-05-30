@@ -4,6 +4,7 @@
 import asyncio
 from collections.abc import Callable
 import logging
+import struct
 
 import websockets
 
@@ -13,6 +14,8 @@ else:
     from resolve_mdns import resolve_mdns_async
 
 LOGGER = logging.getLogger(__name__)
+
+_TYPE_STATUS_SHARE = 3
 
 
 class JazzLightsWebSocketClient:
@@ -48,9 +51,10 @@ class JazzLightsWebSocketClient:
         """Send message over WebSockets."""
         asyncio.run_coroutine_threadsafe(self._send(message), self._loop)
 
-    def turn_on(self) -> None:
+    def turn_on(self, brightness: int = 255) -> None:
         """Turn on the light."""
-        self.send(b"\x03")
+        brightness = max(0, min(brightness, 255))
+        self.send(struct.pack("!BB", _TYPE_STATUS_SHARE, brightness))
 
     def turn_off(self) -> None:
         """Turn off the light."""
@@ -104,10 +108,12 @@ class JazzLightsWebSocketClient:
             LOGGER.error("Received %s", response)
             if len(response) >= 2 and response[0] == 2:
                 self._is_on = response[1] & 0x80 != 0
-                if self._is_on:
-                    LOGGER.error("Clouds are ON")
-                else:
-                    LOGGER.error("Clouds are OFF")
+                brightness = response[2] if len(response) >= 2 else 255
+                LOGGER.error(
+                    "Clouds are %s, brightness=%u",
+                    "ON" if self._is_on else "OFF",
+                    brightness,
+                )
                 callbacks = self._callbacks.copy()
                 for callback in callbacks:
                     LOGGER.error("Calling a callback")

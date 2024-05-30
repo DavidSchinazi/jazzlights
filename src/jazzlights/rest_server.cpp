@@ -67,7 +67,13 @@ void RestServer::HandleMessage(AsyncWebSocketClient* client, uint8_t* data, size
       ShareStatus(client);
     } break;
     case WSType::kTurnOn: {
-      jll_info("Got turn on request from client #%u", client->id());
+      if (len >= 2) {
+        uint8_t brightness = data[1];
+        jll_info("Got turn on request with brightness=%u from client #%u", brightness, client->id());
+        player_.SetBrightness(brightness);
+      } else {
+        jll_info("Got turn on request from client #%u", client->id());
+      }
       player_.set_enabled(true);
       ShareStatus(client);
     } break;
@@ -80,9 +86,10 @@ void RestServer::HandleMessage(AsyncWebSocketClient* client, uint8_t* data, size
 }
 
 void RestServer::ShareStatus(AsyncWebSocketClient* client) {
-  uint8_t response[2] = {};
+  uint8_t response[3] = {};
   response[0] = static_cast<uint8_t>(WSType::kStatusShare);
   if (player_.enabled()) { response[1] |= 0x80; }
+  response[2] = player_.GetBrightness();
   if (client != nullptr) {
     client->binary(&response[0], sizeof(response));
   } else {
