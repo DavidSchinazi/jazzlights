@@ -15,7 +15,12 @@ else:
 
 LOGGER = logging.getLogger(__name__)
 
-_TYPE_STATUS_SHARE = 3
+_TYPE_STATUS_REQUEST = 1
+_TYPE_STATUS_SHARE = 2
+_TYPE_TURN_ON = 3
+_TYPE_TURN_OFF = 4
+
+_STATUS_FLAG_ON = 0x80
 
 
 class JazzLightsWebSocketClient:
@@ -54,11 +59,11 @@ class JazzLightsWebSocketClient:
     def turn_on(self, brightness: int = 255) -> None:
         """Turn on the light."""
         brightness = max(0, min(brightness, 255))
-        self.send(struct.pack("!BB", _TYPE_STATUS_SHARE, brightness))
+        self.send(struct.pack("!BB", _TYPE_TURN_ON, brightness))
 
     def turn_off(self) -> None:
         """Turn off the light."""
-        self.send(b"\x04")
+        self.send(struct.pack("!B", _TYPE_TURN_OFF))
 
     def toggle(self) -> None:
         """Toggle the light."""
@@ -69,7 +74,7 @@ class JazzLightsWebSocketClient:
 
     def request_status(self) -> None:
         """Request a status update."""
-        self.send(b"\x01")
+        self.send(struct.pack("!B", _TYPE_STATUS_REQUEST))
 
     @property
     def is_on(self) -> bool:
@@ -95,7 +100,7 @@ class JazzLightsWebSocketClient:
         self._ws = ws
         LOGGER.error("Connected %s", uri)
         try:
-            await self._ws.send(b"\x01")
+            await self._ws.send(struct.pack("!B", _TYPE_STATUS_REQUEST))
         except websockets.exceptions.WebSocketException as e:
             self._handle_failure(e)
             return
@@ -107,7 +112,7 @@ class JazzLightsWebSocketClient:
                 return
             LOGGER.error("Received %s", response)
             if len(response) >= 2 and response[0] == 2:
-                self._is_on = response[1] & 0x80 != 0
+                self._is_on = response[1] & _STATUS_FLAG_ON != 0
                 brightness = response[2] if len(response) >= 2 else 255
                 LOGGER.error(
                     "Clouds are %s, brightness=%u",

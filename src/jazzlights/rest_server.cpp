@@ -24,6 +24,10 @@ enum class WSType : uint8_t {
   kTurnOff = 4,
 };
 
+enum WSStatusFlag : uint8_t {
+  kWSStatusFlagOn = 0x80,
+};
+
 // static
 void RestServer::WebSocket::EventHandler(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType type,
                                          void* arg, uint8_t* data, size_t len) {
@@ -88,7 +92,7 @@ void RestServer::HandleMessage(AsyncWebSocketClient* client, uint8_t* data, size
 void RestServer::ShareStatus(AsyncWebSocketClient* client) {
   uint8_t response[3] = {};
   response[0] = static_cast<uint8_t>(WSType::kStatusShare);
-  if (player_.enabled()) { response[1] |= 0x80; }
+  if (player_.enabled()) { response[1] |= kWSStatusFlagOn; }
   response[2] = player_.GetBrightness();
   if (client != nullptr) {
     client->binary(&response[0], sizeof(response));
