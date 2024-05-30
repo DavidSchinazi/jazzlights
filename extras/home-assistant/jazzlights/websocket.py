@@ -17,8 +17,7 @@ LOGGER = logging.getLogger(__name__)
 
 _TYPE_STATUS_REQUEST = 1
 _TYPE_STATUS_SHARE = 2
-_TYPE_TURN_ON = 3
-_TYPE_TURN_OFF = 4
+_TYPE_STATUS_SET = 3
 
 _STATUS_FLAG_ON = 0x80
 
@@ -57,14 +56,19 @@ class JazzLightsWebSocketClient:
         """Send message over WebSockets."""
         asyncio.run_coroutine_threadsafe(self._send(message), self._loop)
 
+    def _status_set_message(self, is_on: bool, brightness: int = 255):
+        brightness = max(0, min(brightness, 255))
+        return struct.pack(
+            "!BBB", _TYPE_STATUS_SET, _STATUS_FLAG_ON if is_on else 0, brightness
+        )
+
     def turn_on(self, brightness: int = 255) -> None:
         """Turn on the light."""
-        brightness = max(0, min(brightness, 255))
-        self.send(struct.pack("!BB", _TYPE_TURN_ON, brightness))
+        self.send(self._status_set_message(True, brightness))
 
     def turn_off(self) -> None:
         """Turn off the light."""
-        self.send(struct.pack("!B", _TYPE_TURN_OFF))
+        self.send(self._status_set_message(False))
 
     def toggle(self) -> None:
         """Toggle the light."""

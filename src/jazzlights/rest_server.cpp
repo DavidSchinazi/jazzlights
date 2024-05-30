@@ -20,8 +20,7 @@ enum class WSType : uint8_t {
   kInvalid = 0,
   kStatusRequest = 1,
   kStatusShare = 2,
-  kTurnOn = 3,
-  kTurnOff = 4,
+  kStatusSet = 3,
 };
 
 enum WSStatusFlag : uint8_t {
@@ -70,20 +69,17 @@ void RestServer::HandleMessage(AsyncWebSocketClient* client, uint8_t* data, size
       jll_info("Got status request from client #%u", client->id());
       ShareStatus(client);
     } break;
-    case WSType::kTurnOn: {
-      if (len >= 2) {
-        uint8_t brightness = data[1];
-        jll_info("Got turn on request with brightness=%u from client #%u", brightness, client->id());
-        player_.set_brightness(brightness);
-      } else {
-        jll_info("Got turn on request from client #%u", client->id());
+    case WSType::kStatusSet: {
+      if (len < 3) {
+        jll_error("Ignoring unexpectedly short set status request of length %zu", len);
+        break;
       }
-      player_.set_enabled(true);
-      ShareStatus(client);
-    } break;
-    case WSType::kTurnOff: {
-      jll_info("Got turn off request from client #%u", client->id());
-      player_.set_enabled(false);
+      bool enabled = (data[1] & kWSStatusFlagOn) != 0;
+      uint8_t brightness = data[2];
+      jll_info("Got turn %s request with brightness=%u from client #%u", (enabled ? "on" : "off"), brightness,
+               client->id());
+      player_.set_brightness(brightness);
+      player_.set_enabled(enabled);
       ShareStatus(client);
     } break;
   }
