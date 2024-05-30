@@ -45,7 +45,7 @@ void FastLedRunner::SendLedsToFastLed() {
   SAVE_COUNT_POINT(LedPrintLoop);
   if (!shouldWriteToAtLeastOne) { return; }
 
-  uint32_t brightness = player_->GetBrightness();
+  uint32_t brightness = player_->brightness();
   // Brightness may be reduced if this exceeds our power budget with the current pattern.
 
 #if JL_MAX_MILLIWATTS > 0
@@ -57,8 +57,8 @@ void FastLedRunner::SendLedsToFastLed() {
   if (player_->IsPowerLimited()) { brightness = brightness * JL_MAX_MILLIWATTS / powerAtDesiredBrightness; }
 
   jll_debug("pf%6u    pd%5u    bu%4u    bs%4u    mW%5u    mA%5u%s", powerAtFullBrightness,
-            powerAtDesiredBrightness,              // Full-brightness power, desired-brightness power.
-            player_->GetBrightness(), brightness,  // Desired and selected brightness.
+            powerAtDesiredBrightness,           // Full-brightness power, desired-brightness power.
+            player_->brightness(), brightness,  // Desired and selected brightness.
             powerAtFullBrightness * brightness / 256,
             powerAtFullBrightness * brightness / 256 / 5,  // Selected power & current.
             player_->IsPowerLimited() ? " (limited)" : "");

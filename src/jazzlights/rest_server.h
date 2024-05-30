@@ -13,13 +13,14 @@ namespace jazzlights {
 
 // RestServer is work in progress, it is not yet ready for use.
 
-class RestServer : public Player::EnabledWatcher {
+class RestServer : public Player::StatusWatcher {
  public:
   void Start();
 
   explicit RestServer(uint16_t port, Player& player);
 
-  void OnEnabled(bool enabled) override;
+  // From Player::StatusWatcher.
+  void OnStatus() override;
 
  private:
   void HandleMessage(AsyncWebSocketClient* client, uint8_t* data, size_t len);

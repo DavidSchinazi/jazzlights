@@ -97,8 +97,8 @@ class Player {
 
   bool IsPowerLimited() const { return powerLimited_; }
   void SetPowerLimited(bool powerLimited) { powerLimited_ = powerLimited; }
-  uint8_t GetBrightness() const { return brightness_; }
-  void SetBrightness(uint8_t brightness);
+  uint8_t brightness() const { return brightness_; }
+  void set_brightness(uint8_t brightness);
 
   void setBasePrecedence(Precedence basePrecedence) { basePrecedence_ = basePrecedence; }
   void setPrecedenceGain(Precedence precedenceGain) { precedenceGain_ = precedenceGain; }
@@ -112,17 +112,18 @@ class Player {
   NumHops currentNumHops() const { return currentNumHops_; }
 
   bool enabled() const { return enabled_; }
-#if JL_IS_CONFIG(CLOUDS)
   void set_enabled(bool enabled);
-  class EnabledWatcher {
+#if JL_IS_CONFIG(CLOUDS)
+  class StatusWatcher {
    public:
-    virtual ~EnabledWatcher() = default;
-    virtual void OnEnabled(bool enabled) = 0;
+    virtual ~StatusWatcher() = default;
+    virtual void OnStatus() = 0;
   };
-  void set_enabled_watcher(EnabledWatcher* enabled_watcher) { enabled_watcher_ = enabled_watcher; }
+  void set_status_watcher(StatusWatcher* status_watcher) { status_watcher_ = status_watcher; }
 #endif  // CLOUDS
 
  private:
+  void UpdateStatusWatcher();
   void handleReceivedMessage(NetworkMessage message, Milliseconds currentTime);
 
   Precedence getLocalPrecedence(Milliseconds currentTime);
@@ -170,7 +171,7 @@ class Player {
 #if JL_IS_CONFIG(FAIRY_WAND)
   Milliseconds overridePatternStartTime_ = -1;
 #elif JL_IS_CONFIG(CLOUDS)
-  EnabledWatcher* enabled_watcher_ = nullptr;  // Unowned.
+  StatusWatcher* status_watcher_ = nullptr;  // Unowned.
 #endif  // CLOUDS
 
   std::vector<Network*> networks_;

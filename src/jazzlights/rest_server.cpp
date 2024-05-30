@@ -74,7 +74,7 @@ void RestServer::HandleMessage(AsyncWebSocketClient* client, uint8_t* data, size
       if (len >= 2) {
         uint8_t brightness = data[1];
         jll_info("Got turn on request with brightness=%u from client #%u", brightness, client->id());
-        player_.SetBrightness(brightness);
+        player_.set_brightness(brightness);
       } else {
         jll_info("Got turn on request from client #%u", client->id());
       }
@@ -93,7 +93,7 @@ void RestServer::ShareStatus(AsyncWebSocketClient* client) {
   uint8_t response[3] = {};
   response[0] = static_cast<uint8_t>(WSType::kStatusShare);
   if (player_.enabled()) { response[1] |= kWSStatusFlagOn; }
-  response[2] = player_.GetBrightness();
+  response[2] = player_.brightness();
   if (client != nullptr) {
     client->binary(&response[0], sizeof(response));
   } else {
@@ -101,7 +101,7 @@ void RestServer::ShareStatus(AsyncWebSocketClient* client) {
   }
 }
 
-void RestServer::OnEnabled(bool enabled) { ShareStatus(nullptr); }
+void RestServer::OnStatus() { ShareStatus(nullptr); }
 
 RestServer::RestServer(uint16_t port, Player& player)
     : server_(port), web_socket_("/jazzlights-websocket", this), player_(player) {}
@@ -119,7 +119,7 @@ void RestServer::Start() {
   jll_info("Initializing RestServer");
 
   Player* player = &player_;
-  player->set_enabled_watcher(this);
+  player->set_status_watcher(this);
   constexpr const char* const enabled_path = "/jl-clouds-enabled";
   server_.on(enabled_path, HTTP_GET, [player](AsyncWebServerRequest* request) {
     const bool enabled = player->enabled();

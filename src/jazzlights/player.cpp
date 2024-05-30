@@ -430,17 +430,22 @@ bool Player::render(Milliseconds currentTime) {
 PatternBits Player::currentEffect() const { return lastBegunPattern_; }
 std::string Player::currentEffectName() const { return patternName(lastBegunPattern_); }
 
-#if JL_IS_CONFIG(CLOUDS)
 void Player::set_enabled(bool enabled) {
   if (enabled_ == enabled) { return; }
   enabled_ = enabled;
-  if (enabled_watcher_ != nullptr) { enabled_watcher_->OnEnabled(enabled_); }
+  UpdateStatusWatcher();
 }
-#endif  // CLOUDS
 
-void Player::SetBrightness(uint8_t brightness) {
+void Player::set_brightness(uint8_t brightness) {
+  if (brightness_ == brightness) { return; }
   brightness_ = brightness;
-  if (enabled_watcher_ != nullptr) { enabled_watcher_->OnEnabled(enabled_); }
+  UpdateStatusWatcher();
+}
+
+void Player::UpdateStatusWatcher() {
+#if JL_IS_CONFIG(CLOUDS)
+  if (status_watcher_ != nullptr) { status_watcher_->OnStatus(); }
+#endif  // CLOUDS
 }
 
 void Player::next(Milliseconds currentTime) {

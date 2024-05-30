@@ -382,25 +382,25 @@ class PatternControlMenu {
   static constexpr uint8_t kNumPatternsFirstPage = 4 + 1 + 2;
   static constexpr uint8_t kNumPatternsSecondPage = 3 + 3 + 2;
   SelectablePattern kSelectablePatterns[kNumPatternsFirstPage + kNumPatternsSecondPage] = {
-  // Main patterns.
+      // Main patterns.
       {        "rings",         0x00000001,   State::kPalette},
       {        "flame",         0x40000001,   State::kPalette},
       {  "spin-plasma",         0xC0000001,   State::kPalette},
       {     "hiphotic",         0x80000001,   State::kPalette},
- // All-palette pattern.
+      // All-palette pattern.
       {  "all-palette", kAllPalettePattern,   State::kPalette},
- // Legacy palette patterns.
+      // Legacy palette patterns.
       {    "metaballs",         0x80000030,   State::kPalette},
       {       "bursts",         0x00000030,   State::kPalette},
- // Legacy non-palette patterns.
+      // Legacy non-palette patterns.
       {      "glitter",             0x1200, State::kConfirmed},
       {   "the-matrix",             0x1300, State::kConfirmed},
       {    "threesine",             0x1400, State::kConfirmed},
- // Non-color special patterns.
+      // Non-color special patterns.
       {     "synctest",             0x0F00, State::kConfirmed},
       {  "calibration",             0x1000, State::kConfirmed},
       {"follow-strand",             0x1100, State::kConfirmed},
- // CRGB special patterns.
+      // CRGB special patterns.
       {        "solid",             0x0000,     State::kColor},
       {         "glow",             0x0700,     State::kColor},
   };
@@ -563,7 +563,7 @@ Core2AwsUi::Core2AwsUi(Player& player, Milliseconds currentTime)
     : ArduinoUi(player, currentTime), ledBrightness_(kInitialLedBrightness), onBrightness_(kDefaultOnBrightness) {}
 
 void Core2AwsUi::InitialSetup(Milliseconds currentTime) {
-  player_.SetBrightness(ledBrightness_);
+  player_.set_brightness(ledBrightness_);
   M5.begin(/*LCDEnable=*/true, /*SDEnable=*/false,
            /*SerialEnable=*/false, /*I2CEnable=*/false,
            /*mode=*/kMBusModeOutput);
@@ -833,7 +833,7 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
     if (ledBrightness_ < 255 && gScreenMode == ScreenMode::kSystemMenu) {
       ledBrightness_++;
       jll_info("%u setting LED brightness to %u", currentTime, ledBrightness_);
-      player_.SetBrightness(ledBrightness_);
+      player_.set_brightness(ledBrightness_);
       DrawSystemTextLines(currentTime);
     }
   }
@@ -842,7 +842,7 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
     if (ledBrightness_ > 0 && gScreenMode == ScreenMode::kSystemMenu) {
       ledBrightness_--;
       jll_info("%u setting LED brightness to %u", currentTime, ledBrightness_);
-      player_.SetBrightness(ledBrightness_);
+      player_.set_brightness(ledBrightness_);
       DrawSystemTextLines(currentTime);
     }
   }

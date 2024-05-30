@@ -90,7 +90,7 @@ void AtomS3Ui::UpdateScreen(Milliseconds currentTime) {
     } break;
     case MenuMode::kBrightness: {
       contents = DisplayContents(DisplayContents::Mode::kBrightness);
-      contents.c.brightness.brightness = player_.GetBrightness();
+      contents.c.brightness.brightness = player_.brightness();
     } break;
     case MenuMode::kSpecial: {
       contents = DisplayContents(DisplayContents::Mode::kSpecial);
@@ -194,7 +194,7 @@ void AtomS3Ui::ShortPress(uint8_t pin, Milliseconds currentTime) {
     case MenuMode::kBrightness:
       brightnessCursor_ = (brightnessCursor_ + 1 < kNumBrightnesses) ? brightnessCursor_ + 1 : 0;
       jll_info("%u Brightness button has been hit %u", currentTime, kBrightnessList[brightnessCursor_]);
-      player_.SetBrightness(kBrightnessList[brightnessCursor_]);
+      player_.set_brightness(kBrightnessList[brightnessCursor_]);
       break;
     case MenuMode::kSpecial:
       jll_info("%u Special button has been hit", currentTime);

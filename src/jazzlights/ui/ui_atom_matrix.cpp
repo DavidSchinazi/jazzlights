@@ -264,7 +264,7 @@ void AtomMatrixUi::ShortPress(uint8_t pin, Milliseconds currentTime) {
     case MenuMode::kBrightness:
       brightnessCursor_ = (brightnessCursor_ + 1 < kNumBrightnesses) ? brightnessCursor_ + 1 : 0;
       jll_info("%u Brightness button has been hit %u", currentTime, kBrightnessList[brightnessCursor_]);
-      player_.SetBrightness(kBrightnessList[brightnessCursor_]);
+      player_.set_brightness(kBrightnessList[brightnessCursor_]);
       break;
     case MenuMode::kSpecial:
       jll_info("%u Special button has been hit", currentTime);
@@ -371,7 +371,7 @@ void AtomMatrixUi::RunLoop(Milliseconds currentTime) {
 void AtomMatrixUi::InitialSetup(Milliseconds currentTime) {
   screenController_ = &FastLED.addLeds<WS2812, /*DATA_PIN=*/27, GRB>(screenLEDs_, ATOM_SCREEN_NUM_LEDS);
   ScreenClear(currentTime);
-  player_.SetBrightness(kBrightnessList[brightnessCursor_]);
+  player_.set_brightness(kBrightnessList[brightnessCursor_]);
 }
 
 void AtomMatrixUi::FinalSetup(Milliseconds /*currentTime*/) {}
