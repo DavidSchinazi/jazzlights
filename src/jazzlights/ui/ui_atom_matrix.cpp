@@ -192,7 +192,7 @@ void AtomMatrixUi::ScreenUnlocked(Milliseconds currentTime) {
       static const uint8_t brightnessDial[] = {06, 07, 12, 17, 16, 15, 10, 05};
       if (brightnessCursor_ < i) {
         screenLEDs_[brightnessDial[i]] = CRGB::Black;
-      } else if (player_.IsPowerLimited()) {
+      } else if (player_.is_power_limited()) {
         screenLEDs_[brightnessDial[i]] = CRGB::Red;
       }
     }

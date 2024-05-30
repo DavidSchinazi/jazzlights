@@ -95,8 +95,8 @@ class Player {
   void triggerPatternOverride(Milliseconds currentTime);
 #endif  // FAIRY_WAND
 
-  bool IsPowerLimited() const { return powerLimited_; }
-  void SetPowerLimited(bool powerLimited) { powerLimited_ = powerLimited; }
+  bool is_power_limited() const { return powerLimited_; }
+  void set_power_limited(bool powerLimited) { powerLimited_ = powerLimited; }
   uint8_t brightness() const { return brightness_; }
   void set_brightness(uint8_t brightness);
 

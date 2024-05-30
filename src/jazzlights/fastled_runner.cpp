@@ -53,15 +53,15 @@ void FastLedRunner::SendLedsToFastLed() {
   for (auto& renderer : renderers_) { powerAtFullBrightness += renderer->GetPowerAtFullBrightness(); }
   const uint32_t powerAtDesiredBrightness =
       powerAtFullBrightness * brightness / 256;  // Forecast power at our current desired brightness.
-  player_->SetPowerLimited(powerAtDesiredBrightness > JL_MAX_MILLIWATTS);
-  if (player_->IsPowerLimited()) { brightness = brightness * JL_MAX_MILLIWATTS / powerAtDesiredBrightness; }
+  player_->set_power_limited(powerAtDesiredBrightness > JL_MAX_MILLIWATTS);
+  if (player_->is_power_limited()) { brightness = brightness * JL_MAX_MILLIWATTS / powerAtDesiredBrightness; }
 
   jll_debug("pf%6u    pd%5u    bu%4u    bs%4u    mW%5u    mA%5u%s", powerAtFullBrightness,
             powerAtDesiredBrightness,           // Full-brightness power, desired-brightness power.
             player_->brightness(), brightness,  // Desired and selected brightness.
             powerAtFullBrightness * brightness / 256,
             powerAtFullBrightness * brightness / 256 / 5,  // Selected power & current.
-            player_->IsPowerLimited() ? " (limited)" : "");
+            player_->is_power_limited() ? " (limited)" : "");
 #endif  // JL_MAX_MILLIWATTS
   SAVE_TIME_POINT(Brightness);
 
