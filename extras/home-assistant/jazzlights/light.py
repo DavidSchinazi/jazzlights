@@ -3,7 +3,7 @@
 import logging
 from typing import Any
 
-from homeassistant.components.light import ColorMode, LightEntity, LightEntityFeature
+from homeassistant.components.light import ColorMode, LightEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
