@@ -27,13 +27,15 @@ file(GLOB BENCH_SOURCES
 	bench/*.h
 )
 
+set(JLCompileOptions "-std=c++20;-DJL_CONFIG=NONE;-DJL_CONTROLLER=NATIVE;-fPIC;-Wall;-Wextra;-Werror;-Wno-deprecated-declarations")
+
 # LIBRARY
 find_package(glfw3 3.2 REQUIRED)
 find_package(OpenGL REQUIRED)
 add_library(jazzlights SHARED ${LIB_SOURCES})
 target_include_directories(jazzlights PUBLIC ../src . PRIVATE ${GLFW_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR})
 target_link_libraries(jazzlights glfw ${OPENGL_gl_LIBRARY})
-set_target_properties(jazzlights PROPERTIES COMPILE_OPTIONS "-std=c++20;-DJL_CONFIG=NONE;-DJL_CONTROLLER=NATIVE;-fPIC;-Wall;-Wextra;-Werror;-Wno-deprecated-declarations")
+set_target_properties(jazzlights PROPERTIES COMPILE_OPTIONS "${JLCompileOptions}")
 install(TARGETS jazzlights LIBRARY DESTINATION lib)
 install(DIRECTORY src/ COMPONENT "lib" DESTINATION include FILES_MATCHING PATTERN "*.h")
 install(DIRECTORY extras/jazzlights/ COMPONENT "lib" DESTINATION include/jazzlights FILES_MATCHING PATTERN "*.h")
@@ -42,11 +44,11 @@ install(DIRECTORY extras/jazzlights/ COMPONENT "lib" DESTINATION include/jazzlig
 add_executable(jazzlights-demo ${DEMO_SOURCES})
 target_link_libraries(jazzlights-demo jazzlights)
 target_include_directories(jazzlights-demo PRIVATE ../src)
-set_target_properties(jazzlights-demo PROPERTIES COMPILE_OPTIONS "-std=c++20;-DJL_CONFIG=NONE;-DJL_CONTROLLER=NATIVE;-fPIC;-Wall;-Wextra;-Werror;-Wno-deprecated-declarations")
+set_target_properties(jazzlights-demo PROPERTIES COMPILE_OPTIONS "${JLCompileOptions}")
 install(TARGETS jazzlights-demo DESTINATION bin COMPONENT "demo")
 
 # BENCH
 add_executable(jazzlights-bench ${BENCH_SOURCES})
 target_link_libraries(jazzlights-bench jazzlights)
-set_target_properties(jazzlights-bench PROPERTIES COMPILE_OPTIONS "-std=c++20;-DJL_CONFIG=NONE;-DJL_CONTROLLER=NATIVE;-fPIC;-Wall;-Wextra;-Werror;-Wno-deprecated-declarations")
+set_target_properties(jazzlights-bench PROPERTIES COMPILE_OPTIONS "${JLCompileOptions}")
 install(TARGETS jazzlights-bench DESTINATION bin COMPONENT "bench")
