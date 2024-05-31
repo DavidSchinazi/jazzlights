@@ -382,8 +382,8 @@ class PatternControlMenu {
   static constexpr uint8_t kNumPatternsFirstPage = 4 + 1 + 2;
   static constexpr uint8_t kNumPatternsSecondPage = 3 + 3 + 2;
   // clang-format off
+  // Apparently some versions of clang-format disagree on how to format this.
   SelectablePattern kSelectablePatterns[kNumPatternsFirstPage + kNumPatternsSecondPage] = {
-      // Apparently some versions of clang-format disagree on how to format this.
       // Main patterns.
       {        "rings",         0x00000001,   State::kPalette},
       {        "flame",         0x40000001,   State::kPalette},
