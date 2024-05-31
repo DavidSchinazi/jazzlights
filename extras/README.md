@@ -30,5 +30,6 @@ cmake --build build
 
 ```
 jazzlights/extras/build/jazzlights-demo
+jazzlights/extras/build/jazzlights-demo-asan
 jazzlights/extras/build/jazzlights-bench
 ```

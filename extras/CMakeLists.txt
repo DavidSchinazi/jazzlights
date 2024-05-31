@@ -47,6 +47,14 @@ target_include_directories(jazzlights-demo PRIVATE ../src)
 set_target_properties(jazzlights-demo PROPERTIES COMPILE_OPTIONS "${JLCompileOptions}")
 install(TARGETS jazzlights-demo DESTINATION bin COMPONENT "demo")
 
+# DEMO-ASAN
+add_executable(jazzlights-demo-asan ${DEMO_SOURCES})
+target_link_libraries(jazzlights-demo-asan jazzlights)
+target_include_directories(jazzlights-demo-asan PRIVATE ../src)
+set_target_properties(jazzlights-demo-asan PROPERTIES COMPILE_OPTIONS "${JLCompileOptions};-fsanitize=address")
+set_target_properties(jazzlights-demo-asan PROPERTIES LINK_OPTIONS "-fsanitize=address")
+install(TARGETS jazzlights-demo-asan DESTINATION bin COMPONENT "demo")
+
 # BENCH
 add_executable(jazzlights-bench ${BENCH_SOURCES})
 target_link_libraries(jazzlights-bench jazzlights)
