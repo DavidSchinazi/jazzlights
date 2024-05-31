@@ -146,7 +146,12 @@ class Player {
   void checkLeaderAndPattern(Milliseconds currentTime);
   PatternBits enforceForcedPalette(PatternBits pattern);
 
+#if JL_IS_CONFIG(CLOUDS)
+  bool enabled_ = false;
+#else   // CLOUDS
   bool enabled_ = true;
+#endif  // CLOUDS
+
   bool ready_ = false;
   bool powerLimited_ = false;
   uint8_t brightness_ = 255;
