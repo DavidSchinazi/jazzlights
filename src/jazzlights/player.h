@@ -120,6 +120,13 @@ class Player {
     virtual void OnStatus() = 0;
   };
   void set_status_watcher(StatusWatcher* status_watcher) { status_watcher_ = status_watcher; }
+  void enable_color_override(CRGB color_override) {
+    color_overridden_ = true;
+    color_override_ = color_override;
+  }
+  void disable_color_override() { color_overridden_ = false; }
+  bool color_overridden() const { return color_overridden_; }
+  CRGB color_override() const { return color_override_; }
 #endif  // CLOUDS
 
  private:
@@ -177,6 +184,8 @@ class Player {
   Milliseconds overridePatternStartTime_ = -1;
 #elif JL_IS_CONFIG(CLOUDS)
   StatusWatcher* status_watcher_ = nullptr;  // Unowned.
+  bool color_overridden_ = false;
+  CRGB color_override_;
 #endif  // CLOUDS
 
   std::vector<Network*> networks_;

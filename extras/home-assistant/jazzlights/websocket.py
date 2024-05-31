@@ -2,6 +2,7 @@
 """JazzLights WebSocket client."""
 
 import asyncio
+import binascii
 from collections.abc import Callable
 import logging
 import struct
@@ -20,6 +21,7 @@ _TYPE_STATUS_SHARE = 2
 _TYPE_STATUS_SET = 3
 
 _STATUS_FLAG_ON = 0x80
+_STATUS_FLAG_COLOR_OVERRIDE = 0x40
 
 
 class JazzLightsWebSocketClient:
@@ -35,6 +37,7 @@ class JazzLightsWebSocketClient:
         self._brightness = 255
         self._should_restart = False
         self._assumed_state = True
+        self._color_override = None
 
     def register_callback(self, callback: Callable[[], None]) -> None:
         """Register callback, called when Roller changes state."""
@@ -45,7 +48,7 @@ class JazzLightsWebSocketClient:
         self._callbacks.discard(callback)
 
     async def _send(self, message) -> None:
-        LOGGER.error("Sending %s", message)
+        LOGGER.error("Sending %s", binascii.hexlify(message))
         if self._ws is not None:
             try:
                 await self._ws.send(message)
@@ -57,15 +60,32 @@ class JazzLightsWebSocketClient:
         """Send message over WebSockets."""
         asyncio.run_coroutine_threadsafe(self._send(message), self._loop)
 
-    def _status_set_message(self, is_on: bool, brightness: int = 255):
+    def _status_set_message(
+        self,
+        is_on: bool,
+        brightness: int = 255,
+        color: tuple[int, int, int] | None = None,
+    ):
         brightness = max(0, min(brightness, 255))
+        if color:
+            return struct.pack(
+                "!BBBBBB",
+                _TYPE_STATUS_SET,
+                (_STATUS_FLAG_ON if is_on else 0) | _STATUS_FLAG_COLOR_OVERRIDE,
+                brightness,
+                color[0],
+                color[1],
+                color[2],
+            )
         return struct.pack(
             "!BBB", _TYPE_STATUS_SET, _STATUS_FLAG_ON if is_on else 0, brightness
         )
 
-    def turn_on(self, brightness: int = 255) -> None:
+    def turn_on(
+        self, brightness: int = 255, color: tuple[int, int, int] | None = None
+    ) -> None:
         """Turn on the light."""
-        self.send(self._status_set_message(True, brightness))
+        self.send(self._status_set_message(True, brightness=brightness, color=color))
 
     def turn_off(self) -> None:
         """Turn off the light."""
@@ -86,6 +106,11 @@ class JazzLightsWebSocketClient:
     def brightness(self) -> int | None:
         """Return the brightness of this light between 1..255."""
         return self._brightness
+
+    @property
+    def rgb_color(self) -> tuple[int, int, int] | None:
+        """Return the color value."""
+        return self._color_override
 
     @property
     def is_on(self) -> bool:
@@ -123,14 +148,20 @@ class JazzLightsWebSocketClient:
             except websockets.exceptions.WebSocketException as e:
                 self._handle_failure(e)
                 return
-            LOGGER.error("Received %s", response)
+            LOGGER.error("Received %s", binascii.hexlify(response))
             if len(response) >= 2 and response[0] == _TYPE_STATUS_SHARE:
                 self._is_on = response[1] & _STATUS_FLAG_ON != 0
                 self._brightness = response[2] if len(response) > 2 else 255
+                color_overridden = response[1] & _STATUS_FLAG_COLOR_OVERRIDE != 0
+                if color_overridden and len(response) >= 6:
+                    self._color_override = (response[3], response[4], response[5])
+                else:
+                    self._color_override = None
                 LOGGER.error(
-                    "Clouds are %s, brightness=%u",
+                    "Clouds are %s, brightness=%u color=%s",
                     "ON" if self._is_on else "OFF",
                     self._brightness,
+                    self._color_override,
                 )
                 self._notify_callbacks()
 

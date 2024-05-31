@@ -25,6 +25,7 @@ enum class WSType : uint8_t {
 
 enum WSStatusFlag : uint8_t {
   kWSStatusFlagOn = 0x80,
+  kWSStatusFlagColorOverride = 0x40,
 };
 
 // static
@@ -75,9 +76,20 @@ void RestServer::HandleMessage(AsyncWebSocketClient* client, uint8_t* data, size
         break;
       }
       bool enabled = (data[1] & kWSStatusFlagOn) != 0;
+      bool color_overridden = (data[1] & kWSStatusFlagColorOverride) != 0;
       uint8_t brightness = data[2];
-      jll_info("Got turn %s request with brightness=%u from client #%u", (enabled ? "on" : "off"), brightness,
-               client->id());
+      if (color_overridden) {
+        uint8_t r = data[3];
+        uint8_t g = data[4];
+        uint8_t b = data[5];
+        jll_info("Got turn %s request with brightness=%u color=%02x%02x%02x from client #%u", (enabled ? "on" : "off"),
+                 brightness, r, g, b, client->id());
+        player_.enable_color_override(CRGB(r, g, b));
+      } else {
+        jll_info("Got turn %s request with brightness=%u from client #%u", (enabled ? "on" : "off"), brightness,
+                 client->id());
+        player_.disable_color_override();
+      }
       player_.set_brightness(brightness);
       player_.set_enabled(enabled);
       ShareStatus(client);
@@ -86,14 +98,22 @@ void RestServer::HandleMessage(AsyncWebSocketClient* client, uint8_t* data, size
 }
 
 void RestServer::ShareStatus(AsyncWebSocketClient* client) {
-  uint8_t response[3] = {};
+  uint8_t response[6] = {};
+  size_t response_length = 3;
   response[0] = static_cast<uint8_t>(WSType::kStatusShare);
   if (player_.enabled()) { response[1] |= kWSStatusFlagOn; }
   response[2] = player_.brightness();
+  if (player_.color_overridden()) {
+    response[1] |= kWSStatusFlagColorOverride;
+    response[3] = player_.color_override().r;
+    response[4] = player_.color_override().g;
+    response[5] = player_.color_override().b;
+    response_length += 3;
+  }
   if (client != nullptr) {
-    client->binary(&response[0], sizeof(response));
+    client->binary(&response[0], response_length);
   } else {
-    web_socket_.binaryAll(&response[0], sizeof(response));
+    web_socket_.binaryAll(&response[0], response_length);
   }
 }
 
