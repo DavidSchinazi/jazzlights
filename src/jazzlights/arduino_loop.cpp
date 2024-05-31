@@ -41,9 +41,9 @@ typedef NoOpUi ArduinoUiImpl;
 
 ArduinoUiImpl ui(player, timeMillis());
 
-#if JL_IS_CONFIG(CLOUDS)
+#if JL_REST_SERVER
 RestServer rest_server(80, player);
-#endif  // JL_IS_CONFIG(CLOUDS)
+#endif  // JL_REST_SERVER
 
 void arduinoSetup(void) {
   Milliseconds currentTime = timeMillis();
@@ -83,12 +83,12 @@ void arduinoLoop(void) {
   const bool shouldRender = player.render(currentTime);
   SAVE_TIME_POINT(Player);
   if (shouldRender) { runner.Render(); }
-#if JL_IS_CONFIG(CLOUDS)
+#if JL_REST_SERVER
   if (ArduinoEspWiFiNetwork::get()->status() != INITIALIZING) {
     // This can't be called until after the networks have been initialized.
     rest_server.Start();
   }
-#endif  // JL_IS_CONFIG(CLOUDS)
+#endif  // JL_REST_SERVER
 }
 
 }  // namespace jazzlights

@@ -3,7 +3,15 @@
 
 #include "jazzlights/config.h"
 
+#ifndef JL_REST_SERVER
 #if JL_IS_CONFIG(CLOUDS)
+#define JL_REST_SERVER 1
+#else  // CLOUDS
+#define JL_REST_SERVER 0
+#endif  // CLOUDS
+#endif  // JL_REST_SERVER
+
+#if JL_REST_SERVER
 
 #include <ESPAsyncWebServer.h>
 
@@ -43,5 +51,5 @@ class RestServer : public Player::StatusWatcher {
 
 }  // namespace jazzlights
 
-#endif  // JL_IS_CONFIG(CLOUDS)
+#endif  // JL_REST_SERVER
 #endif  // JL_REST_SERVER_H

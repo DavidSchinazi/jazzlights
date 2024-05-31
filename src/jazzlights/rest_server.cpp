@@ -1,6 +1,6 @@
 #include "jazzlights/rest_server.h"
 
-#if JL_IS_CONFIG(CLOUDS)
+#if JL_REST_SERVER
 
 #include <ESPAsyncWebServer.h>
 #include <mdns.h>
@@ -128,4 +128,4 @@ void RestServer::Start() {
 
 }  // namespace jazzlights
 
-#endif  // JL_IS_CONFIG(CLOUDS)
+#endif  // JL_REST_SERVER
