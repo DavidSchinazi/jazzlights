@@ -358,9 +358,12 @@ bool Player::render(Milliseconds currentTime) {
   if (!enabled()) {
     // TODO save CPU by not computing anything when disabled.
     effect = patternFromBits(0);
-  } else if (color_overridden_) {
+  }
+#if JL_IS_CONFIG(CLOUDS)
+  else if (color_overridden_) {
     effect = patternFromBits(color_override_.r << 24 | color_override_.g << 16 | color_override_.b << 8 | 0x20);
   }
+#endif  // CLOUDS
 
   // Ensure effectContext_ is big enough for this effect.
   size_t effectContextSize = effect->contextSize(frame_);
