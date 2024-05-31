@@ -25,7 +25,7 @@ static constexpr Milliseconds kButtonLockTimeoutDuringUnlockSequence = 4000;  //
 static constexpr uint8_t kBrightnessList[] = {2, 4, 8, 16, 32, 64, 128, 255};
 static constexpr uint8_t kNumBrightnesses = sizeof(kBrightnessList) / sizeof(kBrightnessList[0]);
 
-#if JL_DEV
+#if JL_DEV && !JL_IS_CONFIG(CLOUDS)
 static constexpr uint8_t kInitialBrightnessCursor = 0;
 #elif JL_IS_CONFIG(STAFF)
 static constexpr uint8_t kInitialBrightnessCursor = 3;
