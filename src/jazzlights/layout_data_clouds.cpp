@@ -221,12 +221,25 @@ PixelMap ceiling3Pixels(JL_LENGTH(ceiling3PixelMap), ceiling3PixelMap);
 Layout* GetCloudsLayout() { return &cloudPixels; }
 
 void AddLedsToRunner(FastLedRunner* runner) {
+#if JL_IS_CONTROLLER(ATOM_MATRIX)
+  constexpr uint8_t kCloudsPin = 21;
+  constexpr uint8_t kCeiling1Pin = 25;
+  constexpr uint8_t kCeiling2Pin = 33;
+  constexpr uint8_t kCeiling3Pin = 23;
+#elif JL_IS_CONTROLLER(ATOM_S3)
+  constexpr uint8_t kCloudsPin = 39;
+  constexpr uint8_t kCeiling1Pin = 38;
+  constexpr uint8_t kCeiling2Pin = 8;
+  constexpr uint8_t kCeiling3Pin = 7;
+#else
+#error "Clouds config does not currently support this controller"
+#endif
   // Clouds.
-  runner->AddLeds<WS2812B, 21, GRB>(cloudPixels);
+  runner->AddLeds<WS2812B, kCloudsPin, GRB>(cloudPixels);
   // Ceiling.
-  runner->AddLeds<WS2812B, 25, GRB>(ceiling1Pixels);
-  runner->AddLeds<WS2812B, 33, GRB>(ceiling2Pixels);
-  runner->AddLeds<WS2812B, 23, GRB>(ceiling3Pixels);
+  runner->AddLeds<WS2812B, kCeiling1Pin, GRB>(ceiling1Pixels);
+  runner->AddLeds<WS2812B, kCeiling2Pin, GRB>(ceiling2Pixels);
+  runner->AddLeds<WS2812B, kCeiling3Pin, GRB>(ceiling3Pixels);
 }
 
 }  // namespace jazzlights
