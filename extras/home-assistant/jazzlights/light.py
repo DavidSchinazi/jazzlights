@@ -84,6 +84,7 @@ class JazzLight(LightEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn on the light."""
+        LOGGER.error("Turning Light On kwargs=%s", kwargs)
         brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
         color = kwargs.get(ATTR_RGB_COLOR, 255)
         if isinstance(color, tuple):
