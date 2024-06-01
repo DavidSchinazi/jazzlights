@@ -86,9 +86,20 @@ class JazzLight(LightEntity):
         """Turn on the light."""
         brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
         color = kwargs.get(ATTR_RGB_COLOR, 255)
-        if not isinstance(color, tuple):
+        if isinstance(color, tuple):
+            LOGGER.error(
+                "Turning Light On with brightness=%u color-tuple=%s", brightness, color
+            )
+        elif isinstance(color, int):
+            LOGGER.error(
+                "Turning Light On with brightness=%u color-int=%s", brightness, color
+            )
             color = None
-        LOGGER.error("Turning Light On with brightness=%u color=%s", brightness, color)
+        else:
+            LOGGER.error(
+                "Turning Light On with brightness=%u color-other=%s", brightness, color
+            )
+            color = None
 
         self._client.turn_on(brightness=brightness, color=color)
 
