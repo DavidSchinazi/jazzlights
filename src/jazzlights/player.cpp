@@ -346,6 +346,17 @@ bool Player::render(Milliseconds currentTime) {
     frame_.pattern = currentPattern_;
     frame_.time = currentTime - currentPatternStartTime_;
   }
+
+  if (!enabled()) {
+    // TODO save CPU by not computing anything when disabled.
+    frame_.pattern = 0;
+  }
+#if JL_IS_CONFIG(CLOUDS)
+  else if (color_overridden_) {
+    frame_.pattern = color_override_.r << 24 | color_override_.g << 16 | color_override_.b << 8 | 0x20;
+  }
+#endif  // CLOUDS
+
   const Effect* effect = patternFromBits(frame_.pattern);
 #if JL_IS_CONFIG(FAIRY_WAND)
   constexpr Milliseconds kOverridePatternDuration = 8000;
@@ -355,15 +366,6 @@ bool Player::render(Milliseconds currentTime) {
     effect = &fairy_wand_effect;
   }
 #endif  // FAIRY_WAND
-  if (!enabled()) {
-    // TODO save CPU by not computing anything when disabled.
-    effect = patternFromBits(0);
-  }
-#if JL_IS_CONFIG(CLOUDS)
-  else if (color_overridden_) {
-    effect = patternFromBits(color_override_.r << 24 | color_override_.g << 16 | color_override_.b << 8 | 0x20);
-  }
-#endif  // CLOUDS
 
   // Ensure effectContext_ is big enough for this effect.
   size_t effectContextSize = effect->contextSize(frame_);
