@@ -20,7 +20,9 @@ enum class WSType : uint8_t {
   kInvalid = 0,
   kStatusRequest = 1,
   kStatusShare = 2,
-  kStatusSet = 3,
+  kStatusSetOn = 3,
+  kStatusSetBrightness = 4,
+  kStatusSetColor = 5,
 };
 
 enum WSStatusFlag : uint8_t {
@@ -63,41 +65,105 @@ void RestServer::WebSocket::EventHandler(AsyncWebSocket* server, AsyncWebSocketC
 }
 
 void RestServer::HandleMessage(AsyncWebSocketClient* client, uint8_t* data, size_t len) {
-  jll_info("Handling message of length %zu from client #%u", len, client->id());
+  jll_info("Handling message of length %zu first byte %u from client #%u", len, (len > 0 ? data[0] : 0), client->id());
+  ScopedUpdatePauser pauser(this);
   if (len == 0) { return; }
   switch (static_cast<WSType>(data[0])) {
     case WSType::kStatusRequest: {
       jll_info("Got status request from client #%u", client->id());
       ShareStatus(client);
     } break;
-    case WSType::kStatusSet: {
-      if (len < 3) {
-        jll_error("Ignoring unexpectedly short set status request of length %zu", len);
+    case WSType::kStatusSetOn: {
+      if (len < 2) {
+        jll_error("Ignoring unexpectedly short set on status request of length %zu", len);
         break;
       }
       bool enabled = (data[1] & kWSStatusFlagOn) != 0;
-      bool color_overridden = (data[1] & kWSStatusFlagColorOverride) != 0;
-      uint8_t brightness = data[2];
-      if (color_overridden) {
-        uint8_t r = data[3];
-        uint8_t g = data[4];
-        uint8_t b = data[5];
-        jll_info("Got turn %s request with brightness=%u color=%02x%02x%02x from client #%u", (enabled ? "on" : "off"),
-                 brightness, r, g, b, client->id());
-        player_.enable_color_override(CRGB(r, g, b));
-      } else {
-        jll_info("Got turn %s request with brightness=%u from client #%u", (enabled ? "on" : "off"), brightness,
-                 client->id());
+      jll_info("Got turn %s request from client #%u", (enabled ? "on" : "off"), client->id());
+      player_.set_enabled(enabled);
+      if (!enabled) {
+        // Reset to default parameters when turned off.
+        player_.set_brightness(255);
         player_.disable_color_override();
       }
+      ShareStatus(client);
+    } break;
+    case WSType::kStatusSetBrightness: {
+      if (len < 2) {
+        jll_error("Ignoring unexpectedly short set brightness request of length %zu", len);
+        break;
+      }
+      uint8_t brightness = data[1];
+      jll_info("Got brightness=%u request from client #%u", brightness, client->id());
+      player_.set_enabled(true);
       player_.set_brightness(brightness);
-      player_.set_enabled(enabled);
+      ShareStatus(client);
+    } break;
+    case WSType::kStatusSetColor: {
+      if (len < 4) {
+        jll_error("Ignoring unexpectedly short set color request of length %zu", len);
+        break;
+      }
+      uint8_t r = data[1];
+      uint8_t g = data[2];
+      uint8_t b = data[3];
+      jll_info("Got color=%02x%02x%02x request from client #%u", r, g, b, client->id());
+      player_.set_enabled(true);
+      player_.enable_color_override(CRGB(r, g, b));
       ShareStatus(client);
     } break;
   }
 }
 
+void RestServer::PauseUpdates() {
+  if (paused_update_state_ != PausedUpdateState::kOpen) { jll_fatal("Tried to double pause rest server updates"); }
+  paused_update_state_ = PausedUpdateState::kPausedNoUpdate;
+  jll_debug("Pausing rest server updates");
+}
+
+void RestServer::ResumeUpdates() {
+  PausedUpdateState previous_state = paused_update_state_;
+  paused_update_state_ = PausedUpdateState::kOpen;
+  switch (previous_state) {
+    case PausedUpdateState::kOpen: jll_fatal("Tried to resume non-paused rest server updates"); break;
+    case PausedUpdateState::kPausedNoUpdate: jll_debug("Resuming rest server updates with none pending"); break;
+    case PausedUpdateState::kPausedUpdateOneClient:
+      jll_debug("Resuming rest server updates with pending to client #%u", client_to_update_->id());
+      ShareStatus(client_to_update_);
+      break;
+    case PausedUpdateState::kPausedUpdateAllClients:
+      jll_debug("Resuming rest server updates with pending to all clients");
+      ShareStatus(nullptr);
+      break;
+    default: jll_fatal("Tried to resume rest server updates from unexpected state %d", paused_update_state_); break;
+  }
+  client_to_update_ = nullptr;
+}
+
 void RestServer::ShareStatus(AsyncWebSocketClient* client) {
+  if (paused_update_state_ != PausedUpdateState::kOpen) {
+    if (client == nullptr) {
+      paused_update_state_ != PausedUpdateState::kPausedUpdateAllClients;
+      client_to_update_ = nullptr;
+    } else if (paused_update_state_ == PausedUpdateState::kPausedNoUpdate) {
+      paused_update_state_ = PausedUpdateState::kPausedUpdateOneClient;
+      client_to_update_ = client;
+    } else if (paused_update_state_ == PausedUpdateState::kPausedUpdateOneClient && client_to_update_ != client) {
+      paused_update_state_ != PausedUpdateState::kPausedUpdateAllClients;
+      client_to_update_ = nullptr;
+    }
+    jll_debug("Skipping update to client #%u because we are paused", (client ? client->id() : 0));
+    return;
+  }
+  if (player_.color_overridden()) {
+    jll_info("Sending status %s brightness=%u color=%02x%02x%02x to client #%u", (player_.enabled() ? "on" : "off"),
+             player_.brightness(), player_.color_override().r, player_.color_override().g,
+
+             player_.color_override().b, (client ? client->id() : 0));
+  } else {
+    jll_info("Sending status %s brightness=%u to client #%u", (player_.enabled() ? "on" : "off"), player_.brightness(),
+             (client ? client->id() : 0));
+  }
   uint8_t response[6] = {};
   size_t response_length = 3;
   response[0] = static_cast<uint8_t>(WSType::kStatusShare);

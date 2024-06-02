@@ -84,24 +84,17 @@ class JazzLight(LightEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn on the light."""
+        # Note that this function just tells us the action that the user took
+        # without keeping track of any state. So if the user sets the color to
+        # red, this will be called with color=(255,0,0) but then if the user
+        # sets brightness to 50, this function will be called with
+        # brightness=50 but no color, even though the home app UI still
+        # expects the color to be red. Therefore we only send updates to
+        # specific fields (e.g., only update brightness) and then we receive
+        # the color in the response.
         LOGGER.error("Turning Light On kwargs=%s", kwargs)
-        brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
-        color = kwargs.get(ATTR_RGB_COLOR, 255)
-        if isinstance(color, tuple):
-            LOGGER.error(
-                "Turning Light On with brightness=%u color-tuple=%s", brightness, color
-            )
-        elif isinstance(color, int):
-            LOGGER.error(
-                "Turning Light On with brightness=%u color-int=%s", brightness, color
-            )
-            color = None
-        else:
-            LOGGER.error(
-                "Turning Light On with brightness=%u color-other=%s", brightness, color
-            )
-            color = None
-
+        brightness = kwargs.get(ATTR_BRIGHTNESS, None)
+        color = kwargs.get(ATTR_RGB_COLOR, None)
         self._client.turn_on(brightness=brightness, color=color)
 
     @property

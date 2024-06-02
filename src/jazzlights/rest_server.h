@@ -30,6 +30,9 @@ class RestServer : public Player::StatusWatcher {
   // From Player::StatusWatcher.
   void OnStatus() override;
 
+  void PauseUpdates();
+  void ResumeUpdates();
+
  private:
   void HandleMessage(AsyncWebSocketClient* client, uint8_t* data, size_t len);
   void ShareStatus(AsyncWebSocketClient* client);
@@ -43,10 +46,29 @@ class RestServer : public Player::StatusWatcher {
    private:
     RestServer* rest_server_;  // Unowned.
   };
+  // Prevent the RestServer from sending any updates while this object is in scope. This avoids sending
+  // repeated updates while changing multiple fields in response to a message. If any updates are attempted while the
+  // pause is in effect, an update will be sent when this goes out of scope.
+  class ScopedUpdatePauser {
+   public:
+    explicit ScopedUpdatePauser(RestServer* server) : server_(server) { server_->PauseUpdates(); }
+    ~ScopedUpdatePauser() { server_->ResumeUpdates(); }
+
+   private:
+    RestServer* server_;
+  };
   AsyncWebServer server_;
   WebSocket web_socket_;
   Player& player_;
   bool started_ = false;
+  enum class PausedUpdateState {
+    kOpen = 0,
+    kPausedNoUpdate = 1,
+    kPausedUpdateOneClient = 2,
+    kPausedUpdateAllClients = 3,
+  };
+  PausedUpdateState paused_update_state_ = PausedUpdateState::kOpen;
+  AsyncWebSocketClient* client_to_update_ = nullptr;
 };
 
 }  // namespace jazzlights

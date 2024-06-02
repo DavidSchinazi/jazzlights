@@ -18,7 +18,9 @@ LOGGER = logging.getLogger(__name__)
 
 _TYPE_STATUS_REQUEST = 1
 _TYPE_STATUS_SHARE = 2
-_TYPE_STATUS_SET = 3
+_TYPE_STATUS_SET_ON = 3
+_TYPE_STATUS_SET_BRIGHTNESS = 4
+_TYPE_STATUS_SET_COLOR = 5
 
 _STATUS_FLAG_ON = 0x80
 _STATUS_FLAG_COLOR_OVERRIDE = 0x40
@@ -60,36 +62,24 @@ class JazzLightsWebSocketClient:
         """Send message over WebSockets."""
         asyncio.run_coroutine_threadsafe(self._send(message), self._loop)
 
-    def _status_set_message(
-        self,
-        is_on: bool,
-        brightness: int = 255,
-        color: tuple[int, int, int] | None = None,
-    ):
-        brightness = max(0, min(brightness, 255))
-        if color:
-            return struct.pack(
-                "!BBBBBB",
-                _TYPE_STATUS_SET,
-                (_STATUS_FLAG_ON if is_on else 0) | _STATUS_FLAG_COLOR_OVERRIDE,
-                brightness,
-                color[0],
-                color[1],
-                color[2],
-            )
-        return struct.pack(
-            "!BBB", _TYPE_STATUS_SET, _STATUS_FLAG_ON if is_on else 0, brightness
-        )
-
     def turn_on(
-        self, brightness: int = 255, color: tuple[int, int, int] | None = None
+        self, brightness: int | None = None, color: tuple[int, int, int] | None = None
     ) -> None:
         """Turn on the light."""
-        self.send(self._status_set_message(True, brightness=brightness, color=color))
+        if color is not None:
+            self.send(
+                struct.pack(
+                    "!BBBB", _TYPE_STATUS_SET_COLOR, color[0], color[1], color[2]
+                )
+            )
+        elif brightness is not None:
+            self.send(struct.pack("!BB", _TYPE_STATUS_SET_BRIGHTNESS, brightness))
+        else:
+            self.send(struct.pack("!BB", _TYPE_STATUS_SET_ON, _STATUS_FLAG_ON))
 
     def turn_off(self) -> None:
         """Turn off the light."""
-        self.send(self._status_set_message(False))
+        self.send(struct.pack("!BB", _TYPE_STATUS_SET_ON, 0))
 
     def toggle(self) -> None:
         """Toggle the light."""
