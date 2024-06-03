@@ -5,9 +5,11 @@ from typing import Any
 
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
+    ATTR_EFFECT,
     ATTR_RGB_COLOR,
     ColorMode,
     LightEntity,
+    LightEntityFeature,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -16,6 +18,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .websocket import JazzLightsWebSocketClient
 
 LOGGER = logging.getLogger(__name__)
+
+_EFFECT_CLOUDS = "clouds"
 
 
 async def async_setup_entry(
@@ -37,6 +41,7 @@ class JazzLight(LightEntity):
     _attr_color_mode = ColorMode.RGB
     _attr_supported_color_modes = {ColorMode.RGB}
     _attr_has_entity_name = True
+    _attr_supported_features = LightEntityFeature.EFFECT
 
     def __init__(self, hostname: str) -> None:
         """Initialize light."""
@@ -77,6 +82,16 @@ class JazzLight(LightEntity):
         """Return the state of the light."""
         return self._client.is_on
 
+    @property
+    def effect(self) -> str | None:
+        """Return the current effect of the light."""
+        return _EFFECT_CLOUDS if self.rgb_color is None else None
+
+    @property
+    def effect_list(self) -> list[str]:
+        """Return the list of supported effects."""
+        return [_EFFECT_CLOUDS]
+
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off the light."""
         LOGGER.error("Turning Light Off")
@@ -93,9 +108,11 @@ class JazzLight(LightEntity):
         # specific fields (e.g., only update brightness) and then we receive
         # the color in the response.
         LOGGER.error("Turning Light On kwargs=%s", kwargs)
-        brightness = kwargs.get(ATTR_BRIGHTNESS, None)
-        color = kwargs.get(ATTR_RGB_COLOR, None)
-        self._client.turn_on(brightness=brightness, color=color)
+        self._client.turn_on(
+            brightness=kwargs.get(ATTR_BRIGHTNESS, None),
+            color=kwargs.get(ATTR_RGB_COLOR, None),
+            effect=kwargs.get(ATTR_EFFECT, None),
+        )
 
     @property
     def assumed_state(self) -> bool:

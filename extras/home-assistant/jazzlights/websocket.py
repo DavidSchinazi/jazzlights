@@ -21,6 +21,7 @@ _TYPE_STATUS_SHARE = 2
 _TYPE_STATUS_SET_ON = 3
 _TYPE_STATUS_SET_BRIGHTNESS = 4
 _TYPE_STATUS_SET_COLOR = 5
+_TYPE_STATUS_SET_EFFECT = 6
 
 _STATUS_FLAG_ON = 0x80
 _STATUS_FLAG_COLOR_OVERRIDE = 0x40
@@ -63,10 +64,15 @@ class JazzLightsWebSocketClient:
         asyncio.run_coroutine_threadsafe(self._send(message), self._loop)
 
     def turn_on(
-        self, brightness: int | None = None, color: tuple[int, int, int] | None = None
+        self,
+        brightness: int | None = None,
+        color: tuple[int, int, int] | None = None,
+        effect: str | None = None,
     ) -> None:
         """Turn on the light."""
-        if color is not None:
+        if effect is not None:
+            self.send(struct.pack("!B", _TYPE_STATUS_SET_EFFECT))
+        elif color is not None:
             self.send(
                 struct.pack(
                     "!BBBB", _TYPE_STATUS_SET_COLOR, color[0], color[1], color[2]

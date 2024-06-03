@@ -23,6 +23,7 @@ enum class WSType : uint8_t {
   kStatusSetOn = 3,
   kStatusSetBrightness = 4,
   kStatusSetColor = 5,
+  kStatusSetEffect = 6,
 };
 
 enum WSStatusFlag : uint8_t {
@@ -81,11 +82,6 @@ void RestServer::HandleMessage(AsyncWebSocketClient* client, uint8_t* data, size
       bool enabled = (data[1] & kWSStatusFlagOn) != 0;
       jll_info("Got turn %s request from client #%u", (enabled ? "on" : "off"), client->id());
       player_.set_enabled(enabled);
-      if (!enabled) {
-        // Reset to default parameters when turned off.
-        player_.set_brightness(255);
-        player_.disable_color_override();
-      }
       ShareStatus(client);
     } break;
     case WSType::kStatusSetBrightness: {
@@ -110,6 +106,12 @@ void RestServer::HandleMessage(AsyncWebSocketClient* client, uint8_t* data, size
       jll_info("Got color=%02x%02x%02x request from client #%u", r, g, b, client->id());
       player_.set_enabled(true);
       player_.enable_color_override(CRGB(r, g, b));
+      ShareStatus(client);
+    } break;
+    case WSType::kStatusSetEffect: {
+      jll_info("Got effect request from client #%u", client->id());
+      player_.set_enabled(true);
+      player_.disable_color_override();
       ShareStatus(client);
     } break;
   }
