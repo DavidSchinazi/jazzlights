@@ -82,6 +82,11 @@ void RestServer::HandleMessage(AsyncWebSocketClient* client, uint8_t* data, size
       bool enabled = (data[1] & kWSStatusFlagOn) != 0;
       jll_info("Got turn %s request from client #%u", (enabled ? "on" : "off"), client->id());
       player_.set_enabled(enabled);
+      if (!enabled) {
+        // Reset to default parameters when turned off.
+        player_.set_brightness(255);
+        player_.disable_color_override();
+      }
       ShareStatus(client);
     } break;
     case WSType::kStatusSetBrightness: {

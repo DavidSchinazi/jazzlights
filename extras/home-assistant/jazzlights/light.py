@@ -90,6 +90,7 @@ class JazzLight(LightEntity):
     @property
     def effect_list(self) -> list[str]:
         """Return the list of supported effects."""
+        # Note that HomeKit doesn't have any way to set or show these effects.
         return [_EFFECT_CLOUDS]
 
     async def async_turn_off(self, **kwargs: Any) -> None:
