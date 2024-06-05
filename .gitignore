@@ -10,5 +10,5 @@ build/
 !.vscode/extensions.json
 !.vscode/*.code-snippets
 sdkconfig.*.old
-SCRATCH.md
+SCRATCH.txt
 __pycache__/
