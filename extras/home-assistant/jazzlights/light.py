@@ -47,6 +47,7 @@ class JazzLight(LightEntity):
         """Initialize light."""
         self._client = None
         self._hostname = hostname
+        self._attr_unique_id = "jazzlights.clouds"
 
     async def async_added_to_hass(self) -> None:
         """Run when this Entity has been added to HA."""
