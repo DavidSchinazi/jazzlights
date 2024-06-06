@@ -11,6 +11,16 @@
 // Silences FastLED pragmas <https://github.com/FastLED/FastLED/issues/363>.
 #define FASTLED_INTERNAL 1
 
+#if JL_IS_CONFIG(CLOUDS)
+// This fixes flickering on the ceiling for the clouds.
+// TODO measure how much of a performance regression this is, and investigate if we should use it for other devices too.
+// Alternatively, figure out why the LEDs glitch when we use multiple RMT channels. One theory is that the FastLED's
+// RMT code relies on interrupt handlers in clockless_rmt_esp32.c, and it's unclear which core these are firing on.
+// Apparently interrupts fire on the core where they were created, so we might need to move addLeds and the AtomMatrix
+// UI to the FastLedRunner task.
+#define FASTLED_RMT_MAX_CHANNELS 1
+#endif  // CLOUDS
+
 #include <FastLED.h>
 
 #else  // ARDUINO
