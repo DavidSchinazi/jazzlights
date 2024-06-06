@@ -153,11 +153,11 @@ class Player {
   void checkLeaderAndPattern(Milliseconds currentTime);
   PatternBits enforceForcedPalette(PatternBits pattern);
 
-#if JL_IS_CONFIG(CLOUDS)
+#if JL_IS_CONFIG(CLOUDS) && !JL_DEV
   bool enabled_ = false;
-#else   // CLOUDS
+#else   // JL_IS_CONFIG(CLOUDS) && !JL_DEV
   bool enabled_ = true;
-#endif  // CLOUDS
+#endif  // JL_IS_CONFIG(CLOUDS) && !JL_DEV
 
   bool ready_ = false;
   bool powerLimited_ = false;
