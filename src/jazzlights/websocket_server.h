@@ -32,8 +32,8 @@ class WebSocketServer : public Player::StatusWatcher {
   void ResumeUpdates();
 
  private:
-  void HandleMessage(AsyncWebSocketClient* client, uint8_t* data, size_t len);
-  void ShareStatus(AsyncWebSocketClient* client);
+  void HandleMessage(AsyncWebSocketClient* client, uint8_t* data, size_t len, Milliseconds currentTime);
+  void ShareStatus(AsyncWebSocketClient* client, Milliseconds currentTime);
   class WebSocket : public AsyncWebSocket {
    public:
     explicit WebSocket(const String& url, WebSocketServer* websocket_server)
