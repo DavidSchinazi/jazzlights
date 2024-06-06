@@ -153,7 +153,7 @@ void WebSocketServer::ResumeUpdates() {
       break;
     default:
       jll_fatal("%u Tried to resume WebSocketServer updates from unexpected state %d", currentTime,
-                paused_update_state_);
+                static_cast<int>(paused_update_state_));
       break;
   }
   client_to_update_ = nullptr;

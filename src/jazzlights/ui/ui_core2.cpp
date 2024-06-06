@@ -681,7 +681,7 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
       } break;
       case ScreenMode::kLocked1:  // fallthrough.
       case ScreenMode::kLocked2: {
-        jll_info("%u locking screen due to background press while unlocking");
+        jll_info("%u locking screen due to background press while unlocking", currentTime);
         lockScreen(currentTime);
       } break;
     }
