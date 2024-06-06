@@ -4,6 +4,7 @@
 # See also transmitter, implemented in sender.py
 
 import binascii
+import contextlib
 import socket
 
 
@@ -14,7 +15,7 @@ def get_ip():
         # doesn't even have to be reachable
         s.connect(("10.254.254.254", 1))
         IP = s.getsockname()[0]
-    except Exception:
+    except OSError:
         IP = "127.0.0.1"
     finally:
         s.close()
@@ -26,10 +27,8 @@ def main():
     MCAST_PORT = 6699
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-    try:
+    with contextlib.suppress(AttributeError):
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    except AttributeError:
-        pass
     sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 32)
     sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 1)
 
@@ -47,11 +46,11 @@ def main():
     while 1:
         try:
             data, addr = sock.recvfrom(1024)
-        except socket.error:
+        except OSError:  # noqa: PERF203
             print("Exception")
         else:
             hexdata = binascii.hexlify(data)
-            print("Data = %s" % hexdata)
+            print("Data = {}".format(hexdata))
 
 
 if __name__ == "__main__":

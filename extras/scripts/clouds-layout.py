@@ -64,10 +64,10 @@ for ceil in ceilings:
     x += 1
     y = 0
     points = []
-    for i in range(ceil[0]):
+    for _ in range(ceil[0]):
         y -= 1
         points.append((x, y))
-    for i in range(ceil[0], ceil[1]):
+    for _ in range(ceil[0], ceil[1]):
         points.append((emptyX, emptyY))
     printLayout(points, "ceiling{x}".format(x=x))
 

@@ -6,8 +6,8 @@ import argparse
 import random
 import socket
 import struct
-import time
 from sys import exit
+import time
 
 palettes = {
     "rainbow": 0x6,
@@ -76,7 +76,7 @@ def getPatternBytes(patternName):
     if patternName.startswith("mapping-"):
         pixelNum = int(patternName[len("mapping-") :])
         return 0x00000010 | (pixelNum << 8)
-    elif patternName.startswith("coloring-"):
+    if patternName.startswith("coloring-"):
         rgb = int(patternName[len("coloring-") :], 16)
         return 0x00000020 | (rgb << 8)
     patternBytes = None
@@ -110,8 +110,7 @@ def getPatternBytes(patternName):
     if patternBytes is None:
         print('Unknown pattern "{}"'.format(patternName))
         patternBytes = patterns[defaultName]
-    patternBytes = randomizePattern(patternBytes, randomize)
-    return patternBytes
+    return randomizePattern(patternBytes, randomize)
 
 
 patternBytes = getPatternBytes(patternName)

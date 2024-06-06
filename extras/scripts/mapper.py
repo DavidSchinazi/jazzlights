@@ -3,6 +3,7 @@
 # Test program that can send updates over IP multicast.
 
 import argparse
+import contextlib
 import curses
 import socket
 import struct
@@ -55,7 +56,6 @@ def maybeSendPacket():
     global lastSendTime
     global numPacketsSent
     global numSendErrors
-    global pixelNum
     sendTime = getTimeMillis()
     if sendTime - lastSendTime < 100:
         return False
@@ -141,7 +141,5 @@ def main(stdscr):
             updateDisplay(stdscr)
 
 
-try:
+with contextlib.suppress(KeyboardInterrupt):
     curses.wrapper(main)
-except KeyboardInterrupt:
-    pass

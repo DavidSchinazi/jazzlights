@@ -27,7 +27,7 @@ oyShaft = 1
 yDiffShaft = 1
 x = xShaft
 y = oyShaft
-for i in range(36):
+for _ in range(36):
     points.append((x, y))
     y += yDiffShaft
 
@@ -43,7 +43,7 @@ l2 = []
 xUp = True
 x = ox
 y = oy
-for i in range(33):
+for _ in range(33):
     l2.append((x, y))
     if xUp:
         x += xDiff
