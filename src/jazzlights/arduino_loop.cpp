@@ -14,12 +14,12 @@
 #include "jazzlights/networks/arduino_ethernet.h"
 #include "jazzlights/networks/esp32_ble.h"
 #include "jazzlights/player.h"
-#include "jazzlights/rest_server.h"
 #include "jazzlights/ui/ui.h"
 #include "jazzlights/ui/ui_atom_matrix.h"
 #include "jazzlights/ui/ui_atom_s3.h"
 #include "jazzlights/ui/ui_core2.h"
 #include "jazzlights/ui/ui_disabled.h"
+#include "jazzlights/websocket_server.h"
 
 namespace jazzlights {
 
@@ -41,9 +41,9 @@ typedef NoOpUi ArduinoUiImpl;
 
 ArduinoUiImpl ui(player, timeMillis());
 
-#if JL_REST_SERVER
-RestServer rest_server(80, player);
-#endif  // JL_REST_SERVER
+#if JL_WEBSOCKET_SERVER
+WebSocketServer websocket_server(80, player);
+#endif  // JL_WEBSOCKET_SERVER
 
 void arduinoSetup(void) {
   Milliseconds currentTime = timeMillis();
@@ -83,12 +83,12 @@ void arduinoLoop(void) {
   const bool shouldRender = player.render(currentTime);
   SAVE_TIME_POINT(Player);
   if (shouldRender) { runner.Render(); }
-#if JL_REST_SERVER
+#if JL_WEBSOCKET_SERVER
   if (ArduinoEspWiFiNetwork::get()->status() != INITIALIZING) {
     // This can't be called until after the networks have been initialized.
-    rest_server.Start();
+    websocket_server.Start();
   }
-#endif  // JL_REST_SERVER
+#endif  // JL_WEBSOCKET_SERVER
 }
 
 }  // namespace jazzlights
