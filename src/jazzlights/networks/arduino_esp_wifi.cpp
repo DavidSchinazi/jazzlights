@@ -28,6 +28,74 @@ std::string ArduinoEspWiFiNetwork::WiFiStatusToString(wl_status_t status) {
   return s.str();
 }
 
+std::string WiFiReasonToString(uint8_t reason) {
+  switch (reason) {
+#define JL_WIFI_REASON_CASE_RETURN(r) \
+  case WIFI_REASON_##r: return #r;
+    JL_WIFI_REASON_CASE_RETURN(UNSPECIFIED)
+    JL_WIFI_REASON_CASE_RETURN(AUTH_EXPIRE)
+    JL_WIFI_REASON_CASE_RETURN(AUTH_LEAVE)
+    JL_WIFI_REASON_CASE_RETURN(ASSOC_EXPIRE)
+    JL_WIFI_REASON_CASE_RETURN(ASSOC_TOOMANY)
+    JL_WIFI_REASON_CASE_RETURN(NOT_AUTHED)
+    JL_WIFI_REASON_CASE_RETURN(NOT_ASSOCED)
+    JL_WIFI_REASON_CASE_RETURN(ASSOC_LEAVE)
+    JL_WIFI_REASON_CASE_RETURN(ASSOC_NOT_AUTHED)
+    JL_WIFI_REASON_CASE_RETURN(DISASSOC_PWRCAP_BAD)
+    JL_WIFI_REASON_CASE_RETURN(DISASSOC_SUPCHAN_BAD)
+    JL_WIFI_REASON_CASE_RETURN(BSS_TRANSITION_DISASSOC)
+    JL_WIFI_REASON_CASE_RETURN(IE_INVALID)
+    JL_WIFI_REASON_CASE_RETURN(MIC_FAILURE)
+    JL_WIFI_REASON_CASE_RETURN(4WAY_HANDSHAKE_TIMEOUT)
+    JL_WIFI_REASON_CASE_RETURN(GROUP_KEY_UPDATE_TIMEOUT)
+    JL_WIFI_REASON_CASE_RETURN(IE_IN_4WAY_DIFFERS)
+    JL_WIFI_REASON_CASE_RETURN(GROUP_CIPHER_INVALID)
+    JL_WIFI_REASON_CASE_RETURN(PAIRWISE_CIPHER_INVALID)
+    JL_WIFI_REASON_CASE_RETURN(AKMP_INVALID)
+    JL_WIFI_REASON_CASE_RETURN(UNSUPP_RSN_IE_VERSION)
+    JL_WIFI_REASON_CASE_RETURN(INVALID_RSN_IE_CAP)
+    JL_WIFI_REASON_CASE_RETURN(802_1X_AUTH_FAILED)
+    JL_WIFI_REASON_CASE_RETURN(CIPHER_SUITE_REJECTED)
+    JL_WIFI_REASON_CASE_RETURN(TDLS_PEER_UNREACHABLE)
+    JL_WIFI_REASON_CASE_RETURN(TDLS_UNSPECIFIED)
+    JL_WIFI_REASON_CASE_RETURN(SSP_REQUESTED_DISASSOC)
+    JL_WIFI_REASON_CASE_RETURN(NO_SSP_ROAMING_AGREEMENT)
+    JL_WIFI_REASON_CASE_RETURN(BAD_CIPHER_OR_AKM)
+    JL_WIFI_REASON_CASE_RETURN(NOT_AUTHORIZED_THIS_LOCATION)
+    JL_WIFI_REASON_CASE_RETURN(SERVICE_CHANGE_PERCLUDES_TS)
+    JL_WIFI_REASON_CASE_RETURN(UNSPECIFIED_QOS)
+    JL_WIFI_REASON_CASE_RETURN(NOT_ENOUGH_BANDWIDTH)
+    JL_WIFI_REASON_CASE_RETURN(MISSING_ACKS)
+    JL_WIFI_REASON_CASE_RETURN(EXCEEDED_TXOP)
+    JL_WIFI_REASON_CASE_RETURN(STA_LEAVING)
+    JL_WIFI_REASON_CASE_RETURN(END_BA)
+    JL_WIFI_REASON_CASE_RETURN(UNKNOWN_BA)
+    JL_WIFI_REASON_CASE_RETURN(TIMEOUT)
+    JL_WIFI_REASON_CASE_RETURN(PEER_INITIATED)
+    JL_WIFI_REASON_CASE_RETURN(AP_INITIATED)
+    JL_WIFI_REASON_CASE_RETURN(INVALID_FT_ACTION_FRAME_COUNT)
+    JL_WIFI_REASON_CASE_RETURN(INVALID_PMKID)
+    JL_WIFI_REASON_CASE_RETURN(INVALID_MDE)
+    JL_WIFI_REASON_CASE_RETURN(INVALID_FTE)
+    JL_WIFI_REASON_CASE_RETURN(TRANSMISSION_LINK_ESTABLISH_FAILED)
+    JL_WIFI_REASON_CASE_RETURN(ALTERATIVE_CHANNEL_OCCUPIED)
+    JL_WIFI_REASON_CASE_RETURN(BEACON_TIMEOUT)
+    JL_WIFI_REASON_CASE_RETURN(NO_AP_FOUND)
+    JL_WIFI_REASON_CASE_RETURN(AUTH_FAIL)
+    JL_WIFI_REASON_CASE_RETURN(ASSOC_FAIL)
+    JL_WIFI_REASON_CASE_RETURN(HANDSHAKE_TIMEOUT)
+    JL_WIFI_REASON_CASE_RETURN(CONNECTION_FAIL)
+    JL_WIFI_REASON_CASE_RETURN(AP_TSF_RESET)
+    JL_WIFI_REASON_CASE_RETURN(ROAMING)
+    JL_WIFI_REASON_CASE_RETURN(ASSOC_COMEBACK_TIME_TOO_LONG)
+    JL_WIFI_REASON_CASE_RETURN(SA_QUERY_TIMEOUT)
+#undef JL_WIFI_REASON_CASE_RETURN
+  }
+  std::ostringstream s;
+  s << "UNKNOWN(" << static_cast<int>(reason) << ")";
+  return s.str();
+}
+
 ArduinoEspWiFiNetwork::ArduinoEspWiFiNetwork(const char* ssid, const char* pass) : creds_{ssid, pass} {
   uint8_t macAddress[6] = {};
   localDeviceId_ = NetworkDeviceId(WiFi.macAddress(&macAddress[0]));
@@ -35,16 +103,19 @@ ArduinoEspWiFiNetwork::ArduinoEspWiFiNetwork(const char* ssid, const char* pass)
 
 void WiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
   switch (event) {
-    case ARDUINO_EVENT_WIFI_READY: jll_info("Wi-Fi ready"); break;
-    case ARDUINO_EVENT_WIFI_STA_CONNECTED: jll_info("Wi-Fi connected to \"%s\"", info.wifi_sta_connected.ssid); break;
+    case ARDUINO_EVENT_WIFI_READY: jll_info("%u Wi-Fi ready", timeMillis()); break;
+    case ARDUINO_EVENT_WIFI_STA_CONNECTED:
+      jll_info("%u Wi-Fi connected to \"%s\"", timeMillis(), info.wifi_sta_connected.ssid);
+      break;
     case ARDUINO_EVENT_WIFI_STA_GOT_IP:
-      jll_info("Wi-Fi got IP %u.%u.%u.%u", info.got_ip.ip_info.ip.addr & 0xFF,
+      jll_info("%u Wi-Fi got IP %u.%u.%u.%u", timeMillis(), info.got_ip.ip_info.ip.addr & 0xFF,
                (info.got_ip.ip_info.ip.addr >> 8) & 0xFF, (info.got_ip.ip_info.ip.addr >> 16) & 0xFF,
                (info.got_ip.ip_info.ip.addr >> 24) & 0xFF);
       break;
-    case ARDUINO_EVENT_WIFI_STA_LOST_IP: jll_info("Wi-Fi lost IP"); break;
+    case ARDUINO_EVENT_WIFI_STA_LOST_IP: jll_info("%u Wi-Fi lost IP", timeMillis()); break;
     case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
-      jll_info("Wi-Fi disconnected reason=%u", info.wifi_sta_disconnected.reason);
+      jll_info("%u Wi-Fi disconnected reason=%s", timeMillis(),
+               WiFiReasonToString(info.wifi_sta_disconnected.reason).c_str());
       break;
     default: break;
   }
@@ -184,7 +255,8 @@ err:
 int ArduinoEspWiFiNetwork::recv(void* buf, size_t bufsize, std::string* details) {
   int cb = udp_.parsePacket();
   if (cb <= 0) {
-    jll_debug("ArduinoEspWiFiNetwork::recv returned %d status = %s", cb, NetworkStatusToString(status()).c_str());
+    jll_debug("%u ArduinoEspWiFiNetwork::recv returned %d status = %s", timeMillis(),
+              NetworkStatusToString(status()).c_str());
     return 0;
   }
   std::ostringstream s;
