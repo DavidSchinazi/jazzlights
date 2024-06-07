@@ -51,7 +51,8 @@ class FastLedRenderer : public Renderer {
  private:
   explicit FastLedRenderer(size_t numLeds);
 
-  size_t ledMemorySize_;
+  const size_t numLeds_;
+  const size_t ledMemorySize_;
   CRGB* ledsPlayer_;
   bool freshLedLockedDataAvailable_ = false;
   CRGB* ledsLocked_;  // Protected by FastLedRunner::lockedLedMutex_.

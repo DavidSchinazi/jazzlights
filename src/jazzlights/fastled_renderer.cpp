@@ -6,7 +6,7 @@
 
 namespace jazzlights {
 
-FastLedRenderer::FastLedRenderer(size_t numLeds) : ledMemorySize_(numLeds * sizeof(CRGB)) {
+FastLedRenderer::FastLedRenderer(size_t numLeds) : numLeds_(numLeds), ledMemorySize_(numLeds_ * sizeof(CRGB)) {
   ledsPlayer_ = reinterpret_cast<CRGB*>(calloc(ledMemorySize_, 1));
   ledsLocked_ = reinterpret_cast<CRGB*>(calloc(ledMemorySize_, 1));
   ledsFastLed_ = reinterpret_cast<CRGB*>(calloc(ledMemorySize_, 1));
@@ -24,7 +24,7 @@ FastLedRenderer::~FastLedRenderer() {
 void FastLedRenderer::renderPixel(size_t index, CRGB color) { ledsPlayer_[index] = color; }
 
 uint32_t FastLedRenderer::GetPowerAtFullBrightness() const {
-  return calculate_unscaled_power_mW(ledController_->leds(), ledController_->size());
+  return calculate_unscaled_power_mW(ledsPlayer_, numLeds_);
 }
 
 void FastLedRenderer::copyLedsFromPlayerToLocked() {
