@@ -25,7 +25,11 @@ void Flame::innerBegin(const Frame& f, FlameState* state) const {
   }
   memcpy(state->palette, FastLEDPaletteFromOurColorPalette(p), sizeof(state->palette));
   state->palette[0] = CRGB::Black;
-  state->maxDim = 1012 / h(f) + 12;
+  if (h(f) > 8) {
+    state->maxDim = 1012 / h(f) + 12;
+  } else {
+    state->maxDim = 128;
+  }
 }
 
 void Flame::innerRewind(const Frame& f, FlameState* state) const {
