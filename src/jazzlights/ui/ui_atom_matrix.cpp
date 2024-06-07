@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <memory>
 
+#include "jazzlights/fastled_runner.h"
 #include "jazzlights/fastled_wrapper.h"
 #include "jazzlights/networks/arduino_esp_wifi.h"
 #include "jazzlights/networks/esp32_ble.h"
@@ -123,7 +124,7 @@ void AtomMatrixUi::ScreenDisplay(Milliseconds currentTime) {
   }
   brightnessLastWrite_ = brightness;
   memcpy(screenLEDsLastWrite_, screenLEDs_, sizeof(screenLEDs_));
-  screenController_->showLeds(brightness);
+  runner_->IngestUiPixels(screenLEDs_, brightness);
 }
 
 void AtomMatrixUi::ScreenNetwork(Milliseconds currentTime) {
@@ -369,7 +370,7 @@ void AtomMatrixUi::RunLoop(Milliseconds currentTime) {
 }
 
 void AtomMatrixUi::InitialSetup(Milliseconds currentTime) {
-  screenController_ = &FastLED.addLeds<WS2812, /*DATA_PIN=*/27, GRB>(screenLEDs_, ATOM_SCREEN_NUM_LEDS);
+  runner_->SetupUI<WS2812, /*DATA_PIN=*/27, GRB>(ATOM_SCREEN_NUM_LEDS);
   ScreenClear(currentTime);
   player_.set_brightness(kBrightnessList[brightnessCursor_]);
 }

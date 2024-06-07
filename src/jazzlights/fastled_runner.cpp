@@ -36,9 +36,22 @@ void FastLedRunner::SendLedsToFastLed() {
   bool shouldWriteToAtLeastOne = false;
   std::vector<bool> shouldWrite(renderers_.size(), false);
   uint8_t brightness;
+#if JL_FASTLED_RUNNER_HAS_UI
+  uint8_t uiBrightness;
+  bool uiFresh;
+#endif  // JL_FASTLED_RUNNER_HAS_UI
   {
     const std::lock_guard<std::mutex> lock(lockedLedMutex_);
     brightness = brightnessLocked_;
+#if JL_FASTLED_RUNNER_HAS_UI
+    uiFresh = uiFreshLocked_;
+    if (uiFresh) {
+      shouldWriteToAtLeastOne = true;
+      uiBrightness = uiBrightnessLocked_;
+      memcpy(uiLedsFastLed_, uiLedsLocked_, uiLedMemorySize_);
+      uiFreshLocked_ = false;
+    }
+#endif  // JL_FASTLED_RUNNER_HAS_UI
     for (size_t i = 0; i < renderers_.size(); i++) {
       shouldWrite[i] = renderers_[i]->copyLedsFromLockedToFastLed();
       if (shouldWrite[i]) { shouldWriteToAtLeastOne = true; }
@@ -57,6 +70,9 @@ void FastLedRunner::SendLedsToFastLed() {
 #endif  // STAFF
     if (shouldWrite[i]) { renderers_[i]->sendToLeds(b); }
   }
+#if JL_FASTLED_RUNNER_HAS_UI
+  if (uiFresh) { uiController_->showLeds(uiBrightness); }
+#endif  // JL_FASTLED_RUNNER_HAS_UI
   SAVE_TIME_POINT(MainLED);
   ledWriteEnd();
 }
@@ -87,6 +103,14 @@ void FastLedRunner::Render() {
     const std::lock_guard<std::mutex> lock(lockedLedMutex_);
     brightnessLocked_ = brightness;
     for (auto& renderer : renderers_) { renderer->copyLedsFromPlayerToLocked(); }
+#if JL_FASTLED_RUNNER_HAS_UI
+    uiFreshLocked_ = uiFreshPlayer_;
+    if (uiFreshLocked_) {
+      uiBrightnessLocked_ = uiBrightnessPlayer_;
+      memcpy(uiLedsLocked_, uiLedsPlayer_, uiLedMemorySize_);
+      uiFreshPlayer_ = false;
+    }
+#endif  // JL_FASTLED_RUNNER_HAS_UI
   }
 
   // Notify the FastLED task that there is new data to write.

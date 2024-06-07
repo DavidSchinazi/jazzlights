@@ -1,6 +1,8 @@
 #ifndef JL_FASTLED_RUNNER_H
 #define JL_FASTLED_RUNNER_H
 
+#include "jazzlights/config.h"
+
 #ifdef ARDUINO
 
 #include <memory>
@@ -11,6 +13,12 @@
 #include "jazzlights/fastled_wrapper.h"
 #include "jazzlights/player.h"
 #include "jazzlights/renderer.h"
+
+#if JL_IS_CONTROLLER(ATOM_MATRIX)
+#define JL_FASTLED_RUNNER_HAS_UI 1
+#else  // ATOM_MATRIX
+#define JL_FASTLED_RUNNER_HAS_UI 0
+#endif  // ATOM_MATRIX
 
 namespace jazzlights {
 
@@ -49,6 +57,27 @@ class FastLedRunner {
   void Render();
   void Start();
 
+#if JL_FASTLED_RUNNER_HAS_UI
+  template <template <uint8_t DATA_PIN, EOrder RGB_ORDER> class CHIPSET, uint8_t DATA_PIN, EOrder RGB_ORDER>
+  void SetupUI(size_t uiNumLeds) {
+    uiNumLeds_ = uiNumLeds;
+    uiLedMemorySize_ = uiNumLeds_ * sizeof(CRGB);
+    uiLedsPlayer_ = reinterpret_cast<CRGB*>(calloc(uiLedMemorySize_, 1));
+    uiLedsLocked_ = reinterpret_cast<CRGB*>(calloc(uiLedMemorySize_, 1));
+    uiLedsFastLed_ = reinterpret_cast<CRGB*>(calloc(uiLedMemorySize_, 1));
+    if (uiLedsPlayer_ == nullptr || uiLedsLocked_ == nullptr || uiLedsFastLed_ == nullptr) {
+      jll_fatal("Failed to allocate %zu*%zu", uiNumLeds_, sizeof(CRGB));
+    }
+    uiController_ = &FastLED.addLeds<CHIPSET, DATA_PIN, RGB_ORDER>(uiLedsFastLed_, uiNumLeds_);
+  }
+
+  void IngestUiPixels(CRGB* uiLeds, uint8_t uiBrightness) {
+    uiFreshPlayer_ = true;
+    uiBrightnessPlayer_ = uiBrightness;
+    memcpy(uiLedsPlayer_, uiLeds, uiLedMemorySize_);
+  }
+#endif  // JL_FASTLED_RUNNER_HAS_UI
+
  private:
   static void TaskFunction(void* parameters);
   void SendLedsToFastLed();
@@ -58,6 +87,19 @@ class FastLedRunner {
   uint8_t brightnessLocked_ = 0;  // Protected by lockedLedMutex_.
   TaskHandle_t taskHandle_ = nullptr;
   Player* player_;  // Unowned.
+
+#if JL_FASTLED_RUNNER_HAS_UI
+  CLEDController* uiController_ = nullptr;
+  size_t uiNumLeds_ = 0;
+  size_t uiLedMemorySize_ = 0;
+  uint8_t uiBrightnessPlayer_ = 255;
+  uint8_t uiBrightnessLocked_ = 255;  // Protected by lockedLedMutex_.
+  bool uiFreshPlayer_ = false;
+  bool uiFreshLocked_ = false;
+  CRGB* uiLedsPlayer_ = nullptr;
+  CRGB* uiLedsLocked_ = nullptr;  // Protected by lockedLedMutex_.
+  CRGB* uiLedsFastLed_ = nullptr;
+#endif  // JL_FASTLED_RUNNER_HAS_UI
 };
 
 }  // namespace jazzlights

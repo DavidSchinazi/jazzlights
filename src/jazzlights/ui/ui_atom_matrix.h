@@ -20,6 +20,7 @@ class AtomMatrixUi : public ArduinoUi, public GpioButton::Interface {
   void InitialSetup(Milliseconds currentTime) override;
   void FinalSetup(Milliseconds currentTime) override;
   void RunLoop(Milliseconds currentTime) override;
+  void set_fastled_runner(FastLedRunner* runner) override { runner_ = runner; }
   // From GpioButton::Interface.
   void ShortPress(uint8_t pin, Milliseconds currentTime) override;
   void LongPress(uint8_t pin, Milliseconds currentTime) override;
@@ -60,7 +61,7 @@ class AtomMatrixUi : public ArduinoUi, public GpioButton::Interface {
 
   CRGB screenLEDs_[ATOM_SCREEN_NUM_LEDS] = {};
   CRGB screenLEDsLastWrite_[ATOM_SCREEN_NUM_LEDS] = {};
-  CLEDController* screenController_ = nullptr;
+  FastLedRunner* runner_ = nullptr;  // Unowned.
 };
 
 }  // namespace jazzlights
