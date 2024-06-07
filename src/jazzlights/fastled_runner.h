@@ -55,6 +55,7 @@ class FastLedRunner {
 
   std::vector<std::unique_ptr<FastLedRenderer>> renderers_;
   std::mutex lockedLedMutex_;
+  uint8_t brightnessLocked_ = 0;  // Protected by lockedLedMutex_.
   TaskHandle_t taskHandle_ = nullptr;
   Player* player_;  // Unowned.
 };

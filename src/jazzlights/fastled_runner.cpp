@@ -35,8 +35,10 @@ static_assert(kFastLedNotificationIndex < configTASK_NOTIFICATION_ARRAY_ENTRIES,
 void FastLedRunner::SendLedsToFastLed() {
   bool shouldWriteToAtLeastOne = false;
   std::vector<bool> shouldWrite(renderers_.size(), false);
+  uint8_t brightness;
   {
     const std::lock_guard<std::mutex> lock(lockedLedMutex_);
+    brightness = brightnessLocked_;
     for (size_t i = 0; i < renderers_.size(); i++) {
       shouldWrite[i] = renderers_[i]->copyLedsFromLockedToFastLed();
       if (shouldWrite[i]) { shouldWriteToAtLeastOne = true; }
@@ -45,6 +47,21 @@ void FastLedRunner::SendLedsToFastLed() {
   SAVE_COUNT_POINT(LedPrintLoop);
   if (!shouldWriteToAtLeastOne) { return; }
 
+  ledWriteStart();
+  SAVE_COUNT_POINT(LedPrintSend);
+  for (size_t i = 0; i < renderers_.size(); i++) {
+    uint8_t b = brightness;
+#if JL_IS_CONFIG(STAFF)
+    // Make the second strand of LEDs (the top piece of the staff) brighter.
+    if (i > 0) { b += (255 - b) / 2; }
+#endif  // STAFF
+    if (shouldWrite[i]) { renderers_[i]->sendToLeds(b); }
+  }
+  SAVE_TIME_POINT(MainLED);
+  ledWriteEnd();
+}
+
+void FastLedRunner::Render() {
   uint32_t brightness = player_->brightness();
   // Brightness may be reduced if this exceeds our power budget with the current pattern.
 
@@ -63,25 +80,12 @@ void FastLedRunner::SendLedsToFastLed() {
             powerAtFullBrightness * brightness / 256 / 5,  // Selected power & current.
             player_->is_power_limited() ? " (limited)" : "");
 #endif  // JL_MAX_MILLIWATTS
+
   SAVE_TIME_POINT(Brightness);
 
-  ledWriteStart();
-  SAVE_COUNT_POINT(LedPrintSend);
-  for (size_t i = 0; i < renderers_.size(); i++) {
-    uint32_t b = brightness;
-#if JL_IS_CONFIG(STAFF)
-    // Make the second strand of LEDs (the top piece of the staff) brighter.
-    if (i > 0) { b += (255 - b) / 2; }
-#endif  // STAFF
-    if (shouldWrite[i]) { renderers_[i]->sendToLeds(b); }
-  }
-  SAVE_TIME_POINT(MainLED);
-  ledWriteEnd();
-}
-
-void FastLedRunner::Render() {
   {
     const std::lock_guard<std::mutex> lock(lockedLedMutex_);
+    brightnessLocked_ = brightness;
     for (auto& renderer : renderers_) { renderer->copyLedsFromPlayerToLocked(); }
   }
 
@@ -91,7 +95,8 @@ void FastLedRunner::Render() {
   vTaskDelay(1);  // Yield.
 }
 
-/*static*/ void FastLedRunner::TaskFunction(void* parameters) {
+// static
+void FastLedRunner::TaskFunction(void* parameters) {
   FastLedRunner* runner = reinterpret_cast<FastLedRunner*>(parameters);
   while (true) {
     runner->SendLedsToFastLed();
