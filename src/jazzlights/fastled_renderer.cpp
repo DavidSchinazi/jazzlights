@@ -6,7 +6,8 @@
 
 namespace jazzlights {
 
-FastLedRenderer::FastLedRenderer(size_t numLeds) : numLeds_(numLeds), ledMemorySize_(numLeds_ * sizeof(CRGB)) {
+FastLedRenderer::FastLedRenderer(size_t numLeds, SetupFunction setupFunction)
+    : numLeds_(numLeds), ledMemorySize_(numLeds_ * sizeof(CRGB)), setupFunction_(setupFunction) {
   ledsPlayer_ = reinterpret_cast<CRGB*>(calloc(ledMemorySize_, 1));
   ledsLocked_ = reinterpret_cast<CRGB*>(calloc(ledMemorySize_, 1));
   ledsFastLed_ = reinterpret_cast<CRGB*>(calloc(ledMemorySize_, 1));

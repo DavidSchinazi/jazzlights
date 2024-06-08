@@ -45,9 +45,9 @@ void FastLedRunner::SendLedsToFastLed() {
     brightness = brightnessLocked_;
 #if JL_FASTLED_RUNNER_HAS_UI
     uiFresh = uiFreshLocked_;
+    uiBrightness = uiBrightnessLocked_;
     if (uiFresh) {
       shouldWriteToAtLeastOne = true;
-      uiBrightness = uiBrightnessLocked_;
       memcpy(uiLedsFastLed_, uiLedsLocked_, uiLedMemorySize_);
       uiFreshLocked_ = false;
     }
@@ -122,6 +122,9 @@ void FastLedRunner::Render() {
 // static
 void FastLedRunner::TaskFunction(void* parameters) {
   FastLedRunner* runner = reinterpret_cast<FastLedRunner*>(parameters);
+#if JL_FASTLED_INIT_ON_OUR_TASK
+  runner->Setup();
+#endif  // JL_FASTLED_INIT_ON_OUR_TASK
   while (true) {
     runner->SendLedsToFastLed();
     // Block this task until we are notified that there is new data to write.
@@ -129,7 +132,17 @@ void FastLedRunner::TaskFunction(void* parameters) {
   }
 }
 
+void FastLedRunner::Setup() {
+  for (auto& renderer : renderers_) { renderer->Setup(); }
+#if JL_FASTLED_RUNNER_HAS_UI
+  SetupUi();
+#endif  // JL_FASTLED_RUNNER_HAS_UI
+}
+
 void FastLedRunner::Start() {
+#if !JL_FASTLED_INIT_ON_OUR_TASK
+  Setup();
+#endif  // !JL_FASTLED_INIT_ON_OUR_TASK
   // The Arduino loop is pinned to core 1 so we pin FastLED writes to core 0.
   BaseType_t ret = xTaskCreatePinnedToCore(TaskFunction, "FastLED", configMINIMAL_STACK_SIZE + 400,
                                            /*parameters=*/this,

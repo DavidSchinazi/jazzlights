@@ -5,6 +5,7 @@
 
 #ifdef ARDUINO
 
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <vector>
@@ -19,6 +20,8 @@
 #else  // ATOM_MATRIX
 #define JL_FASTLED_RUNNER_HAS_UI 0
 #endif  // ATOM_MATRIX
+
+#define JL_FASTLED_INIT_ON_OUR_TASK 0
 
 namespace jazzlights {
 
@@ -59,7 +62,7 @@ class FastLedRunner {
 
 #if JL_FASTLED_RUNNER_HAS_UI
   template <template <uint8_t DATA_PIN, EOrder RGB_ORDER> class CHIPSET, uint8_t DATA_PIN, EOrder RGB_ORDER>
-  void SetupUI(size_t uiNumLeds) {
+  void ConfigureUi(size_t uiNumLeds) {
     uiNumLeds_ = uiNumLeds;
     uiLedMemorySize_ = uiNumLeds_ * sizeof(CRGB);
     uiLedsPlayer_ = reinterpret_cast<CRGB*>(calloc(uiLedMemorySize_, 1));
@@ -68,7 +71,7 @@ class FastLedRunner {
     if (uiLedsPlayer_ == nullptr || uiLedsLocked_ == nullptr || uiLedsFastLed_ == nullptr) {
       jll_fatal("Failed to allocate %zu*%zu", uiNumLeds_, sizeof(CRGB));
     }
-    uiController_ = &FastLED.addLeds<CHIPSET, DATA_PIN, RGB_ORDER>(uiLedsFastLed_, uiNumLeds_);
+    uiSetupFunction_ = [](CRGB* leds, size_t num) { return &FastLED.addLeds<CHIPSET, DATA_PIN, RGB_ORDER>(leds, num); };
   }
 
   void IngestUiPixels(CRGB* uiLeds, uint8_t uiBrightness) {
@@ -79,6 +82,13 @@ class FastLedRunner {
 #endif  // JL_FASTLED_RUNNER_HAS_UI
 
  private:
+#if JL_FASTLED_RUNNER_HAS_UI
+  void SetupUi() {
+    uiController_ = uiSetupFunction_(uiLedsFastLed_, uiNumLeds_);
+    uiSetupFunction_ = nullptr;
+  }
+#endif  // JL_FASTLED_RUNNER_HAS_UI
+  void Setup();
   static void TaskFunction(void* parameters);
   void SendLedsToFastLed();
 
@@ -99,6 +109,8 @@ class FastLedRunner {
   CRGB* uiLedsPlayer_ = nullptr;
   CRGB* uiLedsLocked_ = nullptr;  // Protected by lockedLedMutex_.
   CRGB* uiLedsFastLed_ = nullptr;
+  using UiSetupFunction = std::function<CLEDController*(CRGB*, size_t)>;
+  UiSetupFunction uiSetupFunction_ = nullptr;
 #endif  // JL_FASTLED_RUNNER_HAS_UI
 };
 

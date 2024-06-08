@@ -370,7 +370,7 @@ void AtomMatrixUi::RunLoop(Milliseconds currentTime) {
 }
 
 void AtomMatrixUi::InitialSetup(Milliseconds currentTime) {
-  runner_->SetupUI<WS2812, /*DATA_PIN=*/27, GRB>(ATOM_SCREEN_NUM_LEDS);
+  runner_->ConfigureUi<WS2812, /*DATA_PIN=*/27, GRB>(ATOM_SCREEN_NUM_LEDS);
   ScreenClear(currentTime);
   player_.set_brightness(kBrightnessList[brightnessCursor_]);
 }
