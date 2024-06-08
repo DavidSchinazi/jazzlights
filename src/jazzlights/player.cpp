@@ -440,7 +440,11 @@ std::string Player::currentEffectName() const { return patternName(lastBegunPatt
 void Player::set_enabled(bool enabled) {
   if (enabled_ == enabled) { return; }
 #if JL_IS_CONFIG(CLOUDS)
-  if (!enabled) { force_clouds_ = true; }
+  if (!enabled) {
+    force_clouds_ = true;
+    currentPattern_ = enforceForcedPalette(currentPattern_);
+    nextPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
+  }
 #endif  // CLOUDS
   enabled_ = enabled;
   UpdateStatusWatcher();
@@ -462,7 +466,11 @@ void Player::UpdateStatusWatcher() {
 void Player::CloudNext(Milliseconds currentTime) {
   set_enabled(true);
   disable_color_override();
-  force_clouds_ = false;
+  if (force_clouds_) {
+    force_clouds_ = false;
+    currentPattern_ = nextPattern_;
+    nextPattern_ = enforceForcedPalette(computeNextPattern(nextPattern_));
+  }
   currentPattern_ = nextPattern_;
   nextPattern_ = enforceForcedPalette(computeNextPattern(nextPattern_));
   checkLeaderAndPattern(currentTime);
