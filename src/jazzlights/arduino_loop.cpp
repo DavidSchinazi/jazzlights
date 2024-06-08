@@ -53,7 +53,15 @@ void arduinoSetup(void) {
 
   AddLedsToRunner(&runner);
 
-#if JL_IS_CONFIG(WAND) || JL_IS_CONFIG(STAFF) || JL_IS_CONFIG(CAPTAIN_HAT) || JL_IS_CONFIG(SHOE)
+#if JL_IS_CONFIG(CLOUDS)
+#if !JL_DEV
+  player.setBasePrecedence(6000);
+  player.setPrecedenceGain(100);
+#else   // JL_DEV
+  player.setBasePrecedence(5800);
+  player.setPrecedenceGain(100);
+#endif  // JL_DEV
+#elif JL_IS_CONFIG(WAND) || JL_IS_CONFIG(STAFF) || JL_IS_CONFIG(CAPTAIN_HAT) || JL_IS_CONFIG(SHOE)
   player.setBasePrecedence(500);
   player.setPrecedenceGain(100);
 #else
