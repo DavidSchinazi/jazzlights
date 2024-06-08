@@ -127,6 +127,7 @@ class Player {
   void disable_color_override() { color_overridden_ = false; }
   bool color_overridden() const { return color_overridden_; }
   CRGB color_override() const { return color_override_; }
+  void CloudNext(Milliseconds currentTime);
 #endif  // CLOUDS
 
  private:
@@ -185,6 +186,7 @@ class Player {
 #elif JL_IS_CONFIG(CLOUDS)
   StatusWatcher* status_watcher_ = nullptr;  // Unowned.
   bool color_overridden_ = false;
+  bool force_clouds_ = true;
   CRGB color_override_;
 #endif  // CLOUDS
 

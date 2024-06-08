@@ -20,6 +20,7 @@ from .websocket import JazzLightsWebSocketClient
 LOGGER = logging.getLogger(__name__)
 
 _EFFECT_CLOUDS = "clouds"
+_EFFECT_NEXT = "next"
 
 
 async def async_setup_entry(
@@ -92,7 +93,7 @@ class JazzLight(LightEntity):
     def effect_list(self) -> list[str]:
         """Return the list of supported effects."""
         # Note that HomeKit doesn't have any way to set or show these effects.
-        return [_EFFECT_CLOUDS]
+        return [_EFFECT_CLOUDS, _EFFECT_NEXT]
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off the light."""

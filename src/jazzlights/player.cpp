@@ -439,6 +439,9 @@ std::string Player::currentEffectName() const { return patternName(lastBegunPatt
 
 void Player::set_enabled(bool enabled) {
   if (enabled_ == enabled) { return; }
+#if JL_IS_CONFIG(CLOUDS)
+  if (!enabled) { force_clouds_ = true; }
+#endif  // CLOUDS
   enabled_ = enabled;
   UpdateStatusWatcher();
 }
@@ -454,6 +457,23 @@ void Player::UpdateStatusWatcher() {
   if (status_watcher_ != nullptr) { status_watcher_->OnStatus(); }
 #endif  // CLOUDS
 }
+
+#if JL_IS_CONFIG(CLOUDS)
+void Player::CloudNext(Milliseconds currentTime) {
+  set_enabled(true);
+  disable_color_override();
+  force_clouds_ = false;
+  currentPattern_ = nextPattern_;
+  nextPattern_ = enforceForcedPalette(computeNextPattern(nextPattern_));
+  checkLeaderAndPattern(currentTime);
+  jll_info("%u next command processed: now current %s (%08x) next %s (%08x), currentLeader=" DEVICE_ID_FMT, currentTime,
+           patternName(currentPattern_).c_str(), currentPattern_, patternName(nextPattern_).c_str(), nextPattern_,
+           DEVICE_ID_HEX(currentLeader_));
+
+  for (Network* network : networks_) { network->triggerSendAsap(currentTime); }
+  if (status_watcher_ != nullptr) { status_watcher_->OnStatus(); }
+}
+#endif  // CLOUDS
 
 void Player::next(Milliseconds currentTime) {
 #if JL_IS_CONFIG(CLOUDS)
@@ -515,8 +535,10 @@ void Player::stopForcePalette(Milliseconds currentTime) {
 
 PatternBits Player::enforceForcedPalette(PatternBits pattern) {
 #if JL_IS_CONFIG(CLOUDS)
-  pattern &= 0xFFFFFFF0;
-  pattern |= 0x000000F0;
+  if (force_clouds_) {
+    pattern &= 0xFFFFFFF0;
+    pattern |= 0x000000F0;
+  }
 #endif  // CLOUDS
   if (paletteIsForced_) { pattern = applyPalette(pattern, forcedPalette_); }
   return pattern;

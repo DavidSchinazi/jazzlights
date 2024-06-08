@@ -24,6 +24,7 @@ enum class WSType : uint8_t {
   kStatusSetBrightness = 4,
   kStatusSetColor = 5,
   kStatusSetEffect = 6,
+  kStatusNextPattern = 7,
 };
 
 enum WSStatusFlag : uint8_t {
@@ -119,6 +120,11 @@ void WebSocketServer::HandleMessage(AsyncWebSocketClient* client, uint8_t* data,
       jll_info("%u Got WebSocket effect request from client #%u", currentTime, client->id());
       player_.set_enabled(true);
       player_.disable_color_override();
+      ShareStatus(client, currentTime);
+    } break;
+    case WSType::kStatusNextPattern: {
+      jll_info("%u Got WebSocket CloudNextPatern request from client #%u", currentTime, client->id());
+      player_.CloudNext(currentTime);
       ShareStatus(client, currentTime);
     } break;
   }

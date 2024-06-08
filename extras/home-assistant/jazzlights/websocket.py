@@ -22,6 +22,7 @@ _TYPE_STATUS_SET_ON = 3
 _TYPE_STATUS_SET_BRIGHTNESS = 4
 _TYPE_STATUS_SET_COLOR = 5
 _TYPE_STATUS_SET_EFFECT = 6
+_TYPE_STATUS_NEXT_PATTERN = 7
 
 _STATUS_FLAG_ON = 0x80
 _STATUS_FLAG_COLOR_OVERRIDE = 0x40
@@ -71,7 +72,10 @@ class JazzLightsWebSocketClient:
     ) -> None:
         """Turn on the light."""
         if effect is not None:
-            self.send(struct.pack("!B", _TYPE_STATUS_SET_EFFECT))
+            if effect == "next":
+                self.send(struct.pack("!B", _TYPE_STATUS_NEXT_PATTERN))
+            else:
+                self.send(struct.pack("!B", _TYPE_STATUS_SET_EFFECT))
         elif color is not None:
             self.send(
                 struct.pack(
