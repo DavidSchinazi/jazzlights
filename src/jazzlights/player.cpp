@@ -352,8 +352,13 @@ bool Player::render(Milliseconds currentTime) {
     frame_.pattern = 0;
   }
 #if JL_IS_CONFIG(CLOUDS)
-  else if (color_overridden_) {
-    frame_.pattern = color_override_.r << 24 | color_override_.g << 16 | color_override_.b << 8 | 0x20;
+  else if (followedNextHopNetwork_ == nullptr) {
+    if (color_overridden_) {
+      frame_.pattern = color_override_.r << 24 | color_override_.g << 16 | color_override_.b << 8 | 0x20;
+    } else if (force_clouds_) {
+      frame_.pattern &= 0xFFFFFFF0;
+      frame_.pattern |= 0x000000F0;
+    }
   }
 #endif  // CLOUDS
 
@@ -542,12 +547,6 @@ void Player::stopForcePalette(Milliseconds currentTime) {
 }
 
 PatternBits Player::enforceForcedPalette(PatternBits pattern) {
-#if JL_IS_CONFIG(CLOUDS)
-  if (force_clouds_) {
-    pattern &= 0xFFFFFFF0;
-    pattern |= 0x000000F0;
-  }
-#endif  // CLOUDS
   if (paletteIsForced_) { pattern = applyPalette(pattern, forcedPalette_); }
   return pattern;
 }
