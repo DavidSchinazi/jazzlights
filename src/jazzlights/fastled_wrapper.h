@@ -11,14 +11,6 @@
 // Silences FastLED pragmas <https://github.com/FastLED/FastLED/issues/363>.
 #define FASTLED_INTERNAL 1
 
-#if JL_IS_CONFIG(CLOUDS)
-// This fixes flickering on the ceiling for the clouds.
-// TODO measure how much of a performance regression this is, and investigate if we should use it for other devices too.
-// Alternatively, figure out why the LEDs glitch when we use multiple RMT channels. Moving the initialization to the
-// FastLED task didn't seem to help.
-#define FASTLED_RMT_MAX_CHANNELS 1
-#endif  // CLOUDS
-
 #include <FastLED.h>
 
 #else  // ARDUINO

@@ -21,7 +21,7 @@
 #define JL_FASTLED_RUNNER_HAS_UI 0
 #endif  // ATOM_MATRIX
 
-#define JL_FASTLED_INIT_ON_OUR_TASK 0
+#define JL_FASTLED_INIT_ON_OUR_TASK 1
 
 namespace jazzlights {
 
