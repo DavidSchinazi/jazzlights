@@ -77,7 +77,6 @@ void FastLedRunner::SendLedsToFastLed() {
 #if JL_FASTLED_RUNNER_HAS_UI
   uiController_->showLeds(uiBrightness);
 #endif  // JL_FASTLED_RUNNER_HAS_UI
-  SAVE_TIME_POINT(MainLED);
   ledWriteEnd();
 }
 
@@ -100,8 +99,6 @@ void FastLedRunner::Render() {
             powerAtFullBrightness * brightness / 256 / 5,  // Selected power & current.
             player_->is_power_limited() ? " (limited)" : "");
 #endif  // JL_MAX_MILLIWATTS
-
-  SAVE_TIME_POINT(Brightness);
 
   {
     const std::lock_guard<std::mutex> lock(lockedLedMutex_);

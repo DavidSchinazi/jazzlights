@@ -88,7 +88,6 @@ void saveTimePoint(TimePoint timePoint) {
   if (prevTimePointData.lastSavedTime >= 0) {
     thisTimePointData.sumTimes += thisTimePointData.lastSavedTime - prevTimePointData.lastSavedTime;
   }
-  if (timePoint == kMainLED) { gNumLedWrites++; }
 }
 
 void saveCountPoint(CountPoint countPoint) { gCountPointDatas[countPoint]++; }
@@ -105,6 +104,7 @@ void ledWriteEnd() {
   const int64_t ledTime = esp_timer_get_time() - gLastLedStart;
   gLedTimeSum += ledTime;
   gLedTimeCount++;
+  gNumLedWrites++;
   if (ledTime < gLedTimeMin) { gLedTimeMin = ledTime; }
   if (ledTime > gLedTimeMax) { gLedTimeMax = ledTime; }
 }

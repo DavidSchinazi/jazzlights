@@ -19,8 +19,6 @@ inline void printInstrumentationInfo(Milliseconds /*currentTime*/) {}
   X(UserInterface)      \
   X(Bluetooth)          \
   X(PlayerCompute)      \
-  X(Brightness)         \
-  X(MainLED)            \
   X(LedRunner)          \
   X(LoopEnd)            \
   X(NumTimePoints)  // Leave this as last member.
