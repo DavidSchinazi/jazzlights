@@ -18,13 +18,19 @@ NoopRenderer noopRenderer;
 int runMain() {
   player.addStrand(pixels, noopRenderer);
   player.begin(timeMillis());
-  uint32_t fps = 0;
+  Milliseconds lastFpsEpochTime = 0;
   while (true) {
-    player.render(timeMillis());
-    if (player.fps() != fps) {
-      fps = player.fps();
-      jll_info("FPS: %u", fps);
+    const Milliseconds currentTime = timeMillis();
+    if (currentTime - lastFpsEpochTime > 1000) {
+      uint32_t fps;
+      uint8_t utilization = 0;
+      Milliseconds timeSpentComputingThisEpoch;
+      Milliseconds epochDuration;
+      player.GenerateFPSReport(&fps, &utilization, &timeSpentComputingThisEpoch, &epochDuration);
+      jll_info("%u FPS %u%% %u/%ums", fps, utilization, timeSpentComputingThisEpoch, epochDuration);
+      lastFpsEpochTime = currentTime;
     }
+    player.render(currentTime);
   }
   return 0;
 }

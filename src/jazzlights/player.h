@@ -79,9 +79,10 @@ class Player {
   const char* command(const char* cmd);
 
   /**
-   * Returns number of frames rendered per second.
+   * Computes FPS information and resets counters.
    */
-  uint32_t fps() const { return fps_; }
+  void GenerateFPSReport(uint32_t* fps, uint8_t* utilization, Milliseconds* timeSpentComputingThisEpoch,
+                         Milliseconds* epochDuration);
 
   /**
    * Returns the bounding box of all pixels
@@ -210,9 +211,9 @@ class Player {
   bool paletteIsForced_ = false;
   uint8_t forcedPalette_ = 0;
 
-  uint32_t fps_ = 0;
-  Milliseconds lastFpsProbeTime_ = 0;
-  uint64_t framesSinceFpsProbe_ = 0;
+  Milliseconds fpsEpochStart_ = 0;
+  Milliseconds timeSpentComputingEffectsThisEpoch_ = 0;
+  uint32_t framesComputedThisEpoch_ = 0;
 };
 
 std::string patternName(PatternBits pattern);

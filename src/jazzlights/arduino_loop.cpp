@@ -90,14 +90,16 @@ void arduinoLoop(void) {
   SAVE_TIME_POINT(Bluetooth);
 
   const bool shouldRender = player.render(currentTime);
-  SAVE_TIME_POINT(Player);
+  SAVE_TIME_POINT(PlayerCompute);
   if (shouldRender) { runner.Render(); }
+  SAVE_TIME_POINT(LedRunner);
 #if JL_WEBSOCKET_SERVER
   if (ArduinoEspWiFiNetwork::get()->status() != INITIALIZING) {
     // This can't be called until after the networks have been initialized.
     websocket_server.Start();
   }
 #endif  // JL_WEBSOCKET_SERVER
+  SAVE_TIME_POINT(LoopEnd);
 }
 
 }  // namespace jazzlights

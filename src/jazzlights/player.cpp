@@ -403,19 +403,12 @@ bool Player::render(Milliseconds currentTime) {
     lastLEDWriteTime_ = 1;
   }
 
-  // Keep track of how many FPS we might be able to get.
-  framesSinceFpsProbe_++;
-  if (currentTime - lastFpsProbeTime_ > ONE_SECOND) {
-    fps_ = framesSinceFpsProbe_ * 1000 / (currentTime - lastFpsProbeTime_);
-    lastFpsProbeTime_ = currentTime;
-    framesSinceFpsProbe_ = 0;
-  }
-
   // Do not send data to LEDs faster than 100Hz.
   static constexpr Milliseconds minLEDWriteTime = 10;
   if (lastLEDWriteTime_ >= 0 && currentTime - minLEDWriteTime < lastLEDWriteTime_) { return false; }
   lastLEDWriteTime_ = currentTime;
 
+  const Milliseconds patternComputeStartTime = timeMillis();
   // Actually render the pixels.
   predictableRandom_.ResetWithFrameTime(frame_, effect->effectName(frame_.pattern).c_str());
   effect->rewind(frame_);
@@ -436,7 +429,31 @@ bool Player::render(Milliseconds currentTime) {
     }
   }
   effect->afterColors(frame_);
+
+  // Save data for measuring FPS.
+  const Milliseconds patternComputeDuration = timeMillis() - patternComputeStartTime;
+  timeSpentComputingEffectsThisEpoch_ += patternComputeDuration;
+  framesComputedThisEpoch_++;
+
   return true;
+}
+
+void Player::GenerateFPSReport(uint32_t* fps, uint8_t* utilization, Milliseconds* timeSpentComputingThisEpoch,
+                               Milliseconds* epochDuration) {
+  const Milliseconds currentTime = timeMillis();
+  *epochDuration = currentTime - fpsEpochStart_;
+  fpsEpochStart_ = currentTime;
+  *timeSpentComputingThisEpoch = timeSpentComputingEffectsThisEpoch_;
+  timeSpentComputingEffectsThisEpoch_ = 0;
+  // jll_error("silly framesComputedThisEpoch_ %u epochDuration %u", framesComputedThisEpoch_, *epochDuration);
+  if (*epochDuration != 0) {
+    *fps = framesComputedThisEpoch_ * 1000 / *epochDuration;
+    *utilization = *timeSpentComputingThisEpoch * 100 / *epochDuration;
+  } else {
+    *fps = 0;
+    *utilization = 0;
+  }
+  framesComputedThisEpoch_ = 0;
 }
 
 PatternBits Player::currentEffect() const { return lastBegunPattern_; }
@@ -659,10 +676,16 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
     lastOriginationTime = entry->lastOriginationTime;
     if (currentPattern_ != entry->currentPattern) {
       currentPattern_ = entry->currentPattern;
-      jll_info("%u Following " DEVICE_ID_FMT ".p%u nh=%u %s new currentPattern %s (%08x) %u FPS", currentTime,
-               DEVICE_ID_HEX(originator), precedence, currentNumHops_,
+      uint32_t fps;
+      uint8_t utilization;
+      Milliseconds timeSpentComputingThisEpoch;
+      Milliseconds epochDuration;
+      GenerateFPSReport(&fps, &utilization, &timeSpentComputingThisEpoch, &epochDuration);
+      jll_info("%u Following " DEVICE_ID_FMT ".p%u nh=%u %s new currentPattern %s (%08x) %u FPS %u%% %u/%ums",
+               currentTime, DEVICE_ID_HEX(originator), precedence, currentNumHops_,
                (followedNextHopNetwork_ != nullptr ? followedNextHopNetwork_->networkName() : "null"),
-               patternName(currentPattern_).c_str(), currentPattern_, fps());
+               patternName(currentPattern_).c_str(), currentPattern_, fps, utilization, timeSpentComputingThisEpoch,
+               epochDuration);
       printInstrumentationInfo(currentTime);
       lastLEDWriteTime_ = -1;
       shouldBeginPattern_ = true;
@@ -680,8 +703,14 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
         currentPattern_ = nextPattern_;
         nextPattern_ = enforceForcedPalette(computeNextPattern(nextPattern_));
       }
-      jll_info("%u We (" DEVICE_ID_FMT ".p%u) are leading, new currentPattern %s (%08x) %u FPS", currentTime,
-               DEVICE_ID_HEX(localDeviceId_), precedence, patternName(currentPattern_).c_str(), currentPattern_, fps());
+      uint32_t fps;
+      uint8_t utilization;
+      Milliseconds timeSpentComputingThisEpoch;
+      Milliseconds epochDuration;
+      GenerateFPSReport(&fps, &utilization, &timeSpentComputingThisEpoch, &epochDuration);
+      jll_info("%u We (" DEVICE_ID_FMT ".p%u) are leading, new currentPattern %s (%08x) %u FPS %u%% %u/%ums",
+               currentTime, DEVICE_ID_HEX(localDeviceId_), precedence, patternName(currentPattern_).c_str(),
+               currentPattern_, fps, utilization, timeSpentComputingThisEpoch, epochDuration);
       printInstrumentationInfo(currentTime);
       lastLEDWriteTime_ = -1;
       shouldBeginPattern_ = true;
