@@ -137,6 +137,9 @@ void FastLedRunner::Setup() {
 #if JL_FASTLED_RUNNER_HAS_UI
   SetupUi();
 #endif  // JL_FASTLED_RUNNER_HAS_UI
+  // Disable dithering, as we probably don't refresh quickly enough to benefit from it.
+  // https://github.com/FastLED/FastLED/wiki/FastLED-Temporal-Dithering
+  FastLED.setDither(DISABLE_DITHER);
 }
 
 void FastLedRunner::Start() {
