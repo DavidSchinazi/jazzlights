@@ -33,8 +33,7 @@ constexpr UBaseType_t kFastLedNotificationIndex = 0;
 static_assert(kFastLedNotificationIndex < configTASK_NOTIFICATION_ARRAY_ENTRIES, "index too high");
 
 void FastLedRunner::SendLedsToFastLed() {
-  bool shouldWriteToAtLeastOne = false;
-  std::vector<bool> shouldWrite(renderers_.size(), false);
+  bool shouldWrite = false;
   uint8_t brightness;
 #if JL_FASTLED_RUNNER_HAS_UI
   uint8_t uiBrightness;
@@ -47,18 +46,23 @@ void FastLedRunner::SendLedsToFastLed() {
     uiFresh = uiFreshLocked_;
     uiBrightness = uiBrightnessLocked_;
     if (uiFresh) {
-      shouldWriteToAtLeastOne = true;
+      shouldWrite = true;
       memcpy(uiLedsFastLed_, uiLedsLocked_, uiLedMemorySize_);
       uiFreshLocked_ = false;
     }
 #endif  // JL_FASTLED_RUNNER_HAS_UI
     for (size_t i = 0; i < renderers_.size(); i++) {
-      shouldWrite[i] = renderers_[i]->copyLedsFromLockedToFastLed();
-      if (shouldWrite[i]) { shouldWriteToAtLeastOne = true; }
+      if (renderers_[i]->copyLedsFromLockedToFastLed()) { shouldWrite = true; }
     }
   }
   SAVE_COUNT_POINT(LedPrintLoop);
-  if (!shouldWriteToAtLeastOne) { return; }
+
+  // This code initially would only write to a given renderer if there was data for that renderer. However, we later
+  // realized that the FastLED code for WS2812B on ESP32 uses a shared RMT implementation that batches these writes to
+  // send them in parallel. So we instead write to all renderers any time there's data to write to any renderer. This
+  // better matches undocumented assumptions made inside the FastLED library, where they expect us to always write to
+  // all strands. See <https://github.com/FastLED/FastLED/blob/master/src/platforms/esp/32/clockless_rmt_esp32.h>.
+  if (!shouldWrite) { return; }
 
   ledWriteStart();
   SAVE_COUNT_POINT(LedPrintSend);
@@ -68,10 +72,10 @@ void FastLedRunner::SendLedsToFastLed() {
     // Make the second strand of LEDs (the top piece of the staff) brighter.
     if (i > 0) { b += (255 - b) / 2; }
 #endif  // STAFF
-    if (shouldWrite[i]) { renderers_[i]->sendToLeds(b); }
+    renderers_[i]->sendToLeds(b);
   }
 #if JL_FASTLED_RUNNER_HAS_UI
-  if (uiFresh) { uiController_->showLeds(uiBrightness); }
+  uiController_->showLeds(uiBrightness);
 #endif  // JL_FASTLED_RUNNER_HAS_UI
   SAVE_TIME_POINT(MainLED);
   ledWriteEnd();
