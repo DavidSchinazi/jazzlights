@@ -69,8 +69,10 @@ ALL_TIME_POINT_ENUMS
 #undef Y
 #undef X
 
-#define X(e, v) \
-  case e::k##v: return #v;
+// Apparently different version of clang-format disagree on this line.
+// clang-format off
+#define X(e, v) case e::k##v: return #v;
+// clang-format on
 #define Y(n, a) SETUP_TIME_POINT_TO_STR(n, a)
 ALL_TIME_POINT_ENUMS
 #undef Y
