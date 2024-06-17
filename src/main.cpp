@@ -5,9 +5,12 @@
 #ifdef ARDUINO
 
 #define JL_ARDUINO_LOOP_ON_OTHER_CORE 0
-// While we have confirmed that moving the arduino loop to core 0 works, it doesn't make much a difference in practice
-// because we already get 100 computed FPS and 89 written FPS on the vests, which is currently our highest LED count.
-// So we have it disabled for now, but could enable it if we get other performance issues.
+// While we have confirmed that moving the arduino loop to core 0 works, it actually performs slightly worse as there is
+// more contention on that core because that's where a lot of other things (Wi-Fi, Bluetooth, timers) run. Even though
+// we're writing to the LEDs on core 1, that takes up very little CPU time because most of the work is performed by the
+// RMT module when writing to WS2812B. In practice both options allow reaching 100 computed FPS and 89 written FPS on
+// the vests, which is currently our highest LED count. So we have it disabled for now, but could enable it for other
+// devices with different properties.
 
 #include "jazzlights/arduino_loop.h"
 
@@ -25,12 +28,11 @@ TaskHandle_t gTaskHandle = nullptr;
 
 void ArduinoTaskFunction(void* parameters) {
   arduinoSetup();
-  uint8_t loopCount = 0;
   while (true) {
     arduinoLoop();
     // Without this delay, the watchdog fires because the IDLE task never gets to run. Another option would be to run
     // this task at tskIDLE_PRIORITY, but in practice that performs poorly and we get FPS way below 100.
-    vTaskDelay(1);
+    vTaskDelay(2);
   }
 }
 
