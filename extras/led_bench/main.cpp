@@ -3,17 +3,27 @@
 // This file hasn't been designed with a build file yet.
 // To use it, copy it to src/main.cpp and run on ESP32.
 
-// Results on M5Atom for WS2812:
-// This relies on the RMT controller in the M5Atom to asynchronously communicate
-// with all LED strands at once so that sending to 1 or 8 strands takes the same
-// amount of time. (The RMT controller on that device only supports 8 channels
-// at once). For 8 separate lines of n LEDs each:
+// This relies on the RMT controller in the ESP32 to asynchronously communicate with all LED strands at once so that
+// sending to 1 or 8 strands takes the same amount of time. (The RMT controller on that device only supports 8 channels
+// at once). Actually it appears that FASTLED_RMT_MAX_CHANNELS might be 4. So the results are 1-4 vs 5-8 strands.
+
+// M5AtomMatrix - WS2812B or 1-4 separate lines of n LEDs each:
+// 360 LEDs = 11 ms =  89 fps
+// 310 LEDs = 10 ms = 100 fps
+// 250 LEDs =  8 ms = 125 fps
+// 216 LEDs =  7 ms = 142 fps
+// 200 LEDs =  6 ms = 166 fps
+// 150 LEDs =  5 ms = 200 fps
+
+// M5AtomMatrix - WS2812B for 5-8 separate lines of n LEDs each:
 // 360 LEDs = 23 ms =  43 fps
 // 310 LEDs = 19 ms =  52 fps
 // 250 LEDs = 15 ms =  66 fps
 // 216 LEDs = 14 ms =  71 fps
 // 200 LEDs = 12 ms =  83 fps
 // 150 LEDs = 10 ms = 100 fps
+
+#ifndef PIO_UNIT_TESTING
 
 #ifdef ARDUINO
 
@@ -38,10 +48,13 @@ void setLEDs(uint32_t milli, CRGB* leds, size_t numLeds, CRGB colorA, CRGB color
   }
 }
 
-// #define ADD_LEDS(n, pin) c##n = &FastLED.addLeds<WS2812, /*DATA_PIN=*/pin, GRB>(leds##n, numLeds##n);
+#if 1
+#define ADD_LEDS(n, pin) c##n = &FastLED.addLeds<WS2812B, /*DATA_PIN=*/pin, GRB>(leds##n, numLeds##n);
+#else
 #define ADD_LEDS(n, pin)                                                                                    \
   c##n = &FastLED.addLeds<WS2801, /*DATA_PIN=*/pin, /*CLOCK_PIN=*/32, GRB, /*SPI_SPEED=*/DATA_RATE_MHZ(1)>( \
       leds##n, numLeds##n);
+#endif
 
 #define LOG_TIME(s)                           \
   milli2 = millis();                          \
@@ -71,24 +84,24 @@ void setup() {
   ADD_LEDS(2, 26)
   ADD_LEDS(3, 21)
   ADD_LEDS(4, 25)
-  ADD_LEDS(5, 19)
-  ADD_LEDS(6, 22)
-  ADD_LEDS(7, 23)
-  ADD_LEDS(8, 33)
-  // ADD_LEDS(9, 32)
+  //   ADD_LEDS(5, 19)
+  //   ADD_LEDS(6, 22)
+  //   ADD_LEDS(7, 23)
+  //   ADD_LEDS(8, 33)
+  //   ADD_LEDS(9, 32)
   uint32_t milli = millis(), milli2;
   SHOW_LEDS(1)
   SHOW_LEDS(2)
   SHOW_LEDS(3)
   SHOW_LEDS(4)
-  SHOW_LEDS(5)
-  SHOW_LEDS(6)
-  SHOW_LEDS(7)
-  SHOW_LEDS(8)
+  //   SHOW_LEDS(5)
+  //   SHOW_LEDS(6)
+  //   SHOW_LEDS(7)
+  //   SHOW_LEDS(8)
 }
 
 void loop() {
-  Serial.println();
+  //   Serial.println();
   uint32_t milli = millis(), milli2;
   SET_LEDS(1, CRGB::Red, CRGB::Green)
   SET_LEDS(2, CRGB::Yellow, CRGB::Blue)
@@ -100,19 +113,18 @@ void loop() {
   SET_LEDS(8, CRGB::Orange, CRGB::Red)
   // SET_LEDS(9, CRGB::Orange, CRGB::Red)
   LOG_TIME(setld)
-  /*
+
   SHOW_LEDS(1)
-  */
   SHOW_LEDS(2)
-  /*
   SHOW_LEDS(3)
   SHOW_LEDS(4)
-  SHOW_LEDS(5)
-  SHOW_LEDS(6)
-  SHOW_LEDS(7)
-  */
-  SHOW_LEDS(8)
-  // SHOW_LEDS(9)
+  //   SHOW_LEDS(5)
+  //   SHOW_LEDS(6)
+  //   SHOW_LEDS(7)
+  //   SHOW_LEDS(8)
+  //   SHOW_LEDS(9)
 }
 
 #endif  // ARDUINO
+
+#endif  // PIO_UNIT_TESTING
