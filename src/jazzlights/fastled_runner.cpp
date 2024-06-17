@@ -60,12 +60,20 @@ void FastLedRunner::SendLedsToFastLed() {
   SAVE_TIME_POINT(FastLed, Copy);
   SAVE_COUNT_POINT(LedPrintLoop);
 
+  if (!shouldWrite) {
+    // If there's nothing to write, the player is probably computing our next frame. Let's wait for it to notify us that
+    // there's more data.
+    (void)ulTaskGenericNotifyTake(kFastLedNotificationIndex, pdTRUE, portMAX_DELAY);
+    SAVE_TIME_POINT(FastLed, WaitForNotify);
+    // Return once the notification is called to restart this function from the top.
+    return;
+  }
+
   // This code initially would only write to a given renderer if there was data for that renderer. However, we later
   // realized that the FastLED code for WS2812B on ESP32 uses a shared RMT implementation that batches these writes to
   // send them in parallel. So we instead write to all renderers any time there's data to write to any renderer. This
   // better matches undocumented assumptions made inside the FastLED library, where they expect us to always write to
   // all strands. See <https://github.com/FastLED/FastLED/blob/master/src/platforms/esp/32/clockless_rmt_esp32.h>.
-  if (!shouldWrite) { return; }
 
   ledWriteStart();
   SAVE_COUNT_POINT(LedPrintSend);
@@ -136,12 +144,7 @@ void FastLedRunner::TaskFunction(void* parameters) {
 #if JL_FASTLED_INIT_ON_OUR_TASK
   runner->Setup();
 #endif  // JL_FASTLED_INIT_ON_OUR_TASK
-  while (true) {
-    runner->SendLedsToFastLed();
-    // Block this task until we are notified that there is new data to write.
-    (void)ulTaskGenericNotifyTake(kFastLedNotificationIndex, pdTRUE, portMAX_DELAY);
-    SAVE_TIME_POINT(FastLed, WaitForNotify);
-  }
+  while (true) { runner->SendLedsToFastLed(); }
 }
 
 void FastLedRunner::Setup() {

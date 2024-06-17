@@ -40,8 +40,8 @@ inline void printInstrumentationInfo(Milliseconds /*currentTime*/) {}
   X(n, Start)                  \
   X(n, GetLock)                \
   X(n, Copy)                   \
-  X(n, WriteToLeds)            \
-  X(n, WaitForNotify)
+  X(n, WaitForNotify)          \
+  X(n, WriteToLeds)
 
 #define ALL_TIME_POINT_ENUMS               \
   Y(ArduinoLoop, ARDUINO_LOOP_TIME_POINTS) \
