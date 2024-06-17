@@ -80,6 +80,7 @@ void FastLedRunner::SendLedsToFastLed() {
 #if JL_FASTLED_RUNNER_HAS_UI
   uiController_->showLeds(uiBrightness);
 #endif  // JL_FASTLED_RUNNER_HAS_UI
+  numWritesThisEpoch_.fetch_add(1, std::memory_order_relaxed);
   ledWriteEnd();
   SAVE_TIME_POINT(FastLed, WriteToLeds);
 }
@@ -151,6 +152,7 @@ void FastLedRunner::Setup() {
   // Disable dithering, as we probably don't refresh quickly enough to benefit from it.
   // https://github.com/FastLED/FastLED/wiki/FastLED-Temporal-Dithering
   FastLED.setDither(DISABLE_DITHER);
+  player_->SetNumLedWritesGetter(this);
 }
 
 void FastLedRunner::Start() {

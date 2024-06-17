@@ -438,19 +438,22 @@ bool Player::render(Milliseconds currentTime) {
   return true;
 }
 
-void Player::GenerateFPSReport(uint32_t* fps, uint8_t* utilization, Milliseconds* timeSpentComputingThisEpoch,
-                               Milliseconds* epochDuration) {
+void Player::GenerateFPSReport(uint32_t* fpsCompute, uint32_t* fpsWrites, uint8_t* utilization,
+                               Milliseconds* timeSpentComputingThisEpoch, Milliseconds* epochDuration) {
   const Milliseconds currentTime = timeMillis();
   *epochDuration = currentTime - fpsEpochStart_;
   fpsEpochStart_ = currentTime;
   *timeSpentComputingThisEpoch = timeSpentComputingEffectsThisEpoch_;
   timeSpentComputingEffectsThisEpoch_ = 0;
-  // jll_error("silly framesComputedThisEpoch_ %u epochDuration %u", framesComputedThisEpoch_, *epochDuration);
+  uint32_t numLedWritesThisEpoch = 0;
+  if (numLedWritesGetter_ != nullptr) { numLedWritesThisEpoch = numLedWritesGetter_->GetAndClearNumWrites(); }
   if (*epochDuration != 0) {
-    *fps = framesComputedThisEpoch_ * 1000 / *epochDuration;
+    *fpsCompute = framesComputedThisEpoch_ * 1000 / *epochDuration;
+    *fpsWrites = numLedWritesThisEpoch * 1000 / *epochDuration;
     *utilization = *timeSpentComputingThisEpoch * 100 / *epochDuration;
   } else {
-    *fps = 0;
+    *fpsCompute = 0;
+    *fpsWrites = 0;
     *utilization = 0;
   }
   framesComputedThisEpoch_ = 0;
@@ -676,16 +679,18 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
     lastOriginationTime = entry->lastOriginationTime;
     if (currentPattern_ != entry->currentPattern) {
       currentPattern_ = entry->currentPattern;
-      uint32_t fps;
+      uint32_t fpsCompute;
+      uint32_t fpsWrites;
       uint8_t utilization;
       Milliseconds timeSpentComputingThisEpoch;
       Milliseconds epochDuration;
-      GenerateFPSReport(&fps, &utilization, &timeSpentComputingThisEpoch, &epochDuration);
-      jll_info("%u Following " DEVICE_ID_FMT ".p%u nh=%u %s new currentPattern %s (%08x) %u FPS %u%% %u/%ums",
+      GenerateFPSReport(&fpsCompute, &fpsWrites, &utilization, &timeSpentComputingThisEpoch, &epochDuration);
+      jll_info("%u Following " DEVICE_ID_FMT
+               ".p%u nh=%u %s new currentPattern %s (%08x) computed %u FPS wrote %u FPS %u%% %u/%ums",
                currentTime, DEVICE_ID_HEX(originator), precedence, currentNumHops_,
                (followedNextHopNetwork_ != nullptr ? followedNextHopNetwork_->networkName() : "null"),
-               patternName(currentPattern_).c_str(), currentPattern_, fps, utilization, timeSpentComputingThisEpoch,
-               epochDuration);
+               patternName(currentPattern_).c_str(), currentPattern_, fpsCompute, fpsWrites, utilization,
+               timeSpentComputingThisEpoch, epochDuration);
       printInstrumentationInfo(currentTime);
       lastLEDWriteTime_ = -1;
       shouldBeginPattern_ = true;
@@ -703,14 +708,16 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
         currentPattern_ = nextPattern_;
         nextPattern_ = enforceForcedPalette(computeNextPattern(nextPattern_));
       }
-      uint32_t fps;
+      uint32_t fpsCompute;
+      uint32_t fpsWrites;
       uint8_t utilization;
       Milliseconds timeSpentComputingThisEpoch;
       Milliseconds epochDuration;
-      GenerateFPSReport(&fps, &utilization, &timeSpentComputingThisEpoch, &epochDuration);
-      jll_info("%u We (" DEVICE_ID_FMT ".p%u) are leading, new currentPattern %s (%08x) %u FPS %u%% %u/%ums",
+      GenerateFPSReport(&fpsCompute, &fpsWrites, &utilization, &timeSpentComputingThisEpoch, &epochDuration);
+      jll_info("%u We (" DEVICE_ID_FMT
+               ".p%u) are leading, new currentPattern %s (%08x) computed %u FPS wrote %u FPS %u%% %u/%ums",
                currentTime, DEVICE_ID_HEX(localDeviceId_), precedence, patternName(currentPattern_).c_str(),
-               currentPattern_, fps, utilization, timeSpentComputingThisEpoch, epochDuration);
+               currentPattern_, fpsCompute, fpsWrites, utilization, timeSpentComputingThisEpoch, epochDuration);
       printInstrumentationInfo(currentTime);
       lastLEDWriteTime_ = -1;
       shouldBeginPattern_ = true;

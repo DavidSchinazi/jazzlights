@@ -5,6 +5,7 @@
 
 #ifdef ARDUINO
 
+#include <atomic>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -25,9 +26,9 @@
 
 namespace jazzlights {
 
-class FastLedRunner {
+class FastLedRunner : public Player::NumLedWritesGetter {
  public:
-  explicit FastLedRunner(Player* player) : player_(player) {}
+  explicit FastLedRunner(Player* player) : player_(player) { numWritesThisEpoch_.store(0, std::memory_order_relaxed); }
 
   // Disallow copy and move.
   FastLedRunner(const FastLedRunner&) = delete;
@@ -81,6 +82,9 @@ class FastLedRunner {
   }
 #endif  // JL_FASTLED_RUNNER_HAS_UI
 
+  // From Player::NumLedWritesGetter.
+  uint32_t GetAndClearNumWrites() override { return numWritesThisEpoch_.exchange(0, std::memory_order_relaxed); }
+
  private:
 #if JL_FASTLED_RUNNER_HAS_UI
   void SetupUi() {
@@ -97,6 +101,7 @@ class FastLedRunner {
   uint8_t brightnessLocked_ = 0;  // Protected by lockedLedMutex_.
   TaskHandle_t taskHandle_ = nullptr;
   Player* player_;  // Unowned.
+  std::atomic<uint32_t> numWritesThisEpoch_;
 
 #if JL_FASTLED_RUNNER_HAS_UI
   CLEDController* uiController_ = nullptr;

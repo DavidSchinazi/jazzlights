@@ -22,12 +22,13 @@ int runMain() {
   while (true) {
     const Milliseconds currentTime = timeMillis();
     if (currentTime - lastFpsEpochTime > 1000) {
-      uint32_t fps;
+      uint32_t fpsCompute;
+      uint32_t fpsWrites;
       uint8_t utilization = 0;
       Milliseconds timeSpentComputingThisEpoch;
       Milliseconds epochDuration;
-      player.GenerateFPSReport(&fps, &utilization, &timeSpentComputingThisEpoch, &epochDuration);
-      jll_info("%u FPS %u%% %u/%ums", fps, utilization, timeSpentComputingThisEpoch, epochDuration);
+      player.GenerateFPSReport(&fpsCompute, &fpsWrites, &utilization, &timeSpentComputingThisEpoch, &epochDuration);
+      jll_info("%u FPS %u%% %u/%ums", fpsCompute, utilization, timeSpentComputingThisEpoch, epochDuration);
       lastFpsEpochTime = currentTime;
     }
     player.render(currentTime);

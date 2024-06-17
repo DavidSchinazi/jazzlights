@@ -81,8 +81,8 @@ class Player {
   /**
    * Computes FPS information and resets counters.
    */
-  void GenerateFPSReport(uint32_t* fps, uint8_t* utilization, Milliseconds* timeSpentComputingThisEpoch,
-                         Milliseconds* epochDuration);
+  void GenerateFPSReport(uint32_t* fpsCompute, uint32_t* fpsWrites, uint8_t* utilization,
+                         Milliseconds* timeSpentComputingThisEpoch, Milliseconds* epochDuration);
 
   /**
    * Returns the bounding box of all pixels
@@ -130,6 +130,13 @@ class Player {
   CRGB color_override() const { return color_override_; }
   void CloudNext(Milliseconds currentTime);
 #endif  // CLOUDS
+
+  class NumLedWritesGetter {
+   public:
+    virtual ~NumLedWritesGetter() = default;
+    virtual uint32_t GetAndClearNumWrites() = 0;
+  };
+  void SetNumLedWritesGetter(NumLedWritesGetter* numLedWritesGetter) { numLedWritesGetter_ = numLedWritesGetter; }
 
  private:
   void UpdateStatusWatcher();
@@ -191,6 +198,7 @@ class Player {
   CRGB color_override_;
 #endif  // CLOUDS
 
+  NumLedWritesGetter* numLedWritesGetter_ = nullptr;
   std::vector<Network*> networks_;
   std::list<OriginatorEntry> originatorEntries_;
 
