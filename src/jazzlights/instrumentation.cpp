@@ -22,34 +22,6 @@ namespace jazzlights {
 
 namespace {
 
-const char* TimePointToString(TimePoint timePoint) {
-  switch (timePoint) {
-#define X(v) \
-  case k##v: return #v;
-    ALL_TIME_POINTS
-#undef X
-  }
-  return "Unknown";
-}
-
-struct TimePointData {
-  int64_t lastSavedTime = -1;
-  int64_t sumTimes = 0;
-};
-
-TimePointData gTimePointDatas[kNumTimePoints];
-
-void printAndClearTimePoints() {
-  int64_t totalTimePointsSum = 0;
-  for (size_t i = 0; i < kNumTimePoints; i++) { totalTimePointsSum += gTimePointDatas[i].sumTimes; }
-  const int64_t minPercentOffset = totalTimePointsSum / 200;
-  for (size_t i = 0; i < kNumTimePoints; i++) {
-    jll_info("%15s: %2lld%% %8lld", TimePointToString(static_cast<TimePoint>(i)),
-             (gTimePointDatas[i].sumTimes * 100 + minPercentOffset) / totalTimePointsSum, gTimePointDatas[i].sumTimes);
-  }
-  for (size_t i = 0; i < kNumTimePoints; i++) { gTimePointDatas[i] = TimePointData(); }
-}
-
 const char* CountPointToString(CountPoint countPoint) {
   switch (countPoint) {
 #define X(v) \
@@ -79,16 +51,6 @@ void printAndClearCountPoints() {
 }  // namespace
 
 int64_t gNumLedWrites = 0;
-
-void saveTimePoint(TimePoint timePoint) {
-  TimePointData& thisTimePointData = gTimePointDatas[timePoint];
-  const TimePointData& prevTimePointData =
-      timePoint > 0 ? gTimePointDatas[timePoint - 1] : gTimePointDatas[kNumTimePoints - 1];
-  thisTimePointData.lastSavedTime = esp_timer_get_time();
-  if (prevTimePointData.lastSavedTime >= 0) {
-    thisTimePointData.sumTimes += thisTimePointData.lastSavedTime - prevTimePointData.lastSavedTime;
-  }
-}
 
 void saveCountPoint(CountPoint countPoint) { gCountPointDatas[countPoint]++; }
 
@@ -161,7 +123,11 @@ void printInstrumentationInfo(Milliseconds currentTime) {
   free(tastStatuses);
 #endif  // JL_INSTRUMENTATION
 #if JL_TIMING
-  printAndClearTimePoints();
+
+#define Y(n, a) TimePointSaver<n##TimePoint>::Get()->PrintAndClearTimePoints();
+  ALL_TIME_POINT_ENUMS
+#undef Y
+
   printAndClearCountPoints();
   jll_info("Wrote to LEDs %f times per second",
            static_cast<double>(gNumLedWrites) * 1000 / (currentTime - lastInstrumentationLog));

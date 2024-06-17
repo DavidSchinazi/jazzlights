@@ -82,24 +82,23 @@ void arduinoSetup(void) {
 }
 
 void arduinoLoop(void) {
-  SAVE_TIME_POINT(LoopStart);
+  SAVE_TIME_POINT(ArduinoLoop, LoopStart);
   Milliseconds currentTime = timeMillis();
   ui.RunLoop(currentTime);
-  SAVE_TIME_POINT(UserInterface);
+  SAVE_TIME_POINT(ArduinoLoop, UserInterface);
   Esp32BleNetwork::get()->runLoop(currentTime);
-  SAVE_TIME_POINT(Bluetooth);
+  SAVE_TIME_POINT(ArduinoLoop, Bluetooth);
 
   const bool shouldRender = player.render(currentTime);
-  SAVE_TIME_POINT(PlayerCompute);
+  SAVE_TIME_POINT(ArduinoLoop, PlayerCompute);
   if (shouldRender) { runner.Render(); }
-  SAVE_TIME_POINT(LedRunner);
 #if JL_WEBSOCKET_SERVER
   if (ArduinoEspWiFiNetwork::get()->status() != INITIALIZING) {
     // This can't be called until after the networks have been initialized.
     websocket_server.Start();
   }
 #endif  // JL_WEBSOCKET_SERVER
-  SAVE_TIME_POINT(LoopEnd);
+  SAVE_TIME_POINT(ArduinoLoop, LoopEnd);
 }
 
 }  // namespace jazzlights

@@ -33,6 +33,7 @@ constexpr UBaseType_t kFastLedNotificationIndex = 0;
 static_assert(kFastLedNotificationIndex < configTASK_NOTIFICATION_ARRAY_ENTRIES, "index too high");
 
 void FastLedRunner::SendLedsToFastLed() {
+  SAVE_TIME_POINT(FastLed, Start);
   bool shouldWrite = false;
   uint8_t brightness;
 #if JL_FASTLED_RUNNER_HAS_UI
@@ -41,6 +42,7 @@ void FastLedRunner::SendLedsToFastLed() {
 #endif  // JL_FASTLED_RUNNER_HAS_UI
   {
     const std::lock_guard<std::mutex> lock(lockedLedMutex_);
+    SAVE_TIME_POINT(FastLed, GetLock);
     brightness = brightnessLocked_;
 #if JL_FASTLED_RUNNER_HAS_UI
     uiFresh = uiFreshLocked_;
@@ -55,6 +57,7 @@ void FastLedRunner::SendLedsToFastLed() {
       if (renderers_[i]->copyLedsFromLockedToFastLed()) { shouldWrite = true; }
     }
   }
+  SAVE_TIME_POINT(FastLed, Copy);
   SAVE_COUNT_POINT(LedPrintLoop);
 
   // This code initially would only write to a given renderer if there was data for that renderer. However, we later
@@ -78,6 +81,7 @@ void FastLedRunner::SendLedsToFastLed() {
   uiController_->showLeds(uiBrightness);
 #endif  // JL_FASTLED_RUNNER_HAS_UI
   ledWriteEnd();
+  SAVE_TIME_POINT(FastLed, WriteToLeds);
 }
 
 void FastLedRunner::Render() {
@@ -100,8 +104,10 @@ void FastLedRunner::Render() {
             player_->is_power_limited() ? " (limited)" : "");
 #endif  // JL_MAX_MILLIWATTS
 
+  SAVE_TIME_POINT(ArduinoLoop, Brightness);
   {
     const std::lock_guard<std::mutex> lock(lockedLedMutex_);
+    SAVE_TIME_POINT(ArduinoLoop, GetLock);
     brightnessLocked_ = brightness;
     for (auto& renderer : renderers_) { renderer->copyLedsFromPlayerToLocked(); }
 #if JL_FASTLED_RUNNER_HAS_UI
@@ -113,11 +119,14 @@ void FastLedRunner::Render() {
     }
 #endif  // JL_FASTLED_RUNNER_HAS_UI
   }
+  SAVE_TIME_POINT(ArduinoLoop, Copy);
 
   // Notify the FastLED task that there is new data to write.
   (void)xTaskGenericNotify(taskHandle_, kFastLedNotificationIndex,
                            /*notification_value=*/0, eNoAction, /*previousNotificationValue=*/nullptr);
+  SAVE_TIME_POINT(ArduinoLoop, Notify);
   vTaskDelay(1);  // Yield.
+  SAVE_TIME_POINT(ArduinoLoop, Yield);
 }
 
 // static
@@ -130,6 +139,7 @@ void FastLedRunner::TaskFunction(void* parameters) {
     runner->SendLedsToFastLed();
     // Block this task until we are notified that there is new data to write.
     (void)ulTaskGenericNotifyTake(kFastLedNotificationIndex, pdTRUE, portMAX_DELAY);
+    SAVE_TIME_POINT(FastLed, WaitForNotify);
   }
 }
 
