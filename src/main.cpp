@@ -4,11 +4,63 @@
 
 #ifdef ARDUINO
 
+#define JL_ARDUINO_LOOP_ON_OTHER_CORE 0
+// While we have confirmed that moving the arduino loop to core 0 works, it doesn't make much a difference in practice
+// because we already get 100 computed FPS and 89 written FPS on the vests, which is currently our highest LED count.
+// So we have it disabled for now, but could enable it if we get other performance issues.
+
 #include "jazzlights/arduino_loop.h"
 
-void setup() { jazzlights::arduinoSetup(); }
+#if JL_ARDUINO_LOOP_ON_OTHER_CORE
 
-void loop() { jazzlights::arduinoLoop(); }
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
+#include "jazzlights/util/log.h"
+
+namespace jazzlights {
+namespace {
+
+TaskHandle_t gTaskHandle = nullptr;
+
+void ArduinoTaskFunction(void* parameters) {
+  arduinoSetup();
+  uint8_t loopCount = 0;
+  while (true) {
+    arduinoLoop();
+    // Without this delay, the watchdog fires because the IDLE task never gets to run. Another option would be to run
+    // this task at tskIDLE_PRIORITY, but in practice that performs poorly and we get FPS way below 100.
+    vTaskDelay(1);
+  }
+}
+
+void SetupArduinoTask() {
+  BaseType_t ret = xTaskCreatePinnedToCore(ArduinoTaskFunction, "ArduinoJL", CONFIG_ARDUINO_LOOP_STACK_SIZE,
+                                           /*parameters=*/nullptr,
+                                           /*priority=*/30, &gTaskHandle, /*coreID=*/0);
+  if (ret != pdPASS) { jll_fatal("Failed to create ArduinoJL task"); }
+}
+
+}  // namespace
+}  // namespace jazzlights
+
+#endif  // JL_ARDUINO_LOOP_ON_OTHER_CORE
+
+void setup() {
+#if JL_ARDUINO_LOOP_ON_OTHER_CORE
+  jazzlights::SetupArduinoTask();
+#else   // JL_ARDUINO_LOOP_ON_OTHER_CORE
+  jazzlights::arduinoSetup();
+#endif  // JL_ARDUINO_LOOP_ON_OTHER_CORE
+}
+
+void loop() {
+#if JL_ARDUINO_LOOP_ON_OTHER_CORE
+  vTaskDelay(1000000 / portTICK_PERIOD_MS);
+#else   // JL_ARDUINO_LOOP_ON_OTHER_CORE
+  jazzlights::arduinoLoop();
+#endif  // JL_ARDUINO_LOOP_ON_OTHER_CORE
+}
 
 #else  // ARDUINO
 
