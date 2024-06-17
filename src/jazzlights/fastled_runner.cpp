@@ -126,7 +126,7 @@ void FastLedRunner::Render() {
   (void)xTaskGenericNotify(taskHandle_, kFastLedNotificationIndex,
                            /*notification_value=*/0, eNoAction, /*previousNotificationValue=*/nullptr);
   SAVE_TIME_POINT(ArduinoLoop, Notify);
-  vTaskDelay(1);  // Yield.
+  taskYIELD();
   SAVE_TIME_POINT(ArduinoLoop, Yield);
 }
 
