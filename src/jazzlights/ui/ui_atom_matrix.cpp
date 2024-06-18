@@ -4,8 +4,6 @@
 
 #if JL_IS_CONTROLLER(ATOM_MATRIX)
 
-#include <Arduino.h>
-
 #include <cstdint>
 #include <memory>
 
