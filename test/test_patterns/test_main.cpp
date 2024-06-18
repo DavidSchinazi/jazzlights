@@ -219,7 +219,6 @@ void tearDown(void) {}
 #ifdef ARDUINO
 
 void setup() {
-  Serial.begin(115200);
   // The 2s delay is required if board doesn't support software reset via Serial.DTR/RTS.
   delay(2000);
 

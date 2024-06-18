@@ -56,9 +56,9 @@ void setLEDs(uint32_t milli, CRGB* leds, size_t numLeds, CRGB colorA, CRGB color
       leds##n, numLeds##n);
 #endif
 
-#define LOG_TIME(s)                           \
-  milli2 = millis();                          \
-  Serial.printf(#s ": %d\n", milli2 - milli); \
+#define LOG_TIME(s)                      \
+  milli2 = millis();                     \
+  ::printf(#s ": %d\n", milli2 - milli); \
   milli = milli2;
 
 #define SET_LEDS(n, ca, cb) setLEDs(milli, leds##n, numLeds##n, ca, cb);
@@ -79,7 +79,6 @@ ALLOCATE_LED(8, LED_SIZE)
 // ALLOCATE_LED(9, 200)
 
 void setup() {
-  Serial.begin(115200);
   ADD_LEDS(1, 27)
   ADD_LEDS(2, 26)
   ADD_LEDS(3, 21)
@@ -101,7 +100,6 @@ void setup() {
 }
 
 void loop() {
-  //   Serial.println();
   uint32_t milli = millis(), milli2;
   SET_LEDS(1, CRGB::Red, CRGB::Green)
   SET_LEDS(2, CRGB::Yellow, CRGB::Blue)
