@@ -2,26 +2,20 @@
 #define JL_UTIL_LOG_H
 
 #include <cstdio>
+#include <cstdlib>
 
 namespace jazzlights {
 
-extern bool gDebugLoggingEnabled;
+inline bool is_debug_logging_enabled() { return false; }
 
-inline bool is_debug_logging_enabled() { return gDebugLoggingEnabled; }
+}  // namespace jazzlights
 
-inline void enable_debug_logging() { gDebugLoggingEnabled = true; }
+// On ESP32, printf automatically prints to UART 0, which is already properly configured to 115200 8-N-1.
+// We considered replacing our custom logging with esp_log, however the Arduino Core for ESP-IDF hard-codes the max log
+// level to error-only at compile time (see CONFIG_LOG_MAXIMUM_LEVEL=1). Additionally, it logs function, file, and line
+// number - and that makes logs longer than a screen. We could revisit this if we end up compiling our own ESP-IDF.
 
-#ifdef ARDUINO
-
-__attribute__((format(printf, 1, 2))) void arduinoLog(const char* format, ...);
-
-#define _LOG_AT_LEVEL(levelStr, format, ...) arduinoLog(levelStr ": " format, ##__VA_ARGS__)
-
-#else  // ARDUINO
-
-#define _LOG_AT_LEVEL(levelStr, format, ...) printf(levelStr ": " format "\n", ##__VA_ARGS__)
-
-#endif  // ARDUINO
+#define _LOG_AT_LEVEL(levelStr, format, ...) ::printf(levelStr ": " format "\n", ##__VA_ARGS__)
 
 #define jll_debug(format, ...)                                                         \
   do {                                                                                 \
@@ -36,7 +30,5 @@ __attribute__((format(printf, 1, 2))) void arduinoLog(const char* format, ...);
     _LOG_AT_LEVEL("FATAL", format, ##__VA_ARGS__); \
     abort();                                       \
   } while (0)
-
-}  // namespace jazzlights
 
 #endif  // JL_UTIL_LOG_H

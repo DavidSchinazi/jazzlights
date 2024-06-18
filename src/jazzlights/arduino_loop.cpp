@@ -47,7 +47,6 @@ WebSocketServer websocket_server(80, player);
 
 void arduinoSetup(void) {
   Milliseconds currentTime = timeMillis();
-  Serial.begin(115200);
   ui.set_fastled_runner(&runner);
   ui.InitialSetup(currentTime);
 
