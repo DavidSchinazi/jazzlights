@@ -14,6 +14,8 @@ namespace jazzlights {
 
 Milliseconds timeMillis() {
 #ifdef ESP32
+  // We measured this on the Atom Matrix ESP32 and it appears that timeMillis() takes about one microsecond and
+  // esp_timer_get_time() takes about half a microsecond.
   const int64_t systemTime = esp_timer_get_time() / 1000;
 #else   // ESP32
   static auto t0 = std::chrono::steady_clock::now();
