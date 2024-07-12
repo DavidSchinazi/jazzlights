@@ -74,7 +74,7 @@ NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status, Milliseconds 
         return CONNECTION_FAILED;
       }
       jll_info("%u %s Ethernet detected hardware status %s with MAC address " DEVICE_ID_FMT, currentTime, networkName(),
-               EthernetHardwareStatusToString(hwStatus).c_str());
+               EthernetHardwareStatusToString(hwStatus).c_str(), DEVICE_ID_HEX(localDeviceId_));
       return CONNECTING;
     }
     case CONNECTING: {
