@@ -1,0 +1,13 @@
+button {
+    outline: none;
+    cursor: pointer;
+    padding: 8px;
+    margin: 10px;
+    width: 230px;
+    font-family: Verdana, Helvetica, sans-serif;
+    font-size: 19px;
+    background-color: #61c0cb;
+    color: white;
+    border: 0px solid white;
+    border-radius: 25px;
+}

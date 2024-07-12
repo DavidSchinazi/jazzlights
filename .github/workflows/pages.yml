@@ -52,6 +52,7 @@ jobs:
           mkdir -p site/flash/esp-web-tools
           cp -R extras/flash-esp-from-web/esp-web-tools/*.js site/flash/esp-web-tools/
           cp extras/flash-esp-from-web/index.html site/flash/
+          cp extras/flash-esp-from-web/style.css site/flash/
           cp extras/flash-esp-from-web/manifest.json site/flash/
       - name: PlatformIO Build Merged Binary
         run: MERGED_BIN_PATH=site/flash/firmware-merged.bin pio run -t mergebin -e vest

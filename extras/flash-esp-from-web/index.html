@@ -1,9 +1,21 @@
 <!DOCTYPE html>
 <html>
-<body>
-    <h1>ESP Flash</h1>
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="style.css">
     <script type="module" src="esp-web-tools/install-button.js?module"></script>
-    <esp-web-install-button manifest="manifest.json"></esp-web-install-button>
+    <title>JazzLights Web Install</title>
+</head>
+<body>
+    <h1>JazzLights Web Install</h1>
+    <p>Press the Install button to install JazzLights on your connected device.</p>
+    <esp-web-install-button manifest="manifest.json">
+        <button slot="activate">Install</button>
+        <span slot="unsupported">
+            Your browser doesn't support installing things on ESP devices.
+            Use a Chromium-based browser such as Google Chrome or Microsoft Edge.
+        </span>
+    </esp-web-install-button>
 </body>
 </html>
 
