@@ -10,6 +10,7 @@ struct CharacterPixels {
   uint32_t rows[5];
 };
 
+// clang-format off
 constexpr CharacterPixels kCharacterMap[] = {
     {'\0', 5, {0b00000, 0b00000, 0b00000, 0b00000, 0b00000}},
     { ' ', 2,                {0b00, 0b00, 0b00, 0b00, 0b00}},
@@ -82,6 +83,7 @@ constexpr CharacterPixels kCharacterMap[] = {
     { '}', 2,                {0b10, 0b10, 0b01, 0b10, 0b10}},
     { '~', 4,      {0b0000, 0b0101, 0b1010, 0b0000, 0b0000}},
 };
+// clang-format on
 constexpr size_t kCharacterMapSize = sizeof(kCharacterMap) / sizeof(kCharacterMap[0]);
 
 // Useful debugging string:
