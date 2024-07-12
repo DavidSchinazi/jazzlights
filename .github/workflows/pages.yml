@@ -50,10 +50,10 @@ jobs:
       - name: Copy Static Files to Flash Folder
         run: |
           mkdir -p site/flash/esp-web-tools
-          cp -R extras/flash-esp-from-web/esp-web-tools/*.js site/flash/esp-web-tools/
-          cp extras/flash-esp-from-web/index.html site/flash/
-          cp extras/flash-esp-from-web/style.css site/flash/
-          ./extras/flash-esp-from-web/manifest.py --output site/flash/manifest.json --name "JazzLights Vest" --version $(git rev-parse --short "$GITHUB_SHA") --firmware vest.bin
+          cp -R extras/site/flash/esp-web-tools/*.js site/flash/esp-web-tools/
+          cp extras/site/flash/index.html site/flash/
+          cp extras/site/style.css site/
+          ./extras/site/flash/manifest.py --output site/flash/manifest.json --name "JazzLights Vest" --version $(git rev-parse --short "$GITHUB_SHA") --firmware vest.bin
       - name: PlatformIO Build Merged Binary
         run: MERGED_BIN_PATH=site/flash/vest.bin pio run -t mergebin -e vest
       - name: Upload artifact
