@@ -32,8 +32,8 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: "3.12"
-      - name: Install PlatformIO Core
-        run: pip install --upgrade platformio
+      - name: Install Python Dependencies
+        run: pip install --upgrade platformio beautifulsoup4 lxml
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
@@ -45,8 +45,8 @@ jobs:
         run: |
           mkdir -p "${{ runner.temp }}/site-upload"
           echo "upload_dir=${{ runner.temp }}/site-upload" >> "$GITHUB_ENV"
-      - name: Kramdown README
-        run: kramdown README.md > "${upload_dir}/index.html"
+      - name: Create Top-level index.html
+        run: extras/site/create-html.py --template extras/site/template.html --markdown README.md --output "${upload_dir}/index.html"
       - name: Copy Images
         run: cp -R extras/docs/images "${upload_dir}/"
       - name: Copy Static Files to Flash Folder
@@ -55,7 +55,7 @@ jobs:
           cp -R extras/site/flash/esp-web-tools/*.js "${upload_dir}/flash/esp-web-tools/"
           cp extras/site/flash/index.html "${upload_dir}/flash/"
           cp extras/site/style.css "${upload_dir}/"
-          ./extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest.json" --name "JazzLights Vest" --version $(git rev-parse --short "$GITHUB_SHA") --firmware vest.bin
+          extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest.json" --name "JazzLights Vest" --version $(git rev-parse --short "$GITHUB_SHA") --firmware vest.bin
       - name: PlatformIO Build Merged Binary
         run: MERGED_BIN_PATH="${upload_dir}/flash/vest.bin" pio run -t mergebin -e vest
       - name: Upload artifact
