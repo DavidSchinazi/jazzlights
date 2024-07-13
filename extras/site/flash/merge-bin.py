@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # Adds PlatformIO post-processing to merge all the ESP flash images into a single image.
 

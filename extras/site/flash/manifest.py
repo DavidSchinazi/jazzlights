@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # Creates a manifest.json suitable for ESP Web Tools.
 
