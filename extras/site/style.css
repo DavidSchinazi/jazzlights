@@ -2,7 +2,28 @@ body {
     background-color: #3b383f;
 }
 
-p, span, h1, h2, h3 {
+code {
+    background-color: #5c5663;
+}
+
+a {
+    color: #61c0cb;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+a:active {
+    text-decoration: underline;
+}
+
+p,
+span,
+h1,
+h2,
+h3 {
     color: #ffffff;
     font-family: Verdana, Helvetica, sans-serif;
 }
