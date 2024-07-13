@@ -42,7 +42,9 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Create Temporary Site Directory
-        run: echo "upload_dir=$(mktemp -d)" >> "$GITHUB_ENV"
+        run: |
+          mkdir -p "${{ runner.temp }}/site-upload"
+          echo "upload_dir=${{ runner.temp }}/site-upload" >> "$GITHUB_ENV"
       - name: Kramdown README
         run: kramdown README.md > "${upload_dir}/index.html"
       - name: Copy Images
@@ -59,7 +61,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "${upload_dir}"
+          path: "${{ runner.temp }}/site-upload"
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
