@@ -41,25 +41,25 @@ jobs:
         run: gem install kramdown
       - name: Setup Pages
         uses: actions/configure-pages@v5
-      - name: Prepare Site Folder
-        run: mkdir site
+      - name: Create Temporary Site Directory
+        run: echo "upload_dir=$(mktemp -d)" >> "$GITHUB_ENV"
       - name: Kramdown README
-        run: kramdown README.md > site/index.html
+        run: kramdown README.md > "${upload_dir}/index.html"
       - name: Copy Images
-        run: cp -R extras/docs/images site/
+        run: cp -R extras/docs/images "${upload_dir}/"
       - name: Copy Static Files to Flash Folder
         run: |
-          mkdir -p site/flash/esp-web-tools
-          cp -R extras/site/flash/esp-web-tools/*.js site/flash/esp-web-tools/
-          cp extras/site/flash/index.html site/flash/
-          cp extras/site/style.css site/
-          ./extras/site/flash/manifest.py --output site/flash/manifest.json --name "JazzLights Vest" --version $(git rev-parse --short "$GITHUB_SHA") --firmware vest.bin
+          mkdir -p "${upload_dir}/flash/esp-web-tools"
+          cp -R extras/site/flash/esp-web-tools/*.js "${upload_dir}/flash/esp-web-tools/"
+          cp extras/site/flash/index.html "${upload_dir}/flash/"
+          cp extras/site/style.css "${upload_dir}/"
+          ./extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest.json" --name "JazzLights Vest" --version $(git rev-parse --short "$GITHUB_SHA") --firmware vest.bin
       - name: PlatformIO Build Merged Binary
-        run: MERGED_BIN_PATH=site/flash/vest.bin pio run -t mergebin -e vest
+        run: MERGED_BIN_PATH="${upload_dir}/flash/vest.bin" pio run -t mergebin -e vest
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "site"
+          path: "${upload_dir}"
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
