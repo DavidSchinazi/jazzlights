@@ -9,13 +9,13 @@
 namespace jazzlights {
 
 namespace {
-#if JL_IS_CONFIG(CAPTAIN_HAT) || JL_IS_CONFIG(SHOE)
+#if JL_IS_CONFIG(HAT) || JL_IS_CONFIG(SHOE)
 constexpr uint8_t kIgnitionMin = 0;
 constexpr uint8_t kIgnitionMax = 15;
-#else   // CAPTAIN_HAT
+#else   // HAT
 constexpr uint8_t kIgnitionMin = 160;
 constexpr uint8_t kIgnitionMax = 255;
-#endif  // CAPTAIN_HAT
+#endif  // HAT
 }  // namespace
 
 void Flame::innerBegin(const Frame& f, FlameState* state) const {

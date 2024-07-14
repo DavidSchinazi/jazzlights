@@ -1,6 +1,6 @@
 #include "jazzlights/layout_data.h"
 
-#if JL_IS_CONFIG(CAPTAIN_HAT)
+#if JL_IS_CONFIG(HAT)
 
 #include "jazzlights/layouts/pixelmap.h"
 
@@ -70,4 +70,4 @@ void AddLedsToRunner(FastLedRunner* runner) { runner->AddLeds<WS2812B, LED_PIN, 
 
 }  // namespace jazzlights
 
-#endif  // CAPTAIN_HAT
+#endif  // HAT

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Tool used to generate the layout for the captain hat.
+# Tool used to generate the layout for the clouds.
 
 emptyX = -1337
 emptyY = -1337
