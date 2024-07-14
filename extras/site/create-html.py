@@ -12,12 +12,20 @@ parser.add_argument("--template", required=True)
 parser.add_argument("--markdown", required=True)
 parser.add_argument("--output", default="-")
 parser.add_argument("--url")
+parser.add_argument("--title")
 args = parser.parse_args()
 
 with open(args.template, encoding="utf-8") as template_file:
     template_data = template_file.read()
 
 soup = BeautifulSoup(template_data, "lxml")
+
+# Update page title.
+if args.title:
+    soup.head.title.string = args.title
+    for meta in soup.head.find_all("meta"):
+        if meta.get("property", "") == "og:title":
+            meta["content"] = args.title
 
 kramdown_data = run(
     ["kramdown", args.markdown], capture_output=True, check=True, encoding="utf-8"
