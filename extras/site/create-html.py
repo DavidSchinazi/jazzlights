@@ -41,13 +41,17 @@ for child in kramdown_soup.body.contents:
         elif not isinstance(child, element.Comment):
             child.extract()
 
-# Make external URLs open in separate tabs.
+# Fix links.
 if args.url:
     url = args.url
     if url[-1] == "/":
         url = url[:-1]
     for link in kramdown_soup.body.find_all("a"):
-        if link["href"] != url and not link["href"].startswith(url + "/"):
+        # Retarget markdown links to HTML.
+        if link["href"].endswith(".md"):
+            link["href"] = link["href"].split("/")[-1][:-3].lower() + ".html"
+        # Make external URLs open in separate tabs.
+        elif link["href"] != url and not link["href"].startswith(url + "/"):
             link["target"] = "_blank"
 
 replacement_point = soup.find("insert-kramdown-here")

@@ -9,6 +9,7 @@ while to avoid clock skew.
 
 JazzLights was the basis for large art cars and dozens of individual vests and
 other accessories. It's worked well out in the desert for several years.
+Instructions for building your own vest are [here](extras/docs/VEST.md).
 
 As such, JazzLights is not designed as a general-purpose LED library suitable
 for all projects. Adding new patterns or device layouts requires modifying the
