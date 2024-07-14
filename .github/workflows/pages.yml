@@ -45,13 +45,13 @@ jobs:
         run: |
           mkdir -p "${{ runner.temp }}/site-upload"
           echo "upload_dir=${{ runner.temp }}/site-upload" >> "$GITHUB_ENV"
-      - name: Create Top-level index.html
+      - name: Create HTML from Markdown
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           url=$(gh api "repos/$GITHUB_REPOSITORY/pages" --jq '.html_url')
           extras/site/create-html.py --template extras/site/template.html --markdown README.md --url $url --output "${upload_dir}/index.html"
-          extras/site/create-html.py --template extras/site/template.html --markdown extras/docs/VEST.md --url https://davidschinazi.github.io/jazzlights/ --output "${upload_dir}/vest.html"
+          extras/site/create-html.py --template extras/site/template.html --markdown extras/docs/VEST.md --url $url --output "${upload_dir}/vest.html"
       - name: Copy Images
         run: cp -R extras/docs/images "${upload_dir}/"
       - name: Copy Static Files to Flash Folder
