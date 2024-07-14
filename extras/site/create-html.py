@@ -50,7 +50,13 @@ if args.url:
         if link["href"] != url and not link["href"].startswith(url + "/"):
             link["target"] = "_blank"
 
-soup.body.replace_with(kramdown_soup.body)
+replacement_point = soup.find("insert-kramdown-here")
+if replacement_point:
+    new_contents = kramdown_soup.body
+    new_contents.name = "div"
+    replacement_point.replace_with(new_contents)
+else:
+    soup.body.replace_with(kramdown_soup.body)
 
 output_str = soup.prettify()
 
