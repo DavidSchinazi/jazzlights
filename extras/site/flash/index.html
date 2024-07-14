@@ -5,6 +5,10 @@
     <link rel="stylesheet" href="../style.css">
     <script type="module" src="esp-web-tools/install-button.js?module"></script>
     <title>JazzLights Web Install</title>
+    <meta property="og:title" content="JazzLights Web Install" />
+    <meta property="og:site_name" content="JazzLights" />
+    <meta property="og:type" content="website" />
+    <meta property="og:description" content="Install JazzLights from the Web." />
 </head>
 <body>
     <h1>JazzLights Web Install</h1>
@@ -18,6 +22,21 @@
         and then click the Install button before plugging in the device to see
         which new port appears after it's plugged in.
     </p>
+    <h4>Select the device you want to install:</h2>
+    <div class="hardware-buttons">
+      <label>
+        <input type="radio" name="hardware" onchange="onButtonClicked()" value="vest" checked />
+        Vest
+      </label>
+      <label>
+        <input type="radio" name="hardware" onchange="onButtonClicked()" value="shoe" />
+        Shoe
+      </label>
+      <label>
+        <input type="radio" name="hardware" onchange="onButtonClicked()" value="hat" />
+        Hat
+      </label>
+    </div>
     <esp-web-install-button manifest="manifest-vest.json">
         <button slot="activate">Install</button>
         <span slot="unsupported">
@@ -31,5 +50,12 @@
             ESP Web Tools
         </a>.
     </p>
+<script>
+    function onButtonClicked() {
+        const installButton = document.querySelector("esp-web-install-button");
+        const hardware = document.querySelector('input[name="hardware"]:checked').value;
+        installButton.manifest = `manifest-${hardware}.json`;
+    }
+</script>
 </body>
 </html>

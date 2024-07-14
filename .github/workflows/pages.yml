@@ -60,10 +60,16 @@ jobs:
           cp extras/site/flash/index.html "${upload_dir}/flash/"
           cp extras/site/style.css "${upload_dir}/"
           extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-vest.json" --name "JazzLights Vest" --version $(git rev-parse --short "$GITHUB_SHA") --firmware vest.bin --firmware-s3 vest_s3.bin
+          extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-shoe.json" --name "JazzLights Shoe" --version $(git rev-parse --short "$GITHUB_SHA") --firmware shoe.bin
+          extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-hat.json" --name "JazzLights Hat" --version $(git rev-parse --short "$GITHUB_SHA") --firmware hat.bin
       - name: PlatformIO Build Merged Vest Binary
         run: MERGED_BIN_PATH="${upload_dir}/flash/vest.bin" pio run -t mergebin -e vest
       - name: PlatformIO Build Merged Vest S3 Binary
         run: MERGED_BIN_PATH="${upload_dir}/flash/vest_s3.bin" pio run -t mergebin -e vest_s3
+      - name: PlatformIO Build Merged Shoe Binary
+        run: MERGED_BIN_PATH="${upload_dir}/flash/shoe.bin" pio run -t mergebin -e shoe
+      - name: PlatformIO Build Merged Hat Binary
+        run: MERGED_BIN_PATH="${upload_dir}/flash/hat.bin" pio run -t mergebin -e hat
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
