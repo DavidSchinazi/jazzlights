@@ -11,6 +11,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--template", required=True)
 parser.add_argument("--markdown", required=True)
 parser.add_argument("--output", default="-")
+parser.add_argument("--url")
 args = parser.parse_args()
 
 with open(args.template, encoding="utf-8") as template_file:
@@ -24,6 +25,7 @@ kramdown_data = run(
 
 kramdown_soup = BeautifulSoup(kramdown_data, "lxml")
 
+# Remove anything between website-skip-start / website-skip-stop comments.
 remove = False
 for child in kramdown_soup.body.contents:
     if isinstance(child, element.Comment):
@@ -38,6 +40,15 @@ for child in kramdown_soup.body.contents:
             child.decompose()
         elif not isinstance(child, element.Comment):
             child.extract()
+
+# Make external URLs open in separate tabs.
+if args.url:
+    url = args.url
+    if url[-1] == "/":
+        url = url[:-1]
+    for link in kramdown_soup.body.find_all("a"):
+        if link["href"] != url and not link["href"].startswith(url + "/"):
+            link["target"] = "_blank"
 
 soup.body.replace_with(kramdown_soup.body)
 

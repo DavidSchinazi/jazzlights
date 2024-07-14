@@ -46,7 +46,7 @@ jobs:
           mkdir -p "${{ runner.temp }}/site-upload"
           echo "upload_dir=${{ runner.temp }}/site-upload" >> "$GITHUB_ENV"
       - name: Create Top-level index.html
-        run: extras/site/create-html.py --template extras/site/template.html --markdown README.md --output "${upload_dir}/index.html"
+        run: extras/site/create-html.py --template extras/site/template.html --markdown README.md --url $url --output "${upload_dir}/index.html"
       - name: Copy Images
         run: cp -R extras/docs/images "${upload_dir}/"
       - name: Copy Static Files to Flash Folder
