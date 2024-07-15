@@ -3,12 +3,22 @@
 #ifdef ARDUINO
 #if !JL_DISABLE_BLUETOOTH
 
+#include <esp_bt.h>
+#include <esp_bt_main.h>
+#include <esp_gap_ble_api.h>
+
 #include <cmath>
 #include <string>
 #include <unordered_map>
 
 #include "jazzlights/pseudorandom.h"
 #include "jazzlights/util/log.h"
+
+#if !JL_ESP32S3 && !JL_ESP32C3
+#define JL_BLE4 1
+#else
+#define JL_BLE4 0
+#endif
 
 #ifndef ESP32_BLE_DEBUG_OVERRIDE
 #define ESP32_BLE_DEBUG_OVERRIDE 0
@@ -395,8 +405,26 @@ NetworkStatus Esp32BleNetwork::update(NetworkStatus status, Milliseconds current
 }
 
 Esp32BleNetwork::Esp32BleNetwork() {
-  // Let Arduino BLEDevice handle initialization.
-  BLEDevice::init("");
+  // Initialize ESP Bluetooth stack.
+  ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
+  esp_bt_controller_config_t cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+#if JL_BLE4
+  cfg.mode = ESP_BT_MODE_BLE;
+#endif  // JL_BLE4
+  ESP_ERROR_CHECK(esp_bt_controller_init(&cfg));
+  ESP_ERROR_CHECK(esp_bt_controller_enable(ESP_BT_MODE_BLE));
+  ESP_ERROR_CHECK(esp_bluedroid_init());
+  ESP_ERROR_CHECK(esp_bluedroid_enable());
+
+#if JL_BLE4
+  // If we remove the next line, or if we replace the condition with
+  // `if (false)`, then the call to esp_bt_controller_init above fails and
+  // returns ESP_ERR_INVALID_STATE. In theory, all btStarted() does is
+  // checking esp_bt_controller_get_status(), but checking that doesn't work.
+  // When we switch from arduino to espidf, hopefully this problem goes away.
+  if (esp_random() == 0xdeadbeef) { (void)btStarted(); }
+#endif  // JL_BLE4
+
   // Initialize localDeviceId_.
   uint8_t addressType;
   esp_bd_addr_t localAddress;

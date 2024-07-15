@@ -11,8 +11,7 @@
 
 #if !JL_DISABLE_BLUETOOTH
 
-#include <Arduino.h>
-#include <BLEDevice.h>
+#include <esp_gap_ble_api.h>
 
 #include <atomic>
 #include <list>
