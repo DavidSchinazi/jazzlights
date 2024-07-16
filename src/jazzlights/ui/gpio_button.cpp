@@ -2,7 +2,7 @@
 
 #ifdef ARDUINO
 
-#include <Arduino.h>
+#include <driver/gpio.h>
 
 #include "jazzlights/util/time.h"
 
@@ -12,10 +12,12 @@ static constexpr Milliseconds kDebounceTime = 20;
 static constexpr Milliseconds kLongPressTime = 1000;
 }  // namespace
 
-// Arduino's digitalRead() function can return spurious results sometimes. In particular when transitioning from
-// not-pressed to pressed, it might rapidly alternate between the two a few times before settling on the correct value.
-// To avoid reacting to these, we debounce the digital reads and only react after the value has settled for
-// kDebounceTime. See <https://docs.arduino.cc/built-in-examples/digital/Debounce> for details.
+// GPIO reads can return spurious results sometimes. In particular when
+// transitioning from not-pressed to pressed, it might rapidly alternate
+// between the two a few times before settling on the correct value. To avoid
+// reacting to these, we debounce the digital reads and only react after the
+// value has settled for kDebounceTime. See
+// <https://docs.arduino.cc/built-in-examples/digital/Debounce> for details.
 
 GpioButton::GpioButton(uint8_t pin, Interface& interface, Milliseconds currentTime)
     : interface_(interface),
@@ -25,11 +27,18 @@ GpioButton::GpioButton(uint8_t pin, Interface& interface, Milliseconds currentTi
       isPressedDebounced_(false),
       isHeld_(false),
       pin_(pin) {
-  pinMode(pin_, INPUT_PULLUP);
+  static const gpio_config_t config = {
+      .pin_bit_mask = (1ULL << pin_),
+      .mode = GPIO_MODE_INPUT,
+      .pull_up_en = GPIO_PULLUP_ENABLE,
+      .pull_down_en = GPIO_PULLDOWN_DISABLE,
+      .intr_type = GPIO_INTR_DISABLE,
+  };
+  ESP_ERROR_CHECK(gpio_config(&config));
 }
 
 void GpioButton::RunLoop(Milliseconds currentTime) {
-  const bool newIsPressed = (digitalRead(pin_) == LOW);
+  const bool newIsPressed = gpio_get_level(static_cast<gpio_num_t>(pin_)) == 0;
   if (newIsPressed != isPressedRaw_) {
     // Start debounce timer.
     isPressedRaw_ = newIsPressed;

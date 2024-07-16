@@ -418,7 +418,7 @@ Esp32BleNetwork::Esp32BleNetwork() {
 
 #if JL_BLE4
   // If we remove the next line, or if we replace the condition with
-  // `if (false)`, then the call to esp_bt_controller_init above fails and
+  // `if (false)`, then the call to esp_bt_controller_init() above fails and
   // returns ESP_ERR_INVALID_STATE. In theory, all btStarted() does is
   // checking esp_bt_controller_get_status(), but checking that doesn't work.
   // When we switch from arduino to espidf, hopefully this problem goes away.
