@@ -27,7 +27,7 @@ class GpioButton {
   // Starts tracking a button connected to a GPIO pin.
   explicit GpioButton(uint8_t pin, Interface& interface, Milliseconds currentTime);
 
-  // Needs to be called on every iteration of the Arduino run loop.
+  // Called once per primary runloop.
   void RunLoop(Milliseconds currentTime);
 
   // Returns whether the button is currently pressed.

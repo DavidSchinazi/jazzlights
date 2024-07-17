@@ -1,4 +1,4 @@
-#include "jazzlights/arduino_loop.h"
+#include "jazzlights/primary_runloop.h"
 
 #include "jazzlights/config.h"
 
@@ -45,7 +45,7 @@ Esp32UiImpl ui(player, timeMillis());
 WebSocketServer websocket_server(80, player);
 #endif  // JL_WEBSOCKET_SERVER
 
-void arduinoSetup(void) {
+void SetupPrimaryRunLoop() {
   Milliseconds currentTime = timeMillis();
   ui.set_fastled_runner(&runner);
   ui.InitialSetup(currentTime);
@@ -80,16 +80,16 @@ void arduinoSetup(void) {
   runner.Start();
 }
 
-void arduinoLoop(void) {
-  SAVE_TIME_POINT(ArduinoLoop, LoopStart);
+void RunPrimaryRunLoop() {
+  SAVE_TIME_POINT(PrimaryRunLoop, LoopStart);
   Milliseconds currentTime = timeMillis();
   ui.RunLoop(currentTime);
-  SAVE_TIME_POINT(ArduinoLoop, UserInterface);
+  SAVE_TIME_POINT(PrimaryRunLoop, UserInterface);
   Esp32BleNetwork::get()->runLoop(currentTime);
-  SAVE_TIME_POINT(ArduinoLoop, Bluetooth);
+  SAVE_TIME_POINT(PrimaryRunLoop, Bluetooth);
 
   const bool shouldRender = player.render(currentTime);
-  SAVE_TIME_POINT(ArduinoLoop, PlayerCompute);
+  SAVE_TIME_POINT(PrimaryRunLoop, PlayerCompute);
   if (shouldRender) { runner.Render(); }
 #if JL_WEBSOCKET_SERVER
   if (ArduinoEspWiFiNetwork::get()->status() != INITIALIZING) {
@@ -97,7 +97,7 @@ void arduinoLoop(void) {
     websocket_server.Start();
   }
 #endif  // JL_WEBSOCKET_SERVER
-  SAVE_TIME_POINT(ArduinoLoop, LoopEnd);
+  SAVE_TIME_POINT(PrimaryRunLoop, LoopEnd);
 }
 
 }  // namespace jazzlights

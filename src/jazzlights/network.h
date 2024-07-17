@@ -109,7 +109,7 @@ class Network {
   // Gets list of received messages since last call.
   std::list<NetworkMessage> getReceivedMessages(Milliseconds currentTime);
 
-  // Called once per Arduino loop.
+  // Called once per primary runloop.
   void runLoop(Milliseconds currentTime);
 
   // Get current network status.
@@ -142,7 +142,7 @@ class Network {
   virtual NetworkStatus update(NetworkStatus status, Milliseconds currentTime) = 0;
   // Gets list of received messages since last call.
   virtual std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds currentTime) = 0;
-  // Called once per Arduino loop.
+  // Called once per primary runloop.
   virtual void runLoopImpl(Milliseconds currentTime) = 0;
   NetworkStatus getStatus() const { return status_; }
   // Default address and port for sync packets over IP.

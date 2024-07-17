@@ -113,10 +113,10 @@ void FastLedRunner::Render() {
             player_->is_power_limited() ? " (limited)" : "");
 #endif  // JL_MAX_MILLIWATTS
 
-  SAVE_TIME_POINT(ArduinoLoop, Brightness);
+  SAVE_TIME_POINT(PrimaryRunLoop, Brightness);
   {
     const std::lock_guard<std::mutex> lock(lockedLedMutex_);
-    SAVE_TIME_POINT(ArduinoLoop, GetLock);
+    SAVE_TIME_POINT(PrimaryRunLoop, GetLock);
     brightnessLocked_ = brightness;
     for (auto& renderer : renderers_) { renderer->copyLedsFromPlayerToLocked(); }
 #if JL_FASTLED_RUNNER_HAS_UI
@@ -128,14 +128,14 @@ void FastLedRunner::Render() {
     }
 #endif  // JL_FASTLED_RUNNER_HAS_UI
   }
-  SAVE_TIME_POINT(ArduinoLoop, Copy);
+  SAVE_TIME_POINT(PrimaryRunLoop, Copy);
 
   // Notify the FastLED task that there is new data to write.
   (void)xTaskGenericNotify(taskHandle_, kFastLedNotificationIndex,
                            /*notification_value=*/0, eNoAction, /*previousNotificationValue=*/nullptr);
-  SAVE_TIME_POINT(ArduinoLoop, Notify);
+  SAVE_TIME_POINT(PrimaryRunLoop, Notify);
   taskYIELD();
-  SAVE_TIME_POINT(ArduinoLoop, Yield);
+  SAVE_TIME_POINT(PrimaryRunLoop, Yield);
 }
 
 // static
@@ -162,9 +162,9 @@ void FastLedRunner::Start() {
 #if !JL_FASTLED_INIT_ON_OUR_TASK
   Setup();
 #endif  // !JL_FASTLED_INIT_ON_OUR_TASK
-  // The Arduino loop is pinned to core 1. We were initially planning to pin FastLED writes to core 0, but that causes
-  // visual glitches due to various Bluetooth and/or Wi-Fi interrupts firing on that core while LEDs are being written
-  // to, so we instead pin FastLED to core 1.
+  // The primary runloop is pinned to core 1. We were initially planning to pin FastLED writes to core 0, but that
+  // causes visual glitches due to various Bluetooth and/or Wi-Fi interrupts firing on that core while LEDs are being
+  // written to, so we instead pin FastLED to core 1.
   BaseType_t ret = xTaskCreatePinnedToCore(TaskFunction, "FastLED", configMINIMAL_STACK_SIZE + 400,
                                            /*parameters=*/this,
                                            /*priority=*/30, &taskHandle_, /*coreID=*/1);

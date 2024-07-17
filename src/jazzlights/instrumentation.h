@@ -24,16 +24,16 @@ inline void printInstrumentationInfo(Milliseconds /*currentTime*/) {}
 
 // Add new time point categories here:
 
-#define ARDUINO_LOOP_TIME_POINTS(n) \
-  X(n, LoopStart)                   \
-  X(n, UserInterface)               \
-  X(n, Bluetooth)                   \
-  X(n, PlayerCompute)               \
-  X(n, Brightness)                  \
-  X(n, GetLock)                     \
-  X(n, Copy)                        \
-  X(n, Notify)                      \
-  X(n, Yield)                       \
+#define PRIMARY_RUNLOOP_TIME_POINTS(n) \
+  X(n, LoopStart)                      \
+  X(n, UserInterface)                  \
+  X(n, Bluetooth)                      \
+  X(n, PlayerCompute)                  \
+  X(n, Brightness)                     \
+  X(n, GetLock)                        \
+  X(n, Copy)                           \
+  X(n, Notify)                         \
+  X(n, Yield)                          \
   X(n, LoopEnd)
 
 #define FASTLED_TIME_POINTS(n) \
@@ -43,8 +43,8 @@ inline void printInstrumentationInfo(Milliseconds /*currentTime*/) {}
   X(n, WaitForNotify)          \
   X(n, WriteToLeds)
 
-#define ALL_TIME_POINT_ENUMS               \
-  Y(ArduinoLoop, ARDUINO_LOOP_TIME_POINTS) \
+#define ALL_TIME_POINT_ENUMS                     \
+  Y(PrimaryRunLoop, PRIMARY_RUNLOOP_TIME_POINTS) \
   Y(FastLed, FASTLED_TIME_POINTS)
 
 // Internal implementation of time points.
