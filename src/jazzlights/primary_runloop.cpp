@@ -10,9 +10,9 @@
 #include "jazzlights/fastled_runner.h"
 #include "jazzlights/instrumentation.h"
 #include "jazzlights/layout_data.h"
-#include "jazzlights/networks/arduino_esp_wifi.h"
 #include "jazzlights/networks/arduino_ethernet.h"
 #include "jazzlights/networks/esp32_ble.h"
+#include "jazzlights/networks/wifi.h"
 #include "jazzlights/player.h"
 #include "jazzlights/ui/ui.h"
 #include "jazzlights/ui/ui_atom_matrix.h"
@@ -24,7 +24,7 @@
 namespace jazzlights {
 
 #if JL_ARDUINO_ETHERNET
-ArduinoEthernetNetwork ethernetNetwork(ArduinoEspWiFiNetwork::get()->getLocalDeviceId().PlusOne());
+ArduinoEthernetNetwork ethernetNetwork(WiFiNetwork::get()->getLocalDeviceId().PlusOne());
 #endif  // JL_ARDUINO_ETHERNET
 Player player;
 FastLedRunner runner(&player);
@@ -69,7 +69,7 @@ void SetupPrimaryRunLoop() {
 #endif
 
   player.connect(Esp32BleNetwork::get());
-  player.connect(ArduinoEspWiFiNetwork::get());
+  player.connect(WiFiNetwork::get());
 #if JL_ARDUINO_ETHERNET
   player.connect(&ethernetNetwork);
 #endif  // JL_ARDUINO_ETHERNET
@@ -92,7 +92,7 @@ void RunPrimaryRunLoop() {
   SAVE_TIME_POINT(PrimaryRunLoop, PlayerCompute);
   if (shouldRender) { runner.Render(); }
 #if JL_WEBSOCKET_SERVER
-  if (ArduinoEspWiFiNetwork::get()->status() != INITIALIZING) {
+  if (WiFiNetwork::get()->status() != INITIALIZING) {
     // This can't be called until after the networks have been initialized.
     websocket_server.Start();
   }

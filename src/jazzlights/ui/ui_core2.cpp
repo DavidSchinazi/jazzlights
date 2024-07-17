@@ -7,8 +7,8 @@
 #include <M5Core2.h>
 
 #include "jazzlights/layouts/matrix.h"
-#include "jazzlights/networks/arduino_esp_wifi.h"
 #include "jazzlights/networks/esp32_ble.h"
+#include "jazzlights/networks/wifi.h"
 
 namespace jazzlights {
 
@@ -617,7 +617,7 @@ void Core2AwsUi::DrawSystemTextLines(Milliseconds currentTime) {
   snprintf(line, sizeof(line) - 1, "BLE: %s", Esp32BleNetwork::get()->getStatusStr(currentTime).c_str());
   DrawSystemTextLine(i++, line);
   // Wi-Fi.
-  snprintf(line, sizeof(line) - 1, "Wi-Fi: %s", ArduinoEspWiFiNetwork::get()->getStatusStr(currentTime).c_str());
+  snprintf(line, sizeof(line) - 1, "Wi-Fi: %s", WiFiNetwork::get()->getStatusStr(currentTime).c_str());
   DrawSystemTextLine(i++, line);
   // Other.
   const Network* followedNextHopNetwork = player_.followedNextHopNetwork();

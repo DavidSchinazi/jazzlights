@@ -9,8 +9,8 @@
 
 #include "jazzlights/fastled_runner.h"
 #include "jazzlights/fastled_wrapper.h"
-#include "jazzlights/networks/arduino_esp_wifi.h"
 #include "jazzlights/networks/esp32_ble.h"
+#include "jazzlights/networks/wifi.h"
 #include "jazzlights/text.h"
 #include "jazzlights/ui/gpio_button.h"
 
@@ -128,7 +128,7 @@ void AtomMatrixUi::ScreenDisplay(Milliseconds currentTime) {
 void AtomMatrixUi::ScreenNetwork(Milliseconds currentTime) {
   // Change top-right Atom matrix screen LED based on network status.
   CRGB wifiStatusColor = CRGB::Black;
-  switch (ArduinoEspWiFiNetwork::get()->status()) {
+  switch (WiFiNetwork::get()->status()) {
     case INITIALIZING: wifiStatusColor = CRGB::Pink; break;
     case DISCONNECTED: wifiStatusColor = CRGB::Purple; break;
     case CONNECTING: wifiStatusColor = CRGB::Yellow; break;
@@ -138,15 +138,14 @@ void AtomMatrixUi::ScreenNetwork(Milliseconds currentTime) {
   }
   screenLEDs_[4] = wifiStatusColor;
   CRGB followedNetworkColor = CRGB::Red;
-  if (player_.followedNextHopNetwork() == ArduinoEspWiFiNetwork::get()) {
+  if (player_.followedNextHopNetwork() == WiFiNetwork::get()) {
     switch (player_.currentNumHops()) {
       case 1: followedNetworkColor = CRGB(0, 255, 0); break;
       case 2: followedNetworkColor = CRGB(128, 255, 0); break;
       default: followedNetworkColor = CRGB(255, 255, 0); break;
     }
   }
-  const uint8_t wifiBrightness =
-      GetReceiveTimeBrightness(ArduinoEspWiFiNetwork::get()->getLastReceiveTime(), currentTime);
+  const uint8_t wifiBrightness = GetReceiveTimeBrightness(WiFiNetwork::get()->getLastReceiveTime(), currentTime);
   screenLEDs_[9] = CRGB(255 - wifiBrightness, wifiBrightness, 0);
   const uint8_t bleBrightness = GetReceiveTimeBrightness(Esp32BleNetwork::get()->getLastReceiveTime(), currentTime);
   screenLEDs_[14] = CRGB(255 - bleBrightness, 0, bleBrightness);
