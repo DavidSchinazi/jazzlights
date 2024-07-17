@@ -1,7 +1,7 @@
 #ifndef JL_NETWORKS_ARDUINO_ESP_WIFI_H
 #define JL_NETWORKS_ARDUINO_ESP_WIFI_H
 
-#ifdef ARDUINO
+#ifdef ESP32
 
 #include "jazzlights/network.h"
 
@@ -57,5 +57,5 @@ class ArduinoEspWiFiNetwork : public UdpNetwork {
 }  // namespace jazzlights
 
 #endif  // JL_ESP_WIFI
-#endif  // ARDUINO
+#endif  // ESP32
 #endif  // JL_NETWORKS_ARDUINO_ESP_WIFI_H

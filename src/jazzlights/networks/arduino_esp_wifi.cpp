@@ -1,6 +1,6 @@
 #include "jazzlights/networks/arduino_esp_wifi.h"
 
-#ifdef ARDUINO
+#ifdef ESP32
 #if JL_ESP_WIFI
 
 #include <sstream>
@@ -310,4 +310,4 @@ ArduinoEspWiFiNetwork* ArduinoEspWiFiNetwork::get() {
 }  // namespace jazzlights
 
 #endif  // JL_ESP_WIFI
-#endif  // ARDUINO
+#endif  // ESP32
