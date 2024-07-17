@@ -6,7 +6,7 @@
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/math.h"
 #include "jazzlights/util/time.h"
-#ifndef ARDUINO
+#ifndef ESP32
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -17,7 +17,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-#else
+#else  // ESP32
 #ifndef ntohl
 constexpr uint32_t ntohl(uint32_t n) {
   return ((n & 0xFF) << 24) | ((n & 0xFF00) << 8) | ((n & 0xFF0000) >> 8) | ((n & 0xFF000000) >> 24);
@@ -28,7 +28,7 @@ constexpr uint32_t htonl(uint32_t n) {
   return ((n & 0xFF) << 24) | ((n & 0xFF00) << 8) | ((n & 0xFF0000) >> 8) | ((n & 0xFF000000) >> 24);
 }
 #endif  // htonl
-#endif
+#endif  // ESP32
 
 namespace jazzlights {
 

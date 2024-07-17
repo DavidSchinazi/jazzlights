@@ -3,7 +3,7 @@
 
 #include "jazzlights/ui/ui.h"
 
-#ifdef ARDUINO
+#ifdef ESP32
 #if JL_IS_CONTROLLER(CORE2AWS)
 
 #ifndef CORE2AWS_LCD_ENABLED
@@ -38,5 +38,5 @@ typedef NoOpUi Core2AwsUi;
 }  // namespace jazzlights
 
 #endif  // JL_IS_CONTROLLER(CORE2AWS)
-#endif  // ARDUINO
+#endif  // ESP32
 #endif  // JL_UI_CORE2_H

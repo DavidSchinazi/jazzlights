@@ -1,7 +1,7 @@
 #ifndef JL_FASTLED_RENDERER_H
 #define JL_FASTLED_RENDERER_H
 
-#ifdef ARDUINO
+#ifdef ESP32
 
 #include <functional>
 #include <memory>
@@ -71,6 +71,6 @@ class FastLedRenderer : public Renderer {
 
 }  // namespace jazzlights
 
-#endif  // ARDUINO
+#endif  // ESP32
 
 #endif  // JL_FASTLED_RENDERER_H

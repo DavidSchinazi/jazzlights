@@ -4,7 +4,7 @@
 #include "jazzlights/layout_data.h"
 
 #if JL_IS_CONFIG(CLOUDS)
-#ifdef ARDUINO
+#ifdef ESP32
 
 #include "jazzlights/layout.h"
 
@@ -14,6 +14,6 @@ Layout* GetCloudsLayout();
 
 }  // namespace jazzlights
 
-#endif  // ARDUINO
+#endif  // ESP32
 #endif  // JL_IS_CONFIG(CLOUDS)
 #endif  // JL_LAYOUT_DATA_CLOUDS_H

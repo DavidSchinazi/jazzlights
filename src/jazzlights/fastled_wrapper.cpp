@@ -1,6 +1,6 @@
 #include "jazzlights/fastled_wrapper.h"
 
-#ifndef ARDUINO
+#ifndef ESP32
 
 CRGB CHSV(uint8_t h, uint8_t s, uint8_t v) {
   if (s == 0) { return CRGB(v, v, v); }
@@ -114,4 +114,4 @@ extern const TProgmemRGBPalette16 HeatColors_p FL_PROGMEM = {                   
     0xFF9900, 0xFFCC00, 0xFFFF00, 0xFFFF33,                                                //
     0xFFFF66, 0xFFFF99, 0xFFFFCC, 0xFFFFFF};                                               //
 
-#endif  // !ARDUINO
+#endif  // !ESP32

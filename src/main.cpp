@@ -2,7 +2,7 @@
 
 #ifndef PIO_UNIT_TESTING
 
-#ifdef ARDUINO
+#ifdef ESP32
 
 #define JL_ARDUINO_LOOP_ON_OTHER_CORE 0
 // While we have confirmed that moving the arduino loop to core 0 works, it actually performs slightly worse as there is
@@ -64,10 +64,10 @@ void loop() {
 #endif  // JL_ARDUINO_LOOP_ON_OTHER_CORE
 }
 
-#else  // ARDUINO
+#else  // ESP32
 
 int main(int /*argc*/, char** /*argv*/) { return 0; }
 
-#endif  // ARDUINO
+#endif  // ESP32
 
 #endif  // PIO_UNIT_TESTING

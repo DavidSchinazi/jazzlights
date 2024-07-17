@@ -2,7 +2,7 @@
 
 #include "jazzlights/config.h"
 
-#ifdef ARDUINO
+#ifdef ESP32
 
 #include <memory>
 #include <mutex>
@@ -30,16 +30,16 @@ Player player;
 FastLedRunner runner(&player);
 
 #if JL_IS_CONTROLLER(ATOM_MATRIX)
-typedef AtomMatrixUi ArduinoUiImpl;
+typedef AtomMatrixUi Esp32UiImpl;
 #elif JL_IS_CONTROLLER(ATOM_S3)
-typedef AtomS3Ui ArduinoUiImpl;
+typedef AtomS3Ui Esp32UiImpl;
 #elif JL_IS_CONTROLLER(CORE2AWS)
-typedef Core2AwsUi ArduinoUiImpl;
+typedef Core2AwsUi Esp32UiImpl;
 #else
-typedef NoOpUi ArduinoUiImpl;
+typedef NoOpUi Esp32UiImpl;
 #endif
 
-ArduinoUiImpl ui(player, timeMillis());
+Esp32UiImpl ui(player, timeMillis());
 
 #if JL_WEBSOCKET_SERVER
 WebSocketServer websocket_server(80, player);
@@ -102,4 +102,4 @@ void arduinoLoop(void) {
 
 }  // namespace jazzlights
 
-#endif  // ARDUINO
+#endif  // ESP32

@@ -1,19 +1,12 @@
 #ifndef JL_UTIL_GEOM_H
 #define JL_UTIL_GEOM_H
+
 #include <cmath>
 
 #include "jazzlights/util/math.h"
 
 namespace jazzlights {
 
-// I originally tried integer math, but it seems like it doesn't make
-// much difference neither on PC nor on arduino.
-//
-// Most likely this is because the main performance hog by far is conversion
-// between RGB & HSL spaces, which I do in floating-point anyway. And I
-// do it this way because everything I tried with fixed point so far looked
-// like crap. I may try again if I figure out fast AND decent looking HSL/RGBA
-// transform...
 using Coord = double;
 using Meters = double;
 

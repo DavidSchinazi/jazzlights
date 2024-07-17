@@ -3,7 +3,7 @@
 
 #include "jazzlights/config.h"
 
-#ifdef ARDUINO
+#ifdef ESP32
 
 #include <atomic>
 #include <functional>
@@ -121,6 +121,6 @@ class FastLedRunner : public Player::NumLedWritesGetter {
 
 }  // namespace jazzlights
 
-#endif  // ARDUINO
+#endif  // ESP32
 
 #endif  // JL_FASTLED_RUNNER_H

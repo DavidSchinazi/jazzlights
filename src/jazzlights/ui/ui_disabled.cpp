@@ -2,7 +2,7 @@
 
 #include "jazzlights/config.h"
 
-#ifdef ARDUINO
+#ifdef ESP32
 
 namespace jazzlights {
 namespace {
@@ -21,4 +21,4 @@ void NoOpUi::InitialSetup(Milliseconds /*currentTime*/) { player_.set_brightness
 
 }  // namespace jazzlights
 
-#endif  // ARDUINO
+#endif  // ESP32

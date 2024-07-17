@@ -3,7 +3,7 @@
 
 #include "jazzlights/ui/ui.h"
 
-#ifdef ARDUINO
+#ifdef ESP32
 #if JL_IS_CONTROLLER(ATOM_MATRIX)
 
 #define ATOM_SCREEN_NUM_LEDS 25
@@ -67,5 +67,5 @@ class AtomMatrixUi : public ArduinoUi, public GpioButton::Interface {
 }  // namespace jazzlights
 
 #endif  // JL_IS_CONTROLLER(ATOM_MATRIX)
-#endif  // ARDUINO
+#endif  // ESP32
 #endif  // JL_UI_ATOM_MATRIX_H

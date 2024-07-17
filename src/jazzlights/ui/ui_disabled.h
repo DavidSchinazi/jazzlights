@@ -3,7 +3,7 @@
 
 #include "jazzlights/ui/ui.h"
 
-#ifdef ARDUINO
+#ifdef ESP32
 
 namespace jazzlights {
 
@@ -17,5 +17,5 @@ class NoOpUi : public ArduinoUi {
 
 }  // namespace jazzlights
 
-#endif  // ARDUINO
+#endif  // ESP32
 #endif  // JL_UI_DISABLED_H

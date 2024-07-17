@@ -3,7 +3,7 @@
 
 #include "jazzlights/config.h"
 
-#ifdef ARDUINO
+#ifdef ESP32
 
 // Fixes flickering <https://github.com/FastLED/FastLED/issues/306>.
 #define FASTLED_ALLOW_INTERRUPTS 0
@@ -13,7 +13,7 @@
 
 #include <FastLED.h>
 
-#else  // ARDUINO
+#else  // ESP32
 
 // We mainly use FastLED to communicate with LEDs on embedded devices. However, we also use some of FastLED's data types
 // and math functions in the rest of our code. To avoid requiring a dependency on FastLED on platforms where we don't
@@ -386,6 +386,6 @@ typedef enum {
 CRGB ColorFromPalette(const TProgmemRGBPalette16& pal, uint8_t index, uint8_t brightness = 255,
                       TBlendType blendType = LINEARBLEND);
 
-#endif  // ARDUINO
+#endif  // ESP32
 
 #endif  // JL_FASTLED_WRAPPER_H

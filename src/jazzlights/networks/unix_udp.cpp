@@ -1,6 +1,6 @@
 #include "jazzlights/networks/unix_udp.h"
 
-#ifndef ARDUINO
+#ifndef ESP32
 
 #include <arpa/inet.h>
 #include <assert.h>
@@ -265,4 +265,4 @@ void UnixUdpNetwork::send(void* buf, size_t bufsize) {
 }
 
 }  // namespace jazzlights
-#endif  // ARDUINO
+#endif  // ESP32

@@ -1,6 +1,6 @@
 #include "jazzlights/ui/gpio_button.h"
 
-#ifdef ARDUINO
+#ifdef ESP32
 
 #include <driver/gpio.h>
 
@@ -84,4 +84,4 @@ bool GpioButton::HasBeenPressedLongEnoughForLongPress(Milliseconds currentTime) 
 
 }  // namespace jazzlights
 
-#endif  // ARDUINO
+#endif  // ESP32

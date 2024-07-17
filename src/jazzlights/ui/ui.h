@@ -3,7 +3,7 @@
 
 #include "jazzlights/config.h"
 
-#ifdef ARDUINO
+#ifdef ESP32
 
 #ifndef JL_BUTTON_LOCK
 #define JL_BUTTON_LOCK (!JL_DEV)
@@ -31,5 +31,5 @@ class ArduinoUi {
 
 }  // namespace jazzlights
 
-#endif  // ARDUINO
+#endif  // ESP32
 #endif  // JL_UI_H

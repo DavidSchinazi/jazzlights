@@ -1,6 +1,6 @@
 #include "jazzlights/fastled_renderer.h"
 
-#ifdef ARDUINO
+#ifdef ESP32
 
 #include "jazzlights/util/log.h"
 
@@ -45,4 +45,4 @@ void FastLedRenderer::sendToLeds(uint8_t brightness) { ledController_->showLeds(
 
 }  // namespace jazzlights
 
-#endif  // ARDUINO
+#endif  // ESP32

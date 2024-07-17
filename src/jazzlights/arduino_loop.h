@@ -3,7 +3,7 @@
 
 #include "jazzlights/config.h"
 
-#ifdef ARDUINO
+#ifdef ESP32
 
 namespace jazzlights {
 
@@ -12,6 +12,6 @@ void arduinoLoop(void);
 
 }  // namespace jazzlights
 
-#endif  // ARDUINO
+#endif  // ESP32
 
 #endif  // JL_ARDUINO_LOOP_H

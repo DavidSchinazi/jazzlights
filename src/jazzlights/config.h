@@ -81,15 +81,15 @@
 #endif  // JL_INSTRUMENTATION
 
 #ifndef JL_BOUNDS_CHECKS
-#ifdef ARDUINO
+#ifdef ESP32
 #ifdef PIO_UNIT_TESTING
 #define JL_BOUNDS_CHECKS 1
 #else  // PIO_UNIT_TESTING
 #define JL_BOUNDS_CHECKS 0
 #endif  // PIO_UNIT_TESTING
-#else   // ARDUINO
+#else   // ESP32
 #define JL_BOUNDS_CHECKS 1
-#endif  // ARDUINO
+#endif  // ESP32
 #endif  // JL_BOUNDS_CHECKS
 
 #define JL_WIFI_SSID "JazzLights"

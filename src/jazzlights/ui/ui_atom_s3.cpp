@@ -1,6 +1,6 @@
 #include "jazzlights/ui/ui_atom_s3.h"
 
-#ifdef ARDUINO
+#ifdef ESP32
 #if JL_IS_CONTROLLER(ATOM_S3)
 
 #include <M5Unified.h>
@@ -269,4 +269,4 @@ bool AtomS3Ui::DisplayContents::operator==(const DisplayContents& other) const {
 }  // namespace jazzlights
 
 #endif  // JL_IS_CONTROLLER(ATOM_S3)
-#endif  // ARDUINO
+#endif  // ESP32

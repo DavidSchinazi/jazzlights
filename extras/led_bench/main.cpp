@@ -25,9 +25,7 @@
 
 #ifndef PIO_UNIT_TESTING
 
-#ifdef ARDUINO
-
-#include <Arduino.h>
+#ifdef ESP32
 
 #include "jazzlights/fastled_wrapper.h"
 
@@ -123,6 +121,6 @@ void loop() {
   //   SHOW_LEDS(9)
 }
 
-#endif  // ARDUINO
+#endif  // ESP32
 
 #endif  // PIO_UNIT_TESTING

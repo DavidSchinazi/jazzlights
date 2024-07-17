@@ -2,7 +2,7 @@
 
 #include "jazzlights/config.h"
 
-#ifdef ARDUINO
+#ifdef ESP32
 
 #include "jazzlights/instrumentation.h"
 #include "jazzlights/ui/ui.h"
@@ -173,4 +173,4 @@ void FastLedRunner::Start() {
 
 }  // namespace jazzlights
 
-#endif  // ARDUINO
+#endif  // ESP32

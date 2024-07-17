@@ -3,7 +3,7 @@
 
 #include "jazzlights/ui/ui.h"
 
-#ifdef ARDUINO
+#ifdef ESP32
 #if JL_IS_CONTROLLER(ATOM_S3)
 
 #include "jazzlights/ui/gpio_button.h"
@@ -84,5 +84,5 @@ class AtomS3Ui : public ArduinoUi, public GpioButton::Interface {
 }  // namespace jazzlights
 
 #endif  // JL_IS_CONTROLLER(ATOM_S3)
-#endif  // ARDUINO
+#endif  // ESP32
 #endif  // JL_UI_ATOM_S3_H

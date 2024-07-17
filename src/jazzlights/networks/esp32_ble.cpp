@@ -1,6 +1,6 @@
 #include "esp32_ble.h"
 
-#ifdef ARDUINO
+#ifdef ESP32
 #if !JL_DISABLE_BLUETOOTH
 
 #include <esp_bt.h>
@@ -488,4 +488,4 @@ Esp32BleNetwork* Esp32BleNetwork::get() {
 
 }  // namespace jazzlights
 
-#endif  // ARDUINO
+#endif  // ESP32

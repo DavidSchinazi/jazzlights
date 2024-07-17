@@ -1,7 +1,7 @@
 #ifndef JL_NETWORKS_UNIX_UDP_H
 #define JL_NETWORKS_UNIX_UDP_H
 
-#ifndef ARDUINO
+#ifndef ESP32
 
 #include <netinet/in.h>
 
@@ -39,6 +39,6 @@ class UnixUdpNetwork : public UdpNetwork {
 
 }  // namespace jazzlights
 
-#endif  // ARDUINO
+#endif  // ESP32
 
 #endif  // JL_NETWORKS_UNIX_UDP_H

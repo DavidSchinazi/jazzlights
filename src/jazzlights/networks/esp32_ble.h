@@ -1,7 +1,7 @@
 #ifndef JL_NETWORKS_ESP32_BLE_H
 #define JL_NETWORKS_ESP32_BLE_H
 
-#ifdef ARDUINO
+#ifdef ESP32
 
 #ifndef JL_DISABLE_BLUETOOTH
 #define JL_DISABLE_BLUETOOTH 0
@@ -121,5 +121,5 @@ class Esp32BleNetwork : public Network {
 };
 }  // namespace jazzlights
 #endif  // JL_DISABLE_BLUETOOTH
-#endif  // ARDUINO
+#endif  // ESP32
 #endif  // JL_NETWORKS_ESP32_BLE_H

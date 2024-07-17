@@ -3,13 +3,13 @@
 
 #include "jazzlights/config.h"
 
-#ifdef ARDUINO
+#ifdef ESP32
 
 #include "jazzlights/util/time.h"
 
 namespace jazzlights {
 
-// Allows tracking buttons connected to Arduino GPIO pins.
+// Allows tracking buttons connected to ESP32 GPIO pins.
 class GpioButton {
  public:
   // Virtual interface class that will receive button callbacks.
@@ -48,5 +48,5 @@ class GpioButton {
 
 }  // namespace jazzlights
 
-#endif  // ARDUINO
+#endif  // ESP32
 #endif  // JL_GPIO_BUTTON_H

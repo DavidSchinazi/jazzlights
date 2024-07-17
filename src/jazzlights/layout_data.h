@@ -3,7 +3,7 @@
 
 #include "jazzlights/config.h"
 
-#ifdef ARDUINO
+#ifdef ESP32
 
 #define JL_LENGTH(_a) (sizeof(_a) / sizeof((_a)[0]))
 
@@ -29,6 +29,6 @@ void AddLedsToRunner(FastLedRunner* runner);
 
 }  // namespace jazzlights
 
-#endif  // ARDUINO
+#endif  // ESP32
 
 #endif  // JL_LAYOUT_DATA_H
