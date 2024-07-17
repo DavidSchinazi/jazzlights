@@ -52,12 +52,7 @@ void tearDown(void) {}
 
 #ifdef ESP32
 
-void setup() {
-  // The 2s delay is required if board doesn't support software reset via Serial.DTR/RTS.
-  delay(2000);
-
-  jazzlights::run_unity_tests();
-}
+void setup() { jazzlights::run_unity_tests(); }
 
 void loop() {}
 
