@@ -1,19 +1,19 @@
-#ifndef JL_NETWORKS_ESP32_WIFI_H
-#define JL_NETWORKS_ESP32_WIFI_H
+#ifndef JL_NETWORKS_ARDUINO_ESP32_WIFI_H
+#define JL_NETWORKS_ARDUINO_ESP32_WIFI_H
 
 #ifdef ESP32
 
 #include "jazzlights/network.h"
 
-// Esp32WiFiNetwork is currently work-in-progress.
+// ArduinoEsp32WiFiNetwork is currently work-in-progress.
 // TODO: finish this and use it to replace ArduinoEspWiFiNetwork.
-#define JL_ESP32_WIFI 0
+#define JL_ARDUINO_ESP32_WIFI 0
 
-#ifndef JL_ESP32_WIFI
-#define JL_ESP32_WIFI 1
-#endif  // JL_ESP32_WIFI
+#ifndef JL_ARDUINO_ESP32_WIFI
+#define JL_ARDUINO_ESP32_WIFI 1
+#endif  // JL_ARDUINO_ESP32_WIFI
 
-#if JL_ESP32_WIFI
+#if JL_ARDUINO_ESP32_WIFI
 
 #include <WiFi.h>
 
@@ -22,9 +22,9 @@
 
 namespace jazzlights {
 
-class Esp32WiFiNetwork : public Network {
+class ArduinoEsp32WiFiNetwork : public Network {
  public:
-  static Esp32WiFiNetwork* get();
+  static ArduinoEsp32WiFiNetwork* get();
 
   NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
   NetworkDeviceId getLocalDeviceId() override { return localDeviceId_; }
@@ -42,7 +42,7 @@ class Esp32WiFiNetwork : public Network {
   void runLoopImpl(Milliseconds /*currentTime*/) override {}
 
  private:
-  explicit Esp32WiFiNetwork();
+  explicit ArduinoEsp32WiFiNetwork();
   void TaskFunctionInner();
   static void WiFiDhcpTimerCallback(TimerHandle_t timer);
   void WiFiDhcpTimerCallbackInner();
@@ -61,6 +61,6 @@ class Esp32WiFiNetwork : public Network {
 
 }  // namespace jazzlights
 
-#endif  // JL_ESP32_WIFI
+#endif  // JL_ARDUINO_ESP32_WIFI
 #endif  // ESP32
-#endif  // JL_NETWORKS_ESP32_WIFI_H
+#endif  // JL_NETWORKS_ARDUINO_ESP32_WIFI_H
