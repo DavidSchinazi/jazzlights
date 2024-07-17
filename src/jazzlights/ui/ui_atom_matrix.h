@@ -13,10 +13,10 @@
 
 namespace jazzlights {
 
-class AtomMatrixUi : public ArduinoUi, public GpioButton::Interface {
+class AtomMatrixUi : public Esp32Ui, public GpioButton::Interface {
  public:
   explicit AtomMatrixUi(Player& player, Milliseconds currentTime);
-  // From ArduinoUi.
+  // From Esp32Ui.
   void InitialSetup(Milliseconds currentTime) override;
   void FinalSetup(Milliseconds currentTime) override;
   void RunLoop(Milliseconds currentTime) override;

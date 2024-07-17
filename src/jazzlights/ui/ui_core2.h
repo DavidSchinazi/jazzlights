@@ -16,10 +16,10 @@ namespace jazzlights {
 
 #if CORE2AWS_LCD_ENABLED
 
-class Core2AwsUi : public ArduinoUi {
+class Core2AwsUi : public Esp32Ui {
  public:
   explicit Core2AwsUi(Player& player, Milliseconds currentTime);
-  // From ArduinoUi.
+  // From Esp32Ui.
   void InitialSetup(Milliseconds currentTime) override;
   void FinalSetup(Milliseconds currentTime) override;
   void RunLoop(Milliseconds currentTime) override;

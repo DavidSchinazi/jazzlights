@@ -100,7 +100,7 @@ void AtomS3Ui::UpdateScreen(Milliseconds currentTime) {
 }
 
 AtomS3Ui::AtomS3Ui(Player& player, Milliseconds currentTime)
-    : ArduinoUi(player, currentTime),
+    : Esp32Ui(player, currentTime),
       button_(kButtonPin, *this, currentTime),
       brightnessCursor_(kInitialBrightnessCursor) {}
 

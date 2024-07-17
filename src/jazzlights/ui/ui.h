@@ -14,10 +14,10 @@
 
 namespace jazzlights {
 
-class ArduinoUi {
+class Esp32Ui {
  public:
-  explicit ArduinoUi(Player& player, Milliseconds currentTime) : player_(player) { (void)currentTime; }
-  virtual ~ArduinoUi() = default;
+  explicit Esp32Ui(Player& player, Milliseconds currentTime) : player_(player) { (void)currentTime; }
+  virtual ~Esp32Ui() = default;
 
   virtual void set_fastled_runner(FastLedRunner* runner) { (void)runner; }
 

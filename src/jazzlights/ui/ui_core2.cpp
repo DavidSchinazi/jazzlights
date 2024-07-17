@@ -563,7 +563,7 @@ void confirmButtonPressed(Player& player, Milliseconds currentTime) {
 }
 
 Core2AwsUi::Core2AwsUi(Player& player, Milliseconds currentTime)
-    : ArduinoUi(player, currentTime), ledBrightness_(kInitialLedBrightness), onBrightness_(kDefaultOnBrightness) {}
+    : Esp32Ui(player, currentTime), ledBrightness_(kInitialLedBrightness), onBrightness_(kDefaultOnBrightness) {}
 
 void Core2AwsUi::InitialSetup(Milliseconds currentTime) {
   player_.set_brightness(ledBrightness_);

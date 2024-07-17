@@ -216,7 +216,7 @@ void AtomMatrixUi::ScreenShort(Milliseconds currentTime) {
 }
 
 AtomMatrixUi::AtomMatrixUi(Player& player, Milliseconds currentTime)
-    : ArduinoUi(player, currentTime),
+    : Esp32Ui(player, currentTime),
       button_(kButtonPin, *this, currentTime),
       brightnessCursor_(kInitialBrightnessCursor) {}
 
