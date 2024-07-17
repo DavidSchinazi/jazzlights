@@ -24,7 +24,7 @@ class ArduinoEspWiFiNetwork : public UdpNetwork {
   int recv(void* buf, size_t bufsize, std::string* details) override;
   void send(void* buf, size_t bufsize) override;
   NetworkDeviceId getLocalDeviceId() override { return localDeviceId_; }
-  const char* networkName() const override { return "ArduinoEspWiFiNetwork"; }
+  const char* networkName() const override { return "ArduinoEspWiFi"; }
   const char* shortNetworkName() const override { return "WiFi"; }
   std::string getStatusStr(Milliseconds currentTime) const override;
 
