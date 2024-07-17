@@ -19,10 +19,6 @@
 #include "jazzlights/effects/threesine.h"
 #include "jazzlights/layouts/matrix.h"
 
-#ifdef ARDUINO
-#include <Arduino.h>
-#endif  // ARDUINO
-
 namespace jazzlights {
 
 void test_pattern(const Effect& effect) {
@@ -216,7 +212,7 @@ void setUp(void) {}
 
 void tearDown(void) {}
 
-#ifdef ARDUINO
+#ifdef ESP32
 
 void setup() {
   // The 2s delay is required if board doesn't support software reset via Serial.DTR/RTS.
@@ -227,11 +223,11 @@ void setup() {
 
 void loop() {}
 
-#else  // ARDUINO
+#else  // ESP32
 
 int main(int /*argc*/, char** /*argv*/) {
   jazzlights::run_unity_tests();
   return 0;
 }
 
-#endif  // ARDUINO
+#endif  // ESP32
