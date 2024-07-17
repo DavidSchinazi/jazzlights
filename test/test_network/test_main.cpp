@@ -4,7 +4,7 @@
 
 namespace jazzlights {
 
-void test_network_reader(void) {
+void test_network_reader() {
   uint8_t buffer[7] = {1, 2, 3, 4, 5, 6, 7};
   NetworkReader reader(buffer, sizeof(buffer));
   uint8_t u8;
@@ -18,7 +18,7 @@ void test_network_reader(void) {
   TEST_ASSERT_EQUAL(u32, 0x04050607);
   TEST_ASSERT_FALSE(reader.ReadUint8(&u8));
 }
-void test_network_writer(void) {
+void test_network_writer() {
   uint8_t buffer[7] = {};
   NetworkWriter writer(buffer, sizeof(buffer));
   uint8_t u8 = 1;
@@ -46,9 +46,9 @@ void run_unity_tests() {
 
 }  // namespace jazzlights
 
-void setUp(void) {}
+void setUp() {}
 
-void tearDown(void) {}
+void tearDown() {}
 
 #ifdef ESP32
 

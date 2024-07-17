@@ -56,119 +56,119 @@ void test_pattern(const Effect& effect) {
   frame.context = nullptr;
 }
 
-void test_spin_pattern(void) {
+void test_spin_pattern() {
   static const SpinPlasma spin_pattern;
   test_pattern(spin_pattern);
 }
-void test_hiphotic_pattern(void) {
+void test_hiphotic_pattern() {
   static const Hiphotic hiphotic_pattern;
   test_pattern(hiphotic_pattern);
 }
-void test_metaballs_pattern(void) {
+void test_metaballs_pattern() {
   static const Metaballs metaballs_pattern;
   test_pattern(metaballs_pattern);
 }
-void test_colored_bursts_pattern(void) {
+void test_colored_bursts_pattern() {
   static const ColoredBursts colored_bursts_pattern;
   test_pattern(colored_bursts_pattern);
 }
-void test_flame_pattern(void) {
+void test_flame_pattern() {
   static const Flame flame_pattern;
   test_pattern(flame_pattern);
 }
-void test_glitter_pattern(void) {
+void test_glitter_pattern() {
   static const Glitter glitter_pattern;
   test_pattern(glitter_pattern);
 }
-void test_thematrix_pattern(void) {
+void test_thematrix_pattern() {
   static const TheMatrix thematrix_pattern;
   test_pattern(thematrix_pattern);
 }
-void test_rings_pattern(void) {
+void test_rings_pattern() {
   static const Rings rings_pattern;
   test_pattern(rings_pattern);
 }
-void test_threesine_pattern(void) {
+void test_threesine_pattern() {
   static const FunctionalEffect threesine_pattern = threesine();
   test_pattern(threesine_pattern);
 }
-void test_follow_strand_effect(void) {
+void test_follow_strand_effect() {
   static const FunctionalEffect follow_strand_effect = follow_strand();
   test_pattern(follow_strand_effect);
 }
-void test_mapping_effect(void) {
+void test_mapping_effect() {
   static const FunctionalEffect mapping_effect = mapping();
   test_pattern(mapping_effect);
 }
-void test_coloring_effect(void) {
+void test_coloring_effect() {
   static const FunctionalEffect coloring_effect = coloring();
   test_pattern(coloring_effect);
 }
-void test_calibration_effect(void) {
+void test_calibration_effect() {
   static const FunctionalEffect calibration_effect = calibration();
   test_pattern(calibration_effect);
 }
-void test_sync_test_effect(void) {
+void test_sync_test_effect() {
   static const FunctionalEffect sync_test_effect = sync_test();
   test_pattern(sync_test_effect);
 }
-void test_black_effect(void) {
+void test_black_effect() {
   static const FunctionalEffect black_effect = solid(CRGB::Black, "black");
   test_pattern(black_effect);
 }
-void test_red_effect(void) {
+void test_red_effect() {
   static const FunctionalEffect red_effect = solid(CRGB::Black, "red");
   test_pattern(red_effect);
 }
-void test_green_effect(void) {
+void test_green_effect() {
   static const FunctionalEffect green_effect = solid(CRGB::Green, "green");
   test_pattern(green_effect);
 }
-void test_blue_effect(void) {
+void test_blue_effect() {
   static const FunctionalEffect blue_effect = solid(CRGB::Blue, "blue");
   test_pattern(blue_effect);
 }
-void test_purple_effect(void) {
+void test_purple_effect() {
   static const FunctionalEffect purple_effect = solid(CRGB::Purple, "purple");
   test_pattern(purple_effect);
 }
-void test_cyan_effect(void) {
+void test_cyan_effect() {
   static const FunctionalEffect cyan_effect = solid(CRGB::Cyan, "cyan");
   test_pattern(cyan_effect);
 }
-void test_yellow_effect(void) {
+void test_yellow_effect() {
   static const FunctionalEffect yellow_effect = solid(CRGB::Yellow, "yellow");
   test_pattern(yellow_effect);
 }
-void test_white_effect(void) {
+void test_white_effect() {
   static const FunctionalEffect white_effect = solid(CRGB::White, "white");
   test_pattern(white_effect);
 }
-void testred_glow_effect(void) {
+void testred_glow_effect() {
   static const FunctionalEffect red_glow_effect = glow(CRGB::Black, "glow-red");
   test_pattern(red_glow_effect);
 }
-void test_green_glow_effect(void) {
+void test_green_glow_effect() {
   static const FunctionalEffect green_glow_effect = glow(CRGB::Green, "glow-green");
   test_pattern(green_glow_effect);
 }
-void test_blue_glow_effect(void) {
+void test_blue_glow_effect() {
   static const FunctionalEffect blue_glow_effect = glow(CRGB::Blue, "glow-blue");
   test_pattern(blue_glow_effect);
 }
-void test_purple_glow_effect(void) {
+void test_purple_glow_effect() {
   static const FunctionalEffect purple_glow_effect = glow(CRGB::Purple, "glow-purple");
   test_pattern(purple_glow_effect);
 }
-void test_cyan_glow_effect(void) {
+void test_cyan_glow_effect() {
   static const FunctionalEffect cyan_glow_effect = glow(CRGB::Cyan, "glow-cyan");
   test_pattern(cyan_glow_effect);
 }
-void test_yellow_glow_effect(void) {
+void test_yellow_glow_effect() {
   static const FunctionalEffect yellow_glow_effect = glow(CRGB::Yellow, "glow-yellow");
   test_pattern(yellow_glow_effect);
 }
-void test_white_glow_effect(void) {
+void test_white_glow_effect() {
   static const FunctionalEffect white_glow_effect = glow(CRGB::White, "glow-white");
   test_pattern(white_glow_effect);
 }
@@ -208,9 +208,9 @@ void run_unity_tests() {
 
 }  // namespace jazzlights
 
-void setUp(void) {}
+void setUp() {}
 
-void tearDown(void) {}
+void tearDown() {}
 
 #ifdef ESP32
 
