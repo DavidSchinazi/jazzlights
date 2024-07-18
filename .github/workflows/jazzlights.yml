@@ -4,15 +4,6 @@ on:
   push:
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
-
 jobs:
   check-format:
     runs-on: ubuntu-latest
@@ -44,9 +35,38 @@ jobs:
         run: cmake --build extras/build
 
   platformio:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio/.cache
+          key: ${{ runner.os }}-pio
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+      - name: Install PlatformIO Core
+        run: pip install --upgrade platformio
+      - name: PlatformIO Build
+        run: pio run
+      - name: PlatformIO Test
+        run: pio test -e native
+
+  pages:
+    if: github.ref == 'refs/heads/main'
     needs:
       - check-format
       - extras
+      - platformio
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: "pages"
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -71,14 +91,12 @@ jobs:
       - name: Install Kramdown
         run: gem install kramdown
       - name: Setup Pages
-        if: github.ref == 'refs/heads/main'
         uses: actions/configure-pages@v5
       - name: Create Temporary Site Directory
         run: |
           mkdir -p "${{ runner.temp }}/site-upload"
           echo "upload_dir=${{ runner.temp }}/site-upload" >> "$GITHUB_ENV"
       - name: Create HTML from Markdown
-        if: github.ref == 'refs/heads/main'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -96,10 +114,6 @@ jobs:
           extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-vest.json" --name "JazzLights Vest" --version $(git rev-parse --short "$GITHUB_SHA") --firmware vest.bin --firmware-s3 vest_s3.bin
           extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-shoe.json" --name "JazzLights Shoe" --version $(git rev-parse --short "$GITHUB_SHA") --firmware shoe.bin
           extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-hat.json" --name "JazzLights Hat" --version $(git rev-parse --short "$GITHUB_SHA") --firmware hat.bin
-      - name: PlatformIO Build
-        run: pio run
-      - name: PlatformIO Test
-        run: pio test -e native
       - name: PlatformIO Build Merged Vest Binary
         run: MERGED_BIN_PATH="${upload_dir}/flash/vest.bin" pio run -t mergebin -e vest
       - name: PlatformIO Build Merged Vest S3 Binary
@@ -109,11 +123,9 @@ jobs:
       - name: PlatformIO Build Merged Hat Binary
         run: MERGED_BIN_PATH="${upload_dir}/flash/hat.bin" pio run -t mergebin -e hat
       - name: Upload artifact
-        if: github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v3
         with:
           path: "${{ runner.temp }}/site-upload"
       - name: Deploy to GitHub Pages
-        if: github.ref == 'refs/heads/main'
         id: deployment
         uses: actions/deploy-pages@v4
