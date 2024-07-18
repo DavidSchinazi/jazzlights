@@ -23,6 +23,8 @@
 
 namespace jazzlights {
 
+// Useless test comment.
+
 #if JL_ARDUINO_ETHERNET
 ArduinoEthernetNetwork ethernetNetwork(WiFiNetwork::get()->getLocalDeviceId().PlusOne());
 #endif  // JL_ARDUINO_ETHERNET
