@@ -37,18 +37,7 @@ jobs:
   platformio:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/pip
-            ~/.platformio/.cache
-          key: ${{ runner.os }}-pio
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Install PlatformIO Core
-        run: pip install --upgrade platformio
+      - uses: ./.github/workflows/setup-platformio.yml
       - name: PlatformIO Build
         run: pio run
       - name: PlatformIO Test
@@ -72,19 +61,13 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: ./.github/workflows/setup-platformio.yml
       - uses: actions/cache@v4
         with:
-          path: |
-            ~/.cache/pip
-            ~/.platformio/.cache
-          key: ${{ runner.os }}-pio
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip
       - name: Install Python Dependencies
-        run: pip install --upgrade platformio beautifulsoup4 lxml
+        run: pip install --upgrade beautifulsoup4 lxml
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
