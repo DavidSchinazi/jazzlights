@@ -1,8 +1,7 @@
-name: Build and Deploy GitHub Pages
+name: "Jazzlights: Build and Test Code; Deploy Pages"
 
 on:
   push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -15,7 +14,39 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  check-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check format
+        run: ./check_format.sh
+
+  extras:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev wayland-protocols libwayland-dev libxkbcommon-dev libglu1-mesa-dev freeglut3-dev mesa-common-dev
+      - name: Download and Install GLFW3 Dependency
+        run: |
+          GLFW_VERSION=$(curl -Ls https://api.github.com/repos/glfw/glfw/releases/latest | grep tag_name | sed 's/.*:[^"]"\([^"]*\)".*/\1/')
+          echo ${GLFW_VERSION}
+          curl -OLs https://github.com/glfw/glfw/releases/download/${GLFW_VERSION}/glfw-${GLFW_VERSION}.zip
+          rm -rf glfw-${GLFW_VERSION} >/dev/null 2>&1
+          unzip -q glfw-${GLFW_VERSION}.zip
+          cmake -S glfw-${GLFW_VERSION} -B glfw-${GLFW_VERSION}/build
+          sudo make -C glfw-${GLFW_VERSION}/build install
+      - name: Prepare CMake Files
+        run: cmake -S extras -B extras/build
+      - name: Build
+        run: cmake --build extras/build
+
+  platformio:
+    needs:
+      - check-format
+      - extras
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -63,6 +94,10 @@ jobs:
           extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-vest.json" --name "JazzLights Vest" --version $(git rev-parse --short "$GITHUB_SHA") --firmware vest.bin --firmware-s3 vest_s3.bin
           extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-shoe.json" --name "JazzLights Shoe" --version $(git rev-parse --short "$GITHUB_SHA") --firmware shoe.bin
           extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-hat.json" --name "JazzLights Hat" --version $(git rev-parse --short "$GITHUB_SHA") --firmware hat.bin
+      - name: PlatformIO Build
+        run: pio run
+      - name: PlatformIO Test
+        run: pio test -e native
       - name: PlatformIO Build Merged Vest Binary
         run: MERGED_BIN_PATH="${upload_dir}/flash/vest.bin" pio run -t mergebin -e vest
       - name: PlatformIO Build Merged Vest S3 Binary
@@ -76,5 +111,6 @@ jobs:
         with:
           path: "${{ runner.temp }}/site-upload"
       - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main'
         id: deployment
         uses: actions/deploy-pages@v4
