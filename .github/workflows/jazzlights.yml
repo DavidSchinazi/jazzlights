@@ -71,12 +71,14 @@ jobs:
       - name: Install Kramdown
         run: gem install kramdown
       - name: Setup Pages
+        if: github.ref == 'refs/heads/main'
         uses: actions/configure-pages@v5
       - name: Create Temporary Site Directory
         run: |
           mkdir -p "${{ runner.temp }}/site-upload"
           echo "upload_dir=${{ runner.temp }}/site-upload" >> "$GITHUB_ENV"
       - name: Create HTML from Markdown
+        if: github.ref == 'refs/heads/main'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -107,6 +109,7 @@ jobs:
       - name: PlatformIO Build Merged Hat Binary
         run: MERGED_BIN_PATH="${upload_dir}/flash/hat.bin" pio run -t mergebin -e hat
       - name: Upload artifact
+        if: github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v3
         with:
           path: "${{ runner.temp }}/site-upload"
