@@ -110,8 +110,13 @@ void ArduinoEsp32WiFiNetwork::disableSending(Milliseconds /*currentTime*/) {
 void ArduinoEsp32WiFiNetwork::triggerSendAsap(Milliseconds /*currentTime*/) {}
 
 std::list<NetworkMessage> ArduinoEsp32WiFiNetwork::getReceivedMessagesImpl(Milliseconds /*currentTime*/) {
-  const std::lock_guard<std::mutex> lock(mutex_);
-  return receivedMessages_;
+  std::list<NetworkMessage> results;
+  {
+    const std::lock_guard<std::mutex> lock(mutex_);
+    results = std::move(receivedMessages_);
+    receivedMessages_.clear();
+  }
+  return results;
 }
 
 void ArduinoEsp32WiFiNetwork::reconnectToWiFi(Milliseconds currentTime, bool force) {
