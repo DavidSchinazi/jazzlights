@@ -156,6 +156,14 @@ class Network {
     return "224.0.0.169";
   }
 
+  // Parse the UDP payload we use over IP networks into a NetworkMessage.
+  bool ParseUdpPayload(uint8_t* udpPayload, size_t udpPayloadLength, const std::string& receiptDetails,
+                       Milliseconds currentTime, NetworkMessage* outMessage);
+
+  // Write a NetworkMessage into a buffer that can be sent over UDP/IP.
+  bool WriteUdpPayload(const NetworkMessage& messageToSend, uint8_t* udpPayload, size_t udpPayloadLength,
+                       Milliseconds currentTime);
+
  private:
   void checkStatus(Milliseconds currentTime);
   void reconnect(Milliseconds currentTime);

@@ -144,7 +144,56 @@ constexpr uint8_t kOriginationTimeOffset = kNumHopsOffset + 1;
 constexpr uint8_t kCurrentPatternOffset = kOriginationTimeOffset + 2;
 constexpr uint8_t kNextPatternOffset = kCurrentPatternOffset + 4;
 constexpr uint8_t kPatternTimeOffset = kNextPatternOffset + 4;
-constexpr uint8_t kPayloadLength = kPatternTimeOffset + 2;
+constexpr size_t kPayloadLength = kPatternTimeOffset + 2;
+
+bool Network::ParseUdpPayload(uint8_t* udpPayload, size_t udpPayloadLength, const std::string& receiptDetails,
+                              Milliseconds currentTime, NetworkMessage* outMessage) {
+  if (udpPayloadLength < kPayloadLength) {
+    jll_debug("%u %s Received packet too short, received %zd bytes, expected at least %zu bytes", currentTime,
+              networkName(), udpPayloadLength, kPayloadLength);
+    return false;
+  }
+  if ((udpPayload[kVersionOffset] & 0xF0) != kVersion) {
+    jll_debug("%u %s Received packet with unexpected prefix %02x", currentTime, networkName(),
+              udpPayload[kVersionOffset]);
+    return false;
+  }
+  NetworkMessage receivedMessage;
+  receivedMessage.originator = NetworkDeviceId(&udpPayload[kOriginatorOffset]);
+  receivedMessage.sender = NetworkDeviceId(&udpPayload[kSenderOffset]);
+  receivedMessage.precedence = readUint16(&udpPayload[kPrecedenceOffset]);
+  receivedMessage.numHops = udpPayload[kNumHopsOffset];
+  Milliseconds originationTimeDelta = readUint16(&udpPayload[kOriginationTimeOffset]);
+  receivedMessage.currentPattern = readUint32(&udpPayload[kCurrentPatternOffset]);
+  receivedMessage.nextPattern = readUint32(&udpPayload[kNextPatternOffset]);
+  Milliseconds patternTimeDelta = readUint16(&udpPayload[kPatternTimeOffset]);
+  receivedMessage.receiptDetails = receiptDetails;
+
+  // TODO measure transmission offset over various underlying UDP networks like Wi-Fi and Ethernet.
+  constexpr Milliseconds kTransmissionOffset = 5;
+  Milliseconds receiptTime;
+  if (currentTime > kTransmissionOffset) {
+    receiptTime = currentTime - kTransmissionOffset;
+  } else {
+    receiptTime = 0;
+  }
+  if (receiptTime >= patternTimeDelta) {
+    receivedMessage.currentPatternStartTime = receiptTime - patternTimeDelta;
+  } else {
+    receivedMessage.currentPatternStartTime = 0;
+  }
+  if (receiptTime >= originationTimeDelta) {
+    receivedMessage.lastOriginationTime = receiptTime - originationTimeDelta;
+  } else {
+    receivedMessage.lastOriginationTime = 0;
+  }
+
+  jll_debug("%u %s received %s", currentTime, networkName(),
+            networkMessageToString(receivedMessage, currentTime).c_str());
+
+  *outMessage = receivedMessage;
+  return true;
+}
 
 std::list<NetworkMessage> UdpNetwork::getReceivedMessagesImpl(Milliseconds currentTime) {
   std::list<NetworkMessage> receivedMessages;
@@ -154,48 +203,8 @@ std::list<NetworkMessage> UdpNetwork::getReceivedMessagesImpl(Milliseconds curre
     std::string receiptDetails;
     ssize_t n = recv(&udpPayload[0], sizeof(udpPayload), &receiptDetails);
     if (n <= 0) { break; }
-    if (n < kPayloadLength) {
-      jll_debug("%u %s Received packet too short, received %zd bytes, expected at least %u bytes", currentTime,
-                networkName(), n, kPayloadLength);
-      continue;
-    }
-    if ((udpPayload[kVersionOffset] & 0xF0) != kVersion) {
-      jll_debug("%u %s Received packet with unexpected prefix %02x", currentTime, networkName(),
-                udpPayload[kVersionOffset]);
-      continue;
-    }
     NetworkMessage receivedMessage;
-    receivedMessage.originator = NetworkDeviceId(&udpPayload[kOriginatorOffset]);
-    receivedMessage.sender = NetworkDeviceId(&udpPayload[kSenderOffset]);
-    receivedMessage.precedence = readUint16(&udpPayload[kPrecedenceOffset]);
-    receivedMessage.numHops = udpPayload[kNumHopsOffset];
-    Milliseconds originationTimeDelta = readUint16(&udpPayload[kOriginationTimeOffset]);
-    receivedMessage.currentPattern = readUint32(&udpPayload[kCurrentPatternOffset]);
-    receivedMessage.nextPattern = readUint32(&udpPayload[kNextPatternOffset]);
-    Milliseconds patternTimeDelta = readUint16(&udpPayload[kPatternTimeOffset]);
-    receivedMessage.receiptDetails = receiptDetails;
-
-    // TODO measure transmission offset over various underlying UDP networks like Wi-Fi and Ethernet.
-    constexpr Milliseconds kTransmissionOffset = 5;
-    Milliseconds receiptTime;
-    if (currentTime > kTransmissionOffset) {
-      receiptTime = currentTime - kTransmissionOffset;
-    } else {
-      receiptTime = 0;
-    }
-    if (receiptTime >= patternTimeDelta) {
-      receivedMessage.currentPatternStartTime = receiptTime - patternTimeDelta;
-    } else {
-      receivedMessage.currentPatternStartTime = 0;
-    }
-    if (receiptTime >= originationTimeDelta) {
-      receivedMessage.lastOriginationTime = receiptTime - originationTimeDelta;
-    } else {
-      receivedMessage.lastOriginationTime = 0;
-    }
-
-    jll_debug("%u %s received %s", currentTime, networkName(),
-              networkMessageToString(receivedMessage, currentTime).c_str());
+    if (!ParseUdpPayload(udpPayload, n, receiptDetails, currentTime, &receivedMessage)) { continue; }
     receivedMessages.push_back(receivedMessage);
     lastReceiveTime_ = currentTime;
   }
@@ -224,6 +233,41 @@ void Network::runLoop(Milliseconds currentTime) {
 
 bool UdpNetwork::maybeHandleNotConnected(Milliseconds /*currentTime*/) { return status() == CONNECTED; }
 
+bool Network::WriteUdpPayload(const NetworkMessage& messageToSend, uint8_t* udpPayload, size_t udpPayloadLength,
+                              Milliseconds currentTime) {
+  if (udpPayloadLength < kPayloadLength) {
+    jll_error("%u %s cannot send message due to payload too short %zu < %zu", currentTime, networkName(),
+              udpPayloadLength, kPayloadLength);
+    return false;
+  }
+
+  Milliseconds originationTimeDelta;
+  if (messageToSend.lastOriginationTime <= currentTime && currentTime - messageToSend.lastOriginationTime <= 0xFFFF) {
+    originationTimeDelta = currentTime - messageToSend.lastOriginationTime;
+  } else {
+    originationTimeDelta = 0xFFFF;
+  }
+  Milliseconds patternTime;
+  if (messageToSend.currentPatternStartTime <= currentTime &&
+      currentTime - messageToSend.currentPatternStartTime <= 0xFFFF) {
+    patternTime = currentTime - messageToSend.currentPatternStartTime;
+  } else {
+    patternTime = 0xFFFF;
+  }
+  jll_debug("%u %s sending %s", currentTime, networkName(), networkMessageToString(messageToSend, currentTime).c_str());
+
+  udpPayload[kVersionOffset] = kVersion;
+  messageToSend.originator.writeTo(&udpPayload[kOriginatorOffset]);
+  messageToSend.sender.writeTo(&udpPayload[kSenderOffset]);
+  writeUint16(&udpPayload[kPrecedenceOffset], messageToSend.precedence);
+  udpPayload[kNumHopsOffset] = messageToSend.numHops;
+  writeUint16(&udpPayload[kOriginationTimeOffset], originationTimeDelta);
+  writeUint32(&udpPayload[kCurrentPatternOffset], messageToSend.currentPattern);
+  writeUint32(&udpPayload[kNextPatternOffset], messageToSend.nextPattern);
+  writeUint16(&udpPayload[kPatternTimeOffset], patternTime);
+  return true;
+}
+
 void UdpNetwork::runLoopImpl(Milliseconds currentTime) {
   if (!maybeHandleNotConnected(currentTime)) { return; }
 
@@ -233,33 +277,11 @@ void UdpNetwork::runLoopImpl(Milliseconds currentTime) {
                          messageToSend_.currentPattern != lastSentPattern_)) {
     effectLastTxTime_ = currentTime;
     lastSentPattern_ = messageToSend_.currentPattern;
-    Milliseconds originationTimeDelta;
-    if (messageToSend_.lastOriginationTime <= currentTime &&
-        currentTime - messageToSend_.lastOriginationTime <= 0xFFFF) {
-      originationTimeDelta = currentTime - messageToSend_.lastOriginationTime;
-    } else {
-      originationTimeDelta = 0xFFFF;
-    }
-    Milliseconds patternTime;
-    if (messageToSend_.currentPatternStartTime <= currentTime &&
-        currentTime - messageToSend_.currentPatternStartTime <= 0xFFFF) {
-      patternTime = currentTime - messageToSend_.currentPatternStartTime;
-    } else {
-      patternTime = 0xFFFF;
-    }
-    jll_debug("%u %s sending %s", currentTime, networkName(),
-              networkMessageToString(messageToSend_, currentTime).c_str());
 
     uint8_t udpPayload[kPayloadLength] = {};
-    udpPayload[kVersionOffset] = kVersion;
-    messageToSend_.originator.writeTo(&udpPayload[kOriginatorOffset]);
-    messageToSend_.sender.writeTo(&udpPayload[kSenderOffset]);
-    writeUint16(&udpPayload[kPrecedenceOffset], messageToSend_.precedence);
-    udpPayload[kNumHopsOffset] = messageToSend_.numHops;
-    writeUint16(&udpPayload[kOriginationTimeOffset], originationTimeDelta);
-    writeUint32(&udpPayload[kCurrentPatternOffset], messageToSend_.currentPattern);
-    writeUint32(&udpPayload[kNextPatternOffset], messageToSend_.nextPattern);
-    writeUint16(&udpPayload[kPatternTimeOffset], patternTime);
+    if (!WriteUdpPayload(messageToSend_, udpPayload, sizeof(udpPayload), currentTime)) {
+      jll_fatal("%s unexpected payload length issue", networkName());
+    }
     send(&udpPayload[0], sizeof(udpPayload));
   }
 }
