@@ -1,4 +1,4 @@
-name: Checks out code, sets up PlatformIO and its dependencies
+name: Sets up PlatformIO and its dependencies
 
 on:
   workflow_call:
@@ -7,7 +7,6 @@ jobs:
   triage:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
       - uses: actions/cache@v4
         with:
           path: |
