@@ -7,13 +7,15 @@
 
 // Esp32WiFiNetwork is currently work-in-progress.
 // TODO: finish this and use it to replace ArduinoEspWiFiNetwork.
-#define JL_ESP32_WIFI 1
+#define JL_ESP32_WIFI 0
 
 #ifndef JL_ESP32_WIFI
 #define JL_ESP32_WIFI 1
 #endif  // JL_ESP32_WIFI
 
 #if JL_ESP32_WIFI
+
+#include <esp_wifi.h>
 
 #include <atomic>
 #include <mutex>
@@ -41,9 +43,10 @@ class Esp32WiFiNetwork : public Network {
 
  private:
   explicit Esp32WiFiNetwork();
+  static void EventHandler(void* event_handler_arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
 
-  NetworkDeviceId localDeviceId_;  // TODO fix race condition.
   std::atomic<Milliseconds> lastReceiveTime_;
+  NetworkDeviceId localDeviceId_;
   std::mutex mutex_;
   bool hasDataToSend_ = false;                  // Protected by mutex_.
   NetworkMessage messageToSend_;                // Protected by mutex_.

@@ -42,11 +42,76 @@ void Esp32WiFiNetwork::disableSending(Milliseconds /*currentTime*/) {
 void Esp32WiFiNetwork::triggerSendAsap(Milliseconds /*currentTime*/) {}
 
 std::list<NetworkMessage> Esp32WiFiNetwork::getReceivedMessagesImpl(Milliseconds /*currentTime*/) {
-  const std::lock_guard<std::mutex> lock(mutex_);
-  return receivedMessages_;
+  std::list<NetworkMessage> results;
+  {
+    const std::lock_guard<std::mutex> lock(mutex_);
+    results = std::move(receivedMessages_);
+    receivedMessages_.clear();
+  }
+  return results;
 }
 
-Esp32WiFiNetwork::Esp32WiFiNetwork() {}
+// static
+void Esp32WiFiNetwork::EventHandler(void* /*event_handler_arg*/, esp_event_base_t event_base, int32_t event_id,
+                                    void* event_data) {
+  if (event_base == WIFI_EVENT) {
+    if (event_id == WIFI_EVENT_STA_START) {
+      jll_info("Esp32WiFiNetwork STA started - connecting");
+    } else if (event_id == WIFI_EVENT_STA_CONNECTED) {
+      jll_info("Esp32WiFiNetwork STA connected");
+    } else if (event_id == WIFI_EVENT_STA_DISCONNECTED) {
+      jll_info("Esp32WiFiNetwork STA disconnected - reconnecting");
+    }
+    if (event_id == WIFI_EVENT_STA_START || event_id == WIFI_EVENT_STA_DISCONNECTED) { esp_wifi_connect(); }
+  } else if (event_base == IP_EVENT) {
+    if (event_id == IP_EVENT_STA_GOT_IP) {
+      ip_event_got_ip_t* event = (ip_event_got_ip_t*)event_data;
+      jll_info("Esp32WiFiNetwork got IP: " IPSTR, IP2STR(&event->ip_info.ip));
+      // TODO register for receiving multicast
+      // TODO receive packets
+      // TODO send packets
+    } else if (event_id == IP_EVENT_STA_LOST_IP) {
+      jll_info("Esp32WiFiNetwork lost IP");
+    } else if (event_id == IP_EVENT_GOT_IP6) {
+      jll_info("Esp32WiFiNetwork got IPv6");
+    }
+  }
+}
+
+Esp32WiFiNetwork::Esp32WiFiNetwork() {
+  ESP_ERROR_CHECK(esp_netif_init());
+  ESP_ERROR_CHECK(esp_event_loop_create_default());
+  esp_netif_create_default_wifi_sta();
+
+  wifi_init_config_t wifi_init_config = WIFI_INIT_CONFIG_DEFAULT();
+  // TODO should we set wifi_init_config.wifi_task_core_id to 1? The Arduino Core uses 0 and that's been working fine.
+  ESP_ERROR_CHECK(esp_wifi_init(&wifi_init_config));
+
+  esp_event_handler_instance_t instance_any_id;
+  esp_event_handler_instance_t instance_got_ip;
+  ESP_ERROR_CHECK(
+      esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &EventHandler, NULL, &instance_any_id));
+  ESP_ERROR_CHECK(
+      esp_event_handler_instance_register(IP_EVENT, ESP_EVENT_ANY_ID, &EventHandler, NULL, &instance_got_ip));
+
+  wifi_config_t wifi_config;
+  memset(&wifi_config, 0, sizeof(wifi_config));
+  wifi_config.sta = {};
+  strncpy(reinterpret_cast<char*>(wifi_config.sta.ssid), JL_WIFI_SSID, sizeof(wifi_config.sta.ssid) - 1);
+  strncpy(reinterpret_cast<char*>(wifi_config.sta.password), JL_WIFI_PASSWORD, sizeof(wifi_config.sta.password) - 1);
+  // TODO add support for IPv4 link-local addressing in the absence of DHCP. It looks like ESP-IDF supports it via
+  // CONFIG_LWIP_AUTOIP but that doesn't seem to exist in our sdkconfig. I think that's because ESP-IDF disables it by
+  // default, and the Arduino Core doesn't override that, so we'll need a custom ESP-IDF sdkconfig to enable it.
+  ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+  ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+  ESP_ERROR_CHECK(esp_wifi_start());
+
+  uint8_t macAddress[6];
+  ESP_ERROR_CHECK(esp_wifi_get_mac(WIFI_IF_STA, macAddress));
+  localDeviceId_ = NetworkDeviceId(macAddress);
+
+  jll_info("Esp32WiFiNetwork initialized Wi-Fi STA with MAC address %s", localDeviceId_.toString().c_str());
+}
 
 // static
 Esp32WiFiNetwork* Esp32WiFiNetwork::get() {
