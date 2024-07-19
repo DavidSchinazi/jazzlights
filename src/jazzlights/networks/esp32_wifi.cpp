@@ -4,6 +4,9 @@
 #if JL_ESP32_WIFI
 
 #include <esp_wifi.h>
+#include <lwip/inet.h>
+#include <lwip/sockets.h>
+#include <string.h>
 
 #include <sstream>
 
@@ -51,6 +54,50 @@ std::list<NetworkMessage> Esp32WiFiNetwork::getReceivedMessagesImpl(Milliseconds
   return results;
 }
 
+void Esp32WiFiNetwork::CreateSocket() {
+  CloseSocket();
+  socket_ = socket(AF_INET, SOCK_DGRAM, 0);
+  if (socket_ == -1) { jll_fatal("Esp32WiFiNetwork socket() failed with error %d: %s", errno, strerror(errno)); }
+  struct sockaddr_in sin = {
+      .sin_len = sizeof(struct sockaddr_in),
+      .sin_family = AF_INET,
+      .sin_port = htons(DefaultUdpPort()),
+      .sin_addr = localAddress_,
+      .sin_zero = {},
+  };
+  if (bind(socket_, reinterpret_cast<struct sockaddr*>(&sin), sizeof(sin)) != 0) {
+    jll_fatal("Esp32WiFiNetwork bind() failed with error %d: %s", errno, strerror(errno));
+  }
+  uint8_t ttl = 1;
+  if (setsockopt(socket_, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl)) != 0) {
+    jll_fatal("Esp32WiFiNetwork IP_MULTICAST_TTL failed with error %d: %s", errno, strerror(errno));
+  }
+
+  struct ip_mreq multicastGroup = {};
+  multicastGroup.imr_interface = localAddress_;
+  if (inet_aton(DefaultMulticastAddress(), &multicastGroup.imr_multiaddr) != 1) {
+    jll_fatal("Esp32WiFiNetwork failed to parse multicast address");
+  }
+  if (setsockopt(socket_, IPPROTO_IP, IP_ADD_MEMBERSHIP, &multicastGroup, sizeof(multicastGroup)) < 0) {
+    jll_fatal("Esp32WiFiNetwork joining multicast failed with error %d: %s", errno, strerror(errno));
+  }
+
+  // Disable receiving our own multicast traffic.
+  uint8_t zero = 0;
+  if (setsockopt(socket_, IPPROTO_IP, IP_MULTICAST_LOOP, &zero, sizeof(zero)) < 0) {
+    jll_fatal("Esp32WiFiNetwork disabling multicast loopack failed with error %d: %s", errno, strerror(errno));
+  }
+
+  jll_info("Esp32WiFiNetwork created socket");
+}
+
+void Esp32WiFiNetwork::CloseSocket() {
+  if (socket_ == -1) { return; }
+  jll_info("Esp32WiFiNetwork closing socket");
+  close(socket_);
+  socket_ = -1;
+}
+
 // static
 void Esp32WiFiNetwork::EventHandler(void* /*event_handler_arg*/, esp_event_base_t event_base, int32_t event_id,
                                     void* event_data) {
@@ -67,11 +114,13 @@ void Esp32WiFiNetwork::EventHandler(void* /*event_handler_arg*/, esp_event_base_
     if (event_id == IP_EVENT_STA_GOT_IP) {
       ip_event_got_ip_t* event = (ip_event_got_ip_t*)event_data;
       jll_info("Esp32WiFiNetwork got IP: " IPSTR, IP2STR(&event->ip_info.ip));
-      // TODO register for receiving multicast
+      memcpy(&get()->localAddress_, &event->ip_info.ip, sizeof(get()->localAddress_));
+      get()->CreateSocket();
       // TODO receive packets
       // TODO send packets
     } else if (event_id == IP_EVENT_STA_LOST_IP) {
       jll_info("Esp32WiFiNetwork lost IP");
+      get()->CloseSocket();
     } else if (event_id == IP_EVENT_GOT_IP6) {
       jll_info("Esp32WiFiNetwork got IPv6");
     }
@@ -118,6 +167,8 @@ Esp32WiFiNetwork* Esp32WiFiNetwork::get() {
   static Esp32WiFiNetwork sSingleton;
   return &sSingleton;
 }
+
+Esp32WiFiNetwork::~Esp32WiFiNetwork() { CloseSocket(); }
 
 }  // namespace jazzlights
 

@@ -16,6 +16,7 @@
 #if JL_ESP32_WIFI
 
 #include <esp_wifi.h>
+#include <lwip/inet.h>
 
 #include <atomic>
 #include <mutex>
@@ -25,6 +26,7 @@ namespace jazzlights {
 class Esp32WiFiNetwork : public Network {
  public:
   static Esp32WiFiNetwork* get();
+  ~Esp32WiFiNetwork();
 
   NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
   NetworkDeviceId getLocalDeviceId() override { return localDeviceId_; }
@@ -44,9 +46,13 @@ class Esp32WiFiNetwork : public Network {
  private:
   explicit Esp32WiFiNetwork();
   static void EventHandler(void* event_handler_arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
+  void CreateSocket();
+  void CloseSocket();
 
   std::atomic<Milliseconds> lastReceiveTime_;
   NetworkDeviceId localDeviceId_;
+  int socket_ = -1;  // TODO figure out if this needs to be protected by mutex_.
+  struct in_addr localAddress_ = {};
   std::mutex mutex_;
   bool hasDataToSend_ = false;                  // Protected by mutex_.
   NetworkMessage messageToSend_;                // Protected by mutex_.
