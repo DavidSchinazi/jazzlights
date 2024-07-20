@@ -169,7 +169,7 @@ bool UnixUdpNetwork::setupSockets() {
 UnixUdpNetwork::UnixUdpNetwork(uint16_t port, const char* addr) : port_(port) {
   assert(strnlen(addr, sizeof(mcastAddrStr_) + 1) < sizeof(mcastAddrStr_));
   strncpy(mcastAddrStr_, addr, sizeof(mcastAddrStr_));
-  int parsed = inet_aton(addr, &mcastAddr_);
+  int parsed = inet_pton(AF_INET, addr, &mcastAddr_);
   assert(parsed == 1);
   // Make sure localDeviceId_ is filled in.
   setupSockets();
