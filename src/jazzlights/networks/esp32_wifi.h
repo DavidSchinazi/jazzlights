@@ -16,6 +16,7 @@
 #if JL_ESP32_WIFI
 
 #include <esp_wifi.h>
+#include <freertos/task.h>
 #include <lwip/inet.h>
 
 #include <atomic>
@@ -46,13 +47,20 @@ class Esp32WiFiNetwork : public Network {
  private:
   explicit Esp32WiFiNetwork();
   static void EventHandler(void* event_handler_arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
+  static void TaskFunction(void* parameters);
+  void RunTask();
   void CreateSocket();
   void CloseSocket();
 
+  NetworkDeviceId localDeviceId_;         // Only modified in constructor.
+  TaskHandle_t taskHandle_ = nullptr;     // Only modified in constructor.
+  struct in_addr multicastAddress_ = {};  // Only modified in constructor.
+  struct in_addr localAddress_ = {};      // TODO figure out if this needs to be protected by mutex_.
+  int socket_ = -1;                       // TODO figure out if this needs to be protected by mutex_.
+  uint8_t* udpPayload_ = nullptr;         // Only used on our task. Used for both sending and receiving.
+  Milliseconds lastSendTime_ = -1;        // Only used on our task.
+  PatternBits lastSentPattern_ = 0;       // Only used on our task.
   std::atomic<Milliseconds> lastReceiveTime_;
-  NetworkDeviceId localDeviceId_;
-  int socket_ = -1;  // TODO figure out if this needs to be protected by mutex_.
-  struct in_addr localAddress_ = {};
   std::mutex mutex_;
   bool hasDataToSend_ = false;                  // Protected by mutex_.
   NetworkMessage messageToSend_;                // Protected by mutex_.
