@@ -198,7 +198,6 @@ int UnixUdpNetwork::recv(void* buf, size_t bufsize, std::string* /*details*/) {
   for (auto pair : sockets_) {
     std::string ifName = pair.first;
     int fd = pair.second;
-    const char* fromstr = nullptr;
     sockaddr_in fromaddr = {};
     socklen_t fromaddrlen = sizeof(fromaddr);
     // jll_info("Attempting to read %llu bytes on UDP socket %d ifName %s",
@@ -215,8 +214,15 @@ int UnixUdpNetwork::recv(void* buf, size_t bufsize, std::string* /*details*/) {
       // Exit loop since sockets_ has been modified, and that invalidates the loop iterator.
       break;
     }
-    fromstr = inet_ntoa(fromaddr.sin_addr);
-    jll_debug("Received %ld bytes on UDP socket %d ifName %s from %s:%d", n, fd, ifName.c_str(), fromstr,
+
+    char addressString[INET_ADDRSTRLEN] = {};
+    if (is_debug_logging_enabled()) {
+      if (inet_ntop(AF_INET, &(fromaddr.sin_addr), addressString, sizeof(addressString)) == nullptr) {
+        jll_fatal("Printing receive address failed with error %d: %s", errno, strerror(errno));
+      }
+    }
+
+    jll_debug("Received %ld bytes on UDP socket %d ifName %s from %s:%d", n, fd, ifName.c_str(), addressString,
               ntohs(fromaddr.sin_port));
     return n;
   }
