@@ -99,17 +99,13 @@ jobs:
           python-version: "3.12"
       - name: Install PlatformIO Core
         run: pip install --upgrade platformio
-      - name: Create Temporary Binaries Directory
-        run: |
-          mkdir -p "${{ runner.temp }}/binaries"
-          echo "binaries_dir=${{ runner.temp }}/binaries" >> "$GITHUB_ENV"
       - name: PlatformIO Build Merged Vest Binary
-        run: MERGED_BIN_PATH="${binaries_dir}/${{ matrix.pioenv }}.bin" pio run -t mergebin -e ${{ matrix.pioenv }}
+        run: MERGED_BIN_PATH="${{ runner.temp }}/${{ matrix.pioenv }}.bin" pio run -t mergebin -e ${{ matrix.pioenv }}
       - name: Upload Merged Vest Binary as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: merged-binary-${{ matrix.pioenv }}
-          path: "${{ runner.temp }}/binaries/${{ matrix.pioenv }}.bin"
+          path: "${{ runner.temp }}/${{ matrix.pioenv }}.bin"
 
   pages:
     if: github.ref == 'refs/heads/main'
