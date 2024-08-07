@@ -35,6 +35,13 @@ jobs:
         run: cmake --build extras/build
 
   platformio-build:
+    strategy:
+      matrix:
+        pioenv:
+          - vest_dev
+          - vest_instrumentation
+          - clouds_s3_debug
+          - gauntlet
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -50,7 +57,7 @@ jobs:
       - name: Install PlatformIO Core
         run: pip install --upgrade platformio
       - name: PlatformIO Build
-        run: pio run
+        run: pio run -e ${{ matrix.pioenv }}
 
   platformio-native-test:
     runs-on: ubuntu-latest
