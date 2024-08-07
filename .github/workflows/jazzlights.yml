@@ -91,17 +91,32 @@ jobs:
           echo "binaries_dir=${{ runner.temp }}/binaries" >> "$GITHUB_ENV"
       - name: PlatformIO Build Merged Vest Binary
         run: MERGED_BIN_PATH="${binaries_dir}/vest.bin" pio run -t mergebin -e vest
-      - name: PlatformIO Build Merged Vest S3 Binary
-        run: MERGED_BIN_PATH="${binaries_dir}/vest_s3.bin" pio run -t mergebin -e vest_s3
-      - name: PlatformIO Build Merged Shoe Binary
-        run: MERGED_BIN_PATH="${binaries_dir}/shoe.bin" pio run -t mergebin -e shoe
-      - name: PlatformIO Build Merged Hat Binary
-        run: MERGED_BIN_PATH="${binaries_dir}/hat.bin" pio run -t mergebin -e hat
-      - name: Upload Merged Binaries as Artifact
+      - name: Upload Merged Vest Binary as Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: merged-binaries
-          path: "${{ runner.temp }}/binaries"
+          name: merged-binary-vest
+          path: "${{ runner.temp }}/binaries/vest.bin"
+      - name: PlatformIO Build Merged Vest S3 Binary
+        run: MERGED_BIN_PATH="${binaries_dir}/vest_s3.bin" pio run -t mergebin -e vest_s3
+      - name: Upload Merged Vest S3 Binary as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: merged-binary-vest_s3
+          path: "${{ runner.temp }}/binaries/vest_s3.bin"
+      - name: PlatformIO Build Merged Shoe Binary
+        run: MERGED_BIN_PATH="${binaries_dir}/shoe.bin" pio run -t mergebin -e shoe
+      - name: Upload Merged Shoe Binary as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: merged-binary-shoe
+          path: "${{ runner.temp }}/binaries/shoe.bin"
+      - name: PlatformIO Build Merged Hat Binary
+        run: MERGED_BIN_PATH="${binaries_dir}/hat.bin" pio run -t mergebin -e hat
+      - name: Upload Merged Hat Binary as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: merged-binary-hat
+          path: "${{ runner.temp }}/binaries/hat.bin"
 
   pages:
     if: github.ref == 'refs/heads/main'
@@ -166,8 +181,9 @@ jobs:
       - name: Download Binaries to Site Directory
         uses: actions/download-artifact@v4
         with:
-          name: merged-binaries
+          pattern: merged-binary-*
           path: "${{ runner.temp }}/site-upload/flash/"
+          merge-multiple: true
       - run: ls -l "${upload_dir}/flash/"
       - run: find "${upload_dir}/flash/"
       - name: Upload Pages
