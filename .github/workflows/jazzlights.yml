@@ -71,6 +71,13 @@ jobs:
         run: pio test -e native
 
   platformio-merge:
+    strategy:
+      matrix:
+        pioenv:
+          - vest
+          - vest_s3
+          - shoe
+          - hat
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -90,33 +97,12 @@ jobs:
           mkdir -p "${{ runner.temp }}/binaries"
           echo "binaries_dir=${{ runner.temp }}/binaries" >> "$GITHUB_ENV"
       - name: PlatformIO Build Merged Vest Binary
-        run: MERGED_BIN_PATH="${binaries_dir}/vest.bin" pio run -t mergebin -e vest
+        run: MERGED_BIN_PATH="${binaries_dir}/${{ matrix.pioenv }}.bin" pio run -t mergebin -e ${{ matrix.pioenv }}
       - name: Upload Merged Vest Binary as Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: merged-binary-vest
-          path: "${{ runner.temp }}/binaries/vest.bin"
-      - name: PlatformIO Build Merged Vest S3 Binary
-        run: MERGED_BIN_PATH="${binaries_dir}/vest_s3.bin" pio run -t mergebin -e vest_s3
-      - name: Upload Merged Vest S3 Binary as Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: merged-binary-vest_s3
-          path: "${{ runner.temp }}/binaries/vest_s3.bin"
-      - name: PlatformIO Build Merged Shoe Binary
-        run: MERGED_BIN_PATH="${binaries_dir}/shoe.bin" pio run -t mergebin -e shoe
-      - name: Upload Merged Shoe Binary as Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: merged-binary-shoe
-          path: "${{ runner.temp }}/binaries/shoe.bin"
-      - name: PlatformIO Build Merged Hat Binary
-        run: MERGED_BIN_PATH="${binaries_dir}/hat.bin" pio run -t mergebin -e hat
-      - name: Upload Merged Hat Binary as Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: merged-binary-hat
-          path: "${{ runner.temp }}/binaries/hat.bin"
+          name: merged-binary-${{ matrix.pioenv }}
+          path: "${{ runner.temp }}/binaries/${{ matrix.pioenv }}.bin"
 
   pages:
     if: github.ref == 'refs/heads/main'
