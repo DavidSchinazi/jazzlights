@@ -34,7 +34,7 @@ jobs:
       - name: Build
         run: cmake --build extras/build
 
-  platformio:
+  platformio-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -51,15 +51,66 @@ jobs:
         run: pip install --upgrade platformio
       - name: PlatformIO Build
         run: pio run
+
+  platformio-native-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio/.cache
+          key: ${{ runner.os }}-pio
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install PlatformIO Core
+        run: pip install --upgrade platformio
       - name: PlatformIO Test
         run: pio test -e native
+
+  platformio-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio/.cache
+          key: ${{ runner.os }}-pio
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install PlatformIO Core
+        run: pip install --upgrade platformio
+      - name: Create Temporary Binaries Directory
+        run: |
+          mkdir -p "${{ runner.temp }}/binaries"
+          echo "binaries_dir=${{ runner.temp }}/binaries" >> "$GITHUB_ENV"
+      - name: PlatformIO Build Merged Vest Binary
+        run: MERGED_BIN_PATH="${binaries_dir}/vest.bin" pio run -t mergebin -e vest
+      - name: PlatformIO Build Merged Vest S3 Binary
+        run: MERGED_BIN_PATH="${binaries_dir}/vest_s3.bin" pio run -t mergebin -e vest_s3
+      - name: PlatformIO Build Merged Shoe Binary
+        run: MERGED_BIN_PATH="${binaries_dir}/shoe.bin" pio run -t mergebin -e shoe
+      - name: PlatformIO Build Merged Hat Binary
+        run: MERGED_BIN_PATH="${binaries_dir}/hat.bin" pio run -t mergebin -e hat
+      - name: Upload Merged Binaries as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: merged-binaries
+          path: "${binaries_dir}/*.bin"
 
   pages:
     if: github.ref == 'refs/heads/main'
     needs:
       - check-format
       - extras
-      - platformio
+      - platformio-build
+      - platformio-native-test
+      - platformio-merge
     permissions:
       contents: read
       pages: write
@@ -76,15 +127,13 @@ jobs:
         uses: actions/checkout@v4
       - uses: actions/cache@v4
         with:
-          path: |
-            ~/.cache/pip
-            ~/.platformio/.cache
-          key: ${{ runner.os }}-pio
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pages-pip
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - name: Install Python Dependencies
-        run: pip install --upgrade platformio beautifulsoup4 lxml
+        run: pip install --upgrade beautifulsoup4 lxml
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
@@ -114,15 +163,14 @@ jobs:
           extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-vest.json" --name "JazzLights Vest" --version $(git rev-parse --short "$GITHUB_SHA") --firmware vest.bin --firmware-s3 vest_s3.bin
           extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-shoe.json" --name "JazzLights Shoe" --version $(git rev-parse --short "$GITHUB_SHA") --firmware shoe.bin
           extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-hat.json" --name "JazzLights Hat" --version $(git rev-parse --short "$GITHUB_SHA") --firmware hat.bin
-      - name: PlatformIO Build Merged Vest Binary
-        run: MERGED_BIN_PATH="${upload_dir}/flash/vest.bin" pio run -t mergebin -e vest
-      - name: PlatformIO Build Merged Vest S3 Binary
-        run: MERGED_BIN_PATH="${upload_dir}/flash/vest_s3.bin" pio run -t mergebin -e vest_s3
-      - name: PlatformIO Build Merged Shoe Binary
-        run: MERGED_BIN_PATH="${upload_dir}/flash/shoe.bin" pio run -t mergebin -e shoe
-      - name: PlatformIO Build Merged Hat Binary
-        run: MERGED_BIN_PATH="${upload_dir}/flash/hat.bin" pio run -t mergebin -e hat
-      - name: Upload artifact
+      - name: Download Binaries to Site Directory
+        uses: actions/download-artifact@v4
+        with:
+          name: merged-binaries
+          path: "${{ runner.temp }}/site-upload/flash/"
+      - run: ls -l "${upload_dir}/flash/"
+      - run: find "${upload_dir}/flash/"
+      - name: Upload Pages
         uses: actions/upload-pages-artifact@v3
         with:
           path: "${{ runner.temp }}/site-upload"
