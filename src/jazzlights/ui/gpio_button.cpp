@@ -3,7 +3,10 @@
 #ifdef ESP32
 
 #include <driver/gpio.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
+#include "jazzlights/util/log.h"
 #include "jazzlights/util/time.h"
 
 namespace jazzlights {
@@ -27,8 +30,21 @@ GpioButton::GpioButton(uint8_t pin, Interface& interface, Milliseconds currentTi
       isPressedDebounced_(false),
       isHeld_(false),
       pin_(pin) {
+  // GPIO interrupt handlers are run on the core where the config calls were made, so we create a short-lived task to
+  // ensure all that happens on core 0. This prevents it from interfering with LED writes on core 1.
+  TaskHandle_t taskHandle = nullptr;
+  if (xTaskCreatePinnedToCore(ConfigurePin, "GPIO_int", configMINIMAL_STACK_SIZE,
+                              /*parameters=*/this,
+                              /*priority=*/30, &taskHandle, /*coreID=*/0) != pdPASS) {
+    jll_fatal("Failed to create GPIO interrupt handler config task");
+  }
+}
+
+// static
+void GpioButton::ConfigurePin(void* arg) {
+  GpioButton* button = reinterpret_cast<GpioButton*>(arg);
   static const gpio_config_t config = {
-      .pin_bit_mask = (1ULL << pin_),
+      .pin_bit_mask = (1ULL << button->pin_),
       .mode = GPIO_MODE_INPUT,
       .pull_up_en = GPIO_PULLUP_ENABLE,
       .pull_down_en = GPIO_PULLDOWN_DISABLE,
@@ -38,7 +54,9 @@ GpioButton::GpioButton(uint8_t pin, Interface& interface, Milliseconds currentTi
   // Ensure this is only ever called once by saving the result in a static variable.
   static esp_err_t err = gpio_install_isr_service(/*intr_alloc_flags=*/0);
   ESP_ERROR_CHECK(err);
-  ESP_ERROR_CHECK(gpio_isr_handler_add(static_cast<gpio_num_t>(pin_), &GpioButton::InterruptHandler, this));
+  ESP_ERROR_CHECK(gpio_isr_handler_add(static_cast<gpio_num_t>(button->pin_), &GpioButton::InterruptHandler, button));
+  // Delete this task.
+  vTaskDelete(nullptr);
 }
 
 GpioButton::~GpioButton() { ESP_ERROR_CHECK(gpio_isr_handler_remove(static_cast<gpio_num_t>(pin_))); }

@@ -41,6 +41,7 @@ class GpioButton {
 
  private:
   static void InterruptHandler(void* arg);
+  static void ConfigurePin(void* arg);
   void HandleInterrupt();
   Interface& interface_;
   std::atomic<Milliseconds> lastRawChange_;
