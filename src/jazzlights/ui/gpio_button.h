@@ -1,6 +1,8 @@
 #ifndef JL_GPIO_BUTTON_H
 #define JL_GPIO_BUTTON_H
 
+#include <atomic>
+
 #include "jazzlights/config.h"
 
 #ifdef ESP32
@@ -26,6 +28,7 @@ class GpioButton {
 
   // Starts tracking a button connected to a GPIO pin.
   explicit GpioButton(uint8_t pin, Interface& interface, Milliseconds currentTime);
+  ~GpioButton();
 
   // Called once per primary runloop.
   void RunLoop(Milliseconds currentTime);
@@ -37,10 +40,12 @@ class GpioButton {
   bool HasBeenPressedLongEnoughForLongPress(Milliseconds currentTime);
 
  private:
+  static void InterruptHandler(void* arg);
+  void HandleInterrupt();
   Interface& interface_;
-  Milliseconds lastRawChange_;
+  std::atomic<Milliseconds> lastRawChange_;
   Milliseconds lastEvent_;
-  bool isPressedRaw_;
+  std::atomic<bool> isPressedRaw_;
   bool isPressedDebounced_;
   bool isHeld_;
   const uint8_t pin_;

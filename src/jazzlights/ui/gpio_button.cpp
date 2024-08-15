@@ -32,23 +32,25 @@ GpioButton::GpioButton(uint8_t pin, Interface& interface, Milliseconds currentTi
       .mode = GPIO_MODE_INPUT,
       .pull_up_en = GPIO_PULLUP_ENABLE,
       .pull_down_en = GPIO_PULLDOWN_DISABLE,
-      .intr_type = GPIO_INTR_DISABLE,
+      .intr_type = GPIO_INTR_ANYEDGE,
   };
   ESP_ERROR_CHECK(gpio_config(&config));
+  // Ensure this is only ever called once by saving the result in a static variable.
+  static esp_err_t err = gpio_install_isr_service(/*intr_alloc_flags=*/0);
+  ESP_ERROR_CHECK(err);
+  ESP_ERROR_CHECK(gpio_isr_handler_add(static_cast<gpio_num_t>(pin_), &GpioButton::InterruptHandler, this));
 }
 
+GpioButton::~GpioButton() { ESP_ERROR_CHECK(gpio_isr_handler_remove(static_cast<gpio_num_t>(pin_))); }
+
 void GpioButton::RunLoop(Milliseconds currentTime) {
-  const bool newIsPressed = gpio_get_level(static_cast<gpio_num_t>(pin_)) == 0;
-  if (newIsPressed != isPressedRaw_) {
-    // Start debounce timer.
-    isPressedRaw_ = newIsPressed;
-    lastRawChange_ = currentTime;
-  }
-  if (currentTime - lastRawChange_ > kDebounceTime) {
+  const Milliseconds lastRawChange = lastRawChange_.load(std::memory_order_relaxed);
+  if (currentTime - lastRawChange > kDebounceTime) {
+    const bool isPressedRaw = isPressedRaw_.load(std::memory_order_relaxed);
     // GpioButton has been in this state longer than the debounce time.
-    if (newIsPressed != isPressedDebounced_) {
+    if (isPressedRaw != isPressedDebounced_) {
       // GpioButton is transitioning states (with debouncing taken into account).
-      isPressedDebounced_ = newIsPressed;
+      isPressedDebounced_ = isPressedRaw;
       if (isPressedDebounced_) {
         // GpioButton was just pressed, record time.
         lastEvent_ = currentTime;
@@ -80,6 +82,15 @@ void GpioButton::RunLoop(Milliseconds currentTime) {
 bool GpioButton::IsPressed(Milliseconds /*currentTime*/) { return isPressedDebounced_; }
 bool GpioButton::HasBeenPressedLongEnoughForLongPress(Milliseconds currentTime) {
   return isPressedDebounced_ && (isHeld_ || currentTime - lastEvent_ >= kLongPressTime);
+}
+
+// static
+void GpioButton::InterruptHandler(void* arg) { reinterpret_cast<GpioButton*>(arg)->HandleInterrupt(); }
+
+void GpioButton::HandleInterrupt() {
+  const bool newIsPressed = gpio_get_level(static_cast<gpio_num_t>(pin_)) == 0;
+  const bool oldIsPressedRaw = isPressedRaw_.exchange(newIsPressed, std::memory_order_relaxed);
+  if (newIsPressed != oldIsPressedRaw) { lastRawChange_.store(timeMillis(), std::memory_order_relaxed); }
 }
 
 }  // namespace jazzlights
