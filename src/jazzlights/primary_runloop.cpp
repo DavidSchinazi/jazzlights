@@ -39,7 +39,10 @@ typedef Core2AwsUi Esp32UiImpl;
 typedef NoOpUi Esp32UiImpl;
 #endif
 
-Esp32UiImpl ui(player, timeMillis());
+static Esp32UiImpl* GetUi() {
+  static Esp32UiImpl ui(player, timeMillis());
+  return &ui;
+}
 
 #if JL_WEBSOCKET_SERVER
 WebSocketServer websocket_server(80, player);
@@ -47,8 +50,8 @@ WebSocketServer websocket_server(80, player);
 
 void SetupPrimaryRunLoop() {
   Milliseconds currentTime = timeMillis();
-  ui.set_fastled_runner(&runner);
-  ui.InitialSetup(currentTime);
+  GetUi()->set_fastled_runner(&runner);
+  GetUi()->InitialSetup(currentTime);
 
   AddLedsToRunner(&runner);
 
@@ -75,7 +78,7 @@ void SetupPrimaryRunLoop() {
 #endif  // JL_ARDUINO_ETHERNET
   player.begin(currentTime);
 
-  ui.FinalSetup(currentTime);
+  GetUi()->FinalSetup(currentTime);
 
   runner.Start();
 }
@@ -83,7 +86,7 @@ void SetupPrimaryRunLoop() {
 void RunPrimaryRunLoop() {
   SAVE_TIME_POINT(PrimaryRunLoop, LoopStart);
   Milliseconds currentTime = timeMillis();
-  ui.RunLoop(currentTime);
+  GetUi()->RunLoop(currentTime);
   SAVE_TIME_POINT(PrimaryRunLoop, UserInterface);
   Esp32BleNetwork::get()->runLoop(currentTime);
   SAVE_TIME_POINT(PrimaryRunLoop, Bluetooth);
