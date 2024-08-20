@@ -105,6 +105,9 @@ bool GpioButton::HasBeenPressedLongEnoughForLongPress(Milliseconds currentTime) 
 // static
 void GpioButton::InterruptHandler(void* arg) { reinterpret_cast<GpioButton*>(arg)->HandleInterrupt(); }
 
+// Note that regular logging functions cannot be used inside interrupt handlers because they use locks.
+// Instead use: ets_printf("foobar %d\n", 42);
+
 void GpioButton::HandleInterrupt() {
   const bool newIsPressed = gpio_get_level(static_cast<gpio_num_t>(pin_)) == 0;
   const bool oldIsPressedRaw = isPressedRaw_.exchange(newIsPressed, std::memory_order_relaxed);
