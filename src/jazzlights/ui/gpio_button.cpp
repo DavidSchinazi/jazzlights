@@ -33,7 +33,9 @@ GpioButton::GpioButton(uint8_t pin, Interface& interface, Milliseconds currentTi
   // GPIO interrupt handlers are run on the core where the config calls were made, so we create a short-lived task to
   // ensure all that happens on core 0. This prevents it from interfering with LED writes on core 1.
   TaskHandle_t taskHandle = nullptr;
-  if (xTaskCreatePinnedToCore(ConfigurePin, "GPIO_int", configMINIMAL_STACK_SIZE,
+  char taskName[sizeof("GPIO_int_255+")] = {};
+  snprintf(taskName, sizeof(taskName) - 1, "GPIO_int_%u", pin_);
+  if (xTaskCreatePinnedToCore(ConfigurePin, taskName, configMINIMAL_STACK_SIZE + 400,
                               /*parameters=*/this,
                               /*priority=*/30, &taskHandle, /*coreID=*/0) != pdPASS) {
     jll_fatal("Failed to create GPIO interrupt handler config task");
@@ -43,7 +45,7 @@ GpioButton::GpioButton(uint8_t pin, Interface& interface, Milliseconds currentTi
 // static
 void GpioButton::ConfigurePin(void* arg) {
   GpioButton* button = reinterpret_cast<GpioButton*>(arg);
-  static const gpio_config_t config = {
+  const gpio_config_t config = {
       .pin_bit_mask = (1ULL << button->pin_),
       .mode = GPIO_MODE_INPUT,
       .pull_up_en = GPIO_PULLUP_ENABLE,
