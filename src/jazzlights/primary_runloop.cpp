@@ -44,14 +44,60 @@ static Esp32UiImpl* GetUi() {
   return &ui;
 }
 
+#if JL_IS_CONFIG(PHONE)
+class PhoneButtonHandler : public GpioButton::Interface {
+ public:
+  PhoneButtonHandler() = default;
+  ~PhoneButtonHandler() = default;
+  void ShortPress(uint8_t pin, Milliseconds currentTime) override {}
+  void LongPress(uint8_t pin, Milliseconds currentTime) override {}
+  void HeldDown(uint8_t pin, Milliseconds currentTime) override {}
+};
+static PhoneButtonHandler* GetPhoneButtonHandler() {
+  static PhoneButtonHandler buttonHandler;
+  return &buttonHandler;
+}
+#if JL_IS_CONTROLLER(ATOM_MATRIX)
+static constexpr uint8_t kPhonePin1 = 32;
+static constexpr uint8_t kPhonePin2 = 26;
+#elif JL_IS_CONTROLLER(ATOM_S3)
+static constexpr uint8_t kPhonePin1 = 1;
+static constexpr uint8_t kPhonePin2 = 2;
+#else
+#error "unsupported controller for phone"
+#endif
+static GpioButton* GetPhoneButton1() {
+  static GpioButton button(kPhonePin1, *GetPhoneButtonHandler(), timeMillis());
+  return &button;
+}
+static GpioButton* GetPhoneButton2() {
+  static GpioButton button(kPhonePin2, *GetPhoneButtonHandler(), timeMillis());
+  return &button;
+}
+#endif  // PHONE
+
 #if JL_WEBSOCKET_SERVER
 WebSocketServer websocket_server(80, player);
 #endif  // JL_WEBSOCKET_SERVER
 
 void SetupPrimaryRunLoop() {
+#if JL_DEBUG
+  // Sometimes the UART monitor takes a couple seconds to connect when JTAG is involved.
+  // Sleep here to ensure we don't miss any logs.
+  for (size_t i = 0; i < 20; i++) {
+    if ((i % 10) == 0) { ets_printf("%02u ", i / 10); }
+    ets_printf(".");
+    if ((i % 10) == 9) { ets_printf("\n"); }
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+  }
+#endif  // JL_DEBUG
   Milliseconds currentTime = timeMillis();
   GetUi()->set_fastled_runner(&runner);
   GetUi()->InitialSetup(currentTime);
+#if JL_IS_CONFIG(PHONE)
+  (void)GetPhoneButton1();
+  (void)GetPhoneButton2();
+#endif  // PHONE
 
   AddLedsToRunner(&runner);
 
@@ -87,11 +133,19 @@ void RunPrimaryRunLoop() {
   SAVE_TIME_POINT(PrimaryRunLoop, LoopStart);
   Milliseconds currentTime = timeMillis();
   GetUi()->RunLoop(currentTime);
+#if JL_IS_CONFIG(PHONE)
+  GetPhoneButton1()->RunLoop(currentTime);
+  GetPhoneButton2()->RunLoop(currentTime);
+#endif  // PHONE
   SAVE_TIME_POINT(PrimaryRunLoop, UserInterface);
   Esp32BleNetwork::get()->runLoop(currentTime);
   SAVE_TIME_POINT(PrimaryRunLoop, Bluetooth);
 
+#if !JL_IS_CONFIG(PHONE)
   const bool shouldRender = player.render(currentTime);
+#else   // PHONE
+  const bool shouldRender = true;
+#endif  // !PHONE
   SAVE_TIME_POINT(PrimaryRunLoop, PlayerCompute);
   if (shouldRender) { runner.Render(); }
 #if JL_WEBSOCKET_SERVER

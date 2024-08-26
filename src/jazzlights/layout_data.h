@@ -9,6 +9,7 @@
 
 #include "jazzlights/fastled_runner.h"
 
+#if !JL_IS_CONFIG(PHONE)
 #if JL_IS_CONTROLLER(CORE2AWS) || JL_IS_CONTROLLER(M5STAMP_PICO)
 #define LED_PIN 32
 #elif JL_IS_CONTROLLER(M5STAMP_C3U)
@@ -22,6 +23,7 @@
 #else
 #error "Unexpected controller"
 #endif
+#endif  // PHONE
 
 namespace jazzlights {
 

@@ -21,6 +21,7 @@
 #define JL_CONFIG_FAIRY_WAND 7
 #define JL_CONFIG_CLOUDS 8
 #define JL_CONFIG_SHOE 9
+#define JL_CONFIG_PHONE 10
 
 #define JL_IS_CONFIG(config_) (JL_MERGE_TOKENS(JL_CONFIG_, JL_CONFIG) == JL_MERGE_TOKENS(JL_CONFIG_, config_))
 
@@ -55,6 +56,10 @@
 #ifndef JL_DEV
 #define JL_DEV 0
 #endif  // JL_DEV
+
+#ifndef JL_DEBUG
+#define JL_DEBUG 0
+#endif  // JL_DEBUG
 
 #ifndef BOOT_NAME
 #define BOOT_NAME X

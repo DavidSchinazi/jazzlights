@@ -40,4 +40,8 @@ void AddLedsToRunner(FastLedRunner* runner) {
 
 }  // namespace jazzlights
 
+#elif JL_IS_CONFIG(PHONE)
+namespace jazzlights {
+void AddLedsToRunner(FastLedRunner* runner) {}
+}  // namespace jazzlights
 #endif
