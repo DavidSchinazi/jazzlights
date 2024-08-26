@@ -3,11 +3,25 @@
 #ifdef ESP32
 
 #include <driver/gpio.h>
+#include <esp_ipc.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/time.h"
+
+#define JL_GPIO_DEBUG_ENABLED 0
+
+#if JL_GPIO_DEBUG_ENABLED
+#define JL_GPIO_DEBUG(...) jll_info(__VA_ARGS__)
+#else  // JL_GPIO_DEBUG_ENABLED
+#define JL_GPIO_DEBUG(...) jll_debug(__VA_ARGS__)
+#endif  // JL_GPIO_DEBUG_ENABLED
+
+#define JL_GPIO_DEBUG_ISR(format, ...)                                              \
+  do {                                                                              \
+    if (JL_GPIO_DEBUG_ENABLED) { ets_printf("INFO: " format "\n", ##__VA_ARGS__); } \
+  } while (false)
 
 namespace jazzlights {
 namespace {
@@ -30,16 +44,12 @@ GpioButton::GpioButton(uint8_t pin, Interface& interface, Milliseconds currentTi
       isPressedDebounced_(false),
       isHeld_(false),
       pin_(pin) {
-  // GPIO interrupt handlers are run on the core where the config calls were made, so we create a short-lived task to
-  // ensure all that happens on core 0. This prevents it from interfering with LED writes on core 1.
-  TaskHandle_t taskHandle = nullptr;
-  char taskName[sizeof("GPIO_int_255+")] = {};
-  snprintf(taskName, sizeof(taskName) - 1, "GPIO_int_%u", pin_);
-  if (xTaskCreatePinnedToCore(ConfigurePin, taskName, configMINIMAL_STACK_SIZE + 400,
-                              /*parameters=*/this,
-                              /*priority=*/30, &taskHandle, /*coreID=*/0) != pdPASS) {
-    jll_fatal("Failed to create GPIO interrupt handler config task");
-  }
+  // Ensure this is only ever called once by saving the result in a static variable.
+  static esp_err_t err = gpio_install_isr_service(/*intr_alloc_flags=*/0);
+  ESP_ERROR_CHECK(err);
+  // GPIO interrupt handlers are run on the core where the config calls were made, so we use esp_ipc_call to
+  // ensure that all that happens on core 0. This prevents it from interfering with LED writes on core 1.
+  ESP_ERROR_CHECK(esp_ipc_call(/*coreID=*/0, ConfigurePin, /*arg=*/this));
 }
 
 // static
@@ -53,12 +63,7 @@ void GpioButton::ConfigurePin(void* arg) {
       .intr_type = GPIO_INTR_ANYEDGE,
   };
   ESP_ERROR_CHECK(gpio_config(&config));
-  // Ensure this is only ever called once by saving the result in a static variable.
-  static esp_err_t err = gpio_install_isr_service(/*intr_alloc_flags=*/0);
-  ESP_ERROR_CHECK(err);
   ESP_ERROR_CHECK(gpio_isr_handler_add(static_cast<gpio_num_t>(button->pin_), &GpioButton::InterruptHandler, button));
-  // Delete this task.
-  vTaskDelete(nullptr);
 }
 
 GpioButton::~GpioButton() { ESP_ERROR_CHECK(gpio_isr_handler_remove(static_cast<gpio_num_t>(pin_))); }
@@ -69,6 +74,8 @@ void GpioButton::RunLoop(Milliseconds currentTime) {
     const bool isPressedRaw = isPressedRaw_.load(std::memory_order_relaxed);
     // GpioButton has been in this state longer than the debounce time.
     if (isPressedRaw != isPressedDebounced_) {
+      JL_GPIO_DEBUG("%u At %u pin %u switching debounced to %s", timeMillis(), lastRawChange, pin_,
+                    (isPressedRaw ? "closed" : "open"));
       // GpioButton is transitioning states (with debouncing taken into account).
       isPressedDebounced_ = isPressedRaw;
       if (isPressedDebounced_) {
@@ -113,7 +120,11 @@ void GpioButton::InterruptHandler(void* arg) { reinterpret_cast<GpioButton*>(arg
 void GpioButton::HandleInterrupt() {
   const bool newIsPressed = gpio_get_level(static_cast<gpio_num_t>(pin_)) == 0;
   const bool oldIsPressedRaw = isPressedRaw_.exchange(newIsPressed, std::memory_order_relaxed);
-  if (newIsPressed != oldIsPressedRaw) { lastRawChange_.store(timeMillis(), std::memory_order_relaxed); }
+  if (newIsPressed != oldIsPressedRaw) {
+    const Milliseconds currentTime = timeMillis();
+    lastRawChange_.store(currentTime, std::memory_order_relaxed);
+    JL_GPIO_DEBUG_ISR("%u Pin %u switching raw to %s", currentTime, pin_, (newIsPressed ? "closed" : "open"));
+  }
 }
 
 }  // namespace jazzlights
