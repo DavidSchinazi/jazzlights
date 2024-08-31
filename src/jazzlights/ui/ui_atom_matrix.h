@@ -13,7 +13,7 @@
 
 namespace jazzlights {
 
-class AtomMatrixUi : public Esp32Ui, public GpioButton::Interface {
+class AtomMatrixUi : public Esp32Ui, public GpioButton::ButtonInterface {
  public:
   explicit AtomMatrixUi(Player& player, Milliseconds currentTime);
   // From Esp32Ui.
@@ -21,10 +21,10 @@ class AtomMatrixUi : public Esp32Ui, public GpioButton::Interface {
   void FinalSetup(Milliseconds currentTime) override;
   void RunLoop(Milliseconds currentTime) override;
   void set_fastled_runner(FastLedRunner* runner) override { runner_ = runner; }
-  // From GpioButton::Interface.
-  void ShortPress(uint8_t pin, Milliseconds currentTime) override;
-  void LongPress(uint8_t pin, Milliseconds currentTime) override;
-  void HeldDown(uint8_t pin, Milliseconds currentTime) override;
+  // From GpioButton::ButtonInterface.
+  void ShortPress(uint8_t pin) override;
+  void LongPress(uint8_t pin) override;
+  void HeldDown(uint8_t pin) override;
 
  private:
   bool IsLocked();

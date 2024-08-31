@@ -215,9 +215,7 @@ void AtomMatrixUi::ScreenShort(Milliseconds currentTime) {
 }
 
 AtomMatrixUi::AtomMatrixUi(Player& player, Milliseconds currentTime)
-    : Esp32Ui(player, currentTime),
-      button_(kButtonPin, *this, currentTime),
-      brightnessCursor_(kInitialBrightnessCursor) {}
+    : Esp32Ui(player, currentTime), button_(kButtonPin, *this), brightnessCursor_(kInitialBrightnessCursor) {}
 
 bool AtomMatrixUi::IsLocked() {
 #if JL_BUTTON_LOCK
@@ -240,9 +238,10 @@ void AtomMatrixUi::HandleUnlockSequence(bool wasLongPress, Milliseconds currentT
   }
 }
 
-void AtomMatrixUi::ShortPress(uint8_t pin, Milliseconds currentTime) {
+void AtomMatrixUi::ShortPress(uint8_t pin) {
   if (pin != kButtonPin) { return; }
-  jll_info("%u ShortPress", currentTime);
+  const Milliseconds currentTime = timeMillis();
+  jll_info("%u AtomMatrixUi ShortPress", currentTime);
   HandleUnlockSequence(/*wasLongPress=*/false, currentTime);
   if (IsLocked()) { return; }
 
@@ -271,9 +270,10 @@ void AtomMatrixUi::ShortPress(uint8_t pin, Milliseconds currentTime) {
   }
 }
 
-void AtomMatrixUi::LongPress(uint8_t pin, Milliseconds currentTime) {
+void AtomMatrixUi::LongPress(uint8_t pin) {
   if (pin != kButtonPin) { return; }
-  jll_info("%u LongPress", currentTime);
+  const Milliseconds currentTime = timeMillis();
+  jll_info("%u AtomMatrixUi LongPress", currentTime);
   HandleUnlockSequence(/*wasLongPress=*/true, currentTime);
   if (IsLocked()) { return; }
 
@@ -286,9 +286,10 @@ void AtomMatrixUi::LongPress(uint8_t pin, Milliseconds currentTime) {
   }
 }
 
-void AtomMatrixUi::HeldDown(uint8_t pin, Milliseconds currentTime) {
+void AtomMatrixUi::HeldDown(uint8_t pin) {
   if (pin != kButtonPin) { return; }
-  jll_info("%u HeldDown", currentTime);
+  const Milliseconds currentTime = timeMillis();
+  jll_info("%u AtomMatrixUi HeldDown", currentTime);
   if (IsLocked()) {
     // Button was held too long, go back to beginning of unlock sequence.
     buttonLockState_ = 0;
@@ -299,7 +300,7 @@ void AtomMatrixUi::HeldDown(uint8_t pin, Milliseconds currentTime) {
 
 bool AtomMatrixUi::ScreenMessage(const Milliseconds currentTime) {
   if (!displayingBootMessage_) { return false; }
-  if (button_.IsPressed(currentTime)) {
+  if (button_.IsPressed()) {
     jll_info("%u Stopping boot message due to button press", currentTime);
     displayingBootMessage_ = false;
   } else {
@@ -317,14 +318,14 @@ bool AtomMatrixUi::ScreenMessage(const Milliseconds currentTime) {
 }
 
 void AtomMatrixUi::RunLoop(Milliseconds currentTime) {
-  button_.RunLoop(currentTime);
+  button_.RunLoop();
 
   if (ScreenMessage(currentTime)) { return; }
 
 #if JL_IS_CONFIG(FAIRY_WAND)
   ScreenClear(currentTime);
   ScreenDisplay(currentTime);
-  if (button_.IsPressed(currentTime)) { player_.triggerPatternOverride(currentTime); }
+  if (button_.IsPressed()) { player_.triggerPatternOverride(currentTime); }
   return;
 #endif  // FAIRY_WAND
 
@@ -342,8 +343,8 @@ void AtomMatrixUi::RunLoop(Milliseconds currentTime) {
     // 2. When the button has been pressed long enough to register as a long press, and we want to signal the user to
     // let go now
     // 3. In the final transition from state 4 (awaiting release) to state 5 (unlocked)
-    if ((buttonLockState_ == 0 && !button_.IsPressed(currentTime)) ||
-        button_.HasBeenPressedLongEnoughForLongPress(currentTime) || buttonLockState_ >= 4) {
+    if ((buttonLockState_ == 0 && !button_.IsPressed()) || button_.HasBeenPressedLongEnoughForLongPress() ||
+        buttonLockState_ >= 4) {
       ScreenClear(currentTime);
     } else if ((buttonLockState_ % 2) == 1) {
       // In odd  states (1,3) we show "L".
@@ -355,10 +356,10 @@ void AtomMatrixUi::RunLoop(Milliseconds currentTime) {
     ScreenDisplay(currentTime);
 
     // In lock state 4, wait for release of the button, and then move to state 5 (fully unlocked)
-    if (buttonLockState_ < 4 || button_.IsPressed(currentTime)) { return; }
+    if (buttonLockState_ < 4 || button_.IsPressed()) { return; }
     buttonLockState_ = 5;
     lockButtonTime_ = currentTime + kButtonLockTimeout;
-  } else if (button_.IsPressed(currentTime)) {
+  } else if (button_.IsPressed()) {
     lockButtonTime_ = currentTime + kButtonLockTimeout;
   }
 #endif  // JL_BUTTON_LOCK

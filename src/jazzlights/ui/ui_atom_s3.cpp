@@ -100,9 +100,7 @@ void AtomS3Ui::UpdateScreen(Milliseconds currentTime) {
 }
 
 AtomS3Ui::AtomS3Ui(Player& player, Milliseconds currentTime)
-    : Esp32Ui(player, currentTime),
-      button_(kButtonPin, *this, currentTime),
-      brightnessCursor_(kInitialBrightnessCursor) {}
+    : Esp32Ui(player, currentTime), button_(kButtonPin, *this), brightnessCursor_(kInitialBrightnessCursor) {}
 
 bool AtomS3Ui::IsLocked() {
 #if JL_BUTTON_LOCK
@@ -135,7 +133,7 @@ void AtomS3Ui::InitialSetup(Milliseconds currentTime) {
 void AtomS3Ui::FinalSetup(Milliseconds /*currentTime*/) {}
 
 void AtomS3Ui::RunLoop(Milliseconds currentTime) {
-  button_.RunLoop(currentTime);
+  button_.RunLoop();
   M5.update();
 
 #if JL_BUTTON_LOCK
@@ -150,8 +148,8 @@ void AtomS3Ui::RunLoop(Milliseconds currentTime) {
     // 2. When the button has been pressed long enough to register as a long press, and we want to signal the user to
     // let go now
     // 3. In the final transition from state 4 (awaiting release) to state 5 (unlocked)
-    if ((buttonLockState_ == 0 && !button_.IsPressed(currentTime)) ||
-        button_.HasBeenPressedLongEnoughForLongPress(currentTime) || buttonLockState_ >= 4) {
+    if ((buttonLockState_ == 0 && !button_.IsPressed()) || button_.HasBeenPressedLongEnoughForLongPress() ||
+        buttonLockState_ >= 4) {
       Display(DisplayContents(DisplayContents::Mode::kOff), currentTime);
     } else if ((buttonLockState_ % 2) == 1) {
       // In odd  states (1,3) we show "L".
@@ -162,19 +160,20 @@ void AtomS3Ui::RunLoop(Milliseconds currentTime) {
     }
 
     // In lock state 4, wait for release of the button, and then move to state 5 (fully unlocked)
-    if (buttonLockState_ < 4 || button_.IsPressed(currentTime)) { return; }
+    if (buttonLockState_ < 4 || button_.IsPressed()) { return; }
     buttonLockState_ = 5;
     lockButtonTime_ = currentTime + kButtonLockTimeout;
-  } else if (button_.IsPressed(currentTime)) {
+  } else if (button_.IsPressed()) {
     lockButtonTime_ = currentTime + kButtonLockTimeout;
   }
 #endif  // JL_BUTTON_LOCK
   UpdateScreen(currentTime);
 }
 
-void AtomS3Ui::ShortPress(uint8_t pin, Milliseconds currentTime) {
+void AtomS3Ui::ShortPress(uint8_t pin) {
   if (pin != kButtonPin) { return; }
-  jll_info("%u ShortPress", currentTime);
+  const Milliseconds currentTime = timeMillis();
+  jll_info("%u AtomS3Ui ShortPress", currentTime);
   HandleUnlockSequence(/*wasLongPress=*/false, currentTime);
   if (IsLocked()) { return; }
 
@@ -204,9 +203,10 @@ void AtomS3Ui::ShortPress(uint8_t pin, Milliseconds currentTime) {
   UpdateScreen(currentTime);
 }
 
-void AtomS3Ui::LongPress(uint8_t pin, Milliseconds currentTime) {
+void AtomS3Ui::LongPress(uint8_t pin) {
   if (pin != kButtonPin) { return; }
-  jll_info("%u LongPress", currentTime);
+  const Milliseconds currentTime = timeMillis();
+  jll_info("%u AtomS3Ui LongPress", currentTime);
   HandleUnlockSequence(/*wasLongPress=*/true, currentTime);
   if (IsLocked()) { return; }
 
@@ -220,9 +220,10 @@ void AtomS3Ui::LongPress(uint8_t pin, Milliseconds currentTime) {
   UpdateScreen(currentTime);
 }
 
-void AtomS3Ui::HeldDown(uint8_t pin, Milliseconds currentTime) {
+void AtomS3Ui::HeldDown(uint8_t pin) {
   if (pin != kButtonPin) { return; }
-  jll_info("%u HeldDown", currentTime);
+  const Milliseconds currentTime = timeMillis();
+  jll_info("%u AtomS3Ui HeldDown", currentTime);
   if (IsLocked()) {
     // Button was held too long, go back to beginning of unlock sequence.
     buttonLockState_ = 0;

@@ -45,17 +45,17 @@ static Esp32UiImpl* GetUi() {
 }
 
 #if JL_IS_CONFIG(PHONE)
-class PhoneButtonHandler : public GpioButton::Interface {
+class PhonePinHandler : public GpioPin::PinInterface {
  public:
-  PhoneButtonHandler() = default;
-  ~PhoneButtonHandler() = default;
-  void ShortPress(uint8_t pin, Milliseconds currentTime) override {}
-  void LongPress(uint8_t pin, Milliseconds currentTime) override {}
-  void HeldDown(uint8_t pin, Milliseconds currentTime) override {}
+  PhonePinHandler() = default;
+  ~PhonePinHandler() = default;
+  void HandleChange(uint8_t pin, bool isClosed, int64_t timeOfChange) override {
+    jll_info("Pin %u %s at %lld", pin, (isClosed ? "closed" : "opened"), timeOfChange);
+  }
 };
-static PhoneButtonHandler* GetPhoneButtonHandler() {
-  static PhoneButtonHandler buttonHandler;
-  return &buttonHandler;
+static PhonePinHandler* GetPhonePinHandler() {
+  static PhonePinHandler pinHandler;
+  return &pinHandler;
 }
 #if JL_IS_CONTROLLER(ATOM_MATRIX)
 static constexpr uint8_t kPhonePin1 = 32;
@@ -66,12 +66,12 @@ static constexpr uint8_t kPhonePin2 = 2;
 #else
 #error "unsupported controller for phone"
 #endif
-static GpioButton* GetPhoneButton1() {
-  static GpioButton button(kPhonePin1, *GetPhoneButtonHandler(), timeMillis());
+static GpioPin* GetPhonePin1() {
+  static GpioPin button(kPhonePin1, *GetPhonePinHandler());
   return &button;
 }
-static GpioButton* GetPhoneButton2() {
-  static GpioButton button(kPhonePin2, *GetPhoneButtonHandler(), timeMillis());
+static GpioPin* GetPhonePin2() {
+  static GpioPin button(kPhonePin2, *GetPhonePinHandler());
   return &button;
 }
 #endif  // PHONE
@@ -95,8 +95,8 @@ void SetupPrimaryRunLoop() {
   GetUi()->set_fastled_runner(&runner);
   GetUi()->InitialSetup(currentTime);
 #if JL_IS_CONFIG(PHONE)
-  (void)GetPhoneButton1();
-  (void)GetPhoneButton2();
+  (void)GetPhonePin1();
+  (void)GetPhonePin2();
 #endif  // PHONE
 
   AddLedsToRunner(&runner);
@@ -134,8 +134,8 @@ void RunPrimaryRunLoop() {
   Milliseconds currentTime = timeMillis();
   GetUi()->RunLoop(currentTime);
 #if JL_IS_CONFIG(PHONE)
-  GetPhoneButton1()->RunLoop(currentTime);
-  GetPhoneButton2()->RunLoop(currentTime);
+  GetPhonePin1()->RunLoop();
+  GetPhonePin2()->RunLoop();
 #endif  // PHONE
   SAVE_TIME_POINT(PrimaryRunLoop, UserInterface);
   Esp32BleNetwork::get()->runLoop(currentTime);
