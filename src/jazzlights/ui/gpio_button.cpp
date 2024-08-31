@@ -22,7 +22,7 @@
     if (JL_GPIO_DEBUG_ENABLED) { ets_printf("INFO: " format "\n", ##__VA_ARGS__); } \
   } while (false)
 
-#define JL_GPIO_TIME_FMT "%03lld.%03lld,%03lld"
+#define JL_GPIO_TIME_FMT "%03llds%03lldms%03lldus"
 #define JL_GPIO_TIME_VAL(x) ((x) / 1000000), (((x) / 1000) % 1000), ((x) % 1000)
 
 namespace jazzlights {
@@ -59,16 +59,16 @@ GpioButton::GpioButton(uint8_t pin, ButtonInterface& buttonInterface)
 
 // static
 void GpioPin::ConfigurePin(void* arg) {
-  GpioPin* gpio_pin = reinterpret_cast<GpioPin*>(arg);
+  GpioPin* gpioPin = reinterpret_cast<GpioPin*>(arg);
   const gpio_config_t config = {
-      .pin_bit_mask = (1ULL << gpio_pin->pin_),
+      .pin_bit_mask = (1ULL << gpioPin->pin_),
       .mode = GPIO_MODE_INPUT,
       .pull_up_en = GPIO_PULLUP_ENABLE,
       .pull_down_en = GPIO_PULLDOWN_DISABLE,
       .intr_type = GPIO_INTR_ANYEDGE,
   };
   ESP_ERROR_CHECK(gpio_config(&config));
-  ESP_ERROR_CHECK(gpio_isr_handler_add(static_cast<gpio_num_t>(gpio_pin->pin_), &GpioPin::InterruptHandler, gpio_pin));
+  ESP_ERROR_CHECK(gpio_isr_handler_add(static_cast<gpio_num_t>(gpioPin->pin_), &GpioPin::InterruptHandler, gpioPin));
 }
 
 GpioPin::~GpioPin() {
@@ -114,6 +114,22 @@ void GpioPin::RunLoop() {
       }
     }
   }
+  // In theory this call to gpio_get_level() should not be necessary, as we get an interrupt any time the value changes.
+  // However, in practice it appears that the interrupt sometimes does not fire. We call it here to remedy that. This
+  // negates the CPU usage benefits of using the interrupt handler, but still maintains the benefit of keeping track of
+  // events even if the main runloop is busy performing other tasks.
+  const bool liveIsClosed = gpio_get_level(static_cast<gpio_num_t>(pin_)) == 0;
+  if (liveIsClosed != isClosedRawRunloop_) {
+    const int64_t currentTime64 = esp_timer_get_time();
+    JL_GPIO_DEBUG(JL_GPIO_TIME_FMT " Pin %u is unexpectedly %s", JL_GPIO_TIME_VAL(currentTime64), pin_,
+                  (liveIsClosed ? "closed" : "open"));
+    uint64_t state = static_cast<uint64_t>(currentTime64);
+    state &= 0x7FFFFFFFFFFFFFFFULL;
+    if (liveIsClosed) { state |= 0x8000000000000000ULL; }
+    xQueueSendToBack(queue_, &state, /*wait_time=*/0);
+    RunLoop();
+    return;
+  }
   const int64_t timeSinceLastChange = esp_timer_get_time() - lastChangeAwayFromDebounced_;
   if (isClosedDebouncedRunloop_ != isClosedRawRunloop_ && timeSinceLastChange > kDebounceTime) {
     // The debounce time has elapsed since the last change away from the previous debounced value.
@@ -154,13 +170,13 @@ void GpioPin::HandleInterrupt() {
   if (newIsClosed != lastIsClosedInISR_) {
     lastIsClosedInISR_ = newIsClosed;
     const int64_t currentTime64 = esp_timer_get_time();
+    JL_GPIO_DEBUG_ISR(JL_GPIO_TIME_FMT " Pin %u switching raw to %s", JL_GPIO_TIME_VAL(currentTime64), pin_,
+                      (newIsClosed ? "closed" : "open"));
     uint64_t state = static_cast<uint64_t>(currentTime64);
     state &= 0x7FFFFFFFFFFFFFFFULL;
     if (newIsClosed) { state |= 0x8000000000000000ULL; }
     BaseType_t higherPriorityTaskWoken = pdFALSE;
     xQueueSendToBackFromISR(queue_, &state, &higherPriorityTaskWoken);
-    JL_GPIO_DEBUG_ISR(JL_GPIO_TIME_FMT " Pin %u switching raw to %s", JL_GPIO_TIME_VAL(currentTime64), pin_,
-                      (newIsClosed ? "closed" : "open"));
   }
 }
 
