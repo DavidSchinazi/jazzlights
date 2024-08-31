@@ -65,6 +65,8 @@ static constexpr uint8_t kPhoneDialPin = 2;
 #define JL_PHONE_DEBUG(...) jll_debug(__VA_ARGS__)
 #endif  // JL_PHONE_DEBUG_ENABLED
 
+static constexpr int64_t kNumberTime = 3000000;  // 3s.
+
 class PhonePinHandler : public GpioPin::PinInterface {
  public:
   PhonePinHandler() = default;
@@ -80,8 +82,11 @@ class PhonePinHandler : public GpioPin::PinInterface {
         JL_PHONE_DEBUG(JL_PHONE_TIME_FMT " Dialed %u lastKnownDigitIsClosed_=%s", JL_PHONE_TIME_VAL(timeOfChange),
                        digitCount_, (lastKnownDigitIsClosed_ ? "closed" : "open"));
         if (0 < digitCount_ && digitCount_ <= 10) {
-          jll_info(JL_PHONE_TIME_FMT " Dialed %u", JL_PHONE_TIME_VAL(timeOfChange),
-                   (digitCount_ == 10 ? 0 : digitCount_));
+          if (digitCount_ == 10) { digitCount_ = 0; }
+          if (lastNumberEvent_ < 0 || timeOfChange - lastNumberEvent_ > kNumberTime) { fullNumber_ = 0; }
+          fullNumber_ = fullNumber_ * 10 + digitCount_;
+          jll_info(JL_PHONE_TIME_FMT " Dialed %llu", JL_PHONE_TIME_VAL(timeOfChange), fullNumber_);
+          lastNumberEvent_ = timeOfChange;
         }
         digitCount_ = 0;
         lastDigitEvent_ = -1;
@@ -127,6 +132,8 @@ class PhonePinHandler : public GpioPin::PinInterface {
   bool lastKnownDigitIsClosed_ = false;
   uint8_t digitCount_ = 0;
   int64_t lastDigitEvent_ = -1;
+  uint64_t fullNumber_ = 0;
+  int64_t lastNumberEvent_ = -1;
 };
 static PhonePinHandler* GetPhonePinHandler() {
   static PhonePinHandler pinHandler;
