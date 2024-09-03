@@ -22,7 +22,7 @@ class GpioPin {
   };
 
   // Starts tracking a GPIO pin.
-  explicit GpioPin(uint8_t pin, PinInterface& pinInterface);
+  explicit GpioPin(uint8_t pin, PinInterface& pinInterface, int64_t debounceDuration);
   ~GpioPin();
 
   // Called once per primary runloop.
@@ -41,11 +41,13 @@ class GpioPin {
 
   PinInterface& pinInterface_;
   QueueHandle_t queue_;
+  int64_t lastRunloopQueueEventTime_;
   int64_t lastChangeAwayFromDebounced_;
   bool lastIsClosedInISR_;
   bool isClosedRawRunloop_;
   bool isClosedDebouncedRunloop_;
   const uint8_t pin_;
+  const int64_t debounceDuration_;
 };
 
 // Allows tracking buttons connected to ESP32 GPIO pins.

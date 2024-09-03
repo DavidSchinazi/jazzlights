@@ -65,14 +65,17 @@ static constexpr uint8_t kPhoneDialPin = 2;
 #define JL_PHONE_DEBUG(...) jll_debug(__VA_ARGS__)
 #endif  // JL_PHONE_DEBUG_ENABLED
 
-static constexpr int64_t kNumberTime = 3000000;  // 3s.
+static constexpr int64_t kPhoneDebounceDuration = 2000;  // 2ms.
+static constexpr int64_t kNumberTime = 3000000;          // 3s.
+static constexpr int64_t kDigitMinTime = 30000;          // 30ms.
+static constexpr int64_t kDigitMaxTime = 120000;         // 120ms.
 
 class PhonePinHandler : public GpioPin::PinInterface {
  public:
   PhonePinHandler() = default;
   ~PhonePinHandler() = default;
   void HandleChange(uint8_t pin, bool isClosed, int64_t timeOfChange) override {
-    JL_PHONE_DEBUG(JL_PHONE_TIME_FMT " Pin %u %s", JL_PHONE_TIME_VAL(timeOfChange), pin,
+    JL_PHONE_DEBUG(JL_PHONE_TIME_FMT " PhonePinHandler: pin %u %s", JL_PHONE_TIME_VAL(timeOfChange), pin,
                    (isClosed ? "closed" : "opened"));
     if (pin == kPhoneDialPin) {
       dialing_ = isClosed;
@@ -81,6 +84,16 @@ class PhonePinHandler : public GpioPin::PinInterface {
       } else {
         JL_PHONE_DEBUG(JL_PHONE_TIME_FMT " Dialed %u lastKnownDigitIsClosed_=%s", JL_PHONE_TIME_VAL(timeOfChange),
                        digitCount_, (lastKnownDigitIsClosed_ ? "closed" : "open"));
+        if (!lastKnownDigitIsClosed_) {
+          const int64_t timeListLastDigitEvent = timeOfChange - lastDigitEvent_;
+          JL_PHONE_DEBUG(JL_PHONE_TIME_FMT " Dialing ended with digit pin still open after " JL_PHONE_TIME_FMT,
+                         JL_PHONE_TIME_VAL(timeOfChange), JL_PHONE_TIME_VAL(timeListLastDigitEvent));
+          if (timeListLastDigitEvent >= kDigitMinTime && timeListLastDigitEvent <= kDigitMaxTime) {
+            JL_PHONE_DEBUG(JL_PHONE_TIME_FMT " Incrementing count from %u to %u", JL_PHONE_TIME_VAL(timeOfChange),
+                           digitCount_, digitCount_ + 1);
+            digitCount_++;
+          }
+        }
         if (0 < digitCount_ && digitCount_ <= 10) {
           if (digitCount_ == 10) { digitCount_ = 0; }
           if (lastNumberEvent_ < 0 || timeOfChange - lastNumberEvent_ > kNumberTime) { fullNumber_ = 0; }
@@ -103,14 +116,9 @@ class PhonePinHandler : public GpioPin::PinInterface {
           const int64_t timeListLastDigitEvent = timeOfChange - lastDigitEvent_;
           JL_PHONE_DEBUG(JL_PHONE_TIME_FMT " Digit pin was %s for " JL_PHONE_TIME_FMT, JL_PHONE_TIME_VAL(timeOfChange),
                          (isClosed ? "open" : "closed"), JL_PHONE_TIME_VAL(timeListLastDigitEvent));
-          if (isClosed && timeListLastDigitEvent >= 50000 && timeListLastDigitEvent <= 120000) {
+          if (isClosed && timeListLastDigitEvent >= kDigitMinTime && timeListLastDigitEvent <= kDigitMaxTime) {
             JL_PHONE_DEBUG(JL_PHONE_TIME_FMT " Incrementing count from %u to %u", JL_PHONE_TIME_VAL(timeOfChange),
                            digitCount_, digitCount_ + 1);
-            digitCount_++;
-          }
-          if (!isClosed && timeListLastDigitEvent >= 80000 && timeListLastDigitEvent <= 120000) {
-            JL_PHONE_DEBUG(JL_PHONE_TIME_FMT " Maybe extra closed - incrementing count from %u to %u",
-                           JL_PHONE_TIME_VAL(timeOfChange), digitCount_, digitCount_ + 1);
             digitCount_++;
           }
         } else {
@@ -140,11 +148,11 @@ static PhonePinHandler* GetPhonePinHandler() {
   return &pinHandler;
 }
 static GpioPin* GetPhonePin1() {
-  static GpioPin button(kPhoneDigitPin, *GetPhonePinHandler());
+  static GpioPin button(kPhoneDigitPin, *GetPhonePinHandler(), kPhoneDebounceDuration);
   return &button;
 }
 static GpioPin* GetPhonePin2() {
-  static GpioPin button(kPhoneDialPin, *GetPhonePinHandler());
+  static GpioPin button(kPhoneDialPin, *GetPhonePinHandler(), kPhoneDebounceDuration);
   return &button;
 }
 #endif  // PHONE
