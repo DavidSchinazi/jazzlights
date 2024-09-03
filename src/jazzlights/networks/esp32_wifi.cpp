@@ -248,6 +248,7 @@ Esp32WiFiNetwork::Esp32WiFiNetwork() {
 
   esp_event_handler_instance_t wifiInstance;
   esp_event_handler_instance_t ipInstance;
+  // Register event handlers on the default event loop. That runs in task "sys_evt" on core 0 (and is not configurable).
   ESP_ERROR_CHECK(
       esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &EventHandler, this, &wifiInstance));
   ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, ESP_EVENT_ANY_ID, &EventHandler, this, &ipInstance));
@@ -272,6 +273,7 @@ Esp32WiFiNetwork::Esp32WiFiNetwork() {
     jll_fatal("Esp32WiFiNetwork failed to parse multicast address");
   }
 
+  // This task needs to be pinned to core 0 since that's where the system event handler runs (see above).
   // TODO figure out correct stack size
   if (xTaskCreatePinnedToCore(TaskFunction, "JL_WiFi", configMINIMAL_STACK_SIZE + 4000,
                               /*parameters=*/this,
