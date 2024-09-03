@@ -290,7 +290,12 @@ Esp32WiFiNetwork* Esp32WiFiNetwork::get() {
   return &sSingleton;
 }
 
-Esp32WiFiNetwork::~Esp32WiFiNetwork() { CloseSocket(); }
+Esp32WiFiNetwork::~Esp32WiFiNetwork() {
+  jll_fatal("Destructing Esp32WiFiNetwork is not currently supported");
+  // This destruction is unsafe since a race condition could cause the event handler to fire after the destructor is
+  // called. If we ever have a need to destroy this, we'll need to make this safe first.
+  // CloseSocket();
+}
 
 }  // namespace jazzlights
 

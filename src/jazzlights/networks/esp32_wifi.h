@@ -57,10 +57,16 @@ class Esp32WiFiNetwork : public Network {
   TaskHandle_t taskHandle_ = nullptr;     // Only modified in constructor.
   struct in_addr multicastAddress_ = {};  // Only modified in constructor.
   struct in_addr localAddress_ = {};      // TODO figure out if this needs to be protected by mutex_.
-  int socket_ = -1;                       // TODO figure out if this needs to be protected by mutex_.
-  uint8_t* udpPayload_ = nullptr;         // Only used on our task. Used for both sending and receiving.
-  Milliseconds lastSendTime_ = -1;        // Only used on our task.
-  PatternBits lastSentPattern_ = 0;       // Only used on our task.
+  // localAddress_ is only accessed in HandleEvent and CreateSocket.
+  int socket_ = -1;  // TODO figure out if this needs to be protected by mutex_.
+  // socket_ is only accessed in CreateSocket, CloseSocket, and RunTask.
+  // CreateSocket is called by HandleEvent and RunTask.
+  // CloseSocket is called by CreateSocket and HandleEvent.
+  // Another option would be to only modify them from our task and use a queue to notify our task from the event
+  // handler. We could put the local address in the queue data, use a length of one at xQueueOverwrite().
+  uint8_t* udpPayload_ = nullptr;    // Only used on our task. Used for both sending and receiving.
+  Milliseconds lastSendTime_ = -1;   // Only used on our task.
+  PatternBits lastSentPattern_ = 0;  // Only used on our task.
   std::atomic<Milliseconds> lastReceiveTime_;
   std::mutex mutex_;
   bool hasDataToSend_ = false;                  // Protected by mutex_.
