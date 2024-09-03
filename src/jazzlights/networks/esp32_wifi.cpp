@@ -154,8 +154,8 @@ void Esp32WiFiNetwork::HandleEvent(esp_event_base_t event_base, int32_t event_id
 
 // static
 void Esp32WiFiNetwork::TaskFunction(void* parameters) {
-  Esp32WiFiNetwork* network = reinterpret_cast<Esp32WiFiNetwork*>(parameters);
-  while (true) { network->RunTask(); }
+  Esp32WiFiNetwork* wifiNetwork = reinterpret_cast<Esp32WiFiNetwork*>(parameters);
+  while (true) { wifiNetwork->RunTask(); }
 }
 
 void Esp32WiFiNetwork::RunTask() {
