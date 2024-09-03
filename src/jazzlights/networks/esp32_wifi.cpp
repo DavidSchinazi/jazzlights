@@ -120,8 +120,13 @@ void Esp32WiFiNetwork::CloseSocket() {
 }
 
 // static
-void Esp32WiFiNetwork::EventHandler(void* /*event_handler_arg*/, esp_event_base_t event_base, int32_t event_id,
+void Esp32WiFiNetwork::EventHandler(void* event_handler_arg, esp_event_base_t event_base, int32_t event_id,
                                     void* event_data) {
+  Esp32WiFiNetwork* wifiNetwork = reinterpret_cast<Esp32WiFiNetwork*>(event_handler_arg);
+  wifiNetwork->HandleEvent(event_base, event_id, event_data);
+}
+
+void Esp32WiFiNetwork::HandleEvent(esp_event_base_t event_base, int32_t event_id, void* event_data) {
   if (event_base == WIFI_EVENT) {
     if (event_id == WIFI_EVENT_STA_START) {
       jll_info("Esp32WiFiNetwork STA started - connecting");
@@ -136,11 +141,11 @@ void Esp32WiFiNetwork::EventHandler(void* /*event_handler_arg*/, esp_event_base_
     if (event_id == IP_EVENT_STA_GOT_IP) {
       ip_event_got_ip_t* event = (ip_event_got_ip_t*)event_data;
       jll_info("Esp32WiFiNetwork got IP: " IPSTR, IP2STR(&event->ip_info.ip));
-      memcpy(&get()->localAddress_, &event->ip_info.ip, sizeof(get()->localAddress_));
-      get()->CreateSocket();
+      memcpy(&localAddress_, &event->ip_info.ip, sizeof(localAddress_));
+      CreateSocket();
     } else if (event_id == IP_EVENT_STA_LOST_IP) {
       jll_info("Esp32WiFiNetwork lost IP");
-      get()->CloseSocket();
+      CloseSocket();
     } else if (event_id == IP_EVENT_GOT_IP6) {
       jll_info("Esp32WiFiNetwork got IPv6");
     }
@@ -241,12 +246,11 @@ Esp32WiFiNetwork::Esp32WiFiNetwork() {
   wifi_init_config_t wifi_init_config = WIFI_INIT_CONFIG_DEFAULT();
   ESP_ERROR_CHECK(esp_wifi_init(&wifi_init_config));
 
-  esp_event_handler_instance_t instance_any_id;
-  esp_event_handler_instance_t instance_got_ip;
+  esp_event_handler_instance_t wifiInstance;
+  esp_event_handler_instance_t ipInstance;
   ESP_ERROR_CHECK(
-      esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &EventHandler, NULL, &instance_any_id));
-  ESP_ERROR_CHECK(
-      esp_event_handler_instance_register(IP_EVENT, ESP_EVENT_ANY_ID, &EventHandler, NULL, &instance_got_ip));
+      esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &EventHandler, this, &wifiInstance));
+  ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, ESP_EVENT_ANY_ID, &EventHandler, this, &ipInstance));
 
   wifi_config_t wifi_config;
   memset(&wifi_config, 0, sizeof(wifi_config));
