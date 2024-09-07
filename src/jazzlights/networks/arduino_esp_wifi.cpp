@@ -10,7 +10,6 @@
 #include "jazzlights/util/time.h"
 
 namespace jazzlights {
-
 std::string ArduinoEspWiFiNetwork::WiFiStatusToString(wl_status_t status) {
   if (status == kUninitialized) { return "UNINITIALIZED"; }
   switch (status) {
@@ -28,6 +27,7 @@ std::string ArduinoEspWiFiNetwork::WiFiStatusToString(wl_status_t status) {
   return s.str();
 }
 
+namespace {
 std::string WiFiReasonToString(uint8_t reason) {
   switch (reason) {
 #define JL_WIFI_REASON_CASE_RETURN(r) \
@@ -95,6 +95,7 @@ std::string WiFiReasonToString(uint8_t reason) {
   s << "UNKNOWN(" << static_cast<int>(reason) << ")";
   return s.str();
 }
+}  // namespace
 
 ArduinoEspWiFiNetwork::ArduinoEspWiFiNetwork(const char* ssid, const char* pass) : creds_{ssid, pass} {
   uint8_t macAddress[6] = {};
