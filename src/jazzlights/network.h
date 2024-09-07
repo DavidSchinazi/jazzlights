@@ -133,8 +133,8 @@ class Network {
   // Last time we received a message, or -1 to indicate never.
   virtual Milliseconds getLastReceiveTime() const = 0;
 
-  // Get a human-readable status string that can be displayed to the user.
-  virtual std::string getStatusStr(Milliseconds currentTime) const = 0;
+  // Get a human-readable status string that can be displayed to the user. Not const to allow taking locks.
+  virtual std::string getStatusStr(Milliseconds currentTime) = 0;
 
  protected:
   Network() = default;

@@ -30,7 +30,7 @@ class ArduinoEsp32WiFiNetwork : public Network {
   NetworkDeviceId getLocalDeviceId() override { return localDeviceId_; }
   const char* networkName() const override { return "ArduinoEsp32WiFi"; }
   const char* shortNetworkName() const override { return "WiFi"; }
-  std::string getStatusStr(Milliseconds currentTime) const override;
+  std::string getStatusStr(Milliseconds currentTime) override;
   void setMessageToSend(const NetworkMessage& messageToSend, Milliseconds currentTime) override;
   void disableSending(Milliseconds currentTime) override;
   void triggerSendAsap(Milliseconds currentTime) override;

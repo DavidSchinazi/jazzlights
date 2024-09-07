@@ -32,7 +32,7 @@ class ArduinoEthernetNetwork : public UdpNetwork {
   NetworkDeviceId getLocalDeviceId() override { return localDeviceId_; }
   const char* networkName() const override { return "ArduinoEthernet"; }
   const char* shortNetworkName() const override { return "Eth"; }
-  std::string getStatusStr(Milliseconds currentTime) const override;
+  std::string getStatusStr(Milliseconds currentTime) override;
 
  private:
   NetworkDeviceId localDeviceId_;

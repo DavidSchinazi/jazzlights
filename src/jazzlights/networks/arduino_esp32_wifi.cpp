@@ -76,7 +76,7 @@ NetworkStatus ArduinoEsp32WiFiNetwork::update(NetworkStatus status, Milliseconds
   }
 }
 
-std::string ArduinoEsp32WiFiNetwork::getStatusStr(Milliseconds currentTime) const {
+std::string ArduinoEsp32WiFiNetwork::getStatusStr(Milliseconds currentTime) {
   // TODO fix race condition
   switch (getStatus()) {
     case INITIALIZING: return "init";

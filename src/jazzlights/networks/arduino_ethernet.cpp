@@ -118,7 +118,7 @@ NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status, Milliseconds 
   return status;
 }
 
-std::string ArduinoEthernetNetwork::getStatusStr(Milliseconds currentTime) const {
+std::string ArduinoEthernetNetwork::getStatusStr(Milliseconds currentTime) {
   switch (getStatus()) {
     case INITIALIZING: return "init";
     case DISCONNECTED: return "disconnected";

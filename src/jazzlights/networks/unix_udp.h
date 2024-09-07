@@ -23,7 +23,7 @@ class UnixUdpNetwork : public UdpNetwork {
   void send(void* buf, size_t bufsize) override;
   const char* networkName() const override { return "UnixUDP"; }
   const char* shortNetworkName() const override { return "Unix"; }
-  std::string getStatusStr(Milliseconds /*currentTime*/) const override { return "UnixUDP"; }
+  std::string getStatusStr(Milliseconds /*currentTime*/) override { return "UnixUDP"; }
 
  private:
   int setupSocketForInterface(const char* ifName, struct in_addr localAddr);

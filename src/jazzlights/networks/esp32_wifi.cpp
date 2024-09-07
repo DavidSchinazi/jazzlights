@@ -32,7 +32,27 @@ NetworkStatus Esp32WiFiNetwork::update(NetworkStatus status, Milliseconds curren
   }
 }
 
-std::string Esp32WiFiNetwork::getStatusStr(Milliseconds currentTime) const { return "silly"; }
+std::string Esp32WiFiNetwork::getStatusStr(Milliseconds currentTime) {
+  struct in_addr localAddress = {};
+  {
+    const std::lock_guard<std::mutex> lock(mutex_);
+    memcpy(&localAddress, &localAddress_, sizeof(localAddress));
+  }
+  struct in_addr emptyAddress = {INADDR_ANY};
+  if (memcmp(&emptyAddress, &localAddress, sizeof(localAddress)) != 0) {
+    const Milliseconds lastRcv = getLastReceiveTime();
+    char addressString[INET_ADDRSTRLEN + 1] = {};
+    if (inet_ntop(AF_INET, &localAddress, addressString, sizeof(addressString) - 1) == nullptr) {
+      jll_fatal("Esp32WiFiNetwork printing local address failed with error %d: %s", errno, strerror(errno));
+    }
+    char statStr[100] = {};
+    snprintf(statStr, sizeof(statStr) - 1, "%s %s - %ums", JL_WIFI_SSID, addressString,
+             (lastRcv >= 0 ? currentTime - getLastReceiveTime() : -1));
+    return std::string(statStr);
+  } else {
+    return "disconnected";
+  }
+}
 
 void Esp32WiFiNetwork::setMessageToSend(const NetworkMessage& messageToSend, Milliseconds /*currentTime*/) {
   const std::lock_guard<std::mutex> lock(mutex_);
@@ -80,15 +100,18 @@ void Esp32WiFiNetwork::CreateSocket() {
     jll_fatal("Esp32WiFiNetwork IP_MULTICAST_TTL failed with error %d: %s", errno, strerror(errno));
   }
 
-  struct ip_mreq multicastGroup = {
-      .imr_multiaddr = multicastAddress_,
-      .imr_interface = localAddress_,
-  };
-  if (setsockopt(socket_, IPPROTO_IP, IP_ADD_MEMBERSHIP, &multicastGroup, sizeof(multicastGroup)) < 0) {
-    jll_fatal("Esp32WiFiNetwork joining multicast failed with error %d: %s", errno, strerror(errno));
-  }
-  if (setsockopt(socket_, IPPROTO_IP, IP_MULTICAST_IF, &localAddress_, sizeof(localAddress_)) < 0) {
-    jll_fatal("Esp32WiFiNetwork IP_MULTICAST_IF failed with error %d: %s", errno, strerror(errno));
+  {
+    const std::lock_guard<std::mutex> lock(mutex_);
+    struct ip_mreq multicastGroup = {
+        .imr_multiaddr = multicastAddress_,
+        .imr_interface = localAddress_,
+    };
+    if (setsockopt(socket_, IPPROTO_IP, IP_ADD_MEMBERSHIP, &multicastGroup, sizeof(multicastGroup)) < 0) {
+      jll_fatal("Esp32WiFiNetwork joining multicast failed with error %d: %s", errno, strerror(errno));
+    }
+    if (setsockopt(socket_, IPPROTO_IP, IP_MULTICAST_IF, &localAddress_, sizeof(localAddress_)) < 0) {
+      jll_fatal("Esp32WiFiNetwork IP_MULTICAST_IF failed with error %d: %s", errno, strerror(errno));
+    }
   }
 
   // Disable receiving our own multicast traffic.
@@ -177,14 +200,20 @@ void Esp32WiFiNetwork::HandleNetworkEvent(const Esp32WiFiNetworkEvent& networkEv
       }
       break;
     case Esp32WiFiNetworkEvent::Type::kGotIp:
-      memcpy(&localAddress_, &networkEvent.data.address, sizeof(localAddress_));
       jll_info("%u Esp32WiFiNetwork queue got IP", timeMillis());
+      {
+        const std::lock_guard<std::mutex> lock(mutex_);
+        memcpy(&localAddress_, &networkEvent.data.address, sizeof(localAddress_));
+      }
       reconnectCount_ = 0;
       CreateSocket();
       break;
     case Esp32WiFiNetworkEvent::Type::kLostIp:
       jll_info("%u Esp32WiFiNetwork queue lost IP", timeMillis());
-      memset(&localAddress_, 0, sizeof(localAddress_));
+      {
+        const std::lock_guard<std::mutex> lock(mutex_);
+        memset(&localAddress_, 0, sizeof(localAddress_));
+      }
       CloseSocket();
       break;
     case Esp32WiFiNetworkEvent::Type::kSocketReady:
@@ -302,7 +331,8 @@ Esp32WiFiNetwork::Esp32WiFiNetwork()
 
   esp_event_handler_instance_t wifiInstance;
   esp_event_handler_instance_t ipInstance;
-  // Register event handlers on the default event loop. That runs in task "sys_evt" on core 0 (and is not configurable).
+  // Register event handlers on the default event loop. That runs in task "sys_evt" on core 0 (and is not
+  // configurable).
   ESP_ERROR_CHECK(
       esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &EventHandler, this, &wifiInstance));
   ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, ESP_EVENT_ANY_ID, &EventHandler, this, &ipInstance));

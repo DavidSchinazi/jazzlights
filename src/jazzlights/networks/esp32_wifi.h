@@ -36,7 +36,7 @@ class Esp32WiFiNetwork : public Network {
   NetworkDeviceId getLocalDeviceId() override { return localDeviceId_; }
   const char* networkName() const override { return "Esp32WiFi"; }
   const char* shortNetworkName() const override { return "WiFi"; }
-  std::string getStatusStr(Milliseconds currentTime) const override;
+  std::string getStatusStr(Milliseconds currentTime) override;
   void setMessageToSend(const NetworkMessage& messageToSend, Milliseconds currentTime) override;
   void disableSending(Milliseconds currentTime) override;
   void triggerSendAsap(Milliseconds currentTime) override;
@@ -80,7 +80,6 @@ class Esp32WiFiNetwork : public Network {
   NetworkDeviceId localDeviceId_;                   // Only modified in constructor.
   TaskHandle_t taskHandle_ = nullptr;               // Only modified in constructor.
   struct in_addr multicastAddress_ = {};            // Only modified in constructor.
-  struct in_addr localAddress_ = {};                // Only used on our task.
   int socket_ = -1;                                 // Only used on our task.
   uint8_t* udpPayload_ = nullptr;                   // Only used on our task. Used for both sending and receiving.
   Milliseconds lastSendTime_ = -1;                  // Only used on our task.
@@ -89,6 +88,7 @@ class Esp32WiFiNetwork : public Network {
   uint32_t reconnectCount_ = 0;                     // Only used on our task.
   std::atomic<Milliseconds> lastReceiveTime_;
   std::mutex mutex_;
+  struct in_addr localAddress_ = {};            // Protected by mutex_.
   bool hasDataToSend_ = false;                  // Protected by mutex_.
   NetworkMessage messageToSend_;                // Protected by mutex_.
   std::list<NetworkMessage> receivedMessages_;  // Protected by mutex_.

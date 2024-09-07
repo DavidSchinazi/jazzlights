@@ -36,7 +36,7 @@ class Esp32BleNetwork : public Network {
   const char* shortNetworkName() const override { return "BLE"; }
   bool shouldEcho() const override { return true; }
   Milliseconds getLastReceiveTime() const override { return lastReceiveTime_; }
-  std::string getStatusStr(Milliseconds currentTime) const override;
+  std::string getStatusStr(Milliseconds currentTime) override;
 
  protected:
   void runLoopImpl(Milliseconds currentTime) override;
@@ -112,7 +112,7 @@ class Esp32BleNetwork : public Network {
   const char* shortNetworkName() const override { return "!BLE"; }
   bool shouldEcho() const override { return false; }
   Milliseconds getLastReceiveTime() const override { return -1; }
-  std::string getStatusStr(Milliseconds currentTime) const override { return "Compiled Out"; }
+  std::string getStatusStr(Milliseconds currentTime) override { return "Compiled Out"; }
 
  protected:
   void runLoopImpl(Milliseconds /*currentTime*/) override {}
