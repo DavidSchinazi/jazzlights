@@ -3,6 +3,9 @@
 
 #ifdef ESP32
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
+
 #include "jazzlights/network.h"
 
 // Esp32WiFiNetwork is currently work-in-progress.
@@ -45,28 +48,36 @@ class Esp32WiFiNetwork : public Network {
   void runLoopImpl(Milliseconds /*currentTime*/) override {}
 
  private:
+  enum class Esp32WiFiNetworkEventType {
+    kReserved = 0,
+    kUp = 1,
+    kDown = 2,
+    kSocketReady = 3,
+  };
+  struct Esp32WiFiNetworkEventData {
+    Esp32WiFiNetworkEventType type;
+    union {
+      struct in_addr address;
+    } data;
+  };
   explicit Esp32WiFiNetwork();
   static void EventHandler(void* event_handler_arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
   void HandleEvent(esp_event_base_t event_base, int32_t event_id, void* event_data);
+  void HandleEventData(const Esp32WiFiNetworkEventData& eventData);
   static void TaskFunction(void* parameters);
   void RunTask();
   void CreateSocket();
   void CloseSocket();
 
+  QueueHandle_t eventQueue_;
   NetworkDeviceId localDeviceId_;         // Only modified in constructor.
   TaskHandle_t taskHandle_ = nullptr;     // Only modified in constructor.
   struct in_addr multicastAddress_ = {};  // Only modified in constructor.
-  struct in_addr localAddress_ = {};      // TODO figure out if this needs to be protected by mutex_.
-  // localAddress_ is only accessed in HandleEvent and CreateSocket.
-  int socket_ = -1;  // TODO figure out if this needs to be protected by mutex_.
-  // socket_ is only accessed in CreateSocket, CloseSocket, and RunTask.
-  // CreateSocket is called by HandleEvent and RunTask.
-  // CloseSocket is called by CreateSocket and HandleEvent.
-  // Another option would be to only modify them from our task and use a queue to notify our task from the event
-  // handler. We could put the local address in the queue data, use a length of one at xQueueOverwrite().
-  uint8_t* udpPayload_ = nullptr;    // Only used on our task. Used for both sending and receiving.
-  Milliseconds lastSendTime_ = -1;   // Only used on our task.
-  PatternBits lastSentPattern_ = 0;  // Only used on our task.
+  struct in_addr localAddress_ = {};      // Only used on our task.
+  int socket_ = -1;                       // Only used on our task.
+  uint8_t* udpPayload_ = nullptr;         // Only used on our task. Used for both sending and receiving.
+  Milliseconds lastSendTime_ = -1;        // Only used on our task.
+  PatternBits lastSentPattern_ = 0;       // Only used on our task.
   std::atomic<Milliseconds> lastReceiveTime_;
   std::mutex mutex_;
   bool hasDataToSend_ = false;                  // Protected by mutex_.

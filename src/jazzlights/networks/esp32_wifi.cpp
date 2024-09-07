@@ -19,11 +19,6 @@ namespace jazzlights {
 namespace {
 constexpr size_t kReceiveBufferLength = 1500;
 constexpr Milliseconds kSendInterval = 100;
-// Index 0 is normally reserved by FreeRTOS for stream and message buffers. However, the default precompiled FreeRTOS
-// kernel for arduino/esp-idf only allows a single notification, so we use index 0 here. We don't use stream or message
-// buffers on this specific task so we should be fine.
-constexpr UBaseType_t kWiFiNotificationIndex = 0;
-static_assert(kWiFiNotificationIndex < configTASK_NOTIFICATION_ARRAY_ENTRIES, "index too high");
 }  // namespace
 
 NetworkStatus Esp32WiFiNetwork::update(NetworkStatus status, Milliseconds currentTime) {
@@ -108,8 +103,9 @@ void Esp32WiFiNetwork::CreateSocket() {
 
   jll_info("Esp32WiFiNetwork created socket");
   // Notify our task that the socket is ready.
-  (void)xTaskGenericNotify(taskHandle_, kWiFiNotificationIndex,
-                           /*notification_value=*/0, eNoAction, /*previousNotificationValue=*/nullptr);
+  Esp32WiFiNetworkEventData eventData;
+  eventData.type = Esp32WiFiNetworkEventType::kSocketReady;
+  xQueueOverwrite(eventQueue_, &eventData);
 }
 
 void Esp32WiFiNetwork::CloseSocket() {
@@ -141,11 +137,15 @@ void Esp32WiFiNetwork::HandleEvent(esp_event_base_t event_base, int32_t event_id
     if (event_id == IP_EVENT_STA_GOT_IP) {
       ip_event_got_ip_t* event = (ip_event_got_ip_t*)event_data;
       jll_info("Esp32WiFiNetwork got IP: " IPSTR, IP2STR(&event->ip_info.ip));
-      memcpy(&localAddress_, &event->ip_info.ip, sizeof(localAddress_));
-      CreateSocket();
+      Esp32WiFiNetworkEventData eventData;
+      eventData.type = Esp32WiFiNetworkEventType::kUp;
+      memcpy(&eventData.data.address, &event->ip_info.ip, sizeof(eventData.data.address));
+      xQueueOverwrite(eventQueue_, &eventData);
     } else if (event_id == IP_EVENT_STA_LOST_IP) {
       jll_info("Esp32WiFiNetwork lost IP");
-      CloseSocket();
+      Esp32WiFiNetworkEventData eventData;
+      eventData.type = Esp32WiFiNetworkEventType::kDown;
+      xQueueOverwrite(eventQueue_, &eventData);
     } else if (event_id == IP_EVENT_GOT_IP6) {
       jll_info("Esp32WiFiNetwork got IPv6");
     }
@@ -158,11 +158,32 @@ void Esp32WiFiNetwork::TaskFunction(void* parameters) {
   while (true) { wifiNetwork->RunTask(); }
 }
 
+void Esp32WiFiNetwork::HandleEventData(const Esp32WiFiNetworkEventData& eventData) {
+  switch (eventData.type) {
+    case Esp32WiFiNetworkEventType::kReserved: jll_fatal("Unexpected Esp32WiFiNetworkEventType::kReserved"); break;
+    case Esp32WiFiNetworkEventType::kUp:
+      memcpy(&localAddress_, &eventData.data.address, sizeof(localAddress_));
+      jll_info("Esp32WiFiNetwork queue Up");
+      CreateSocket();
+      break;
+    case Esp32WiFiNetworkEventType::kDown:
+      jll_info("Esp32WiFiNetwork queue Down");
+      memset(&localAddress_, 0, sizeof(localAddress_));
+      CloseSocket();
+      break;
+    case Esp32WiFiNetworkEventType::kSocketReady: jll_info("Esp32WiFiNetwork queue SocketReady"); break;
+  }
+}
+
 void Esp32WiFiNetwork::RunTask() {
+  Esp32WiFiNetworkEventData eventData;
+  while (xQueueReceive(eventQueue_, &eventData, /*xTicksToWait=*/0)) { HandleEventData(eventData); }
   if (socket_ < 0) {
     // Wait until socket is created.
     jll_info("Esp32WiFiNetwork waiting for socket");
-    (void)ulTaskGenericNotifyTake(kWiFiNotificationIndex, pdTRUE, portMAX_DELAY);
+    BaseType_t queueResult = xQueueReceive(eventQueue_, &eventData, /*xTicksToWait=*/portMAX_DELAY);
+    if (queueResult != pdTRUE) { jll_fatal("Esp32WiFiNetwork xQueueReceive failed"); }
+    HandleEventData(eventData);
     return;  // Restart loop.
   }
   NetworkMessage messageToSend;
@@ -234,7 +255,9 @@ void Esp32WiFiNetwork::RunTask() {
   }
 }
 
-Esp32WiFiNetwork::Esp32WiFiNetwork() {
+Esp32WiFiNetwork::Esp32WiFiNetwork()
+    : eventQueue_(xQueueCreate(/*num_queue_items=*/1, /*queue_item_size=*/sizeof(Esp32WiFiNetworkEventData))) {
+  if (eventQueue_ == nullptr) { jll_fatal("Failed to create Esp32WiFiNetwork queue"); }
   udpPayload_ = reinterpret_cast<uint8_t*>(malloc(kReceiveBufferLength));
   if (udpPayload_ == nullptr) {
     jll_fatal("Esp32WiFiNetwork failed to allocate receive buffer of length %zu", kReceiveBufferLength);
