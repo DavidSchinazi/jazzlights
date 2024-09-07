@@ -48,37 +48,45 @@ class Esp32WiFiNetwork : public Network {
   void runLoopImpl(Milliseconds /*currentTime*/) override {}
 
  private:
-  enum class Esp32WiFiNetworkEventType {
-    kReserved = 0,
-    kUp = 1,
-    kDown = 2,
-    kSocketReady = 3,
-  };
-  struct Esp32WiFiNetworkEventData {
-    Esp32WiFiNetworkEventType type;
+  struct Esp32WiFiNetworkEvent {
+    enum class Type {
+      kReserved = 0,
+      kStationStarted,
+      kStationDisconnected,
+      kGotIp,
+      kLostIp,
+      kSocketReady,
+    };
+    Type type;
     union {
       struct in_addr address;
     } data;
+    explicit Esp32WiFiNetworkEvent(Type t) {
+      memset(this, 0, sizeof(*this));
+      type = t;
+    }
+    explicit Esp32WiFiNetworkEvent() : Esp32WiFiNetworkEvent(Type::kReserved) {}
   };
   explicit Esp32WiFiNetwork();
   static void EventHandler(void* event_handler_arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
   void HandleEvent(esp_event_base_t event_base, int32_t event_id, void* event_data);
-  void HandleEventData(const Esp32WiFiNetworkEventData& eventData);
+  void HandleNetworkEvent(const Esp32WiFiNetworkEvent& networkEvent);
   static void TaskFunction(void* parameters);
   void RunTask();
   void CreateSocket();
   void CloseSocket();
 
   QueueHandle_t eventQueue_;
-  NetworkDeviceId localDeviceId_;         // Only modified in constructor.
-  TaskHandle_t taskHandle_ = nullptr;     // Only modified in constructor.
-  struct in_addr multicastAddress_ = {};  // Only modified in constructor.
-  struct in_addr localAddress_ = {};      // Only used on our task.
-  int socket_ = -1;                       // Only used on our task.
-  uint8_t* udpPayload_ = nullptr;         // Only used on our task. Used for both sending and receiving.
-  Milliseconds lastSendTime_ = -1;        // Only used on our task.
-  PatternBits lastSentPattern_ = 0;       // Only used on our task.
-  uint8_t reconnectLogCount_ = 0;         // Only used from system event handler.
+  NetworkDeviceId localDeviceId_;                   // Only modified in constructor.
+  TaskHandle_t taskHandle_ = nullptr;               // Only modified in constructor.
+  struct in_addr multicastAddress_ = {};            // Only modified in constructor.
+  struct in_addr localAddress_ = {};                // Only used on our task.
+  int socket_ = -1;                                 // Only used on our task.
+  uint8_t* udpPayload_ = nullptr;                   // Only used on our task. Used for both sending and receiving.
+  Milliseconds lastSendTime_ = -1;                  // Only used on our task.
+  PatternBits lastSentPattern_ = 0;                 // Only used on our task.
+  bool shouldArmQueueReconnectionTimeout_ = false;  // Only used on our task.
+  uint32_t reconnectCount_ = 0;                     // Only used on our task.
   std::atomic<Milliseconds> lastReceiveTime_;
   std::mutex mutex_;
   bool hasDataToSend_ = false;                  // Protected by mutex_.
