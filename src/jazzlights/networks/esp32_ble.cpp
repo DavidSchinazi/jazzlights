@@ -55,7 +55,7 @@ void convertToHex(char* target, size_t targetLength, const uint8_t* source, uint
 void Esp32BleNetwork::UpdateState(Esp32BleNetwork::State expectedCurrentState, Esp32BleNetwork::State newState) {
   const std::lock_guard<std::mutex> lock(mutex_);
   if (state_ != expectedCurrentState) {
-    jll_error("Unexpected state %s updating from %s to %s", StateToString(state_).c_str(),
+    jll_error("%u Unexpected state %s updating from %s to %s", timeMillis(), StateToString(state_).c_str(),
               StateToString(expectedCurrentState).c_str(), StateToString(newState).c_str());
   }
   state_ = newState;
@@ -430,8 +430,8 @@ Esp32BleNetwork::Esp32BleNetwork() {
   esp_bd_addr_t localAddress;
   memset(localAddress, 0, sizeof(localAddress));
   ESP_ERROR_CHECK(esp_ble_gap_get_local_used_addr(localAddress, &addressType));
-  jll_info("Initialized BLE with local MAC address " ESP_BD_ADDR_STR " (type %u)", ESP_BD_ADDR_HEX(localAddress),
-           addressType);
+  jll_info("%u Initialized BLE with local MAC address " ESP_BD_ADDR_STR " (type %u)", timeMillis(),
+           ESP_BD_ADDR_HEX(localAddress), addressType);
   localDeviceId_ = NetworkDeviceId(localAddress);
   lastReceiveTime_ = -1;
   // Override callbacks away from BLEDevice back to us.

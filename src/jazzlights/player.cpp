@@ -218,7 +218,7 @@ Player& Player::addStrand(const Layout& l, Renderer& r) {
 }
 
 Player& Player::connect(Network* n) {
-  jll_info("Connecting network %s", n->networkName());
+  jll_info("%u Connecting network %s", timeMillis(), n->networkName());
   networks_.push_back(n);
   ready_ = false;
   return *this;
@@ -256,6 +256,7 @@ void Player::begin(Milliseconds currentTime) {
     localDeviceId_ = NetworkDeviceId(deviceIdBytes);
   }
   currentLeader_ = localDeviceId_;
+  currentTime = timeMillis();
   jll_info(
       "%u Starting JazzLights player %s; "
       "basePrecedence %u precedenceGain %u strands: %zu%s, "

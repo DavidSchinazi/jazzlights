@@ -102,7 +102,7 @@ void Esp32WiFiNetwork::CreateSocket() {
     jll_fatal("Esp32WiFiNetwork setting nonblocking failed with error %d: %s", errno, strerror(errno));
   }
 
-  jll_info("Esp32WiFiNetwork created socket");
+  jll_info("%u Esp32WiFiNetwork created socket", timeMillis());
   // Notify our task that the socket is ready.
   Esp32WiFiNetworkEvent networkEvent(Esp32WiFiNetworkEvent::Type::kSocketReady);
   xQueueOverwrite(eventQueue_, &networkEvent);
@@ -110,7 +110,7 @@ void Esp32WiFiNetwork::CreateSocket() {
 
 void Esp32WiFiNetwork::CloseSocket() {
   if (socket_ < 0) { return; }
-  jll_info("Esp32WiFiNetwork closing socket");
+  jll_info("%u Esp32WiFiNetwork closing socket", timeMillis());
   close(socket_);
   socket_ = -1;
 }
@@ -125,29 +125,29 @@ void Esp32WiFiNetwork::EventHandler(void* event_handler_arg, esp_event_base_t ev
 void Esp32WiFiNetwork::HandleEvent(esp_event_base_t event_base, int32_t event_id, void* event_data) {
   if (event_base == WIFI_EVENT) {
     if (event_id == WIFI_EVENT_STA_START) {
-      jll_info("Esp32WiFiNetwork STA started");
+      jll_info("%u Esp32WiFiNetwork STA started", timeMillis());
       Esp32WiFiNetworkEvent networkEvent(Esp32WiFiNetworkEvent::Type::kStationStarted);
       xQueueOverwrite(eventQueue_, &networkEvent);
     } else if (event_id == WIFI_EVENT_STA_CONNECTED) {
-      jll_info("Esp32WiFiNetwork STA connected");
+      jll_info("%u Esp32WiFiNetwork STA connected", timeMillis());
     } else if (event_id == WIFI_EVENT_STA_DISCONNECTED) {
-      jll_info("Esp32WiFiNetwork STA disconnected");
+      jll_info("%u Esp32WiFiNetwork STA disconnected", timeMillis());
       Esp32WiFiNetworkEvent networkEvent(Esp32WiFiNetworkEvent::Type::kStationDisconnected);
       xQueueOverwrite(eventQueue_, &networkEvent);
     }
   } else if (event_base == IP_EVENT) {
     if (event_id == IP_EVENT_STA_GOT_IP) {
       ip_event_got_ip_t* event = (ip_event_got_ip_t*)event_data;
-      jll_info("Esp32WiFiNetwork got IP: " IPSTR, IP2STR(&event->ip_info.ip));
+      jll_info("%u Esp32WiFiNetwork got IP: " IPSTR, timeMillis(), IP2STR(&event->ip_info.ip));
       Esp32WiFiNetworkEvent networkEvent(Esp32WiFiNetworkEvent::Type::kGotIp);
       memcpy(&networkEvent.data.address, &event->ip_info.ip, sizeof(networkEvent.data.address));
       xQueueOverwrite(eventQueue_, &networkEvent);
     } else if (event_id == IP_EVENT_STA_LOST_IP) {
-      jll_info("Esp32WiFiNetwork lost IP");
+      jll_info("%u Esp32WiFiNetwork lost IP", timeMillis());
       Esp32WiFiNetworkEvent networkEvent(Esp32WiFiNetworkEvent::Type::kLostIp);
       xQueueOverwrite(eventQueue_, &networkEvent);
     } else if (event_id == IP_EVENT_GOT_IP6) {
-      jll_info("Esp32WiFiNetwork got IPv6");
+      jll_info("%u Esp32WiFiNetwork got IPv6", timeMillis());
     }
   }
 }
@@ -162,31 +162,34 @@ void Esp32WiFiNetwork::HandleNetworkEvent(const Esp32WiFiNetworkEvent& networkEv
   switch (networkEvent.type) {
     case Esp32WiFiNetworkEvent::Type::kReserved: jll_fatal("Unexpected Esp32WiFiNetworkEvent::Type::kReserved"); break;
     case Esp32WiFiNetworkEvent::Type::kStationStarted:
-      jll_info("Esp32WiFiNetwork queue station started - connecting");
+      jll_info("%u Esp32WiFiNetwork queue station started - connecting", timeMillis());
       esp_wifi_connect();
       break;
     case Esp32WiFiNetworkEvent::Type::kStationDisconnected:
       reconnectCount_++;
       if (reconnectCount_ < kNumReconnectsBeforeDelay) {
-        jll_info("Esp32WiFiNetwork queue station disconnected (count %u) - reconnecting immediately", reconnectCount_);
+        jll_info("%u Esp32WiFiNetwork queue station disconnected (count %u) - reconnecting immediately", timeMillis(),
+                 reconnectCount_);
         esp_wifi_connect();
       } else {
-        jll_info("Esp32WiFiNetwork queue station disconnected (count %u)", reconnectCount_);
+        jll_info("%u Esp32WiFiNetwork queue station disconnected (count %u)", timeMillis(), reconnectCount_);
         shouldArmQueueReconnectionTimeout_ = true;
       }
       break;
     case Esp32WiFiNetworkEvent::Type::kGotIp:
       memcpy(&localAddress_, &networkEvent.data.address, sizeof(localAddress_));
-      jll_info("Esp32WiFiNetwork queue got IP");
+      jll_info("%u Esp32WiFiNetwork queue got IP", timeMillis());
       reconnectCount_ = 0;
       CreateSocket();
       break;
     case Esp32WiFiNetworkEvent::Type::kLostIp:
-      jll_info("Esp32WiFiNetwork queue lost IP");
+      jll_info("%u Esp32WiFiNetwork queue lost IP", timeMillis());
       memset(&localAddress_, 0, sizeof(localAddress_));
       CloseSocket();
       break;
-    case Esp32WiFiNetworkEvent::Type::kSocketReady: jll_info("Esp32WiFiNetwork queue SocketReady"); break;
+    case Esp32WiFiNetworkEvent::Type::kSocketReady:
+      jll_info("%u Esp32WiFiNetwork queue SocketReady", timeMillis());
+      break;
   }
 }
 
@@ -200,16 +203,16 @@ void Esp32WiFiNetwork::RunTask() {
       shouldArmQueueReconnectionTimeout_ = false;
       // Backoff exponentially from 1s to 32s.
       queueDelay = 1 << std::min<uint32_t>(reconnectCount_ - kNumReconnectsBeforeDelay, 5);
-      jll_info("Esp32WiFiNetwork waiting for queue event with %us timeout", queueDelay);
+      jll_info("%u Esp32WiFiNetwork waiting for queue event with %us timeout", timeMillis(), queueDelay);
       queueDelay *= 1000 / portTICK_PERIOD_MS;
     } else {
-      jll_info("Esp32WiFiNetwork waiting for queue event forever");
+      jll_info("%u Esp32WiFiNetwork waiting for queue event forever", timeMillis());
     }
     BaseType_t queueResult = xQueueReceive(eventQueue_, &networkEvent, queueDelay);
     if (queueResult == pdTRUE) {
       HandleNetworkEvent(networkEvent);
     } else {
-      jll_info("Esp32WiFiNetwork timed out waiting for queue event - reconnecting");
+      jll_info("%u Esp32WiFiNetwork timed out waiting for queue event - reconnecting", timeMillis());
       esp_wifi_connect();
     }
     return;  // Restart loop.
@@ -225,7 +228,7 @@ void Esp32WiFiNetwork::RunTask() {
     lastSendTime_ = currentTime;
     lastSentPattern_ = messageToSend.currentPattern;
     if (!WriteUdpPayload(messageToSend, udpPayload_, kReceiveBufferLength, currentTime)) {
-      jll_fatal("%s unexpected payload length issue", networkName());
+      jll_fatal("Esp32WiFiNetwork unexpected payload length issue");
     }
     struct sockaddr_in sin = {
         .sin_len = sizeof(struct sockaddr_in),
@@ -259,12 +262,12 @@ void Esp32WiFiNetwork::RunTask() {
       } else if (pollRes == 0) {  // Timed out.
                                   // Do nothing, just restart loop to write.
       } else {                    // Error.
-        jll_error("Esp32WiFiNetwork poll failed with error %d: %s", errno, strerror(errno));
+        jll_error("%u Esp32WiFiNetwork poll failed with error %d: %s", timeMillis(), errno, strerror(errno));
         CreateSocket();
       }
       return;  // Restart loop.
     }
-    jll_error("Esp32WiFiNetwork recvfrom failed with error %d: %s", errno, strerror(errno));
+    jll_error("%u Esp32WiFiNetwork recvfrom failed with error %d: %s", timeMillis(), errno, strerror(errno));
     CreateSocket();
     return;
   }
@@ -331,7 +334,8 @@ Esp32WiFiNetwork::Esp32WiFiNetwork()
     jll_fatal("Failed to create Esp32WiFiNetwork task");
   }
 
-  jll_info("Esp32WiFiNetwork initialized Wi-Fi STA with MAC address %s", localDeviceId_.toString().c_str());
+  jll_info("%u Esp32WiFiNetwork initialized Wi-Fi STA with MAC address %s", timeMillis(),
+           localDeviceId_.toString().c_str());
 }
 
 // static
