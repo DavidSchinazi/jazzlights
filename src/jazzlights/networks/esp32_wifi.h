@@ -78,6 +78,7 @@ class Esp32WiFiNetwork : public Network {
   uint8_t* udpPayload_ = nullptr;         // Only used on our task. Used for both sending and receiving.
   Milliseconds lastSendTime_ = -1;        // Only used on our task.
   PatternBits lastSentPattern_ = 0;       // Only used on our task.
+  uint8_t reconnectLogCount_ = 0;         // Only used from system event handler.
   std::atomic<Milliseconds> lastReceiveTime_;
   std::mutex mutex_;
   bool hasDataToSend_ = false;                  // Protected by mutex_.
