@@ -130,7 +130,7 @@ void Esp32WiFiNetwork::HandleEvent(esp_event_base_t event_base, int32_t event_id
       jll_info("Esp32WiFiNetwork STA connected");
     } else if (event_id == WIFI_EVENT_STA_DISCONNECTED) {
       jll_info("Esp32WiFiNetwork STA disconnected - reconnecting");
-      // TODO Consider adding some kind of delay (10s?) when reconnecting fails repeatedly to avoid draining battery.
+      // We could add a delay before reconnecting but in practice it only happens every 3.5s anyway.
     }
     if (event_id == WIFI_EVENT_STA_START || event_id == WIFI_EVENT_STA_DISCONNECTED) { esp_wifi_connect(); }
   } else if (event_base == IP_EVENT) {
