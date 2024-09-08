@@ -2,7 +2,7 @@
 #define JL_NETWORKS_ESP32_WIFI_H
 
 #ifdef ESP32
-#include <esp_wifi.h>
+#include <esp_event.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <freertos/task.h>
