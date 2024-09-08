@@ -11,11 +11,6 @@
 
 namespace jazzlights {
 
-template <class T>
-constexpr T square(T x) {
-  return x * x;
-}
-
 // The jlbeat* functions are almost identical to the corresponding beat* functions in FastLED/src/lib8tion.h, except
 // that they operate on elapsedTime (the time since the current pattern has started) instead of the absolute time.
 

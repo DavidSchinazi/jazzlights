@@ -2,28 +2,16 @@
 #define JL_NETWORKS_ESP32_WIFI_H
 
 #ifdef ESP32
-
+#include <esp_wifi.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
-
-#include "jazzlights/network.h"
-
-// Esp32WiFiNetwork is currently work-in-progress.
-// TODO: finish this and use it to replace ArduinoEspWiFiNetwork.
-#define JL_ESP32_WIFI 0
-
-#ifndef JL_ESP32_WIFI
-#define JL_ESP32_WIFI 1
-#endif  // JL_ESP32_WIFI
-
-#if JL_ESP32_WIFI
-
-#include <esp_wifi.h>
 #include <freertos/task.h>
 #include <lwip/inet.h>
 
 #include <atomic>
 #include <mutex>
+
+#include "jazzlights/network.h"
 
 namespace jazzlights {
 
@@ -96,6 +84,5 @@ class Esp32WiFiNetwork : public Network {
 
 }  // namespace jazzlights
 
-#endif  // JL_ESP32_WIFI
 #endif  // ESP32
 #endif  // JL_NETWORKS_ESP32_WIFI_H

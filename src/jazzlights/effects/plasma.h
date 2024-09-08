@@ -3,6 +3,7 @@
 
 #include "jazzlights/effect.h"
 #include "jazzlights/palette.h"
+#include "jazzlights/util/geom.h"
 #include "jazzlights/util/math.h"
 
 namespace jazzlights {

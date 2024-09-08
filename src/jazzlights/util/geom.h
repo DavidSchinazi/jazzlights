@@ -2,10 +2,11 @@
 #define JL_UTIL_GEOM_H
 
 #include <cmath>
-
-#include "jazzlights/util/math.h"
+#include <limits>
 
 namespace jazzlights {
+
+constexpr double square(double x) { return x * x; }
 
 using Coord = double;
 using Meters = double;

@@ -7,6 +7,7 @@
 #include <list>
 #include <string>
 
+#include "jazzlights/config.h"
 #include "jazzlights/types.h"
 #include "jazzlights/util/time.h"
 

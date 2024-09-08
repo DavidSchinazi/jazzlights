@@ -14,6 +14,9 @@
 #include "jazzlights/pseudorandom.h"
 #include "jazzlights/util/log.h"
 
+// This is an Arduino header and in theory we shouldn't need it, but see comment near btStarted() below.
+#include <esp32-hal-bt.h>
+
 #if !JL_ESP32S3 && !JL_ESP32C3
 #define JL_BLE4 1
 #else
@@ -119,12 +122,12 @@ void Esp32BleNetwork::MaybeUpdateAdvertisingState(Milliseconds currentTime) {
 
 void Esp32BleNetwork::StopAdvertisingIn(Milliseconds duration) {
   const std::lock_guard<std::mutex> lock(mutex_);
-  timeToStopAdvertising_ = millis() + duration;
+  timeToStopAdvertising_ = timeMillis() + duration;
 }
 
 void Esp32BleNetwork::StopScanningIn(Milliseconds duration) {
   const std::lock_guard<std::mutex> lock(mutex_);
-  timeToStopScanning_ = millis() + duration;
+  timeToStopScanning_ = timeMillis() + duration;
 }
 
 std::list<NetworkMessage> Esp32BleNetwork::getReceivedMessagesImpl(Milliseconds currentTime) {
