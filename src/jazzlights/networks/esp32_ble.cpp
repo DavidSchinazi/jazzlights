@@ -424,7 +424,7 @@ Esp32BleNetwork::Esp32BleNetwork() {
   // esp_bt_controller_init() above fails and returns ESP_ERR_INVALID_STATE. This call to btStarted() ensures that
   // arduino uses the right btInUse(). In theory, all btStarted() does is checking esp_bt_controller_get_status(),
   // but checking that doesn't work. When we switch from arduino to espidf, this should go away because arduino is
-  // what's currently release Bluetooth memory from under us when it thinks btInUse() is false.
+  // what's currently releasing Bluetooth memory from under us when it thinks btInUse() is false.
   // https://github.com/espressif/arduino-esp32/issues/3436#issuecomment-927341016
   if (esp_random() == 0xdeadbeef) { (void)btStarted(); }
 #endif  // JL_BLE4
