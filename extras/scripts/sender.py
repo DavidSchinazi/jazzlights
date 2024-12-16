@@ -51,6 +51,7 @@ defaultName = "glow-red"
 parser = argparse.ArgumentParser()
 parser.add_argument("pattern")
 parser.add_argument("-r", "--norandom", action="store_true")
+parser.add_argument("-a", "--admin", action="store_true")
 args = parser.parse_args()
 
 patternName = args.pattern
@@ -136,7 +137,7 @@ s.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 3)
 
 versionByte = 0x10
 thisDeviceMacAddress = b"\xff\xff\x01\x02\x03\x04"
-precedence = 40000
+precedence = 40000 if not args.admin else 60000
 numHops = 0
 currentPattern = patternBytes
 nextPattern = randomizePattern(currentPattern, randomize)

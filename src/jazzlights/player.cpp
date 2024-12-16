@@ -594,6 +594,7 @@ Precedence addPrecedenceGain(Precedence startPrecedence, Precedence gain) {
 }
 
 static constexpr Milliseconds kInputDuration = 10 * 60 * 1000;  // 10min.
+static constexpr Precedence kAdminPrecedence = 60000;
 
 Precedence Player::getLocalPrecedence(Milliseconds currentTime) {
   return addPrecedenceGain(basePrecedence_,
@@ -638,30 +639,30 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
   const OriginatorEntry* entry = nullptr;
   const bool hadRecentUserInput = (lastUserInputTime_ >= 0 && lastUserInputTime_ <= currentTime &&
                                    currentTime - lastUserInputTime_ < kInputDuration);
-  // Keep ourselves as leader if there was recent user button input or if we are looping.
-  if (!hadRecentUserInput && !loop_) {
-    for (const OriginatorEntry& e : originatorEntries_) {
-      if (e.retracted) {
-        jll_debug("%u ignoring " DEVICE_ID_FMT " due to retracted", currentTime, DEVICE_ID_HEX(e.originator));
-        continue;
-      }
-      if (currentTime > e.lastOriginationTime + kOriginationTimeDiscard) {
-        jll_debug("%u ignoring " DEVICE_ID_FMT " due to origination time", currentTime, DEVICE_ID_HEX(e.originator));
-        continue;
-      }
-      if (currentTime > e.currentPatternStartTime + 2 * kEffectDuration) {
-        jll_debug("%u ignoring " DEVICE_ID_FMT " due to effect duration", currentTime, DEVICE_ID_HEX(e.originator));
-        continue;
-      }
-      if (comparePrecedence(e.precedence, e.originator, precedence, originator) <= 0) {
-        jll_debug("%u ignoring " DEVICE_ID_FMT ".p%u due to better " DEVICE_ID_FMT ".p%u", currentTime,
-                  DEVICE_ID_HEX(e.originator), e.precedence, DEVICE_ID_HEX(originator), precedence);
-        continue;
-      }
-      precedence = e.precedence;
-      originator = e.originator;
-      entry = &e;
+  for (const OriginatorEntry& e : originatorEntries_) {
+    // Keep ourselves as leader if there was recent user button input or if we are looping, unless the originator has
+    // admin-level precedence.
+    if ((hadRecentUserInput || loop_) && e.precedence < kAdminPrecedence) { continue; }
+    if (e.retracted) {
+      jll_debug("%u ignoring " DEVICE_ID_FMT " due to retracted", currentTime, DEVICE_ID_HEX(e.originator));
+      continue;
     }
+    if (currentTime > e.lastOriginationTime + kOriginationTimeDiscard) {
+      jll_debug("%u ignoring " DEVICE_ID_FMT " due to origination time", currentTime, DEVICE_ID_HEX(e.originator));
+      continue;
+    }
+    if (currentTime > e.currentPatternStartTime + 2 * kEffectDuration) {
+      jll_debug("%u ignoring " DEVICE_ID_FMT " due to effect duration", currentTime, DEVICE_ID_HEX(e.originator));
+      continue;
+    }
+    if (comparePrecedence(e.precedence, e.originator, precedence, originator) <= 0) {
+      jll_debug("%u ignoring " DEVICE_ID_FMT ".p%u due to better " DEVICE_ID_FMT ".p%u", currentTime,
+                DEVICE_ID_HEX(e.originator), e.precedence, DEVICE_ID_HEX(originator), precedence);
+      continue;
+    }
+    precedence = e.precedence;
+    originator = e.originator;
+    entry = &e;
   }
 
   if (currentLeader_ != originator) {
