@@ -23,24 +23,23 @@
 
 #define FL_PROGMEM
 
-static const uint8_t b_m16_interleave[] = {0, 49, 49, 41, 90, 27, 117, 10};
+constexpr int absi(int i) { return i < 0 ? -i : i; }
 
-inline int absi(int i) { return i < 0 ? -i : i; }
-
-inline uint8_t qmul8(uint8_t i, uint8_t j) {
+constexpr uint8_t qmul8(uint8_t i, uint8_t j) {
   int p = ((int)i * (int)(j));
   if (p > 255) { p = 255; }
   return p;
 }
 
-inline uint8_t scale8(uint8_t i, uint8_t scale) { return ((uint16_t)i * (uint16_t)(scale)) >> 8; }
+constexpr uint8_t scale8(uint8_t i, uint8_t scale) { return ((uint16_t)i * (uint16_t)(scale)) >> 8; }
 
-inline uint8_t scale8_video(uint8_t i, uint8_t scale) {
+constexpr uint8_t scale8_video(uint8_t i, uint8_t scale) {
   uint8_t j = (((int)i * (int)scale) >> 8) + ((i && scale) ? 1 : 0);
   return j;
 }
 
-inline uint8_t sin8(uint8_t theta) {
+constexpr uint8_t sin8(uint8_t theta) {
+  constexpr uint8_t b_m16_interleave[] = {0, 49, 49, 41, 90, 27, 117, 10};
   uint8_t offset = theta;
   if (theta & 0x40) { offset = (uint8_t)255 - offset; }
   offset &= 0x3F;  // 0..63
@@ -66,15 +65,15 @@ inline uint8_t sin8(uint8_t theta) {
   return y;
 }
 
-inline uint8_t cos8(uint8_t theta) { return sin8(theta + 64); }
+constexpr uint8_t cos8(uint8_t theta) { return sin8(theta + 64); }
 
-inline uint8_t triwave8(uint8_t in) {
+constexpr uint8_t triwave8(uint8_t in) {
   if (in & 0x80) { in = 255 - in; }
   uint8_t out = in << 1;
   return out;
 }
 
-inline uint8_t ease8InOutQuad(uint8_t i) {
+constexpr uint8_t ease8InOutQuad(uint8_t i) {
   uint8_t j = i;
   if (j & 0x80) { j = 255 - j; }
   uint8_t jj = scale8(j, (j + 1));
@@ -83,46 +82,42 @@ inline uint8_t ease8InOutQuad(uint8_t i) {
   return jj2;
 }
 
-inline uint8_t quadwave8(uint8_t in) { return ease8InOutQuad(triwave8(in)); }
+constexpr uint8_t quadwave8(uint8_t in) { return ease8InOutQuad(triwave8(in)); }
 
-inline uint8_t qadd8(uint8_t i, uint8_t j) {
+constexpr uint8_t qadd8(uint8_t i, uint8_t j) {
   unsigned int t = i + j;
   if (t > 255) { t = 255; }
   return t;
 }
 
-inline int8_t qadd7(int8_t i, int8_t j) {
+constexpr int8_t qadd7(int8_t i, int8_t j) {
   int16_t t = i + j;
   if (t > 127) { t = 127; }
   return t;
 }
 
-inline uint8_t qsub8(uint8_t i, uint8_t j) {
+constexpr uint8_t qsub8(uint8_t i, uint8_t j) {
   int t = i - j;
   if (t < 0) { t = 0; }
   return t;
 }
 
-inline uint8_t map8(uint8_t in, uint8_t rangeStart, uint8_t rangeEnd) {
+constexpr uint8_t map8(uint8_t in, uint8_t rangeStart, uint8_t rangeEnd) {
   uint8_t rangeWidth = rangeEnd - rangeStart;
   uint8_t out = scale8(in, rangeWidth);
   out += rangeStart;
   return out;
 }
 
-constexpr inline int8_t abs8(int8_t i) { return i >= 0 ? i : -i; }
+constexpr int8_t abs8(int8_t i) { return i >= 0 ? i : -i; }
 
-constexpr inline int8_t avg7(int8_t i, int8_t j) { return ((i + j) >> 1) + (i & 0x1); }
+constexpr int8_t avg7(int8_t i, int8_t j) { return ((i + j) >> 1) + (i & 0x1); }
 
-constexpr inline int16_t avg15(int16_t i, int16_t j) {
-  return ((int32_t)((int32_t)(i) + (int32_t)(j)) >> 1) + (i & 0x1);
-}
+constexpr int16_t avg15(int16_t i, int16_t j) { return ((int32_t)((int32_t)(i) + (int32_t)(j)) >> 1) + (i & 0x1); }
 
-constexpr inline uint16_t scale16(uint16_t i, uint16_t scale) {
-  return ((uint32_t)(i) * (1 + (uint32_t)(scale))) / 65536;
-}
+constexpr uint16_t scale16(uint16_t i, uint16_t scale) { return ((uint32_t)(i) * (1 + (uint32_t)(scale))) / 65536; }
 
-inline uint8_t lerp8by8(uint8_t a, uint8_t b, uint8_t frac) {
+constexpr uint8_t lerp8by8(uint8_t a, uint8_t b, uint8_t frac) {
   if (b > a) {
     return a + scale8(b - a, frac);
   } else {
@@ -130,7 +125,7 @@ inline uint8_t lerp8by8(uint8_t a, uint8_t b, uint8_t frac) {
   }
 }
 
-inline int16_t lerp15by16(int16_t a, int16_t b, uint16_t frac) {
+constexpr int16_t lerp15by16(int16_t a, int16_t b, uint16_t frac) {
   if (b > a) {
     return a + scale16(b - a, frac);
   } else {
@@ -159,49 +154,49 @@ struct CRGB {
 
   // Work around clang-format disagreement between CI and local copy.
   // clang-format off
-  inline CRGB(uint32_t colorcode) __attribute__((always_inline))
+  constexpr CRGB(uint32_t colorcode) __attribute__((always_inline))
       : r((colorcode >> 16) & 0xFF), g((colorcode >> 8) & 0xFF), b((colorcode >> 0) & 0xFF) {}
   // clang-format on
 
-  inline CRGB(uint8_t ir, uint8_t ig, uint8_t ib) __attribute__((always_inline)) : r(ir), g(ig), b(ib) {}
+  constexpr CRGB(uint8_t ir, uint8_t ig, uint8_t ib) __attribute__((always_inline)) : r(ir), g(ig), b(ib) {}
 
-  inline CRGB() : CRGB(0) {}
+  constexpr CRGB() : CRGB(0) {}
 
-  inline CRGB& nscale8(uint8_t scaledown) {
+  constexpr CRGB& nscale8(uint8_t scaledown) {
     r = scale8(r, scaledown);
     g = scale8(g, scaledown);
     b = scale8(b, scaledown);
     return *this;
   }
 
-  inline CRGB& nscale8(const CRGB& scaledown) {
+  constexpr CRGB& nscale8(const CRGB& scaledown) {
     r = scale8(r, scaledown.r);
     g = scale8(g, scaledown.g);
     b = scale8(b, scaledown.b);
     return *this;
   }
 
-  inline CRGB& nscale8_video(uint8_t scaledown) {
+  constexpr CRGB& nscale8_video(uint8_t scaledown) {
     r = scale8_video(r, scaledown);
     g = scale8_video(g, scaledown);
     b = scale8_video(b, scaledown);
     return *this;
   }
 
-  inline CRGB& nscale8_video(const CRGB& scaledown) {
+  constexpr CRGB& nscale8_video(const CRGB& scaledown) {
     r = scale8_video(r, scaledown.r);
     g = scale8_video(g, scaledown.g);
     b = scale8_video(b, scaledown.b);
     return *this;
   }
 
-  inline CRGB& operator+=(const CRGB& rhs) {
+  constexpr CRGB& operator+=(const CRGB& rhs) {
     r = qadd8(r, rhs.r);
     g = qadd8(g, rhs.g);
     b = qadd8(b, rhs.b);
     return *this;
   }
-  inline CRGB& operator%=(uint8_t scaledown) { return nscale8_video(scaledown); }
+  constexpr CRGB& operator%=(uint8_t scaledown) { return nscale8_video(scaledown); }
 
   typedef enum {
     AliceBlue = 0xF0F8FF,
@@ -357,10 +352,10 @@ struct CRGB {
   } HTMLColorCode;
 };
 
-inline CRGB operator+(const CRGB& p1, const CRGB& p2) {
+constexpr CRGB operator+(const CRGB& p1, const CRGB& p2) {
   return CRGB(qadd8(p1.r, p2.r), qadd8(p1.g, p2.g), qadd8(p1.b, p2.b));
 }
-inline CRGB operator%(const CRGB& p1, uint8_t d) {
+constexpr CRGB operator%(const CRGB& p1, uint8_t d) {
   CRGB retval(p1);
   retval.nscale8_video(d);
   return retval;
