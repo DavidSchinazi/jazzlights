@@ -28,7 +28,7 @@ static constexpr uint8_t kNumBrightnesses = sizeof(kBrightnessList) / sizeof(kBr
 static constexpr uint8_t kInitialBrightnessCursor = 0;
 #elif JL_IS_CONFIG(STAFF)
 static constexpr uint8_t kInitialBrightnessCursor = 3;
-#elif JL_IS_CONFIG(HAMMER) || JL_IS_CONFIG(CLOUDS)
+#elif JL_IS_CONFIG(HAMMER) || JL_IS_CONFIG(CLOUDS) || JL_IS_CONFIG(XMAS_TREE)
 static constexpr uint8_t kInitialBrightnessCursor = 7;
 #else
 static constexpr uint8_t kInitialBrightnessCursor = 4;

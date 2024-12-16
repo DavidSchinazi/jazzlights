@@ -1,7 +1,7 @@
 #include "jazzlights/layout_data.h"
 
 #if JL_IS_CONFIG(GAUNTLET) || JL_IS_CONFIG(HAMMER) || JL_IS_CONFIG(FAIRY_WAND) || JL_IS_CONFIG(ROPELIGHT) || \
-    JL_IS_CONFIG(SHOE)
+    JL_IS_CONFIG(SHOE) || JL_IS_CONFIG(XMAS_TREE)
 
 #include "jazzlights/layouts/matrix.h"
 
@@ -28,11 +28,17 @@ Matrix pixels(/*w=*/300, /*h=*/1);
 Matrix pixels(/*w=*/36, /*h=*/1);
 #endif  // ROPELIGHT
 
+#if JL_IS_CONFIG(XMAS_TREE)
+Matrix pixels(/*w=*/10, /*h=*/10);
+#endif  // XMAS_TREE
+
 }  // namespace
 
 void AddLedsToRunner(FastLedRunner* runner) {
 #if JL_IS_CONFIG(ROPELIGHT)
   runner->AddLeds<WS2812, LED_PIN, BRG>(pixels);
+#elif JL_IS_CONFIG(XMAS_TREE)
+  runner->AddLeds<WS2812B, LED_PIN, RGB>(pixels);
 #else
   runner->AddLeds<WS2812B, LED_PIN, GRB>(pixels);
 #endif

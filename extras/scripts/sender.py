@@ -41,6 +41,8 @@ patterns = {
     "glitter": 0x1200,
     "the-matrix": 0x1300,
     "threesine": 0x1400,
+    "warm": 0x1500,
+    "glow-warm": 0x1600,
     "sp": 0xC0000001,
     "hiphotic": 0x80000001,
     "flame": 0x40000001,

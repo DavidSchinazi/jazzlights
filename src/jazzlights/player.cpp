@@ -85,6 +85,12 @@ PatternBits applyPalette(PatternBits pattern, uint8_t palette) {
   return pattern;
 }
 
+static constexpr CRGB warmColor() {
+  // Based on the example values from:
+  // https://www.usuallypragmatic.com/projects/Generating-Color-Temperature-Equivalent-Light-with-RGB-LEDs.html
+  return CRGB(255, 67, 5);
+}
+
 static const Effect* patternFromBits(PatternBits pattern) {
   // Static definitions of all patterns.
   static const SpinPlasma spin_pattern;
@@ -109,6 +115,7 @@ static const Effect* patternFromBits(PatternBits pattern) {
   static const FunctionalEffect cyan_effect = solid(CRGB::Cyan, "cyan");
   static const FunctionalEffect yellow_effect = solid(CRGB::Yellow, "yellow");
   static const FunctionalEffect white_effect = solid(CRGB::White, "white");
+  static const FunctionalEffect warm_effect = solid(warmColor(), "warm");
   static const FunctionalEffect red_glow_effect = glow(CRGB::Red, "glow-red");
   static const FunctionalEffect green_glow_effect = glow(CRGB::Green, "glow-green");
   static const FunctionalEffect blue_glow_effect = glow(CRGB::Blue, "glow-blue");
@@ -116,6 +123,7 @@ static const Effect* patternFromBits(PatternBits pattern) {
   static const FunctionalEffect cyan_glow_effect = glow(CRGB::Cyan, "glow-cyan");
   static const FunctionalEffect yellow_glow_effect = glow(CRGB::Yellow, "glow-yellow");
   static const FunctionalEffect white_glow_effect = glow(CRGB::White, "glow-white");
+  static const FunctionalEffect warm_glow_effect = glow(warmColor(), "glow-warm");
 #if JL_IS_CONFIG(CLOUDS)
   static const Clouds clouds_effect = Clouds();
 #endif  // CLOUDS
@@ -147,6 +155,8 @@ static const Effect* patternFromBits(PatternBits pattern) {
         case 0x12: return &glitter_pattern;
         case 0x13: return &thematrix_pattern;
         case 0x14: return &threesine_pattern;
+        case 0x15: return &warm_effect;
+        case 0x16: return &warm_glow_effect;
       }
     } else if (reserved_type == 0x1) {
       return &mapping_effect;
@@ -273,6 +283,10 @@ void Player::begin(Milliseconds currentTime) {
   nextPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
 #if defined(JL_START_SPECIAL) && JL_START_SPECIAL
   handleSpecial(currentTime);
+#elif JL_IS_CONFIG(XMAS_TREE)
+  currentPattern_ = 0x00001500;
+  nextPattern_ = currentPattern_;
+  loop_ = true;
 #elif JL_IS_CONFIG(HAMMER)
   // Hammer defaults to looping glow-red pattern.
   currentPattern_ = 0x00080000;

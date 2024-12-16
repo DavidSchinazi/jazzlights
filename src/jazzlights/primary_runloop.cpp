@@ -77,6 +77,9 @@ void SetupPrimaryRunLoop() {
 #elif JL_IS_CONFIG(WAND) || JL_IS_CONFIG(STAFF) || JL_IS_CONFIG(HAT) || JL_IS_CONFIG(SHOE)
   player.setBasePrecedence(500);
   player.setPrecedenceGain(100);
+#elif JL_IS_CONFIG(XMAS_TREE)
+  player.setBasePrecedence(7000);
+  player.setPrecedenceGain(100);
 #else
   player.setBasePrecedence(1000);
   player.setPrecedenceGain(1000);
