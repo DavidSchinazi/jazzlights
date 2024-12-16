@@ -78,7 +78,27 @@ def getPatternBytes(patternName):
         pixelNum = int(patternName[len("mapping-") :])
         return 0x00000010 | (pixelNum << 8)
     if patternName.startswith("coloring-"):
-        rgb = int(patternName[len("coloring-") :], 16)
+        color = patternName[len("coloring-") :]
+        mode = "rgb"
+        if color.startswith("grb-"):
+            color = color[len("grb-") :]
+            mode = "grb"
+        elif color.startswith("gbr-"):
+            color = color[len("gbr-") :]
+            mode = "gbr"
+        if "," in color:
+            colors = [int(c) for c in color.split(",")]
+            rgb = (colors[0] << 16) | (colors[1] << 8) | colors[2]
+        else:
+            rgb = int(color, 16)
+        if mode == "grb":
+            rgb = ((rgb & 0xFF0000) >> 8) | ((rgb & 0x00FF00) << 8) | (rgb & 0x0000FF)
+        elif mode == "gbr":
+            rgb = (
+                ((rgb & 0xFF0000) >> 16)
+                | ((rgb & 0x00FF00) << 8)
+                | ((rgb & 0x0000FF) << 8)
+            )
         return 0x00000020 | (rgb << 8)
     patternBytes = None
     paletteName = ""
