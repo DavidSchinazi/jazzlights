@@ -14,7 +14,7 @@ namespace jazzlights {
 // The jlbeat* functions are almost identical to the corresponding beat* functions in FastLED/src/lib8tion.h, except
 // that they operate on elapsedTime (the time since the current pattern has started) instead of the absolute time.
 
-inline uint16_t jlbeat88(uint16_t beats_per_minute_88, uint32_t elapsedTime) {
+constexpr uint16_t jlbeat88(uint16_t beats_per_minute_88, uint32_t elapsedTime) {
   return (elapsedTime * beats_per_minute_88 * 280) >> 16;
 }
 

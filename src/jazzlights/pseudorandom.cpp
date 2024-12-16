@@ -23,7 +23,7 @@ namespace {
 // https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
 constexpr uint64_t kFNV1a64Prime = 0x100000001B3;
 constexpr uint64_t kFNV1a64OffsetBasis = 0xCBF29CE484222325;
-inline uint64_t NextFnv1a64Value(uint64_t hash, uint8_t b) { return (hash ^ b) * kFNV1a64Prime; }
+constexpr uint64_t NextFnv1a64Value(uint64_t hash, uint8_t b) { return (hash ^ b) * kFNV1a64Prime; }
 
 // Implementation of the 64bit variant of xorshift*.
 // https://en.wikipedia.org/wiki/Xorshift#xorshift*
