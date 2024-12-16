@@ -11,7 +11,7 @@ inline FunctionalEffect mapping() {
     const bool blink = ((frame.time % 1000) < 500);
     return [pixelNum, blink](const Pixel& pt) -> CRGB {
       if (pt.index < pixelNum) {
-        return CRGB::Black;
+        return CRGB::Red;
       } else if (pt.index == pixelNum) {
         if (blink) {
           return CRGB::Blue;
