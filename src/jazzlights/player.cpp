@@ -37,6 +37,10 @@ namespace {
 // flame-heat and then sp-cloud, and then picking the one that will loop after the most iterations. This one loops after
 // 118284 iterations, which is more than 13 days.
 constexpr PatternBits kStartingPattern = 0x00b3db69;
+
+#if JL_IS_CONFIG(XMAS_TREE)
+constexpr PatternBits kWarmPattern = 0x00001500;
+#endif  // XMAS_TREE
 }  // namespace
 
 int comparePrecedence(Precedence leftPrecedence, const NetworkDeviceId& leftDeviceId, Precedence rightPrecedence,
@@ -284,7 +288,7 @@ void Player::begin(Milliseconds currentTime) {
 #if defined(JL_START_SPECIAL) && JL_START_SPECIAL
   handleSpecial(currentTime);
 #elif JL_IS_CONFIG(XMAS_TREE)
-  currentPattern_ = 0x00001500;
+  currentPattern_ = kWarmPattern;
   nextPattern_ = currentPattern_;
   loop_ = true;
 #elif JL_IS_CONFIG(HAMMER)
@@ -480,6 +484,7 @@ std::string Player::currentEffectName() const { return patternName(lastBegunPatt
 void Player::set_enabled(bool enabled) {
   if (enabled_ == enabled) { return; }
 #if JL_IS_CONFIG(CLOUDS)
+  lastUserInputTime_ = -1;
   if (!enabled) {
     force_clouds_ = true;
     currentPattern_ = enforceForcedPalette(currentPattern_);
@@ -505,6 +510,7 @@ void Player::UpdateStatusWatcher() {
 #if JL_IS_CONFIG(CLOUDS)
 void Player::CloudNext(Milliseconds currentTime) {
   set_enabled(true);
+  lastUserInputTime_ = currentTime;
   disable_color_override();
   if (force_clouds_) {
     force_clouds_ = false;
@@ -608,7 +614,11 @@ Precedence addPrecedenceGain(Precedence startPrecedence, Precedence gain) {
 }
 
 static constexpr Milliseconds kInputDuration = 10 * 60 * 1000;  // 10min.
+#if JL_IS_CONFIG(XMAS_TREE)
+static constexpr Precedence kAdminPrecedence = 6001;
+#else   // XMAS_TREE
 static constexpr Precedence kAdminPrecedence = 60000;
+#endif  // XMAS_TREE
 
 Precedence Player::getLocalPrecedence(Milliseconds currentTime) {
   return addPrecedenceGain(basePrecedence_,
@@ -713,6 +723,11 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
     }
   } else {
     // We are currently leading.
+#if JL_IS_CONFIG(XMAS_TREE)
+    currentPattern_ = kWarmPattern;
+    nextPattern_ = currentPattern_;
+    loop_ = true;
+#endif  // XMAS_TREE
     followedNextHopNetwork_ = nullptr;
     currentNumHops_ = 0;
     lastOriginationTime = currentTime;
