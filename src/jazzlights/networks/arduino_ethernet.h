@@ -1,17 +1,7 @@
 #ifndef JL_NETWORKS_ARDUINO_ETHERNET_H
 #define JL_NETWORKS_ARDUINO_ETHERNET_H
 
-#ifndef JL_CORE2AWS_ETHERNET
-#define JL_CORE2AWS_ETHERNET 0
-#endif  // JL_CORE2AWS_ETHERNET
-
-#if JL_CORE2AWS_ETHERNET && !defined(JL_ETHERNET)
-#define JL_ETHERNET 1
-#endif
-
-#ifndef JL_ETHERNET
-#define JL_ETHERNET 0
-#endif  // JL_ETHERNET
+#include "jazzlights/config.h"
 
 #if JL_ETHERNET
 

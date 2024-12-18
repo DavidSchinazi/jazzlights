@@ -10,8 +10,8 @@
 #include "jazzlights/fastled_runner.h"
 #include "jazzlights/instrumentation.h"
 #include "jazzlights/layout_data.h"
-#include "jazzlights/networks/arduino_ethernet.h"
 #include "jazzlights/networks/esp32_ble.h"
+#include "jazzlights/networks/ethernet.h"
 #include "jazzlights/networks/wifi.h"
 #include "jazzlights/player.h"
 #include "jazzlights/ui/rotary_phone.h"
@@ -24,9 +24,10 @@
 
 namespace jazzlights {
 
-#if JL_ETHERNET
-ArduinoEthernetNetwork ethernetNetwork(WiFiNetwork::get()->getLocalDeviceId().PlusOne());
-#endif  // JL_ETHERNET
+#if JL_ETHERNET && !JL_ESP32_ETHERNET
+EthernetNetwork ethernetNetwork(WiFiNetwork::get()->getLocalDeviceId().PlusOne());
+#endif  // JL_ETHERNET && !JL_ESP32_ETHERNET
+
 Player player;
 FastLedRunner runner(&player);
 
@@ -88,7 +89,11 @@ void SetupPrimaryRunLoop() {
   player.connect(Esp32BleNetwork::get());
   player.connect(WiFiNetwork::get());
 #if JL_ETHERNET
+#if JL_ESP32_ETHERNET
+  player.connect(Esp32EthernetNetwork::get());
+#else   // JL_ESP32_ETHERNET
   player.connect(&ethernetNetwork);
+#endif  // JL_ESP32_ETHERNET
 #endif  // JL_ETHERNET
   player.begin(currentTime);
 

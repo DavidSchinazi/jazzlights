@@ -101,4 +101,16 @@
 #define JL_WIFI_SSID "JazzLights"
 #define JL_WIFI_PASSWORD "burningblink"
 
+#ifndef JL_CORE2AWS_ETHERNET
+#define JL_CORE2AWS_ETHERNET 0
+#endif  // JL_CORE2AWS_ETHERNET
+
+#ifndef JL_ETHERNET
+#if JL_CORE2AWS_ETHERNET
+#define JL_ETHERNET 1
+#else  // JL_CORE2AWS_ETHERNET
+#define JL_ETHERNET 0
+#endif  // JL_CORE2AWS_ETHERNET
+#endif  // JL_ETHERNET
+
 #endif  // JL_CONFIG_H
