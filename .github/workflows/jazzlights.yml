@@ -34,7 +34,7 @@ jobs:
       - name: Build
         run: cmake --build extras/build
 
-  platformio-build:
+  pio-build:
     strategy:
       matrix:
         pioenv:
@@ -59,7 +59,7 @@ jobs:
       - name: PlatformIO Build
         run: pio run -e ${{ matrix.pioenv }}
 
-  platformio-native-test:
+  pio-native-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -77,7 +77,7 @@ jobs:
       - name: PlatformIO Test
         run: pio test -e native
 
-  platformio-merge:
+  pio-merge:
     strategy:
       matrix:
         pioenv:
@@ -112,9 +112,9 @@ jobs:
     needs:
       - check-format
       - extras
-      - platformio-build
-      - platformio-native-test
-      - platformio-merge
+      - pio-build
+      - pio-native-test
+      - pio-merge
     permissions:
       contents: read
       pages: write
