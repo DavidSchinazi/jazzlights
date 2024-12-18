@@ -3,7 +3,7 @@
 
 #include "jazzlights/config.h"
 
-#if JL_ETHERNET
+#if JL_ETHERNET && !JL_ESP32_ETHERNET
 
 #include <Ethernet.h>
 #include <SPI.h>
@@ -33,6 +33,6 @@ class ArduinoEthernetNetwork : public UdpNetwork {
 
 }  // namespace jazzlights
 
-#endif  // JL_ETHERNET
+#endif  // JL_ETHERNET && !JL_ESP32_ETHERNET
 
 #endif  // JL_NETWORKS_ARDUINO_ETHERNET_H

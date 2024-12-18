@@ -1,11 +1,11 @@
 #include "jazzlights/networks/arduino_ethernet.h"
 
+#if JL_ETHERNET && !JL_ESP32_ETHERNET
+
 #include <sstream>
 
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/time.h"
-
-#if JL_ETHERNET
 
 namespace jazzlights {
 namespace {
@@ -158,4 +158,4 @@ void ArduinoEthernetNetwork::send(void* buf, size_t bufsize) {
 
 }  // namespace jazzlights
 
-#endif  // JL_ETHERNET
+#endif  // JL_ETHERNET && !JL_ESP32_ETHERNET

@@ -106,6 +106,12 @@
 #endif  // ESP32
 #endif  // JL_WIFI
 
+#ifndef JL_ESP32_WIFI
+// Esp32WiFiNetwork is currently work-in-progress.
+// TODO: finish this and use it to replace ArduinoEspWiFiNetwork.
+#define JL_ESP32_WIFI 0
+#endif  // JL_ESP32_WIFI
+
 #define JL_WIFI_SSID "JazzLights"
 #define JL_WIFI_PASSWORD "burningblink"
 
@@ -120,5 +126,11 @@
 #define JL_ETHERNET 0
 #endif  // JL_CORE2AWS_ETHERNET
 #endif  // JL_ETHERNET
+
+#ifndef JL_ESP32_ETHERNET
+// Esp32WiFiNetwork is currently work-in-progress.
+// TODO: finish this and use it to replace ArduinoEspWiFiNetwork.
+#define JL_ESP32_ETHERNET 0
+#endif  // JL_ESP32_ETHERNET
 
 #endif  // JL_CONFIG_H

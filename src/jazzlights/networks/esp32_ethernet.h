@@ -3,12 +3,6 @@
 
 #include "jazzlights/config.h"
 
-// Esp32WiFiNetwork is currently work-in-progress.
-// TODO: finish this and use it to replace ArduinoEspWiFiNetwork.
-#ifndef JL_ESP32_ETHERNET
-#define JL_ESP32_ETHERNET 0
-#endif  // JL_ESP32_ETHERNET
-
 #if JL_ESP32_ETHERNET
 #include <esp_event.h>
 #include <freertos/FreeRTOS.h>
