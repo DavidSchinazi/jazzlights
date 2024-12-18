@@ -5,15 +5,15 @@
 #define JL_CORE2AWS_ETHERNET 0
 #endif  // JL_CORE2AWS_ETHERNET
 
-#if JL_CORE2AWS_ETHERNET && !defined(JL_ARDUINO_ETHERNET)
-#define JL_ARDUINO_ETHERNET 1
+#if JL_CORE2AWS_ETHERNET && !defined(JL_ETHERNET)
+#define JL_ETHERNET 1
 #endif
 
-#ifndef JL_ARDUINO_ETHERNET
-#define JL_ARDUINO_ETHERNET 0
-#endif  // JL_ARDUINO_ETHERNET
+#ifndef JL_ETHERNET
+#define JL_ETHERNET 0
+#endif  // JL_ETHERNET
 
-#if JL_ARDUINO_ETHERNET
+#if JL_ETHERNET
 
 #include <Ethernet.h>
 #include <SPI.h>
@@ -43,6 +43,6 @@ class ArduinoEthernetNetwork : public UdpNetwork {
 
 }  // namespace jazzlights
 
-#endif  // JL_ARDUINO_ETHERNET
+#endif  // JL_ETHERNET
 
 #endif  // JL_NETWORKS_ARDUINO_ETHERNET_H

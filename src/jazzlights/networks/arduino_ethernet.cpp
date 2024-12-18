@@ -5,7 +5,7 @@
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/time.h"
 
-#if JL_ARDUINO_ETHERNET
+#if JL_ETHERNET
 
 namespace jazzlights {
 namespace {
@@ -158,4 +158,4 @@ void ArduinoEthernetNetwork::send(void* buf, size_t bufsize) {
 
 }  // namespace jazzlights
 
-#endif  // JL_ARDUINO_ETHERNET
+#endif  // JL_ETHERNET
