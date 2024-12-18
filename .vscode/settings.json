@@ -52,6 +52,9 @@
     "unordered_map": "cpp",
     "variant": "cpp",
     "vector": "cpp",
-    "utility": "cpp"
+    "utility": "cpp",
+    "deque": "cpp",
+    "unordered_set": "cpp",
+    "regex": "cpp"
   }
 }
