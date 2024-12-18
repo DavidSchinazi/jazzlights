@@ -14,6 +14,7 @@
 
 #include <sstream>
 
+#include "jazzlights/config.h"
 #include "jazzlights/pseudorandom.h"
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/time.h"
@@ -23,6 +24,19 @@ namespace {
 constexpr size_t kReceiveBufferLength = 1500;
 constexpr Milliseconds kSendInterval = 100;
 constexpr uint32_t kNumReconnectsBeforeDelay = 10;
+#if JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_LITE)
+constexpr int kEthernetPinSCK = 22;
+constexpr int kEthernetPinCS = 19;
+constexpr int kEthernetPinMISO = 23;
+constexpr int kEthernetPinMOSI = 33;
+#elif JL_IS_CONTROLLER(ATOM_S3)
+constexpr int kEthernetPinSCK = 5;
+constexpr int kEthernetPinCS = 6;
+constexpr int kEthernetPinMISO = 7;
+constexpr int kEthernetPinMOSI = 8;
+#else
+#error "Unexpected controller"
+#endif
 }  // namespace
 
 NetworkStatus Esp32EthernetNetwork::update(NetworkStatus status, Milliseconds currentTime) {
@@ -151,13 +165,13 @@ void Esp32EthernetNetwork::EventHandler(void* event_handler_arg, esp_event_base_
 void Esp32EthernetNetwork::HandleEvent(esp_event_base_t event_base, int32_t event_id, void* event_data) {
   if (event_base == ETH_EVENT) {
     if (event_id == ETHERNET_EVENT_CONNECTED) {
-      jll_info("Esp32EthernetNetwork ETHERNET_EVENT_CONNECTED");
+      jll_info("Esp32EthernetNetwork got a valid link");
     } else if (event_id == ETHERNET_EVENT_DISCONNECTED) {
-      jll_info("Esp32EthernetNetwork ETHERNET_EVENT_DISCONNECTED");
+      jll_info("Esp32EthernetNetwork lost a valid link");
     } else if (event_id == ETHERNET_EVENT_START) {
-      jll_info("Esp32EthernetNetwork ETHERNET_EVENT_START");
+      jll_info("Esp32EthernetNetwork driver start");
     } else if (event_id == ETHERNET_EVENT_STOP) {
-      jll_info("Esp32EthernetNetwork ETHERNET_EVENT_STOP");
+      jll_info("Esp32EthernetNetwork driver stop");
     }
     /*
     if (event_base == WIFI_EVENT) {
@@ -371,9 +385,9 @@ Esp32EthernetNetwork::Esp32EthernetNetwork()
 
   // Init SPI bus
   spi_bus_config_t buscfg = {
-      .mosi_io_num = 33,
-      .miso_io_num = 23,
-      .sclk_io_num = 22,
+      .mosi_io_num = kEthernetPinMOSI,
+      .miso_io_num = kEthernetPinMISO,
+      .sclk_io_num = kEthernetPinSCK,
       .quadwp_io_num = -1,
       .quadhd_io_num = -1,
   };
@@ -387,7 +401,7 @@ Esp32EthernetNetwork::Esp32EthernetNetwork()
                                               .address_bits = 8,   // Actually it's the control phase in W5500 SPI frame
                                               .mode = 0,
                                               .clock_speed_hz = 33 * 1000 * 1000,
-                                              .spics_io_num = 19,
+                                              .spics_io_num = kEthernetPinCS,
                                               .queue_size = 20};
 
   // Set remaining GPIO numbers and configuration used by the SPI module
