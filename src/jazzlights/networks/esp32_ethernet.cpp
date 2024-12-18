@@ -414,7 +414,11 @@ Esp32EthernetNetwork::Esp32EthernetNetwork()
   ESP_ERROR_CHECK(spi_bus_add_device(SPI2_HOST, &spi_devcfg, &spi_handle));
   eth_w5500_config_t w5500_config = ETH_W5500_DEFAULT_CONFIG(spi_handle);
 #endif
-  //   w5500_config.int_gpio_num = -1;  // TODO interrupt pin?
+  // ETH_W5500_DEFAULT_CONFIG sets int_gpio_num to 4. The interrupt pin isn't connected in the AtomPoE module so we
+  // should set it to -1, but that's not allowed so we set it to unused pin 21 instead.
+  // It looks like it might be possible to have it work without interrupt in newer versions of ESP-IDF.
+  // https://github.com/espressif/esp-idf/issues/12682
+  w5500_config.int_gpio_num = 21;  // TODO interrupt pin?
   mac_spi = esp_eth_mac_new_w5500(&w5500_config, &mac_config_spi);
   phy_spi = esp_eth_phy_new_w5500(&phy_config_spi);
 
