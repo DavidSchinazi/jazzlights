@@ -4,6 +4,8 @@
 #include "jazzlights/networks/arduino_esp_wifi.h"
 #include "jazzlights/networks/esp32_wifi.h"
 
+#if JL_WIFI
+
 namespace jazzlights {
 
 // Esp32WiFiNetwork is currently work-in-progress.
@@ -17,5 +19,7 @@ using WiFiNetwork = ArduinoEspWiFiNetwork;
 #endif  // JL_ESP32_WIFI
 
 }  // namespace jazzlights
+
+#endif  // JL_WIFI
 
 #endif  // JL_NETWORKS_WIFI_H

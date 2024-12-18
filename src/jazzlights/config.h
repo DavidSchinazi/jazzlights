@@ -98,6 +98,14 @@
 #endif  // ESP32
 #endif  // JL_BOUNDS_CHECKS
 
+#ifndef JL_WIFI
+#ifdef ESP32
+#define JL_WIFI 1
+#else  // ESP32
+#define JL_WIFI 0
+#endif  // ESP32
+#endif  // JL_WIFI
+
 #define JL_WIFI_SSID "JazzLights"
 #define JL_WIFI_PASSWORD "burningblink"
 

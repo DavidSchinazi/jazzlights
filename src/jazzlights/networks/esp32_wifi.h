@@ -1,7 +1,10 @@
 #ifndef JL_NETWORKS_ESP32_WIFI_H
 #define JL_NETWORKS_ESP32_WIFI_H
 
-#ifdef ESP32
+#include "jazzlights/config.h"
+
+#if JL_WIFI
+
 #include <esp_event.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
@@ -84,5 +87,5 @@ class Esp32WiFiNetwork : public Network {
 
 }  // namespace jazzlights
 
-#endif  // ESP32
+#endif  // JL_WIFI
 #endif  // JL_NETWORKS_ESP32_WIFI_H

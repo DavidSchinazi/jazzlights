@@ -87,7 +87,9 @@ void SetupPrimaryRunLoop() {
 #endif
 
   player.connect(Esp32BleNetwork::get());
+#if JL_WIFI
   player.connect(WiFiNetwork::get());
+#endif  // JL_WIFI
 #if JL_ETHERNET
 #if JL_ESP32_ETHERNET
   player.connect(Esp32EthernetNetwork::get());

@@ -1,6 +1,6 @@
 #include "jazzlights/networks/esp32_wifi.h"
 
-#ifdef ESP32
+#if JL_WIFI
 
 #include <esp_event.h>
 #include <esp_wifi.h>
@@ -452,4 +452,4 @@ Esp32WiFiNetwork::~Esp32WiFiNetwork() {
 
 }  // namespace jazzlights
 
-#endif  // ESP32
+#endif  // JL_WIFI
