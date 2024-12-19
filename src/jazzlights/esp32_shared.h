@@ -9,6 +9,8 @@ namespace jazzlights {
 
 void InitializeNetStack();
 
+void InstallGpioIsrService();
+
 }  // namespace jazzlights
 
 #endif  // ESP32

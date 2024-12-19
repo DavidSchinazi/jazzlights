@@ -7,6 +7,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
+#include "jazzlights/esp32_shared.h"
 #include "jazzlights/util/log.h"
 
 #define JL_GPIO_DEBUG_ENABLED 0
@@ -48,9 +49,7 @@ GpioPin::GpioPin(uint8_t pin, PinInterface& pinInterface, int64_t debounceDurati
       pin_(pin),
       debounceDuration_(debounceDuration) {
   if (queue_ == nullptr) { jll_fatal("Failed to create GpioPin queue"); }
-  // Ensure this is only ever called once by saving the result in a static variable.
-  static esp_err_t err = gpio_install_isr_service(/*intr_alloc_flags=*/0);
-  ESP_ERROR_CHECK(err);
+  InstallGpioIsrService();
   // GPIO interrupt handlers are run on the core where the config calls were made, so we use esp_ipc_call to
   // ensure that all that happens on core 0. This prevents it from interfering with LED writes on core 1.
   ESP_ERROR_CHECK(esp_ipc_call(/*coreID=*/0, ConfigurePin, /*arg=*/this));

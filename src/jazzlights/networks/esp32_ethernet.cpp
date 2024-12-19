@@ -381,7 +381,7 @@ Esp32EthernetNetwork::Esp32EthernetNetwork()
   phy_config_spi.autonego_timeout_ms = 0;
   phy_config_spi.reset_gpio_num = -1;
 
-  gpio_install_isr_service(0);
+  InstallGpioIsrService();
 
   // Init SPI bus
   spi_bus_config_t buscfg = {
