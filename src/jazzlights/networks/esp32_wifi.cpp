@@ -11,6 +11,7 @@
 
 #include <sstream>
 
+#include "jazzlights/esp32_shared.h"
 #include "jazzlights/pseudorandom.h"
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/time.h"
@@ -391,8 +392,7 @@ Esp32WiFiNetwork::Esp32WiFiNetwork()
   if (udpPayload_ == nullptr) {
     jll_fatal("Esp32WiFiNetwork failed to allocate receive buffer of length %zu", kReceiveBufferLength);
   }
-  ESP_ERROR_CHECK(esp_netif_init());
-  ESP_ERROR_CHECK(esp_event_loop_create_default());
+  InitializeNetStack();
   esp_netif_create_default_wifi_sta();
 
   wifi_init_config_t wifi_init_config = WIFI_INIT_CONFIG_DEFAULT();

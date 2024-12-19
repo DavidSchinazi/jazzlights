@@ -15,6 +15,7 @@
 #include <sstream>
 
 #include "jazzlights/config.h"
+#include "jazzlights/esp32_shared.h"
 #include "jazzlights/pseudorandom.h"
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/time.h"
@@ -356,8 +357,7 @@ Esp32EthernetNetwork::Esp32EthernetNetwork()
   if (udpPayload_ == nullptr) {
     jll_fatal("Esp32EthernetNetwork failed to allocate receive buffer of length %zu", kReceiveBufferLength);
   }
-  ESP_ERROR_CHECK(esp_netif_init());
-  ESP_ERROR_CHECK(esp_event_loop_create_default());
+  InitializeNetStack();
 
   //  Create instance(s) of esp-netif for SPI Ethernet(s)
   esp_netif_inherent_config_t esp_netif_config = ESP_NETIF_INHERENT_DEFAULT_ETH();
