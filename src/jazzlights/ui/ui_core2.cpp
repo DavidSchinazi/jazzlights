@@ -616,9 +616,11 @@ void Core2AwsUi::DrawSystemTextLines(Milliseconds currentTime) {
   // BLE.
   snprintf(line, sizeof(line) - 1, "BLE: %s", Esp32BleNetwork::get()->getStatusStr(currentTime).c_str());
   DrawSystemTextLine(i++, line);
+#if JL_WIFI
   // Wi-Fi.
   snprintf(line, sizeof(line) - 1, "Wi-Fi: %s", WiFiNetwork::get()->getStatusStr(currentTime).c_str());
   DrawSystemTextLine(i++, line);
+#endif  // JL_WIFI
   // Other.
   const Network* followedNextHopNetwork = player_.followedNextHopNetwork();
   if (followedNextHopNetwork == nullptr) {

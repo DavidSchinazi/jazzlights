@@ -25,16 +25,27 @@ namespace {
 constexpr size_t kReceiveBufferLength = 1500;
 constexpr Milliseconds kSendInterval = 100;
 constexpr uint32_t kNumReconnectsBeforeDelay = 10;
-#if JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_LITE)
+#if JL_CORE2AWS_ETHERNET
+constexpr int kEthernetPinSCK = 18;
+constexpr int kEthernetPinCS = 26;
+constexpr int kEthernetPinMISO = 38;
+constexpr int kEthernetPinMOSI = 23;
+constexpr int kEthernetPinReset = 19;
+constexpr int kEthernetPinInterrupt = 34;
+#elif JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_LITE)
 constexpr int kEthernetPinSCK = 22;
 constexpr int kEthernetPinCS = 19;
 constexpr int kEthernetPinMISO = 23;
 constexpr int kEthernetPinMOSI = 33;
+constexpr int kEthernetPinReset = -1;
+constexpr int kEthernetPinInterrupt = 21;  // Fake because -1 isn't supported in ESP-IDP v4.
 #elif JL_IS_CONTROLLER(ATOM_S3)
 constexpr int kEthernetPinSCK = 5;
 constexpr int kEthernetPinCS = 6;
 constexpr int kEthernetPinMISO = 7;
 constexpr int kEthernetPinMOSI = 8;
+constexpr int kEthernetPinReset = -1;
+constexpr int kEthernetPinInterrupt = 21;  // Fake because -1 isn't supported in ESP-IDP v4.
 #else
 #error "Unexpected controller"
 #endif
@@ -166,7 +177,12 @@ void Esp32EthernetNetwork::EventHandler(void* event_handler_arg, esp_event_base_
 void Esp32EthernetNetwork::HandleEvent(esp_event_base_t event_base, int32_t event_id, void* event_data) {
   if (event_base == ETH_EVENT) {
     if (event_id == ETHERNET_EVENT_CONNECTED) {
-      jll_info("Esp32EthernetNetwork got a valid link");
+      uint8_t mac_addr[6] = {0};
+      /* we can get the ethernet driver handle from event data */
+      esp_eth_handle_t eth_handle = *(esp_eth_handle_t*)event_data;
+      ESP_ERROR_CHECK(esp_eth_ioctl(eth_handle, ETH_CMD_G_MAC_ADDR, mac_addr));
+      jll_info("Esp32EthernetNetwork got a valid link, MAC: %02x:%02x:%02x:%02x:%02x:%02x", mac_addr[0], mac_addr[1],
+               mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
     } else if (event_id == ETHERNET_EVENT_DISCONNECTED) {
       jll_info("Esp32EthernetNetwork lost a valid link");
     } else if (event_id == ETHERNET_EVENT_START) {
@@ -357,6 +373,119 @@ Esp32EthernetNetwork::Esp32EthernetNetwork()
   if (udpPayload_ == nullptr) {
     jll_fatal("Esp32EthernetNetwork failed to allocate receive buffer of length %zu", kReceiveBufferLength);
   }
+#if 1
+  // Initialize Ethernet driver
+
+  // Start of example_eth_init.
+
+  // Install GPIO ISR handler to be able to service SPI Eth modules interrupts
+  InstallGpioIsrService();
+
+  spi_host_device_t host_id =
+      SPI3_HOST;  // looks like the code below uses 1? Example uses CONFIG_EXAMPLE_ETH_SPI_PHY_ADDR0. So maybe 0?
+
+  // Init SPI bus
+  spi_bus_config_t buscfg = {
+      .mosi_io_num = kEthernetPinMOSI,
+      .miso_io_num = kEthernetPinMISO,
+      .sclk_io_num = kEthernetPinSCK,
+      .quadwp_io_num = -1,
+      .quadhd_io_num = -1,
+  };
+  esp_err_t spiInitErr = spi_bus_initialize(host_id, &buscfg, SPI_DMA_CH_AUTO);
+  if (spiInitErr == ESP_ERR_INVALID_STATE) {
+    jll_error("Esp32EthernetNetwork - SPI bus already initialized");
+    spiInitErr = ESP_OK;
+  }
+  ESP_ERROR_CHECK(spiInitErr);
+
+  // The SPI Ethernet module(s) might not have a burned factory MAC address, hence use manually configured address(es).
+  // In this example, Locally Administered MAC address derived from ESP32x base MAC address is used.
+  // Note that Locally Administered OUI range should be used only when testing on a LAN under your control!
+  uint8_t base_mac_addr[6];
+  ESP_ERROR_CHECK(esp_efuse_mac_get_default(base_mac_addr));
+  jll_info("Esp32EthernetNetwork got efuse MAC: %02x:%02x:%02x:%02x:%02x:%02x", base_mac_addr[0], base_mac_addr[1],
+           base_mac_addr[2], base_mac_addr[3], base_mac_addr[4], base_mac_addr[5]);
+  uint8_t local_mac_1[6];
+  esp_derive_local_mac(local_mac_1, base_mac_addr);
+  jll_info("Esp32EthernetNetwork derived local MAC: %02x:%02x:%02x:%02x:%02x:%02x", local_mac_1[0], local_mac_1[1],
+           local_mac_1[2], local_mac_1[3], local_mac_1[4], local_mac_1[5]);
+
+  // esp_eth_handle_t eth_handle = eth_init_spi(&spi_eth_module_config, NULL, NULL);
+  // start of eth_init_spi
+
+  // Init common MAC and PHY configs to default
+  eth_mac_config_t mac_config = ETH_MAC_DEFAULT_CONFIG();
+  eth_phy_config_t phy_config = ETH_PHY_DEFAULT_CONFIG();
+
+  // Update PHY config based on board specific configuration
+  phy_config.phy_addr = host_id;
+  phy_config.reset_gpio_num = kEthernetPinReset;
+
+  // Configure SPI interface for specific SPI module
+  spi_device_interface_config_t spi_devcfg = {
+      .mode = 0,
+      .clock_speed_hz = 20 * 1000 * 1000,
+      .spics_io_num = kEthernetPinCS,
+      .queue_size = 20,
+  };
+// Init vendor specific MAC config to default, and create new SPI Ethernet MAC instance
+// and new PHY instance based on board configuration
+
+// eth_w5500_config_t w5500_config = ETH_W5500_DEFAULT_CONFIG(CONFIG_EXAMPLE_ETH_SPI_HOST, &spi_devcfg);
+#if USE_ESP_IDF && (ESP_IDF_VERSION_MAJOR >= 5)
+  eth_w5500_config_t w5500_config = ETH_W5500_DEFAULT_CONFIG(host_id, &spi_devcfg);
+#else
+  spi_device_handle_t spi_handle = nullptr;
+  ESP_ERROR_CHECK(spi_bus_add_device(host_id, &spi_devcfg, &spi_handle));
+  eth_w5500_config_t w5500_config = ETH_W5500_DEFAULT_CONFIG(spi_handle);
+#endif
+  w5500_config.int_gpio_num =
+      kEthernetPinInterrupt;  // spi_eth_module_config->int_gpio; -- see comments in the other code version below
+  // w5500_config.poll_period_ms = spi_eth_module_config->polling_ms;
+  esp_eth_mac_t* mac = esp_eth_mac_new_w5500(&w5500_config, &mac_config);
+  esp_eth_phy_t* phy = esp_eth_phy_new_w5500(&phy_config);
+
+  // Init Ethernet driver to default and install it
+  esp_eth_handle_t eth_handle = NULL;
+  esp_eth_config_t eth_config_spi = ETH_DEFAULT_CONFIG(mac, phy);
+  ESP_ERROR_CHECK(esp_eth_driver_install(&eth_config_spi, &eth_handle));
+
+  // The SPI Ethernet module might not have a burned factory MAC address, we can set it manually.
+  if (true) { ESP_ERROR_CHECK(esp_eth_ioctl(eth_handle, ETH_CMD_S_MAC_ADDR, local_mac_1)); }
+
+  // end of eth_init_spi
+
+  // End of example_eth_init
+
+  // Initialize TCP/IP network interface aka the esp-netif (should be called only once in application)
+  ESP_ERROR_CHECK(esp_netif_init());
+  // Create default event loop that running in background
+  ESP_ERROR_CHECK(esp_event_loop_create_default());
+
+  // Create instance(s) of esp-netif for Ethernet(s)
+
+  // Use ESP_NETIF_DEFAULT_ETH when just one Ethernet interface is used and you don't need to modify
+  // default esp-netif configuration parameters.
+  esp_netif_config_t cfg = ESP_NETIF_DEFAULT_ETH();
+  esp_netif_t* eth_netif = esp_netif_new(&cfg);
+  // Attach Ethernet driver to TCP/IP stack
+  ESP_ERROR_CHECK(esp_netif_attach(eth_netif, esp_eth_new_netif_glue(eth_handle)));
+
+  // end of something?
+
+  esp_event_handler_instance_t ethInstance;
+  esp_event_handler_instance_t ipInstance;
+  // Register event handlers on the default event loop. That runs in task "sys_evt" on core 0 (and is not
+  // configurable).
+  ESP_ERROR_CHECK(esp_event_handler_instance_register(ETH_EVENT, ESP_EVENT_ANY_ID, &EventHandler, this, &ethInstance));
+  ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, ESP_EVENT_ANY_ID, &EventHandler, this, &ipInstance));
+
+  /* start Ethernet driver state machine */
+  ESP_ERROR_CHECK(esp_eth_start(eth_handle));
+  ESP_ERROR_CHECK(esp_netif_init());
+  jll_info("Esp32EthernetNetwork completed initialization");
+#elif 1
   InitializeNetStack();
 
   //  Create instance(s) of esp-netif for SPI Ethernet(s)
@@ -443,8 +572,7 @@ Esp32EthernetNetwork::Esp32EthernetNetwork()
   /* start Ethernet driver state machine */
   ESP_ERROR_CHECK(esp_eth_start(eth_handle_spi));
   ESP_ERROR_CHECK(esp_netif_init());
-
-#if 0
+#elif 0
 
   // Initialize Ethernet driver
   uint8_t eth_port_cnt = 0;
