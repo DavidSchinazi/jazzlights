@@ -38,14 +38,14 @@ constexpr int kEthernetPinCS = 19;
 constexpr int kEthernetPinMISO = 23;
 constexpr int kEthernetPinMOSI = 33;
 constexpr int kEthernetPinReset = -1;
-constexpr int kEthernetPinInterrupt = 21;  // Fake because -1 isn't supported in ESP-IDP v4.
+constexpr int kEthernetPinInterrupt = 21;  // Fake because -1 isn't supported in ESP-IDF v4.
 #elif JL_IS_CONTROLLER(ATOM_S3)
 constexpr int kEthernetPinSCK = 5;
 constexpr int kEthernetPinCS = 6;
 constexpr int kEthernetPinMISO = 7;
 constexpr int kEthernetPinMOSI = 8;
 constexpr int kEthernetPinReset = -1;
-constexpr int kEthernetPinInterrupt = 21;  // Fake because -1 isn't supported in ESP-IDP v4.
+constexpr int kEthernetPinInterrupt = 21;  // Fake because -1 isn't supported in ESP-IDF v4.
 #else
 #error "Unexpected controller"
 #endif
