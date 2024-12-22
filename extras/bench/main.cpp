@@ -22,8 +22,8 @@ int runMain() {
   while (true) {
     const Milliseconds currentTime = timeMillis();
     if (currentTime - lastFpsEpochTime > 1000) {
-      uint32_t fpsCompute;
-      uint32_t fpsWrites;
+      uint16_t fpsCompute;
+      uint16_t fpsWrites;
       uint8_t utilization = 0;
       Milliseconds timeSpentComputingThisEpoch;
       Milliseconds epochDuration;
