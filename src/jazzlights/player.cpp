@@ -457,7 +457,7 @@ bool Player::render(Milliseconds currentTime) {
   return true;
 }
 
-void Player::GenerateFPSReport(uint32_t* fpsCompute, uint32_t* fpsWrites, uint8_t* utilization,
+void Player::GenerateFPSReport(uint16_t* fpsCompute, uint16_t* fpsWrites, uint8_t* utilization,
                                Milliseconds* timeSpentComputingThisEpoch, Milliseconds* epochDuration) {
   const Milliseconds currentTime = timeMillis();
   *epochDuration = currentTime - fpsEpochStart_;
@@ -705,8 +705,8 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
     lastOriginationTime = entry->lastOriginationTime;
     if (currentPattern_ != entry->currentPattern) {
       currentPattern_ = entry->currentPattern;
-      uint32_t fpsCompute;
-      uint32_t fpsWrites;
+      uint16_t fpsCompute;
+      uint16_t fpsWrites;
       uint8_t utilization;
       Milliseconds timeSpentComputingThisEpoch;
       Milliseconds epochDuration;
@@ -739,8 +739,8 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
         currentPattern_ = nextPattern_;
         nextPattern_ = enforceForcedPalette(computeNextPattern(nextPattern_));
       }
-      uint32_t fpsCompute;
-      uint32_t fpsWrites;
+      uint16_t fpsCompute;
+      uint16_t fpsWrites;
       uint8_t utilization;
       Milliseconds timeSpentComputingThisEpoch;
       Milliseconds epochDuration;

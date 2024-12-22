@@ -8,6 +8,7 @@
 #include "jazzlights/network.h"
 #include "jazzlights/pseudorandom.h"
 #include "jazzlights/renderer.h"
+#include "jazzlights/types.h"
 
 namespace jazzlights {
 
@@ -81,7 +82,7 @@ class Player {
   /**
    * Computes FPS information and resets counters.
    */
-  void GenerateFPSReport(uint32_t* fpsCompute, uint32_t* fpsWrites, uint8_t* utilization,
+  void GenerateFPSReport(uint16_t* fpsCompute, uint16_t* fpsWrites, uint8_t* utilization,
                          Milliseconds* timeSpentComputingThisEpoch, Milliseconds* epochDuration);
 
   /**

@@ -4,7 +4,10 @@
 
 namespace jazzlights {
 
-typedef int32_t Milliseconds;
+// We would normally define Milliseconds as int32_t, but then some compilers would require us to use PRId32 as a printf
+// format, so we define it as int so we can use %d instead.
+typedef int Milliseconds;
+static_assert(sizeof(int32_t) == sizeof(Milliseconds), "bad int size");
 
 enum : Milliseconds {
   ONE_SECOND = 1000,

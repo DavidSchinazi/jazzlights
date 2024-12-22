@@ -109,9 +109,7 @@ void WiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
       jll_info("%u Wi-Fi connected to \"%s\"", timeMillis(), info.wifi_sta_connected.ssid);
       break;
     case ARDUINO_EVENT_WIFI_STA_GOT_IP:
-      jll_info("%u Wi-Fi got IP %u.%u.%u.%u", timeMillis(), info.got_ip.ip_info.ip.addr & 0xFF,
-               (info.got_ip.ip_info.ip.addr >> 8) & 0xFF, (info.got_ip.ip_info.ip.addr >> 16) & 0xFF,
-               (info.got_ip.ip_info.ip.addr >> 24) & 0xFF);
+      jll_info("%u Wi-Fi got IP " IPSTR, timeMillis(), IP2STR(&info.got_ip.ip_info.ip));
       break;
     case ARDUINO_EVENT_WIFI_STA_LOST_IP: jll_info("%u Wi-Fi lost IP", timeMillis()); break;
     case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:

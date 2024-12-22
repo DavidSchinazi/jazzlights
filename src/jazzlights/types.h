@@ -8,7 +8,10 @@
 
 namespace jazzlights {
 
-using PatternBits = uint32_t;
+// We would normally define PatternBits as int32_t, but then some compilers would require us to use PRIu32 as a printf
+// format, so we define it as int so we can use %u instead.
+using PatternBits = unsigned int;
+static_assert(sizeof(uint32_t) == sizeof(PatternBits), "bad int size");
 using Precedence = uint16_t;
 using NumHops = uint8_t;
 

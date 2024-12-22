@@ -331,7 +331,7 @@ void Esp32BleNetwork::GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap
             jll_error(
                 "%u Unexpected scan result %s dev_type=%d ble_addr_type=%d"
                 " ble_evt_type=%d rssi=%d flag=%d num_resps=%d adv_data_len=%u"
-                " scan_rsp_len=%u num_dis=%u",
+                " scan_rsp_len=%u num_dis=%" PRIu32,
                 currentTime, macAddressString, param->scan_rst.dev_type, param->scan_rst.ble_addr_type,
                 param->scan_rst.ble_evt_type, param->scan_rst.rssi, param->scan_rst.flag, param->scan_rst.num_resps,
                 param->scan_rst.adv_data_len, param->scan_rst.scan_rsp_len, param->scan_rst.num_dis);
