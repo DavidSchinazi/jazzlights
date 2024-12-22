@@ -11,7 +11,7 @@
 #include <unistd.h>
 #endif
 #elif defined(ESP32)
-#include "esp_system.h"
+#include <esp_random.h>
 #endif
 
 #include "jazzlights/util/log.h"

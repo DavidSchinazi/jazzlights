@@ -6,6 +6,7 @@
 #include <esp_ipc.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+#include <rom/ets_sys.h>
 
 #include "jazzlights/esp32_shared.h"
 #include "jazzlights/util/log.h"
