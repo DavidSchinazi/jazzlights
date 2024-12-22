@@ -55,6 +55,7 @@
     "utility": "cpp",
     "deque": "cpp",
     "unordered_set": "cpp",
-    "regex": "cpp"
+    "regex": "cpp",
+    "type_traits": "cpp"
   }
 }
