@@ -4,6 +4,7 @@
 
 #ifdef ESP32
 
+#include "jazzlights/esp32_shared.h"
 #include "jazzlights/instrumentation.h"
 #include "jazzlights/ui/ui.h"
 #include "jazzlights/util/log.h"
@@ -167,8 +168,7 @@ void FastLedRunner::Start() {
   // causes visual glitches due to various Bluetooth and/or Wi-Fi interrupts firing on that core while LEDs are being
   // written to, so we instead pin FastLED to core 1.
   BaseType_t ret = xTaskCreatePinnedToCore(TaskFunction, "FastLED", configMINIMAL_STACK_SIZE + 400,
-                                           /*parameters=*/this,
-                                           /*priority=*/30, &taskHandle_, /*coreID=*/1);
+                                           /*parameters=*/this, kHighestTaskPriority, &taskHandle_, /*coreID=*/1);
   if (ret != pdPASS) { jll_fatal("Failed to create FastLED task"); }
 }
 

@@ -5,11 +5,21 @@
 
 #ifdef ESP32
 
+#include <esp_idf_version.h>
+
 namespace jazzlights {
 
 void InitializeNetStack();
 
 void InstallGpioIsrService();
+
+enum : UBaseType_t {
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+  kHighestTaskPriority = 24,
+#else
+  kHighestTaskPriority = 30,
+#endif
+};
 
 }  // namespace jazzlights
 

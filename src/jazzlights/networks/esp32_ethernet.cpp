@@ -747,9 +747,8 @@ Esp32EthernetNetwork::Esp32EthernetNetwork()
   }
 
   // This task needs to be pinned to core 0 since that's where the system event handler runs (see above).
-  if (xTaskCreatePinnedToCore(TaskFunction, "JL_WiFi", configMINIMAL_STACK_SIZE + 2000,
-                              /*parameters=*/this,
-                              /*priority=*/30, &taskHandle_, /*coreID=*/0) != pdPASS) {
+  if (xTaskCreatePinnedToCore(TaskFunction, "JL_Eth", configMINIMAL_STACK_SIZE + 2000,
+                              /*parameters=*/this, kHighestTaskPriority, &taskHandle_, /*coreID=*/0) != pdPASS) {
     jll_fatal("Failed to create Esp32EthernetNetwork task");
   }
 

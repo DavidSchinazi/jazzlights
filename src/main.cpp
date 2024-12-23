@@ -12,6 +12,7 @@
 // 89 written FPS on the vests, which is currently our highest LED count. So we have it disabled for now, but could
 // enable it for other devices with different properties.
 
+#include "jazzlights/esp32_shared.h"
 #include "jazzlights/primary_runloop.h"
 
 #if JL_PRIMARY_RUNLOOP_ON_OTHER_CORE
@@ -39,8 +40,7 @@ void PrimaryRunLoopTaskFunction(void* parameters) {
 void SetupPrimaryRunLoopTask() {
   BaseType_t ret =
       xTaskCreatePinnedToCore(PrimaryRunLoopTaskFunction, "PrimaryRunLoopJL", CONFIG_ARDUINO_LOOP_STACK_SIZE,
-                              /*parameters=*/nullptr,
-                              /*priority=*/30, &gTaskHandle, /*coreID=*/0);
+                              /*parameters=*/nullptr, kHighestTaskPriority, &gTaskHandle, /*coreID=*/0);
   if (ret != pdPASS) { jll_fatal("Failed to create PrimaryRunLoopJL task"); }
 }
 
