@@ -6,6 +6,8 @@
 #ifdef ESP32
 
 #include <esp_idf_version.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
 namespace jazzlights {
 
