@@ -97,7 +97,15 @@ std::string WiFiReasonToString(uint8_t reason) {
 }
 }  // namespace
 
-ArduinoEspWiFiNetwork::ArduinoEspWiFiNetwork(const char* ssid, const char* pass) : creds_{ssid, pass} {}
+ArduinoEspWiFiNetwork::ArduinoEspWiFiNetwork(const char* ssid, const char* pass) : creds_{ssid, pass} {
+  uint8_t macAddress[6] = {};
+  if (WiFi.macAddress(&macAddress[0]) == nullptr) {
+    uint64_t efuseMac64 = ESP.getEfuseMac();
+    if (efuseMac64 == 0) { jll_fatal("%u Wi-Fi failed to read MAC address from both Wi-Fi and EFUSE", timeMillis()); }
+    memcpy(macAddress, &efuseMac64, sizeof(macAddress));
+  }
+  localDeviceId_ = NetworkDeviceId(macAddress);
+}
 
 void WiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
   switch (event) {
@@ -163,11 +171,6 @@ NetworkStatus ArduinoEspWiFiNetwork::update(NetworkStatus status, Milliseconds c
       WiFi.onEvent(WiFiEvent, ARDUINO_EVENT_WIFI_STA_LOST_IP);
       WiFi.onEvent(WiFiEvent, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
       wl_status_t beginWiFiStatus = WiFi.begin(creds_.ssid, creds_.pass);
-      uint8_t macAddress[6] = {};
-      if (WiFi.macAddress(&macAddress[0]) == nullptr) {
-        jll_fatal("%u Wi-Fi failed to read MAC address", timeMillis());
-      }
-      localDeviceId_ = NetworkDeviceId(macAddress);
       jll_info("%u %s Wi-Fi " DEVICE_ID_FMT " begin to %s returned %s", currentTime, networkName(),
                DEVICE_ID_HEX(localDeviceId_), creds_.ssid, WiFiStatusToString(beginWiFiStatus).c_str());
       return CONNECTING;

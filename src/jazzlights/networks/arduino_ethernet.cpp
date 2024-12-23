@@ -36,6 +36,8 @@ std::string EthernetHardwareStatusToString(EthernetHardwareStatus hwStatus) {
 }  // namespace
 
 ArduinoEthernetNetwork::ArduinoEthernetNetwork(NetworkDeviceId localDeviceId) : localDeviceId_(localDeviceId) {
+  jll_info("%u %s Starting Ethernet with MAC address " DEVICE_ID_FMT, timeMillis(), networkName(),
+           DEVICE_ID_HEX(localDeviceId_));
 #if JL_CORE2AWS_ETHERNET
   // These pins work with the M5Stack Core2AWS connected to the Ethernet W5500 module.
   // https://docs.m5stack.com/en/core/core2_for_aws
