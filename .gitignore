@@ -9,6 +9,8 @@ build/
 !.vscode/tasks.json
 !.vscode/extensions.json
 !.vscode/*.code-snippets
+dependencies.lock
+managed_components/*
 sdkconfig.*.old
 SCRATCH.txt
 __pycache__/

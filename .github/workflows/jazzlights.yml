@@ -42,6 +42,8 @@ jobs:
           - vest_instrumentation
           - clouds_s3_debug
           - gauntlet
+          - vest_idf5
+          - vest_idf5_espidf
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
