@@ -41,14 +41,22 @@ constexpr int kEthernetPinCS = 19;
 constexpr int kEthernetPinMISO = 23;
 constexpr int kEthernetPinMOSI = 33;
 constexpr int kEthernetPinReset = -1;
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+constexpr int kEthernetPinInterrupt = -1;
+#else
 constexpr int kEthernetPinInterrupt = 21;  // Fake because -1 isn't supported in ESP-IDF v4.
+#endif
 #elif JL_IS_CONTROLLER(ATOM_S3)
 constexpr int kEthernetPinSCK = 5;
 constexpr int kEthernetPinCS = 6;
 constexpr int kEthernetPinMISO = 7;
 constexpr int kEthernetPinMOSI = 8;
 constexpr int kEthernetPinReset = -1;
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+constexpr int kEthernetPinInterrupt = -1;
+#else
 constexpr int kEthernetPinInterrupt = 21;  // Fake because -1 isn't supported in ESP-IDF v4.
+#endif
 #else
 #error "Unexpected controller"
 #endif
@@ -533,6 +541,7 @@ Esp32EthernetNetwork::Esp32EthernetNetwork()
 // eth_w5500_config_t w5500_config = ETH_W5500_DEFAULT_CONFIG(CONFIG_EXAMPLE_ETH_SPI_HOST, &spi_devcfg);
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
   eth_w5500_config_t w5500_config = ETH_W5500_DEFAULT_CONFIG(host_id, &spi_devcfg);
+  if (kEthernetPinInterrupt < 0) { w5500_config.poll_period_ms = 10; }
 #else
   spi_device_handle_t spi_handle = nullptr;
   ESP_ERROR_CHECK(spi_bus_add_device(host_id, &spi_devcfg, &spi_handle));
@@ -540,7 +549,6 @@ Esp32EthernetNetwork::Esp32EthernetNetwork()
 #endif
   w5500_config.int_gpio_num =
       kEthernetPinInterrupt;  // spi_eth_module_config->int_gpio; -- see comments in the other code version below
-  // w5500_config.poll_period_ms = spi_eth_module_config->polling_ms;
   esp_eth_mac_t* mac = esp_eth_mac_new_w5500(&w5500_config, &mac_config);
   esp_eth_phy_t* phy = esp_eth_phy_new_w5500(&phy_config);
 
