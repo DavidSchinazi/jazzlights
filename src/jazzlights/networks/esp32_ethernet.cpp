@@ -200,6 +200,8 @@ void Esp32EthernetNetwork::HandleEvent(esp_event_base_t event_base, int32_t even
       jll_info("Esp32EthernetNetwork driver start");
     } else if (event_id == ETHERNET_EVENT_STOP) {
       jll_info("Esp32EthernetNetwork driver stop");
+    } else {
+      jll_info("Esp32EthernetNetwork handling ETH_EVENT id %d", static_cast<int>(event_id));
     }
     /*
     if (event_base == WIFI_EVENT) {
@@ -217,19 +219,23 @@ void Esp32EthernetNetwork::HandleEvent(esp_event_base_t event_base, int32_t even
       }
       */
   } else if (event_base == IP_EVENT) {
-    if (event_id == IP_EVENT_STA_GOT_IP) {
+    if (event_id == IP_EVENT_ETH_GOT_IP) {
       ip_event_got_ip_t* event = reinterpret_cast<ip_event_got_ip_t*>(event_data);
       jll_info("%u Esp32EthernetNetwork got IP: " IPSTR, timeMillis(), IP2STR(&event->ip_info.ip));
       Esp32EthernetNetworkEvent networkEvent(Esp32EthernetNetworkEvent::Type::kGotIp);
       memcpy(&networkEvent.data.address, &event->ip_info.ip, sizeof(networkEvent.data.address));
       xQueueOverwrite(eventQueue_, &networkEvent);
-    } else if (event_id == IP_EVENT_STA_LOST_IP) {
+    } else if (event_id == IP_EVENT_ETH_LOST_IP) {
       jll_info("%u Esp32EthernetNetwork lost IP", timeMillis());
       Esp32EthernetNetworkEvent networkEvent(Esp32EthernetNetworkEvent::Type::kLostIp);
       xQueueOverwrite(eventQueue_, &networkEvent);
     } else if (event_id == IP_EVENT_GOT_IP6) {
       jll_info("%u Esp32EthernetNetwork got IPv6", timeMillis());
+    } else {
+      jll_info("Esp32EthernetNetwork handling IP_EVENT id %d", static_cast<int>(event_id));
     }
+  } else {
+    jll_info("Esp32EthernetNetwork handling unknown event base %p id %d", event_base, (int)event_id);
   }
 }
 
