@@ -7,6 +7,9 @@
 #include <driver/spi_master.h>
 #include <esp_eth.h>
 #include <esp_event.h>
+#include <esp_idf_version.h>
+#include <esp_mac.h>
+#include <esp_netif.h>
 #include <freertos/task.h>
 #include <lwip/inet.h>
 #include <lwip/sockets.h>
@@ -283,7 +286,7 @@ void Esp32EthernetNetwork::RunTask() {
       shouldArmQueueReconnectionTimeout_ = false;
       // Backoff exponentially from 1s to 32s.
       queueDelay = 1 << std::min<uint32_t>(reconnectCount_ - kNumReconnectsBeforeDelay, 5);
-      jll_info("%u Esp32EthernetNetwork waiting for queue event with %us timeout", timeMillis(), queueDelay);
+      jll_info("%u Esp32EthernetNetwork waiting for queue event with %" PRIu32 "s timeout", timeMillis(), queueDelay);
       queueDelay *= 1000 / portTICK_PERIOD_MS;
     } else {
       jll_info("%u Esp32EthernetNetwork waiting for queue event forever", timeMillis());
@@ -376,7 +379,7 @@ Esp32EthernetNetwork::Esp32EthernetNetwork()
   // Below are a collection of attempts to get W5500 working. None of them actually work though.
   // This could be because we use esp-idf v4.4.7 since it is bundled with arduino-esp32 as of 2024-12-21.
   // This might work better with esp-idf v5 which we could use once we drop the use of arduino-esp32.
-#if 1
+#if 0
   // This version was adapted from the esp-idf v4.4.7 example.
   // https://github.com/espressif/esp-idf/blob/v4.4.7/examples/ethernet/basic/main/ethernet_example_main.c
   InitializeNetStack();
@@ -528,7 +531,7 @@ Esp32EthernetNetwork::Esp32EthernetNetwork()
 // and new PHY instance based on board configuration
 
 // eth_w5500_config_t w5500_config = ETH_W5500_DEFAULT_CONFIG(CONFIG_EXAMPLE_ETH_SPI_HOST, &spi_devcfg);
-#if USE_ESP_IDF && (ESP_IDF_VERSION_MAJOR >= 5)
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
   eth_w5500_config_t w5500_config = ETH_W5500_DEFAULT_CONFIG(host_id, &spi_devcfg);
 #else
   spi_device_handle_t spi_handle = nullptr;
