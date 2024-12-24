@@ -564,10 +564,7 @@ Esp32EthernetNetwork::Esp32EthernetNetwork()
 
   // End of example_eth_init
 
-  // Initialize TCP/IP network interface aka the esp-netif (should be called only once in application)
-  ESP_ERROR_CHECK(esp_netif_init());
-  // Create default event loop that running in background
-  ESP_ERROR_CHECK(esp_event_loop_create_default());
+  InitializeNetStack();
 
   // Create instance(s) of esp-netif for Ethernet(s)
 
