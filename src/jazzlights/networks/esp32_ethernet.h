@@ -41,8 +41,6 @@ class Esp32EthernetNetwork : public Network {
   struct Esp32EthernetNetworkEvent {
     enum class Type {
       kReserved = 0,
-      kStationStarted,
-      kStationDisconnected,
       kGotIp,
       kLostIp,
       kSocketReady,
@@ -67,15 +65,13 @@ class Esp32EthernetNetwork : public Network {
   void CloseSocket();
 
   QueueHandle_t eventQueue_;
-  NetworkDeviceId localDeviceId_;                   // Only modified in constructor.
-  TaskHandle_t taskHandle_ = nullptr;               // Only modified in constructor.
-  struct in_addr multicastAddress_ = {};            // Only modified in constructor.
-  int socket_ = -1;                                 // Only used on our task.
-  uint8_t* udpPayload_ = nullptr;                   // Only used on our task. Used for both sending and receiving.
-  Milliseconds lastSendTime_ = -1;                  // Only used on our task.
-  PatternBits lastSentPattern_ = 0;                 // Only used on our task.
-  bool shouldArmQueueReconnectionTimeout_ = false;  // Only used on our task.
-  uint32_t reconnectCount_ = 0;                     // Only used on our task.
+  NetworkDeviceId localDeviceId_;         // Only modified in constructor.
+  TaskHandle_t taskHandle_ = nullptr;     // Only modified in constructor.
+  struct in_addr multicastAddress_ = {};  // Only modified in constructor.
+  int socket_ = -1;                       // Only used on our task.
+  uint8_t* udpPayload_ = nullptr;         // Only used on our task. Used for both sending and receiving.
+  Milliseconds lastSendTime_ = -1;        // Only used on our task.
+  PatternBits lastSentPattern_ = 0;       // Only used on our task.
   std::atomic<Milliseconds> lastReceiveTime_;
   std::mutex mutex_;
   struct in_addr localAddress_ = {};            // Protected by mutex_.

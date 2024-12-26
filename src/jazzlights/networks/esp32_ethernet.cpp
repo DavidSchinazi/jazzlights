@@ -203,21 +203,6 @@ void Esp32EthernetNetwork::HandleEvent(esp_event_base_t event_base, int32_t even
     } else {
       jll_info("Esp32EthernetNetwork handling ETH_EVENT id %d", static_cast<int>(event_id));
     }
-    /*
-    if (event_base == WIFI_EVENT) {
-      if (event_id == WIFI_EVENT_STA_START) {
-        jll_info("%u Esp32EthernetNetwork STA started", timeMillis());
-        Esp32EthernetNetworkEvent networkEvent(Esp32EthernetNetworkEvent::Type::kStationStarted);
-        xQueueOverwrite(eventQueue_, &networkEvent);
-      } else if (event_id == WIFI_EVENT_STA_CONNECTED) {
-        jll_info("%u Esp32EthernetNetwork STA connected", timeMillis());
-      } else if (event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        wifi_event_sta_disconnected_t* event = reinterpret_cast<wifi_event_sta_disconnected_t*>(event_data);
-        jll_info("%u Esp32EthernetNetwork STA disconnected: %s", timeMillis(),
-    WiFiReasonToString(event->reason).c_str()); Esp32EthernetNetworkEvent
-    networkEvent(Esp32EthernetNetworkEvent::Type::kStationDisconnected); xQueueOverwrite(eventQueue_, &networkEvent);
-      }
-      */
   } else if (event_base == IP_EVENT) {
     if (event_id == IP_EVENT_ETH_GOT_IP) {
       ip_event_got_ip_t* event = reinterpret_cast<ip_event_got_ip_t*>(event_data);
@@ -246,71 +231,43 @@ void Esp32EthernetNetwork::TaskFunction(void* parameters) {
 }
 
 void Esp32EthernetNetwork::HandleNetworkEvent(const Esp32EthernetNetworkEvent& networkEvent) {
-  /*
-switch (networkEvent.type) {
-  case Esp32EthernetNetworkEvent::Type::kReserved:
-    jll_fatal("Unexpected Esp32EthernetNetworkEvent::Type::kReserved");
-    break;
-  case Esp32EthernetNetworkEvent::Type::kStationStarted:
-    jll_info("%u Esp32EthernetNetwork queue station started - connecting", timeMillis());
-    esp_wifi_connect();
-    break;
-  case Esp32EthernetNetworkEvent::Type::kStationDisconnected:
-    reconnectCount_++;
-    if (reconnectCount_ < kNumReconnectsBeforeDelay) {
-      jll_info("%u Esp32EthernetNetwork queue station disconnected (count %u) - reconnecting immediately",
-               timeMillis(), reconnectCount_);
-      esp_wifi_connect();
-    } else {
-      jll_info("%u Esp32EthernetNetwork queue station disconnected (count %u)", timeMillis(), reconnectCount_);
-      shouldArmQueueReconnectionTimeout_ = true;
-    }
-    break;
-  case Esp32EthernetNetworkEvent::Type::kGotIp:
-    jll_info("%u Esp32EthernetNetwork queue got IP", timeMillis());
-    {
-      const std::lock_guard<std::mutex> lock(mutex_);
-      memcpy(&localAddress_, &networkEvent.data.address, sizeof(localAddress_));
-    }
-    reconnectCount_ = 0;
-    CreateSocket();
-    break;
-  case Esp32EthernetNetworkEvent::Type::kLostIp:
-    jll_info("%u Esp32EthernetNetwork queue lost IP", timeMillis());
-    {
-      const std::lock_guard<std::mutex> lock(mutex_);
-      memset(&localAddress_, 0, sizeof(localAddress_));
-    }
-    CloseSocket();
-    break;
-  case Esp32EthernetNetworkEvent::Type::kSocketReady:
-    jll_info("%u Esp32EthernetNetwork queue SocketReady", timeMillis());
-    break;
-}
-*/
+  switch (networkEvent.type) {
+    case Esp32EthernetNetworkEvent::Type::kReserved:
+      jll_fatal("Unexpected Esp32EthernetNetworkEvent::Type::kReserved");
+      break;
+    case Esp32EthernetNetworkEvent::Type::kGotIp:
+      jll_info("%u Esp32EthernetNetwork queue got IP", timeMillis());
+      {
+        const std::lock_guard<std::mutex> lock(mutex_);
+        memcpy(&localAddress_, &networkEvent.data.address, sizeof(localAddress_));
+      }
+      CreateSocket();
+      break;
+    case Esp32EthernetNetworkEvent::Type::kLostIp:
+      jll_info("%u Esp32EthernetNetwork queue lost IP", timeMillis());
+      {
+        const std::lock_guard<std::mutex> lock(mutex_);
+        memset(&localAddress_, 0, sizeof(localAddress_));
+      }
+      CloseSocket();
+      break;
+    case Esp32EthernetNetworkEvent::Type::kSocketReady:
+      jll_info("%u Esp32EthernetNetwork queue SocketReady", timeMillis());
+      break;
+  }
 }
 
 void Esp32EthernetNetwork::RunTask() {
   Esp32EthernetNetworkEvent networkEvent;
   while (xQueueReceive(eventQueue_, &networkEvent, /*xTicksToWait=*/0)) { HandleNetworkEvent(networkEvent); }
   if (socket_ < 0) {
-    // Wait until socket is created, or a Wi-Fi reconnection timeout.
-    TickType_t queueDelay = portMAX_DELAY;
-    if (shouldArmQueueReconnectionTimeout_ && reconnectCount_ >= kNumReconnectsBeforeDelay) {
-      shouldArmQueueReconnectionTimeout_ = false;
-      // Backoff exponentially from 1s to 32s.
-      queueDelay = 1 << std::min<uint32_t>(reconnectCount_ - kNumReconnectsBeforeDelay, 5);
-      jll_info("%u Esp32EthernetNetwork waiting for queue event with %" PRIu32 "s timeout", timeMillis(), queueDelay);
-      queueDelay *= 1000 / portTICK_PERIOD_MS;
-    } else {
-      jll_info("%u Esp32EthernetNetwork waiting for queue event forever", timeMillis());
-    }
-    BaseType_t queueResult = xQueueReceive(eventQueue_, &networkEvent, queueDelay);
+    // Wait until socket is created.
+    jll_info("%u Esp32EthernetNetwork waiting for queue event forever", timeMillis());
+    BaseType_t queueResult = xQueueReceive(eventQueue_, &networkEvent, portMAX_DELAY);
     if (queueResult == pdTRUE) {
       HandleNetworkEvent(networkEvent);
     } else {
-      jll_info("%u Esp32EthernetNetwork timed out waiting for queue event - reconnecting", timeMillis());
-      //   esp_wifi_connect();
+      jll_info("%u Esp32EthernetNetwork timed out waiting for queue event", timeMillis());
     }
     return;  // Restart loop.
   }
@@ -522,6 +479,7 @@ Esp32EthernetNetwork::Esp32EthernetNetwork()
   esp_derive_local_mac(local_mac_1, base_mac_addr);
   jll_info("Esp32EthernetNetwork derived local MAC: %02x:%02x:%02x:%02x:%02x:%02x", local_mac_1[0], local_mac_1[1],
            local_mac_1[2], local_mac_1[3], local_mac_1[4], local_mac_1[5]);
+  localDeviceId_ = NetworkDeviceId(local_mac_1);
 
   // esp_eth_handle_t eth_handle = eth_init_spi(&spi_eth_module_config, NULL, NULL);
   // start of eth_init_spi
@@ -593,7 +551,19 @@ Esp32EthernetNetwork::Esp32EthernetNetwork()
   /* start Ethernet driver state machine */
   ESP_ERROR_CHECK(esp_eth_start(eth_handle));
   ESP_ERROR_CHECK(esp_netif_init());
-  jll_info("Esp32EthernetNetwork completed initialization v5.2.2");
+
+  if (inet_pton(AF_INET, DefaultMulticastAddress(), &multicastAddress_) != 1) {
+    jll_fatal("Esp32EthernetNetwork failed to parse multicast address");
+  }
+
+  // This task needs to be pinned to core 0 since that's where the system event handler runs (see above).
+  if (xTaskCreatePinnedToCore(TaskFunction, "JL_Eth", configMINIMAL_STACK_SIZE + 2000,
+                              /*parameters=*/this, kHighestTaskPriority, &taskHandle_, /*coreID=*/0) != pdPASS) {
+    jll_fatal("Failed to create Esp32EthernetNetwork task");
+  }
+
+  jll_info("%u Esp32EthernetNetwork initialized ethernet for IDF v5.2.2 with MAC address %s", timeMillis(),
+           localDeviceId_.toString().c_str());
 #elif 1
   InitializeNetStack();
 
