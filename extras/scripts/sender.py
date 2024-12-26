@@ -54,10 +54,12 @@ parser = argparse.ArgumentParser()
 parser.add_argument("pattern")
 parser.add_argument("-r", "--norandom", action="store_true")
 parser.add_argument("-a", "--admin", action="store_true")
+parser.add_argument("--src")
 args = parser.parse_args()
 
 patternName = args.pattern
 randomize = not args.norandom
+src = args.src
 
 
 def randomizePattern(patternBytes, randomize=True):
@@ -146,6 +148,8 @@ PATTERN_DURATION = 10000
 
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 s.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 3)
+if src is not None:
+    s.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_IF, socket.inet_aton(src))
 
 # 1 byte set to 0x10
 # 6 byte originator MAC address
