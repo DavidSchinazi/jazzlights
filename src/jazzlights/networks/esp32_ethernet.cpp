@@ -86,7 +86,7 @@ std::string Esp32EthernetNetwork::getStatusStr(Milliseconds currentTime) {
       jll_fatal("Esp32EthernetNetwork printing local address failed with error %d: %s", errno, strerror(errno));
     }
     char statStr[100] = {};
-    snprintf(statStr, sizeof(statStr) - 1, "%s %s - %ums", JL_WIFI_SSID, addressString,
+    snprintf(statStr, sizeof(statStr) - 1, "%s - %ums", addressString,
              (lastRcv >= 0 ? currentTime - getLastReceiveTime() : -1));
     return std::string(statStr);
   } else {
@@ -181,8 +181,8 @@ void Esp32EthernetNetwork::CloseSocket() {
 // static
 void Esp32EthernetNetwork::EventHandler(void* event_handler_arg, esp_event_base_t event_base, int32_t event_id,
                                         void* event_data) {
-  Esp32EthernetNetwork* wifiNetwork = reinterpret_cast<Esp32EthernetNetwork*>(event_handler_arg);
-  wifiNetwork->HandleEvent(event_base, event_id, event_data);
+  Esp32EthernetNetwork* ethNetwork = reinterpret_cast<Esp32EthernetNetwork*>(event_handler_arg);
+  ethNetwork->HandleEvent(event_base, event_id, event_data);
 }
 
 void Esp32EthernetNetwork::HandleEvent(esp_event_base_t event_base, int32_t event_id, void* event_data) {
@@ -221,8 +221,8 @@ void Esp32EthernetNetwork::HandleEvent(esp_event_base_t event_base, int32_t even
 
 // static
 void Esp32EthernetNetwork::TaskFunction(void* parameters) {
-  Esp32EthernetNetwork* wifiNetwork = reinterpret_cast<Esp32EthernetNetwork*>(parameters);
-  while (true) { wifiNetwork->RunTask(); }
+  Esp32EthernetNetwork* ethNetwork = reinterpret_cast<Esp32EthernetNetwork*>(parameters);
+  while (true) { ethNetwork->RunTask(); }
 }
 
 void Esp32EthernetNetwork::HandleNetworkEvent(const Esp32EthernetNetworkEvent& networkEvent) {
@@ -427,8 +427,8 @@ Esp32EthernetNetwork::Esp32EthernetNetwork()
     jll_fatal("Failed to create Esp32EthernetNetwork task");
   }
 
-  jll_info("%u Esp32EthernetNetwork initialized ethernet with MAC address %s", timeMillis(),
-           localDeviceId_.toString().c_str());
+  jll_info("%u Esp32EthernetNetwork initialized ethernet with MAC address " DEVICE_ID_FMT, timeMillis(),
+           DEVICE_ID_HEX(localDeviceId_));
 }
 
 // static

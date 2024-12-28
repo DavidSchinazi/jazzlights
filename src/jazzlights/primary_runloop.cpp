@@ -24,10 +24,6 @@
 
 namespace jazzlights {
 
-#if JL_ETHERNET && !JL_ESP32_ETHERNET
-EthernetNetwork ethernetNetwork(WiFiNetwork::get()->getLocalDeviceId().PlusOne());
-#endif  // JL_ETHERNET && !JL_ESP32_ETHERNET
-
 Player player;
 FastLedRunner runner(&player);
 
@@ -91,11 +87,7 @@ void SetupPrimaryRunLoop() {
   player.connect(WiFiNetwork::get());
 #endif  // JL_WIFI
 #if JL_ETHERNET
-#if JL_ESP32_ETHERNET
-  player.connect(Esp32EthernetNetwork::get());
-#else   // JL_ESP32_ETHERNET
-  player.connect(&ethernetNetwork);
-#endif  // JL_ESP32_ETHERNET
+  player.connect(EthernetNetwork::get());
 #endif  // JL_ETHERNET
   player.begin(currentTime);
 

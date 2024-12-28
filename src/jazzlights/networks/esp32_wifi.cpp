@@ -432,8 +432,8 @@ Esp32WiFiNetwork::Esp32WiFiNetwork()
     jll_fatal("Failed to create Esp32WiFiNetwork task");
   }
 
-  jll_info("%u Esp32WiFiNetwork initialized Wi-Fi STA with MAC address %s", timeMillis(),
-           localDeviceId_.toString().c_str());
+  jll_info("%u Esp32WiFiNetwork initialized Wi-Fi STA with MAC address " DEVICE_ID_FMT, timeMillis(),
+           DEVICE_ID_HEX(localDeviceId_));
 }
 
 // static

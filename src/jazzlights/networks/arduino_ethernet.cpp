@@ -35,7 +35,12 @@ std::string EthernetHardwareStatusToString(EthernetHardwareStatus hwStatus) {
 
 }  // namespace
 
-ArduinoEthernetNetwork::ArduinoEthernetNetwork(NetworkDeviceId localDeviceId) : localDeviceId_(localDeviceId) {
+ArduinoEthernetNetwork::ArduinoEthernetNetwork() {
+  uint8_t wifiMacAddress[6] = {};
+  uint64_t efuseMac64 = ESP.getEfuseMac();
+  if (efuseMac64 == 0) { jll_fatal("%u Wi-Fi failed to read MAC address from EFUSE", timeMillis()); }
+  memcpy(wifiMacAddress, &efuseMac64, sizeof(wifiMacAddress));
+  localDeviceId_ = NetworkDeviceId(wifiMacAddress).PlusOne();
   jll_info("%u %s Starting Ethernet with MAC address " DEVICE_ID_FMT, timeMillis(), networkName(),
            DEVICE_ID_HEX(localDeviceId_));
 #if JL_CORE2AWS_ETHERNET
@@ -62,6 +67,12 @@ ArduinoEthernetNetwork::ArduinoEthernetNetwork(NetworkDeviceId localDeviceId) : 
   SPI.begin(/*SCLK=*/22, /*MISO=*/23, /*MOSI=*/33, /*SS/CS=*/-1);
   Ethernet.init(/*SS/CS=*/19);
 #endif  // JL_CORE2AWS_ETHERNET
+}
+
+// static
+ArduinoEthernetNetwork* ArduinoEthernetNetwork::get() {
+  static ArduinoEthernetNetwork sSingleton;
+  return &sSingleton;
 }
 
 NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status, Milliseconds currentTime) {

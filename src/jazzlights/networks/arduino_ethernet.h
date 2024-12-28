@@ -14,7 +14,7 @@ namespace jazzlights {
 
 class ArduinoEthernetNetwork : public UdpNetwork {
  public:
-  explicit ArduinoEthernetNetwork(NetworkDeviceId localDeviceId);
+  static ArduinoEthernetNetwork* get();
 
   NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
   int recv(void* buf, size_t bufsize, std::string* details) override;
@@ -25,6 +25,7 @@ class ArduinoEthernetNetwork : public UdpNetwork {
   std::string getStatusStr(Milliseconds currentTime) override;
 
  private:
+  explicit ArduinoEthernetNetwork();
   NetworkDeviceId localDeviceId_;
   uint16_t port_ = DefaultUdpPort();
   const char* mcastAddr_ = DefaultMulticastAddress();
