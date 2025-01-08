@@ -45,7 +45,7 @@ void onKey(GLFWwindow* window, int key, int /*scncode*/, int action, int mods) {
   }
 };
 
-int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen) {
+int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen, Milliseconds killTime) {
   player = &playerRef;
   viewport = vp;
 
@@ -83,9 +83,14 @@ int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen) {
 
   glClearColor(0.15, 0.15, 0.15, 1);
   while (!glfwWindowShouldClose(window)) {
+    Milliseconds currentTime = timeMillis();
+    if (killTime > 0 && currentTime > killTime) {
+      jll_info("Kill time reached, exiting.");
+      exit(0);
+    }
     glClear(GL_COLOR_BUFFER_BIT);
 
-    player->render(timeMillis());
+    player->render(currentTime);
     std::ostringstream title;
     title << "jazzlights-demo-" << REVISION << " " << player->currentEffectName();
     glfwSetWindowTitle(window, title.str().c_str());

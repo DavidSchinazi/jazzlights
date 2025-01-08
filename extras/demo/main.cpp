@@ -1,3 +1,5 @@
+#include <getopt.h>
+
 #include <memory>
 #include <vector>
 
@@ -8,7 +10,13 @@
 
 namespace jazzlights {
 
-int runMain(int /*argn*/, char** /*argv*/) {
+int runMain(int argc, char** argv) {
+  int killTime = 0;
+  while (true) {
+    int ch = getopt(argc, argv, "k:");
+    if (ch == -1) { break; }
+    if (ch == 'k') { killTime = strtol(optarg, nullptr, 10) * 1000; }
+  }
   Matrix layout(/*w=*/400, /*h=*/300);
   GLRenderer renderer(layout);
   UnixUdpNetwork network;
@@ -20,7 +28,7 @@ int runMain(int /*argn*/, char** /*argv*/) {
   player.connect(&network);
   player.begin(timeMillis());
 
-  return runGui("JazzLights Demo", player, player.bounds());
+  return runGui("JazzLights Demo", player, player.bounds(), /*fullscreen=*/false, killTime);
 }
 
 }  // namespace jazzlights
