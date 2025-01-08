@@ -1,3 +1,5 @@
+#include <getopt.h>
+
 #include "jazzlights/layout/matrix.h"
 #include "jazzlights/player.h"
 #include "jazzlights/util/log.h"
@@ -15,12 +17,22 @@ class NoopRenderer : public Renderer {
 
 NoopRenderer noopRenderer;
 
-int runMain() {
+int runMain(int argc, char** argv) {
+  int killTime = 0;
+  while (true) {
+    int ch = getopt(argc, argv, "k:");
+    if (ch == -1) { break; }
+    if (ch == 'k') { killTime = strtol(optarg, nullptr, 10) * 1000; }
+  }
   player.addStrand(pixels, noopRenderer);
   player.begin(timeMillis());
   Milliseconds lastFpsEpochTime = 0;
   while (true) {
     const Milliseconds currentTime = timeMillis();
+    if (killTime > 0 && currentTime > killTime) {
+      jll_info("Kill time reached, exiting.");
+      exit(0);
+    }
     if (currentTime - lastFpsEpochTime > 1000) {
       uint16_t fpsCompute;
       uint16_t fpsWrites;
@@ -38,4 +50,4 @@ int runMain() {
 
 }  // namespace jazzlights
 
-int main(int /*argc*/, char** /*argv*/) { return jazzlights::runMain(); }
+int main(int argc, char** argv) { return jazzlights::runMain(argc, argv); }

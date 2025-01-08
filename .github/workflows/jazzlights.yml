@@ -33,8 +33,8 @@ jobs:
         run: cmake -S extras -B extras/build
       - name: Build
         run: cmake --build extras/build
-      - name: Run jazzlights-demo
-        run: extras/build/jazzlights-demo -k 1
+      - name: Run jazzlights-bench
+        run: extras/build/jazzlights-bench -k 2
 
   pio-build:
     strategy:
