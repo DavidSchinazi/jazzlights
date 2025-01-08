@@ -1,5 +1,5 @@
-#ifndef JL_EFFECTS_FLAME_H
-#define JL_EFFECTS_FLAME_H
+#ifndef JL_EFFECT_FLAME_H
+#define JL_EFFECT_FLAME_H
 
 #include "jazzlights/palette.h"
 
@@ -19,4 +19,4 @@ class Flame : public EffectWithPaletteXYIndexAndState<FlameState, uint8_t> {
 };
 
 }  // namespace jazzlights
-#endif  // JL_EFFECTS_FLAME_H
+#endif  // JL_EFFECT_FLAME_H

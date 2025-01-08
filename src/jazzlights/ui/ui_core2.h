@@ -1,5 +1,5 @@
-#ifndef JL_UI_CORE2_H
-#define JL_UI_CORE2_H
+#ifndef JL_UI_UI_CORE2_H
+#define JL_UI_UI_CORE2_H
 
 #include "jazzlights/ui/ui.h"
 
@@ -39,4 +39,4 @@ typedef NoOpUi Core2AwsUi;
 
 #endif  // JL_IS_CONTROLLER(CORE2AWS)
 #endif  // ESP32
-#endif  // JL_UI_CORE2_H
+#endif  // JL_UI_UI_CORE2_H

@@ -1,5 +1,5 @@
-#ifndef JL_NETWORKS_ARDUINO_ESP_WIFI_H
-#define JL_NETWORKS_ARDUINO_ESP_WIFI_H
+#ifndef JL_NETWORK_ARDUINO_ESP_WIFI_H
+#define JL_NETWORK_ARDUINO_ESP_WIFI_H
 
 #include "jazzlights/config.h"
 
@@ -60,4 +60,4 @@ class ArduinoEspWiFiNetwork : public UdpNetwork {
 
 #endif  // JL_ESP_WIFI
 #endif  // JL_WIFI
-#endif  // JL_NETWORKS_ARDUINO_ESP_WIFI_H
+#endif  // JL_NETWORK_ARDUINO_ESP_WIFI_H

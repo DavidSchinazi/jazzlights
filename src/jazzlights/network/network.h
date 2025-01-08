@@ -1,5 +1,5 @@
-#ifndef JL_NETWORK_H
-#define JL_NETWORK_H
+#ifndef JL_NETWORK_NETWORK_H
+#define JL_NETWORK_NETWORK_H
 
 #include <stdio.h>
 #include <string.h>  // memcpy, size_t
@@ -279,4 +279,4 @@ class NetworkWriter {
 
 }  // namespace jazzlights
 
-#endif  // JL_NETWORK_H
+#endif  // JL_NETWORK_NETWORK_H

@@ -1,5 +1,5 @@
-#ifndef JL_EFFECTS_GLITTER_H
-#define JL_EFFECTS_GLITTER_H
+#ifndef JL_EFFECT_GLITTER_H
+#define JL_EFFECT_GLITTER_H
 
 #include "jazzlights/effect/effect.h"
 #include "jazzlights/util/math.h"
@@ -47,4 +47,4 @@ class Glitter : public Effect {
 };
 
 }  // namespace jazzlights
-#endif  // JL_EFFECTS_GLITTER_H
+#endif  // JL_EFFECT_GLITTER_H

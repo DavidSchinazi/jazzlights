@@ -1,5 +1,5 @@
-#ifndef JL_LAYOUTS_MATRIX_H
-#define JL_LAYOUTS_MATRIX_H
+#ifndef JL_LAYOUT_MATRIX_H
+#define JL_LAYOUT_MATRIX_H
 
 #include "jazzlights/layout/layout.h"
 namespace jazzlights {
@@ -61,4 +61,4 @@ class Matrix : public Layout {
 };
 
 }  // namespace jazzlights
-#endif  // JL_LAYOUTS_MATRIX_H
+#endif  // JL_LAYOUT_MATRIX_H

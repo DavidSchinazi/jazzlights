@@ -1,5 +1,5 @@
-#ifndef JL_LAYOUT_DATA_H
-#define JL_LAYOUT_DATA_H
+#ifndef JL_LAYOUT_LAYOUT_DATA_H
+#define JL_LAYOUT_LAYOUT_DATA_H
 
 #include "jazzlights/config.h"
 
@@ -33,4 +33,4 @@ void AddLedsToRunner(FastLedRunner* runner);
 
 #endif  // ESP32
 
-#endif  // JL_LAYOUT_DATA_H
+#endif  // JL_LAYOUT_LAYOUT_DATA_H

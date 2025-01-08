@@ -1,5 +1,5 @@
-#ifndef JL_UI_ATOM_MATRIX_H
-#define JL_UI_ATOM_MATRIX_H
+#ifndef JL_UI_UI_ATOM_MATRIX_H
+#define JL_UI_UI_ATOM_MATRIX_H
 
 #include "jazzlights/ui/ui.h"
 
@@ -68,4 +68,4 @@ class AtomMatrixUi : public Esp32Ui, public GpioButton::ButtonInterface {
 
 #endif  // JL_IS_CONTROLLER(ATOM_MATRIX)
 #endif  // ESP32
-#endif  // JL_UI_ATOM_MATRIX_H
+#endif  // JL_UI_UI_ATOM_MATRIX_H

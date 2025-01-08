@@ -1,5 +1,5 @@
-#ifndef JL_EFFECTS_GLOW_H
-#define JL_EFFECTS_GLOW_H
+#ifndef JL_EFFECT_GLOW_H
+#define JL_EFFECT_GLOW_H
 #include "jazzlights/effect/functional.h"
 #include "jazzlights/util/math.h"
 
@@ -42,4 +42,4 @@ inline FunctionalEffect glow(CRGB color, const std::string& name) {
 };
 
 }  // namespace jazzlights
-#endif  // JL_EFFECTS_GLOW_H
+#endif  // JL_EFFECT_GLOW_H

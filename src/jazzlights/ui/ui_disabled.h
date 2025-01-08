@@ -1,5 +1,5 @@
-#ifndef JL_UI_DISABLED_H
-#define JL_UI_DISABLED_H
+#ifndef JL_UI_UI_DISABLED_H
+#define JL_UI_UI_DISABLED_H
 
 #include "jazzlights/ui/ui.h"
 
@@ -18,4 +18,4 @@ class NoOpUi : public Esp32Ui {
 }  // namespace jazzlights
 
 #endif  // ESP32
-#endif  // JL_UI_DISABLED_H
+#endif  // JL_UI_UI_DISABLED_H

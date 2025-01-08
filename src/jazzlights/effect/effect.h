@@ -1,5 +1,5 @@
-#ifndef JL_EFFECT_H
-#define JL_EFFECT_H
+#ifndef JL_EFFECT_EFFECT_H
+#define JL_EFFECT_EFFECT_H
 
 #include <string>
 
@@ -118,4 +118,4 @@ class XYIndexEffect : public XYIndexStateEffect<EmptyState, PER_PIXEL_TYPE> {
 };
 
 }  // namespace jazzlights
-#endif  // JL_EFFECT_H
+#endif  // JL_EFFECT_EFFECT_H

@@ -1,5 +1,5 @@
-#ifndef JL_ROTARY_PHONE_H
-#define JL_ROTARY_PHONE_H
+#ifndef JL_UI_ROTARY_PHONE_H
+#define JL_UI_ROTARY_PHONE_H
 
 #include "jazzlights/config.h"
 
@@ -38,4 +38,4 @@ class PhonePinHandler : public GpioPin::PinInterface {
 
 #endif  // PHONE
 #endif  // ESP32
-#endif  // JL_ROTARY_PHONE_H
+#endif  // JL_UI_ROTARY_PHONE_H

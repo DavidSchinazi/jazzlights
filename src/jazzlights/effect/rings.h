@@ -1,5 +1,5 @@
-#ifndef JL_EFFECTS_RINGS_H
-#define JL_EFFECTS_RINGS_H
+#ifndef JL_EFFECT_RINGS_H
+#define JL_EFFECT_RINGS_H
 
 #include <algorithm>
 
@@ -51,4 +51,4 @@ class Rings : public EffectWithPaletteAndState<RingsState> {
 };
 
 }  // namespace jazzlights
-#endif  // JL_EFFECTS_RINGS_H
+#endif  // JL_EFFECT_RINGS_H

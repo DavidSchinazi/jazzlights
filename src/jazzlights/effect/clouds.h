@@ -1,5 +1,5 @@
-#ifndef JL_EFFECTS_CLOUDS_H
-#define JL_EFFECTS_CLOUDS_H
+#ifndef JL_EFFECT_CLOUDS_H
+#define JL_EFFECT_CLOUDS_H
 
 #include <algorithm>
 
@@ -96,4 +96,4 @@ class Clouds : public Effect {
 
 }  // namespace jazzlights
 #endif  // CLOUDS
-#endif  // JL_EFFECTS_CLOUDS_H
+#endif  // JL_EFFECT_CLOUDS_H

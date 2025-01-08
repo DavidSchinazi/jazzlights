@@ -1,5 +1,5 @@
-#ifndef JL_NETWORKS_UNIX_UDP_H
-#define JL_NETWORKS_UNIX_UDP_H
+#ifndef JL_NETWORK_UNIX_UDP_H
+#define JL_NETWORK_UNIX_UDP_H
 
 #ifndef ESP32
 
@@ -41,4 +41,4 @@ class UnixUdpNetwork : public UdpNetwork {
 
 #endif  // ESP32
 
-#endif  // JL_NETWORKS_UNIX_UDP_H
+#endif  // JL_NETWORK_UNIX_UDP_H

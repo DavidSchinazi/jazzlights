@@ -1,5 +1,5 @@
-#ifndef JL_LAYOUTS_PIXELMAP_H
-#define JL_LAYOUTS_PIXELMAP_H
+#ifndef JL_LAYOUT_PIXELMAP_H
+#define JL_LAYOUT_PIXELMAP_H
 
 #include "jazzlights/layout/layout.h"
 #include "jazzlights/util/math.h"
@@ -22,4 +22,4 @@ class PixelMap : public Layout {
 };
 
 }  // namespace jazzlights
-#endif  // JL_LAYOUTS_PIXELMAP_H
+#endif  // JL_LAYOUT_PIXELMAP_H

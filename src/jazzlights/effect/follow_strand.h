@@ -1,5 +1,5 @@
-#ifndef JL_EFFECTS_FOLLOWSTRAND_H
-#define JL_EFFECTS_FOLLOWSTRAND_H
+#ifndef JL_EFFECT_FOLLOWSTRAND_H
+#define JL_EFFECT_FOLLOWSTRAND_H
 
 #include "jazzlights/effect/functional.h"
 #include "jazzlights/layout/layout.h"
@@ -33,4 +33,4 @@ inline FunctionalEffect follow_strand() {
 };
 
 }  // namespace jazzlights
-#endif  // JL_EFFECTS_FOLLOWSTRAND_H
+#endif  // JL_EFFECT_FOLLOWSTRAND_H

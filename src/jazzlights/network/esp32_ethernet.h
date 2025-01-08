@@ -1,5 +1,5 @@
-#ifndef JL_NETWORKS_ESP32_ETHERNET_H
-#define JL_NETWORKS_ESP32_ETHERNET_H
+#ifndef JL_NETWORK_ESP32_ETHERNET_H
+#define JL_NETWORK_ESP32_ETHERNET_H
 
 #include "jazzlights/config.h"
 
@@ -83,4 +83,4 @@ class Esp32EthernetNetwork : public Network {
 }  // namespace jazzlights
 
 #endif  // JL_ESP32_ETHERNET
-#endif  // JL_NETWORKS_ESP32_ETHERNET_H
+#endif  // JL_NETWORK_ESP32_ETHERNET_H

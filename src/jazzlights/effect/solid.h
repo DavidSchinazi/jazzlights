@@ -1,5 +1,5 @@
-#ifndef JL_EFFECTS_SOLID_H
-#define JL_EFFECTS_SOLID_H
+#ifndef JL_EFFECT_SOLID_H
+#define JL_EFFECT_SOLID_H
 
 #include "jazzlights/effect/functional.h"
 
@@ -11,4 +11,4 @@ inline FunctionalEffect solid(CRGB color, const std::string& name) {
 };
 
 }  // namespace jazzlights
-#endif  // JL_EFFECTS_SOLID_H
+#endif  // JL_EFFECT_SOLID_H

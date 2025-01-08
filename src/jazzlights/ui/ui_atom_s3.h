@@ -1,5 +1,5 @@
-#ifndef JL_UI_ATOM_S3_H
-#define JL_UI_ATOM_S3_H
+#ifndef JL_UI_UI_ATOM_S3_H
+#define JL_UI_UI_ATOM_S3_H
 
 #include "jazzlights/ui/ui.h"
 
@@ -85,4 +85,4 @@ class AtomS3Ui : public Esp32Ui, public GpioButton::ButtonInterface {
 
 #endif  // JL_IS_CONTROLLER(ATOM_S3)
 #endif  // ESP32
-#endif  // JL_UI_ATOM_S3_H
+#endif  // JL_UI_UI_ATOM_S3_H

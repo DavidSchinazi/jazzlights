@@ -1,5 +1,5 @@
-#ifndef JL_NETWORKS_WIFI_H
-#define JL_NETWORKS_WIFI_H
+#ifndef JL_NETWORK_WIFI_H
+#define JL_NETWORK_WIFI_H
 
 #include "jazzlights/network/arduino_esp_wifi.h"
 #include "jazzlights/network/esp32_wifi.h"
@@ -18,4 +18,4 @@ using WiFiNetwork = ArduinoEspWiFiNetwork;
 
 #endif  // JL_WIFI
 
-#endif  // JL_NETWORKS_WIFI_H
+#endif  // JL_NETWORK_WIFI_H

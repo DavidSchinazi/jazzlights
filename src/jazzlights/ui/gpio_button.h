@@ -1,5 +1,5 @@
-#ifndef JL_GPIO_BUTTON_H
-#define JL_GPIO_BUTTON_H
+#ifndef JL_UI_GPIO_BUTTON_H
+#define JL_UI_GPIO_BUTTON_H
 
 #include "jazzlights/config.h"
 
@@ -94,4 +94,4 @@ class GpioButton : public GpioPin::PinInterface {
 }  // namespace jazzlights
 
 #endif  // ESP32
-#endif  // JL_GPIO_BUTTON_H
+#endif  // JL_UI_GPIO_BUTTON_H

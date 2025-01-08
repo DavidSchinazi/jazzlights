@@ -1,5 +1,5 @@
-#ifndef JL_EFFECTS_METABALLS_H
-#define JL_EFFECTS_METABALLS_H
+#ifndef JL_EFFECT_METABALLS_H
+#define JL_EFFECT_METABALLS_H
 
 #include "jazzlights/effect/effect.h"
 #include "jazzlights/palette.h"
@@ -81,4 +81,4 @@ class Metaballs : public EffectWithPaletteAndState<MetaballsState> {
 
 }  // namespace jazzlights
 
-#endif  // JL_EFFECTS_METABALLS_H
+#endif  // JL_EFFECT_METABALLS_H

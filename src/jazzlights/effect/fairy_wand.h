@@ -1,5 +1,5 @@
-#ifndef JL_EFFECTS_FAIRY_WAND_H
-#define JL_EFFECTS_FAIRY_WAND_H
+#ifndef JL_EFFECT_FAIRY_WAND_H
+#define JL_EFFECT_FAIRY_WAND_H
 
 #include "jazzlights/effect/functional.h"
 
@@ -29,4 +29,4 @@ inline FunctionalEffect fairy_wand() {
 };
 
 }  // namespace jazzlights
-#endif  // JL_EFFECTS_FAIRY_WAND_H
+#endif  // JL_EFFECT_FAIRY_WAND_H

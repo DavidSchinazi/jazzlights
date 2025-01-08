@@ -1,5 +1,5 @@
-#ifndef JL_EFFECTS_FUNCTIONAL_H
-#define JL_EFFECTS_FUNCTIONAL_H
+#ifndef JL_EFFECT_FUNCTIONAL_H
+#define JL_EFFECT_FUNCTIONAL_H
 
 #include <functional>
 
@@ -56,4 +56,4 @@ inline FunctionalEffect effect(const std::string& name, const FrameToPixelColorF
 }
 
 }  // namespace jazzlights
-#endif  // JL_EFFECTS_FUNCTIONAL_H
+#endif  // JL_EFFECT_FUNCTIONAL_H

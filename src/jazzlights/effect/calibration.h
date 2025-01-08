@@ -1,5 +1,5 @@
-#ifndef JL_EFFECTS_CALIBRATION_H
-#define JL_EFFECTS_CALIBRATION_H
+#ifndef JL_EFFECT_CALIBRATION_H
+#define JL_EFFECT_CALIBRATION_H
 
 #include "jazzlights/effect/functional.h"
 
@@ -37,4 +37,4 @@ inline FunctionalEffect calibration() {
 };
 
 }  // namespace jazzlights
-#endif  // JL_EFFECTS_CALIBRATION_H
+#endif  // JL_EFFECT_CALIBRATION_H

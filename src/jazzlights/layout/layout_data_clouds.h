@@ -1,5 +1,5 @@
-#ifndef JL_LAYOUT_DATA_CLOUDS_H
-#define JL_LAYOUT_DATA_CLOUDS_H
+#ifndef JL_LAYOUT_LAYOUT_DATA_CLOUDS_H
+#define JL_LAYOUT_LAYOUT_DATA_CLOUDS_H
 
 #include "jazzlights/layout/layout_data.h"
 
@@ -16,4 +16,4 @@ Layout* GetCloudsLayout();
 
 #endif  // ESP32
 #endif  // JL_IS_CONFIG(CLOUDS)
-#endif  // JL_LAYOUT_DATA_CLOUDS_H
+#endif  // JL_LAYOUT_LAYOUT_DATA_CLOUDS_H

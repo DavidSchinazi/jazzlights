@@ -1,5 +1,5 @@
-#ifndef JL_UI_H
-#define JL_UI_H
+#ifndef JL_UI_UI_H
+#define JL_UI_UI_H
 
 #include "jazzlights/config.h"
 
@@ -32,4 +32,4 @@ class Esp32Ui {
 }  // namespace jazzlights
 
 #endif  // ESP32
-#endif  // JL_UI_H
+#endif  // JL_UI_UI_H
