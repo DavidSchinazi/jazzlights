@@ -14,7 +14,7 @@
 #include <atomic>
 #include <mutex>
 
-#include "jazzlights/network.h"
+#include "jazzlights/networks/network.h"
 
 namespace jazzlights {
 

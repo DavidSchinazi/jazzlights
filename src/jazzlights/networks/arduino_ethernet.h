@@ -8,7 +8,7 @@
 #include <Ethernet.h>
 #include <SPI.h>
 
-#include "jazzlights/network.h"
+#include "jazzlights/networks/network.h"
 
 namespace jazzlights {
 
