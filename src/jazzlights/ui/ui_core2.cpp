@@ -622,11 +622,10 @@ void Core2AwsUi::DrawSystemTextLines(Milliseconds currentTime) {
   DrawSystemTextLine(i++, line);
 #endif  // JL_WIFI
   // Other.
-  const Network* followedNextHopNetwork = player_.followedNextHopNetwork();
-  if (followedNextHopNetwork == nullptr) {
+  if (player_.following() == NetworkType::kLeading) {
     snprintf(line, sizeof(line) - 1, "Leading");
   } else {
-    snprintf(line, sizeof(line) - 1, "Following %s nh=%u", followedNextHopNetwork->shortNetworkName(),
+    snprintf(line, sizeof(line) - 1, "Following %s nh=%u", NetworkTypeToString(player_.following()),
              player_.currentNumHops());
   }
   DrawSystemTextLine(i++, line);

@@ -13,6 +13,16 @@
 
 namespace jazzlights {
 
+enum class NetworkType {
+  kLeading,
+  kBLE,
+  kWiFi,
+  kEthernet,
+  kOther,
+};
+
+const char* NetworkTypeToString(NetworkType type);
+
 class Network;
 
 #define ALL_NETWORK_STATUSES \
@@ -122,11 +132,8 @@ class Network {
   // Returns this device's unique ID, often using its MAC address. Not const to allow taking locks.
   virtual NetworkDeviceId getLocalDeviceId() = 0;
 
-  // A static name for this network class suitable for logging.
-  virtual const char* networkName() const = 0;
-
-  // A static name for this network class suitable for displaying when screen size is limited.
-  virtual const char* shortNetworkName() const = 0;
+  // The type of this network.
+  virtual NetworkType type() const = 0;
 
   // Whether we should advertise patterns on this network if that's where we received them.
   virtual bool shouldEcho() const = 0;

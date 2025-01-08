@@ -32,8 +32,7 @@ class Esp32BleNetwork : public Network {
 
   // Get this device's BLE MAC address.
   NetworkDeviceId getLocalDeviceId() override { return localDeviceId_; }
-  const char* networkName() const override { return "ESP32BLE"; }
-  const char* shortNetworkName() const override { return "BLE"; }
+  NetworkType type() const override { return NetworkType::kBLE; }
   bool shouldEcho() const override { return true; }
   Milliseconds getLastReceiveTime() const override { return lastReceiveTime_; }
   std::string getStatusStr(Milliseconds currentTime) override;
@@ -108,8 +107,7 @@ class Esp32BleNetwork : public Network {
   void disableSending(Milliseconds /*currentTime*/) override {}
   void triggerSendAsap(Milliseconds /*currentTime*/) override {}
   NetworkDeviceId getLocalDeviceId() override { return NetworkDeviceId(); }
-  const char* networkName() const override { return "NoOpESP32BLE"; }
-  const char* shortNetworkName() const override { return "!BLE"; }
+  NetworkType type() const override { return NetworkType::kBLE; }
   bool shouldEcho() const override { return false; }
   Milliseconds getLastReceiveTime() const override { return -1; }
   std::string getStatusStr(Milliseconds currentTime) override { return "Compiled Out"; }

@@ -21,8 +21,7 @@ class UnixUdpNetwork : public UdpNetwork {
   NetworkDeviceId getLocalDeviceId() override { return localDeviceId_; }
   int recv(void* buf, size_t bufsize, std::string* details) override;
   void send(void* buf, size_t bufsize) override;
-  const char* networkName() const override { return "UnixUDP"; }
-  const char* shortNetworkName() const override { return "Unix"; }
+  NetworkType type() const override { return NetworkType::kOther; }
   std::string getStatusStr(Milliseconds /*currentTime*/) override { return "UnixUDP"; }
 
  private:

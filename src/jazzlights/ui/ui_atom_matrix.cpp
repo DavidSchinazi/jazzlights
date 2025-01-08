@@ -138,7 +138,7 @@ void AtomMatrixUi::ScreenNetwork(Milliseconds currentTime) {
     case DISCONNECTING: wifiStatusColor = CRGB::Orange; break;
     case CONNECTION_FAILED: wifiStatusColor = CRGB::Red; break;
   }
-  if (player_.followedNextHopNetwork() == WiFiNetwork::get()) {
+  if (player_.following() == NetworkType::kWiFi) {
     switch (player_.currentNumHops()) {
       case 1: followedNetworkColor = CRGB(0, 255, 0); break;
       case 2: followedNetworkColor = CRGB(128, 255, 0); break;
@@ -150,7 +150,7 @@ void AtomMatrixUi::ScreenNetwork(Milliseconds currentTime) {
   const uint8_t wifiBrightness = 0;
 #endif  // JL_WIFI
   const uint8_t bleBrightness = GetReceiveTimeBrightness(Esp32BleNetwork::get()->getLastReceiveTime(), currentTime);
-  if (player_.followedNextHopNetwork() == Esp32BleNetwork::get()) {
+  if (player_.following() == NetworkType::kBLE) {
     switch (player_.currentNumHops()) {
       case 1: followedNetworkColor = CRGB(0, 0, 255); break;
       case 2: followedNetworkColor = CRGB(128, 0, 255); break;

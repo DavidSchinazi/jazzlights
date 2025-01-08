@@ -24,8 +24,7 @@ class Esp32EthernetNetwork : public Network {
 
   NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
   NetworkDeviceId getLocalDeviceId() override { return localDeviceId_; }
-  const char* networkName() const override { return "Esp32Ethernet"; }
-  const char* shortNetworkName() const override { return "Ethernet"; }
+  NetworkType type() const override { return NetworkType::kEthernet; }
   std::string getStatusStr(Milliseconds currentTime) override;
   void setMessageToSend(const NetworkMessage& messageToSend, Milliseconds currentTime) override;
   void disableSending(Milliseconds currentTime) override;
