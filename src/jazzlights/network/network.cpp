@@ -1,4 +1,4 @@
-#include "jazzlights/networks/network.h"
+#include "jazzlights/network/network.h"
 
 #include <stdint.h>
 #include <string.h>

@@ -1,4 +1,4 @@
-#include "jazzlights/networks/esp32_ethernet.h"
+#include "jazzlights/network/esp32_ethernet.h"
 
 #if JL_ESP32_ETHERNET
 

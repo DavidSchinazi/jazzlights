@@ -8,7 +8,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "jazzlights/networks/network.h"
+#include "jazzlights/network/network.h"
 
 namespace jazzlights {
 

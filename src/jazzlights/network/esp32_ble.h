@@ -7,7 +7,7 @@
 #define JL_DISABLE_BLUETOOTH 0
 #endif  // JL_DISABLE_BLUETOOTH
 
-#include "jazzlights/networks/network.h"
+#include "jazzlights/network/network.h"
 
 #if !JL_DISABLE_BLUETOOTH
 

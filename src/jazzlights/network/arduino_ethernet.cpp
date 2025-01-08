@@ -1,4 +1,4 @@
-#include "jazzlights/networks/arduino_ethernet.h"
+#include "jazzlights/network/arduino_ethernet.h"
 
 #if JL_ETHERNET && !JL_ESP32_ETHERNET
 

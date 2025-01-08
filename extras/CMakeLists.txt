@@ -9,8 +9,8 @@ file(GLOB LIB_SOURCES
 	../src/jazzlights/effects/*.h
 	../src/jazzlights/layouts/*.cpp
 	../src/jazzlights/layouts/*.h
-	../src/jazzlights/networks/*.cpp
-	../src/jazzlights/networks/*.h
+	../src/jazzlights/network/*.cpp
+	../src/jazzlights/network/*.h
 	../src/jazzlights/util/*.cpp
 	../src/jazzlights/util/*.h
 	jazzlights/util/*.cpp

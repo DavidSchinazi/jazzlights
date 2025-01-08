@@ -1,9 +1,10 @@
-#ifndef JL_NETWORKS_ESP32_ETHERNET_H
-#define JL_NETWORKS_ESP32_ETHERNET_H
+#ifndef JL_NETWORKS_ESP32_WIFI_H
+#define JL_NETWORKS_ESP32_WIFI_H
 
 #include "jazzlights/config.h"
 
-#if JL_ESP32_ETHERNET
+#if JL_WIFI
+
 #include <esp_event.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
@@ -13,19 +14,19 @@
 #include <atomic>
 #include <mutex>
 
-#include "jazzlights/networks/network.h"
+#include "jazzlights/network/network.h"
 
 namespace jazzlights {
 
-class Esp32EthernetNetwork : public Network {
+class Esp32WiFiNetwork : public Network {
  public:
-  static Esp32EthernetNetwork* get();
-  ~Esp32EthernetNetwork();
+  static Esp32WiFiNetwork* get();
+  ~Esp32WiFiNetwork();
 
   NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
   NetworkDeviceId getLocalDeviceId() override { return localDeviceId_; }
-  const char* networkName() const override { return "Esp32Ethernet"; }
-  const char* shortNetworkName() const override { return "Ethernet"; }
+  const char* networkName() const override { return "Esp32WiFi"; }
+  const char* shortNetworkName() const override { return "WiFi"; }
   std::string getStatusStr(Milliseconds currentTime) override;
   void setMessageToSend(const NetworkMessage& messageToSend, Milliseconds currentTime) override;
   void disableSending(Milliseconds currentTime) override;
@@ -38,9 +39,11 @@ class Esp32EthernetNetwork : public Network {
   void runLoopImpl(Milliseconds /*currentTime*/) override {}
 
  private:
-  struct Esp32EthernetNetworkEvent {
+  struct Esp32WiFiNetworkEvent {
     enum class Type {
       kReserved = 0,
+      kStationStarted,
+      kStationDisconnected,
       kGotIp,
       kLostIp,
       kSocketReady,
@@ -49,29 +52,31 @@ class Esp32EthernetNetwork : public Network {
     union {
       struct in_addr address;
     } data;
-    explicit Esp32EthernetNetworkEvent(Type t) {
+    explicit Esp32WiFiNetworkEvent(Type t) {
       memset(this, 0, sizeof(*this));
       type = t;
     }
-    explicit Esp32EthernetNetworkEvent() : Esp32EthernetNetworkEvent(Type::kReserved) {}
+    explicit Esp32WiFiNetworkEvent() : Esp32WiFiNetworkEvent(Type::kReserved) {}
   };
-  explicit Esp32EthernetNetwork();
+  explicit Esp32WiFiNetwork();
   static void EventHandler(void* event_handler_arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
   void HandleEvent(esp_event_base_t event_base, int32_t event_id, void* event_data);
-  void HandleNetworkEvent(const Esp32EthernetNetworkEvent& networkEvent);
+  void HandleNetworkEvent(const Esp32WiFiNetworkEvent& networkEvent);
   static void TaskFunction(void* parameters);
   void RunTask();
   void CreateSocket();
   void CloseSocket();
 
   QueueHandle_t eventQueue_;
-  NetworkDeviceId localDeviceId_;         // Only modified in constructor.
-  TaskHandle_t taskHandle_ = nullptr;     // Only modified in constructor.
-  struct in_addr multicastAddress_ = {};  // Only modified in constructor.
-  int socket_ = -1;                       // Only used on our task.
-  uint8_t* udpPayload_ = nullptr;         // Only used on our task. Used for both sending and receiving.
-  Milliseconds lastSendTime_ = -1;        // Only used on our task.
-  PatternBits lastSentPattern_ = 0;       // Only used on our task.
+  NetworkDeviceId localDeviceId_;                   // Only modified in constructor.
+  TaskHandle_t taskHandle_ = nullptr;               // Only modified in constructor.
+  struct in_addr multicastAddress_ = {};            // Only modified in constructor.
+  int socket_ = -1;                                 // Only used on our task.
+  uint8_t* udpPayload_ = nullptr;                   // Only used on our task. Used for both sending and receiving.
+  Milliseconds lastSendTime_ = -1;                  // Only used on our task.
+  PatternBits lastSentPattern_ = 0;                 // Only used on our task.
+  bool shouldArmQueueReconnectionTimeout_ = false;  // Only used on our task.
+  uint32_t reconnectCount_ = 0;                     // Only used on our task.
   std::atomic<Milliseconds> lastReceiveTime_;
   std::mutex mutex_;
   struct in_addr localAddress_ = {};            // Protected by mutex_.
@@ -82,5 +87,5 @@ class Esp32EthernetNetwork : public Network {
 
 }  // namespace jazzlights
 
-#endif  // JL_ESP32_ETHERNET
-#endif  // JL_NETWORKS_ESP32_ETHERNET_H
+#endif  // JL_WIFI
+#endif  // JL_NETWORKS_ESP32_WIFI_H

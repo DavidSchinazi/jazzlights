@@ -1,4 +1,4 @@
-#include "jazzlights/networks/arduino_esp_wifi.h"
+#include "jazzlights/network/arduino_esp_wifi.h"
 
 #if JL_WIFI
 #if JL_ESP_WIFI

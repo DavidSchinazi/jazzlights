@@ -9,8 +9,8 @@
 
 #include "jazzlights/fastled_runner.h"
 #include "jazzlights/fastled_wrapper.h"
-#include "jazzlights/networks/esp32_ble.h"
-#include "jazzlights/networks/wifi.h"
+#include "jazzlights/network/esp32_ble.h"
+#include "jazzlights/network/wifi.h"
 #include "jazzlights/text.h"
 #include "jazzlights/ui/gpio_button.h"
 

@@ -1,4 +1,4 @@
-#include "jazzlights/networks/esp32_wifi.h"
+#include "jazzlights/network/esp32_wifi.h"
 
 #if JL_WIFI
 

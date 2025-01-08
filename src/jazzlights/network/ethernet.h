@@ -1,8 +1,8 @@
 #ifndef JL_NETWORKS_ETHERNET_H
 #define JL_NETWORKS_ETHERNET_H
 
-#include "jazzlights/networks/arduino_ethernet.h"
-#include "jazzlights/networks/esp32_ethernet.h"
+#include "jazzlights/network/arduino_ethernet.h"
+#include "jazzlights/network/esp32_ethernet.h"
 
 #if JL_ETHERNET
 

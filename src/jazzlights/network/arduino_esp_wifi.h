@@ -5,7 +5,7 @@
 
 #if JL_WIFI
 
-#include "jazzlights/networks/network.h"
+#include "jazzlights/network/network.h"
 
 #ifndef JL_ESP_WIFI
 #define JL_ESP_WIFI 1
