@@ -1,7 +1,7 @@
 #ifndef JL_EFFECTS_COLOREDBURSTS_H
 #define JL_EFFECTS_COLOREDBURSTS_H
 
-#include "jazzlights/effect.h"
+#include "jazzlights/effects/effect.h"
 #include "jazzlights/fastled_wrapper.h"
 #include "jazzlights/palette.h"
 #include "jazzlights/pseudorandom.h"

@@ -3,7 +3,7 @@
 
 #include <functional>
 
-#include "jazzlights/effect.h"
+#include "jazzlights/effects/effect.h"
 
 namespace jazzlights {
 

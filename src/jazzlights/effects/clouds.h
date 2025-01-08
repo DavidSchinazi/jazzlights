@@ -4,7 +4,7 @@
 #include <algorithm>
 
 #include "jazzlights/config.h"
-#include "jazzlights/effect.h"
+#include "jazzlights/effects/effect.h"
 #include "jazzlights/layout/layout_data_clouds.h"
 #include "jazzlights/util/math.h"
 
