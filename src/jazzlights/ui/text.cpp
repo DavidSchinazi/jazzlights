@@ -1,4 +1,4 @@
-#include "jazzlights/text.h"
+#include "jazzlights/ui/text.h"
 
 #if JL_IS_CONTROLLER(ATOM_MATRIX)
 

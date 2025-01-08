@@ -11,8 +11,8 @@
 #include "jazzlights/fastled_wrapper.h"
 #include "jazzlights/network/esp32_ble.h"
 #include "jazzlights/network/wifi.h"
-#include "jazzlights/text.h"
 #include "jazzlights/ui/gpio_button.h"
+#include "jazzlights/ui/text.h"
 
 namespace jazzlights {
 namespace {
