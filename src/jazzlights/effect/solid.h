@@ -1,7 +1,7 @@
 #ifndef JL_EFFECTS_SOLID_H
 #define JL_EFFECTS_SOLID_H
 
-#include "jazzlights/effects/functional.h"
+#include "jazzlights/effect/functional.h"
 
 namespace jazzlights {
 

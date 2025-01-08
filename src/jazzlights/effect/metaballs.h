@@ -1,7 +1,7 @@
 #ifndef JL_EFFECTS_METABALLS_H
 #define JL_EFFECTS_METABALLS_H
 
-#include "jazzlights/effects/effect.h"
+#include "jazzlights/effect/effect.h"
 #include "jazzlights/palette.h"
 #include "jazzlights/pseudorandom.h"
 #include "jazzlights/util/math.h"

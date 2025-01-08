@@ -1,4 +1,4 @@
-#include "jazzlights/effects/flame.h"
+#include "jazzlights/effect/flame.h"
 
 #include <assert.h>
 

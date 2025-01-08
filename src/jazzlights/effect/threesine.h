@@ -1,6 +1,6 @@
 #ifndef JL_EFFECTS_THREESINE_H
 #define JL_EFFECTS_THREESINE_H
-#include "jazzlights/effects/functional.h"
+#include "jazzlights/effect/functional.h"
 #include "jazzlights/util/math.h"
 
 namespace jazzlights {

@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-#include "jazzlights/effects/effect.h"
+#include "jazzlights/effect/effect.h"
 #include "jazzlights/fastled_wrapper.h"
 
 namespace jazzlights {

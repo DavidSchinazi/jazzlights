@@ -1,7 +1,7 @@
 #ifndef JL_EFFECTS_FOLLOWSTRAND_H
 #define JL_EFFECTS_FOLLOWSTRAND_H
 
-#include "jazzlights/effects/functional.h"
+#include "jazzlights/effect/functional.h"
 #include "jazzlights/layout/layout.h"
 
 namespace jazzlights {
