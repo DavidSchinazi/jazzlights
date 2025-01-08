@@ -1,9 +1,9 @@
-#include "jazzlights/layouts/layout_data_clouds.h"
+#include "jazzlights/layout/layout_data_clouds.h"
 
 #if JL_IS_CONFIG(CLOUDS)
 
-#include "jazzlights/layouts/matrix.h"
-#include "jazzlights/layouts/pixelmap.h"
+#include "jazzlights/layout/matrix.h"
+#include "jazzlights/layout/pixelmap.h"
 
 namespace jazzlights {
 namespace {

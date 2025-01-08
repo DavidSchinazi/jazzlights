@@ -1,4 +1,4 @@
-#include "jazzlights/layouts/matrix.h"
+#include "jazzlights/layout/matrix.h"
 #include "jazzlights/player.h"
 #include "jazzlights/util/log.h"
 

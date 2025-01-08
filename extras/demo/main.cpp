@@ -3,7 +3,7 @@
 
 #include "glrenderer.h"
 #include "gui.h"
-#include "jazzlights/layouts/matrix.h"
+#include "jazzlights/layout/matrix.h"
 #include "jazzlights/network/unix_udp.h"
 
 namespace jazzlights {

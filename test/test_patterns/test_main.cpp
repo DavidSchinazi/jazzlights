@@ -17,7 +17,7 @@
 #include "jazzlights/effects/sync_test.h"
 #include "jazzlights/effects/the_matrix.h"
 #include "jazzlights/effects/threesine.h"
-#include "jazzlights/layouts/matrix.h"
+#include "jazzlights/layout/matrix.h"
 
 namespace jazzlights {
 

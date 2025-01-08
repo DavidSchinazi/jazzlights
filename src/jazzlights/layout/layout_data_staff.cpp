@@ -1,8 +1,8 @@
-#include "jazzlights/layouts/layout_data.h"
+#include "jazzlights/layout/layout_data.h"
 
 #if JL_IS_CONFIG(STAFF)
 
-#include "jazzlights/layouts/pixelmap.h"
+#include "jazzlights/layout/pixelmap.h"
 
 namespace jazzlights {
 namespace {

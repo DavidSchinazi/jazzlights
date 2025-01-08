@@ -6,7 +6,7 @@
 
 #include <M5Core2.h>
 
-#include "jazzlights/layouts/matrix.h"
+#include "jazzlights/layout/matrix.h"
 #include "jazzlights/network/esp32_ble.h"
 #include "jazzlights/network/wifi.h"
 

@@ -3,7 +3,7 @@
 #include <set>
 #include <vector>
 
-#include "jazzlights/layouts/layout.h"
+#include "jazzlights/layout/layout.h"
 #include "jazzlights/pseudorandom.h"
 #include "jazzlights/util/log.h"
 

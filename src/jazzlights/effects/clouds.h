@@ -5,7 +5,7 @@
 
 #include "jazzlights/config.h"
 #include "jazzlights/effect.h"
-#include "jazzlights/layouts/layout_data_clouds.h"
+#include "jazzlights/layout/layout_data_clouds.h"
 #include "jazzlights/util/math.h"
 
 #if JL_IS_CONFIG(CLOUDS)

@@ -1,9 +1,9 @@
-#include "jazzlights/layouts/layout_data.h"
+#include "jazzlights/layout/layout_data.h"
 
 #if JL_IS_CONFIG(GAUNTLET) || JL_IS_CONFIG(HAMMER) || JL_IS_CONFIG(FAIRY_WAND) || JL_IS_CONFIG(ROPELIGHT) || \
     JL_IS_CONFIG(SHOE) || JL_IS_CONFIG(XMAS_TREE)
 
-#include "jazzlights/layouts/matrix.h"
+#include "jazzlights/layout/matrix.h"
 
 namespace jazzlights {
 namespace {

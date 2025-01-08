@@ -1,7 +1,7 @@
 #ifndef JL_EXTRAS_DEMO_GLRENDERER_H
 #define JL_EXTRAS_DEMO_GLRENDERER_H
 
-#include "jazzlights/layouts/layout.h"
+#include "jazzlights/layout/layout.h"
 #include "jazzlights/renderer.h"
 
 namespace jazzlights {

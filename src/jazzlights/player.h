@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "jazzlights/effect.h"
-#include "jazzlights/layouts/layout.h"
+#include "jazzlights/layout/layout.h"
 #include "jazzlights/network/network.h"
 #include "jazzlights/pseudorandom.h"
 #include "jazzlights/renderer.h"

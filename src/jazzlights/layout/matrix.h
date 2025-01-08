@@ -1,7 +1,7 @@
 #ifndef JL_LAYOUTS_MATRIX_H
 #define JL_LAYOUTS_MATRIX_H
 
-#include "jazzlights/layouts/layout.h"
+#include "jazzlights/layout/layout.h"
 namespace jazzlights {
 
 using PixelsPerMeter = double;
