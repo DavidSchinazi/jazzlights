@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.9)
 set(CMAKE_MACOSX_RPATH 1)
 project(Jazzlights)
 
