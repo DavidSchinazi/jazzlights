@@ -2,27 +2,17 @@ cmake_minimum_required(VERSION 3.9)
 set(CMAKE_MACOSX_RPATH 1)
 project(Jazzlights)
 
-file(GLOB LIB_SOURCES
+file(GLOB_RECURSE LIB_SOURCES
 	../src/jazzlights/*.cpp
 	../src/jazzlights/*.h
-	../src/jazzlights/effects/*.cpp
-	../src/jazzlights/effects/*.h
-	../src/jazzlights/layouts/*.cpp
-	../src/jazzlights/layouts/*.h
-	../src/jazzlights/network/*.cpp
-	../src/jazzlights/network/*.h
-	../src/jazzlights/util/*.cpp
-	../src/jazzlights/util/*.h
-	jazzlights/util/*.cpp
-	jazzlights/util/*.h
 )
 
-file(GLOB DEMO_SOURCES
+file(GLOB_RECURSE DEMO_SOURCES
 	demo/*.cpp
 	demo/*.h
 )
 
-file(GLOB BENCH_SOURCES
+file(GLOB_RECURSE BENCH_SOURCES
 	bench/*.cpp
 	bench/*.h
 )
