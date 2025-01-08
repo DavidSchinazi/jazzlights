@@ -9,7 +9,7 @@
 
 #include "jazzlights/fastled_runner.h"
 #include "jazzlights/instrumentation.h"
-#include "jazzlights/layout_data.h"
+#include "jazzlights/layouts/layout_data.h"
 #include "jazzlights/network/esp32_ble.h"
 #include "jazzlights/network/ethernet.h"
 #include "jazzlights/network/wifi.h"

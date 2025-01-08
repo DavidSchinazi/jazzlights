@@ -1,12 +1,12 @@
 #ifndef JL_LAYOUT_DATA_CLOUDS_H
 #define JL_LAYOUT_DATA_CLOUDS_H
 
-#include "jazzlights/layout_data.h"
+#include "jazzlights/layouts/layout_data.h"
 
 #if JL_IS_CONFIG(CLOUDS)
 #ifdef ESP32
 
-#include "jazzlights/layout.h"
+#include "jazzlights/layouts/layout.h"
 
 namespace jazzlights {
 

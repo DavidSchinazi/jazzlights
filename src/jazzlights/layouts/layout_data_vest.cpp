@@ -1,4 +1,4 @@
-#include "jazzlights/layout_data.h"
+#include "jazzlights/layouts/layout_data.h"
 
 #if JL_IS_CONFIG(VEST)
 

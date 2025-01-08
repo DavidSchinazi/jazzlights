@@ -1,4 +1,4 @@
-#include "jazzlights/layout_data.h"
+#include "jazzlights/layouts/layout_data.h"
 
 #if JL_IS_CONFIG(GAUNTLET) || JL_IS_CONFIG(HAMMER) || JL_IS_CONFIG(FAIRY_WAND) || JL_IS_CONFIG(ROPELIGHT) || \
     JL_IS_CONFIG(SHOE) || JL_IS_CONFIG(XMAS_TREE)

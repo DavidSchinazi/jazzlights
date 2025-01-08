@@ -1,4 +1,4 @@
-#include "jazzlights/layout_data_clouds.h"
+#include "jazzlights/layouts/layout_data_clouds.h"
 
 #if JL_IS_CONFIG(CLOUDS)
 
