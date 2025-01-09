@@ -15,7 +15,6 @@ namespace jazzlights {
 class UnixUdpNetwork : public UdpNetwork {
  public:
   UnixUdpNetwork(uint16_t port = DefaultUdpPort(), const char* addr = DefaultMulticastAddress());
-  UnixUdpNetwork(const UnixUdpNetwork&) = default;
 
   NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
   NetworkDeviceId getLocalDeviceId() override { return localDeviceId_; }

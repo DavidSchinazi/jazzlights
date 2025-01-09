@@ -109,6 +109,12 @@ std::string networkMessageToString(const NetworkMessage& message, Milliseconds c
 
 class Network {
  public:
+  // Disallow copy and move.
+  Network(const Network&) = delete;
+  Network(Network&&) = delete;
+  Network& operator=(const Network&) = delete;
+  Network& operator=(Network&&) = delete;
+
   virtual ~Network() = default;
 
   // Set message to send during next send opportunity.
@@ -186,10 +192,6 @@ class Network {
 
 class UdpNetwork : public Network {
  public:
-  UdpNetwork() = default;
-  ~UdpNetwork() = default;
-  UdpNetwork(const UdpNetwork&) = default;
-
   void setMessageToSend(const NetworkMessage& messageToSend, Milliseconds currentTime) override;
   void disableSending(Milliseconds currentTime) override;
   void triggerSendAsap(Milliseconds currentTime) override;
