@@ -394,14 +394,6 @@ void Esp32BleNetwork::GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap
   }
 }
 
-NetworkStatus Esp32BleNetwork::update(NetworkStatus status, Milliseconds /*currentTime*/) {
-  if (status == INITIALIZING || status == CONNECTING) {
-    return CONNECTED;
-  } else {
-    return status;
-  }
-}
-
 // static
 NetworkDeviceId Esp32BleNetwork::InitBluetoothStackAndQueryLocalDeviceId() {
   // Initialize ESP Bluetooth stack.

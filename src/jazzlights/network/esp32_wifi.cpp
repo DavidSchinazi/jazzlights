@@ -91,14 +91,6 @@ std::string WiFiReasonToString(uint8_t reason) {
 }
 }  // namespace
 
-NetworkStatus Esp32WiFiNetwork::update(NetworkStatus status, Milliseconds /*currentTime*/) {
-  if (status == INITIALIZING || status == CONNECTING) {
-    return CONNECTED;
-  } else {
-    return status;
-  }
-}
-
 std::string Esp32WiFiNetwork::getStatusStr(Milliseconds currentTime) {
   struct in_addr localAddress = {};
   {

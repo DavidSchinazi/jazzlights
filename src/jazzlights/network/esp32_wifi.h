@@ -23,7 +23,7 @@ class Esp32WiFiNetwork : public Network {
   static Esp32WiFiNetwork* get();
   ~Esp32WiFiNetwork();
 
-  NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
+  NetworkStatus update(NetworkStatus /*status*/, Milliseconds /*currentTime*/) override { return CONNECTED; }
   NetworkDeviceId getLocalDeviceId() const override { return localDeviceId_; }
   NetworkType type() const override { return NetworkType::kWiFi; }
   std::string getStatusStr(Milliseconds currentTime) override;

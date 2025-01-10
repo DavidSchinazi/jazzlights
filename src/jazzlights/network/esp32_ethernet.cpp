@@ -62,14 +62,6 @@ constexpr int kEthernetPinInterrupt = 21;  // Fake because -1 isn't supported in
 #endif
 }  // namespace
 
-NetworkStatus Esp32EthernetNetwork::update(NetworkStatus status, Milliseconds currentTime) {
-  if (status == INITIALIZING || status == CONNECTING) {
-    return CONNECTED;
-  } else {
-    return status;
-  }
-}
-
 std::string Esp32EthernetNetwork::getStatusStr(Milliseconds currentTime) {
   struct in_addr localAddress = {};
   {

@@ -22,7 +22,7 @@ class Esp32EthernetNetwork : public Network {
   static Esp32EthernetNetwork* get();
   ~Esp32EthernetNetwork();
 
-  NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
+  NetworkStatus update(NetworkStatus /*status*/, Milliseconds /*currentTime*/) override { return CONNECTED; }
   NetworkDeviceId getLocalDeviceId() const override { return localDeviceId_; }
   NetworkType type() const override { return NetworkType::kEthernet; }
   std::string getStatusStr(Milliseconds currentTime) override;

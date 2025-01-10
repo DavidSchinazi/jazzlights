@@ -16,7 +16,7 @@ class UnixUdpNetwork : public UdpNetwork {
  public:
   explicit UnixUdpNetwork();
 
-  NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
+  NetworkStatus update(NetworkStatus /*status*/, Milliseconds /*currentTime*/) override { return CONNECTED; }
   NetworkDeviceId getLocalDeviceId() const override { return localDeviceId_; }
   int recv(void* buf, size_t bufsize, std::string* details) override;
   void send(void* buf, size_t bufsize) override;

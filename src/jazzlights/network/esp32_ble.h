@@ -39,7 +39,7 @@ class Esp32BleNetwork : public Network {
 
  protected:
   void runLoopImpl(Milliseconds currentTime) override;
-  NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
+  NetworkStatus update(NetworkStatus /*status*/, Milliseconds /*currentTime*/) override { return CONNECTED; }
   std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds currentTime) override;
 
  private:
