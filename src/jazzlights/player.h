@@ -110,7 +110,7 @@ class Player {
   PredictableRandom* predictableRandom() { return &predictableRandom_; }
   PatternBits currentEffect() const;
   std::string currentEffectName() const;
-  NetworkType following() const { return following_; }
+  NetworkType following() const { return followedNextHopNetworkType_; }
   NumHops currentNumHops() const { return currentNumHops_; }
 
   bool enabled() const { return enabled_; }
@@ -153,7 +153,8 @@ class Player {
     Milliseconds currentPatternStartTime = 0;
     Milliseconds lastOriginationTime = 0;
     NetworkDeviceId nextHopDevice = NetworkDeviceId();
-    Network* nextHopNetwork = nullptr;
+    NetworkId nextHopNetworkId = 0;
+    NetworkType nextHopNetworkType = NetworkType::kLeading;
     NumHops numHops = 0;
     bool retracted = false;
     int8_t patternStartTimeMovementCounter = 0;
@@ -210,8 +211,8 @@ class Player {
   bool randomizeLocalDeviceId_ = false;
   NetworkDeviceId localDeviceId_ = NetworkDeviceId();
   NetworkDeviceId currentLeader_ = NetworkDeviceId();
-  Network* followedNextHopNetwork_ = nullptr;
-  NetworkType following_ = NetworkType::kLeading;
+  NetworkId followedNextHopNetworkId_ = 0;
+  NetworkType followedNextHopNetworkType_ = NetworkType::kLeading;
   NumHops currentNumHops_ = 0;
 
   Frame frame_;

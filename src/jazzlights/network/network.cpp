@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <atomic>
+
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/math.h"
 #include "jazzlights/util/time.h"
@@ -89,9 +91,9 @@ std::string networkMessageToString(const NetworkMessage& message, Milliseconds c
   std::string rv = "{o=" + message.originator.toString() + ", s=" + message.sender.toString() +
                    ", c=" + displayBitsAsBinary(message.currentPattern) +
                    ", n=" + displayBitsAsBinary(message.nextPattern);
-  if (message.receiptNetwork != nullptr) {
+  if (message.receiptNetworkType != NetworkType::kLeading) {
     rv += ", ";
-    rv += NetworkTypeToString(message.receiptNetwork->type());
+    rv += NetworkTypeToString(message.receiptNetworkType);
   }
   rv += str;
   return rv;
@@ -114,6 +116,13 @@ NetworkDeviceId NetworkDeviceId::PlusOne() const {
     }
   }
   return deviceId;
+}
+
+NetworkId Network::NextAvailableId() {
+  static std::atomic<NetworkId> nextId{1};
+  NetworkId res = nextId.fetch_add(1, std::memory_order_relaxed);
+  if (res == std::numeric_limits<NetworkId>::max() - 1) { jll_fatal("Ran out of available NetworkIds"); }
+  return res;
 }
 
 NetworkStatus Network::status() const { return status_; }
@@ -141,7 +150,10 @@ void UdpNetwork::disableSending(Milliseconds /*currentTime*/) { hasDataToSend_ =
 std::list<NetworkMessage> Network::getReceivedMessages(Milliseconds currentTime) {
   checkStatus(currentTime);
   std::list<NetworkMessage> receivedMessages = getReceivedMessagesImpl(currentTime);
-  for (NetworkMessage& message : receivedMessages) { message.receiptNetwork = this; }
+  for (NetworkMessage& message : receivedMessages) {
+    message.receiptNetworkId = id();
+    message.receiptNetworkType = type();
+  }
   return receivedMessages;
 }
 

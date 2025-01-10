@@ -23,6 +23,10 @@ enum class NetworkType {
 
 const char* NetworkTypeToString(NetworkType type);
 
+// NetworkId 0 is a sentinel value that cannot be assigned to a network. It can mean that we generated the update
+// instead of having received it.
+using NetworkId = uint32_t;
+
 class Network;
 
 #define ALL_NETWORK_STATUSES \
@@ -90,13 +94,15 @@ struct NetworkMessage {
   Milliseconds currentPatternStartTime = 0;
   Milliseconds lastOriginationTime = 0;
   // Receipt values are not sent over the wire.
-  Network* receiptNetwork = nullptr;
+  NetworkId receiptNetworkId = 0;
+  NetworkType receiptNetworkType = NetworkType::kLeading;
   std::string receiptDetails;
 
   bool isEqualExceptOriginationTime(const NetworkMessage& other) const {
     return sender == other.sender && originator == other.originator && precedence == other.precedence &&
            currentPattern == other.currentPattern && nextPattern == other.nextPattern && numHops == other.numHops &&
-           currentPatternStartTime == other.currentPatternStartTime && receiptNetwork == other.receiptNetwork;
+           currentPatternStartTime == other.currentPatternStartTime && receiptNetworkId == other.receiptNetworkId &&
+           receiptNetworkType == other.receiptNetworkType;
   }
   bool operator==(const NetworkMessage& other) const {
     return isEqualExceptOriginationTime(other) && lastOriginationTime == other.lastOriginationTime;
@@ -131,6 +137,9 @@ class Network {
 
   // Get current network status.
   NetworkStatus status() const;
+
+  // Get unique identifier for this network.
+  NetworkId id() const { return id_; }
 
   // Request an immediate send.
   virtual void triggerSendAsap(Milliseconds currentTime) = 0;
@@ -181,6 +190,10 @@ class Network {
  private:
   void checkStatus(Milliseconds currentTime);
   void reconnect(Milliseconds currentTime);
+
+  static NetworkId NextAvailableId();
+
+  const NetworkId id_ = NextAvailableId();
 
   NetworkStatus status_ = INITIALIZING;
 
