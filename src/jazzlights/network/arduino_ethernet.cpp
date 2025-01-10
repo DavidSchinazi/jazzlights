@@ -124,11 +124,6 @@ NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status, Milliseconds 
       Ethernet.maintain();
       return status;
     }
-    case DISCONNECTING: {
-      udp_.stop();
-      return DISCONNECTED;
-    }
-    case DISCONNECTED:
     case CONNECTION_FAILED:
       // Do nothing.
       return status;
@@ -139,9 +134,7 @@ NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status, Milliseconds 
 std::string ArduinoEthernetNetwork::getStatusStr(Milliseconds currentTime) {
   switch (getStatus()) {
     case INITIALIZING: return "init";
-    case DISCONNECTED: return "disconnected";
     case CONNECTING: return "connecting";
-    case DISCONNECTING: return "disconnecting";
     case CONNECTION_FAILED: return "failed";
     case CONNECTED: {
       IPAddress ip = Ethernet.localIP();

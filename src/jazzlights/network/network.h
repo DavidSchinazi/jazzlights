@@ -31,10 +31,8 @@ class Network;
 
 #define ALL_NETWORK_STATUSES \
   X(INITIALIZING)            \
-  X(DISCONNECTED)            \
   X(CONNECTING)              \
   X(CONNECTED)               \
-  X(DISCONNECTING)           \
   X(CONNECTION_FAILED)
 
 enum NetworkStatus {

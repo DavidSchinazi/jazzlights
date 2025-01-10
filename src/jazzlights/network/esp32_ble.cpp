@@ -110,7 +110,7 @@ void Esp32BleNetwork::MaybeUpdateAdvertisingState(Milliseconds currentTime) {
     if (state_ == State::kAdvertising && timeToStopAdvertising_ > 0 && currentTime >= timeToStopAdvertising_) {
       timeToStopAdvertising_ = 0;
       shouldStopAdvertising = true;
-    } else if (state_ == State::kScanning && isSendingEnabled_ && hasDataToSend_ &&
+    } else if (state_ == State::kScanning && hasDataToSend_ &&
                (numUrgentSends_ > 0 || (timeToStopScanning_ > 0 && currentTime >= timeToStopScanning_))) {
       if (numUrgentSends_ > 0) { numUrgentSends_--; }
       timeToStopScanning_ = 0;
@@ -394,15 +394,9 @@ void Esp32BleNetwork::GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap
   }
 }
 
-NetworkStatus Esp32BleNetwork::update(NetworkStatus status, Milliseconds currentTime) {
+NetworkStatus Esp32BleNetwork::update(NetworkStatus status, Milliseconds /*currentTime*/) {
   if (status == INITIALIZING || status == CONNECTING) {
-    const std::lock_guard<std::mutex> lock(mutex_);
-    isSendingEnabled_ = true;
     return CONNECTED;
-  } else if (status == DISCONNECTING) {
-    const std::lock_guard<std::mutex> lock(mutex_);
-    isSendingEnabled_ = false;
-    return DISCONNECTED;
   } else {
     return status;
   }

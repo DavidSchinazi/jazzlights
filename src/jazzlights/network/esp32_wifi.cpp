@@ -91,11 +91,9 @@ std::string WiFiReasonToString(uint8_t reason) {
 }
 }  // namespace
 
-NetworkStatus Esp32WiFiNetwork::update(NetworkStatus status, Milliseconds currentTime) {
+NetworkStatus Esp32WiFiNetwork::update(NetworkStatus status, Milliseconds /*currentTime*/) {
   if (status == INITIALIZING || status == CONNECTING) {
     return CONNECTED;
-  } else if (status == DISCONNECTING) {
-    return DISCONNECTED;
   } else {
     return status;
   }

@@ -189,19 +189,9 @@ NetworkStatus UnixUdpNetwork::update(NetworkStatus status, Milliseconds /*curren
   if (status == INITIALIZING || status == CONNECTING) {
     setupSockets();
     return CONNECTED;
-  } else if (status == DISCONNECTING) {
-    for (auto pair : sockets_) {
-      std::string ifName = pair.first;
-      int fd = pair.second;
-      close(fd);
-      jll_info("Disconnected UDP socket %d for ifName %s", fd, ifName.c_str());
-    }
-    sockets_.clear();
-    return DISCONNECTED;
+  } else {
+    return status;
   }
-
-  // Nothing to do
-  return status;
 }
 
 int UnixUdpNetwork::recv(void* buf, size_t bufsize, std::string* /*details*/) {

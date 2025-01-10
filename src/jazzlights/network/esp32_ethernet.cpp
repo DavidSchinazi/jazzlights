@@ -65,8 +65,6 @@ constexpr int kEthernetPinInterrupt = 21;  // Fake because -1 isn't supported in
 NetworkStatus Esp32EthernetNetwork::update(NetworkStatus status, Milliseconds currentTime) {
   if (status == INITIALIZING || status == CONNECTING) {
     return CONNECTED;
-  } else if (status == DISCONNECTING) {
-    return DISCONNECTED;
   } else {
     return status;
   }

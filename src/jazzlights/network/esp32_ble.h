@@ -86,7 +86,6 @@ class Esp32BleNetwork : public Network {
   std::mutex mutex_;
   // All the variables below are protected by mutex_.
   State state_ = State::kIdle;
-  bool isSendingEnabled_ = false;
   bool hasDataToSend_ = false;
   NetworkMessage messageToSend_;
   uint8_t numUrgentSends_ = 0;

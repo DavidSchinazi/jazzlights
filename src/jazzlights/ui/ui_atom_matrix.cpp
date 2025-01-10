@@ -132,10 +132,8 @@ void AtomMatrixUi::ScreenNetwork(Milliseconds currentTime) {
 #if JL_WIFI
   switch (WiFiNetwork::get()->status()) {
     case INITIALIZING: wifiStatusColor = CRGB::Pink; break;
-    case DISCONNECTED: wifiStatusColor = CRGB::Purple; break;
     case CONNECTING: wifiStatusColor = CRGB::Yellow; break;
     case CONNECTED: wifiStatusColor = CRGB(0, 255, 0); break;
-    case DISCONNECTING: wifiStatusColor = CRGB::Orange; break;
     case CONNECTION_FAILED: wifiStatusColor = CRGB::Red; break;
   }
   if (player_.following() == NetworkType::kWiFi) {

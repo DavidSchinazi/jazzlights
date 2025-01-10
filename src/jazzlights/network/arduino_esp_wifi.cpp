@@ -228,20 +228,9 @@ NetworkStatus ArduinoEspWiFiNetwork::update(NetworkStatus status, Milliseconds c
     } break;
 
     case CONNECTED:
-    case DISCONNECTED:
     case CONNECTION_FAILED:
       // do nothing
       break;
-
-    case DISCONNECTING: {
-      switch (newWiFiStatus) {
-        case WL_DISCONNECTED: jll_info("%u Wi-Fi disconnected from %s", currentTime, WiFiSsid()); return DISCONNECTED;
-        default:
-          jll_info("%u Wi-Fi disconnecting from %s...", currentTime, WiFiSsid());
-          WiFi.disconnect();
-          break;
-      }
-    } break;
   }
 
   return status;
@@ -285,9 +274,7 @@ void ArduinoEspWiFiNetwork::send(void* buf, size_t bufsize) {
 std::string ArduinoEspWiFiNetwork::getStatusStr(Milliseconds currentTime) {
   switch (getStatus()) {
     case INITIALIZING: return "init";
-    case DISCONNECTED: return "disconnected";
     case CONNECTING: return "connecting";
-    case DISCONNECTING: return "disconnecting";
     case CONNECTION_FAILED: return "failed";
     case CONNECTED: {
       IPAddress ip = WiFi.localIP();
