@@ -97,7 +97,7 @@ std::string WiFiReasonToString(uint8_t reason) {
 }
 }  // namespace
 
-ArduinoEspWiFiNetwork::ArduinoEspWiFiNetwork(const char* ssid, const char* pass) : creds_{ssid, pass} {
+ArduinoEspWiFiNetwork::ArduinoEspWiFiNetwork() {
   uint8_t macAddress[6] = {};
   if (WiFi.macAddress(&macAddress[0]) == nullptr) {
     uint64_t efuseMac64 = ESP.getEfuseMac();
@@ -156,7 +156,7 @@ NetworkStatus ArduinoEspWiFiNetwork::update(NetworkStatus status, Milliseconds c
   }
   switch (status) {
     case INITIALIZING: {
-      jll_info("%u Wi-Fi connecting to %s...", currentTime, creds_.ssid);
+      jll_info("%u Wi-Fi connecting to %s...", currentTime, WiFiSsid());
       if (staticConf_) {
         IPAddress ip, gw, snm;
         ip.fromString(staticConf_->ip);
@@ -169,23 +169,23 @@ NetworkStatus ArduinoEspWiFiNetwork::update(NetworkStatus status, Milliseconds c
       WiFi.onEvent(WiFiEvent, ARDUINO_EVENT_WIFI_STA_GOT_IP);
       WiFi.onEvent(WiFiEvent, ARDUINO_EVENT_WIFI_STA_LOST_IP);
       WiFi.onEvent(WiFiEvent, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
-      wl_status_t beginWiFiStatus = WiFi.begin(creds_.ssid, creds_.pass);
+      wl_status_t beginWiFiStatus = WiFi.begin(WiFiSsid(), WiFiPassword());
       jll_info("%u Wi-Fi " DEVICE_ID_FMT " begin to %s returned %s", currentTime, DEVICE_ID_HEX(localDeviceId_),
-               creds_.ssid, WiFiStatusToString(beginWiFiStatus).c_str());
+               WiFiSsid(), WiFiStatusToString(beginWiFiStatus).c_str());
       return CONNECTING;
     } break;
     case CONNECTING: {
       switch (newWiFiStatus) {
         case WL_NO_SHIELD:
-          jll_error("%u Wi-Fi connection to %s failed: there's no WiFi shield", currentTime, creds_.ssid);
+          jll_error("%u Wi-Fi connection to %s failed: there's no WiFi shield", currentTime, WiFiSsid());
           return CONNECTION_FAILED;
 
         case WL_NO_SSID_AVAIL:
-          jll_error("%u Wi-Fi connection to %s failed: SSID not available", currentTime, creds_.ssid);
+          jll_error("%u Wi-Fi connection to %s failed: SSID not available", currentTime, WiFiSsid());
           return CONNECTION_FAILED;
 
         case WL_SCAN_COMPLETED:
-          jll_debug("%u Wi-Fi scan completed, still connecting to %s...", currentTime, creds_.ssid);
+          jll_debug("%u Wi-Fi scan completed, still connecting to %s...", currentTime, WiFiSsid());
           break;
 
         case WL_CONNECTED: {
@@ -198,16 +198,16 @@ NetworkStatus ArduinoEspWiFiNetwork::update(NetworkStatus status, Milliseconds c
           }
           IPAddress ip = WiFi.localIP();
           jll_info("%u Wi-Fi connected to %s, IP: %d.%d.%d.%d, bound to port %u, multicast group: %s", currentTime,
-                   creds_.ssid, ip[0], ip[1], ip[2], ip[3], port_, mcastAddr_);
+                   WiFiSsid(), ip[0], ip[1], ip[2], ip[3], port_, mcastAddr_);
           return CONNECTED;
         } break;
 
         case WL_CONNECT_FAILED:
-          jll_error("%u Wi-Fi connection to %s failed", currentTime, creds_.ssid);
+          jll_error("%u Wi-Fi connection to %s failed", currentTime, WiFiSsid());
           return CONNECTION_FAILED;
 
         case WL_CONNECTION_LOST:
-          jll_error("%u Wi-Fi connection to %s lost", currentTime, creds_.ssid);
+          jll_error("%u Wi-Fi connection to %s lost", currentTime, WiFiSsid());
           return INITIALIZING;
 
         case WL_DISCONNECTED:
@@ -234,9 +234,9 @@ NetworkStatus ArduinoEspWiFiNetwork::update(NetworkStatus status, Milliseconds c
 
     case DISCONNECTING: {
       switch (newWiFiStatus) {
-        case WL_DISCONNECTED: jll_info("%u Wi-Fi disconnected from %s", currentTime, creds_.ssid); return DISCONNECTED;
+        case WL_DISCONNECTED: jll_info("%u Wi-Fi disconnected from %s", currentTime, WiFiSsid()); return DISCONNECTED;
         default:
-          jll_info("%u Wi-Fi disconnecting from %s...", currentTime, creds_.ssid);
+          jll_info("%u Wi-Fi disconnecting from %s...", currentTime, WiFiSsid());
           WiFi.disconnect();
           break;
       }
@@ -246,7 +246,7 @@ NetworkStatus ArduinoEspWiFiNetwork::update(NetworkStatus status, Milliseconds c
   return status;
 
 err:
-  jll_error("%u Wi-Fi connection to %s failed", currentTime, creds_.ssid);
+  jll_error("%u Wi-Fi connection to %s failed", currentTime, WiFiSsid());
   WiFi.disconnect();
   return CONNECTION_FAILED;
 }
@@ -292,7 +292,7 @@ std::string ArduinoEspWiFiNetwork::getStatusStr(Milliseconds currentTime) {
       IPAddress ip = WiFi.localIP();
       const Milliseconds lastRcv = getLastReceiveTime();
       char statStr[100] = {};
-      snprintf(statStr, sizeof(statStr) - 1, "%s %u.%u.%u.%u - %ums", creds_.ssid, ip[0], ip[1], ip[2], ip[3],
+      snprintf(statStr, sizeof(statStr) - 1, "%s %u.%u.%u.%u - %ums", WiFiSsid(), ip[0], ip[1], ip[2], ip[3],
                (lastRcv >= 0 ? currentTime - lastRcv : -1));
       return std::string(statStr);
     }
@@ -302,7 +302,7 @@ std::string ArduinoEspWiFiNetwork::getStatusStr(Milliseconds currentTime) {
 
 // static
 ArduinoEspWiFiNetwork* ArduinoEspWiFiNetwork::get() {
-  static ArduinoEspWiFiNetwork sSingleton(JL_WIFI_SSID, JL_WIFI_PASSWORD);
+  static ArduinoEspWiFiNetwork sSingleton;
   return &sSingleton;
 }
 

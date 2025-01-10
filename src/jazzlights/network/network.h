@@ -180,6 +180,8 @@ class Network {
     // https://www.iana.org/assignments/multicast-addresses/multicast-addresses.xhtml#multicast-addresses-1
     return "224.0.0.169";
   }
+  static constexpr const char* WiFiSsid() { return "JazzLights"; }
+  static constexpr const char* WiFiPassword() { return "burningblink"; }
 
   // Parse the UDP payload we use over IP networks into a NetworkMessage.
   bool ParseUdpPayload(uint8_t* udpPayload, size_t udpPayloadLength, const std::string& receiptDetails,

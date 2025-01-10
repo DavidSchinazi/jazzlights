@@ -115,7 +115,7 @@ std::string Esp32WiFiNetwork::getStatusStr(Milliseconds currentTime) {
       jll_fatal("Esp32WiFiNetwork printing local address failed with error %d: %s", errno, strerror(errno));
     }
     char statStr[100] = {};
-    snprintf(statStr, sizeof(statStr) - 1, "%s %s - %ums", JL_WIFI_SSID, addressString,
+    snprintf(statStr, sizeof(statStr) - 1, "%s %s - %ums", WiFiSsid(), addressString,
              (lastRcv >= 0 ? currentTime - getLastReceiveTime() : -1));
     return std::string(statStr);
   } else {
@@ -409,8 +409,8 @@ Esp32WiFiNetwork::Esp32WiFiNetwork()
   wifi_config_t wifi_config;
   memset(&wifi_config, 0, sizeof(wifi_config));
   wifi_config.sta = {};
-  strncpy(reinterpret_cast<char*>(wifi_config.sta.ssid), JL_WIFI_SSID, sizeof(wifi_config.sta.ssid) - 1);
-  strncpy(reinterpret_cast<char*>(wifi_config.sta.password), JL_WIFI_PASSWORD, sizeof(wifi_config.sta.password) - 1);
+  strncpy(reinterpret_cast<char*>(wifi_config.sta.ssid), WiFiSsid(), sizeof(wifi_config.sta.ssid) - 1);
+  strncpy(reinterpret_cast<char*>(wifi_config.sta.password), WiFiPassword(), sizeof(wifi_config.sta.password) - 1);
   // TODO add support for IPv4 link-local addressing in the absence of DHCP. It looks like ESP-IDF supports it via
   // CONFIG_LWIP_AUTOIP but that doesn't seem to exist in our sdkconfig. I think that's because ESP-IDF disables it by
   // default, and the Arduino Core doesn't override that, so we'll need a custom ESP-IDF sdkconfig to enable it.

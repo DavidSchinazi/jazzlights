@@ -29,11 +29,6 @@ class ArduinoEspWiFiNetwork : public UdpNetwork {
   NetworkType type() const override { return NetworkType::kWiFi; }
   std::string getStatusStr(Milliseconds currentTime) override;
 
-  struct Credentials {
-    const char* ssid;
-    const char* pass;
-  };
-
   struct StaticConf {
     const char* ip;
     const char* gateway;
@@ -41,13 +36,12 @@ class ArduinoEspWiFiNetwork : public UdpNetwork {
   };
 
  private:
-  ArduinoEspWiFiNetwork(const char* ssid, const char* pass);
+  ArduinoEspWiFiNetwork();
   static constexpr wl_status_t kUninitialized = static_cast<wl_status_t>(123);
   static std::string WiFiStatusToString(wl_status_t status);
   uint16_t port_ = DefaultUdpPort();
   const char* mcastAddr_ = DefaultMulticastAddress();
   WiFiUDP udp_;
-  Credentials creds_;
   StaticConf* staticConf_ = nullptr;
   NetworkDeviceId localDeviceId_;
   wl_status_t currentWiFiStatus_ = kUninitialized;

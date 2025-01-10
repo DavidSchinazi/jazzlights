@@ -112,9 +112,6 @@
 #define JL_ESP32_WIFI 0
 #endif  // JL_ESP32_WIFI
 
-#define JL_WIFI_SSID "JazzLights"
-#define JL_WIFI_PASSWORD "burningblink"
-
 #ifndef JL_CORE2AWS_ETHERNET
 #define JL_CORE2AWS_ETHERNET 0
 #endif  // JL_CORE2AWS_ETHERNET
