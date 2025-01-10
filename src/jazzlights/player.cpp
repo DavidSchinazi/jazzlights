@@ -371,7 +371,7 @@ bool Player::render(Milliseconds currentTime) {
     frame_.pattern = 0;
   }
 #if JL_IS_CONFIG(CLOUDS)
-  else if (nextHopNetworkId == 0) {
+  else if (followedNextHopNetworkId_ == 0) {
     if (color_overridden_) {
       frame_.pattern = color_override_.r << 24 | color_override_.g << 16 | color_override_.b << 8 | 0x20;
     } else if (force_clouds_) {
