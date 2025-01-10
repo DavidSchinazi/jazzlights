@@ -408,7 +408,8 @@ NetworkStatus Esp32BleNetwork::update(NetworkStatus status, Milliseconds current
   }
 }
 
-Esp32BleNetwork::Esp32BleNetwork() {
+// static
+NetworkDeviceId Esp32BleNetwork::InitBluetoothStackAndQueryLocalDeviceId() {
   // Initialize ESP Bluetooth stack.
   ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
   esp_bt_controller_config_t cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
@@ -430,15 +431,6 @@ Esp32BleNetwork::Esp32BleNetwork() {
   if (esp_random() == 0xdeadbeef) { (void)btStarted(); }
 #endif  // JL_BLE4
 
-  // Initialize localDeviceId_.
-  uint8_t addressType;
-  esp_bd_addr_t localAddress;
-  memset(localAddress, 0, sizeof(localAddress));
-  ESP_ERROR_CHECK(esp_ble_gap_get_local_used_addr(localAddress, &addressType));
-  jll_info("%u Initialized BLE with local MAC address " ESP_BD_ADDR_STR " (type %u)", timeMillis(),
-           ESP_BD_ADDR_HEX(localAddress), addressType);
-  localDeviceId_ = NetworkDeviceId(localAddress);
-  lastReceiveTime_ = -1;
   // Override callbacks away from BLEDevice back to us.
   ESP_ERROR_CHECK(esp_ble_gap_register_callback(&Esp32BleNetwork::GapCallback));
   // Configure scanning parameters.
@@ -450,6 +442,15 @@ Esp32BleNetwork::Esp32BleNetwork() {
   scanParams.scan_window = 16000;    // 10s (unit is 625us).
   scanParams.scan_duplicate = BLE_SCAN_DUPLICATE_DISABLE;
   ESP_ERROR_CHECK(esp_ble_gap_set_scan_params(&scanParams));
+
+  // Initialize localDeviceId_.
+  uint8_t addressType;
+  esp_bd_addr_t localAddress;
+  memset(localAddress, 0, sizeof(localAddress));
+  ESP_ERROR_CHECK(esp_ble_gap_get_local_used_addr(localAddress, &addressType));
+  jll_info("%u Initialized BLE with local MAC address " ESP_BD_ADDR_STR " (type %u)", timeMillis(),
+           ESP_BD_ADDR_HEX(localAddress), addressType);
+  return NetworkDeviceId(localAddress);
 }
 
 void Esp32BleNetwork::runLoopImpl(Milliseconds currentTime) { MaybeUpdateAdvertisingState(currentTime); }

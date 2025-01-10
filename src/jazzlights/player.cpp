@@ -255,7 +255,7 @@ void Player::begin(Milliseconds currentTime) {
 
   // Figure out localDeviceId_.
   if (!randomizeLocalDeviceId_) {
-    for (Network* network : networks_) {
+    for (const Network* network : networks_) {
       NetworkDeviceId localDeviceId = network->getLocalDeviceId();
       if (localDeviceId != NetworkDeviceId()) {
         localDeviceId_ = localDeviceId;

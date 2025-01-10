@@ -146,8 +146,8 @@ class Network {
   // Request an immediate send.
   virtual void triggerSendAsap(Milliseconds currentTime) = 0;
 
-  // Returns this device's unique ID, often using its MAC address. Not const to allow taking locks.
-  virtual NetworkDeviceId getLocalDeviceId() = 0;
+  // Returns this device's unique ID, often using its MAC address.
+  virtual NetworkDeviceId getLocalDeviceId() const = 0;
 
   // The type of this network.
   virtual NetworkType type() const = 0;

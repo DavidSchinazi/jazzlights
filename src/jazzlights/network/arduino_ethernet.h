@@ -19,13 +19,16 @@ class ArduinoEthernetNetwork : public UdpNetwork {
   NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
   int recv(void* buf, size_t bufsize, std::string* details) override;
   void send(void* buf, size_t bufsize) override;
-  NetworkDeviceId getLocalDeviceId() override { return localDeviceId_; }
+  NetworkDeviceId getLocalDeviceId() const override { return localDeviceId_; }
   NetworkType type() const override { return NetworkType::kEthernet; }
   std::string getStatusStr(Milliseconds currentTime) override;
 
  private:
   explicit ArduinoEthernetNetwork();
-  NetworkDeviceId localDeviceId_;
+
+  static NetworkDeviceId QueryLocalDeviceId();
+
+  const NetworkDeviceId localDeviceId_ = QueryLocalDeviceId();
   uint16_t port_ = DefaultUdpPort();
   const char* mcastAddr_ = DefaultMulticastAddress();
   EthernetUDP udp_;

@@ -35,12 +35,16 @@ std::string EthernetHardwareStatusToString(EthernetHardwareStatus hwStatus) {
 
 }  // namespace
 
-ArduinoEthernetNetwork::ArduinoEthernetNetwork() {
+// static
+NetworkDeviceId ArduinoEthernetNetwork::QueryLocalDeviceId() {
   uint8_t wifiMacAddress[6] = {};
   uint64_t efuseMac64 = ESP.getEfuseMac();
   if (efuseMac64 == 0) { jll_fatal("%u Wi-Fi failed to read MAC address from EFUSE", timeMillis()); }
   memcpy(wifiMacAddress, &efuseMac64, sizeof(wifiMacAddress));
-  localDeviceId_ = NetworkDeviceId(wifiMacAddress).PlusOne();
+  return NetworkDeviceId(wifiMacAddress).PlusOne();
+}
+
+ArduinoEthernetNetwork::ArduinoEthernetNetwork() {
   jll_info("%u Starting Ethernet with MAC address " DEVICE_ID_FMT, timeMillis(), DEVICE_ID_HEX(localDeviceId_));
 #if JL_CORE2AWS_ETHERNET
   // These pins work with the M5Stack Core2AWS connected to the Ethernet W5500 module.
@@ -100,7 +104,9 @@ NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status, Milliseconds 
       constexpr unsigned long kResponseTimeoutMs = 1000;
       // TODO move Ethernet.begin() call to its own thread because it performs DHCP synchronously
       // and currently blocks our main thread while waiting for a DHCP response.
-      int beginRes = Ethernet.begin(localDeviceId_.data(), kDhcpTimeoutMs, kResponseTimeoutMs);
+      uint8_t macAddress[6];
+      localDeviceId_.writeTo(macAddress);
+      int beginRes = Ethernet.begin(macAddress, kDhcpTimeoutMs, kResponseTimeoutMs);
       if (beginRes == 0) {
         jll_error("%u Ethernet DHCP failed", currentTime);
         // TODO add support for IPv4 link-local addresses.

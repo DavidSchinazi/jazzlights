@@ -24,7 +24,7 @@ class Esp32WiFiNetwork : public Network {
   ~Esp32WiFiNetwork();
 
   NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
-  NetworkDeviceId getLocalDeviceId() override { return localDeviceId_; }
+  NetworkDeviceId getLocalDeviceId() const override { return localDeviceId_; }
   NetworkType type() const override { return NetworkType::kWiFi; }
   std::string getStatusStr(Milliseconds currentTime) override;
   void setMessageToSend(const NetworkMessage& messageToSend, Milliseconds currentTime) override;
@@ -66,8 +66,10 @@ class Esp32WiFiNetwork : public Network {
   void CreateSocket();
   void CloseSocket();
 
+  NetworkDeviceId InitWiFiStackAndQueryLocalDeviceId();
+
   QueueHandle_t eventQueue_;
-  NetworkDeviceId localDeviceId_;                   // Only modified in constructor.
+  const NetworkDeviceId localDeviceId_ = InitWiFiStackAndQueryLocalDeviceId();
   TaskHandle_t taskHandle_ = nullptr;               // Only modified in constructor.
   struct in_addr multicastAddress_ = {};            // Only modified in constructor.
   int socket_ = -1;                                 // Only used on our task.

@@ -23,7 +23,7 @@ class Esp32EthernetNetwork : public Network {
   ~Esp32EthernetNetwork();
 
   NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
-  NetworkDeviceId getLocalDeviceId() override { return localDeviceId_; }
+  NetworkDeviceId getLocalDeviceId() const override { return localDeviceId_; }
   NetworkType type() const override { return NetworkType::kEthernet; }
   std::string getStatusStr(Milliseconds currentTime) override;
   void setMessageToSend(const NetworkMessage& messageToSend, Milliseconds currentTime) override;
@@ -63,8 +63,10 @@ class Esp32EthernetNetwork : public Network {
   void CreateSocket();
   void CloseSocket();
 
+  static NetworkDeviceId QueryLocalDeviceId();
+
   QueueHandle_t eventQueue_;
-  NetworkDeviceId localDeviceId_;         // Only modified in constructor.
+  const NetworkDeviceId localDeviceId_ = QueryLocalDeviceId();
   TaskHandle_t taskHandle_ = nullptr;     // Only modified in constructor.
   struct in_addr multicastAddress_ = {};  // Only modified in constructor.
   int socket_ = -1;                       // Only used on our task.

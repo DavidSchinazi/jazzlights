@@ -385,13 +385,7 @@ void Esp32WiFiNetwork::RunTask() {
   }
 }
 
-Esp32WiFiNetwork::Esp32WiFiNetwork()
-    : eventQueue_(xQueueCreate(/*num_queue_items=*/1, /*queue_item_size=*/sizeof(Esp32WiFiNetworkEvent))) {
-  if (eventQueue_ == nullptr) { jll_fatal("Failed to create Esp32WiFiNetwork queue"); }
-  udpPayload_ = reinterpret_cast<uint8_t*>(malloc(kReceiveBufferLength));
-  if (udpPayload_ == nullptr) {
-    jll_fatal("Esp32WiFiNetwork failed to allocate receive buffer of length %zu", kReceiveBufferLength);
-  }
+NetworkDeviceId Esp32WiFiNetwork::InitWiFiStackAndQueryLocalDeviceId() {
   InitializeNetStack();
   esp_netif_create_default_wifi_sta();
 
@@ -420,7 +414,16 @@ Esp32WiFiNetwork::Esp32WiFiNetwork()
 
   uint8_t macAddress[6];
   ESP_ERROR_CHECK(esp_wifi_get_mac(WIFI_IF_STA, macAddress));
-  localDeviceId_ = NetworkDeviceId(macAddress);
+  return NetworkDeviceId(macAddress);
+}
+
+Esp32WiFiNetwork::Esp32WiFiNetwork()
+    : eventQueue_(xQueueCreate(/*num_queue_items=*/1, /*queue_item_size=*/sizeof(Esp32WiFiNetworkEvent))) {
+  if (eventQueue_ == nullptr) { jll_fatal("Failed to create Esp32WiFiNetwork queue"); }
+  udpPayload_ = reinterpret_cast<uint8_t*>(malloc(kReceiveBufferLength));
+  if (udpPayload_ == nullptr) {
+    jll_fatal("Esp32WiFiNetwork failed to allocate receive buffer of length %zu", kReceiveBufferLength);
+  }
 
   if (inet_pton(AF_INET, DefaultMulticastAddress(), &multicastAddress_) != 1) {
     jll_fatal("Esp32WiFiNetwork failed to parse multicast address");

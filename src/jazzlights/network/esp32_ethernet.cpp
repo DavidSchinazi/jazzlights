@@ -335,6 +335,18 @@ void Esp32EthernetNetwork::RunTask() {
   }
 }
 
+// static
+NetworkDeviceId Esp32EthernetNetwork::QueryLocalDeviceId() {
+  // W5500 SPI Ethernet modules do not have a MAC address, so we instead add one to the Wi-Fi MAC.
+  uint8_t wifi_mac_addr[6];
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+  ESP_ERROR_CHECK(esp_read_mac(wifi_mac_addr, ESP_MAC_EFUSE_FACTORY));
+#else
+  ESP_ERROR_CHECK(esp_efuse_mac_get_default(wifi_mac_addr));
+#endif
+  return NetworkDeviceId(wifi_mac_addr).PlusOne();
+}
+
 Esp32EthernetNetwork::Esp32EthernetNetwork()
     : eventQueue_(xQueueCreate(/*num_queue_items=*/1, /*queue_item_size=*/sizeof(Esp32EthernetNetworkEvent))) {
   if (eventQueue_ == nullptr) { jll_fatal("Failed to create Esp32EthernetNetwork queue"); }
@@ -366,12 +378,6 @@ Esp32EthernetNetwork::Esp32EthernetNetwork()
   }
   ESP_ERROR_CHECK(spiInitErr);
 
-  // The SPI Ethernet module(s) do not have a MAC address, so we instead add one to the Wi-Fi MAC.
-  uint8_t wifi_mac_addr[6];
-  ESP_ERROR_CHECK(esp_read_mac(wifi_mac_addr, ESP_MAC_EFUSE_FACTORY));
-  NetworkDeviceId wifi_mac(wifi_mac_addr);
-  localDeviceId_ = wifi_mac.PlusOne();
-
   eth_mac_config_t mac_config = ETH_MAC_DEFAULT_CONFIG();
   eth_phy_config_t phy_config = ETH_PHY_DEFAULT_CONFIG();
   phy_config.phy_addr = host_id;
@@ -400,7 +406,9 @@ Esp32EthernetNetwork::Esp32EthernetNetwork()
   esp_eth_config_t eth_config_spi = ETH_DEFAULT_CONFIG(mac, phy);
   ESP_ERROR_CHECK(esp_eth_driver_install(&eth_config_spi, &eth_handle));
 
-  ESP_ERROR_CHECK(esp_eth_ioctl(eth_handle, ETH_CMD_S_MAC_ADDR, localDeviceId_.data()));
+  uint8_t mac_address[6];
+  localDeviceId_.writeTo(mac_address);
+  ESP_ERROR_CHECK(esp_eth_ioctl(eth_handle, ETH_CMD_S_MAC_ADDR, mac_address));
 
   InitializeNetStack();
 

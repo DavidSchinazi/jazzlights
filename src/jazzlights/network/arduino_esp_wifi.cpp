@@ -97,14 +97,15 @@ std::string WiFiReasonToString(uint8_t reason) {
 }
 }  // namespace
 
-ArduinoEspWiFiNetwork::ArduinoEspWiFiNetwork() {
+// static
+NetworkDeviceId ArduinoEspWiFiNetwork::QueryLocalDeviceId() {
   uint8_t macAddress[6] = {};
   if (WiFi.macAddress(&macAddress[0]) == nullptr) {
     uint64_t efuseMac64 = ESP.getEfuseMac();
     if (efuseMac64 == 0) { jll_fatal("%u Wi-Fi failed to read MAC address from both Wi-Fi and EFUSE", timeMillis()); }
     memcpy(macAddress, &efuseMac64, sizeof(macAddress));
   }
-  localDeviceId_ = NetworkDeviceId(macAddress);
+  return NetworkDeviceId(macAddress);
 }
 
 void WiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {

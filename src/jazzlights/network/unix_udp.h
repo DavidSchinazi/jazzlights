@@ -14,10 +14,10 @@ namespace jazzlights {
 
 class UnixUdpNetwork : public UdpNetwork {
  public:
-  UnixUdpNetwork(uint16_t port = DefaultUdpPort(), const char* addr = DefaultMulticastAddress());
+  explicit UnixUdpNetwork();
 
   NetworkStatus update(NetworkStatus status, Milliseconds currentTime) override;
-  NetworkDeviceId getLocalDeviceId() override { return localDeviceId_; }
+  NetworkDeviceId getLocalDeviceId() const override { return localDeviceId_; }
   int recv(void* buf, size_t bufsize, std::string* details) override;
   void send(void* buf, size_t bufsize) override;
   NetworkType type() const override { return NetworkType::kOther; }
@@ -28,10 +28,10 @@ class UnixUdpNetwork : public UdpNetwork {
   void invalidateSocket(std::string ifName);
   bool setupSockets();
 
-  NetworkDeviceId localDeviceId_;
+  static NetworkDeviceId QueryLocalDeviceId();
+
+  const NetworkDeviceId localDeviceId_ = QueryLocalDeviceId();
   struct in_addr mcastAddr_;
-  char mcastAddrStr_[sizeof("255.255.255.255")];
-  const uint16_t port_;
   std::unordered_map<std::string, int> sockets_;
 };
 

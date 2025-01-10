@@ -31,7 +31,7 @@ class Esp32BleNetwork : public Network {
   void triggerSendAsap(Milliseconds currentTime) override;
 
   // Get this device's BLE MAC address.
-  NetworkDeviceId getLocalDeviceId() override { return localDeviceId_; }
+  NetworkDeviceId getLocalDeviceId() const override { return localDeviceId_; }
   NetworkType type() const override { return NetworkType::kBLE; }
   bool shouldEcho() const override { return true; }
   Milliseconds getLastReceiveTime() const override { return lastReceiveTime_; }
@@ -61,7 +61,7 @@ class Esp32BleNetwork : public Network {
   // 29 is dictated by the BLE standard.
   static constexpr size_t kMaxInnerPayloadLength = 29;
 
-  explicit Esp32BleNetwork();
+  explicit Esp32BleNetwork() {}
   void StartScanning(Milliseconds currentTime);
   void StopScanning(Milliseconds currentTime);
   void StartAdvertising(Milliseconds currentTime);
@@ -79,8 +79,10 @@ class Esp32BleNetwork : public Network {
 
   static void GapCallback(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param);
 
-  NetworkDeviceId localDeviceId_;
-  std::atomic<Milliseconds> lastReceiveTime_;
+  static NetworkDeviceId InitBluetoothStackAndQueryLocalDeviceId();
+
+  const NetworkDeviceId localDeviceId_ = InitBluetoothStackAndQueryLocalDeviceId();
+  std::atomic<Milliseconds> lastReceiveTime_{-1};
   std::mutex mutex_;
   // All the variables below are protected by mutex_.
   State state_ = State::kIdle;
@@ -106,7 +108,7 @@ class Esp32BleNetwork : public Network {
   void setMessageToSend(const NetworkMessage& /*messageToSend*/, Milliseconds /*currentTime*/) override {}
   void disableSending(Milliseconds /*currentTime*/) override {}
   void triggerSendAsap(Milliseconds /*currentTime*/) override {}
-  NetworkDeviceId getLocalDeviceId() override { return NetworkDeviceId(); }
+  NetworkDeviceId getLocalDeviceId() const override { return NetworkDeviceId(); }
   NetworkType type() const override { return NetworkType::kBLE; }
   bool shouldEcho() const override { return false; }
   Milliseconds getLastReceiveTime() const override { return -1; }

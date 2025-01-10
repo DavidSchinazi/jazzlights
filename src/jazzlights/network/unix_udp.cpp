@@ -59,14 +59,14 @@ int UnixUdpNetwork::setupSocketForInterface(const char* ifName, struct in_addr l
 
     sockaddr_in sin = {
         .sin_family = AF_INET,
-        .sin_port = htons(port_),
+        .sin_port = htons(DefaultUdpPort()),
         // .sin_addr = localAddr,
         .sin_addr = {htonl(INADDR_ANY)},
         .sin_zero = {},
     };
 
     if (bind(fd, (struct sockaddr*)&sin, sizeof(sin)) < 0) {
-      jll_error("Failed to bind UDP socket %d ifName %s to port %d: %s", fd, ifName, port_, strerror(errno));
+      jll_error("Failed to bind UDP socket %d ifName %s to port %d: %s", fd, ifName, DefaultUdpPort(), strerror(errno));
       break;
     }
 
@@ -75,8 +75,8 @@ int UnixUdpNetwork::setupSocketForInterface(const char* ifName, struct in_addr l
         .imr_interface = localAddr,
     };
     if (setsockopt(fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mcastGroup, sizeof(mcastGroup)) < 0) {
-      jll_error("Failed to add UDP socket %d ifName %s to multicast group %s: %s", fd, ifName, mcastAddrStr_,
-                strerror(errno));
+      jll_error("Failed to add UDP socket %d ifName %s to multicast group %s: %s", fd, ifName,
+                DefaultMulticastAddress(), strerror(errno));
       break;
     }
 
@@ -89,8 +89,8 @@ int UnixUdpNetwork::setupSocketForInterface(const char* ifName, struct in_addr l
 
     sockets_[ifName] = fd;
 
-    jll_info("Joined multicast group %s, listening on port %d, UDP socket %d, ifName %s", mcastAddrStr_, port_, fd,
-             ifName);
+    jll_info("Joined multicast group %s, listening on port %d, UDP socket %d, ifName %s", DefaultMulticastAddress(),
+             DefaultUdpPort(), fd, ifName);
     return 2;
   } while (false);
 
@@ -116,6 +116,36 @@ void UnixUdpNetwork::invalidateSocket(std::string ifName) {
   jll_info("Invalidated socket %d for ifName %s", fd, ifName.c_str());
 }
 
+// static
+NetworkDeviceId UnixUdpNetwork::QueryLocalDeviceId() {
+  NetworkDeviceId localAddress;
+  struct ifaddrs* ifaddr = NULL;
+  if (getifaddrs(&ifaddr) != -1) {
+    for (struct ifaddrs* ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+      if (ifa->ifa_addr == NULL) { continue; }
+#if defined(__APPLE__)
+      if (ifa->ifa_addr->sa_family != AF_LINK) { continue; }
+      struct sockaddr_dl* dlAddress = reinterpret_cast<struct sockaddr_dl*>(ifa->ifa_addr);
+      localAddress = NetworkDeviceId(reinterpret_cast<const uint8_t*>(&dlAddress->sdl_data[dlAddress->sdl_nlen]));
+#elif defined(linux) || defined(__linux) || defined(__linux__)
+      if (ifa->ifa_addr->sa_family != AF_PACKET) { continue; }
+      localAddress = NetworkDeviceId((reinterpret_cast<struct sockaddr_ll*>(ifa->ifa_addr)->sll_addr));
+#else
+#error "Unsupported platform"
+#endif
+      if (localAddress != NetworkDeviceId()) {
+        jll_info("Choosing local MAC address " DEVICE_ID_FMT " from interface %s", DEVICE_ID_HEX(localAddress),
+                 ifa->ifa_name);
+        break;
+      }
+    }
+    freeifaddrs(ifaddr);
+  } else {
+    jll_fatal("getifaddrs failed: %s", strerror(errno));
+  }
+  return localAddress;
+}
+
 bool UnixUdpNetwork::setupSockets() {
   struct ifaddrs* ifaddr = NULL;
   if (getifaddrs(&ifaddr) == -1) {
@@ -128,24 +158,6 @@ bool UnixUdpNetwork::setupSockets() {
     if (ifa->ifa_addr == NULL) {
       jll_error("Skipping interface without data \"%s\"", ifa->ifa_name);
       continue;
-    }
-    if (localDeviceId_ == NetworkDeviceId()) {
-      // Fill in localDeviceId_.
-#if defined(__APPLE__)
-      if (ifa->ifa_addr->sa_family != AF_LINK) { continue; }
-      struct sockaddr_dl* dlAddress = reinterpret_cast<struct sockaddr_dl*>(ifa->ifa_addr);
-      NetworkDeviceId localAddress(reinterpret_cast<const uint8_t*>(&dlAddress->sdl_data[dlAddress->sdl_nlen]));
-#elif defined(linux) || defined(__linux) || defined(__linux__)
-      if (ifa->ifa_addr->sa_family != AF_PACKET) { continue; }
-      NetworkDeviceId localAddress((reinterpret_cast<struct sockaddr_ll*>(ifa->ifa_addr)->sll_addr));
-#else
-#error "Unsupported platform"
-#endif
-      if (localAddress != NetworkDeviceId()) {
-        jll_info("Choosing local MAC address " DEVICE_ID_FMT " from interface %s", DEVICE_ID_HEX(localAddress),
-                 ifa->ifa_name);
-        localDeviceId_ = localAddress;
-      }
     }
     if (ifa->ifa_addr->sa_family != AF_INET) {
       // We currently only support IPv4.
@@ -166,12 +178,10 @@ bool UnixUdpNetwork::setupSockets() {
   return !sockets_.empty();
 }
 
-UnixUdpNetwork::UnixUdpNetwork(uint16_t port, const char* addr) : port_(port) {
-  assert(strnlen(addr, sizeof(mcastAddrStr_) + 1) < sizeof(mcastAddrStr_));
-  strncpy(mcastAddrStr_, addr, sizeof(mcastAddrStr_));
-  int parsed = inet_pton(AF_INET, addr, &mcastAddr_);
-  assert(parsed == 1);
-  // Make sure localDeviceId_ is filled in.
+UnixUdpNetwork::UnixUdpNetwork() {
+  if (inet_pton(AF_INET, DefaultMulticastAddress(), &mcastAddr_) != 1) {
+    jll_fatal("UnixUdpNetwork failed to parse multicast address");
+  }
   setupSockets();
 }
 
@@ -233,7 +243,7 @@ void UnixUdpNetwork::send(void* buf, size_t bufsize) {
   setupSockets();
   sockaddr_in sin = {
       .sin_family = AF_INET,
-      .sin_port = htons(port_),
+      .sin_port = htons(DefaultUdpPort()),
       .sin_addr = mcastAddr_,
       .sin_zero = {},
   };
@@ -266,7 +276,8 @@ void UnixUdpNetwork::send(void* buf, size_t bufsize) {
       // Exit loop since sockets_ has been modified, and that invalidates the loop iterator.
       break;
     }
-    jll_debug("Sent %zu bytes on UDP socket %d ifName %s to %s:%d", bufsize, fd, ifName.c_str(), mcastAddrStr_, port_);
+    jll_debug("Sent %zu bytes on UDP socket %d ifName %s to %s:%d", bufsize, fd, ifName.c_str(),
+              DefaultMulticastAddress(), DefaultUdpPort());
   }
 }
 
