@@ -769,8 +769,10 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
   messageToSend.precedence = precedence;
   messageToSend.lastOriginationTime = lastOriginationTime;
   messageToSend.numHops = currentNumHops_;
+  messageToSend.receiptNetworkId = followedNextHopNetworkId_;
+  messageToSend.receiptNetworkType = followedNextHopNetworkType_;
   for (Network* network : networks_) {
-    if (!network->shouldEcho() && followedNextHopNetworkId_ == network->id()) {
+    if (!network->shouldEcho() && messageToSend.receiptNetworkId == network->id()) {
       jll_debug("%u Not echoing for %s to %s ", currentTime, NetworkTypeToString(network->type()),
                 networkMessageToString(messageToSend, currentTime).c_str());
       network->disableSending(currentTime);

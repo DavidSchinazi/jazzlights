@@ -94,6 +94,8 @@ struct NetworkMessage {
   Milliseconds currentPatternStartTime = 0;
   Milliseconds lastOriginationTime = 0;
   // Receipt values are not sent over the wire.
+  // Note that, when sending, `receiptNetworkId` and `receiptNetworkType` represent
+  // the network where our followed next hop is; or 0 / kLeading if we are leading.
   NetworkId receiptNetworkId = 0;
   NetworkType receiptNetworkType = NetworkType::kLeading;
   std::string receiptDetails;
