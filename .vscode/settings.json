@@ -56,6 +56,24 @@
     "deque": "cpp",
     "unordered_set": "cpp",
     "regex": "cpp",
-    "type_traits": "cpp"
+    "type_traits": "cpp",
+    "atomic": "cpp",
+    "*.tcc": "cpp",
+    "chrono": "cpp",
+    "condition_variable": "cpp",
+    "exception": "cpp",
+    "algorithm": "cpp",
+    "functional": "cpp",
+    "iterator": "cpp",
+    "map": "cpp",
+    "memory": "cpp",
+    "memory_resource": "cpp",
+    "numeric": "cpp",
+    "random": "cpp",
+    "system_error": "cpp",
+    "fstream": "cpp",
+    "iostream": "cpp",
+    "thread": "cpp",
+    "cinttypes": "cpp"
   }
 }
