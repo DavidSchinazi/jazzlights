@@ -25,7 +25,7 @@
 namespace jazzlights {
 
 // returns 2 when newly created, 1 when already existing, 0 on failure.
-int UnixUdpNetwork::setupSocketForInterface(const char* ifName, struct in_addr localAddr) {
+int UnixUdpNetwork::setupSocketForInterface(const char* ifName, struct in_addr localAddr, int ifIndex) {
   int fd = -1;
   auto search = sockets_.find(std::string(ifName));
   if (search != sockets_.end()) { fd = search->second; }
@@ -61,7 +61,10 @@ int UnixUdpNetwork::setupSocketForInterface(const char* ifName, struct in_addr l
         // Do not set sin_len since it is no longer available on Linux and it is not needed on macOS.
         .sin_family = AF_INET,
         .sin_port = htons(DefaultUdpPort()),
-        // .sin_addr = localAddr,
+        // For sending purposes, we would want to bind to localAddr to ensure we send over the right interface. However,
+        // we want to receive packets destined to the multicast address, so for receiving purposes we need to bind to
+        // INADDR_ANY, as binding to the multicast address would prevent us from sending. We set the receiving interface
+        // via the IP_ADD_MEMBERSHIP socket option and the sending interface via the IP_MULTICAST_IF option.
         .sin_addr = {htonl(INADDR_ANY)},
         .sin_zero = {},
     };
@@ -71,13 +74,18 @@ int UnixUdpNetwork::setupSocketForInterface(const char* ifName, struct in_addr l
       break;
     }
 
-    struct ip_mreq mcastGroup = {
+    struct ip_mreqn mcastGroup = {
         .imr_multiaddr = mcastAddr_,
-        .imr_interface = localAddr,
+        .imr_address = localAddr,
+        .imr_ifindex = ifIndex,
     };
     if (setsockopt(fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mcastGroup, sizeof(mcastGroup)) < 0) {
       jll_error("Failed to add UDP socket %d ifName %s to multicast group %s: %s", fd, ifName,
                 DefaultMulticastAddress(), strerror(errno));
+      break;
+    }
+    if (setsockopt(fd, IPPROTO_IP, IP_MULTICAST_IF, &mcastGroup, sizeof(mcastGroup)) < 0) {
+      jll_error("Failed to add set multicast interface for UDP socket %d ifName %s: %s", fd, ifName, strerror(errno));
       break;
     }
 
@@ -90,8 +98,12 @@ int UnixUdpNetwork::setupSocketForInterface(const char* ifName, struct in_addr l
 
     sockets_[ifName] = fd;
 
-    jll_info("Joined multicast group %s, listening on port %d, UDP socket %d, ifName %s", DefaultMulticastAddress(),
-             DefaultUdpPort(), fd, ifName);
+    char addressString[INET_ADDRSTRLEN + 1] = {};
+    if (inet_ntop(AF_INET, &localAddr, addressString, sizeof(addressString) - 1) == nullptr) {
+      jll_fatal("UnixUdpNetwork printing local address on ifName %s failed: %s", ifName, strerror(errno));
+    }
+    jll_info("Joined multicast group %s, listening on %s:%d, UDP socket %d, ifName %s", DefaultMulticastAddress(),
+             addressString, DefaultUdpPort(), fd, ifName);
     return 2;
   } while (false);
 
@@ -155,10 +167,15 @@ bool UnixUdpNetwork::setupSockets() {
   }
 
   uint32_t newValidSockets = 0;
+  int ifIndex = 0;
   for (struct ifaddrs* ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
     if (ifa->ifa_addr == NULL) {
       jll_error("Skipping interface without data \"%s\"", ifa->ifa_name);
       continue;
+    }
+    if (ifa->ifa_addr->sa_family == AF_LINK) {
+      struct sockaddr_dl* dlAddress = reinterpret_cast<struct sockaddr_dl*>(ifa->ifa_addr);
+      ifIndex = dlAddress->sdl_index;
     }
     if (ifa->ifa_addr->sa_family != AF_INET) {
       // We currently only support IPv4.
@@ -171,7 +188,7 @@ bool UnixUdpNetwork::setupSockets() {
     }
 
     sockaddr_in* sin = reinterpret_cast<sockaddr_in*>(ifa->ifa_addr);
-    if (setupSocketForInterface(ifa->ifa_name, sin->sin_addr) == 2) { newValidSockets++; }
+    if (setupSocketForInterface(ifa->ifa_name, sin->sin_addr, ifIndex) == 2) { newValidSockets++; }
   }
 
   freeifaddrs(ifaddr);

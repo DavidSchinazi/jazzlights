@@ -24,7 +24,7 @@ class UnixUdpNetwork : public UdpNetwork {
   std::string getStatusStr(Milliseconds /*currentTime*/) override { return "UnixUDP"; }
 
  private:
-  int setupSocketForInterface(const char* ifName, struct in_addr localAddr);
+  int setupSocketForInterface(const char* ifName, struct in_addr localAddr, int ifIndex);
   void invalidateSocket(std::string ifName);
   bool setupSockets();
 
