@@ -173,10 +173,17 @@ bool UnixUdpNetwork::setupSockets() {
       jll_error("Skipping interface without data \"%s\"", ifa->ifa_name);
       continue;
     }
+#if defined(__APPLE__)
     if (ifa->ifa_addr->sa_family == AF_LINK) {
-      struct sockaddr_dl* dlAddress = reinterpret_cast<struct sockaddr_dl*>(ifa->ifa_addr);
-      ifIndex = dlAddress->sdl_index;
+      ifIndex = reinterpret_cast<struct sockaddr_dl*>(ifa->ifa_addr)->sdl_index;
     }
+#elif defined(linux) || defined(__linux) || defined(__linux__)
+    if (ifa->ifa_addr->sa_family == AF_PACKET) {
+      ifIndex = (reinterpret_cast<struct sockaddr_ll*>(ifa->ifa_addr)->sll_ifindex);
+    }
+#else
+#error "Unsupported platform"
+#endif
     if (ifa->ifa_addr->sa_family != AF_INET) {
       // We currently only support IPv4.
       continue;
