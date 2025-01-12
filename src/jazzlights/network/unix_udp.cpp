@@ -173,6 +173,8 @@ bool UnixUdpNetwork::setupSockets() {
       jll_error("Skipping interface without data \"%s\"", ifa->ifa_name);
       continue;
     }
+    // This code relies on the assumption that the list from getifaddrs() always contains an interface-level entry
+    // before the address-level entry for that interface, and that the entries are grouped by interface.
 #if defined(__APPLE__)
     if (ifa->ifa_addr->sa_family == AF_LINK) {
       ifIndex = reinterpret_cast<struct sockaddr_dl*>(ifa->ifa_addr)->sdl_index;
