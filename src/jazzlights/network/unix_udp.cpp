@@ -58,6 +58,7 @@ int UnixUdpNetwork::setupSocketForInterface(const char* ifName, struct in_addr l
     }
 
     sockaddr_in sin = {
+        .sin_len = sizeof(struct sockaddr_in),
         .sin_family = AF_INET,
         .sin_port = htons(DefaultUdpPort()),
         // .sin_addr = localAddr,
@@ -223,6 +224,7 @@ int UnixUdpNetwork::recv(void* buf, size_t bufsize, std::string* /*details*/) {
 void UnixUdpNetwork::send(void* buf, size_t bufsize) {
   setupSockets();
   sockaddr_in sin = {
+      .sin_len = sizeof(struct sockaddr_in),
       .sin_family = AF_INET,
       .sin_port = htons(DefaultUdpPort()),
       .sin_addr = mcastAddr_,
