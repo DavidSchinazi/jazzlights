@@ -32,7 +32,7 @@ set_target_properties(jazzlights PROPERTIES COMPILE_OPTIONS "${JLCompileOptions}
 # LIBRARY-ASAN
 add_library(jazzlights-asan SHARED ${LIB_SOURCES})
 target_include_directories(jazzlights-asan PUBLIC ../src .)
-set_target_properties(jazzlights-asan PROPERTIES COMPILE_OPTIONS "${JLCompileOptions};-fsanitize=address")
+set_target_properties(jazzlights-asan PROPERTIES COMPILE_OPTIONS "${JLCompileOptions};-fsanitize=address;-g")
 set_target_properties(jazzlights-asan PROPERTIES LINK_OPTIONS "-fsanitize=address")
 
 # DEMO-LIB
@@ -48,7 +48,7 @@ set_target_properties(jazzlights-demo PROPERTIES COMPILE_OPTIONS "${JLCompileOpt
 # DEMO-ASAN
 add_executable(jazzlights-demo-asan ${DEMO_SOURCES})
 target_link_libraries(jazzlights-demo-asan PRIVATE jazzlights-asan jazzlights-demo-lib)
-set_target_properties(jazzlights-demo-asan PROPERTIES COMPILE_OPTIONS "${JLCompileOptions};-fsanitize=address")
+set_target_properties(jazzlights-demo-asan PROPERTIES COMPILE_OPTIONS "${JLCompileOptions};-fsanitize=address;-g")
 set_target_properties(jazzlights-demo-asan PROPERTIES LINK_OPTIONS "-fsanitize=address")
 
 # BENCH
