@@ -17,7 +17,7 @@ void XYIndexStore::IngestLayout(const Layout* layout) {
   layoutInfos_.push_back(LayoutInfo());
   LayoutInfo& li = layoutInfos_.back();
   li.layout = layout;
-  li.xyIndices.reserve(layout->pixelCount());
+  li.xyIndices.resize(layout->pixelCount());
 }
 
 void XYIndexStore::Finalize(const Box& viewport) {
