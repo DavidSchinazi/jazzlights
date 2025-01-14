@@ -26,27 +26,24 @@ set(JLCompileOptions "-std=c++20;-DJL_CONFIG=NONE;-DJL_CONTROLLER=NATIVE;-fPIC;-
 add_library(jazzlights SHARED ${LIB_SOURCES})
 target_include_directories(jazzlights PUBLIC ../src .)
 set_target_properties(jazzlights PROPERTIES COMPILE_OPTIONS "${JLCompileOptions}")
-install(TARGETS jazzlights LIBRARY DESTINATION lib)
-install(DIRECTORY src/ COMPONENT "lib" DESTINATION include FILES_MATCHING PATTERN "*.h")
-install(DIRECTORY extras/jazzlights/ COMPONENT "lib" DESTINATION include/jazzlights FILES_MATCHING PATTERN "*.h")
+
+# DEMO-LIB
+add_library(jazzlights-demo-lib INTERFACE)
+target_link_libraries(jazzlights-demo-lib INTERFACE jazzlights glfw OpenGL::GL)
+target_include_directories(jazzlights-demo-lib INTERFACE ../src ${GLFW_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR})
 
 # DEMO
 add_executable(jazzlights-demo ${DEMO_SOURCES})
-target_link_libraries(jazzlights-demo PRIVATE jazzlights glfw OpenGL::GL)
-target_include_directories(jazzlights-demo PRIVATE ../src ${GLFW_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR})
+target_link_libraries(jazzlights-demo PRIVATE jazzlights-demo-lib)
 set_target_properties(jazzlights-demo PROPERTIES COMPILE_OPTIONS "${JLCompileOptions}")
-install(TARGETS jazzlights-demo DESTINATION bin COMPONENT "demo")
 
 # DEMO-ASAN
 add_executable(jazzlights-demo-asan ${DEMO_SOURCES})
-target_link_libraries(jazzlights-demo-asan PRIVATE jazzlights glfw OpenGL::GL)
-target_include_directories(jazzlights-demo-asan PRIVATE ../src ${GLFW_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR})
+target_link_libraries(jazzlights-demo-asan PRIVATE jazzlights-demo-lib)
 set_target_properties(jazzlights-demo-asan PROPERTIES COMPILE_OPTIONS "${JLCompileOptions};-fsanitize=address")
 set_target_properties(jazzlights-demo-asan PROPERTIES LINK_OPTIONS "-fsanitize=address")
-install(TARGETS jazzlights-demo-asan DESTINATION bin COMPONENT "demo")
 
 # BENCH
 add_executable(jazzlights-bench ${BENCH_SOURCES})
 target_link_libraries(jazzlights-bench jazzlights)
 set_target_properties(jazzlights-bench PROPERTIES COMPILE_OPTIONS "${JLCompileOptions}")
-install(TARGETS jazzlights-bench DESTINATION bin COMPONENT "bench")
