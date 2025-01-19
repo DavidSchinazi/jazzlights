@@ -169,10 +169,7 @@ bool UnixUdpNetwork::setupSockets() {
   uint32_t newValidSockets = 0;
   int ifIndex = 0;
   for (struct ifaddrs* ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
-    if (ifa->ifa_addr == NULL) {
-      jll_error("Skipping interface without data \"%s\"", ifa->ifa_name);
-      continue;
-    }
+    if (ifa->ifa_addr == NULL) { continue; }
     // This code relies on the assumption that the list from getifaddrs() always contains an interface-level entry
     // before the address-level entry for that interface, and that the entries are grouped by interface.
 #if defined(__APPLE__)
