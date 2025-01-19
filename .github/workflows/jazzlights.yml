@@ -34,7 +34,7 @@ jobs:
       - name: Build
         run: cmake --build extras/build
       - name: Run jazzlights-bench
-        run: extras/build/jazzlights-bench -k 2
+        run: extras/build/jazzlights-bench -nk11
 
   pio-build:
     strategy:
