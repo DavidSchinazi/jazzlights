@@ -14,8 +14,7 @@ namespace jazzlights {
 
 class UnixUdpNetwork : public UdpNetwork {
  public:
-  explicit UnixUdpNetwork();
-
+  static UnixUdpNetwork* get();
   NetworkStatus update(NetworkStatus /*status*/, Milliseconds /*currentTime*/) override { return CONNECTED; }
   NetworkDeviceId getLocalDeviceId() const override { return localDeviceId_; }
   int recv(void* buf, size_t bufsize, std::string* details) override;
@@ -24,6 +23,7 @@ class UnixUdpNetwork : public UdpNetwork {
   std::string getStatusStr(Milliseconds /*currentTime*/) override { return "UnixUDP"; }
 
  private:
+  explicit UnixUdpNetwork();
   int setupSocketForInterface(const char* ifName, struct in_addr localAddr, int ifIndex);
   void invalidateSocket(std::string ifName);
   bool setupSockets();

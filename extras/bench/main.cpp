@@ -1,6 +1,7 @@
 #include <getopt.h>
 
 #include "jazzlights/layout/matrix.h"
+#include "jazzlights/network/unix_udp.h"
 #include "jazzlights/player.h"
 #include "jazzlights/util/log.h"
 
@@ -19,12 +20,15 @@ NoopRenderer noopRenderer;
 
 int runMain(int argc, char** argv) {
   int killTime = 0;
+  bool useNetwork = false;
   while (true) {
-    int ch = getopt(argc, argv, "k:");
+    int ch = getopt(argc, argv, "k:n");
     if (ch == -1) { break; }
     if (ch == 'k') { killTime = strtol(optarg, nullptr, 10) * 1000; }
+    if (ch == 'n') { useNetwork = true; }
   }
   player.addStrand(pixels, noopRenderer);
+  if (useNetwork) { player.connect(UnixUdpNetwork::get()); }
   player.begin(timeMillis());
   Milliseconds lastFpsEpochTime = 0;
   while (true) {

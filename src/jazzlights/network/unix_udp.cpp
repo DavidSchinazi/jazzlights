@@ -212,6 +212,12 @@ UnixUdpNetwork::UnixUdpNetwork() {
   setupSockets();
 }
 
+// static
+UnixUdpNetwork* UnixUdpNetwork::get() {
+  static UnixUdpNetwork sSingleton;
+  return &sSingleton;
+}
+
 int UnixUdpNetwork::recv(void* buf, size_t bufsize, std::string* /*details*/) {
   for (auto pair : sockets_) {
     std::string ifName = pair.first;

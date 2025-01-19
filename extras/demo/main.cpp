@@ -19,13 +19,12 @@ int runMain(int argc, char** argv) {
   }
   Matrix layout(/*w=*/400, /*h=*/300);
   GLRenderer renderer(layout);
-  UnixUdpNetwork network;
   Player player;
   player.setBasePrecedence(30000);
   player.setPrecedenceGain(5000);
   player.addStrand(layout, renderer);
   player.setRandomizeLocalDeviceId(true);
-  player.connect(&network);
+  player.connect(UnixUdpNetwork::get());
   player.begin(timeMillis());
 
   return runGui("JazzLights Demo", player, player.bounds(), /*fullscreen=*/false, killTime);
