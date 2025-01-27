@@ -200,9 +200,9 @@ class Network {
   NetworkStatus status_ = INITIALIZING;
 
   Milliseconds lastConnectionAttempt_ = 0;
-  Milliseconds minBackoffTimeout_ = 1000;
-  Milliseconds maxBackoffTimeout_ = 16000;
-  Milliseconds backoffTimeout_ = minBackoffTimeout_;
+  static constexpr Milliseconds kMinBackoffTimeout = 1000;
+  static constexpr Milliseconds kMaxBackoffTimeout = 16000;
+  Milliseconds backoffTimeout_ = kMinBackoffTimeout;
 };
 
 class UdpNetwork : public Network {
