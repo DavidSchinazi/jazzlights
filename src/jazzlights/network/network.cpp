@@ -220,7 +220,7 @@ bool Network::ParseUdpPayload(uint8_t* udpPayload, size_t udpPayloadLength, cons
 
 std::list<NetworkMessage> UdpNetwork::getReceivedMessagesImpl(Milliseconds currentTime) {
   std::list<NetworkMessage> receivedMessages;
-  if (!maybeHandleNotConnected(currentTime)) { return receivedMessages; }
+  if (status() != CONNECTED) { return receivedMessages; }
   while (true) {
     uint8_t udpPayload[2000] = {};
     std::string receiptDetails;
@@ -253,8 +253,6 @@ void Network::runLoop(Milliseconds currentTime) {
   checkStatus(currentTime);
   runLoopImpl(currentTime);
 }
-
-bool UdpNetwork::maybeHandleNotConnected(Milliseconds /*currentTime*/) { return status() == CONNECTED; }
 
 bool Network::WriteUdpPayload(const NetworkMessage& messageToSend, uint8_t* udpPayload, size_t udpPayloadLength,
                               Milliseconds currentTime) {
@@ -293,7 +291,7 @@ bool Network::WriteUdpPayload(const NetworkMessage& messageToSend, uint8_t* udpP
 }
 
 void UdpNetwork::runLoopImpl(Milliseconds currentTime) {
-  if (!maybeHandleNotConnected(currentTime)) { return; }
+  if (status() != CONNECTED) { return; }
 
   // Do we need to send?
   static constexpr Milliseconds kMinTimeBetweenUdpSends = 100;

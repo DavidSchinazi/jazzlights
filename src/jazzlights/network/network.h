@@ -220,7 +220,6 @@ class UdpNetwork : public Network {
   virtual void send(void* buf, size_t bufsize) = 0;
 
  private:
-  bool maybeHandleNotConnected(Milliseconds currentTime);
   bool hasDataToSend_ = false;
   NetworkMessage messageToSend_;
 

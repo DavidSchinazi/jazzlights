@@ -244,8 +244,7 @@ err:
 int ArduinoEspWiFiNetwork::recv(void* buf, size_t bufsize, std::string* details) {
   int cb = udp_.parsePacket();
   if (cb <= 0) {
-    jll_debug("%u ArduinoEspWiFiNetwork::recv returned %d status = %s", timeMillis(), cb,
-              NetworkStatusToString(status()).c_str());
+    jll_debug("%u ArduinoEspWiFiNetwork::recv returned %d", timeMillis(), cb);
     return 0;
   }
   std::ostringstream s;
