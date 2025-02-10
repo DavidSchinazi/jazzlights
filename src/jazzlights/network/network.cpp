@@ -236,7 +236,7 @@ std::list<NetworkMessage> UdpNetwork::getReceivedMessagesImpl(Milliseconds curre
 
 void Network::checkStatus(Milliseconds currentTime) {
   if (status_ == CONNECTION_FAILED) {
-    backoffTimeout_ = std::min(kMaxBackoffTimeout, backoffTimeout_ * 2);
+    backoffTimeout_ = std::min(MaxBackoffTimeout(), backoffTimeout_ * 2);
     if (currentTime - lastConnectionAttempt_ > backoffTimeout_) { reconnect(currentTime); }
   } else {
     const NetworkStatus previousStatus = status_;
@@ -246,7 +246,7 @@ void Network::checkStatus(Milliseconds currentTime) {
                NetworkStatusToString(previousStatus).c_str(), NetworkStatusToString(status_).c_str());
     }
   }
-  if (status_ == CONNECTED) { backoffTimeout_ = kMinBackoffTimeout; }
+  if (status_ == CONNECTED) { backoffTimeout_ = MinBackoffTimeout(); }
 }
 
 void Network::runLoop(Milliseconds currentTime) {
