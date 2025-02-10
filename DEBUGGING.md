@@ -53,9 +53,18 @@ pio run -e vest_instrumentation -t menuconfig
 
 # DS33 dual devices
 
+## Vests
+
 ```
 pio run -e ds33_dev_a -t upload && pio device monitor -e ds33_dev_a
 pio run -e ds33_dev_b -t upload && pio device monitor -e ds33_dev_b
+```
+
+## Creatures
+
+```
+pio run -e ds33_creature_a -t upload && pio device monitor -e ds33_creature_a
+pio run -e ds33_creature_b -t upload && pio device monitor -e ds33_creature_b
 ```
 
 # Instrumentation
