@@ -1,7 +1,7 @@
 #include "jazzlights/layout/layout_data.h"
 
 #if JL_IS_CONFIG(GAUNTLET) || JL_IS_CONFIG(HAMMER) || JL_IS_CONFIG(FAIRY_WAND) || JL_IS_CONFIG(ROPELIGHT) || \
-    JL_IS_CONFIG(SHOE) || JL_IS_CONFIG(XMAS_TREE)
+    JL_IS_CONFIG(SHOE) || JL_IS_CONFIG(XMAS_TREE) || JL_IS_CONFIG(CREATURE)
 
 #include "jazzlights/layout/matrix.h"
 
@@ -26,11 +26,15 @@ Matrix pixels(/*w=*/300, /*h=*/1);
 
 #if JL_IS_CONFIG(SHOE)
 Matrix pixels(/*w=*/36, /*h=*/1);
-#endif  // ROPELIGHT
+#endif  // SHOE
 
 #if JL_IS_CONFIG(XMAS_TREE)
 Matrix pixels(/*w=*/10, /*h=*/10);
 #endif  // XMAS_TREE
+
+#if JL_IS_CONFIG(CREATURE)
+Matrix pixels(/*w=*/30, /*h=*/1);
+#endif  // CREATURE
 
 }  // namespace
 
