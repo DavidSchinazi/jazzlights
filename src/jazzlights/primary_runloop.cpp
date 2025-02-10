@@ -77,6 +77,9 @@ void SetupPrimaryRunLoop() {
 #elif JL_IS_CONFIG(XMAS_TREE)
   player.setBasePrecedence(5000);
   player.setPrecedenceGain(100);
+#elif JL_IS_CONFIG(CREATURE)
+  player.setBasePrecedence(CreaturePrecedence());
+  player.setPrecedenceGain(0);
 #else
   player.setBasePrecedence(1000);
   player.setPrecedenceGain(1000);

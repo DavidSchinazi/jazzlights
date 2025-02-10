@@ -58,6 +58,7 @@ class NetworkDeviceId {
   uint8_t operator()(uint8_t i) const { return data_[i]; }
   int compare(const NetworkDeviceId& other) const { return memcmp(&data_[0], &other.data_[0], kNetworkDeviceIdSize); }
   void writeTo(uint8_t* data) const { memcpy(data, &data_[0], kNetworkDeviceIdSize); }
+  void readFrom(const uint8_t* data) { memcpy(&data_[0], data, kNetworkDeviceIdSize); }
   bool operator==(const NetworkDeviceId& other) const { return compare(other) == 0; }
   bool operator!=(const NetworkDeviceId& other) const { return compare(other) != 0; }
   bool operator<(const NetworkDeviceId& other) const { return compare(other) < 0; }
@@ -73,6 +74,8 @@ class NetworkDeviceId {
   uint8_t* data() { return &data_[0]; }
 
   NetworkDeviceId PlusOne() const;
+
+  static constexpr size_t size() { return kNetworkDeviceIdSize; }
 
  private:
   static constexpr size_t kNetworkDeviceIdSize = 6;
@@ -97,6 +100,12 @@ struct NetworkMessage {
   NetworkId receiptNetworkId = 0;
   NetworkType receiptNetworkType = NetworkType::kLeading;
   std::string receiptDetails;
+
+#if JL_IS_CONFIG(CREATURE)
+  int receiptRssi = -1000;
+  Milliseconds receiptTime = -1;
+  uint32_t creatureColor = 0;
+#endif  // CREATURE
 
   bool isEqualExceptOriginationTime(const NetworkMessage& other) const {
     return sender == other.sender && originator == other.originator && precedence == other.precedence &&
@@ -259,6 +268,13 @@ class NetworkReader {
     return true;
   }
 
+  bool ReadNetworkDeviceId(NetworkDeviceId* out) {
+    if (NetworkDeviceId::size() > size_ || pos_ > size_ - NetworkDeviceId::size()) { return false; }
+    out->readFrom(&data_[pos_]);
+    pos_ += NetworkDeviceId::size();
+    return true;
+  }
+
  private:
   const uint8_t* data_;
   const size_t size_;
@@ -291,6 +307,13 @@ class NetworkWriter {
     data_[pos_ + 2] = static_cast<uint8_t>((in & 0x0000FF00) >> 8);
     data_[pos_ + 3] = static_cast<uint8_t>((in & 0x000000FF));
     pos_ += sizeof(in);
+    return true;
+  }
+
+  bool WriteNetworkDeviceId(const NetworkDeviceId& in) {
+    if (NetworkDeviceId::size() > size_ || pos_ > size_ - NetworkDeviceId::size()) { return false; }
+    in.writeTo(&data_[pos_]);
+    pos_ += NetworkDeviceId::size();
     return true;
   }
 

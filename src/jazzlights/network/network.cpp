@@ -88,13 +88,20 @@ std::string networkMessageToString(const NetworkMessage& message, Milliseconds c
   char str[sizeof(", t=4294967296, p=65536, nh=255, ot=4294967296}")] = {};
   snprintf(str, sizeof(str), ", t=%u, p=%u, nh=%u, ot=%u}", currentTime - message.currentPatternStartTime,
            message.precedence, message.numHops, currentTime - message.lastOriginationTime);
-  std::string rv = "{o=" + message.originator.toString() + ", s=" + message.sender.toString() +
-                   ", c=" + displayBitsAsBinary(message.currentPattern) +
-                   ", n=" + displayBitsAsBinary(message.nextPattern);
+  std::string rv = "{o=" + message.originator.toString() + ", s=" + message.sender.toString();
+#if !JL_IS_CONFIG(CREATURE)
+  rv += ", c=" + displayBitsAsBinary(message.currentPattern);
+  rv += ", n=" + displayBitsAsBinary(message.nextPattern);
+#endif  // !CREATURE
   if (message.receiptNetworkType != NetworkType::kLeading) {
     rv += ", ";
     rv += NetworkTypeToString(message.receiptNetworkType);
   }
+#if JL_IS_CONFIG(CREATURE)
+  char str2[sizeof(", rssi=-2147483648, rgb=010203")] = {};
+  snprintf(str2, sizeof(str2), ", rssi=%d, rgb=%06x", message.receiptRssi, message.creatureColor);
+  rv += str2;
+#endif  // CREATURE
   rv += str;
   return rv;
 }

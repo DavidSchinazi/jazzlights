@@ -11,6 +11,7 @@
 #include "jazzlights/effect/calibration.h"
 #include "jazzlights/effect/clouds.h"
 #include "jazzlights/effect/colored_bursts.h"
+#include "jazzlights/effect/creatures.h"
 #include "jazzlights/effect/fairy_wand.h"
 #include "jazzlights/effect/flame.h"
 #include "jazzlights/effect/follow_strand.h"
@@ -130,7 +131,10 @@ static const Effect* patternFromBits(PatternBits pattern) {
   static const FunctionalEffect warm_glow_effect = glow(warmColor(), "glow-warm");
 #if JL_IS_CONFIG(CLOUDS)
   static const Clouds clouds_effect = Clouds();
-#endif  // CLOUDS
+#elif JL_IS_CONFIG(CREATURE)
+  static const Creatures creatures_effect = Creatures();
+  return &creatures_effect;
+#endif
 
   // Pattern selection from bits.
   if (patternIsReserved(pattern)) {
@@ -296,6 +300,10 @@ void Player::begin(Milliseconds currentTime) {
   currentPattern_ = 0x00080000;
   nextPattern_ = currentPattern_;
   loop_ = true;
+#elif JL_IS_CONFIG(CREATURE)
+  currentPattern_ = CreaturePattern();
+  nextPattern_ = currentPattern_;
+  loop_ = true;
 #endif
 }
 
@@ -426,6 +434,10 @@ bool Player::render(Milliseconds currentTime) {
   static constexpr Milliseconds minLEDWriteTime = 10;
   if (lastLEDWriteTime_ >= 0 && currentTime - minLEDWriteTime < lastLEDWriteTime_) { return false; }
   lastLEDWriteTime_ = currentTime;
+
+#if JL_IS_CONFIG(CREATURE)
+  KnownCreatures::Get()->ExpireOldEntries(currentTime);
+#endif  // CREATURE
 
   const Milliseconds patternComputeStartTime = timeMillis();
   // Actually render the pixels.
@@ -771,6 +783,9 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
   messageToSend.numHops = currentNumHops_;
   messageToSend.receiptNetworkId = followedNextHopNetworkId_;
   messageToSend.receiptNetworkType = followedNextHopNetworkType_;
+#if JL_IS_CONFIG(CREATURE)
+  messageToSend.creatureColor = ThisCreatureColor();
+#endif  // CREATURE
   for (Network* network : networks_) {
     if (!network->shouldEcho() && messageToSend.receiptNetworkId == network->id()) {
       jll_debug("%u Not echoing for %s to %s ", currentTime, NetworkTypeToString(network->type()),
@@ -785,6 +800,10 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
 }
 
 void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentTime) {
+#if JL_IS_CONFIG(CREATURE)
+  jll_error("%u creature recv %s", currentTime, networkMessageToString(message, currentTime).c_str());
+  KnownCreatures::Get()->AddCreature(message.creatureColor, message.receiptTime, message.receiptRssi);
+#endif  // CREATURE
   jll_debug("%u handleReceivedMessage %s", currentTime, networkMessageToString(message, currentTime).c_str());
   if (message.sender == localDeviceId_) {
     jll_debug("%u Ignoring received message that we sent %s", currentTime,
@@ -1043,5 +1062,12 @@ const char* Player::command(const char* req) {
   jll_debug("[%s] -> [%s]", req, res);
   return res;
 }
+
+#if JL_IS_CONFIG(CREATURE)
+KnownCreatures* KnownCreatures::Get() {
+  static KnownCreatures sKnownCreatures;
+  return &sKnownCreatures;
+}
+#endif  // CREATURE
 
 }  // namespace jazzlights

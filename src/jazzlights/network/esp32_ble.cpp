@@ -42,7 +42,11 @@ namespace {
 // Squat on an unused Bluetooth Advertising Data Type.
 // https://bitbucket.org/bluetooth-SIG/public/src/main/assigned_numbers/core/ad_types.yaml
 // https://www.bluetooth.com/specifications/assigned-numbers/
+#if JL_IS_CONFIG(CREATURE)
+constexpr uint8_t kAdvType = 0xC3;
+#else   // CREATURE
 constexpr uint8_t kAdvType = 0x96;
+#endif  // CREATURE
 
 void convertToHex(char* target, size_t targetLength, const uint8_t* source, uint8_t sourceLength) {
   if (targetLength <= static_cast<size_t>(sourceLength) * 2) { return; }
@@ -167,6 +171,9 @@ void Esp32BleNetwork::disableSending(Milliseconds currentTime) {
   hasDataToSend_ = false;
 }
 
+#if JL_IS_CONFIG(CREATURE)
+constexpr uint8_t kPayloadLength = 6 + 1 + 2 + 2 + 3;
+#else   // CREATURE
 constexpr uint8_t kOriginatorOffset = 0;
 constexpr uint8_t kPrecedenceOffset = kOriginatorOffset + 6;
 constexpr uint8_t kNumHopsOffset = kPrecedenceOffset + 2;
@@ -175,13 +182,55 @@ constexpr uint8_t kCurrentPatternOffset = kOriginationTimeOffset + 2;
 constexpr uint8_t kNextPatternOffset = kCurrentPatternOffset + 4;
 constexpr uint8_t kPatternTimeOffset = kNextPatternOffset + 4;
 constexpr uint8_t kPayloadLength = kPatternTimeOffset + 2;
+#endif  // CREATURE
 
 void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifier, uint8_t innerPayloadLength,
-                                           const uint8_t* innerPayload, int /*rssi*/, Milliseconds currentTime) {
+                                           const uint8_t* innerPayload, int rssi, Milliseconds currentTime) {
   if (innerPayloadLength > kMaxInnerPayloadLength) {
     jll_error("%u Received advertisement with unexpected length %u", currentTime, innerPayloadLength);
     return;
   }
+#if JL_IS_CONFIG(CREATURE)
+  if (innerPayloadLength < kPayloadLength) {
+    jll_error("%u Ignoring received creature BLE with unexpected length %u", currentTime, innerPayloadLength);
+    return;
+  }
+  NetworkReader reader(innerPayload, innerPayloadLength);
+  NetworkMessage message;
+  message.precedence = CreaturePrecedence();
+  message.currentPattern = CreaturePattern();
+  message.nextPattern = CreaturePattern();
+  message.sender = deviceIdentifier;
+  if (!reader.ReadNetworkDeviceId(&message.originator)) {
+    jll_error("%u Failed to parse creature originator", currentTime);
+    return;
+  }
+  if (!reader.ReadUint8(&message.numHops)) {
+    jll_error("%u Failed to parse creature numHops", currentTime);
+    return;
+  }
+  uint16_t originationTimeDelta16;
+  if (!reader.ReadUint16(&originationTimeDelta16)) {
+    jll_error("%u Failed to parse creature originationTimeDelta", currentTime);
+    return;
+  }
+  Milliseconds originationTimeDelta = originationTimeDelta16;
+  uint16_t patternTimeDelta16;
+  if (!reader.ReadUint16(&patternTimeDelta16)) {
+    jll_error("%u Failed to parse creature patternTimeDelta", currentTime);
+    return;
+  }
+  Milliseconds patternTimeDelta = patternTimeDelta16;
+  uint8_t creatureRed, creatureGreen, creatureBlue;
+  if (!reader.ReadUint8(&creatureRed) || !reader.ReadUint8(&creatureGreen) || !reader.ReadUint8(&creatureBlue)) {
+    jll_error("%u Failed to parse creature RGB", currentTime);
+    return;
+  }
+  message.creatureColor = (creatureRed << 16) | (creatureGreen << 8) | creatureBlue;
+  message.receiptRssi = rssi;
+  message.receiptTime = currentTime;
+#else   // CREATURE
+  (void)rssi;
   if (innerPayloadLength < kPayloadLength) {
     ESP32_BLE_DEBUG("%u Ignoring received BLE with unexpected length %u", currentTime, innerPayloadLength);
     return;
@@ -195,6 +244,7 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
   message.currentPattern = readUint32(&innerPayload[kCurrentPatternOffset]);
   message.nextPattern = readUint32(&innerPayload[kNextPatternOffset]);
   Milliseconds patternTimeDelta = readUint16(&innerPayload[kPatternTimeOffset]);
+#endif  // CREATURE
 
   // Empirical measurements with the ATOM Matrix show a RTT of 50ms,
   // so we offset the one way transmission time by half that.
@@ -253,6 +303,34 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_
     patternTimeDelta = 0xFFFF;
   }
 
+#if JL_IS_CONFIG(CREATURE)
+  NetworkWriter writer(innerPayload, maxInnerPayloadLength);
+  if (!writer.WriteNetworkDeviceId(messageToSend_.originator)) {
+    jll_error("%u Failed to write creature originator", currentTime);
+    return 0;
+  }
+
+  if (!writer.WriteUint8(messageToSend_.numHops)) {
+    jll_error("%u Failed to write creature numHops", currentTime);
+    return 0;
+  }
+  if (!writer.WriteUint16(originationTimeDelta)) {
+    jll_error("%u Failed to write creature originationTimeDelta", currentTime);
+    return 0;
+  }
+  if (!writer.WriteUint16(patternTimeDelta)) {
+    jll_error("%u Failed to write creature patternTimeDelta", currentTime);
+    return 0;
+  }
+  uint8_t creatureRed = (messageToSend_.creatureColor >> 16) & 0xFF;
+  uint8_t creatureGreen = (messageToSend_.creatureColor >> 8) & 0xFF;
+  uint8_t creatureBlue = messageToSend_.creatureColor & 0xFF;
+  if (!writer.WriteUint8(creatureRed) || !writer.WriteUint8(creatureGreen) || !writer.WriteUint8(creatureBlue)) {
+    jll_error("%u Failed to write creature RGB", currentTime);
+    return 0;
+  }
+
+#else   // CREATURE
   messageToSend_.originator.writeTo(&innerPayload[kOriginatorOffset]);
   writeUint16(&innerPayload[kPrecedenceOffset], messageToSend_.precedence);
   innerPayload[kNumHopsOffset] = messageToSend_.numHops;
@@ -260,7 +338,7 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_
   writeUint32(&innerPayload[kCurrentPatternOffset], messageToSend_.currentPattern);
   writeUint32(&innerPayload[kNextPatternOffset], messageToSend_.nextPattern);
   writeUint16(&innerPayload[kPatternTimeOffset], patternTimeDelta);
-
+#endif  // CREATURE
   if (ESP32_BLE_DEBUG_ENABLED()) {
     char advRawData[kPayloadLength * 2 + 1] = {};
     convertToHex(advRawData, sizeof(advRawData), innerPayload, kPayloadLength);
