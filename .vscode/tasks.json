@@ -1,0 +1,22 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "cmake-prepare",
+            "type": "shell",
+            "options": {
+                "cwd": "${workspaceRoot}"
+            },
+            "command": "cmake",
+            "args": [ "-S", "extras", "-B", "extras/build" ]
+        }, {
+            "label": "cmake-build",
+            "type": "shell",
+            "options": {
+                "cwd": "${workspaceRoot}"
+            },
+            "command": "cmake",
+            "args": [ "--build", "extras/build" ]
+        }
+    ]
+}
