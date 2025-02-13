@@ -5,15 +5,6 @@
 
 namespace jazzlights {
 
-namespace {
-uint8_t fade_sub_color(uint8_t channel, uint8_t intensity) {
-  if (intensity == 255) { return channel; }
-  if (channel == 255) { return intensity; }
-  if (channel == 0 || intensity == 0) { return 0; }
-  return static_cast<uint8_t>(static_cast<double>(channel) * static_cast<double>(intensity) / 255.0);
-}
-}  // namespace
-
 inline FunctionalEffect glow(CRGB color, const std::string& name) {
   return effect(name, [color](const Frame& frame) {
     constexpr uint32_t period = 2500;
@@ -35,8 +26,7 @@ inline FunctionalEffect glow(CRGB color, const std::string& name) {
     } else {
       intensity = max_intensity;
     }
-    const CRGB faded_color(fade_sub_color(color.red, intensity), fade_sub_color(color.green, intensity),
-                           fade_sub_color(color.blue, intensity));
+    const CRGB faded_color = FadeColor(color, intensity);
     return [faded_color](const Pixel& /*pt*/) -> CRGB { return faded_color; };
   });
 };

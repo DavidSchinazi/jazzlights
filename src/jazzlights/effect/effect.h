@@ -117,5 +117,17 @@ class XYIndexEffect : public XYIndexStateEffect<EmptyState, PER_PIXEL_TYPE> {
   }
 };
 
+inline uint8_t FadeSubColor(uint8_t channel, uint8_t intensity) {
+  if (intensity == 255) { return channel; }
+  if (channel == 255) { return intensity; }
+  if (channel == 0 || intensity == 0) { return 0; }
+  return static_cast<uint8_t>(static_cast<double>(channel) * static_cast<double>(intensity) / 255.0);
+}
+
+inline CRGB FadeColor(CRGB color, uint8_t intensity) {
+  return CRGB(FadeSubColor(color.red, intensity), FadeSubColor(color.green, intensity),
+              FadeSubColor(color.blue, intensity));
+}
+
 }  // namespace jazzlights
 #endif  // JL_EFFECT_EFFECT_H
