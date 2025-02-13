@@ -22,7 +22,7 @@ inline bool is_debug_logging_enabled() { return false; }
     if (is_debug_logging_enabled()) { _LOG_AT_LEVEL("DEBUG", format, ##__VA_ARGS__); } \
   } while (0)
 
-#define jll_info(format, ...) _LOG_AT_LEVEL("INFO", format, ##__VA_ARGS__)
+#define jll_info(format, ...) _LOG_AT_LEVEL(" INFO", format, ##__VA_ARGS__)
 #define jll_error(format, ...) _LOG_AT_LEVEL("ERROR", format, ##__VA_ARGS__)
 
 #define jll_fatal(format, ...)                     \
