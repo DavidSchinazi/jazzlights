@@ -37,7 +37,10 @@ namespace {
 // This value was intentionally selected by brute-forcing all possible values that start with rings-rainbow followed by
 // flame-heat and then sp-cloud, and then picking the one that will loop after the most iterations. This one loops after
 // 118284 iterations, which is more than 13 days.
-constexpr PatternBits kStartingPattern = 0x00b3db69;
+#ifndef JL_START_PATTERN
+#define JL_START_PATTERN 0x00b3db69
+#endif  // JL_START_PATTERN
+constexpr PatternBits kStartingPattern = JL_START_PATTERN;
 
 #if JL_IS_CONFIG(XMAS_TREE)
 constexpr PatternBits kWarmPattern = 0x00001500;
@@ -305,6 +308,9 @@ void Player::begin(Milliseconds currentTime) {
   nextPattern_ = currentPattern_;
   loop_ = true;
 #endif
+#if defined(JL_START_LOOP) && JL_START_LOOP
+  loop_ = true;
+#endif  // JL_START_LOOP
 }
 
 void Player::updatePrecedence(Precedence basePrecedence, Precedence precedenceGain, Milliseconds currentTime) {
@@ -676,9 +682,11 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
   const bool hadRecentUserInput = (lastUserInputTime_ >= 0 && lastUserInputTime_ <= currentTime &&
                                    currentTime - lastUserInputTime_ < kInputDuration);
   for (const OriginatorEntry& e : originatorEntries_) {
+#if !JL_IS_CONFIG(CREATURE)
     // Keep ourselves as leader if there was recent user button input or if we are looping, unless the originator has
     // admin-level precedence.
     if ((hadRecentUserInput || loop_) && e.precedence < kAdminPrecedence) { continue; }
+#endif  // CREATURE
     if (e.retracted) {
       jll_debug("%u ignoring " DEVICE_ID_FMT " due to retracted", currentTime, DEVICE_ID_HEX(e.originator));
       continue;
