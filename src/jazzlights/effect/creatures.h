@@ -97,14 +97,18 @@ class Creatures : public Effect {
   }
 
   void rewind(const Frame& frame) const override {
+    const Milliseconds currentTime = timeMillis();
     const std::vector<Creature>& creatures = KnownCreatures::Get()->creatures();
     size_t num_creatures = creatures.size();
-    Milliseconds period_duration = PeriodDuration(num_creatures);
-    size_t num_period = (frame.time / period_duration) % num_creatures;
-    if (num_period > creatures.size()) { jll_fatal("bad creature math"); }
-    const Creature& creature = creatures[num_period];
-    uint8_t intensity = RssiToIntensity(creature.rssi);
-    state(frame)->color = FadeColor(CRGB(creature.color), intensity);
+    if (num_creatures > kMaxNumColors - 2) { num_creatures = kMaxNumColors - 2; }
+    for (size_t i = 0; i < num_creatures; i++) {
+      const Creature& creature = creatures[i];
+      state(frame)->colors[i] = FadeColor(CRGB(creature.color), CreatureIntensity(creature, currentTime));
+    }
+    state(frame)->colors[num_creatures] = CRGB::Black;
+    state(frame)->colors[num_creatures + 1] = CRGB::Black;
+    state(frame)->num_colors = num_creatures + 2;
+    state(frame)->offset = frame.time / 100;
   }
 
   void afterColors(const Frame& /*frame*/) const override {
@@ -112,28 +116,32 @@ class Creatures : public Effect {
                   "CreaturesState must be trivially destructible");
   }
 
-  CRGB color(const Frame& frame, const Pixel& px) const override { return state(frame)->color; }
+  CRGB color(const Frame& frame, const Pixel& px) const override {
+    size_t num_colors = state(frame)->num_colors;
+    const size_t reverseIndex = (-px.index % num_colors) + num_colors - 1;
+    return state(frame)->colors[(state(frame)->offset + reverseIndex) % num_colors];
+  }
 
  private:
+  static constexpr size_t kMaxNumColors = 256;
   struct CreaturesState {
-    CRGB color;
+    size_t num_colors;
+    size_t offset;
+    CRGB colors[kMaxNumColors];
   };
   CreaturesState* state(const Frame& frame) const {
     static_assert(alignof(CreaturesState) <= kMaxStateAlignment, "Need to increase kMaxStateAlignment");
     return static_cast<CreaturesState*>(frame.context);
   }
-  static Milliseconds PeriodDuration(size_t num_creatures) {
-    // The return value needs to (almost) evenly divide 10s to the repeat isn't visible.
-    switch (num_creatures) {
-      case 1: return 1000;
-      case 2: return 1000;
-      case 3: return 1111;
-      case 4: return 1250;
-      case 5: return 1000;
-      default: return 10000 / num_creatures;
+  static uint8_t CreatureIntensity(const Creature& creature, Milliseconds currentTime) {
+    int rssi = creature.rssi;
+    if (creature.lastHeard >= 0) {
+      Milliseconds timeSinceHeard = currentTime - creature.lastHeard;
+      if (timeSinceHeard >= 3000) {
+        // If we haven't heard from this creature in 3s, decay the RSSI by 5 dBm every second.
+        rssi -= (timeSinceHeard - 3000) / 200;
+      }
     }
-  }
-  static uint8_t RssiToIntensity(int rssi) {
     // According to Espressif documentation, their API provides RSSI in dBm with values between -127 and +20.
     // In practice, the sensors generally aren't able to pick up anything below -100, and rarely below -90.
     // When two ATOM Matrix devices are right next to each other, the highest observed value was -26 but we almost never
