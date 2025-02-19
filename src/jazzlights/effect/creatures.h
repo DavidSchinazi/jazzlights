@@ -94,6 +94,16 @@ class Creatures : public Effect {
 
   void begin(const Frame& frame) const override {
     new (state(frame)) CreaturesState;  // Default-initialize the state.
+    state(frame)->origin = {
+        frame.viewport.origin.x + frame.predictableRandom->GetRandomDoubleBetween(0, frame.viewport.size.width),
+        frame.viewport.origin.y + frame.predictableRandom->GetRandomDoubleBetween(0, frame.viewport.size.height),
+    };
+    state(frame)->maxDistance = std::max({
+        distance(state(frame)->origin, lefttop(frame)),
+        distance(state(frame)->origin, righttop(frame)),
+        distance(state(frame)->origin, leftbottom(frame)),
+        distance(state(frame)->origin, rightbottom(frame)),
+    });
   }
 
   void rewind(const Frame& frame) const override {
@@ -101,14 +111,19 @@ class Creatures : public Effect {
     const std::vector<Creature>& creatures = KnownCreatures::Get()->creatures();
     size_t num_creatures = creatures.size();
     if (num_creatures > kMaxNumColors - 2) { num_creatures = kMaxNumColors - 2; }
+    uint32_t num_close_creatures = 0;
     for (size_t i = 0; i < num_creatures; i++) {
       const Creature& creature = creatures[i];
-      state(frame)->colors[i] = FadeColor(CRGB(creature.color), CreatureIntensity(creature, currentTime));
+      uint8_t intensity = CreatureIntensity(creature, currentTime);
+      state(frame)->colors[i] = FadeColor(CRGB(creature.color), intensity);
+      if (intensity >= 100) { num_close_creatures++; }
     }
     state(frame)->colors[num_creatures] = CRGB::Black;
     state(frame)->colors[num_creatures + 1] = CRGB::Black;
     state(frame)->num_colors = num_creatures + 2;
     state(frame)->offset = frame.time / 100;
+    state(frame)->rainbow = num_close_creatures >= 3;
+    state(frame)->initialHue = 256 * frame.time / 1500;
   }
 
   void afterColors(const Frame& /*frame*/) const override {
@@ -117,6 +132,11 @@ class Creatures : public Effect {
   }
 
   CRGB color(const Frame& frame, const Pixel& px) const override {
+    if (state(frame)->rainbow) {
+      const double d = distance(px.coord, state(frame)->origin);
+      return ColorFromPalette(RainbowColors_p,
+                              state(frame)->initialHue + int32_t(255 * d / state(frame)->maxDistance) % 255);
+    }
     size_t num_colors = state(frame)->num_colors;
     const size_t reverseIndex = (-px.index % num_colors) + num_colors - 1;
     return state(frame)->colors[(state(frame)->offset + reverseIndex) % num_colors];
@@ -125,8 +145,12 @@ class Creatures : public Effect {
  private:
   static constexpr size_t kMaxNumColors = 256;
   struct CreaturesState {
+    Point origin;
+    double maxDistance;
     size_t num_colors;
     size_t offset;
+    bool rainbow;
+    uint8_t initialHue;
     CRGB colors[kMaxNumColors];
   };
   CreaturesState* state(const Frame& frame) const {
