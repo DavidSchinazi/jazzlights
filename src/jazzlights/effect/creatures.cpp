@@ -110,6 +110,7 @@ KnownCreatures::KnownCreatures() {
   creatures_.push_back(ourselves);
 }
 
+// Called once to initialize the state.
 void Creatures::begin(const Frame& frame) const {
   new (state(frame)) CreaturesState;  // Default-initialize the state.
   state(frame)->origin = {
@@ -124,6 +125,7 @@ void Creatures::begin(const Frame& frame) const {
   });
 }
 
+// Called once for each point in time to prepare the state before calling color() for each pixel.
 void Creatures::rewind(const Frame& frame) const {
   const Milliseconds currentTime = timeMillis();
   const std::vector<Creature>& creatures = KnownCreatures::Get()->creatures();
@@ -131,6 +133,7 @@ void Creatures::rewind(const Frame& frame) const {
   if (num_creatures > kMaxNumColors - 2) { num_creatures = kMaxNumColors - 2; }
   uint32_t num_close_creatures = 0;
   for (size_t i = 0; i < num_creatures; i++) {
+    // Compute the color for each known creature.
     const Creature& creature = creatures[i];
     uint8_t intensity = CreatureIntensity(creature, currentTime);
     state(frame)->colors[i] = FadeColor(CRGB(creature.color), intensity);
@@ -139,28 +142,33 @@ void Creatures::rewind(const Frame& frame) const {
   state(frame)->colors[num_creatures] = CRGB::Black;
   state(frame)->colors[num_creatures + 1] = CRGB::Black;
   state(frame)->num_colors = num_creatures + 2;
+  // The offset increases over time and makes the pixels scroll.
   state(frame)->offset = frame.time / 100;
-  // TODO the rainbow mode sometimes only triggers on some creatures but not others
-  // we need to make the metric bidirectional to avoid that
-  // we can do that by having every node broadcast its list of known creatures and decayed RSSI (or intensity)
-  // then we use a symmetric function (such as min or average) to decide when to put it in num_close_creatures
+  // TODO the rainbow mode sometimes only triggers on some creatures but not others. To fix it, we need to make the
+  // metric bidirectional. We can do that by having every node broadcast its list of known creatures and decayed RSSI
+  // (or intensity) then we use a symmetric function (such as min or average) to decide when to put it in
+  // num_close_creatures.
   state(frame)->rainbow = num_close_creatures >= 3;
   state(frame)->initialHue = 256 * frame.time / 1500;
 }
 
-void Creatures::afterColors(const Frame& /*frame*/) const {
-  static_assert(std::is_trivially_destructible<CreaturesState>::value, "CreaturesState must be trivially destructible");
-}
-
+// Called for each pixel to compute its color.
 CRGB Creatures::color(const Frame& frame, const Pixel& px) const {
   if (state(frame)->rainbow) {
+    // The rainbow effect determines the hue based on the distance from the rainbow origin point.
     const double d = distance(px.coord, state(frame)->origin);
     return ColorFromPalette(RainbowColors_p,
                             state(frame)->initialHue + int32_t(255 * d / state(frame)->maxDistance) % 255);
   }
   size_t num_colors = state(frame)->num_colors;
+  // Display the colors in order based on the current offset.
   const size_t reverseIndex = (-px.index % num_colors) + num_colors - 1;
   return state(frame)->colors[(state(frame)->offset + reverseIndex) % num_colors];
+}
+
+// Called once for each point in time after all pixels have been computed.
+void Creatures::afterColors(const Frame& /*frame*/) const {
+  static_assert(std::is_trivially_destructible<CreaturesState>::value, "CreaturesState must be trivially destructible");
 }
 
 }  // namespace jazzlights
