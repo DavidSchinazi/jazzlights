@@ -9,13 +9,9 @@
 
 #if JL_IS_CONFIG(CREATURE)
 
-#ifndef JL_CREATURE_COLOR
-#define JL_CREATURE_COLOR 0xFFFFFF
-#endif  // JL_CREATURE_COLOR
-
 namespace jazzlights {
 
-constexpr uint32_t ThisCreatureColor() { return JL_CREATURE_COLOR; }
+uint32_t ThisCreatureColor();
 
 struct Creature {
   uint32_t color;

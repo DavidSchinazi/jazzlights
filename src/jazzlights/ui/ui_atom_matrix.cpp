@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <memory>
 
+#include "jazzlights/effect/creatures.h"
 #include "jazzlights/fastled_runner.h"
 #include "jazzlights/fastled_wrapper.h"
 #include "jazzlights/network/esp32_ble.h"
@@ -308,8 +309,21 @@ bool AtomMatrixUi::ScreenMessage(const Milliseconds currentTime) {
   } else {
     static Milliseconds bootMessageStartTime = -1;
     if (bootMessageStartTime < 0) { bootMessageStartTime = currentTime; }
-    displayingBootMessage_ =
-        displayText(BOOT_MESSAGE, screenLEDs_, CRGB::Red, CRGB::Black, currentTime - bootMessageStartTime);
+    Milliseconds offsetMillis = currentTime - bootMessageStartTime;
+#if JL_IS_CONFIG(CREATURE)
+    static const CRGB textColor = ThisCreatureColor();
+    static constexpr Milliseconds kShowColorTime = 3000;
+    if (offsetMillis <= kShowColorTime) {
+      // Show this creature's color for `kShowColorTime` after boot.
+      for (int i = 0; i < ATOM_SCREEN_NUM_LEDS; i++) { screenLEDs_[i] = textColor; }
+      ScreenDisplay(currentTime);
+      return true;
+    }
+    offsetMillis -= kShowColorTime;
+#else   // CREATURE
+    static const CRGB textColor = CRGB::Red;
+#endif  // CREATURE
+    displayingBootMessage_ = displayText(BOOT_MESSAGE, screenLEDs_, textColor, CRGB::Black, offsetMillis);
     if (!displayingBootMessage_) {
       jll_info("%u Done displaying boot message", currentTime);
     } else {

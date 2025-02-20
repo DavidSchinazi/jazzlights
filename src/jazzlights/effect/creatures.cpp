@@ -2,6 +2,8 @@
 
 #if JL_IS_CONFIG(CREATURE)
 
+#include <esp_mac.h>
+
 namespace jazzlights {
 
 namespace {
@@ -36,6 +38,30 @@ uint8_t CreatureIntensity(const Creature& creature, Milliseconds currentTime) {
 }
 
 }  // namespace
+
+uint32_t ThisCreatureColor() {
+#ifdef JL_CREATURE_COLOR
+  return JL_CREATURE_COLOR;
+#else  // JL_CREATURE_COLOR
+  static const uint32_t sThisCreatureColor = []() {
+    uint64_t x = 0;
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+    ESP_ERROR_CHECK(esp_read_mac(reinterpret_cast<uint8_t*>(&x), ESP_MAC_EFUSE_FACTORY));
+#else
+    ESP_ERROR_CHECK(esp_efuse_mac_get_default(reinterpret_cast<uint8_t*>(&x)));
+#endif
+    x ^= x >> 12;
+    x ^= x << 25;
+    x ^= x >> 27;
+    x *= 0x2545F4914F6CDD1DULL;
+    static constexpr CRGB kColors[] = {
+        CRGB::Red, CRGB::Green, CRGB::Blue, CRGB::Yellow, CRGB::Purple, CRGB::Cyan,
+    };
+    return static_cast<uint32_t>(kColors[x % (sizeof(kColors) / sizeof(kColors[0]))]);
+  }();
+  return sThisCreatureColor;
+#endif  // JL_CREATURE_COLOR
+}
 
 void KnownCreatures::ExpireOldEntries(Milliseconds currentTime) {
   creatures_.erase(std::remove_if(creatures_.begin(), creatures_.end(),
@@ -108,6 +134,10 @@ void Creatures::rewind(const Frame& frame) const {
   state(frame)->colors[num_creatures + 1] = CRGB::Black;
   state(frame)->num_colors = num_creatures + 2;
   state(frame)->offset = frame.time / 100;
+  // TODO the rainbow mode sometimes only triggers on some creatures but not others
+  // we need to make the metric bidirectional to avoid that
+  // we can do that by having every node broadcast its list of known creatures and decayed RSSI (or intensity)
+  // then we use a symmetric function (such as min or average) to decide when to put it in num_close_creatures
   state(frame)->rainbow = num_close_creatures >= 3;
   state(frame)->initialHue = 256 * frame.time / 1500;
 }
