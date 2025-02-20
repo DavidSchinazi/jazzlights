@@ -50,14 +50,20 @@ uint32_t ThisCreatureColor() {
 #else
     ESP_ERROR_CHECK(esp_efuse_mac_get_default(reinterpret_cast<uint8_t*>(&x)));
 #endif
-    x ^= x >> 12;
-    x ^= x << 25;
-    x ^= x >> 27;
-    x *= 0x2545F4914F6CDD1DULL;
+    for (int i = 0; i < 8; i++) {
+      // Do a few rounds of xorshift* to turn the MAC address into something pretty uniformaly distributed, and also
+      // swap some bytes because, who knows, that might help?
+      x = ((x & 0x0000FFFFFFFFFFFF) << 16) | ((x & 0xFFFF000000000000) >> 48);
+      x ^= x >> 12;
+      x ^= x << 25;
+      x ^= x >> 27;
+      x *= 0x2545F4914F6CDD1DULL;
+    }
     static constexpr CRGB kColors[] = {
         CRGB::Red, CRGB::Green, CRGB::Blue, CRGB::Yellow, CRGB::Purple, CRGB::Cyan,
     };
-    return static_cast<uint32_t>(kColors[x % (sizeof(kColors) / sizeof(kColors[0]))]);
+    x %= (sizeof(kColors) / sizeof(kColors[0]));
+    return static_cast<uint32_t>(kColors[x]);
   }();
   return sThisCreatureColor;
 #endif  // JL_CREATURE_COLOR
