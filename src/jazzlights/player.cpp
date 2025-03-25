@@ -32,6 +32,13 @@
 #include "jazzlights/util/math.h"
 #include "jazzlights/util/time.h"
 
+#if (JL_WIFI && !JL_ESP32_WIFI) || (JL_ETHERNET && !JL_ESP32_ETHERNET)
+// The Arduino network variants only read from the the primary runloop, so the Player cannot sleep on it.
+#define JL_PLAYER_SLEEPS 0
+#else
+#define JL_PLAYER_SLEEPS 1
+#endif
+
 namespace jazzlights {
 namespace {
 // This value was intentionally selected by brute-forcing all possible values that start with rings-rainbow followed by
@@ -433,12 +440,22 @@ bool Player::render(Milliseconds currentTime) {
     shouldBeginPattern_ = false;
     predictableRandom_.ResetWithFrameStart(frame_, effect->effectName(frame_.pattern).c_str());
     effect->begin(frame_);
-    lastLEDWriteTime_ = 1;
+    lastLEDWriteTime_ = -1;
   }
 
   // Do not send data to LEDs faster than 100Hz.
-  static constexpr Milliseconds minLEDWriteTime = 10;
-  if (lastLEDWriteTime_ >= 0 && currentTime - minLEDWriteTime < lastLEDWriteTime_) { return false; }
+  if (lastLEDWriteTime_ >= 0 && lastLEDWriteTime_ <= currentTime) {
+    static constexpr Milliseconds kMinLEDWriteTime = 10;
+    Milliseconds timeSinceLastWrite = currentTime - lastLEDWriteTime_;
+    if (timeSinceLastWrite < kMinLEDWriteTime) {
+#if JL_PLAYER_SLEEPS
+      // Note that this mode ends up operating at 90Hz since one spin of the runloop isn't free.
+      // We could tweak it if we cared more about FPS than battery life.
+      vTaskDelay((kMinLEDWriteTime - timeSinceLastWrite) / portTICK_PERIOD_MS);
+#endif  // JL_PLAYER_SLEEPS
+      return false;
+    }
+  }
   lastLEDWriteTime_ = currentTime;
 
 #if JL_IS_CONFIG(CREATURE)
