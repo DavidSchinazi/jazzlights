@@ -32,8 +32,9 @@
 #include "jazzlights/util/math.h"
 #include "jazzlights/util/time.h"
 
-#if (JL_WIFI && !JL_ESP32_WIFI) || (JL_ETHERNET && !JL_ESP32_ETHERNET)
+#if !defined(ESP32) || (JL_WIFI && !JL_ESP32_WIFI) || (JL_ETHERNET && !JL_ESP32_ETHERNET)
 // The Arduino network variants only read from the the primary runloop, so the Player cannot sleep on it.
+// The same is currently true for the non-ESP32 variants.
 #define JL_PLAYER_SLEEPS 0
 #else
 #define JL_PLAYER_SLEEPS 1
