@@ -26,7 +26,7 @@ namespace {
 #if JL_IS_CONTROLLER(ATOM_MATRIX)
 static constexpr uint8_t kPhoneDigitPin = 32;
 static constexpr uint8_t kPhoneDialPin = 26;
-#elif JL_IS_CONTROLLER(ATOM_S3)
+#elif JL_IS_CONTROLLER(ATOM_S3) || JL_IS_CONTROLLER(ATOM_S3_LITE)
 static constexpr uint8_t kPhoneDigitPin = 1;
 static constexpr uint8_t kPhoneDialPin = 2;
 #else

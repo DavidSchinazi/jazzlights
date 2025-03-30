@@ -46,7 +46,7 @@ constexpr int kEthernetPinInterrupt = -1;
 #else
 constexpr int kEthernetPinInterrupt = 21;  // Fake because -1 isn't supported in ESP-IDF v4.
 #endif
-#elif JL_IS_CONTROLLER(ATOM_S3)
+#elif JL_IS_CONTROLLER(ATOM_S3) || JL_IS_CONTROLLER(ATOM_S3_LITE)
 constexpr int kEthernetPinSCK = 5;
 constexpr int kEthernetPinCS = 6;
 constexpr int kEthernetPinMISO = 7;

@@ -221,12 +221,12 @@ PixelMap ceiling3Pixels(JL_LENGTH(ceiling3PixelMap), ceiling3PixelMap);
 Layout* GetCloudsLayout() { return &cloudPixels; }
 
 void AddLedsToRunner(FastLedRunner* runner) {
-#if JL_IS_CONTROLLER(ATOM_MATRIX)
+#if JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_LITE)
   constexpr uint8_t kCloudsPin = 21;
   constexpr uint8_t kCeiling1Pin = 25;
   constexpr uint8_t kCeiling2Pin = 33;
   constexpr uint8_t kCeiling3Pin = 23;
-#elif JL_IS_CONTROLLER(ATOM_S3)
+#elif JL_IS_CONTROLLER(ATOM_S3) || JL_IS_CONTROLLER(ATOM_S3_LITE)
   constexpr uint8_t kCloudsPin = 39;
   constexpr uint8_t kCeiling1Pin = 38;
   constexpr uint8_t kCeiling2Pin = 8;
