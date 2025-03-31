@@ -23,7 +23,7 @@
 namespace jazzlights {
 namespace {
 
-#if JL_IS_CONTROLLER(ATOM_MATRIX)
+#if JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_LITE)
 static constexpr uint8_t kPhoneDigitPin = 32;
 static constexpr uint8_t kPhoneDialPin = 26;
 #elif JL_IS_CONTROLLER(ATOM_S3) || JL_IS_CONTROLLER(ATOM_S3_LITE)

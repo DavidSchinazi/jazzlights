@@ -20,6 +20,9 @@
 #elif JL_IS_CONTROLLER(ATOM_S3) || JL_IS_CONTROLLER(ATOM_S3_LITE)
 #define LED_PIN 2
 #define LED_PIN2 1
+#elif JL_IS_CONTROLLER(M5STAMP_S3)
+#define LED_PIN 13
+#define LED_PIN2 15
 #else
 #error "Unexpected controller"
 #endif
