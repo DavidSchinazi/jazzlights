@@ -18,7 +18,10 @@ const int WIN_W = 960;
 const int WIN_H = 720;
 
 static Player* player = nullptr;
-static Box viewport;
+static Box viewport = {
+    {0.0, 0.0},
+    {0.0, 0.0}
+};
 
 void onResize(GLFWwindow*, int winWidth, int winHeight) {
   const Box& vp = viewport;

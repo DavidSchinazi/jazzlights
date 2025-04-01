@@ -3,6 +3,7 @@
 
 #include "jazzlights/types.h"
 #include "jazzlights/util/geom.h"
+#include "jazzlights/util/log.h"
 #include "jazzlights/util/math.h"
 
 namespace jazzlights {
@@ -22,7 +23,10 @@ class Layout {
 };
 
 inline Box bounds(const Layout& layout) {
-  Box bb;
+  Box bb = {
+      {0.0, 0.0},
+      {0.0, 0.0}
+  };
   const size_t numPixels = layout.pixelCount();
   for (size_t index = 0; index < numPixels; index++) { bb = merge(bb, layout.at(index)); }
   return bb;

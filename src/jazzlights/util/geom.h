@@ -16,16 +16,8 @@ struct Vector2D {
   Coord y;
 };
 
-struct Vector3D {
-  Coord x;
-  Coord y;
-  Coord z;
-};
-
 using Point2D = Vector2D;
-using Point3D = Vector3D;
 using Point = Point2D;
-using Origin = Point2D;
 
 constexpr Coord EmptyCoord() { return std::numeric_limits<Coord>::quiet_NaN(); }
 constexpr Point EmptyPoint() { return {EmptyCoord(), EmptyCoord()}; }

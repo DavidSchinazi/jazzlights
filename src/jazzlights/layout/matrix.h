@@ -55,7 +55,7 @@ class Matrix : public Layout {
 
   size_t width_;
   size_t height_;
-  Point origin_ = {0, 0};
+  Point origin_ = {0.0, 0.0};
   PixelsPerMeter resolution_ = 60.0;
   uint32_t flags_ = 0;
 };
