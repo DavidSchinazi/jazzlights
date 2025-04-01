@@ -99,7 +99,7 @@ std::string networkMessageToString(const NetworkMessage& message, Milliseconds c
   }
 #if JL_IS_CONFIG(CREATURE)
   char str2[sizeof(", rssi=-2147483648, rgb=010203")] = {};
-  snprintf(str2, sizeof(str2), ", rssi=%d, rgb=%06x", message.receiptRssi, message.creatureColor);
+  snprintf(str2, sizeof(str2), ", rssi=%d, rgb=%06x", message.receiptRssi, static_cast<int>(message.creatureColor));
   rv += str2;
 #endif  // CREATURE
   rv += str;

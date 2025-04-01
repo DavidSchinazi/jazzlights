@@ -18,7 +18,7 @@
 // This is an Arduino header and in theory we shouldn't need it, but see comment near btStarted() below.
 #include <esp32-hal-bt.h>
 
-#if !JL_ESP32S3 && !JL_ESP32C3
+#if !JL_ESP32S3 && !JL_ESP32C3 && !JL_ESP32C6
 #define JL_BLE4 1
 #else
 #define JL_BLE4 0

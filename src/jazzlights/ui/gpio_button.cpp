@@ -51,9 +51,13 @@ GpioPin::GpioPin(uint8_t pin, PinInterface& pinInterface, int64_t debounceDurati
       debounceDuration_(debounceDuration) {
   if (queue_ == nullptr) { jll_fatal("Failed to create GpioPin queue"); }
   InstallGpioIsrService();
+#if JL_ESP32C6 || defined(CONFIG_FREERTOS_UNICORE)
+  ConfigurePin(this);
+#else
   // GPIO interrupt handlers are run on the core where the config calls were made, so we use esp_ipc_call to
   // ensure that all that happens on core 0. This prevents it from interfering with LED writes on core 1.
   ESP_ERROR_CHECK(esp_ipc_call(/*coreID=*/0, ConfigurePin, /*arg=*/this));
+#endif
 }
 
 GpioButton::GpioButton(uint8_t pin, ButtonInterface& buttonInterface)
