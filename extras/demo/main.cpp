@@ -12,10 +12,12 @@ namespace jazzlights {
 
 int runMain(int argc, char** argv) {
   int killTime = 0;
+  bool startLooping = false;
   while (true) {
-    int ch = getopt(argc, argv, "k:");
+    int ch = getopt(argc, argv, "k:l");
     if (ch == -1) { break; }
     if (ch == 'k') { killTime = strtol(optarg, nullptr, 10) * 1000; }
+    if (ch == 'l') { startLooping = true; }
   }
   Matrix layout(/*w=*/400, /*h=*/300);
   GLRenderer renderer(layout);
@@ -26,6 +28,7 @@ int runMain(int argc, char** argv) {
   player.setRandomizeLocalDeviceId(true);
   player.connect(UnixUdpNetwork::get());
   player.begin(timeMillis());
+  if (startLooping) { player.loopOne(timeMillis()); }
 
   return runGui("JazzLights Demo", player, player.bounds(), /*fullscreen=*/false, killTime);
 }
