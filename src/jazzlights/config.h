@@ -1,6 +1,10 @@
 #ifndef JL_CONFIG_H
 #define JL_CONFIG_H
 
+#ifdef ESP32
+#include "sdkconfig.h"
+#endif  // ESP32
+
 // Misc macros.
 #define JL_MERGE_TOKENS_INTERNAL(a_, b_) a_##b_
 #define JL_MERGE_TOKENS(a_, b_) JL_MERGE_TOKENS_INTERNAL(a_, b_)
