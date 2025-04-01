@@ -10,6 +10,9 @@
 
 #if JL_INSTRUMENTATION
 #include <freertos/task.h>
+
+#include <cstring>
+#include <unordered_map>
 #endif  // JL_INSTRUMENTATION
 
 #if JL_TIMING
@@ -102,6 +105,12 @@ void printInstrumentationInfo(Milliseconds currentTime) {
     return;
   }
 #if JL_INSTRUMENTATION
+  struct Measurement {
+    uint64_t runtime = 0;
+    char name[configMAX_TASK_NAME_LEN + 1] = {};
+  };
+  static uint64_t sAggregatedTotalRuntime = 0;
+  static std::unordered_map<UBaseType_t, Measurement> sMeasurements;
   UBaseType_t numTasks = uxTaskGetNumberOfTasks();
   // Add 10 in case some tasks get created while this is getting executed.
   TaskStatus_t* tastStatuses = reinterpret_cast<TaskStatus_t*>(calloc(numTasks + 10, sizeof(TaskStatus_t)));
@@ -111,15 +120,31 @@ void printInstrumentationInfo(Milliseconds currentTime) {
   jll_info("%u INSTRUMENTATION for %u tasks:", currentTime, numTasks);
   for (UBaseType_t i = 0; i < numTasks; i++) {
     const TaskStatus_t& ts = tastStatuses[i];
+    Measurement* m;
+    auto it = sMeasurements.find(ts.xTaskNumber);
+    if (it != sMeasurements.end()) {
+      m = &(it->second);
+    } else {
+      m = &(sMeasurements.insert(std::make_pair(ts.xTaskNumber, Measurement())).first->second);
+      strncpy(m->name, ts.pcTaskName, configMAX_TASK_NAME_LEN);
+    }
+    uint32_t aggregatedPercentRuntime = 0;
+    if (m->runtime > 0 && sAggregatedTotalRuntime > 0) {
+      aggregatedPercentRuntime =
+          static_cast<uint32_t>((m->runtime + (sAggregatedTotalRuntime / 200)) / (sAggregatedTotalRuntime / 100));
+    }
+    m->runtime += ts.ulRunTimeCounter;
     uint32_t percentRuntime = 0;
     if (ts.ulRunTimeCounter > 0 && totalRuntime > 0) {
       percentRuntime = (ts.ulRunTimeCounter + (totalRuntime / 200)) / (totalRuntime / 100);
     }
     static_assert(configMAX_TASK_NAME_LEN == 16, "tweak format string");
-    jll_info("%16s: num=%02u %s priority=current%02u/base%02u runtime=%09u=%02u%% core=%+d", ts.pcTaskName,
-             ts.xTaskNumber, TaskStateToString(ts.eCurrentState), ts.uxCurrentPriority, ts.uxBasePriority,
-             ts.ulRunTimeCounter, percentRuntime, (ts.xCoreID == 2147483647 ? -1 : ts.xCoreID));
+    jll_info("%16s: num=%02u %s priority=current%02u/base%02u runtime=%09u=%02u%% core=%+d agg_runtime=%02u%%",
+             ts.pcTaskName, ts.xTaskNumber, TaskStateToString(ts.eCurrentState), ts.uxCurrentPriority,
+             ts.uxBasePriority, ts.ulRunTimeCounter, percentRuntime, (ts.xCoreID == 2147483647 ? -1 : ts.xCoreID),
+             aggregatedPercentRuntime);
   }
+  sAggregatedTotalRuntime += totalRuntime;
   free(tastStatuses);
 #endif  // JL_INSTRUMENTATION
 #if JL_TIMING
