@@ -84,8 +84,15 @@ void KnownCreatures::AddCreature(uint32_t color, Milliseconds lastHeard, int rss
   for (Creature& creature : creatures_) {
     if (creature.color == color) {
       if (lastHeard > creature.lastHeard) {
+        if (lastHeard - creature.lastHeard < 2000) {
+          // Average RSSI if we're doing alright health wise
+          // why not LPF it, it will be fine
+          creature.rssi = (creature.rssi * 3 + rssi) / 4;
+        } else {
+          // Reset RSSI if it's been a minute
+          creature.rssi = rssi;
+        }
         creature.lastHeard = lastHeard;
-        creature.rssi = rssi;
       }
       found = true;
       break;
