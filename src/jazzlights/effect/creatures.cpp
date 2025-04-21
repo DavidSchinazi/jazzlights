@@ -16,15 +16,8 @@ uint32_t ColorHash(uint32_t color) {
   return color;
 }
 
-uint8_t CreatureIntensity(const Creature& creature, Milliseconds currentTime) {
+uint8_t CreatureIntensity(const Creature& creature) {
   int rssi = creature.rssi;
-  if (creature.lastHeard >= 0) {
-    Milliseconds timeSinceHeard = currentTime - creature.lastHeard;
-    if (timeSinceHeard >= 3000) {
-      // If we haven't heard from this creature in 3s, decay the RSSI by 5 dBm every second.
-      rssi -= (timeSinceHeard - 3000) / 200;
-    }
-  }
   // According to Espressif documentation, their API provides RSSI in dBm with values between -127 and +20.
   // In practice, the sensors generally aren't able to pick up anything below -100, and rarely below -90.
   // When two ATOM Matrix devices are right next to each other, the highest observed value was -26 but we almost never
@@ -85,7 +78,7 @@ void KnownCreatures::AddCreature(uint32_t color, Milliseconds lastHeard, int rss
     if (creature.color == color) {
       if (lastHeard > creature.lastHeard) {
         creature.lastHeard = lastHeard;
-        creature.rssi = rssi;
+        creature.lastHeardRssi = rssi;
       }
       found = true;
       break;
@@ -95,11 +88,37 @@ void KnownCreatures::AddCreature(uint32_t color, Milliseconds lastHeard, int rss
     Creature new_creature;
     new_creature.color = color;
     new_creature.lastHeard = lastHeard;
+    new_creature.lastHeardRssi = rssi;
     new_creature.rssi = rssi;
+    new_creature.creatureIntensity = CreatureIntensity(new_creature);
+    new_creature.creatureIntensityCounter =
+        (new_creature.creatureIntensity >= Creatures::kCloseCreatureIntensityThresh) ? 1 : 0;
     creatures_.push_back(new_creature);
   }
   std::sort(creatures_.begin(), creatures_.end(),
             [](Creature a, Creature b) { return ColorHash(a.color) > ColorHash(b.color); });
+}
+
+void KnownCreatures::update(void) {
+  time_t currentTime = timeMillis();
+  for (Creature& creature : creatures_) {
+    if (creature.lastHeard > 0 && currentTime - creature.lastHeard > KnownCreatures::kRssiDecayDelayMs) {
+      // If we haven't heard from this creature in kRssiDecayDelayMs, decay the RSSI by kRssiDecayFactor dBm every
+      // second.
+      creature.rssi =
+          creature.lastHeardRssi -
+          (KnownCreatures::kRssiDecayFactor * (currentTime - creature.lastHeard + KnownCreatures::kRssiDecayDelayMs)) /
+              1000;
+    } else {
+      creature.rssi = creature.lastHeardRssi;
+    }
+    creature.creatureIntensity = CreatureIntensity(creature);
+    if (creature.creatureIntensity >= Creatures::kCloseCreatureIntensityThresh) {
+      creature.creatureIntensityCounter = 0;
+    } else {
+      if (!++creature.creatureIntensityCounter) { creature.creatureIntensityCounter = 255; }
+    }
+  }
 }
 
 KnownCreatures::KnownCreatures() {
@@ -107,6 +126,7 @@ KnownCreatures::KnownCreatures() {
   ourselves.color = ThisCreatureColor();
   ourselves.lastHeard = -1;
   ourselves.rssi = 20;
+  ourselves.lastHeardRssi = 20;
   creatures_.push_back(ourselves);
 }
 
@@ -127,7 +147,7 @@ void Creatures::begin(const Frame& frame) const {
 
 // Called once for each point in time to prepare the state before calling color() for each pixel.
 void Creatures::rewind(const Frame& frame) const {
-  const Milliseconds currentTime = timeMillis();
+  KnownCreatures::Get()->update();
   const std::vector<Creature>& creatures = KnownCreatures::Get()->creatures();
   size_t num_creatures = creatures.size();
   if (num_creatures > kMaxNumColors - 2) { num_creatures = kMaxNumColors - 2; }
@@ -135,9 +155,9 @@ void Creatures::rewind(const Frame& frame) const {
   for (size_t i = 0; i < num_creatures; i++) {
     // Compute the color for each known creature.
     const Creature& creature = creatures[i];
-    uint8_t intensity = CreatureIntensity(creature, currentTime);
-    state(frame)->colors[i] = FadeColor(CRGB(creature.color), intensity);
-    if (intensity >= 100) { num_close_creatures++; }
+    uint8_t intensity = CreatureIntensity(creature);
+    state(frame)->colors[i] = FadeColor(CRGB(creature.color), creature.creatureIntensity);
+    if (creature.creatureIntensityCounter < 100) { num_close_creatures++; }
   }
   state(frame)->colors[num_creatures] = CRGB::Black;
   state(frame)->colors[num_creatures + 1] = CRGB::Black;

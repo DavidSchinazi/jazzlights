@@ -16,7 +16,10 @@ uint32_t ThisCreatureColor();
 struct Creature {
   uint32_t color;
   Milliseconds lastHeard;
+  int lastHeardRssi;
   int rssi;
+  uint8_t creatureIntensity;
+  uint8_t creatureIntensityCounter;
 };
 
 class KnownCreatures {
@@ -31,10 +34,14 @@ class KnownCreatures {
   const std::vector<Creature>& creatures() const { return creatures_; }
   void ExpireOldEntries(Milliseconds currentTime);
   void AddCreature(uint32_t color, Milliseconds lastHeard, int rssi);
+  // Update all known creature states (decay RSSI, increment counters, etc)
+  void update(void);
 
  private:
   KnownCreatures();
   std::vector<Creature> creatures_;
+  const int kRssiDecayDelayMs = 3000;  // Decay after 3s of inactivity
+  const int kRssiDecayFactor = 5;      // Decay RSSI by 5dBm/s after delay
 };
 
 class Creatures : public Effect {
@@ -49,6 +56,8 @@ class Creatures : public Effect {
   void rewind(const Frame& frame) const override;
   void afterColors(const Frame& /*frame*/) const override;
   CRGB color(const Frame& frame, const Pixel& px) const override;
+
+  static const uint8_t kCloseCreatureIntensityThresh = 100;
 
  private:
   static constexpr size_t kMaxNumColors = 256;
