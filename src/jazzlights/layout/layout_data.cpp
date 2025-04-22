@@ -33,7 +33,7 @@ Matrix pixels(/*w=*/10, /*h=*/10);
 #endif  // XMAS_TREE
 
 #if JL_IS_CONFIG(CREATURE)
-Matrix pixels(/*w=*/30, /*h=*/1);
+Matrix pixels(/*w=*/32, /*h=*/1);
 #endif  // CREATURE
 
 }  // namespace
