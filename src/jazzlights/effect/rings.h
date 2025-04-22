@@ -39,7 +39,9 @@ class Rings : public EffectWithPaletteAndState<RingsState> {
   }
 
   void innerRewind(const Frame& frame, RingsState* state) const override {
-    uint8_t hueOffset = 256 * frame.time / 1500;
+    // kPeriod needs to (almost) cleanly divide kEffectDuration to avoid visible resets when looping.
+    static constexpr Milliseconds kPeriod = 1667;
+    uint8_t hueOffset = 256 * frame.time / kPeriod;
     if (state->backwards) { hueOffset = 255 - hueOffset; }
     state->initialHue = state->startHue + hueOffset;
   }

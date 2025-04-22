@@ -149,7 +149,7 @@ void Creatures::rewind(const Frame& frame) const {
   // (or intensity) then we use a symmetric function (such as min or average) to decide when to put it in
   // num_close_creatures.
   state(frame)->rainbow = num_close_creatures >= 3;
-  state(frame)->initialHue = 256 * frame.time / 1500;
+  state(frame)->initialHue = 256 * frame.time / 1667;
 }
 
 // Called for each pixel to compute its color.
