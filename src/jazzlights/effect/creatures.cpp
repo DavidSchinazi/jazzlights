@@ -17,7 +17,7 @@ uint32_t ColorHash(uint32_t color) {
 }
 
 uint8_t CreatureIntensity(const Creature& creature) {
-  int rssi = creature.rssi;
+  int rssi = creature.effectiveRssi;
   // According to Espressif documentation, their API provides RSSI in dBm with values between -127 and +20.
   // In practice, the sensors generally aren't able to pick up anything below -100, and rarely below -90.
   // When two ATOM Matrix devices are right next to each other, the highest observed value was -26 but we almost never
@@ -79,6 +79,9 @@ void KnownCreatures::AddCreature(uint32_t color, Milliseconds lastHeard, int rss
       if (lastHeard > creature.lastHeard) {
         creature.lastHeard = lastHeard;
         creature.lastHeardRssi = rssi;
+        creature.effectiveRssi = rssi;
+        creature.lastHeardNearby =
+            (CreatureIntensity(creature) >= Creatures::kCloseCreatureIntensityThresh) ? lastHeard : 0;
       }
       found = true;
       break;
@@ -89,9 +92,9 @@ void KnownCreatures::AddCreature(uint32_t color, Milliseconds lastHeard, int rss
     new_creature.color = color;
     new_creature.lastHeard = lastHeard;
     new_creature.lastHeardRssi = rssi;
-    new_creature.rssi = rssi;
-    new_creature.intensity = CreatureIntensity(new_creature);
-    new_creature.intensityCounter = (new_creature.intensity >= Creatures::kCloseCreatureIntensityThresh) ? 1 : 0;
+    new_creature.effectiveRssi = rssi;
+    new_creature.lastHeardNearby =
+        (CreatureIntensity(new_creature) >= Creatures::kCloseCreatureIntensityThresh) ? lastHeard : 0;
     creatures_.push_back(new_creature);
   }
   std::sort(creatures_.begin(), creatures_.end(),
@@ -104,18 +107,15 @@ void KnownCreatures::update() {
     if (creature.lastHeard > 0 && currentTime - creature.lastHeard > KnownCreatures::kRssiDecayDelayMs) {
       // If we haven't heard from this creature in kRssiDecayDelayMs, decay the RSSI by kRssiDecayFactor dBm every
       // second.
-      creature.rssi =
+      creature.effectiveRssi =
           creature.lastHeardRssi -
           (KnownCreatures::kRssiDecayFactor * (currentTime - creature.lastHeard + KnownCreatures::kRssiDecayDelayMs)) /
               1000;
     } else {
-      creature.rssi = creature.lastHeardRssi;
+      creature.effectiveRssi = creature.lastHeardRssi;
     }
-    creature.intensity = CreatureIntensity(creature);
-    if (creature.intensity >= Creatures::kCloseCreatureIntensityThresh) {
-      creature.intensityCounter = 0;
-    } else {
-      if (!++creature.intensityCounter) { creature.intensityCounter = 255; }
+    if (CreatureIntensity(creature) >= Creatures::kCloseCreatureIntensityThresh) {
+      creature.lastHeardNearby = creature.lastHeard;
     }
   }
 }
@@ -124,7 +124,8 @@ KnownCreatures::KnownCreatures() {
   Creature ourselves;
   ourselves.color = ThisCreatureColor();
   ourselves.lastHeard = -1;
-  ourselves.rssi = 20;
+  ourselves.lastHeardNearby = -1;
+  ourselves.effectiveRssi = 20;
   ourselves.lastHeardRssi = 20;
   creatures_.push_back(ourselves);
 }
@@ -154,8 +155,13 @@ void Creatures::rewind(const Frame& frame) const {
   for (size_t i = 0; i < num_creatures; i++) {
     // Compute the color for each known creature.
     const Creature& creature = creatures[i];
-    state(frame)->colors[i] = FadeColor(CRGB(creature.color), creature.intensity);
-    if (creature.intensityCounter < 100) { num_close_creatures++; }
+    uint8_t intensity = CreatureIntensity(creature);
+    state(frame)->colors[i] = FadeColor(CRGB(creature.color), intensity);
+    if (creature.lastHeardNearby < 0 ||
+        timeMillis() - creature.lastHeardNearby < KnownCreatures::kNearbyCreatureTimeoutMs) {
+      // If the creature has been heard nearby in the last KnownCreatures::kNearbyCreatureTimeoutMs it is still close
+      num_close_creatures++;
+    }
   }
   state(frame)->colors[num_creatures] = CRGB::Black;
   state(frame)->colors[num_creatures + 1] = CRGB::Black;
