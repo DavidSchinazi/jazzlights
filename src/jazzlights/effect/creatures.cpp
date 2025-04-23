@@ -90,17 +90,16 @@ void KnownCreatures::AddCreature(uint32_t color, Milliseconds lastHeard, int rss
     new_creature.lastHeard = lastHeard;
     new_creature.lastHeardRssi = rssi;
     new_creature.rssi = rssi;
-    new_creature.creatureIntensity = CreatureIntensity(new_creature);
-    new_creature.creatureIntensityCounter =
-        (new_creature.creatureIntensity >= Creatures::kCloseCreatureIntensityThresh) ? 1 : 0;
+    new_creature.intensity = CreatureIntensity(new_creature);
+    new_creature.intensityCounter = (new_creature.intensity >= Creatures::kCloseCreatureIntensityThresh) ? 1 : 0;
     creatures_.push_back(new_creature);
   }
   std::sort(creatures_.begin(), creatures_.end(),
             [](Creature a, Creature b) { return ColorHash(a.color) > ColorHash(b.color); });
 }
 
-void KnownCreatures::update(void) {
-  time_t currentTime = timeMillis();
+void KnownCreatures::update() {
+  Milliseconds currentTime = timeMillis();
   for (Creature& creature : creatures_) {
     if (creature.lastHeard > 0 && currentTime - creature.lastHeard > KnownCreatures::kRssiDecayDelayMs) {
       // If we haven't heard from this creature in kRssiDecayDelayMs, decay the RSSI by kRssiDecayFactor dBm every
@@ -112,11 +111,11 @@ void KnownCreatures::update(void) {
     } else {
       creature.rssi = creature.lastHeardRssi;
     }
-    creature.creatureIntensity = CreatureIntensity(creature);
-    if (creature.creatureIntensity >= Creatures::kCloseCreatureIntensityThresh) {
-      creature.creatureIntensityCounter = 0;
+    creature.intensity = CreatureIntensity(creature);
+    if (creature.intensity >= Creatures::kCloseCreatureIntensityThresh) {
+      creature.intensityCounter = 0;
     } else {
-      if (!++creature.creatureIntensityCounter) { creature.creatureIntensityCounter = 255; }
+      if (!++creature.intensityCounter) { creature.intensityCounter = 255; }
     }
   }
 }
@@ -155,9 +154,8 @@ void Creatures::rewind(const Frame& frame) const {
   for (size_t i = 0; i < num_creatures; i++) {
     // Compute the color for each known creature.
     const Creature& creature = creatures[i];
-    uint8_t intensity = CreatureIntensity(creature);
-    state(frame)->colors[i] = FadeColor(CRGB(creature.color), creature.creatureIntensity);
-    if (creature.creatureIntensityCounter < 100) { num_close_creatures++; }
+    state(frame)->colors[i] = FadeColor(CRGB(creature.color), creature.intensity);
+    if (creature.intensityCounter < 100) { num_close_creatures++; }
   }
   state(frame)->colors[num_creatures] = CRGB::Black;
   state(frame)->colors[num_creatures + 1] = CRGB::Black;

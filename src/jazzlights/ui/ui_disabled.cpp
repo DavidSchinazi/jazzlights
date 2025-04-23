@@ -6,14 +6,16 @@
 
 namespace jazzlights {
 namespace {
-#if JL_DEV
+#if defined(JL_BRIGHTNESS_CUSTOM)
+static constexpr uint8_t kBrightness = JL_BRIGHTNESS_CUSTOM;
+#elif JL_DEV
 static constexpr uint8_t kBrightness = 2;
 #elif JL_IS_CONFIG(STAFF)
 static constexpr uint8_t kBrightness = 16;
 #elif JL_IS_CONFIG(HAMMER)
 static constexpr uint8_t kBrightness = 255;
 #elif JL_IS_CONFIG(CREATURE)
-static constexpr uint8_t kBrightness = 96;
+static constexpr uint8_t kBrightness = 16;
 #else
 static constexpr uint8_t kBrightness = 32;
 #endif
