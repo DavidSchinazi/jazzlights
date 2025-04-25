@@ -109,13 +109,8 @@ void KnownCreatures::AddCreature(uint32_t color, Milliseconds lastHeard, int rss
     new_creature.lastHeardRssi = rssi;
     new_creature.effectiveRssi = rssi;
     new_creature.isNearby = false;
-    if (CreatureIntensity(new_creature) >= kCloseCreatureIntensityThresh) {
-      new_creature.lastHeardNearby = lastHeard;
-      new_creature.lastHeardLessNearby = -1;
-    } else {
-      new_creature.lastHeardNearby = -1;
-      new_creature.lastHeardLessNearby = lastHeard;
-    }
+    new_creature.lastHeardNearby = lastHeard;
+    new_creature.lastHeardLessNearby = lastHeard;
     creatures_.push_back(new_creature);
   }
   std::sort(creatures_.begin(), creatures_.end(),
