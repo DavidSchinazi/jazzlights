@@ -4,21 +4,17 @@
 
 #include <esp_mac.h>
 
-namespace {
-constexpr int kRssiDecayDelayMs = 3000;  // Decay after 3s of inactivity.
-constexpr int kRssiDecayFactor = 5;      // Decay RSSI by 5dBm/s after delay.
-// Consider creatures far away if no nearby RSSI within 3 second.
-constexpr int kNearbyCreatureTimeoutMs = 3000;
-
-constexpr uint8_t kCloseCreatureIntensityThresh = 25;  // 10% of max intensity.
-constexpr int kMinCreaturesForAParty = 3;              // Minimum number of creatures to trigger a party.
-
-constexpr int kMSecPerSec = 1000;  // Number of milliseconds in a second.
-}  // namespace
-
 namespace jazzlights {
 
 namespace {
+
+constexpr Milliseconds kRssiDecayDelayMs = 3000;  // Decay after 3s of inactivity.
+constexpr int kRssiDecayFactor = 5;               // Decay RSSI by 5dBm/s after delay.
+// Consider creatures far away if no nearby RSSI within 3 second.
+constexpr Milliseconds kNearbyCreatureTimeoutMs = 3000;
+
+constexpr uint8_t kCloseCreatureIntensityThresh = 25;  // 10% of max intensity.
+constexpr uint32_t kMinCreaturesForAParty = 3;         // Minimum number of creatures to trigger a party.
 
 uint32_t ColorHash(uint32_t color) {
   // Allows sorting colors in a way that isn't trivially predictable by humans.
@@ -120,12 +116,11 @@ void KnownCreatures::AddCreature(uint32_t color, Milliseconds lastHeard, int rss
 void KnownCreatures::update() {
   Milliseconds currentTime = timeMillis();
   for (Creature& creature : creatures_) {
-    if (creature.lastHeard > 0 && currentTime - creature.lastHeard > kRssiDecayDelayMs) {
+    if (creature.lastHeard >= 0 && currentTime - creature.lastHeard > kRssiDecayDelayMs) {
       // If we haven't heard from this creature in kRssiDecayDelayMs, decay the RSSI by kRssiDecayFactor dBm every
       // second.
-      creature.effectiveRssi =
-          creature.lastHeardRssi -
-          (kRssiDecayFactor * (currentTime - creature.lastHeard - kRssiDecayDelayMs)) / kMSecPerSec;
+      creature.effectiveRssi = creature.lastHeardRssi -
+                               (kRssiDecayFactor * (currentTime - creature.lastHeard - kRssiDecayDelayMs)) / ONE_SECOND;
       creature.isNearby = false;  // Non responsive creatures are not nearby.
       return;
     }
