@@ -93,6 +93,9 @@ void KnownCreatures::AddCreature(uint32_t color, Milliseconds lastHeard, int rss
         } else {
           creature.lastHeardLessNearby = lastHeard;
         }
+
+        if (creature.lastHeardNearby < 0) { creature.lastHeardNearby = lastHeard; }
+        if (creature.lastHeardLessNearby < 0) { creature.lastHeardLessNearby = lastHeard; }
       }
       found = true;
       break;
@@ -121,7 +124,9 @@ void KnownCreatures::update() {
       // second.
       creature.effectiveRssi = creature.lastHeardRssi -
                                (kRssiDecayFactor * (currentTime - creature.lastHeard - kRssiDecayDelayMs)) / ONE_SECOND;
-      creature.isNearby = false;  // Non responsive creatures are not nearby.
+      creature.lastHeardNearby = -1;      // Reset the nearby flag if we haven't heard from it in a while.
+      creature.lastHeardLessNearby = -1;  // Reset the less nearby flag if we haven't heard from it in a while.
+      creature.isNearby = false;          // Non responsive creatures are not nearby.
       return;
     }
     if (creature.lastHeardNearby >= 0 && creature.isNearby &&
