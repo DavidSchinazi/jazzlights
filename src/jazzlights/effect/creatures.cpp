@@ -134,11 +134,11 @@ void KnownCreatures::update() {
       creature.isNearby = false;  // Non responsive creatures are not nearby.
       return;
     }
-    if (creature.lastHeardNearby > 0 && creature.isNearby &&
+    if (creature.lastHeardNearby >= 0 && creature.isNearby &&
         currentTime - creature.lastHeardNearby > kNearbyCreatureTimeoutMs) {
       // If creature hasn't been close for kNearbyCreatureTimeoutMs, unstick the nearby flag.
       creature.isNearby = false;
-    } else if (creature.lastHeardLessNearby > 0 && !creature.isNearby &&
+    } else if (creature.lastHeardLessNearby >= 0 && !creature.isNearby &&
                currentTime - creature.lastHeardLessNearby > kNearbyCreatureTimeoutMs) {
       // If creature hasn't been far away for kNearbyCreatureTimeoutMs, stick the nearby flag.
       creature.isNearby = true;
