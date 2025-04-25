@@ -4,6 +4,18 @@
 
 #include <esp_mac.h>
 
+namespace {
+constexpr int kRssiDecayDelayMs = 3000;  // Decay after 3s of inactivity.
+constexpr int kRssiDecayFactor = 5;      // Decay RSSI by 5dBm/s after delay.
+// Consider creatures far away if no nearby RSSI within 3 second.
+constexpr int kNearbyCreatureTimeoutMs = 3000;
+
+constexpr uint8_t kCloseCreatureIntensityThresh = 25;  // 10% of max intensity.
+constexpr int kMinCreaturesForAParty = 3;              // Minimum number of creatures to trigger a party.
+
+constexpr int kMSecPerSec = 1000;  // Number of milliseconds in a second.
+}  // namespace
+
 namespace jazzlights {
 
 namespace {
@@ -80,8 +92,11 @@ void KnownCreatures::AddCreature(uint32_t color, Milliseconds lastHeard, int rss
         creature.lastHeard = lastHeard;
         creature.lastHeardRssi = rssi;
         creature.effectiveRssi = rssi;
-        creature.lastHeardNearby =
-            (CreatureIntensity(creature) >= Creatures::kCloseCreatureIntensityThresh) ? lastHeard : 0;
+        if (CreatureIntensity(creature) >= kCloseCreatureIntensityThresh) {
+          creature.lastHeardNearby = lastHeard;
+        } else {
+          creature.lastHeardLessNearby = lastHeard;
+        }
       }
       found = true;
       break;
@@ -93,8 +108,14 @@ void KnownCreatures::AddCreature(uint32_t color, Milliseconds lastHeard, int rss
     new_creature.lastHeard = lastHeard;
     new_creature.lastHeardRssi = rssi;
     new_creature.effectiveRssi = rssi;
-    new_creature.lastHeardNearby =
-        (CreatureIntensity(new_creature) >= Creatures::kCloseCreatureIntensityThresh) ? lastHeard : 0;
+    new_creature.isNearby = false;
+    if (CreatureIntensity(new_creature) >= kCloseCreatureIntensityThresh) {
+      new_creature.lastHeardNearby = lastHeard;
+      new_creature.lastHeardLessNearby = -1;
+    } else {
+      new_creature.lastHeardNearby = -1;
+      new_creature.lastHeardLessNearby = lastHeard;
+    }
     creatures_.push_back(new_creature);
   }
   std::sort(creatures_.begin(), creatures_.end(),
@@ -104,18 +125,23 @@ void KnownCreatures::AddCreature(uint32_t color, Milliseconds lastHeard, int rss
 void KnownCreatures::update() {
   Milliseconds currentTime = timeMillis();
   for (Creature& creature : creatures_) {
-    if (creature.lastHeard > 0 && currentTime - creature.lastHeard > KnownCreatures::kRssiDecayDelayMs) {
+    if (creature.lastHeard > 0 && currentTime - creature.lastHeard > kRssiDecayDelayMs) {
       // If we haven't heard from this creature in kRssiDecayDelayMs, decay the RSSI by kRssiDecayFactor dBm every
       // second.
       creature.effectiveRssi =
           creature.lastHeardRssi -
-          (KnownCreatures::kRssiDecayFactor * (currentTime - creature.lastHeard + KnownCreatures::kRssiDecayDelayMs)) /
-              1000;
-    } else {
-      creature.effectiveRssi = creature.lastHeardRssi;
+          (kRssiDecayFactor * (currentTime - creature.lastHeard - kRssiDecayDelayMs)) / kMSecPerSec;
+      creature.isNearby = false;  // Non responsive creatures are not nearby.
+      return;
     }
-    if (CreatureIntensity(creature) >= Creatures::kCloseCreatureIntensityThresh) {
-      creature.lastHeardNearby = creature.lastHeard;
+    if (creature.lastHeardNearby > 0 && creature.isNearby &&
+        currentTime - creature.lastHeardNearby > kNearbyCreatureTimeoutMs) {
+      // If creature hasn't been close for kNearbyCreatureTimeoutMs, unstick the nearby flag.
+      creature.isNearby = false;
+    } else if (creature.lastHeardLessNearby > 0 && !creature.isNearby &&
+               currentTime - creature.lastHeardLessNearby > kNearbyCreatureTimeoutMs) {
+      // If creature hasn't been far away for kNearbyCreatureTimeoutMs, stick the nearby flag.
+      creature.isNearby = true;
     }
   }
 }
@@ -125,8 +151,10 @@ KnownCreatures::KnownCreatures() {
   ourselves.color = ThisCreatureColor();
   ourselves.lastHeard = -1;
   ourselves.lastHeardNearby = -1;
+  ourselves.lastHeardLessNearby = -1;
   ourselves.effectiveRssi = 20;
   ourselves.lastHeardRssi = 20;
+  ourselves.isNearby = true;
   creatures_.push_back(ourselves);
 }
 
@@ -150,18 +178,14 @@ void Creatures::rewind(const Frame& frame) const {
   KnownCreatures::Get()->update();
   const std::vector<Creature>& creatures = KnownCreatures::Get()->creatures();
   size_t num_creatures = creatures.size();
-  if (num_creatures > kMaxNumColors - 2) { num_creatures = kMaxNumColors - 2; }
+  if (num_creatures > kMaxNumCreatureColours - 2) { num_creatures = kMaxNumCreatureColours - 2; }
   uint32_t num_close_creatures = 0;
   for (size_t i = 0; i < num_creatures; i++) {
     // Compute the color for each known creature.
     const Creature& creature = creatures[i];
     uint8_t intensity = CreatureIntensity(creature);
     state(frame)->colors[i] = FadeColor(CRGB(creature.color), intensity);
-    if (creature.lastHeardNearby < 0 ||
-        timeMillis() - creature.lastHeardNearby < KnownCreatures::kNearbyCreatureTimeoutMs) {
-      // If the creature has been heard nearby in the last KnownCreatures::kNearbyCreatureTimeoutMs it is still close
-      num_close_creatures++;
-    }
+    if (creature.isNearby) { num_close_creatures++; }
   }
   state(frame)->colors[num_creatures] = CRGB::Black;
   state(frame)->colors[num_creatures + 1] = CRGB::Black;
@@ -172,7 +196,7 @@ void Creatures::rewind(const Frame& frame) const {
   // metric bidirectional. We can do that by having every node broadcast its list of known creatures and decayed RSSI
   // (or intensity) then we use a symmetric function (such as min or average) to decide when to put it in
   // num_close_creatures.
-  state(frame)->rainbow = num_close_creatures >= 3;
+  state(frame)->rainbow = num_close_creatures >= kMinCreaturesForAParty;
   state(frame)->initialHue = 256 * frame.time / 1667;
 }
 
