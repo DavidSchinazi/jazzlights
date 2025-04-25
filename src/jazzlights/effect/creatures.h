@@ -11,12 +11,20 @@
 
 namespace jazzlights {
 
+enum : size_t {
+  kMaxNumCreatureColours = 256,
+};
+
 uint32_t ThisCreatureColor();
 
 struct Creature {
   uint32_t color;
   Milliseconds lastHeard;
-  int rssi;
+  int lastHeardRssi;
+  int effectiveRssi;
+  Milliseconds lastHeardNearby;
+  Milliseconds lastHeardLessNearby;
+  bool isNearby;  // True when the creature is near, used to sticky the nearby flag.
 };
 
 class KnownCreatures {
@@ -31,6 +39,8 @@ class KnownCreatures {
   const std::vector<Creature>& creatures() const { return creatures_; }
   void ExpireOldEntries(Milliseconds currentTime);
   void AddCreature(uint32_t color, Milliseconds lastHeard, int rssi);
+  // Update all known creature states (decay RSSI, increment counters, etc).
+  void update();
 
  private:
   KnownCreatures();
@@ -51,7 +61,6 @@ class Creatures : public Effect {
   CRGB color(const Frame& frame, const Pixel& px) const override;
 
  private:
-  static constexpr size_t kMaxNumColors = 256;
   struct CreaturesState {
     Point origin;
     double maxDistance;
@@ -59,7 +68,7 @@ class Creatures : public Effect {
     size_t offset;
     bool rainbow;
     uint8_t initialHue;
-    CRGB colors[kMaxNumColors];
+    CRGB colors[kMaxNumCreatureColours];
   };
   CreaturesState* state(const Frame& frame) const {
     static_assert(alignof(CreaturesState) <= kMaxStateAlignment, "Need to increase kMaxStateAlignment");

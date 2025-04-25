@@ -6,7 +6,9 @@
 
 namespace jazzlights {
 namespace {
-#if JL_DEV
+#if defined(JL_BRIGHTNESS_CUSTOM)
+static constexpr uint8_t kBrightness = JL_BRIGHTNESS_CUSTOM;
+#elif JL_DEV
 static constexpr uint8_t kBrightness = 2;
 #elif JL_IS_CONFIG(STAFF)
 static constexpr uint8_t kBrightness = 16;
