@@ -126,17 +126,23 @@ void KnownCreatures::update() {
                                (kRssiDecayFactor * (currentTime - creature.lastHeard - kRssiDecayDelayMs)) / ONE_SECOND;
       creature.lastHeardNearby = -1;      // Reset the nearby flag if we haven't heard from it in a while.
       creature.lastHeardLessNearby = -1;  // Reset the less nearby flag if we haven't heard from it in a while.
-      creature.isNearby = false;          // Non responsive creatures are not nearby.
-      return;
-    }
-    if (creature.lastHeardNearby >= 0 && creature.isNearby &&
-        currentTime - creature.lastHeardNearby > kNearbyCreatureTimeoutMs) {
+      if (creature.isNearby) {
+        creature.isNearby = false;  // Non responsive creatures are not nearby.
+        jll_info("%u Removing nearby from creature rgb=%06x due to RSSI decay timeout", currentTime,
+                 static_cast<int>(creature.color));
+      }
+    } else if (creature.lastHeardNearby >= 0 && creature.isNearby &&
+               currentTime - creature.lastHeardNearby > kNearbyCreatureTimeoutMs) {
       // If creature hasn't been close for kNearbyCreatureTimeoutMs, unstick the nearby flag.
       creature.isNearby = false;
+      jll_info("%u Removing nearby from creature rgb=%06x due to nearby timeout", currentTime,
+               static_cast<int>(creature.color));
     } else if (creature.lastHeardLessNearby >= 0 && !creature.isNearby &&
                currentTime - creature.lastHeardLessNearby > kNearbyCreatureTimeoutMs) {
       // If creature hasn't been far away for kNearbyCreatureTimeoutMs, stick the nearby flag.
       creature.isNearby = true;
+      jll_info("%u Adding nearby to creature rgb=%06x due to nearby timeout", currentTime,
+               static_cast<int>(creature.color));
     }
   }
 }
