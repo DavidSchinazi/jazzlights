@@ -63,11 +63,15 @@ uint32_t ThisCreatureColor() {
       x ^= x >> 27;
       x *= 0x2545F4914F6CDD1DULL;
     }
+    // Pick a color from kColors but then use the MAC address hash to randomize the lower bits.
     static constexpr CRGB kColors[] = {
         CRGB::Red, CRGB::Green, CRGB::Blue, CRGB::Yellow, CRGB::Purple, CRGB::Cyan,
     };
-    x %= (sizeof(kColors) / sizeof(kColors[0]));
-    return static_cast<uint32_t>(kColors[x]);
+    size_t colorIndex = x % (sizeof(kColors) / sizeof(kColors[0]));
+    uint32_t color = static_cast<uint32_t>(kColors[colorIndex]);
+    color &= 0xf0f0f0;
+    color |= (x & 0x0f0f0f);
+    return color;
   }();
   return sThisCreatureColor;
 #endif  // JL_CREATURE_COLOR
@@ -134,6 +138,7 @@ void KnownCreatures::update() {
 KnownCreatures::KnownCreatures() {
   Creature ourselves;
   ourselves.color = ThisCreatureColor();
+  jll_info("%u Using color rgb=%06x for ourselves", timeMillis(), static_cast<int>(ourselves.color));
   ourselves.lastHeard = -1;
   ourselves.smoothedRssi = kRssiMax;
   ourselves.isNearby = true;
