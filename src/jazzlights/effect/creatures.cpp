@@ -87,13 +87,18 @@ void KnownCreatures::ExpireOldEntries(Milliseconds currentTime) {
                    creatures_.end());
 }
 
-void KnownCreatures::AddCreature(uint32_t color, Milliseconds lastHeard, int rssi) {
+void KnownCreatures::AddCreature(uint32_t color, Milliseconds lastHeard, int rssi, bool isPartying) {
   bool found = false;
   for (Creature& creature : creatures_) {
     if (creature.color == color) {
       if (lastHeard > creature.lastHeard) {
         creature.lastHeard = lastHeard;
         creature.smoothedRssi += (rssi - creature.smoothedRssi) / 2;
+        if (isPartying) {
+          creature.lastHeardPartying = lastHeard;
+        } else {
+          creature.lastHeardPartying = -1;
+        }
       }
       found = true;
       break;
@@ -103,11 +108,16 @@ void KnownCreatures::AddCreature(uint32_t color, Milliseconds lastHeard, int rss
     Creature new_creature;
     new_creature.color = color;
     new_creature.lastHeard = lastHeard;
+    if (isPartying) {
+      new_creature.lastHeardPartying = lastHeard;
+    } else {
+      new_creature.lastHeardPartying = -1;
+    }
     new_creature.smoothedRssi = rssi;
     new_creature.isNearby = rssi >= kRssiNearbyThresholdUp;
     creatures_.push_back(new_creature);
-    jll_info("%u Adding new creature rgb=%06x rssi=%d %s", timeMillis(), static_cast<int>(color), rssi,
-             (new_creature.isNearby ? "near" : "far"));
+    jll_info("%u Adding new creature rgb=%06x rssi=%d %s %s partying", timeMillis(), static_cast<int>(color), rssi,
+             (new_creature.isNearby ? "near" : "far"), (isPartying ? "is" : "not"));
   }
   std::sort(creatures_.begin(), creatures_.end(),
             [](Creature a, Creature b) { return ColorHash(a.color) > ColorHash(b.color); });
@@ -140,6 +150,7 @@ KnownCreatures::KnownCreatures() {
   ourselves.color = ThisCreatureColor();
   jll_info("%u Using color rgb=%06x for ourselves", timeMillis(), static_cast<int>(ourselves.color));
   ourselves.lastHeard = -1;
+  ourselves.lastHeardPartying = -1;
   ourselves.smoothedRssi = kRssiMax;
   ourselves.isNearby = true;
   creatures_.push_back(ourselves);
@@ -167,12 +178,17 @@ void Creatures::rewind(const Frame& frame) const {
   size_t num_creatures = creatures.size();
   if (num_creatures > kMaxNumCreatureColours - 2) { num_creatures = kMaxNumCreatureColours - 2; }
   uint32_t num_close_creatures = 0;
+  bool iShouldParty = false;
+  Milliseconds currentTime = timeMillis();
   for (size_t i = 0; i < num_creatures; i++) {
     // Compute the color for each known creature.
     const Creature& creature = creatures[i];
     uint8_t intensity = CreatureIntensity(creature);
     state(frame)->colors[i] = FadeColor(CRGB(creature.color), intensity);
     if (creature.isNearby) { num_close_creatures++; }
+    if (creature.lastHeardPartying >= 0 && currentTime - creature.lastHeardPartying < kNearbyCreatureTimeoutMs) {
+      iShouldParty = true;
+    }
   }
   state(frame)->colors[num_creatures] = CRGB::Black;
   state(frame)->colors[num_creatures + 1] = CRGB::Black;
@@ -183,7 +199,8 @@ void Creatures::rewind(const Frame& frame) const {
   // metric bidirectional. We can do that by having every node broadcast its list of known creatures and decayed RSSI
   // (or intensity) then we use a symmetric function (such as min or average) to decide when to put it in
   // num_close_creatures.
-  state(frame)->rainbow = num_close_creatures >= kMinCreaturesForAParty;
+  KnownCreatures::Get()->SetIsPartying(num_close_creatures >= kMinCreaturesForAParty);
+  state(frame)->rainbow = iShouldParty || KnownCreatures::Get()->IsPartying();
   state(frame)->initialHue = 256 * frame.time / 1667;
 }
 

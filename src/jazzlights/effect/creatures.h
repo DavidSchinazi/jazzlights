@@ -22,6 +22,7 @@ struct Creature {
   Milliseconds lastHeard;
   int smoothedRssi;
   bool isNearby;  // True when the creature is near, used to sticky the nearby flag.
+  Milliseconds lastHeardPartying;
 };
 
 class KnownCreatures {
@@ -35,13 +36,16 @@ class KnownCreatures {
   static KnownCreatures* Get();
   const std::vector<Creature>& creatures() const { return creatures_; }
   void ExpireOldEntries(Milliseconds currentTime);
-  void AddCreature(uint32_t color, Milliseconds lastHeard, int rssi);
+  void AddCreature(uint32_t color, Milliseconds lastHeard, int rssi, bool isPartying);
   // Update all known creature states (decay RSSI, increment counters, etc).
   void update();
+  bool IsPartying() const { return isPartying_; }
+  void SetIsPartying(bool isPartying) { isPartying_ = isPartying; }
 
  private:
   KnownCreatures();
   std::vector<Creature> creatures_;
+  bool isPartying_ = false;
 };
 
 class Creatures : public Effect {
