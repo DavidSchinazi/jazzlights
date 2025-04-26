@@ -20,10 +20,7 @@ uint32_t ThisCreatureColor();
 struct Creature {
   uint32_t color;
   Milliseconds lastHeard;
-  int lastHeardRssi;
-  int effectiveRssi;
-  Milliseconds lastHeardNearby;
-  Milliseconds lastHeardLessNearby;
+  int smoothedRssi;
   bool isNearby;  // True when the creature is near, used to sticky the nearby flag.
 };
 
