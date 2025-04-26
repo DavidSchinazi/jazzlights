@@ -811,6 +811,7 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
   messageToSend.receiptNetworkType = followedNextHopNetworkType_;
 #if JL_IS_CONFIG(CREATURE)
   messageToSend.creatureColor = ThisCreatureColor();
+  messageToSend.isPartying = KnownCreatures::Get()->IsPartying();
 #endif  // CREATURE
   for (Network* network : networks_) {
     if (!network->shouldEcho() && messageToSend.receiptNetworkId == network->id()) {
@@ -828,7 +829,8 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
 void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentTime) {
 #if JL_IS_CONFIG(CREATURE)
   jll_error("%u creature recv %s", currentTime, networkMessageToString(message, currentTime).c_str());
-  KnownCreatures::Get()->AddCreature(message.creatureColor, message.receiptTime, message.receiptRssi);
+  KnownCreatures::Get()->AddCreature(message.creatureColor, message.receiptTime, message.receiptRssi,
+                                     message.isPartying);
 #endif  // CREATURE
   jll_debug("%u handleReceivedMessage %s", currentTime, networkMessageToString(message, currentTime).c_str());
   if (message.sender == localDeviceId_) {

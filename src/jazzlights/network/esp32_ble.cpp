@@ -205,10 +205,13 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
     jll_error("%u Failed to parse creature originator", currentTime);
     return;
   }
-  if (!reader.ReadUint8(&message.numHops)) {
-    jll_error("%u Failed to parse creature numHops", currentTime);
+  uint8_t numHopsAndIsPartying;
+  if (!reader.ReadUint8(&numHopsAndIsPartying)) {
+    jll_error("%u Failed to parse creature numHopsAndIsPartying", currentTime);
     return;
   }
+  message.numHops = numHopsAndIsPartying & 0x7F;
+  message.isPartying = (numHopsAndIsPartying & 0x80) != 0;
   uint16_t originationTimeDelta16;
   if (!reader.ReadUint16(&originationTimeDelta16)) {
     jll_error("%u Failed to parse creature originationTimeDelta", currentTime);
@@ -310,8 +313,10 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_
     return 0;
   }
 
-  if (!writer.WriteUint8(messageToSend_.numHops)) {
-    jll_error("%u Failed to write creature numHops", currentTime);
+  uint8_t numHopsAndIsPartying =
+      ((messageToSend_.numHops > 0x7F ? 0x7F : messageToSend_.numHops) & 0x7F) | (messageToSend_.isPartying ? 0x80 : 0);
+  if (!writer.WriteUint8(numHopsAndIsPartying)) {
+    jll_error("%u Failed to write creature numHopsAndIsPartying", currentTime);
     return 0;
   }
   if (!writer.WriteUint16(originationTimeDelta)) {

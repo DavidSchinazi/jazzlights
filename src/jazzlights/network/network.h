@@ -105,6 +105,7 @@ struct NetworkMessage {
   int receiptRssi = -1000;
   Milliseconds receiptTime = -1;
   uint32_t creatureColor = 0;
+  bool isPartying = false;
 #endif  // CREATURE
 
   bool isEqualExceptOriginationTime(const NetworkMessage& other) const {
