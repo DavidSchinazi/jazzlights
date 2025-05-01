@@ -77,6 +77,11 @@ uint32_t ThisCreatureColor() {
 #endif  // JL_CREATURE_COLOR
 }
 
+KnownCreatures* KnownCreatures::Get() {
+  static KnownCreatures sKnownCreatures;
+  return &sKnownCreatures;
+}
+
 void KnownCreatures::ExpireOldEntries(Milliseconds currentTime) {
   creatures_.erase(std::remove_if(creatures_.begin(), creatures_.end(),
                                   [currentTime](const Creature& creature) {

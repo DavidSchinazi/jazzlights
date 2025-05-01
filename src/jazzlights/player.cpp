@@ -1091,11 +1091,4 @@ const char* Player::command(const char* req) {
   return res;
 }
 
-#if JL_IS_CONFIG(CREATURE)
-KnownCreatures* KnownCreatures::Get() {
-  static KnownCreatures sKnownCreatures;
-  return &sKnownCreatures;
-}
-#endif  // CREATURE
-
 }  // namespace jazzlights
