@@ -52,7 +52,9 @@ constexpr PatternBits kStartingPattern = JL_START_PATTERN;
 
 #if JL_IS_CONFIG(XMAS_TREE)
 constexpr PatternBits kWarmPattern = 0x00001500;
-#endif  // XMAS_TREE
+#elif JL_IS_CONFIG(CREATURE)
+constexpr PatternBits kCreaturePattern = 0x0000FF00;
+#endif
 }  // namespace
 
 int comparePrecedence(Precedence leftPrecedence, const NetworkDeviceId& leftDeviceId, Precedence rightPrecedence,
@@ -144,7 +146,6 @@ static const Effect* patternFromBits(PatternBits pattern) {
   static const Clouds clouds_effect = Clouds();
 #elif JL_IS_CONFIG(CREATURE)
   static const Creatures creatures_effect = Creatures();
-  return &creatures_effect;
 #endif
 
   // Pattern selection from bits.
@@ -176,6 +177,12 @@ static const Effect* patternFromBits(PatternBits pattern) {
         case 0x14: return &threesine_pattern;
         case 0x15: return &warm_effect;
         case 0x16: return &warm_glow_effect;
+        case 0xFF:
+#if JL_IS_CONFIG(CREATURE)
+          return &creatures_effect;
+#else   // CREATURE
+          return &white_glow_effect;
+#endif  // CREATURE
       }
     } else if (reserved_type == 0x1) {
       return &mapping_effect;
@@ -312,7 +319,7 @@ void Player::begin(Milliseconds currentTime) {
   nextPattern_ = currentPattern_;
   loop_ = true;
 #elif JL_IS_CONFIG(CREATURE)
-  currentPattern_ = CreaturePattern();
+  currentPattern_ = kCreaturePattern;
   nextPattern_ = currentPattern_;
   loop_ = true;
 #endif
@@ -411,6 +418,8 @@ bool Player::render(Milliseconds currentTime) {
     frame_.time = currentTime - overridePatternStartTime_;
     effect = &fairy_wand_effect;
   }
+#elif JL_IS_CONFIG(CREATURE)
+  if (!creatureIsFollowingNonCreature_) { effect = patternFromBits(kCreaturePattern); }
 #endif  // FAIRY_WAND
 
   // Ensure effectContext_ is big enough for this effect.
@@ -736,6 +745,16 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
   Milliseconds lastOriginationTime;
   if (entry != nullptr) {
     // Update our state based on entry from leader.
+#if JL_IS_CONFIG(CREATURE)
+    // Creatures only follow non-creatures if they have override enabled.
+    const bool newCreatureIsFollowingNonCreature = precedence >= OverridePrecedence();
+    if (creatureIsFollowingNonCreature_ != newCreatureIsFollowingNonCreature) {
+      jll_info("%u now %s because " DEVICE_ID_FMT " has low precedence %u", currentTime,
+               (creatureIsFollowingNonCreature_ ? "creatureFollowing" : "creatureIgnoring"), DEVICE_ID_HEX(originator),
+               precedence);
+    }
+    creatureIsFollowingNonCreature_ = newCreatureIsFollowingNonCreature;
+#endif  // CREATURE
     nextPattern_ = entry->nextPattern;
     currentPatternStartTime_ = entry->currentPatternStartTime;
     followedNextHopNetworkId_ = entry->nextHopNetworkId;
@@ -751,9 +770,14 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
       Milliseconds epochDuration;
       GenerateFPSReport(&fpsCompute, &fpsWrites, &utilization, &timeSpentComputingThisEpoch, &epochDuration);
       jll_info("%u Following " DEVICE_ID_FMT
-               ".p%u nh=%u %s new currentPattern %s (%08x) computed %u FPS wrote %u FPS %u%% %u/%ums",
+               ".p%u nh=%u %s new currentPattern %s (%08x)%s computed %u FPS wrote %u FPS %u%% %u/%ums",
                currentTime, DEVICE_ID_HEX(originator), precedence, currentNumHops_,
                NetworkTypeToString(followedNextHopNetworkType_), patternName(currentPattern_).c_str(), currentPattern_,
+#if JL_IS_CONFIG(CREATURE)
+               (creatureIsFollowingNonCreature_ ? " creatureFollowing" : " creatureIgnoring"),
+#else   // CREATURE
+               "",
+#endif  // CREATURE
                fpsCompute, fpsWrites, utilization, timeSpentComputingThisEpoch, epochDuration);
       printInstrumentationInfo(currentTime);
       lastLEDWriteTime_ = -1;
@@ -765,7 +789,13 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
     currentPattern_ = kWarmPattern;
     nextPattern_ = currentPattern_;
     loop_ = true;
-#endif  // XMAS_TREE
+#elif JL_IS_CONFIG(CREATURE)
+    if (creatureIsFollowingNonCreature_) { jll_info("%u now creatureIgnoring because we are leading", currentTime); }
+    creatureIsFollowingNonCreature_ = false;
+    currentPattern_ = kCreaturePattern;
+    nextPattern_ = currentPattern_;
+    loop_ = true;
+#endif
     followedNextHopNetworkId_ = 0;
     followedNextHopNetworkType_ = NetworkType::kLeading;
     currentNumHops_ = 0;
@@ -810,8 +840,9 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
   messageToSend.receiptNetworkId = followedNextHopNetworkId_;
   messageToSend.receiptNetworkType = followedNextHopNetworkType_;
 #if JL_IS_CONFIG(CREATURE)
-  messageToSend.creatureColor = ThisCreatureColor();
+  messageToSend.isCreature = true;
   messageToSend.isPartying = KnownCreatures::Get()->IsPartying();
+  messageToSend.creatureColor = ThisCreatureColor();
 #endif  // CREATURE
   for (Network* network : networks_) {
     if (!network->shouldEcho() && messageToSend.receiptNetworkId == network->id()) {
@@ -828,9 +859,11 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
 
 void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentTime) {
 #if JL_IS_CONFIG(CREATURE)
-  jll_error("%u creature recv %s", currentTime, networkMessageToString(message, currentTime).c_str());
-  KnownCreatures::Get()->AddCreature(message.creatureColor, message.receiptTime, message.receiptRssi,
-                                     message.isPartying);
+  if (message.isCreature) {
+    jll_info("%u creature recv %s", currentTime, networkMessageToString(message, currentTime).c_str());
+    KnownCreatures::Get()->AddCreature(message.creatureColor, message.receiptTime, message.receiptRssi,
+                                       message.isPartying);
+  }
 #endif  // CREATURE
   jll_debug("%u handleReceivedMessage %s", currentTime, networkMessageToString(message, currentTime).c_str());
   if (message.sender == localDeviceId_) {

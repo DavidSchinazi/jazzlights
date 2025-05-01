@@ -33,10 +33,7 @@ constexpr bool patternbit(PatternBits pattern, uint8_t bitNum) {
 
 PatternBits randomizePatternBits(PatternBits pattern);
 
-#if JL_IS_CONFIG(CREATURE)
-constexpr Precedence CreaturePrecedence() { return 1; }
-constexpr PatternBits CreaturePattern() { return 0; }
-#endif  // CREATURE
+constexpr Precedence OverridePrecedence() { return 36000; }
 
 class Layout;
 

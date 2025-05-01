@@ -78,7 +78,7 @@ void SetupPrimaryRunLoop() {
   player.setBasePrecedence(5000);
   player.setPrecedenceGain(100);
 #elif JL_IS_CONFIG(CREATURE)
-  player.setBasePrecedence(CreaturePrecedence());
+  player.setBasePrecedence(1);
   player.setPrecedenceGain(0);
 #else
   player.setBasePrecedence(1000);

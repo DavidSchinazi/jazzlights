@@ -105,6 +105,7 @@ struct NetworkMessage {
   int receiptRssi = -1000;
   Milliseconds receiptTime = -1;
   uint32_t creatureColor = 0;
+  bool isCreature = false;
   bool isPartying = false;
 #endif  // CREATURE
 
@@ -248,6 +249,8 @@ class NetworkReader {
  public:
   explicit NetworkReader(const uint8_t* data, size_t size) : data_(data), size_(size) {}
 
+  bool Done() const { return pos_ >= size_; }
+
   bool ReadUint8(uint8_t* out) {
     if (sizeof(*out) > size_ || pos_ > size_ - sizeof(*out)) { return false; }
     *out = data_[pos_];
@@ -269,6 +272,12 @@ class NetworkReader {
     return true;
   }
 
+  bool ReadUint32(PatternBits* out) {
+    // In theory we shouldn't need this because PatternBits is roughly a uint32_t, but we made it an unsigned int to
+    // allow `printf("%u", pattern)` without warnings.
+    return ReadUint32(reinterpret_cast<uint32_t*>(out));
+  }
+
   bool ReadNetworkDeviceId(NetworkDeviceId* out) {
     if (NetworkDeviceId::size() > size_ || pos_ > size_ - NetworkDeviceId::size()) { return false; }
     out->readFrom(&data_[pos_]);
@@ -285,6 +294,7 @@ class NetworkReader {
 class NetworkWriter {
  public:
   explicit NetworkWriter(uint8_t* data, size_t size) : data_(data), size_(size) {}
+  size_t LengthWritten() const { return pos_; }
 
   bool WriteUint8(uint8_t in) {
     if (sizeof(in) > size_ || pos_ > size_ - sizeof(in)) { return false; }

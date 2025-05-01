@@ -198,7 +198,9 @@ class Player {
   bool color_overridden_ = false;
   bool force_clouds_ = true;
   CRGB color_override_;
-#endif  // CLOUDS
+#elif JL_IS_CONFIG(CREATURE)
+  bool creatureIsFollowingNonCreature_ = false;
+#endif
 
   NumLedWritesGetter* numLedWritesGetter_ = nullptr;
   std::vector<Network*> networks_;

@@ -74,7 +74,7 @@ void SetDefaultPrecedence(Player& player, Milliseconds currentTime) {
 }
 
 void SetOverridePrecedence(Player& player, Milliseconds currentTime) {
-  player.updatePrecedence(36000, 5000, currentTime);
+  player.updatePrecedence(OverridePrecedence(), 5000, currentTime);
 }
 
 void DrawSystemTextLine(uint8_t i, const char* text) {
