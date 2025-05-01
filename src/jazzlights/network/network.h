@@ -272,7 +272,7 @@ class NetworkReader {
     return true;
   }
 
-  bool ReadUint32(PatternBits* out) {
+  bool ReadPatternBits(PatternBits* out) {
     // In theory we shouldn't need this because PatternBits is roughly a uint32_t, but we made it an unsigned int to
     // allow `printf("%u", pattern)` without warnings.
     return ReadUint32(reinterpret_cast<uint32_t*>(out));

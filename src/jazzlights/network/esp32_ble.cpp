@@ -226,11 +226,11 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
     return;
   }
   Milliseconds originationTimeDelta = originationTimeDelta16;
-  if (!reader.ReadUint32(reinterpret_cast<uint32_t*>(&message.currentPattern))) {
+  if (!reader.ReadPatternBits(&message.currentPattern)) {
     jll_error("%u Failed to parse creature currentPattern", currentTime);
     return;
   }
-  if (!reader.ReadUint32(reinterpret_cast<uint32_t*>(&message.nextPattern))) {
+  if (!reader.ReadPatternBits(&message.nextPattern)) {
     jll_error("%u Failed to parse creature nextPattern", currentTime);
     return;
   }
