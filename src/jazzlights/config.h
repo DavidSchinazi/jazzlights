@@ -81,7 +81,7 @@
 #endif  // BOOT_NAME
 
 #ifndef REVISION
-#define REVISION 12
+#define REVISION 13
 #endif  // REVISION
 
 // Extra indirection ensures preprocessor expands macros in correct order.
