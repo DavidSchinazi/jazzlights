@@ -14,7 +14,7 @@ namespace jazzlights {
 #if JL_IS_CONFIG(STAFF)
 // Significantly reduce power limit since this is 24V and 6 LEDs per pixel.
 #define JL_MAX_MILLIWATTS 300
-#elif JL_IS_CONFIG(ROPELIGHT)
+#elif JL_IS_CONFIG(ROPELIGHT) || JL_IS_CONFIG(XMAS_TREE) || JL_IS_CONFIG(FAIRY_STRING)
 // Ropelight is generally connected to an independent large power source.
 #define JL_MAX_MILLIWATTS 0
 #elif JL_DEV
