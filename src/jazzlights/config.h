@@ -9,6 +9,11 @@
 #define JL_MERGE_TOKENS_INTERNAL(a_, b_) a_##b_
 #define JL_MERGE_TOKENS(a_, b_) JL_MERGE_TOKENS_INTERNAL(a_, b_)
 
+#if defined(JL_CUSTOM_CONFIG) && JL_CUSTOM_CONFIG
+#define JL_CONFIG VEST
+#define BOOT_NAME CUSTOM
+#endif  // JL_CUSTOM_CONFIG
+
 // Configurations.
 #ifndef JL_CONFIG
 #error "Preprocessor macro JL_CONFIG must be defined using compiler flags"
