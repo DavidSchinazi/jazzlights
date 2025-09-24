@@ -149,10 +149,16 @@ static const Effect* patternFromBits(PatternBits pattern) {
 #endif
 
   // Pattern selection from bits.
+  // If the pattern bits have the least-significant bits all zero then this is a reserved pattern,
+  // and we examine the next four bits to determine what *type* of reserved pattern it is.
+  // If the next four bits are also zero (reserved type zero),
+  // then we examine the next eight bits to determine which particular one
+  // of the reserved type zero patterns it is (generally simple solid colors).
+  // Reserved types 0 (basic), 1 (mapping), and 2 (coloring) don’t use a palette.
+  // Reserved type 3 and the non-reserved patterns do use ColorWithPalette.
   if (patternIsReserved(pattern)) {
     const uint8_t reserved_type = (pattern >> 4) & 0xF;
     if (reserved_type == 0x0) {
-      // Reserved effects that don't use a palette.
       switch ((pattern >> 8) & 0xFF) {
         case 0x00: return &black_effect;
         case 0x01: return &red_effect;
