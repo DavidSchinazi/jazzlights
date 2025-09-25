@@ -149,7 +149,7 @@ static const Effect* patternFromBits(PatternBits pattern) {
 #endif
 
   // Pattern selection from bits.
-  // If the pattern bits have the least-significant bits all zero then this is a reserved pattern,
+  // If the pattern bits have the four least-significant bits all zero then this is a reserved pattern,
   // and we examine the next four bits to determine what *type* of reserved pattern it is.
   // If the next four bits are also zero (reserved type zero),
   // then we examine the next eight bits to determine which particular one
