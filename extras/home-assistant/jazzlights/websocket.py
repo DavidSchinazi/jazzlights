@@ -3,9 +3,9 @@
 
 import asyncio
 import binascii
-from collections.abc import Callable
 import logging
 import struct
+from collections.abc import Callable
 
 import websockets
 
@@ -52,7 +52,7 @@ class JazzLightsWebSocketClient:
         self._callbacks.discard(callback)
 
     async def _send(self, message) -> None:
-        LOGGER.error("Sending %s", binascii.hexlify(message))
+        LOGGER.debug("Sending %s", binascii.hexlify(message))
         if self._ws is not None:
             try:
                 await self._ws.send(message)
@@ -121,11 +121,11 @@ class JazzLightsWebSocketClient:
         self._should_restart = True
         assert self._ws is None
         address = await resolve_mdns_async(self.hostname)
-        LOGGER.error("Resolved %s to %s", self.hostname, address)
+        LOGGER.info("Resolved %s to %s", self.hostname, address)
         assert address is not None
 
         uri = f"ws://{address}:80/jazzlights-websocket"
-        LOGGER.error("Connecting %s", uri)
+        LOGGER.info("Connecting %s", uri)
         assert self._ws is None
         try:
             ws = await websockets.connect(uri)
@@ -134,7 +134,7 @@ class JazzLightsWebSocketClient:
             return
         assert self._ws is None
         self._ws = ws
-        LOGGER.error("Connected %s", uri)
+        LOGGER.info("Connected %s", uri)
         self._assumed_state = False
         self._notify_callbacks()
         try:
@@ -148,7 +148,7 @@ class JazzLightsWebSocketClient:
             except websockets.exceptions.WebSocketException as e:
                 self._handle_failure(e)
                 return
-            LOGGER.error("Received %s", binascii.hexlify(response))
+            LOGGER.debug("Received %s", binascii.hexlify(response))
             if len(response) >= 2 and response[0] == _TYPE_STATUS_SHARE:
                 self._is_on = response[1] & _STATUS_FLAG_ON != 0
                 self._brightness = response[2] if len(response) > 2 else 255
@@ -157,7 +157,7 @@ class JazzLightsWebSocketClient:
                     self._color_override = (response[3], response[4], response[5])
                 else:
                     self._color_override = None
-                LOGGER.error(
+                LOGGER.info(
                     "Clouds are %s, brightness=%u color=%s",
                     "ON" if self._is_on else "OFF",
                     self._brightness,
@@ -168,7 +168,7 @@ class JazzLightsWebSocketClient:
     def _notify_callbacks(self) -> None:
         callbacks = self._callbacks.copy()
         for callback in callbacks:
-            LOGGER.error("Calling a callback")
+            LOGGER.debug("Calling a callback")
             callback()
 
     def start(self) -> None:
@@ -189,7 +189,7 @@ class JazzLightsWebSocketClient:
         LOGGER.error("Websocket failed: %s", e)
         self._close(disable_restart=False)
         if self._should_restart:
-            LOGGER.error("Restarting Websocket")
+            LOGGER.info("Restarting Websocket")
             # Start it as its own stack to avoid infinite recursion.
             self._loop.create_task(self._run())
 

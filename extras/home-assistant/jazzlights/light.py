@@ -97,7 +97,7 @@ class JazzLight(LightEntity):
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off the light."""
-        LOGGER.error("Turning Light Off")
+        LOGGER.info("Turning Light Off")
         self._client.turn_off()
 
     async def async_turn_on(self, **kwargs: Any) -> None:
@@ -110,7 +110,7 @@ class JazzLight(LightEntity):
         # expects the color to be red. Therefore we only send updates to
         # specific fields (e.g., only update brightness) and then we receive
         # the color in the response.
-        LOGGER.error("Turning Light On kwargs=%s", kwargs)
+        LOGGER.info("Turning Light On kwargs=%s", kwargs)
         self._client.turn_on(
             brightness=kwargs.get(ATTR_BRIGHTNESS, None),
             color=kwargs.get(ATTR_RGB_COLOR, None),

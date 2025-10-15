@@ -9,9 +9,9 @@ import asyncio
 import contextlib
 import logging
 import socket
-from struct import pack_into, unpack_from
 import sys
 import time
+from struct import pack_into, unpack_from
 
 LOGGER = logging.getLogger(__name__)
 
@@ -151,7 +151,7 @@ class MulticastDNSProtocol:
                 if time_left <= 0:
                     return
                 read_timeout = min(read_timeout, time_left)
-            LOGGER.error("Sending %u bytes to multicast", len(self.packet_to_send))
+            LOGGER.debug("Sending %u bytes to multicast", len(self.packet_to_send))
             self.transport.sendto(self.packet_to_send, ("224.0.0.251", 5353))
             with contextlib.suppress(TimeoutError, asyncio.exceptions.CancelledError):
                 await asyncio.wait_for(asyncio.shield(self.future_done), read_timeout)
@@ -166,7 +166,7 @@ class MulticastDNSProtocol:
 
     def datagram_received(self, buf, addr):
         """DNS packet received."""
-        LOGGER.error("Received %u bytes from %s", len(buf), addr)
+        LOGGER.debug("Received %u bytes from %s", len(buf), addr)
         if not self.question or not buf:
             return
         try:
@@ -190,7 +190,7 @@ class MulticastDNSProtocol:
 
     def error_received(self, exc):
         """Error received on socket."""
-        LOGGER.error("Error received: %s", exc)
+        LOGGER.error("Socket received error: %s", exc)
         self.transport.close()
 
     def connection_lost(self, exc):
