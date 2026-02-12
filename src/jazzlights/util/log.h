@@ -8,6 +8,8 @@ namespace jazzlights {
 
 inline bool is_debug_logging_enabled() { return false; }
 
+size_t EscapeRawBuffer(const uint8_t* input, size_t input_len, uint8_t* output, size_t out_size);
+
 }  // namespace jazzlights
 
 // On ESP32, printf automatically prints to UART 0, which is already properly configured to 115200 8-N-1.
