@@ -1,6 +1,7 @@
 #ifndef JL_UTIL_LOG_H
 #define JL_UTIL_LOG_H
 
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 
