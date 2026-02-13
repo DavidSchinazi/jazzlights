@@ -644,8 +644,9 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
     ::Point pressed = M5.background.event.from;
     int16_t px = pressed.x;
     int16_t py = pressed.y;
-    jll_info("%u background pressed x=%d y=%d, free RAM %u/%u free PSRAM %u/%u", currentTime, px, py, freeHeap,
-             totalHeap, freePSRAM, totalPSRAM);
+    jll_info("%u background pressed x=%d y=%d, free RAM %u/%u free PSRAM %u/%u", currentTime, px, py,
+             static_cast<unsigned int>(freeHeap), static_cast<unsigned int>(totalHeap),
+             static_cast<unsigned int>(freePSRAM), static_cast<unsigned int>(totalPSRAM));
     switch (gScreenMode) {
       case ScreenMode::kOff: {
         gLastScreenInteractionTime = currentTime;
