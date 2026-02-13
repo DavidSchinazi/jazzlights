@@ -15,7 +15,8 @@
 namespace jazzlights {
 namespace {
 
-static constexpr uart_port_t kUartNum = UART_NUM_2;
+constexpr uart_port_t kUartNum = UART_NUM_2;
+
 }  // namespace
 
 void SetupUart(Milliseconds currentTime) {
