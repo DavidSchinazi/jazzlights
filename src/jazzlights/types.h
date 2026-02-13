@@ -10,7 +10,7 @@
 
 namespace jazzlights {
 
-// We would normally define out int types using fixed-width types such as as int32_t, but then some compilers would
+// We would normally define our int types using fixed-width types such as as int32_t, but then some compilers would
 // require us to use PRId32 as a printf format, so we define them as older types so we can use %u or %d instead.
 
 #define JL_ASSERT_INT_TYPES_EQUAL(_a, _b)                                                                       \
