@@ -139,10 +139,10 @@ void printInstrumentationInfo(Milliseconds currentTime) {
       percentRuntime = (ts.ulRunTimeCounter + (totalRuntime / 200)) / (totalRuntime / 100);
     }
     static_assert(configMAX_TASK_NAME_LEN == 16, "tweak format string");
-    jll_info("%16s: num=%02u %s priority=current%02u/base%02u runtime=%09u=%02u%% core=%+d agg_runtime=%02u%%",
+    jll_info("%16s: num=%02u %s priority=current%02u/base%02u runtime=%09llu=%02llu%% core=%+d agg_runtime=%02llu%%",
              ts.pcTaskName, ts.xTaskNumber, TaskStateToString(ts.eCurrentState), ts.uxCurrentPriority,
-             ts.uxBasePriority, ts.ulRunTimeCounter, percentRuntime, (ts.xCoreID == 2147483647 ? -1 : ts.xCoreID),
-             aggregatedPercentRuntime);
+             ts.uxBasePriority, static_cast<uint64_t>(ts.ulRunTimeCounter), static_cast<uint64_t>(percentRuntime),
+             (ts.xCoreID == 2147483647 ? -1 : ts.xCoreID), static_cast<uint64_t>(aggregatedPercentRuntime));
   }
   sAggregatedTotalRuntime += totalRuntime;
   free(tastStatuses);
