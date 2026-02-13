@@ -5,10 +5,6 @@
 #ifdef ESP32
 
 #if JL_IS_CONFIG(ORRERY)
-#include <Arduino.h>
-// Arduino.h needs to be included before EZModbus.h because Arduino and LWIP both define
-// INADDR_NONE in incompatible ways, and they only compile if Arduino is included first.
-#include <EZModbus.h>
 #include <driver/uart.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
