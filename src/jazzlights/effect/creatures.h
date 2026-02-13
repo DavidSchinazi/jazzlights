@@ -5,7 +5,6 @@
 
 #include "jazzlights/config.h"
 #include "jazzlights/effect/effect.h"
-#include "jazzlights/util/math.h"
 
 #if JL_IS_CONFIG(CREATURE)
 

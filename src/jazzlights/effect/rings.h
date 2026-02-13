@@ -4,7 +4,6 @@
 #include <algorithm>
 
 #include "jazzlights/palette.h"
-#include "jazzlights/util/math.h"
 
 namespace jazzlights {
 

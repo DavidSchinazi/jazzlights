@@ -4,7 +4,6 @@
 #include "jazzlights/types.h"
 #include "jazzlights/util/geom.h"
 #include "jazzlights/util/log.h"
-#include "jazzlights/util/math.h"
 
 namespace jazzlights {
 

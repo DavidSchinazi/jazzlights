@@ -2,9 +2,9 @@
 #define JL_EFFECT_PLASMA_H
 
 #include "jazzlights/effect/effect.h"
+#include "jazzlights/fastled_wrapper.h"
 #include "jazzlights/palette.h"
 #include "jazzlights/util/geom.h"
-#include "jazzlights/util/math.h"
 
 namespace jazzlights {
 

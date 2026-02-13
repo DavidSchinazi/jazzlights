@@ -29,7 +29,6 @@
 #include "jazzlights/instrumentation.h"
 #include "jazzlights/pseudorandom.h"
 #include "jazzlights/util/log.h"
-#include "jazzlights/util/math.h"
 #include "jazzlights/util/time.h"
 
 #if !defined(ESP32) || (JL_WIFI && !JL_ESP32_WIFI) || (JL_ETHERNET && !JL_ESP32_ETHERNET)

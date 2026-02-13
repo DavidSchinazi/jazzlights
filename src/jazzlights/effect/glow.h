@@ -1,7 +1,6 @@
 #ifndef JL_EFFECT_GLOW_H
 #define JL_EFFECT_GLOW_H
 #include "jazzlights/effect/functional.h"
-#include "jazzlights/util/math.h"
 
 namespace jazzlights {
 

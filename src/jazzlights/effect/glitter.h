@@ -2,7 +2,6 @@
 #define JL_EFFECT_GLITTER_H
 
 #include "jazzlights/effect/effect.h"
-#include "jazzlights/util/math.h"
 
 namespace jazzlights {
 

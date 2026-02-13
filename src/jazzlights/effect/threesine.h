@@ -1,7 +1,7 @@
 #ifndef JL_EFFECT_THREESINE_H
 #define JL_EFFECT_THREESINE_H
 #include "jazzlights/effect/functional.h"
-#include "jazzlights/util/math.h"
+#include "jazzlights/fastled_wrapper.h"
 
 namespace jazzlights {
 
