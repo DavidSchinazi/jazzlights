@@ -159,4 +159,8 @@
 #endif  // ESP32 && ORRERY
 #endif  // JL_UART
 
+#ifndef JL_BUS_LEADER
+#define JL_BUS_LEADER 0
+#endif  // JL_BUS_LEADER
+
 #endif  // JL_CONFIG_H
