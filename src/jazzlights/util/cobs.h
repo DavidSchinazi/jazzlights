@@ -16,7 +16,9 @@ size_t CobsEncode(const uint8_t* inputBuffer, size_t inputLength, uint8_t* encod
 size_t CobsDecode(const uint8_t* encodedInputBuffer, size_t encodedInputLength, uint8_t* outputBuffer,
                   size_t outputBufferSize);
 
-size_t CobsMaxEncodedSize(size_t inputLength);
+constexpr size_t CobsMaxEncodedSize(size_t inputLength) {
+  return static_cast<size_t>((((static_cast<uint64_t>(inputLength) * 255) + 253) / 254));
+}
 
 }  // namespace jazzlights
 
