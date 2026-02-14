@@ -161,13 +161,29 @@ void UartHandler::RunTask() {
     case kApplicationDataAvailable: {  // Our application has data to write to UART.
       {
         const std::lock_guard<std::mutex> lock(sendMutex_);
-        lengthInTaskSendBuffer_ = lengthInSharedSendBuffer_;
-        lengthInSharedSendBuffer_ = 0;
-        memcpy(taskSendBuffer_, sharedSendBuffer_, lengthInTaskSendBuffer_);
+        size_t lengthToCopy = std::min<size_t>(lengthInSharedSendBuffer_, kUartBufferSize - lengthInTaskSendBuffer_);
+        memcpy(taskSendBuffer_ + lengthInTaskSendBuffer_, sharedSendBuffer_, lengthToCopy);
+        if (lengthToCopy < lengthInSharedSendBuffer_) {
+          memmove(sharedSendBuffer_, sharedSendBuffer_ + lengthToCopy, lengthInSharedSendBuffer_ - lengthToCopy);
+        }
+        lengthInTaskSendBuffer_ += lengthToCopy;
+        lengthInSharedSendBuffer_ -= lengthToCopy;
       }
       int bytes_written =
           uart_write_bytes(uartPort_, reinterpret_cast<const char*>(taskSendBuffer_), lengthInTaskSendBuffer_);
-      jll_info("UART%d wrote %d bytes", uartPort_, bytes_written);
+      if (bytes_written > 0) {
+        if (static_cast<size_t>(bytes_written) == lengthInTaskSendBuffer_) {
+          jll_info("UART%d fully wrote %d bytes", uartPort_, bytes_written);
+          lengthInTaskSendBuffer_ = 0;
+        } else {
+          jll_info("UART%d partially wrote %d/%zu bytes", uartPort_, bytes_written, lengthInTaskSendBuffer_);
+          lengthInTaskSendBuffer_ -= bytes_written;
+          memmove(taskSendBuffer_, taskSendBuffer_ + bytes_written, lengthInTaskSendBuffer_ - bytes_written);
+        }
+      } else {
+        jll_error("UART%d failed to write %zu bytes: got %d", uartPort_, lengthInTaskSendBuffer_, bytes_written);
+      }
+
     } break;
     default: {
       jll_info("UART%d unexpected event %d", uartPort_, static_cast<int>(event.type));
@@ -342,7 +358,7 @@ size_t Rs485Bus::ReadData(uint8_t* buffer, size_t maxLength) {
 #endif  // JL_UART_LOG
   uint32_t crc32 = esp_crc32_be(0, decodedBuffer, decodedBufferIndex - 2 - sizeof(uint32_t));
   if (memcmp(decodedBuffer + decodedBufferIndex - 2 - sizeof(crc32), &crc32, sizeof(uint32_t)) != 0) {
-    jll_error("Rs485Bus CRC32 check failed");
+    jll_error("Rs485Bus CRC32 check on %d bytes failed", decodedBufferIndex - 2 - sizeof(uint32_t));
     return 0;
   }
   memcpy(buffer, decodedBuffer + 2, decodedBufferIndex - 4 - sizeof(uint32_t));
