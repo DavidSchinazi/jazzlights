@@ -5,21 +5,21 @@
 
 #include "jazzlights/util/log.h"
 
-#define JL_COBS_PRINT 0
+#define JL_LOG_COBS_DATA 0
 
-#if JL_COBS_PRINT
-static constexpr size_t kCobsPrintBufferSize = 2048;
-#endif  // JL_COBS_PRINT
+#if JL_LOG_COBS_DATA
+#define jll_cobs_data(...) jll_info(__VA_ARGS__)
+#define jll_cobs_data_buffer(...) jll_buffer_info(__VA_ARGS__)
+#else  // JL_LOG_COBS_DATA
+#define jll_cobs_data(...) jll_debug(__VA_ARGS__)
+#define jll_cobs_data_buffer(...) jll_buffer_debug(__VA_ARGS__)
+#endif  // JL_LOG_COBS_DATA
 
 namespace jazzlights {
 
 size_t CobsEncode(const uint8_t* inputBuffer, size_t inputLength, uint8_t* encodedOuputBuffer,
                   size_t encodedOuputBufferSize) {
-#if JL_COBS_PRINT
-  static uint8_t* cobsPrintBuffer = reinterpret_cast<uint8_t*>(malloc(kCobsPrintBufferSize));
-  EscapeRawBuffer(inputBuffer, inputLength, cobsPrintBuffer, kCobsPrintBufferSize);
-  jll_info("COBS encode: %s", cobsPrintBuffer);
-#endif  // JL_COBS_PRINT
+  jll_cobs_data_buffer(inputBuffer, inputLength, "COBS encode");
   uint8_t code = 0x01;
   size_t inputIndex = 0;
   size_t outputCodeIndex = 0;
@@ -69,11 +69,7 @@ size_t CobsDecode(const uint8_t* encodedInputBuffer, size_t encodedInputLength, 
     }
     if (code < 0xFF) {
       if (inputIndex == encodedInputLength) {
-#if JL_COBS_PRINT
-        static uint8_t* cobsPrintBuffer = reinterpret_cast<uint8_t*>(malloc(kCobsPrintBufferSize));
-        EscapeRawBuffer(outputBuffer, outputIndex, cobsPrintBuffer, kCobsPrintBufferSize);
-        jll_info("COBS decode1: %s", cobsPrintBuffer);
-#endif  // JL_COBS_PRINT
+        jll_cobs_data_buffer(outputBuffer, outputIndex, "COBS decode1");
         return outputIndex;
       }
       if (outputIndex >= outputBufferSize) {
@@ -84,11 +80,7 @@ size_t CobsDecode(const uint8_t* encodedInputBuffer, size_t encodedInputLength, 
       outputIndex++;
     }
   }
-#if JL_COBS_PRINT
-  static uint8_t* cobsPrintBuffer = reinterpret_cast<uint8_t*>(malloc(kCobsPrintBufferSize));
-  EscapeRawBuffer(outputBuffer, outputIndex, cobsPrintBuffer, kCobsPrintBufferSize);
-  jll_info("COBS decode2: %s", cobsPrintBuffer);
-#endif  // JL_COBS_PRINT
+  jll_cobs_data_buffer(outputBuffer, outputIndex, "COBS decode2");
   return outputIndex;
 }
 
