@@ -20,7 +20,9 @@
 namespace jazzlights {
 namespace {
 
+#ifndef JL_LOG_UART_DATA
 #define JL_LOG_UART_DATA 0
+#endif  // JL_LOG_UART_DATA
 
 #if JL_LOG_UART_DATA
 #define jll_uart_data(...) jll_info(__VA_ARGS__)
@@ -103,10 +105,12 @@ UartHandler::UartHandler(uart_port_t uartPort, int txPin, int rxPin)
     jll_fatal("Failed to allocate UartHandler task send buffer size %d", kUartBufferSize);
   }
   taskRecvBuffer_ = reinterpret_cast<uint8_t*>(malloc(kUartBufferSize));
-  if (taskRecvBuffer_ == nullptr) { jll_fatal("Failed to allocate UartHandler recv buffer size %d", kUartBufferSize); }
+  if (taskRecvBuffer_ == nullptr) {
+    jll_fatal("Failed to allocate UartHandler task recv buffer size %d", kUartBufferSize);
+  }
   sharedRecvBuffer_ = reinterpret_cast<uint8_t*>(malloc(kUartBufferSize));
   if (sharedRecvBuffer_ == nullptr) {
-    jll_fatal("Failed to allocate UartHandler print buffer size %d", kUartBufferSize);
+    jll_fatal("Failed to allocate UartHandler shared recv buffer size %d", kUartBufferSize);
   }
 }
 
@@ -264,10 +268,23 @@ class Rs485Bus {
   explicit Rs485Bus(BusId bus_id, uart_port_t uartPort, int txPin, int rxPin);
   BusId bus_id_;
   UartHandler uart_;
+  uint8_t* encodedReadBuffer_ = nullptr;
+  size_t encodedReadBufferIndex_ = 0;
+  uint8_t* decodedReadBuffer_ = nullptr;
+  size_t decodedReadBufferIndex_ = 0;
 };
 
 Rs485Bus::Rs485Bus(BusId bus_id, uart_port_t uartPort, int txPin, int rxPin)
-    : bus_id_(bus_id), uart_(uartPort, txPin, rxPin) {}
+    : bus_id_(bus_id), uart_(uartPort, txPin, rxPin) {
+  encodedReadBuffer_ = reinterpret_cast<uint8_t*>(malloc(kUartBufferSize));
+  if (encodedReadBuffer_ == nullptr) {
+    jll_fatal("Failed to allocate Rs485Bus encoded read buffer size %d", kUartBufferSize);
+  }
+  decodedReadBuffer_ = reinterpret_cast<uint8_t*>(malloc(kUartBufferSize));
+  if (decodedReadBuffer_ == nullptr) {
+    jll_fatal("Failed to allocate Rs485Bus decoded read buffer size %d", kUartBufferSize);
+  }
+}
 
 // static
 Rs485Bus* Rs485Bus::Get() {
@@ -307,42 +324,49 @@ void Rs485Bus::WriteData(const uint8_t* buffer, size_t length) {
 }
 
 size_t Rs485Bus::ReadData(uint8_t* buffer, size_t maxLength) {
-  uint8_t uartBuffer[kUartBufferSize];
-  size_t readLength = uart_.ReadData(uartBuffer, sizeof(uartBuffer));
+  size_t readLength =
+      uart_.ReadData(encodedReadBuffer_ + encodedReadBufferIndex_, kUartBufferSize - encodedReadBufferIndex_);
   if (readLength == 0) { return 0; }
-  jll_uart_data_buffer(uartBuffer, readLength, "Rs485Bus attempting to read");
+  jll_uart_data_buffer(encodedReadBuffer_ + encodedReadBufferIndex_, readLength, "Rs485Bus read");
+  encodedReadBufferIndex_ += readLength;
   // TODO properly resynchronize using zeroes.
-  if (readLength < ComputeExpansion(0)) {
-    jll_error("Rs485Bus ignoring very short message");
+  if (encodedReadBufferIndex_ < ComputeExpansion(0)) {
+    jll_buffer_error(encodedReadBuffer_, encodedReadBufferIndex_, "Rs485Bus ignoring very short message");
     return 0;
   }
   size_t uartBufferIndex = 0;
-  BusId separator = uartBuffer[uartBufferIndex++];
+  BusId separator = encodedReadBuffer_[uartBufferIndex++];
   if (separator != kSeparator) {
-    jll_buffer_error(buffer, readLength, "Rs485Bus ignoring message due to bad separator");
+    jll_buffer_error(encodedReadBuffer_, encodedReadBufferIndex_,
+                     "Rs485Bus ignoring message due to bad initial separator");
+    encodedReadBufferIndex_ = 0;
     return 0;
   }
-  BusId destBudId = uartBuffer[uartBufferIndex++];
+  BusId destBudId = encodedReadBuffer_[uartBufferIndex++];
   if (destBudId != kBusIdBroadcast && destBudId != kBusId) {
-    jll_buffer_error(buffer, readLength, "Rs485Bus ignoring message not meant for us");
+    jll_buffer_error(encodedReadBuffer_, encodedReadBufferIndex_, "Rs485Bus ignoring message not meant for us");
+    encodedReadBufferIndex_ = 0;
     return 0;
   }
-  if (uartBuffer[readLength - 2] != kSeparator) {
-    jll_buffer_error(buffer, readLength, "Rs485Bus did not find end separator");
+  if (encodedReadBuffer_[encodedReadBufferIndex_ - 2] != kSeparator) {
+    jll_buffer_error(encodedReadBuffer_, encodedReadBufferIndex_, "Rs485Bus did not find end separator");
+    encodedReadBufferIndex_ = 0;
     return 0;
   }
-  if (uartBuffer[readLength - 1] != kBusIdEndOfMessage) {
-    jll_buffer_error(buffer, readLength, "Rs485Bus did not find end of message");
+  if (encodedReadBuffer_[encodedReadBufferIndex_ - 1] != kBusIdEndOfMessage) {
+    jll_buffer_error(encodedReadBuffer_, encodedReadBufferIndex_, "Rs485Bus did not find end of message");
+    encodedReadBufferIndex_ = 0;
     return 0;
   }
   uint8_t decodedBuffer[kUartBufferSize + 2];
   size_t decodedBufferIndex = 0;
-  decodedBuffer[decodedBufferIndex++] = uartBuffer[0];
-  decodedBuffer[decodedBufferIndex++] = uartBuffer[1];
-  size_t decodeLength = CobsDecode(uartBuffer + uartBufferIndex, readLength - uartBufferIndex - 2,
+  decodedBuffer[decodedBufferIndex++] = encodedReadBuffer_[0];
+  decodedBuffer[decodedBufferIndex++] = encodedReadBuffer_[1];
+  size_t decodeLength = CobsDecode(encodedReadBuffer_ + uartBufferIndex, encodedReadBufferIndex_ - uartBufferIndex - 2,
                                    decodedBuffer + decodedBufferIndex, sizeof(decodedBuffer) - decodedBufferIndex);
   if (decodeLength == 0) {
-    jll_buffer_error(buffer, readLength, "Rs485Bus failed to CobsDecode incoming message");
+    jll_buffer_error(encodedReadBuffer_, encodedReadBufferIndex_, "Rs485Bus failed to CobsDecode incoming message");
+    encodedReadBufferIndex_ = 0;
     return 0;
   }
   decodedBufferIndex += decodeLength;
@@ -351,9 +375,11 @@ size_t Rs485Bus::ReadData(uint8_t* buffer, size_t maxLength) {
   if (memcmp(decodedBuffer + decodedBufferIndex - 2 - sizeof(crc32), &crc32, sizeof(uint32_t)) != 0) {
     jll_buffer_error(decodedBuffer, decodedBufferIndex, "Rs485Bus CRC32 check on %d bytes failed",
                      decodedBufferIndex - 2 - sizeof(uint32_t));
+    encodedReadBufferIndex_ = 0;
     return 0;
   }
   memcpy(buffer, decodedBuffer + 2, decodedBufferIndex - 4 - sizeof(uint32_t));
+  encodedReadBufferIndex_ = 0;
   return decodedBufferIndex - 4 - sizeof(uint32_t);
 }
 

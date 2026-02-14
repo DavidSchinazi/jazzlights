@@ -5,7 +5,9 @@
 
 #include "jazzlights/util/log.h"
 
+#ifndef JL_LOG_COBS_DATA
 #define JL_LOG_COBS_DATA 0
+#endif  // JL_LOG_COBS_DATA
 
 #if JL_LOG_COBS_DATA
 #define jll_cobs_data(...) jll_info(__VA_ARGS__)
