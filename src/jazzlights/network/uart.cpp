@@ -104,14 +104,17 @@ void UartHandler::RunTask() {
   if (!xQueueReceive(queue_, &event, portMAX_DELAY)) { jll_fatal("UartHandler queue error"); }
   switch (event.type) {
     case UART_DATA: {  // There is data ready to be read.
-      int lengthToRead = std::min<size_t>(event.size, kUartBufferSize);
-      int readLen = uart_read_bytes(uartPort_, taskRecvBuffer_, event.size, portMAX_DELAY);
-      if (readLen < 0) {
-        jll_error("UART%d read error", uartPort_);
-      } else {
-        const std::lock_guard<std::mutex> lock(recvMutex_);
-        lengthInSharedRecvBuffer_ = readLen;
-        memcpy(sharedRecvBuffer_, taskRecvBuffer_, lengthInSharedRecvBuffer_);
+      size_t lengthToRead = std::min<size_t>(event.size, kUartBufferSize);
+      if (lengthToRead > 0) {
+        int readLen = uart_read_bytes(uartPort_, taskRecvBuffer_, lengthToRead, portMAX_DELAY);
+        if (readLen <= 0) {
+          jll_error("UART%d read error %d", uartPort_, readLen);
+        } else {
+          const std::lock_guard<std::mutex> lock(recvMutex_);
+          size_t lengthToCopy = std::min<size_t>(readLen, kUartBufferSize - lengthInSharedRecvBuffer_);
+          memcpy(sharedRecvBuffer_ + lengthInSharedRecvBuffer_, taskRecvBuffer_, lengthToCopy);
+          lengthInSharedRecvBuffer_ += lengthToCopy;
+        }
       }
     } break;
     case UART_BREAK: {  // Received a UART break signal.
@@ -140,10 +143,11 @@ void UartHandler::RunTask() {
       {
         const std::lock_guard<std::mutex> lock(sendMutex_);
         lengthInTaskSendBuffer_ = lengthInSharedSendBuffer_;
-        memcpy(taskSendBuffer_, sharedSendBuffer_, lengthInSharedSendBuffer_);
+        lengthInSharedSendBuffer_ = 0;
+        memcpy(taskSendBuffer_, sharedSendBuffer_, lengthInTaskSendBuffer_);
       }
       int bytes_written =
-          uart_write_bytes(uartPort_, reinterpret_cast<const char*>(taskSendBuffer_), lengthInSharedSendBuffer_);
+          uart_write_bytes(uartPort_, reinterpret_cast<const char*>(taskSendBuffer_), lengthInTaskSendBuffer_);
       jll_info("UART%d wrote %d bytes", uartPort_, bytes_written);
     } break;
     default: {
@@ -177,8 +181,13 @@ void UartHandler::WriteData(const uint8_t* buffer, size_t length) {
   }
   {
     const std::lock_guard<std::mutex> lock(sendMutex_);
-    lengthInSharedSendBuffer_ = length;
-    memcpy(sharedSendBuffer_, buffer, length);
+    if (lengthInSharedSendBuffer_ + length > kUartBufferSize) {
+      jll_error("UART%d cannot currently send %zu bytes, already have %zu and limit is %zu", uartPort_, length,
+                lengthInSharedSendBuffer_, kUartBufferSize);
+      return;
+    }
+    memcpy(sharedSendBuffer_ + lengthInSharedSendBuffer_, buffer, length);
+    lengthInSharedSendBuffer_ += length;
   }
   uart_event_t eventToSend = {};
   eventToSend.type = kApplicationDataAvailable;
@@ -224,7 +233,7 @@ void RunUart(Milliseconds currentTime) {
   sLastWriteTime = currentTime;
   sTimeBetweenRuns = UnpredictableRandom::GetNumberBetween(500, 1500);
   char send_data[100] = {};
-  snprintf(send_data, sizeof(send_data) - 1, "\n" STRINGIFY(JL_ROLE) " is NEW sending: %u.", currentTime);
+  snprintf(send_data, sizeof(send_data) - 1, "\n\t\t\t\t\t\t" STRINGIFY(JL_ROLE) " is NEW sending: %u.", currentTime);
   UartHandler::Get()->WriteData(reinterpret_cast<const uint8_t*>(send_data), strnlen(send_data, sizeof(send_data)));
 }
 
