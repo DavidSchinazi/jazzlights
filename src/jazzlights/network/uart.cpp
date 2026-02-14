@@ -27,6 +27,7 @@ class UartHandler {
  public:
   static UartHandler* Get();
   void WriteData(const uint8_t* buffer, size_t length);
+  size_t ReadData(uint8_t* buffer, size_t maxLength);
 
  private:
   explicit UartHandler(uart_port_t uartPort, int txPin, int rxPin);
@@ -39,13 +40,15 @@ class UartHandler {
   const int txPin_;                    // Only modified in constructor.
   const int rxPin_;                    // Only modified in constructor.
   TaskHandle_t taskHandle_ = nullptr;  // Only modified in constructor.
-  std::mutex mutex_;
-  uint8_t* sharedSendBuffer_ = nullptr;  // Protected by `mutex_`.
-  size_t lengthInSharedSendBuffer_ = 0;  // Protected by `mutex_`.
+  std::mutex sendMutex_;
+  std::mutex recvMutex_;
+  uint8_t* sharedSendBuffer_ = nullptr;  // Protected by `sendMutex_`.
+  size_t lengthInSharedSendBuffer_ = 0;  // Protected by `sendMutex_`.
   uint8_t* taskSendBuffer_ = nullptr;    // Only accessed by task.
   size_t lengthInTaskSendBuffer_ = 0;    // Only accessed by task.
-  uint8_t* recvBuffer_ = nullptr;        // Only accessed by task.
-  uint8_t* printBuffer_ = nullptr;       // Only accessed by task.
+  uint8_t* taskRecvBuffer_ = nullptr;    // Only accessed by task.
+  uint8_t* sharedRecvBuffer_ = nullptr;  // Protected by `recvMutex_`.
+  size_t lengthInSharedRecvBuffer_ = 0;  // Protected by `recvMutex_`.
   QueueHandle_t queue_;
 };
 
@@ -73,18 +76,20 @@ UartHandler::UartHandler(uart_port_t uartPort, int txPin, int rxPin)
   if (taskSendBuffer_ == nullptr) {
     jll_fatal("Failed to allocate UartHandler task send buffer size %d", kUartBufferSize);
   }
-  recvBuffer_ = reinterpret_cast<uint8_t*>(malloc(kUartBufferSize));
-  if (recvBuffer_ == nullptr) { jll_fatal("Failed to allocate UartHandler recv buffer size %d", kUartBufferSize); }
-  printBuffer_ = reinterpret_cast<uint8_t*>(malloc(kPrintBufferSize));
-  if (printBuffer_ == nullptr) { jll_fatal("Failed to allocate UartHandler print buffer size %d", kPrintBufferSize); }
+  taskRecvBuffer_ = reinterpret_cast<uint8_t*>(malloc(kUartBufferSize));
+  if (taskRecvBuffer_ == nullptr) { jll_fatal("Failed to allocate UartHandler recv buffer size %d", kUartBufferSize); }
+  sharedRecvBuffer_ = reinterpret_cast<uint8_t*>(malloc(kPrintBufferSize));
+  if (sharedRecvBuffer_ == nullptr) {
+    jll_fatal("Failed to allocate UartHandler print buffer size %d", kPrintBufferSize);
+  }
 }
 
 UartHandler::~UartHandler() {
   vTaskDelete(taskHandle_);
   free(sharedSendBuffer_);
   free(taskSendBuffer_);
-  free(recvBuffer_);
-  free(printBuffer_);
+  free(taskRecvBuffer_);
+  free(sharedRecvBuffer_);
 }
 
 // static
@@ -100,12 +105,13 @@ void UartHandler::RunTask() {
   switch (event.type) {
     case UART_DATA: {  // There is data ready to be read.
       int lengthToRead = std::min<size_t>(event.size, kUartBufferSize);
-      int readLen = uart_read_bytes(uartPort_, recvBuffer_, event.size, portMAX_DELAY);
+      int readLen = uart_read_bytes(uartPort_, taskRecvBuffer_, event.size, portMAX_DELAY);
       if (readLen < 0) {
         jll_error("UART%d read error", uartPort_);
       } else {
-        EscapeRawBuffer(recvBuffer_, readLen, printBuffer_, kPrintBufferSize);
-        jll_info("UART%d read %d bytes: %s", uartPort_, readLen, printBuffer_);
+        const std::lock_guard<std::mutex> lock(recvMutex_);
+        lengthInSharedRecvBuffer_ = readLen;
+        memcpy(sharedRecvBuffer_, taskRecvBuffer_, lengthInSharedRecvBuffer_);
       }
     } break;
     case UART_BREAK: {  // Received a UART break signal.
@@ -132,13 +138,13 @@ void UartHandler::RunTask() {
     } break;
     case kApplicationDataAvailable: {  // Our application has data to write to UART.
       {
-        const std::lock_guard<std::mutex> lock(mutex_);
+        const std::lock_guard<std::mutex> lock(sendMutex_);
         lengthInTaskSendBuffer_ = lengthInSharedSendBuffer_;
         memcpy(taskSendBuffer_, sharedSendBuffer_, lengthInSharedSendBuffer_);
       }
       int bytes_written =
           uart_write_bytes(uartPort_, reinterpret_cast<const char*>(taskSendBuffer_), lengthInSharedSendBuffer_);
-      jll_info("UART%d wrote %d bytes to UART", uartPort_, bytes_written);
+      jll_info("UART%d wrote %d bytes", uartPort_, bytes_written);
     } break;
     default: {
       jll_info("UART%d unexpected event %d", uartPort_, static_cast<int>(event.type));
@@ -166,24 +172,30 @@ void UartHandler::SetUp() {
 
 void UartHandler::WriteData(const uint8_t* buffer, size_t length) {
   if (length > kUartBufferSize) {
-    jll_error("Refusing to send %zu bytes > %zu", length, kUartBufferSize);
+    jll_error("UART%d refusing to send %zu bytes > %zu", uartPort_, length, kUartBufferSize);
     return;
   }
   {
-    const std::lock_guard<std::mutex> lock(mutex_);
+    const std::lock_guard<std::mutex> lock(sendMutex_);
     lengthInSharedSendBuffer_ = length;
     memcpy(sharedSendBuffer_, buffer, length);
   }
   uart_event_t eventToSend = {};
   eventToSend.type = kApplicationDataAvailable;
   BaseType_t res = xQueueSendToBack(queue_, &eventToSend, /*ticksToWait=*/0);
-  if (res == pdPASS) {
-    jll_info("sent data to queue");
-  } else if (res == errQUEUE_FULL) {
-    jll_error("queue is full");
-  } else {
-    jll_error("unexpected queue error %d", res);
+  if (res == errQUEUE_FULL) {
+    jll_error("UART%d event queue is full", uartPort_);
+  } else if (res != pdPASS) {
+    jll_error("UART%d event queue error %d", uartPort_, res);
   }
+}
+
+size_t UartHandler::ReadData(uint8_t* buffer, size_t maxLength) {
+  const std::lock_guard<std::mutex> lock(recvMutex_);
+  const size_t readLength = std::min<size_t>(lengthInSharedRecvBuffer_, maxLength);
+  memcpy(buffer, sharedRecvBuffer_, readLength);
+  lengthInSharedRecvBuffer_ -= readLength;
+  return readLength;
 }
 
 }  // namespace
@@ -191,9 +203,24 @@ void UartHandler::WriteData(const uint8_t* buffer, size_t length) {
 void SetupUart(Milliseconds currentTime) { (void)UartHandler::Get(); }
 
 void RunUart(Milliseconds currentTime) {
+  static uint8_t* outerRecvBuffer = reinterpret_cast<uint8_t*>(malloc(kUartBufferSize));
+  if (outerRecvBuffer == nullptr) {
+    jll_fatal("Failed to allocate UartHandler outer recv buffer size %d", kUartBufferSize);
+  }
+  static uint8_t* printBuffer = reinterpret_cast<uint8_t*>(malloc(kPrintBufferSize));
+  if (printBuffer == nullptr) { jll_fatal("Failed to allocate UartHandler print buffer size %d", kPrintBufferSize); }
   static Milliseconds sTimeBetweenRuns = UnpredictableRandom::GetNumberBetween(500, 1500);
   static Milliseconds sLastWriteTime = 0;
-  if (currentTime - sLastWriteTime < sTimeBetweenRuns) { return; }
+  size_t readLength = UartHandler::Get()->ReadData(outerRecvBuffer, kUartBufferSize);
+  if (readLength > 0) {
+    EscapeRawBuffer(outerRecvBuffer, readLength, printBuffer, kPrintBufferSize);
+    jll_info("UART read %d bytes: %s", readLength, printBuffer);
+  }
+
+  if (currentTime - sLastWriteTime < sTimeBetweenRuns) {
+    // Too soon to write.
+    return;
+  }
   sLastWriteTime = currentTime;
   sTimeBetweenRuns = UnpredictableRandom::GetNumberBetween(500, 1500);
   char send_data[100] = {};
