@@ -485,16 +485,15 @@ void RunUart(Milliseconds currentTime) {
     Rs485Bus::Get()->WriteMessage(outerSendBuffer, bytesWritten, kBusIdLeader);
   }
 #else   // L_BUS_LEADER
-  static Milliseconds sTimeBetweenRuns = UnpredictableRandom::GetNumberBetween(500, 1500);
+  constexpr Milliseconds sFollowerResponseTimeOut = 500;
   static Milliseconds sLastWriteTime = 0;
   static bool sAwaitingResponse = true;
   if (readLength > 0) { sAwaitingResponse = false; }
-  if (currentTime - sLastWriteTime < sTimeBetweenRuns && sAwaitingResponse) {
+  if (currentTime - sLastWriteTime < sFollowerResponseTimeOut && sAwaitingResponse) {
     // Too soon to write.
     return;
   }
   sLastWriteTime = currentTime;
-  sTimeBetweenRuns = UnpredictableRandom::GetNumberBetween(500, 1500);
   constexpr BusId kFollowerBusIds[] = {4, 5};
   constexpr char* kFollowerNames[] = {"B", "C"};
   constexpr size_t kNumFollowers = sizeof(kFollowerBusIds) / sizeof(kFollowerBusIds[0]);
