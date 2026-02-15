@@ -266,6 +266,8 @@ class Rs485Bus {
 
  private:
   explicit Rs485Bus(BusId bus_id, uart_port_t uartPort, int txPin, int rxPin);
+  size_t DecodeMessage(const uint8_t* encodedBuffer, size_t encodedLength, uint8_t* decodedBuffer,
+                       size_t maxDecodedLength);
   BusId bus_id_;
   UartHandler uart_;
   uint8_t* encodedReadBuffer_ = nullptr;
@@ -323,6 +325,61 @@ void Rs485Bus::WriteData(const uint8_t* buffer, size_t length) {
   return uart_.WriteData(uartBuffer2, uartBufferIndex2);
 }
 
+size_t Rs485Bus::DecodeMessage(const uint8_t* encodedBuffer, size_t encodedLength, uint8_t* decodedBuffer,
+                               size_t maxDecodedLength) {
+  if (encodedLength < ComputeExpansion(0)) {
+    jll_buffer_error(encodedBuffer, encodedLength, "Rs485Bus DecodeMessage ignoring very short message");
+    return 0;
+  }
+  size_t uartBufferIndex = 0;
+  BusId separator = encodedBuffer[uartBufferIndex++];
+  if (separator != kSeparator) {
+    jll_buffer_error(encodedBuffer, encodedLength,
+                     "Rs485Bus DecodeMessage ignoring message due to bad initial separator");
+    return 0;
+  }
+  BusId destBudId = encodedBuffer[uartBufferIndex++];
+  if (destBudId != kBusIdBroadcast && destBudId != kBusId) {
+    jll_buffer_error(encodedBuffer, encodedLength, "Rs485Bus DecodeMessage ignoring message not meant for us");
+    return 0;
+  }
+  if (encodedBuffer[encodedLength - 2] != kSeparator) {
+    jll_buffer_error(encodedBuffer, encodedLength, "Rs485Bus DecodeMessage did not find end separator");
+    return 0;
+  }
+  if (encodedBuffer[encodedLength - 1] != kBusIdEndOfMessage) {
+    jll_buffer_error(encodedBuffer, encodedLength, "Rs485Bus DecodeMessage did not find end of message");
+    return 0;
+  }
+  decodedReadBufferIndex_ = 0;
+  decodedReadBuffer_[decodedReadBufferIndex_++] = encodedBuffer[0];
+  decodedReadBuffer_[decodedReadBufferIndex_++] = encodedBuffer[1];
+  size_t decodeLength =
+      CobsDecode(encodedBuffer + uartBufferIndex, encodedLength - uartBufferIndex - 2,
+                 decodedReadBuffer_ + decodedReadBufferIndex_, kUartBufferSize - decodedReadBufferIndex_);
+  if (decodeLength == 0) {
+    jll_buffer_error(encodedBuffer, encodedLength, "Rs485Bus DecodeMessage failed to CobsDecode incoming message");
+    return 0;
+  }
+  decodedReadBufferIndex_ += decodeLength;
+  jll_uart_data_buffer(decodedReadBuffer_, decodedReadBufferIndex_ - 2 - sizeof(uint32_t),
+                       "Rs485Bus DecodeMessage computing incoming CRC32");
+  uint32_t crc32 = esp_crc32_be(0, decodedReadBuffer_, decodedReadBufferIndex_ - 2 - sizeof(uint32_t));
+  if (memcmp(decodedReadBuffer_ + decodedReadBufferIndex_ - 2 - sizeof(crc32), &crc32, sizeof(uint32_t)) != 0) {
+    jll_buffer_error(decodedReadBuffer_, decodedReadBufferIndex_,
+                     "Rs485Bus DecodeMessage CRC32 check on %d bytes failed",
+                     decodedReadBufferIndex_ - 2 - sizeof(uint32_t));
+    return 0;
+  }
+  size_t decodedMessageLength = decodedReadBufferIndex_ - 4 - sizeof(uint32_t);
+  if (decodedMessageLength > maxDecodedLength) {
+    jll_error("Rs485Bus DecodeMessage found message too long %zu > %zu", decodedMessageLength, maxDecodedLength);
+    return 0;
+  }
+  memcpy(decodedBuffer, decodedReadBuffer_ + 2, decodedMessageLength);
+  return decodedMessageLength;
+}
+
 size_t Rs485Bus::ReadData(uint8_t* buffer, size_t maxLength) {
   size_t readLength =
       uart_.ReadData(encodedReadBuffer_ + encodedReadBufferIndex_, kUartBufferSize - encodedReadBufferIndex_);
@@ -330,57 +387,9 @@ size_t Rs485Bus::ReadData(uint8_t* buffer, size_t maxLength) {
   jll_uart_data_buffer(encodedReadBuffer_ + encodedReadBufferIndex_, readLength, "Rs485Bus read");
   encodedReadBufferIndex_ += readLength;
   // TODO properly resynchronize using zeroes.
-  if (encodedReadBufferIndex_ < ComputeExpansion(0)) {
-    jll_buffer_error(encodedReadBuffer_, encodedReadBufferIndex_, "Rs485Bus ignoring very short message");
-    return 0;
-  }
-  size_t uartBufferIndex = 0;
-  BusId separator = encodedReadBuffer_[uartBufferIndex++];
-  if (separator != kSeparator) {
-    jll_buffer_error(encodedReadBuffer_, encodedReadBufferIndex_,
-                     "Rs485Bus ignoring message due to bad initial separator");
-    encodedReadBufferIndex_ = 0;
-    return 0;
-  }
-  BusId destBudId = encodedReadBuffer_[uartBufferIndex++];
-  if (destBudId != kBusIdBroadcast && destBudId != kBusId) {
-    jll_buffer_error(encodedReadBuffer_, encodedReadBufferIndex_, "Rs485Bus ignoring message not meant for us");
-    encodedReadBufferIndex_ = 0;
-    return 0;
-  }
-  if (encodedReadBuffer_[encodedReadBufferIndex_ - 2] != kSeparator) {
-    jll_buffer_error(encodedReadBuffer_, encodedReadBufferIndex_, "Rs485Bus did not find end separator");
-    encodedReadBufferIndex_ = 0;
-    return 0;
-  }
-  if (encodedReadBuffer_[encodedReadBufferIndex_ - 1] != kBusIdEndOfMessage) {
-    jll_buffer_error(encodedReadBuffer_, encodedReadBufferIndex_, "Rs485Bus did not find end of message");
-    encodedReadBufferIndex_ = 0;
-    return 0;
-  }
-  decodedReadBufferIndex_ = 0;
-  decodedReadBuffer_[decodedReadBufferIndex_++] = encodedReadBuffer_[0];
-  decodedReadBuffer_[decodedReadBufferIndex_++] = encodedReadBuffer_[1];
-  size_t decodeLength =
-      CobsDecode(encodedReadBuffer_ + uartBufferIndex, encodedReadBufferIndex_ - uartBufferIndex - 2,
-                 decodedReadBuffer_ + decodedReadBufferIndex_, kUartBufferSize - decodedReadBufferIndex_);
-  if (decodeLength == 0) {
-    jll_buffer_error(encodedReadBuffer_, encodedReadBufferIndex_, "Rs485Bus failed to CobsDecode incoming message");
-    encodedReadBufferIndex_ = 0;
-    return 0;
-  }
-  decodedReadBufferIndex_ += decodeLength;
-  jll_uart_data_buffer(decodedReadBuffer_, decodedReadBufferIndex_ - 2 - sizeof(uint32_t), "computing incoming CRC32");
-  uint32_t crc32 = esp_crc32_be(0, decodedReadBuffer_, decodedReadBufferIndex_ - 2 - sizeof(uint32_t));
-  if (memcmp(decodedReadBuffer_ + decodedReadBufferIndex_ - 2 - sizeof(crc32), &crc32, sizeof(uint32_t)) != 0) {
-    jll_buffer_error(decodedReadBuffer_, decodedReadBufferIndex_, "Rs485Bus CRC32 check on %d bytes failed",
-                     decodedReadBufferIndex_ - 2 - sizeof(uint32_t));
-    encodedReadBufferIndex_ = 0;
-    return 0;
-  }
-  memcpy(buffer, decodedReadBuffer_ + 2, decodedReadBufferIndex_ - 4 - sizeof(uint32_t));
+  size_t decodedMessageLength = DecodeMessage(encodedReadBuffer_, encodedReadBufferIndex_, buffer, maxLength);
   encodedReadBufferIndex_ = 0;
-  return decodedReadBufferIndex_ - 4 - sizeof(uint32_t);
+  return decodedMessageLength;
 }
 
 }  // namespace
