@@ -268,6 +268,7 @@ class Rs485Bus {
   explicit Rs485Bus(BusId bus_id, uart_port_t uartPort, int txPin, int rxPin);
   size_t DecodeMessage(const uint8_t* encodedBuffer, size_t encodedLength, uint8_t* decodedBuffer,
                        size_t maxDecodedLength);
+  void ShiftEncodedReadBuffer(size_t messageStartIndex);
   BusId bus_id_;
   UartHandler uart_;
   uint8_t* encodedReadBuffer_ = nullptr;
@@ -380,16 +381,77 @@ size_t Rs485Bus::DecodeMessage(const uint8_t* encodedBuffer, size_t encodedLengt
   return decodedMessageLength;
 }
 
+void Rs485Bus::ShiftEncodedReadBuffer(size_t messageStartIndex) {
+  if (messageStartIndex == 0) { return; }
+  if (encodedReadBufferIndex_ == messageStartIndex) {
+    encodedReadBufferIndex_ = 0;
+    return;
+  }
+  // Move the message left to the start of the buffer to leave more room for future reads.
+  memmove(encodedReadBuffer_, encodedReadBuffer_ + messageStartIndex, encodedReadBufferIndex_ - messageStartIndex);
+  encodedReadBufferIndex_ -= messageStartIndex;
+}
+
 size_t Rs485Bus::ReadData(uint8_t* buffer, size_t maxLength) {
   size_t readLength =
       uart_.ReadData(encodedReadBuffer_ + encodedReadBufferIndex_, kUartBufferSize - encodedReadBufferIndex_);
   if (readLength == 0) { return 0; }
   jll_uart_data_buffer(encodedReadBuffer_ + encodedReadBufferIndex_, readLength, "Rs485Bus read");
   encodedReadBufferIndex_ += readLength;
-  // TODO properly resynchronize using zeroes.
-  size_t decodedMessageLength = DecodeMessage(encodedReadBuffer_, encodedReadBufferIndex_, buffer, maxLength);
-  encodedReadBufferIndex_ = 0;
-  return decodedMessageLength;
+  jll_uart_data_buffer(encodedReadBuffer_, encodedReadBufferIndex_, "Rs485Bus data we now have");
+  size_t messageStartIndex = 0;
+  while (messageStartIndex < encodedReadBufferIndex_) {
+    while (messageStartIndex < encodedReadBufferIndex_ && encodedReadBuffer_[messageStartIndex] != kSeparator) {
+      messageStartIndex++;
+    }
+    if (messageStartIndex >= encodedReadBufferIndex_) {
+      jll_uart_data_buffer(encodedReadBuffer_, encodedReadBufferIndex_,
+                           "Rs485Bus discarding full read buffer without separator");
+      encodedReadBufferIndex_ = 0;
+      return 0;
+    }
+    // Now encodedReadBuffer_[messageStartIndex] is the separator.
+    if (encodedReadBufferIndex_ - messageStartIndex < ComputeExpansion(0)) {
+      jll_uart_data_buffer(encodedReadBuffer_, encodedReadBufferIndex_, "Rs485Bus pausing because packet too short");
+      ShiftEncodedReadBuffer(messageStartIndex);
+      return 0;
+    }
+    BusId destBudId = encodedReadBuffer_[messageStartIndex + 1];
+    if (destBudId != kBusIdBroadcast && destBudId != kBusId) {
+      jll_uart_data_buffer(encodedReadBuffer_, encodedReadBufferIndex_,
+                           "Rs485Bus skipping past message not meant for us");
+      messageStartIndex++;
+      continue;
+    }
+    // Now we've confirmed that the first two bytes at messageStartIndex indicate a message for us, now to find the end.
+    size_t messageEndIndex = messageStartIndex + 2;
+    while (messageEndIndex < encodedReadBufferIndex_ && encodedReadBuffer_[messageEndIndex] != kSeparator) {
+      messageEndIndex++;
+    }
+    if (messageEndIndex + 1 >= encodedReadBufferIndex_) {
+      jll_uart_data_buffer(encodedReadBuffer_, encodedReadBufferIndex_, "Rs485Bus pausing because packet incomplete");
+      ShiftEncodedReadBuffer(messageStartIndex);
+      return 0;
+    }
+    messageEndIndex++;
+    if (encodedReadBuffer_[messageEndIndex] != kBusIdEndOfMessage) {
+      jll_uart_data_buffer(encodedReadBuffer_, encodedReadBufferIndex_,
+                           "Rs485Bus skipping past message without valid end");
+      messageStartIndex = messageEndIndex;
+      continue;
+    }
+    size_t decodedMessageLength = DecodeMessage(encodedReadBuffer_, encodedReadBufferIndex_, buffer, maxLength);
+    if (decodedMessageLength == 0) {
+      jll_uart_data_buffer(encodedReadBuffer_, encodedReadBufferIndex_,
+                           "Rs485Bus skipping past message which failed to decode");
+      messageStartIndex = messageEndIndex;
+      continue;
+    }
+    ShiftEncodedReadBuffer(messageEndIndex + 1);
+    return decodedMessageLength;
+  }
+  ShiftEncodedReadBuffer(messageStartIndex);
+  return 0;
 }
 
 }  // namespace
