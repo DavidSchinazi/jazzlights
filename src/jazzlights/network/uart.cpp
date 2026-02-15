@@ -204,7 +204,7 @@ void UartHandler::RunTask() {
 
 void UartHandler::SetUp() {
   constexpr int kEventQueueSize = 16;
-  constexpr int kBaudRate = 9600;
+  constexpr int kBaudRate = 115200;
   ESP_ERROR_CHECK(uart_driver_install(uartPort_, 2 * kUartBufferSize, 2 * kUartBufferSize, kEventQueueSize, &queue_,
                                       /*intr_alloc_flags=*/0));
   uart_config_t uart_config = {
