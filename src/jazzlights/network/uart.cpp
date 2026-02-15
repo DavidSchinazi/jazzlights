@@ -255,8 +255,8 @@ size_t UartHandler::ReadData(uint8_t* buffer, size_t maxLength) {
 
 class Rs485Bus {
  public:
-  void WriteData(const uint8_t* buffer, size_t length);
-  size_t ReadData(uint8_t* buffer, size_t maxLength);
+  void WriteMessage(const uint8_t* buffer, size_t length, BusId destBusId);
+  size_t ReadMessage(uint8_t* buffer, size_t maxLength, BusId* outDestBusId);
   static Rs485Bus* Get();
 
   constexpr size_t ComputeExpansion(size_t length) {
@@ -298,28 +298,26 @@ Rs485Bus* Rs485Bus::Get() {
   return &sRs485Bus;
 }
 
-void Rs485Bus::WriteData(const uint8_t* buffer, size_t length) {
+void Rs485Bus::WriteMessage(const uint8_t* buffer, size_t length, BusId destBusId) {
   if (ComputeExpansion(length) > kUartBufferSize) {
     jll_error("Cannot write message of length %zu", length);
     return;
   }
   uint8_t uartBuffer1[kUartBufferSize];
-  size_t uartBufferIndex1 = 0;
-  uartBuffer1[uartBufferIndex1++] = kSeparator;
-  uartBuffer1[uartBufferIndex1++] = kBusIdBroadcast;
-  memcpy(uartBuffer1 + uartBufferIndex1, buffer, length);
-  uartBufferIndex1 += length;
+  uartBuffer1[0] = kSeparator;
+  uartBuffer1[1] = destBusId;
+  memcpy(uartBuffer1 + 2, buffer, length);
+  size_t uartBufferIndex1 = 2 + length;
   jll_uart_data_buffer(uartBuffer1, uartBufferIndex1, "computing outgoing CRC32");
   uint32_t crc32 = esp_crc32_be(0, uartBuffer1, uartBufferIndex1);
   memcpy(uartBuffer1 + uartBufferIndex1, &crc32, sizeof(crc32));
   uartBufferIndex1 += sizeof(crc32);
-  // TODO change the COBS API so we can do this without a second bugger copy.
+  // TODO change the COBS API so we can do this without a second buffer copy.
   uint8_t uartBuffer2[kUartBufferSize];
-  size_t uartBufferIndex2 = 0;
-  uartBuffer2[uartBufferIndex2++] = kSeparator;
-  uartBuffer2[uartBufferIndex2++] = kBusIdBroadcast;
-  uartBufferIndex2 += CobsEncode(uartBuffer1 + 2, uartBufferIndex1, uartBuffer2 + uartBufferIndex2,
-                                 sizeof(uartBuffer2) - uartBufferIndex2);
+  uartBuffer2[0] = kSeparator;
+  uartBuffer2[1] = destBusId;
+  size_t uartBufferIndex2 =
+      2 + CobsEncode(uartBuffer1 + 2, uartBufferIndex1 - 2, uartBuffer2 + 2, sizeof(uartBuffer2) - 2);
   uartBuffer2[uartBufferIndex2++] = kSeparator;
   uartBuffer2[uartBufferIndex2++] = kBusIdEndOfMessage;
   jll_uart_data_buffer(uartBuffer2, uartBufferIndex2, "Rs485Bus writing");
@@ -328,6 +326,7 @@ void Rs485Bus::WriteData(const uint8_t* buffer, size_t length) {
 
 size_t Rs485Bus::DecodeMessage(const uint8_t* encodedBuffer, size_t encodedLength, uint8_t* decodedBuffer,
                                size_t maxDecodedLength) {
+  jll_uart_data_buffer(encodedBuffer, encodedLength, "DecodeMessage attempting to parse");
   if (encodedLength < ComputeExpansion(0)) {
     jll_buffer_error(encodedBuffer, encodedLength, "Rs485Bus DecodeMessage ignoring very short message");
     return 0;
@@ -339,8 +338,8 @@ size_t Rs485Bus::DecodeMessage(const uint8_t* encodedBuffer, size_t encodedLengt
                      "Rs485Bus DecodeMessage ignoring message due to bad initial separator");
     return 0;
   }
-  BusId destBudId = encodedBuffer[uartBufferIndex++];
-  if (destBudId != kBusIdBroadcast && destBudId != kBusId) {
+  BusId destBusId = encodedBuffer[uartBufferIndex++];
+  if (destBusId != kBusIdBroadcast && destBusId != kBusId) {
     jll_buffer_error(encodedBuffer, encodedLength, "Rs485Bus DecodeMessage ignoring message not meant for us");
     return 0;
   }
@@ -363,16 +362,16 @@ size_t Rs485Bus::DecodeMessage(const uint8_t* encodedBuffer, size_t encodedLengt
     return 0;
   }
   decodedReadBufferIndex_ += decodeLength;
-  jll_uart_data_buffer(decodedReadBuffer_, decodedReadBufferIndex_ - 2 - sizeof(uint32_t),
+  jll_uart_data_buffer(decodedReadBuffer_, decodedReadBufferIndex_ - sizeof(uint32_t),
                        "Rs485Bus DecodeMessage computing incoming CRC32");
-  uint32_t crc32 = esp_crc32_be(0, decodedReadBuffer_, decodedReadBufferIndex_ - 2 - sizeof(uint32_t));
-  if (memcmp(decodedReadBuffer_ + decodedReadBufferIndex_ - 2 - sizeof(crc32), &crc32, sizeof(uint32_t)) != 0) {
+  uint32_t crc32 = esp_crc32_be(0, decodedReadBuffer_, decodedReadBufferIndex_ - sizeof(uint32_t));
+  if (memcmp(decodedReadBuffer_ + decodedReadBufferIndex_ - sizeof(crc32), &crc32, sizeof(uint32_t)) != 0) {
     jll_buffer_error(decodedReadBuffer_, decodedReadBufferIndex_,
                      "Rs485Bus DecodeMessage CRC32 check on %d bytes failed",
-                     decodedReadBufferIndex_ - 2 - sizeof(uint32_t));
+                     decodedReadBufferIndex_ - sizeof(uint32_t));
     return 0;
   }
-  size_t decodedMessageLength = decodedReadBufferIndex_ - 4 - sizeof(uint32_t);
+  size_t decodedMessageLength = decodedReadBufferIndex_ - 2 - sizeof(uint32_t);
   if (decodedMessageLength > maxDecodedLength) {
     jll_error("Rs485Bus DecodeMessage found message too long %zu > %zu", decodedMessageLength, maxDecodedLength);
     return 0;
@@ -383,7 +382,7 @@ size_t Rs485Bus::DecodeMessage(const uint8_t* encodedBuffer, size_t encodedLengt
 
 void Rs485Bus::ShiftEncodedReadBuffer(size_t messageStartIndex) {
   if (messageStartIndex == 0) { return; }
-  if (encodedReadBufferIndex_ == messageStartIndex) {
+  if (encodedReadBufferIndex_ <= messageStartIndex) {
     encodedReadBufferIndex_ = 0;
     return;
   }
@@ -392,7 +391,7 @@ void Rs485Bus::ShiftEncodedReadBuffer(size_t messageStartIndex) {
   encodedReadBufferIndex_ -= messageStartIndex;
 }
 
-size_t Rs485Bus::ReadData(uint8_t* buffer, size_t maxLength) {
+size_t Rs485Bus::ReadMessage(uint8_t* buffer, size_t maxLength, BusId* outDestBusId) {
   size_t readLength =
       uart_.ReadData(encodedReadBuffer_ + encodedReadBufferIndex_, kUartBufferSize - encodedReadBufferIndex_);
   if (readLength == 0) { return 0; }
@@ -412,15 +411,16 @@ size_t Rs485Bus::ReadData(uint8_t* buffer, size_t maxLength) {
     }
     // Now encodedReadBuffer_[messageStartIndex] is the separator.
     if (encodedReadBufferIndex_ - messageStartIndex < ComputeExpansion(0)) {
-      jll_uart_data_buffer(encodedReadBuffer_, encodedReadBufferIndex_, "Rs485Bus pausing because packet too short");
+      jll_uart_data_buffer(encodedReadBuffer_, encodedReadBufferIndex_,
+                           "Rs485Bus pausing because packet too short start=%zu", messageStartIndex);
       ShiftEncodedReadBuffer(messageStartIndex);
       return 0;
     }
-    BusId destBudId = encodedReadBuffer_[messageStartIndex + 1];
-    if (destBudId != kBusIdBroadcast && destBudId != kBusId) {
-      jll_uart_data_buffer(encodedReadBuffer_, encodedReadBufferIndex_,
-                           "Rs485Bus skipping past message not meant for us");
+    BusId destBusId = encodedReadBuffer_[messageStartIndex + 1];
+    if (destBusId != kBusIdBroadcast && destBusId != kBusId) {
       messageStartIndex++;
+      jll_uart_data_buffer(encodedReadBuffer_, encodedReadBufferIndex_,
+                           "Rs485Bus skipping past message not meant for us, set start to %zu", messageStartIndex);
       continue;
     }
     // Now we've confirmed that the first two bytes at messageStartIndex indicate a message for us, now to find the end.
@@ -440,14 +440,18 @@ size_t Rs485Bus::ReadData(uint8_t* buffer, size_t maxLength) {
       messageStartIndex = messageEndIndex;
       continue;
     }
-    size_t decodedMessageLength = DecodeMessage(encodedReadBuffer_, encodedReadBufferIndex_, buffer, maxLength);
+    messageEndIndex++;
+    size_t decodedMessageLength =
+        DecodeMessage(encodedReadBuffer_ + messageStartIndex, messageEndIndex - messageStartIndex, buffer, maxLength);
     if (decodedMessageLength == 0) {
       jll_uart_data_buffer(encodedReadBuffer_, encodedReadBufferIndex_,
-                           "Rs485Bus skipping past message which failed to decode");
+                           "Rs485Bus skipping past message which failed to decode start=%zu end=%zu", messageStartIndex,
+                           messageEndIndex);
       messageStartIndex = messageEndIndex;
       continue;
     }
-    ShiftEncodedReadBuffer(messageEndIndex + 1);
+    ShiftEncodedReadBuffer(messageEndIndex);
+    *outDestBusId = destBusId;
     return decodedMessageLength;
   }
   ShiftEncodedReadBuffer(messageStartIndex);
@@ -463,20 +467,49 @@ void RunUart(Milliseconds currentTime) {
   if (outerRecvBuffer == nullptr) {
     jll_fatal("Failed to allocate UartHandler outer recv buffer size %d", kUartBufferSize);
   }
+  static uint8_t* outerSendBuffer = reinterpret_cast<uint8_t*>(malloc(kUartBufferSize));
+  if (outerSendBuffer == nullptr) {
+    jll_fatal("Failed to allocate UartHandler outer send buffer size %d", kUartBufferSize);
+  }
+  BusId destBusId = kSeparator;
+  size_t readLength = Rs485Bus::Get()->ReadMessage(outerRecvBuffer, kUartBufferSize, &destBusId);
+  if (readLength > 0) { jll_buffer_info(outerRecvBuffer, readLength, "UART read message"); }
+#if !JL_BUS_LEADER
+  if (destBusId == kBusId) {
+    jll_info("Got message specifically for us, responding");
+    outerRecvBuffer[readLength] = '\0';
+    int bytesWritten = snprintf(reinterpret_cast<char*>(outerSendBuffer), kUartBufferSize - 1,
+                                "{" STRINGIFY(JL_ROLE) " is responding at %u to: %s}", currentTime, outerRecvBuffer);
+    if (bytesWritten >= kUartBufferSize) { bytesWritten = kUartBufferSize - 1; }
+    outerSendBuffer[bytesWritten] = '\0';
+    jll_info("Follower " STRINGIFY(JL_ROLE) " sending %zu response bytes: %s", bytesWritten, outerSendBuffer);
+    Rs485Bus::Get()->WriteMessage(outerSendBuffer, bytesWritten, kBusIdLeader);
+  }
+#else   // L_BUS_LEADER
   static Milliseconds sTimeBetweenRuns = UnpredictableRandom::GetNumberBetween(500, 1500);
   static Milliseconds sLastWriteTime = 0;
-  size_t readLength = Rs485Bus::Get()->ReadData(outerRecvBuffer, kUartBufferSize);
-  if (readLength > 0) { jll_buffer_info(outerRecvBuffer, readLength, "UART happily read"); }
-
   if (currentTime - sLastWriteTime < sTimeBetweenRuns) {
     // Too soon to write.
     return;
   }
   sLastWriteTime = currentTime;
   sTimeBetweenRuns = UnpredictableRandom::GetNumberBetween(500, 1500);
-  char send_data[100] = {};
-  snprintf(send_data, sizeof(send_data) - 1, "<" STRINGIFY(JL_ROLE) " is sending: %u>", currentTime);
-  Rs485Bus::Get()->WriteData(reinterpret_cast<const uint8_t*>(send_data), strnlen(send_data, sizeof(send_data)));
+  constexpr BusId kFollowerBusIds[] = {4, 5};
+  constexpr char* kFollowerNames[] = {"B", "C"};
+  constexpr size_t kNumFollowers = sizeof(kFollowerBusIds) / sizeof(kFollowerBusIds[0]);
+  static_assert(kNumFollowers == sizeof(kFollowerNames) / sizeof(kFollowerNames[0]), "lengths need to match");
+  static size_t sCurrentFollower = kNumFollowers - 1;
+  sCurrentFollower++;
+  if (sCurrentFollower >= kNumFollowers) { sCurrentFollower = 0; }
+
+  int bytesWritten = snprintf(reinterpret_cast<char*>(outerSendBuffer), kUartBufferSize - 1,
+                              "<" STRINGIFY(JL_ROLE) " says at %u : Hey %s what is up?>", currentTime,
+                              kFollowerNames[sCurrentFollower]);
+  if (bytesWritten >= kUartBufferSize) { bytesWritten = kUartBufferSize - 1; }
+  outerSendBuffer[bytesWritten] = '\0';
+  jll_info("Leader " STRINGIFY(JL_ROLE) " sending %d bytes: %s", bytesWritten, outerSendBuffer);
+  Rs485Bus::Get()->WriteMessage(outerSendBuffer, bytesWritten, kFollowerBusIds[sCurrentFollower]);
+#endif  // L_BUS_LEADER
 }
 
 }  // namespace jazzlights
