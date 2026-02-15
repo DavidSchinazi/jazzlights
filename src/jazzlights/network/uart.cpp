@@ -476,7 +476,6 @@ void RunUart(Milliseconds currentTime) {
   if (readLength > 0) { jll_buffer_info(outerRecvBuffer, readLength, "UART read message"); }
 #if !JL_BUS_LEADER
   if (destBusId == kBusId) {
-    jll_info("Got message specifically for us, responding");
     outerRecvBuffer[readLength] = '\0';
     int bytesWritten = snprintf(reinterpret_cast<char*>(outerSendBuffer), kUartBufferSize - 1,
                                 "{" STRINGIFY(JL_ROLE) " is responding at %u to: %s}", currentTime, outerRecvBuffer);
@@ -488,7 +487,9 @@ void RunUart(Milliseconds currentTime) {
 #else   // L_BUS_LEADER
   static Milliseconds sTimeBetweenRuns = UnpredictableRandom::GetNumberBetween(500, 1500);
   static Milliseconds sLastWriteTime = 0;
-  if (currentTime - sLastWriteTime < sTimeBetweenRuns) {
+  static bool sAwaitingResponse = true;
+  if (readLength > 0) { sAwaitingResponse = false; }
+  if (currentTime - sLastWriteTime < sTimeBetweenRuns && sAwaitingResponse) {
     // Too soon to write.
     return;
   }
@@ -509,6 +510,7 @@ void RunUart(Milliseconds currentTime) {
   outerSendBuffer[bytesWritten] = '\0';
   jll_info("Leader " STRINGIFY(JL_ROLE) " sending %d bytes: %s", bytesWritten, outerSendBuffer);
   Rs485Bus::Get()->WriteMessage(outerSendBuffer, bytesWritten, kFollowerBusIds[sCurrentFollower]);
+  sAwaitingResponse = true;
 #endif  // L_BUS_LEADER
 }
 
