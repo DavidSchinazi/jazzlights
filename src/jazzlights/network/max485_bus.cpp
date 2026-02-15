@@ -1,4 +1,4 @@
-#include "jazzlights/network/uart.h"
+#include "jazzlights/network/max485_bus.h"
 
 #if JL_UART
 

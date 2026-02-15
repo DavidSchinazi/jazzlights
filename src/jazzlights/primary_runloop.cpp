@@ -12,7 +12,7 @@
 #include "jazzlights/layout/layout_data.h"
 #include "jazzlights/network/esp32_ble.h"
 #include "jazzlights/network/ethernet.h"
-#include "jazzlights/network/uart.h"
+#include "jazzlights/network/max485_bus.h"
 #include "jazzlights/network/wifi.h"
 #include "jazzlights/player.h"
 #include "jazzlights/ui/rotary_phone.h"
