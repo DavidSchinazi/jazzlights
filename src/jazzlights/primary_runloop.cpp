@@ -62,7 +62,7 @@ void SetupPrimaryRunLoop() {
   Milliseconds currentTime = timeMillis();
   GetUi()->set_fastled_runner(&runner);
   GetUi()->InitialSetup(currentTime);
-  SetupUart(currentTime);
+  SetupMax485Bus(currentTime);
 
   AddLedsToRunner(&runner);
 
@@ -106,7 +106,7 @@ void RunPrimaryRunLoop() {
   SAVE_TIME_POINT(PrimaryRunLoop, LoopStart);
   Milliseconds currentTime = timeMillis();
   GetUi()->RunLoop(currentTime);
-  RunUart(currentTime);
+  RunMax485Bus(currentTime);
   SAVE_TIME_POINT(PrimaryRunLoop, UserInterface);
   Esp32BleNetwork::get()->runLoop(currentTime);
   SAVE_TIME_POINT(PrimaryRunLoop, Bluetooth);

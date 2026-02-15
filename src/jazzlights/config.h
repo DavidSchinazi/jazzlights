@@ -151,13 +151,13 @@
 #define JL_ESP32_ETHERNET 0
 #endif  // JL_ESP32_ETHERNET
 
-#ifndef JL_UART
+#ifndef JL_MAX485_BUS
 #if defined(ESP32) && JL_IS_CONFIG(ORRERY)
-#define JL_UART 1
+#define JL_MAX485_BUS 1
 #else  // ESP32 && ORRERY
-#define JL_UART 0
+#define JL_MAX485_BUS 0
 #endif  // ESP32 && ORRERY
-#endif  // JL_UART
+#endif  // JL_MAX485_BUS
 
 #ifndef JL_BUS_LEADER
 #define JL_BUS_LEADER 0
