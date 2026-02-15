@@ -31,11 +31,11 @@ const std::lock_guard<std::mutex> GetEscapeBufferLock();
 
 #define _LOG_AT_LEVEL(levelStr, format, ...) ::printf(levelStr ": " format "\n", ##__VA_ARGS__)
 
-#define _LOG_BUFFER_AT_LEVEL(levelStr, input, inputLength, format, ...)           \
-  do {                                                                            \
-    const std::lock_guard<std::mutex> lock(GetEscapeBufferLock());                \
-    _LOG_AT_LEVEL(levelStr, format "[%zu bytes]: %s", ##__VA_ARGS__, inputLength, \
-                  EscapeIntoStaticBuffer(input, inputLength));                    \
+#define _LOG_BUFFER_AT_LEVEL(levelStr, input, inputLength, format, ...)            \
+  do {                                                                             \
+    const std::lock_guard<std::mutex> lock(GetEscapeBufferLock());                 \
+    _LOG_AT_LEVEL(levelStr, format " [%zu bytes]: %s", ##__VA_ARGS__, inputLength, \
+                  EscapeIntoStaticBuffer(input, inputLength));                     \
   } while (0)
 
 #define jll_debug(format, ...)                                                                            \

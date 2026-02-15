@@ -358,29 +358,29 @@ size_t Rs485Bus::ReadData(uint8_t* buffer, size_t maxLength) {
     encodedReadBufferIndex_ = 0;
     return 0;
   }
-  uint8_t decodedBuffer[kUartBufferSize + 2];
-  size_t decodedBufferIndex = 0;
-  decodedBuffer[decodedBufferIndex++] = encodedReadBuffer_[0];
-  decodedBuffer[decodedBufferIndex++] = encodedReadBuffer_[1];
-  size_t decodeLength = CobsDecode(encodedReadBuffer_ + uartBufferIndex, encodedReadBufferIndex_ - uartBufferIndex - 2,
-                                   decodedBuffer + decodedBufferIndex, sizeof(decodedBuffer) - decodedBufferIndex);
+  decodedReadBufferIndex_ = 0;
+  decodedReadBuffer_[decodedReadBufferIndex_++] = encodedReadBuffer_[0];
+  decodedReadBuffer_[decodedReadBufferIndex_++] = encodedReadBuffer_[1];
+  size_t decodeLength =
+      CobsDecode(encodedReadBuffer_ + uartBufferIndex, encodedReadBufferIndex_ - uartBufferIndex - 2,
+                 decodedReadBuffer_ + decodedReadBufferIndex_, kUartBufferSize - decodedReadBufferIndex_);
   if (decodeLength == 0) {
     jll_buffer_error(encodedReadBuffer_, encodedReadBufferIndex_, "Rs485Bus failed to CobsDecode incoming message");
     encodedReadBufferIndex_ = 0;
     return 0;
   }
-  decodedBufferIndex += decodeLength;
-  jll_uart_data_buffer(decodedBuffer, decodedBufferIndex - 2 - sizeof(uint32_t), "computing incoming CRC32");
-  uint32_t crc32 = esp_crc32_be(0, decodedBuffer, decodedBufferIndex - 2 - sizeof(uint32_t));
-  if (memcmp(decodedBuffer + decodedBufferIndex - 2 - sizeof(crc32), &crc32, sizeof(uint32_t)) != 0) {
-    jll_buffer_error(decodedBuffer, decodedBufferIndex, "Rs485Bus CRC32 check on %d bytes failed",
-                     decodedBufferIndex - 2 - sizeof(uint32_t));
+  decodedReadBufferIndex_ += decodeLength;
+  jll_uart_data_buffer(decodedReadBuffer_, decodedReadBufferIndex_ - 2 - sizeof(uint32_t), "computing incoming CRC32");
+  uint32_t crc32 = esp_crc32_be(0, decodedReadBuffer_, decodedReadBufferIndex_ - 2 - sizeof(uint32_t));
+  if (memcmp(decodedReadBuffer_ + decodedReadBufferIndex_ - 2 - sizeof(crc32), &crc32, sizeof(uint32_t)) != 0) {
+    jll_buffer_error(decodedReadBuffer_, decodedReadBufferIndex_, "Rs485Bus CRC32 check on %d bytes failed",
+                     decodedReadBufferIndex_ - 2 - sizeof(uint32_t));
     encodedReadBufferIndex_ = 0;
     return 0;
   }
-  memcpy(buffer, decodedBuffer + 2, decodedBufferIndex - 4 - sizeof(uint32_t));
+  memcpy(buffer, decodedReadBuffer_ + 2, decodedReadBufferIndex_ - 4 - sizeof(uint32_t));
   encodedReadBufferIndex_ = 0;
-  return decodedBufferIndex - 4 - sizeof(uint32_t);
+  return decodedReadBufferIndex_ - 4 - sizeof(uint32_t);
 }
 
 }  // namespace
