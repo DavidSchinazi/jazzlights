@@ -15,7 +15,7 @@ size_t EscapeRawBuffer(const uint8_t* input, size_t inputLength, uint8_t* output
 // `EscapeIntoStaticBuffer()` uses a static malloc'ed buffer for the escaped string, so it is not thread-safe by
 // default. Callers need to take a mutex using `GetEscapeBufferLock()`. Use the `jll_buffer*` macros below.
 uint8_t* EscapeIntoStaticBuffer(const uint8_t* input, size_t inputLength);
-const std::unique_lock<std::mutex> GetEscapeBufferLock();
+std::unique_lock<std::mutex> GetEscapeBufferLock();
 
 }  // namespace jazzlights
 
@@ -33,7 +33,7 @@ const std::unique_lock<std::mutex> GetEscapeBufferLock();
 
 #define _LOG_BUFFER_AT_LEVEL(levelStr, input, inputLength, format, ...)            \
   do {                                                                             \
-    const std::unique_lock<std::mutex> lock(GetEscapeBufferLock());                \
+    std::unique_lock<std::mutex> lock(GetEscapeBufferLock());                      \
     _LOG_AT_LEVEL(levelStr, format " [%zu bytes]: %s", ##__VA_ARGS__, inputLength, \
                   EscapeIntoStaticBuffer(input, inputLength));                     \
   } while (0)

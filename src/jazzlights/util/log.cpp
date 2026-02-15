@@ -30,7 +30,7 @@ size_t EscapeRawBuffer(const uint8_t* input, size_t inputLength, uint8_t* output
   return out_idx;
 }
 
-const std::unique_lock<std::mutex> GetEscapeBufferLock() {
+std::unique_lock<std::mutex> GetEscapeBufferLock() {
   static std::mutex sMutex;
   return std::unique_lock<std::mutex>(sMutex);
 }
