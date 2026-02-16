@@ -103,7 +103,7 @@ class Max485BusHandler {
   OwnedBufferU8 taskRecvBuffer_;                         // Only accessed by task.
   size_t lengthInTaskRecvBuffer_ = 0;                    // Only accessed by task.
   OwnedBufferU8 taskMessageBuffer_;                      // Only accessed by task.
-  size_t lengthInTaskMessageBuffer_;                     // Only accessed by task.
+  size_t lengthInTaskMessageBuffer_ = 0;                 // Only accessed by task.
   OwnedBufferU8 sharedRecvSelfMessageBuffer_;            // Protected by `recvMutex_`.
   size_t lengthInSharedRecvSelfMessageBuffer_ = 0;       // Protected by `recvMutex_`.
   OwnedBufferU8 sharedRecvBroadcastMessageBuffer_;       // Protected by `recvMutex_`.
