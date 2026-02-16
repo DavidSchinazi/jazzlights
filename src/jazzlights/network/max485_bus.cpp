@@ -331,7 +331,7 @@ size_t Max485BusHandler::DecodeMessage(const BufferViewU8 encodedBuffer, OwnedBu
     return 0;
   }
   decodedReadBufferIndex_ += decodeLength;
-  jll_max485_data_buffer(BufferViewU8(decodedReadBuffer_, decodedReadBufferIndex_ - sizeof(uint32_t)),
+  jll_max485_data_buffer(BufferViewU8(decodedReadBuffer_, 0, decodedReadBufferIndex_ - sizeof(uint32_t)),
                          "Max485BusHandler DecodeMessage computing incoming CRC32");
   uint32_t crc32 = esp_crc32_be(0, &decodedReadBuffer_[0], decodedReadBufferIndex_ - sizeof(uint32_t));
   if (memcmp(&decodedReadBuffer_[decodedReadBufferIndex_] - sizeof(crc32), &crc32, sizeof(uint32_t)) != 0) {
