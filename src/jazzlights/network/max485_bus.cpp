@@ -45,18 +45,18 @@ constexpr BusId kBusIdLeader = 3;
 #if JL_BUS_LEADER
 #define JL_BUS_ID kBusIdLeader
 #else  // JL_BUS_ID
-#error "Need to define bus ID for non-leaders"
+#error "Followers need to define JL_BUS_ID"
 #endif  // JL_BUS_ID
 #endif  // JL_BUS_LEADER
 
-// While most bus ID values are available, we're reserving values above 128 for future use.
-static_assert((JL_BUS_ID) < 128, "high bus ID");
-static_assert((JL_BUS_ID) >= kBusIdLeader, "low bus ID");
-#if !JL_BUS_LEADER
-static_assert((JL_BUS_ID) != kBusIdLeader, "follower bus ID cannot be equal to leader");
-#endif  // JL_BUS_LEADER
+constexpr BusId kBusIdSelf = (JL_BUS_ID);
 
-constexpr BusId kBusId = (JL_BUS_ID);
+// While most bus ID values are available, we're reserving values above 128 for future use.
+static_assert(kBusIdSelf < 128, "high bus ID");
+static_assert(kBusIdSelf >= kBusIdLeader, "low bus ID");
+#if !JL_BUS_LEADER
+static_assert(kBusIdSelf != kBusIdLeader, "follower bus ID cannot be equal to leader");
+#endif  // JL_BUS_LEADER
 
 constexpr size_t kUartBufferSize = 1024;
 constexpr size_t kUartDriverBufferSize = 2 * kUartBufferSize;
@@ -142,7 +142,7 @@ Max485BusHandler* Max485BusHandler::Get() {
   constexpr uart_port_t kUartPort = UART_NUM_2;
   constexpr int kTxPin = 26;
   constexpr int kRxPin = 32;
-  static Max485BusHandler sMax485BusHandler(kUartPort, kTxPin, kRxPin, kBusId);
+  static Max485BusHandler sMax485BusHandler(kUartPort, kTxPin, kRxPin, kBusIdSelf);
   return &sMax485BusHandler;
 }
 
@@ -172,7 +172,7 @@ void Max485BusHandler::RunTask() {
           while (true) {
             BufferViewU8 taskMessageView = TaskFindReceivedMessage(&destBusId);
             if (taskMessageView.empty()) { break; }
-            if (destBusId == kBusId) {
+            if (destBusId == kBusIdSelf) {
               const std::lock_guard<std::mutex> lock(recvMutex_);
               sharedRecvSelfMessage_ = sharedRecvSelfMessageBuffer_.CopyIn(taskMessageView);
             } else if (destBusId == kBusIdBroadcast) {
@@ -322,7 +322,7 @@ BufferViewU8 Max485BusHandler::DecodeMessage(const BufferViewU8 encodedBuffer, O
     return BufferViewU8();
   }
   BusId destBusId = encodedBuffer[uartBufferIndex++];
-  if (destBusId != kBusIdBroadcast && destBusId != kBusId) {
+  if (destBusId != kBusIdBroadcast && destBusId != kBusIdSelf) {
     jll_buffer_error(encodedBuffer, "Max485BusHandler DecodeMessage ignoring message not meant for us");
     return BufferViewU8();
   }
@@ -377,7 +377,7 @@ BufferViewU8 Max485BusHandler::ReadMessage(OwnedBufferU8& readMessageBuffer, Bus
   if (!IsReady()) { return BufferViewU8(); }
   const std::lock_guard<std::mutex> lock(recvMutex_);
   if (!sharedRecvSelfMessage_.empty()) {
-    *outDestBusId = kBusId;
+    *outDestBusId = kBusIdSelf;
     BufferViewU8 ret = readMessageBuffer.CopyIn(sharedRecvSelfMessage_);
     sharedRecvSelfMessage_ = BufferViewU8();
     return ret;
@@ -413,7 +413,7 @@ BufferViewU8 Max485BusHandler::TaskFindReceivedMessage(BusId* destBusId) {
       return BufferViewU8();
     }
     *destBusId = taskRecvBuffer_[messageStartIndex + 1];
-    if (*destBusId != kBusIdBroadcast && *destBusId != kBusId) {
+    if (*destBusId != kBusIdBroadcast && *destBusId != kBusIdSelf) {
       messageStartIndex++;
       jll_max485_data_buffer(BufferViewU8(taskRecvBuffer_, 0, lengthInTaskRecvBuffer_),
                              "Max485BusHandler task skipping past message not meant for us, set start to %zu",
@@ -466,7 +466,7 @@ void RunMax485Bus(Milliseconds currentTime) {
   BufferViewU8 readMessage = Max485BusHandler::Get()->ReadMessage(outerRecvBuffer, &destBusId);
   if (readMessage.size() > 0) { jll_buffer_info(readMessage, "UART read message"); }
 #if !JL_BUS_LEADER
-  if (destBusId == kBusId) {
+  if (destBusId == kBusIdSelf) {
     outerRecvBuffer[readMessage.size()] = '\0';
     int bytesWritten =
         snprintf(reinterpret_cast<char*>(&outerSendBuffer[0]), outerRecvBuffer.size() - 1,
