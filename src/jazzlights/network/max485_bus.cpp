@@ -173,12 +173,10 @@ void Max485BusHandler::RunTask() {
           if (!taskMessageView.empty()) {
             if (destBusId == kBusId) {
               const std::lock_guard<std::mutex> lock(recvMutex_);
-              memcpy(&sharedRecvSelfMessageBuffer_[0], &taskMessageView[0], taskMessageView.size());
-              sharedRecvSelfMessage_ = BufferViewU8(sharedRecvSelfMessageBuffer_, 0, taskMessageView.size());
+              sharedRecvSelfMessage_ = sharedRecvSelfMessageBuffer_.CopyIn(taskMessageView);
             } else if (destBusId == kBusIdBroadcast) {
               const std::lock_guard<std::mutex> lock(recvMutex_);
-              memcpy(&sharedRecvBroadcastMessageBuffer_[0], &taskMessageView[0], taskMessageView.size());
-              sharedRecvBroadcastMessage_ = BufferViewU8(sharedRecvBroadcastMessageBuffer_, 0, taskMessageView.size());
+              sharedRecvBroadcastMessage_ = sharedRecvBroadcastMessageBuffer_.CopyIn(taskMessageView);
             } else {
               jll_fatal("Unexpected bus ID %d", static_cast<int>(destBusId));
             }
@@ -380,14 +378,12 @@ BufferViewU8 Max485BusHandler::ReadMessage(OwnedBufferU8& readMessageBuffer, Bus
   const std::lock_guard<std::mutex> lock(recvMutex_);
   if (!sharedRecvSelfMessage_.empty()) {
     *outDestBusId = kBusId;
-    memcpy(&readMessageBuffer[0], &sharedRecvSelfMessageBuffer_[0], sharedRecvSelfMessage_.size());
-    BufferViewU8 ret(readMessageBuffer, 0, sharedRecvSelfMessage_.size());
+    BufferViewU8 ret = readMessageBuffer.CopyIn(sharedRecvSelfMessage_);
     sharedRecvSelfMessage_ = BufferViewU8();
     return ret;
   } else if (!sharedRecvBroadcastMessage_.empty()) {
     *outDestBusId = kBusIdBroadcast;
-    memcpy(&readMessageBuffer[0], &sharedRecvBroadcastMessageBuffer_[0], sharedRecvBroadcastMessage_.size());
-    BufferViewU8 ret(readMessageBuffer, 0, sharedRecvBroadcastMessage_.size());
+    BufferViewU8 ret = readMessageBuffer.CopyIn(sharedRecvBroadcastMessage_);
     sharedRecvBroadcastMessage_ = BufferViewU8();
     return ret;
   } else {

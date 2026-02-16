@@ -12,6 +12,9 @@ namespace jazzlights {
 // and we don't want to take a dependency on Abseil.
 
 template <typename T>
+class BufferView;
+
+template <typename T>
 class OwnedBuffer {
  public:
   explicit OwnedBuffer(size_t size) : buffer_(size, T{}) {}
@@ -20,6 +23,10 @@ class OwnedBuffer {
   size_t size() const { return buffer_.size(); }
   void resize(size_t size) { buffer_.resize(size, T{}); }
   bool empty() const { return size() == 0; }
+  BufferView<T> CopyIn(BufferView<T> input) {
+    memcpy(&buffer_[0], &input[0], input.size());
+    return BufferView<T>(*this, 0, input.size());
+  }
 
  private:
   std::vector<T> buffer_;
