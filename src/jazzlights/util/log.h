@@ -6,6 +6,8 @@
 #include <cstdlib>
 #include <mutex>
 
+#include "jazzlights/util/buffer.h"
+
 namespace jazzlights {
 
 inline bool is_debug_logging_enabled() { return false; }

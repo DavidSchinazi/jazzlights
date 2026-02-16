@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 
 namespace jazzlights {
 
@@ -27,14 +28,16 @@ class BufferView {
  public:
   explicit BufferView(T* data, size_t size) : data_(data), size_(size) {}
   BufferView(const OwnedBuffer<T>& ownedBuffer) : data_(&ownedBuffer[0]), size_(ownedBuffer.size()) {}
-  explicit BufferView(const OwnedBuffer<T>& ownedBuffer, size_t startPosition, size_t endPosition)
+  explicit BufferView(OwnedBuffer<T>& ownedBuffer, size_t startPosition, size_t endPosition)
       : data_(&ownedBuffer[startPosition]), size_(endPosition - startPosition) {}
+  explicit BufferView(OwnedBuffer<T>& ownedBuffer, size_t startPosition)
+      : BufferView(ownedBuffer, startPosition, ownedBuffer.size()) {}
   T& operator[](size_t position) { return data_[position]; }
   const T& operator[](size_t position) const { return data_[position]; }
   size_t size() const { return size_; }
 
  private:
-  const T* data_;
+  T* data_;
   size_t size_;
 };
 

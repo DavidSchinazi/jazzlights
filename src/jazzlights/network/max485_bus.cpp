@@ -83,8 +83,8 @@ class Max485BusHandler {
   static void TaskFunction(void* parameters);
   void SetUp();
   void RunTask();
-  void WriteData(const uint8_t* buffer, size_t length);
-  size_t ReadData(uint8_t* buffer, size_t maxLength);
+  void WriteData(const BufferViewU8 data);
+  size_t ReadData(BufferViewU8 data);
   size_t DecodeMessage(const BufferViewU8 encodedBuffer, OwnedBufferU8& decodedMessage);
   void ShiftEncodedReadBuffer(size_t messageStartIndex);
 
@@ -239,20 +239,20 @@ void Max485BusHandler::SetUp() {
   ESP_ERROR_CHECK(uart_set_pin(uartPort_, txPin_, rxPin_, /*rts=*/UART_PIN_NO_CHANGE, /*cts=*/UART_PIN_NO_CHANGE));
 }
 
-void Max485BusHandler::WriteData(const uint8_t* buffer, size_t length) {
-  if (length > sharedSendBuffer_.size()) {
-    jll_error("UART%d refusing to send %zu bytes > %zu", uartPort_, length, sharedSendBuffer_.size());
+void Max485BusHandler::WriteData(const BufferViewU8 data) {
+  if (data.size() > sharedSendBuffer_.size()) {
+    jll_error("UART%d refusing to send %zu bytes > %zu", uartPort_, data.size(), sharedSendBuffer_.size());
     return;
   }
   {
     const std::lock_guard<std::mutex> lock(sendMutex_);
-    if (lengthInSharedSendBuffer_ + length > sharedSendBuffer_.size()) {
-      jll_error("UART%d cannot currently send %zu bytes, already have %zu and limit is %zu", uartPort_, length,
+    if (lengthInSharedSendBuffer_ + data.size() > sharedSendBuffer_.size()) {
+      jll_error("UART%d cannot currently send %zu bytes, already have %zu and limit is %zu", uartPort_, data.size(),
                 lengthInSharedSendBuffer_, sharedSendBuffer_.size());
       return;
     }
-    memcpy(&sharedSendBuffer_[lengthInSharedSendBuffer_], buffer, length);
-    lengthInSharedSendBuffer_ += length;
+    memcpy(&sharedSendBuffer_[lengthInSharedSendBuffer_], &data[0], data.size());
+    lengthInSharedSendBuffer_ += data.size();
   }
   uart_event_t eventToSend = {};
   eventToSend.type = kApplicationDataAvailable;
@@ -264,10 +264,10 @@ void Max485BusHandler::WriteData(const uint8_t* buffer, size_t length) {
   }
 }
 
-size_t Max485BusHandler::ReadData(uint8_t* buffer, size_t maxLength) {
+size_t Max485BusHandler::ReadData(BufferViewU8 data) {
   const std::lock_guard<std::mutex> lock(recvMutex_);
-  const size_t readLength = std::min<size_t>(lengthInSharedRecvBuffer_, maxLength);
-  memcpy(buffer, &sharedRecvBuffer_[0], readLength);
+  const size_t readLength = std::min<size_t>(lengthInSharedRecvBuffer_, data.size());
+  memcpy(&data[0], &sharedRecvBuffer_[0], readLength);
   lengthInSharedRecvBuffer_ -= readLength;
   return readLength;
 }
@@ -295,7 +295,7 @@ void Max485BusHandler::WriteMessage(const BufferViewU8 message, BusId destBusId)
   uartBuffer2[uartBufferIndex2++] = kSeparator;
   uartBuffer2[uartBufferIndex2++] = kBusIdEndOfMessage;
   jll_max485_data_buffer(uartBuffer2, uartBufferIndex2, "Max485BusHandler writing");
-  return WriteData(uartBuffer2, uartBufferIndex2);
+  return WriteData(BufferViewU8(uartBuffer2, uartBufferIndex2));
 }
 
 size_t Max485BusHandler::DecodeMessage(const BufferViewU8 encodedBuffer, OwnedBufferU8& decodedMessage) {
@@ -365,8 +365,7 @@ void Max485BusHandler::ShiftEncodedReadBuffer(size_t messageStartIndex) {
 }
 
 size_t Max485BusHandler::ReadMessage(OwnedBufferU8& message, BusId* outDestBusId) {
-  size_t readLength =
-      ReadData(&encodedReadBuffer_[encodedReadBufferIndex_], encodedReadBuffer_.size() - encodedReadBufferIndex_);
+  size_t readLength = ReadData(BufferViewU8(encodedReadBuffer_, encodedReadBufferIndex_));
   if (readLength == 0) { return 0; }
   jll_max485_data_buffer(&encodedReadBuffer_[encodedReadBufferIndex_], readLength, "Max485BusHandler read");
   encodedReadBufferIndex_ += readLength;
@@ -417,7 +416,7 @@ size_t Max485BusHandler::ReadMessage(OwnedBufferU8& message, BusId* outDestBusId
     }
     messageEndIndex++;
     size_t decodedMessageLength =
-        DecodeMessage(BufferView(encodedReadBuffer_, messageStartIndex, messageEndIndex), message);
+        DecodeMessage(BufferViewU8(encodedReadBuffer_, messageStartIndex, messageEndIndex), message);
     if (decodedMessageLength == 0) {
       jll_max485_data_buffer(&encodedReadBuffer_[0], encodedReadBufferIndex_,
                              "Max485BusHandler skipping past message which failed to decode start=%zu end=%zu",
