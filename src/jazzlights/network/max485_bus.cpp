@@ -96,19 +96,19 @@ class Max485BusHandler {
   QueueHandle_t queue_ = nullptr;
   std::mutex sendMutex_;
   std::mutex recvMutex_;
-  OwnedBufferU8 outerSendBuffer_;                        // Only accessed on main rull loop.
-  OwnedBufferU8 sharedSendBuffer_;                       // Protected by `sendMutex_`.
-  size_t lengthInSharedSendBuffer_ = 0;                  // Protected by `sendMutex_`.
-  OwnedBufferU8 taskSendBuffer_;                         // Only accessed by task.
-  size_t lengthInTaskSendBuffer_ = 0;                    // Only accessed by task.
-  OwnedBufferU8 taskRecvBuffer_;                         // Only accessed by task.
-  size_t lengthInTaskRecvBuffer_ = 0;                    // Only accessed by task.
-  OwnedBufferU8 taskDecodedReadBuffer_;                  // Only accessed by task.
-  OwnedBufferU8 taskDecodedMessageBuffer_;               // Only accessed by task.
-  OwnedBufferU8 sharedRecvSelfMessageBuffer_;            // Protected by `recvMutex_`.
-  size_t lengthInSharedRecvSelfMessageBuffer_ = 0;       // Protected by `recvMutex_`.
-  OwnedBufferU8 sharedRecvBroadcastMessageBuffer_;       // Protected by `recvMutex_`.
-  size_t lengthInSharedRecvBroadcastMessageBuffer_ = 0;  // Protected by `recvMutex_`.
+  OwnedBufferU8 outerSendBuffer_;                   // Only accessed on main rull loop.
+  OwnedBufferU8 sharedSendBuffer_;                  // Protected by `sendMutex_`.
+  size_t lengthInSharedSendBuffer_ = 0;             // Protected by `sendMutex_`.
+  OwnedBufferU8 taskSendBuffer_;                    // Only accessed by task.
+  size_t lengthInTaskSendBuffer_ = 0;               // Only accessed by task.
+  OwnedBufferU8 taskRecvBuffer_;                    // Only accessed by task.
+  size_t lengthInTaskRecvBuffer_ = 0;               // Only accessed by task.
+  OwnedBufferU8 taskDecodedReadBuffer_;             // Only accessed by task.
+  OwnedBufferU8 taskDecodedMessageBuffer_;          // Only accessed by task.
+  OwnedBufferU8 sharedRecvSelfMessageBuffer_;       // Protected by `recvMutex_`.
+  BufferViewU8 sharedRecvSelfMessage_;              // Protected by `recvMutex_`.
+  OwnedBufferU8 sharedRecvBroadcastMessageBuffer_;  // Protected by `recvMutex_`.
+  BufferViewU8 sharedRecvBroadcastMessage_;         // Protected by `recvMutex_`.
   std::atomic<bool> ready_ = false;
 };
 
@@ -125,7 +125,9 @@ Max485BusHandler::Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, B
       taskRecvBuffer_(kUartBufferSize),
       taskDecodedMessageBuffer_(kUartBufferSize),
       sharedRecvSelfMessageBuffer_(kUartBufferSize),
+      sharedRecvSelfMessage_(),
       sharedRecvBroadcastMessageBuffer_(kUartBufferSize),
+      sharedRecvBroadcastMessage_(),
       taskDecodedReadBuffer_(kUartBufferSize) {
   // Pin task to core 0 to ensure UART interrupts do not get in the way of LED writing on core 1.
   if (xTaskCreatePinnedToCore(TaskFunction, "JL_MAX485_BUS", configMINIMAL_STACK_SIZE + 2000,
@@ -172,11 +174,11 @@ void Max485BusHandler::RunTask() {
             if (destBusId == kBusId) {
               const std::lock_guard<std::mutex> lock(recvMutex_);
               memcpy(&sharedRecvSelfMessageBuffer_[0], &taskMessageView[0], taskMessageView.size());
-              lengthInSharedRecvSelfMessageBuffer_ = taskMessageView.size();
+              sharedRecvSelfMessage_ = BufferViewU8(sharedRecvSelfMessageBuffer_, 0, taskMessageView.size());
             } else if (destBusId == kBusIdBroadcast) {
               const std::lock_guard<std::mutex> lock(recvMutex_);
               memcpy(&sharedRecvBroadcastMessageBuffer_[0], &taskMessageView[0], taskMessageView.size());
-              lengthInSharedRecvBroadcastMessageBuffer_ = taskMessageView.size();
+              sharedRecvBroadcastMessage_ = BufferViewU8(sharedRecvBroadcastMessageBuffer_, 0, taskMessageView.size());
             } else {
               jll_fatal("Unexpected bus ID %d", static_cast<int>(destBusId));
             }
@@ -376,17 +378,17 @@ void Max485BusHandler::ShiftTaskRecvBuffer(size_t messageStartIndex) {
 BufferViewU8 Max485BusHandler::ReadMessage(OwnedBufferU8& readMessageBuffer, BusId* outDestBusId) {
   if (!IsReady()) { return BufferViewU8(); }
   const std::lock_guard<std::mutex> lock(recvMutex_);
-  if (lengthInSharedRecvSelfMessageBuffer_ > 0) {
+  if (!sharedRecvSelfMessage_.empty()) {
     *outDestBusId = kBusId;
-    memcpy(&readMessageBuffer[0], &sharedRecvSelfMessageBuffer_[0], lengthInSharedRecvSelfMessageBuffer_);
-    BufferViewU8 ret(readMessageBuffer, 0, lengthInSharedRecvSelfMessageBuffer_);
-    lengthInSharedRecvSelfMessageBuffer_ = 0;
+    memcpy(&readMessageBuffer[0], &sharedRecvSelfMessageBuffer_[0], sharedRecvSelfMessage_.size());
+    BufferViewU8 ret(readMessageBuffer, 0, sharedRecvSelfMessage_.size());
+    sharedRecvSelfMessage_ = BufferViewU8();
     return ret;
-  } else if (lengthInSharedRecvBroadcastMessageBuffer_ > 0) {
+  } else if (!sharedRecvBroadcastMessage_.empty()) {
     *outDestBusId = kBusIdBroadcast;
-    memcpy(&readMessageBuffer[0], &sharedRecvBroadcastMessageBuffer_[0], lengthInSharedRecvBroadcastMessageBuffer_);
-    BufferViewU8 ret(readMessageBuffer, 0, lengthInSharedRecvBroadcastMessageBuffer_);
-    lengthInSharedRecvBroadcastMessageBuffer_ = 0;
+    memcpy(&readMessageBuffer[0], &sharedRecvBroadcastMessageBuffer_[0], sharedRecvBroadcastMessage_.size());
+    BufferViewU8 ret(readMessageBuffer, 0, sharedRecvBroadcastMessage_.size());
+    sharedRecvBroadcastMessage_ = BufferViewU8();
     return ret;
   } else {
     return BufferViewU8();
