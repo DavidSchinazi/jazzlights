@@ -358,8 +358,7 @@ BufferViewU8 Max485BusHandler::DecodeMessage(const BufferViewU8 encodedBuffer, O
               decodedMessageBuffer.size());
     return BufferViewU8();
   }
-  memcpy(&decodedMessageBuffer[0], &decodedReadBuffer[2], decodedMessageLength);
-  return BufferViewU8(decodedMessageBuffer, 0, decodedMessageLength);
+  return decodedMessageBuffer.CopyIn(BufferViewU8(decodedReadBuffer, 2, decodedMessageLength + 2));
 }
 
 void Max485BusHandler::ShiftTaskRecvBuffer(size_t messageStartIndex) {
