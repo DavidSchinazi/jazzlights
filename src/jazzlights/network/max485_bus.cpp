@@ -87,6 +87,7 @@ class Max485BusHandler {
                                     OwnedBufferU8& decodedMessageBuffer, BusId busIdSelf);
   void ShiftTaskRecvBuffer(size_t messageStartIndex);
   BufferViewU8 TaskFindReceivedMessage(BusId* destBusId, BusId* srcBusId);
+  void SendToUart(BufferViewU8 encodedData);
   bool IsReady() const;
 
   const uart_port_t uartPort_;         // Only modified in constructor.
@@ -159,6 +160,20 @@ void Max485BusHandler::TaskFunction(void* parameters) {
   while (true) { handler->RunTask(); }
 }
 
+void Max485BusHandler::SendToUart(BufferViewU8 encodedData) {
+  int bytes_written = uart_write_bytes(uartPort_, reinterpret_cast<const char*>(&encodedData[0]), encodedData.size());
+  if (bytes_written > 0) {
+    if (static_cast<size_t>(bytes_written) == encodedData.size()) {
+      jll_max485_data("UART%d fully wrote %d bytes", uartPort_, bytes_written);
+    } else {
+      jll_buffer_error(encodedData, "UART%d partially wrote %d bytes", uartPort_, bytes_written);
+      // If this happens in practice we'll need handle partial writes more gracefully.
+    }
+  } else {
+    jll_buffer_error(encodedData, "UART%d got error %d trying to write", uartPort_, bytes_written);
+  }
+}
+
 void Max485BusHandler::RunTask() {
   uart_event_t event;
   if (!xQueueReceive(queue_, &event, portMAX_DELAY)) { jll_fatal("Max485BusHandler queue error"); }
@@ -225,21 +240,8 @@ void Max485BusHandler::RunTask() {
         lengthInTaskSendBuffer_ += lengthToCopy;
         lengthInSharedSendBuffer_ -= lengthToCopy;
       }
-      int bytes_written =
-          uart_write_bytes(uartPort_, reinterpret_cast<const char*>(&taskSendBuffer_[0]), lengthInTaskSendBuffer_);
-      if (bytes_written > 0) {
-        if (static_cast<size_t>(bytes_written) == lengthInTaskSendBuffer_) {
-          jll_max485_data("UART%d fully wrote %d bytes", uartPort_, bytes_written);
-          lengthInTaskSendBuffer_ = 0;
-        } else {
-          jll_max485_data("UART%d partially wrote %d/%zu bytes", uartPort_, bytes_written, lengthInTaskSendBuffer_);
-          lengthInTaskSendBuffer_ -= bytes_written;
-          memmove(&taskSendBuffer_[0], &taskSendBuffer_[bytes_written], lengthInTaskSendBuffer_ - bytes_written);
-        }
-      } else {
-        jll_error("UART%d failed to write %zu bytes: got %d", uartPort_, lengthInTaskSendBuffer_, bytes_written);
-      }
-
+      SendToUart(BufferViewU8(taskSendBuffer_, 0, lengthInTaskSendBuffer_));
+      lengthInTaskSendBuffer_ = 0;
     } break;
     default: {
       jll_info("UART%d unexpected event %d", uartPort_, static_cast<int>(event.type));
