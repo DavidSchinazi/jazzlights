@@ -103,7 +103,7 @@ class Max485BusHandler {
   OwnedBufferU8 taskRecvBuffer_;                         // Only accessed by task.
   size_t lengthInTaskRecvBuffer_ = 0;                    // Only accessed by task.
   OwnedBufferU8 taskMessageBuffer_;                      // Only accessed by task.
-  size_t lengthInTaskMessageBuffer_ = 0;                 // Only accessed by task.
+  BufferViewU8 taskMessageView_;                         // Only accessed by task.
   OwnedBufferU8 sharedRecvSelfMessageBuffer_;            // Protected by `recvMutex_`.
   size_t lengthInSharedRecvSelfMessageBuffer_ = 0;       // Protected by `recvMutex_`.
   OwnedBufferU8 sharedRecvBroadcastMessageBuffer_;       // Protected by `recvMutex_`.
@@ -125,6 +125,7 @@ Max485BusHandler::Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, B
       taskSendBuffer_(kUartBufferSize),
       taskRecvBuffer_(kUartBufferSize),
       taskMessageBuffer_(kUartBufferSize),
+      taskMessageView_(taskMessageBuffer_, 0, 0),
       sharedRecvSelfMessageBuffer_(kUartBufferSize),
       sharedRecvBroadcastMessageBuffer_(kUartBufferSize),
       encodedReadBuffer_(kUartBufferSize),
@@ -170,15 +171,15 @@ void Max485BusHandler::RunTask() {
           lengthInTaskRecvBuffer_ = readLen;
           BusId destBusId = kSeparator;
           CheckMessage(&destBusId);
-          if (lengthInTaskMessageBuffer_ > 0) {
+          if (taskMessageView_.size() > 0) {
             if (destBusId == kBusId) {
               const std::lock_guard<std::mutex> lock(recvMutex_);
-              memcpy(&sharedRecvSelfMessageBuffer_[0], &taskMessageBuffer_[0], lengthInTaskMessageBuffer_);
-              lengthInSharedRecvSelfMessageBuffer_ = lengthInTaskMessageBuffer_;
+              memcpy(&sharedRecvSelfMessageBuffer_[0], &taskMessageView_[0], taskMessageView_.size());
+              lengthInSharedRecvSelfMessageBuffer_ = taskMessageView_.size();
             } else if (destBusId == kBusIdBroadcast) {
               const std::lock_guard<std::mutex> lock(recvMutex_);
-              memcpy(&sharedRecvBroadcastMessageBuffer_[0], &taskMessageBuffer_[0], lengthInTaskMessageBuffer_);
-              lengthInSharedRecvBroadcastMessageBuffer_ = lengthInTaskMessageBuffer_;
+              memcpy(&sharedRecvBroadcastMessageBuffer_[0], &taskMessageView_[0], taskMessageView_.size());
+              lengthInSharedRecvBroadcastMessageBuffer_ = taskMessageView_.size();
             } else {
               jll_fatal("Unexpected bus ID %d", static_cast<int>(destBusId));
             }
@@ -427,7 +428,7 @@ void Max485BusHandler::CheckMessage(BusId* destBusId) {
       jll_max485_data_buffer(BufferViewU8(taskRecvBuffer_, 0, lengthInTaskRecvBuffer_),
                              "Max485BusHandler discarding full task read buffer without separator");
       lengthInTaskRecvBuffer_ = 0;
-      lengthInTaskMessageBuffer_ = 0;
+      taskMessageView_.resize(0);
       return;
     }
     // Now taskRecvBuffer_[messageStartIndex] is the separator.
@@ -435,7 +436,7 @@ void Max485BusHandler::CheckMessage(BusId* destBusId) {
       jll_max485_data_buffer(BufferViewU8(taskRecvBuffer_, 0, lengthInTaskRecvBuffer_),
                              "Max485BusHandler pausing because task message too short start=%zu", messageStartIndex);
       ShiftTaskRecvBuffer(messageStartIndex);
-      lengthInTaskMessageBuffer_ = 0;
+      taskMessageView_.resize(0);
       return;
     }
     *destBusId = taskRecvBuffer_[messageStartIndex + 1];
@@ -455,7 +456,7 @@ void Max485BusHandler::CheckMessage(BusId* destBusId) {
       jll_max485_data_buffer(BufferViewU8(taskRecvBuffer_, 0, lengthInTaskRecvBuffer_),
                              "Max485BusHandler task pausing because packet incomplete");
       ShiftTaskRecvBuffer(messageStartIndex);
-      lengthInTaskMessageBuffer_ = 0;
+      taskMessageView_.resize(0);
       return;
     }
     messageEndIndex++;
@@ -476,11 +477,11 @@ void Max485BusHandler::CheckMessage(BusId* destBusId) {
       continue;
     }
     ShiftTaskRecvBuffer(messageEndIndex);
-    lengthInTaskMessageBuffer_ = decodedMessage.size();
+    taskMessageView_ = decodedMessage;
     return;
   }
   ShiftTaskRecvBuffer(messageStartIndex);
-  lengthInTaskMessageBuffer_ = 0;
+  taskMessageView_.resize(0);
 }
 
 }  // namespace
