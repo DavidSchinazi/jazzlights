@@ -13,6 +13,7 @@
 
 #include "jazzlights/esp32_shared.h"
 #include "jazzlights/pseudorandom.h"
+#include "jazzlights/util/buffer.h"
 #include "jazzlights/util/cobs.h"
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/time.h"
@@ -93,16 +94,16 @@ class Max485BusHandler {
   QueueHandle_t queue_ = nullptr;
   std::mutex sendMutex_;
   std::mutex recvMutex_;
-  std::vector<uint8_t> sharedSendBuffer_;  // Protected by `sendMutex_`.
-  size_t lengthInSharedSendBuffer_ = 0;    // Protected by `sendMutex_`.
-  std::vector<uint8_t> taskSendBuffer_;    // Only accessed by task.
-  size_t lengthInTaskSendBuffer_ = 0;      // Only accessed by task.
-  std::vector<uint8_t> taskRecvBuffer_;    // Only accessed by task.
-  std::vector<uint8_t> sharedRecvBuffer_;  // Protected by `recvMutex_`.
-  size_t lengthInSharedRecvBuffer_ = 0;    // Protected by `recvMutex_`.
-  std::vector<uint8_t> encodedReadBuffer_;
+  OwnedBufferU8 sharedSendBuffer_;       // Protected by `sendMutex_`.
+  size_t lengthInSharedSendBuffer_ = 0;  // Protected by `sendMutex_`.
+  OwnedBufferU8 taskSendBuffer_;         // Only accessed by task.
+  size_t lengthInTaskSendBuffer_ = 0;    // Only accessed by task.
+  OwnedBufferU8 taskRecvBuffer_;         // Only accessed by task.
+  OwnedBufferU8 sharedRecvBuffer_;       // Protected by `recvMutex_`.
+  size_t lengthInSharedRecvBuffer_ = 0;  // Protected by `recvMutex_`.
+  OwnedBufferU8 encodedReadBuffer_;
   size_t encodedReadBufferIndex_ = 0;
-  std::vector<uint8_t> decodedReadBuffer_;
+  OwnedBufferU8 decodedReadBuffer_;
   size_t decodedReadBufferIndex_ = 0;
 };
 
@@ -111,12 +112,12 @@ Max485BusHandler::Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, B
       txPin_(txPin),
       rxPin_(rxPin),
       bus_id_(bus_id),
-      sharedSendBuffer_(kUartBufferSize, '\0'),
-      taskSendBuffer_(kUartBufferSize, '\0'),
-      taskRecvBuffer_(kUartBufferSize, '\0'),
-      sharedRecvBuffer_(kUartBufferSize, '\0'),
-      encodedReadBuffer_(kUartBufferSize, '\0'),
-      decodedReadBuffer_(kUartBufferSize, '\0') {
+      sharedSendBuffer_(kUartBufferSize),
+      taskSendBuffer_(kUartBufferSize),
+      taskRecvBuffer_(kUartBufferSize),
+      sharedRecvBuffer_(kUartBufferSize),
+      encodedReadBuffer_(kUartBufferSize),
+      decodedReadBuffer_(kUartBufferSize) {
   // Pin task to core 0 to ensure UART interrupts do not get in the way of LED writing on core 1.
   if (xTaskCreatePinnedToCore(TaskFunction, "JL_MAX485_BUS", configMINIMAL_STACK_SIZE + 2000,
                               /*parameters=*/this, kHighestTaskPriority, &taskHandle_,
@@ -438,8 +439,8 @@ size_t Max485BusHandler::ReadMessage(uint8_t* buffer, size_t maxLength, BusId* o
 void SetupMax485Bus(Milliseconds currentTime) { (void)Max485BusHandler::Get(); }
 
 void RunMax485Bus(Milliseconds currentTime) {
-  static std::vector<uint8_t> outerRecvBuffer(kUartBufferSize, '\0');
-  static std::vector<uint8_t> outerSendBuffer(kUartBufferSize, '\0');
+  static OwnedBufferU8 outerRecvBuffer(kUartBufferSize);
+  static OwnedBufferU8 outerSendBuffer(kUartBufferSize);
   BusId destBusId = kSeparator;
   size_t readLength = Max485BusHandler::Get()->ReadMessage(&outerRecvBuffer[0], outerRecvBuffer.size(), &destBusId);
   if (readLength > 0) { jll_buffer_info(&outerRecvBuffer[0], readLength, "UART read message"); }
