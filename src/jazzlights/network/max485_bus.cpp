@@ -257,7 +257,7 @@ void Max485BusHandler::SetUp() {
   };
   ESP_ERROR_CHECK(uart_param_config(uartPort_, &uart_config));
   ESP_ERROR_CHECK(uart_set_pin(uartPort_, txPin_, rxPin_, /*rts=*/UART_PIN_NO_CHANGE, /*cts=*/UART_PIN_NO_CHANGE));
-  ready_ = true;
+  ready_.store(true, std::memory_order_relaxed);
 }
 
 void Max485BusHandler::WriteData(const BufferViewU8 data) {
@@ -386,7 +386,7 @@ void Max485BusHandler::ShiftTaskRecvBuffer(size_t messageStartIndex) {
 }
 
 BufferViewU8 Max485BusHandler::ReadMessage(OwnedBufferU8& readMessageBuffer, BusId* outDestBusId) {
-  if (!ready_) { return BufferViewU8(); }
+  if (!ready_.load(std::memory_order_relaxed)) { return BufferViewU8(); }
   const std::lock_guard<std::mutex> lock(recvMutex_);
   if (lengthInSharedRecvSelfMessageBuffer_ > 0) {
     *outDestBusId = kBusId;
