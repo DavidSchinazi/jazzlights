@@ -389,21 +389,15 @@ void Max485BusHandler::ReadMessage(BufferViewU8* message, BusId* outDestBusId) {
   if (!ready_) { return; }
   const std::lock_guard<std::mutex> lock(recvMutex_);
   if (lengthInSharedRecvSelfMessageBuffer_ > 0) {
-    // jll_buffer_info(BufferViewU8(sharedRecvSelfMessageBuffer_, 0, lengthInSharedRecvSelfMessageBuffer_),
-    //                 "receiving self message");
     *outDestBusId = kBusId;
     memcpy(&(*message)[0], &sharedRecvSelfMessageBuffer_[0], lengthInSharedRecvSelfMessageBuffer_);
     message->resize(lengthInSharedRecvSelfMessageBuffer_);
     lengthInSharedRecvSelfMessageBuffer_ = 0;
-    // jll_buffer_info(*message, "receiving self message2");
   } else if (lengthInSharedRecvBroadcastMessageBuffer_ > 0) {
-    // jll_buffer_info(BufferViewU8(sharedRecvBroadcastMessageBuffer_, 0, lengthInSharedRecvBroadcastMessageBuffer_),
-    //                 "receiving broadcast message");
     *outDestBusId = kBusIdBroadcast;
     memcpy(&(*message)[0], &sharedRecvBroadcastMessageBuffer_[0], lengthInSharedRecvBroadcastMessageBuffer_);
     message->resize(lengthInSharedRecvBroadcastMessageBuffer_);
     lengthInSharedRecvBroadcastMessageBuffer_ = 0;
-    // jll_buffer_info(*message, "receiving broadcast message2");
   } else {
     message->resize(0);
   }
