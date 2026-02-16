@@ -84,7 +84,6 @@ class Max485BusHandler {
   void WriteData(const BufferViewU8 data);
   static BufferViewU8 DecodeMessage(const BufferViewU8 encodedBuffer, OwnedBufferU8& decodedReadBuffer,
                                     OwnedBufferU8& decodedMessageBuffer);
-  void ShiftEncodedReadBuffer(size_t messageStartIndex);
   void ShiftTaskRecvBuffer(size_t messageStartIndex);
   BufferViewU8 TaskFindReceivedMessage(BusId* destBusId);
 
@@ -109,8 +108,6 @@ class Max485BusHandler {
   size_t lengthInSharedRecvSelfMessageBuffer_ = 0;       // Protected by `recvMutex_`.
   OwnedBufferU8 sharedRecvBroadcastMessageBuffer_;       // Protected by `recvMutex_`.
   size_t lengthInSharedRecvBroadcastMessageBuffer_ = 0;  // Protected by `recvMutex_`.
-  OwnedBufferU8 encodedReadBuffer_;
-  size_t encodedReadBufferIndex_ = 0;
   std::atomic<bool> ready_ = false;
 };
 
@@ -126,7 +123,6 @@ Max485BusHandler::Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, B
       taskDecodedMessageBuffer_(kUartBufferSize),
       sharedRecvSelfMessageBuffer_(kUartBufferSize),
       sharedRecvBroadcastMessageBuffer_(kUartBufferSize),
-      encodedReadBuffer_(kUartBufferSize),
       taskDecodedReadBuffer_(kUartBufferSize) {
   // Pin task to core 0 to ensure UART interrupts do not get in the way of LED writing on core 1.
   if (xTaskCreatePinnedToCore(TaskFunction, "JL_MAX485_BUS", configMINIMAL_STACK_SIZE + 2000,
@@ -361,17 +357,6 @@ BufferViewU8 Max485BusHandler::DecodeMessage(const BufferViewU8 encodedBuffer, O
   }
   memcpy(&decodedMessageBuffer[0], &decodedReadBuffer[2], decodedMessageLength);
   return BufferViewU8(decodedMessageBuffer, 0, decodedMessageLength);
-}
-
-void Max485BusHandler::ShiftEncodedReadBuffer(size_t messageStartIndex) {
-  if (messageStartIndex == 0) { return; }
-  if (encodedReadBufferIndex_ <= messageStartIndex) {
-    encodedReadBufferIndex_ = 0;
-    return;
-  }
-  // Move the message left to the start of the buffer to leave more room for future reads.
-  memmove(&encodedReadBuffer_[0], &encodedReadBuffer_[messageStartIndex], encodedReadBufferIndex_ - messageStartIndex);
-  encodedReadBufferIndex_ -= messageStartIndex;
 }
 
 void Max485BusHandler::ShiftTaskRecvBuffer(size_t messageStartIndex) {
