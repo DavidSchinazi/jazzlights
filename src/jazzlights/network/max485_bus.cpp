@@ -86,6 +86,7 @@ class Max485BusHandler {
                                     OwnedBufferU8& decodedMessageBuffer);
   void ShiftTaskRecvBuffer(size_t messageStartIndex);
   BufferViewU8 TaskFindReceivedMessage(BusId* destBusId);
+  bool IsReady() const;
 
   const uart_port_t uartPort_;         // Only modified in constructor.
   const int txPin_;                    // Only modified in constructor.
@@ -110,6 +111,8 @@ class Max485BusHandler {
   size_t lengthInSharedRecvBroadcastMessageBuffer_ = 0;  // Protected by `recvMutex_`.
   std::atomic<bool> ready_ = false;
 };
+
+bool Max485BusHandler::IsReady() const { return ready_.load(std::memory_order_relaxed); }
 
 Max485BusHandler::Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, BusId bus_id)
     : uartPort_(uartPort),
@@ -282,7 +285,7 @@ void Max485BusHandler::WriteData(const BufferViewU8 data) {
 }
 
 void Max485BusHandler::WriteMessage(const BufferViewU8 message, BusId destBusId) {
-  if (!ready_) { return; }
+  if (!IsReady()) { return; }
   if (ComputeExpansion(message.size()) > kUartBufferSize) {
     jll_error("Cannot write message of length %zu", message.size());
     return;
@@ -371,7 +374,7 @@ void Max485BusHandler::ShiftTaskRecvBuffer(size_t messageStartIndex) {
 }
 
 BufferViewU8 Max485BusHandler::ReadMessage(OwnedBufferU8& readMessageBuffer, BusId* outDestBusId) {
-  if (!ready_.load(std::memory_order_relaxed)) { return BufferViewU8(); }
+  if (!IsReady()) { return BufferViewU8(); }
   const std::lock_guard<std::mutex> lock(recvMutex_);
   if (lengthInSharedRecvSelfMessageBuffer_ > 0) {
     *outDestBusId = kBusId;
