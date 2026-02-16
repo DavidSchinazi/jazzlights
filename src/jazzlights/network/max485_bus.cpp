@@ -102,7 +102,7 @@ class Max485BusHandler {
   size_t lengthInTaskSendBuffer_ = 0;                    // Only accessed by task.
   OwnedBufferU8 taskRecvBuffer_;                         // Only accessed by task.
   size_t lengthInTaskRecvBuffer_ = 0;                    // Only accessed by task.
-  OwnedBufferU8 taskMessageBuffer_;                      // Only accessed by task.
+  OwnedBufferU8 taskDecodedMessageBuffer_;               // Only accessed by task.
   OwnedBufferU8 sharedRecvSelfMessageBuffer_;            // Protected by `recvMutex_`.
   size_t lengthInSharedRecvSelfMessageBuffer_ = 0;       // Protected by `recvMutex_`.
   OwnedBufferU8 sharedRecvBroadcastMessageBuffer_;       // Protected by `recvMutex_`.
@@ -123,7 +123,7 @@ Max485BusHandler::Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, B
       sharedSendBuffer_(kUartBufferSize),
       taskSendBuffer_(kUartBufferSize),
       taskRecvBuffer_(kUartBufferSize),
-      taskMessageBuffer_(kUartBufferSize),
+      taskDecodedMessageBuffer_(kUartBufferSize),
       sharedRecvSelfMessageBuffer_(kUartBufferSize),
       sharedRecvBroadcastMessageBuffer_(kUartBufferSize),
       encodedReadBuffer_(kUartBufferSize),
@@ -455,7 +455,7 @@ BufferViewU8 Max485BusHandler::CheckMessage(BusId* destBusId) {
     }
     messageEndIndex++;
     BufferViewU8 decodedMessage =
-        DecodeMessage(BufferViewU8(taskRecvBuffer_, messageStartIndex, messageEndIndex), taskMessageBuffer_);
+        DecodeMessage(BufferViewU8(taskRecvBuffer_, messageStartIndex, messageEndIndex), taskDecodedMessageBuffer_);
     if (decodedMessage.empty()) {
       jll_max485_data_buffer(BufferViewU8(taskRecvBuffer_, 0, lengthInTaskRecvBuffer_),
                              "Max485BusHandler skipping past message which failed to decode start=%zu end=%zu",
