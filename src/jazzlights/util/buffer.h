@@ -19,6 +19,7 @@ class OwnedBuffer {
   const T& operator[](size_t position) const { return buffer_[position]; }
   size_t size() const { return buffer_.size(); }
   void resize(size_t size) { buffer_.resize(size, T{}); }
+  bool empty() const { return size() == 0; }
 
  private:
   std::vector<T> buffer_;
@@ -33,10 +34,12 @@ class BufferView {
       : data_(&bufferView[startPosition]), size_(endPosition - startPosition) {}
   explicit BufferView(BufferView<T> bufferView, size_t startPosition)
       : BufferView<T>(bufferView, startPosition, bufferView.size()) {}
+  explicit BufferView() : data_(nullptr), size_(0) {}
   T& operator[](size_t position) { return data_[position]; }
   const T& operator[](size_t position) const { return data_[position]; }
   size_t size() const { return size_; }
   void resize(size_t size) { size_ = size; }
+  bool empty() const { return size() == 0; }
 
  private:
   T* data_;
