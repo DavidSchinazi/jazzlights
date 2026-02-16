@@ -17,31 +17,33 @@
 #define jll_cobs_data_buffer(...) jll_buffer_debug(__VA_ARGS__)
 #endif  // JL_LOG_COBS_DATA
 
+#define jll_cobs_data_buffer2(bufferClass, ...) jll_cobs_data_buffer(&bufferClass[0], bufferClass.size(), ##__VA_ARGS__)
+
 namespace jazzlights {
 
-size_t CobsEncode(const uint8_t* inputBuffer, size_t inputLength, uint8_t* encodedOuputBuffer,
-                  size_t encodedOuputBufferSize) {
-  jll_cobs_data_buffer(inputBuffer, inputLength, "COBS encode");
+void CobsEncode(const BufferViewU8 inputBuffer, BufferViewU8* encodedOutputBuffer) {
+  jll_cobs_data_buffer2(inputBuffer, "COBS encode");
   uint8_t code = 0x01;
   size_t inputIndex = 0;
   size_t outputCodeIndex = 0;
   size_t outputIndex = 1;
-  while (inputIndex < inputLength) {
-    if (outputIndex >= encodedOuputBufferSize) {
+  while (inputIndex < inputBuffer.size()) {
+    if (outputIndex >= encodedOutputBuffer->size()) {
       jll_error("CobsEncode ran out of space");
-      return 0;
+      encodedOutputBuffer->resize(0);
+      return;
     }
     if (inputBuffer[inputIndex] == 0x00) {
-      encodedOuputBuffer[outputCodeIndex] = code;
+      (*encodedOutputBuffer)[outputCodeIndex] = code;
       code = 0x01;
       outputCodeIndex = outputIndex;
       outputIndex++;
     } else {
-      encodedOuputBuffer[outputIndex] = inputBuffer[inputIndex];
+      (*encodedOutputBuffer)[outputIndex] = inputBuffer[inputIndex];
       outputIndex++;
       code++;
       if (code == 0xFF) {
-        encodedOuputBuffer[outputCodeIndex] = code;
+        (*encodedOutputBuffer)[outputCodeIndex] = code;
         code = 0x01;
         outputCodeIndex = outputIndex;
         outputIndex++;
@@ -49,8 +51,8 @@ size_t CobsEncode(const uint8_t* inputBuffer, size_t inputLength, uint8_t* encod
     }
     inputIndex++;
   }
-  encodedOuputBuffer[outputCodeIndex] = code;
-  return outputIndex;
+  (*encodedOutputBuffer)[outputCodeIndex] = code;
+  encodedOutputBuffer->resize(outputIndex);
 }
 
 size_t CobsDecode(const uint8_t* encodedInputBuffer, size_t encodedInputLength, uint8_t* outputBuffer,

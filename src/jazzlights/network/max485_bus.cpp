@@ -274,25 +274,27 @@ void Max485BusHandler::WriteMessage(const BufferViewU8 message, BusId destBusId)
     jll_error("Cannot write message of length %zu", message.size());
     return;
   }
-  uint8_t uartBuffer1[kUartBufferSize];
+  OwnedBufferU8 uartBuffer1(kUartBufferSize);
   uartBuffer1[0] = kSeparator;
   uartBuffer1[1] = destBusId;
-  memcpy(uartBuffer1 + 2, &message[0], message.size());
+  memcpy(&uartBuffer1[2], &message[0], message.size());
   size_t uartBufferIndex1 = 2 + message.size();
-  jll_max485_data_buffer(BufferViewU8(uartBuffer1, uartBufferIndex1), "computing outgoing CRC32");
-  uint32_t crc32 = esp_crc32_be(0, uartBuffer1, uartBufferIndex1);
-  memcpy(uartBuffer1 + uartBufferIndex1, &crc32, sizeof(crc32));
+  jll_max485_data_buffer(BufferViewU8(uartBuffer1, 0, uartBufferIndex1), "computing outgoing CRC32");
+  uint32_t crc32 = esp_crc32_be(0, &uartBuffer1[0], uartBufferIndex1);
+  memcpy(&uartBuffer1[uartBufferIndex1], &crc32, sizeof(crc32));
   uartBufferIndex1 += sizeof(crc32);
   // TODO change the COBS API so we can do this without a second buffer copy.
-  uint8_t uartBuffer2[kUartBufferSize];
+
+  OwnedBufferU8 uartBuffer2(kUartBufferSize);
   uartBuffer2[0] = kSeparator;
   uartBuffer2[1] = destBusId;
-  size_t uartBufferIndex2 =
-      2 + CobsEncode(uartBuffer1 + 2, uartBufferIndex1 - 2, uartBuffer2 + 2, sizeof(uartBuffer2) - 2);
+  BufferViewU8 encodedBuffer(uartBuffer2, 2);
+  CobsEncode(BufferViewU8(uartBuffer1, 2, uartBufferIndex1), &encodedBuffer);
+  size_t uartBufferIndex2 = 2 + encodedBuffer.size();
   uartBuffer2[uartBufferIndex2++] = kSeparator;
   uartBuffer2[uartBufferIndex2++] = kBusIdEndOfMessage;
-  jll_max485_data_buffer(BufferViewU8(uartBuffer2, uartBufferIndex2), "Max485BusHandler writing");
-  return WriteData(BufferViewU8(uartBuffer2, uartBufferIndex2));
+  jll_max485_data_buffer(BufferViewU8(uartBuffer2, 0, uartBufferIndex2), "Max485BusHandler writing");
+  return WriteData(BufferViewU8(uartBuffer2, 0, uartBufferIndex2));
 }
 
 size_t Max485BusHandler::DecodeMessage(const BufferViewU8 encodedBuffer, OwnedBufferU8& decodedMessage) {
@@ -450,7 +452,7 @@ void RunMax485Bus(Milliseconds currentTime) {
                  "{" STRINGIFY(JL_ROLE) " is responding at %u to: %s}", currentTime, &outerRecvBuffer[0]);
     if (bytesWritten >= outerRecvBuffer.size()) { bytesWritten = outerRecvBuffer.size() - 1; }
     outerSendBuffer[bytesWritten] = '\0';
-    jll_info("Follower " STRINGIFY(JL_ROLE) " sending %zu response bytes: %s", bytesWritten, &outerSendBuffer[0]);
+    jll_info("Follower " STRINGIFY(JL_ROLE) " sending %d response bytes: %s", bytesWritten, &outerSendBuffer[0]);
     Max485BusHandler::Get()->WriteMessage(BufferViewU8(outerSendBuffer, 0, bytesWritten), kBusIdLeader);
   }
 #else   // L_BUS_LEADER
