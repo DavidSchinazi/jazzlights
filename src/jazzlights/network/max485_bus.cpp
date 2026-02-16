@@ -169,8 +169,9 @@ void Max485BusHandler::RunTask() {
         } else {
           lengthInTaskRecvBuffer_ = readLen;
           BusId destBusId = kSeparator;
-          BufferViewU8 taskMessageView = TaskFindReceivedMessage(&destBusId);
-          if (!taskMessageView.empty()) {
+          while (true) {
+            BufferViewU8 taskMessageView = TaskFindReceivedMessage(&destBusId);
+            if (taskMessageView.empty()) { break; }
             if (destBusId == kBusId) {
               const std::lock_guard<std::mutex> lock(recvMutex_);
               sharedRecvSelfMessage_ = sharedRecvSelfMessageBuffer_.CopyIn(taskMessageView);
