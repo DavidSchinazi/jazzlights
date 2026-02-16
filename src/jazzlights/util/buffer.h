@@ -29,10 +29,10 @@ class BufferView {
  public:
   explicit BufferView(T* data, size_t size) : data_(data), size_(size) {}
   BufferView(OwnedBuffer<T>& ownedBuffer) : data_(&ownedBuffer[0]), size_(ownedBuffer.size()) {}
-  explicit BufferView(OwnedBuffer<T>& ownedBuffer, size_t startPosition, size_t endPosition)
-      : data_(&ownedBuffer[startPosition]), size_(endPosition - startPosition) {}
-  explicit BufferView(OwnedBuffer<T>& ownedBuffer, size_t startPosition)
-      : BufferView(ownedBuffer, startPosition, ownedBuffer.size()) {}
+  explicit BufferView(BufferView<T> bufferView, size_t startPosition, size_t endPosition)
+      : data_(&bufferView[startPosition]), size_(endPosition - startPosition) {}
+  explicit BufferView(BufferView<T> bufferView, size_t startPosition)
+      : BufferView<T>(bufferView, startPosition, bufferView.size()) {}
   T& operator[](size_t position) { return data_[position]; }
   const T& operator[](size_t position) const { return data_[position]; }
   size_t size() const { return size_; }

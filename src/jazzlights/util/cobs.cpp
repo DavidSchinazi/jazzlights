@@ -11,18 +11,16 @@
 
 #if JL_LOG_COBS_DATA
 #define jll_cobs_data(...) jll_info(__VA_ARGS__)
-#define jll_cobs_data_buffer(...) jll_buffer_info(__VA_ARGS__)
+#define jll_cobs_data_buffer(...) jll_buffer_info2(__VA_ARGS__)
 #else  // JL_LOG_COBS_DATA
 #define jll_cobs_data(...) jll_debug(__VA_ARGS__)
-#define jll_cobs_data_buffer(...) jll_buffer_debug(__VA_ARGS__)
+#define jll_cobs_data_buffer(...) jll_buffer_debug2(__VA_ARGS__)
 #endif  // JL_LOG_COBS_DATA
-
-#define jll_cobs_data_buffer2(bufferClass, ...) jll_cobs_data_buffer(&bufferClass[0], bufferClass.size(), ##__VA_ARGS__)
 
 namespace jazzlights {
 
 void CobsEncode(const BufferViewU8 inputBuffer, BufferViewU8* encodedOutputBuffer) {
-  jll_cobs_data_buffer2(inputBuffer, "COBS encode");
+  jll_cobs_data_buffer(inputBuffer, "COBS encode");
   uint8_t code = 0x01;
   size_t inputIndex = 0;
   size_t outputCodeIndex = 0;
@@ -55,37 +53,39 @@ void CobsEncode(const BufferViewU8 inputBuffer, BufferViewU8* encodedOutputBuffe
   encodedOutputBuffer->resize(outputIndex);
 }
 
-size_t CobsDecode(const uint8_t* encodedInputBuffer, size_t encodedInputLength, uint8_t* outputBuffer,
-                  size_t outputBufferSize) {
+void CobsDecode(const BufferViewU8 encodedInputBuffer, BufferViewU8* outputBuffer) {
   size_t inputIndex = 0;
   size_t outputIndex = 0;
-  while (inputIndex < encodedInputLength) {
+  while (inputIndex < encodedInputBuffer.size()) {
     const uint8_t code = encodedInputBuffer[inputIndex];
     inputIndex++;
     for (uint8_t i = 1; i < code; ++i) {
-      if (outputIndex >= outputBufferSize) {
+      if (outputIndex >= outputBuffer->size()) {
         jll_error("CobsDecode ran out of space 1");
-        return 0;
+        outputBuffer->resize(0);
+        return;
       }
-      outputBuffer[outputIndex] = encodedInputBuffer[inputIndex];
+      (*outputBuffer)[outputIndex] = encodedInputBuffer[inputIndex];
       outputIndex++;
       inputIndex++;
     }
     if (code < 0xFF) {
-      if (inputIndex == encodedInputLength) {
-        jll_cobs_data_buffer(outputBuffer, outputIndex, "COBS decode1");
-        return outputIndex;
+      if (inputIndex == encodedInputBuffer.size()) {
+        outputBuffer->resize(outputIndex);
+        jll_cobs_data_buffer(*outputBuffer, "COBS decode1");
+        return;
       }
-      if (outputIndex >= outputBufferSize) {
+      if (outputIndex >= outputBuffer->size()) {
         jll_error("CobsDecode ran out of space 2");
-        return 0;
+        outputBuffer->resize(0);
+        return;
       }
-      outputBuffer[outputIndex] = 0x00;
+      (*outputBuffer)[outputIndex] = 0x00;
       outputIndex++;
     }
   }
-  jll_cobs_data_buffer(outputBuffer, outputIndex, "COBS decode2");
-  return outputIndex;
+  outputBuffer->resize(outputIndex);
+  jll_cobs_data_buffer(*outputBuffer, "COBS decode2");
 }
 
 }  // namespace jazzlights

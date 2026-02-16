@@ -330,15 +330,14 @@ void Max485BusHandler::DecodeMessage(const BufferViewU8 encodedBuffer, BufferVie
   decodedReadBufferIndex_ = 0;
   decodedReadBuffer_[decodedReadBufferIndex_++] = encodedBuffer[0];
   decodedReadBuffer_[decodedReadBufferIndex_++] = encodedBuffer[1];
-  size_t decodeLength =
-      CobsDecode(&encodedBuffer[uartBufferIndex], encodedBuffer.size() - uartBufferIndex - 2,
-                 &decodedReadBuffer_[decodedReadBufferIndex_], decodedReadBuffer_.size() - decodedReadBufferIndex_);
-  if (decodeLength == 0) {
+  BufferViewU8 decodedBuffer(decodedReadBuffer_, decodedReadBufferIndex_);
+  CobsDecode(BufferViewU8(encodedBuffer, uartBufferIndex, encodedBuffer.size() - 2), &decodedBuffer);
+  if (decodedBuffer.size() == 0) {
     jll_buffer_error2(encodedBuffer, "Max485BusHandler DecodeMessage failed to CobsDecode incoming message");
     decodedMessage->resize(0);
     return;
   }
-  decodedReadBufferIndex_ += decodeLength;
+  decodedReadBufferIndex_ += decodedBuffer.size();
   jll_max485_data_buffer(BufferViewU8(decodedReadBuffer_, 0, decodedReadBufferIndex_ - sizeof(uint32_t)),
                          "Max485BusHandler DecodeMessage computing incoming CRC32");
   uint32_t crc32 = esp_crc32_be(0, &decodedReadBuffer_[0], decodedReadBufferIndex_ - sizeof(uint32_t));
