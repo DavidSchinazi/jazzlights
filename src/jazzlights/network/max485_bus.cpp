@@ -33,6 +33,9 @@ namespace {
 #define jll_max485_data_buffer(...) jll_buffer_debug(__VA_ARGS__)
 #endif  // JL_LOG_MAX485_BUS_DATA
 
+#define jll_max485_data_buffer2(bufferClass, ...) \
+  jll_max485_data_buffer(&bufferClass[0], bufferClass.size(), ##__VA_ARGS__)
+
 using BusId = uint8_t;
 
 constexpr uint8_t kSeparator = 0;
@@ -68,7 +71,7 @@ class Max485BusHandler {
   ~Max485BusHandler();
 
   void WriteMessage(const BufferViewU8 message, BusId destBusId);
-  size_t ReadMessage(uint8_t* buffer, size_t maxLength, BusId* outDestBusId);
+  size_t ReadMessage(OwnedBufferU8& message, BusId* outDestBusId);
 
   constexpr size_t ComputeExpansion(size_t length) {
     return /*kSeparator=*/1 + /*busID=*/1 + CobsMaxEncodedSize(length) + /*CRC32=*/sizeof(uint32_t) + /*kSeparator=*/1 +
@@ -82,8 +85,7 @@ class Max485BusHandler {
   void RunTask();
   void WriteData(const uint8_t* buffer, size_t length);
   size_t ReadData(uint8_t* buffer, size_t maxLength);
-  size_t DecodeMessage(const uint8_t* encodedBuffer, size_t encodedLength, uint8_t* decodedBuffer,
-                       size_t maxDecodedLength);
+  size_t DecodeMessage(const BufferViewU8 encodedBuffer, OwnedBufferU8& decodedMessage);
   void ShiftEncodedReadBuffer(size_t messageStartIndex);
 
   const uart_port_t uartPort_;         // Only modified in constructor.
@@ -296,42 +298,39 @@ void Max485BusHandler::WriteMessage(const BufferViewU8 message, BusId destBusId)
   return WriteData(uartBuffer2, uartBufferIndex2);
 }
 
-size_t Max485BusHandler::DecodeMessage(const uint8_t* encodedBuffer, size_t encodedLength, uint8_t* decodedBuffer,
-                                       size_t maxDecodedLength) {
-  jll_max485_data_buffer(encodedBuffer, encodedLength, "DecodeMessage attempting to parse");
-  if (encodedLength < ComputeExpansion(0)) {
-    jll_buffer_error(encodedBuffer, encodedLength, "Max485BusHandler DecodeMessage ignoring very short message");
+size_t Max485BusHandler::DecodeMessage(const BufferViewU8 encodedBuffer, OwnedBufferU8& decodedMessage) {
+  jll_max485_data_buffer2(encodedBuffer, "DecodeMessage attempting to parse");
+  if (encodedBuffer.size() < ComputeExpansion(0)) {
+    jll_buffer_error2(encodedBuffer, "Max485BusHandler DecodeMessage ignoring very short message");
     return 0;
   }
   size_t uartBufferIndex = 0;
   BusId separator = encodedBuffer[uartBufferIndex++];
   if (separator != kSeparator) {
-    jll_buffer_error(encodedBuffer, encodedLength,
-                     "Max485BusHandler DecodeMessage ignoring message due to bad initial separator");
+    jll_buffer_error2(encodedBuffer, "Max485BusHandler DecodeMessage ignoring message due to bad initial separator");
     return 0;
   }
   BusId destBusId = encodedBuffer[uartBufferIndex++];
   if (destBusId != kBusIdBroadcast && destBusId != kBusId) {
-    jll_buffer_error(encodedBuffer, encodedLength, "Max485BusHandler DecodeMessage ignoring message not meant for us");
+    jll_buffer_error2(encodedBuffer, "Max485BusHandler DecodeMessage ignoring message not meant for us");
     return 0;
   }
-  if (encodedBuffer[encodedLength - 2] != kSeparator) {
-    jll_buffer_error(encodedBuffer, encodedLength, "Max485BusHandler DecodeMessage did not find end separator");
+  if (encodedBuffer[encodedBuffer.size() - 2] != kSeparator) {
+    jll_buffer_error2(encodedBuffer, "Max485BusHandler DecodeMessage did not find end separator");
     return 0;
   }
-  if (encodedBuffer[encodedLength - 1] != kBusIdEndOfMessage) {
-    jll_buffer_error(encodedBuffer, encodedLength, "Max485BusHandler DecodeMessage did not find end of message");
+  if (encodedBuffer[encodedBuffer.size() - 1] != kBusIdEndOfMessage) {
+    jll_buffer_error2(encodedBuffer, "Max485BusHandler DecodeMessage did not find end of message");
     return 0;
   }
   decodedReadBufferIndex_ = 0;
   decodedReadBuffer_[decodedReadBufferIndex_++] = encodedBuffer[0];
   decodedReadBuffer_[decodedReadBufferIndex_++] = encodedBuffer[1];
   size_t decodeLength =
-      CobsDecode(encodedBuffer + uartBufferIndex, encodedLength - uartBufferIndex - 2,
+      CobsDecode(&encodedBuffer[uartBufferIndex], encodedBuffer.size() - uartBufferIndex - 2,
                  &decodedReadBuffer_[decodedReadBufferIndex_], decodedReadBuffer_.size() - decodedReadBufferIndex_);
   if (decodeLength == 0) {
-    jll_buffer_error(encodedBuffer, encodedLength,
-                     "Max485BusHandler DecodeMessage failed to CobsDecode incoming message");
+    jll_buffer_error2(encodedBuffer, "Max485BusHandler DecodeMessage failed to CobsDecode incoming message");
     return 0;
   }
   decodedReadBufferIndex_ += decodeLength;
@@ -345,12 +344,12 @@ size_t Max485BusHandler::DecodeMessage(const uint8_t* encodedBuffer, size_t enco
     return 0;
   }
   size_t decodedMessageLength = decodedReadBufferIndex_ - 2 - sizeof(uint32_t);
-  if (decodedMessageLength > maxDecodedLength) {
+  if (decodedMessageLength > decodedMessage.size()) {
     jll_error("Max485BusHandler DecodeMessage found message too long %zu > %zu", decodedMessageLength,
-              maxDecodedLength);
+              decodedMessage.size());
     return 0;
   }
-  memcpy(decodedBuffer, &decodedReadBuffer_[2], decodedMessageLength);
+  memcpy(&decodedMessage[0], &decodedReadBuffer_[2], decodedMessageLength);
   return decodedMessageLength;
 }
 
@@ -365,7 +364,7 @@ void Max485BusHandler::ShiftEncodedReadBuffer(size_t messageStartIndex) {
   encodedReadBufferIndex_ -= messageStartIndex;
 }
 
-size_t Max485BusHandler::ReadMessage(uint8_t* buffer, size_t maxLength, BusId* outDestBusId) {
+size_t Max485BusHandler::ReadMessage(OwnedBufferU8& message, BusId* outDestBusId) {
   size_t readLength =
       ReadData(&encodedReadBuffer_[encodedReadBufferIndex_], encodedReadBuffer_.size() - encodedReadBufferIndex_);
   if (readLength == 0) { return 0; }
@@ -418,7 +417,7 @@ size_t Max485BusHandler::ReadMessage(uint8_t* buffer, size_t maxLength, BusId* o
     }
     messageEndIndex++;
     size_t decodedMessageLength =
-        DecodeMessage(&encodedReadBuffer_[messageStartIndex], messageEndIndex - messageStartIndex, buffer, maxLength);
+        DecodeMessage(BufferView(encodedReadBuffer_, messageStartIndex, messageEndIndex), message);
     if (decodedMessageLength == 0) {
       jll_max485_data_buffer(&encodedReadBuffer_[0], encodedReadBufferIndex_,
                              "Max485BusHandler skipping past message which failed to decode start=%zu end=%zu",
@@ -442,7 +441,7 @@ void RunMax485Bus(Milliseconds currentTime) {
   static OwnedBufferU8 outerRecvBuffer(kUartBufferSize);
   static OwnedBufferU8 outerSendBuffer(kUartBufferSize);
   BusId destBusId = kSeparator;
-  size_t readLength = Max485BusHandler::Get()->ReadMessage(&outerRecvBuffer[0], outerRecvBuffer.size(), &destBusId);
+  size_t readLength = Max485BusHandler::Get()->ReadMessage(outerRecvBuffer, &destBusId);
   if (readLength > 0) { jll_buffer_info(&outerRecvBuffer[0], readLength, "UART read message"); }
 #if !JL_BUS_LEADER
   if (destBusId == kBusId) {
@@ -453,7 +452,7 @@ void RunMax485Bus(Milliseconds currentTime) {
     if (bytesWritten >= outerRecvBuffer.size()) { bytesWritten = outerRecvBuffer.size() - 1; }
     outerSendBuffer[bytesWritten] = '\0';
     jll_info("Follower " STRINGIFY(JL_ROLE) " sending %zu response bytes: %s", bytesWritten, &outerSendBuffer[0]);
-    Max485BusHandler::Get()->WriteMessage(BufferViewU8(outerSendBuffer, bytesWritten), kBusIdLeader);
+    Max485BusHandler::Get()->WriteMessage(BufferViewU8(outerSendBuffer, 0, bytesWritten), kBusIdLeader);
   }
 #else   // L_BUS_LEADER
   constexpr Milliseconds sFollowerResponseTimeOut = 500;
@@ -479,7 +478,8 @@ void RunMax485Bus(Milliseconds currentTime) {
   if (bytesWritten >= outerSendBuffer.size()) { bytesWritten = outerSendBuffer.size() - 1; }
   outerSendBuffer[bytesWritten] = '\0';
   jll_info("Leader " STRINGIFY(JL_ROLE) " sending %d bytes: %s", bytesWritten, &outerSendBuffer[0]);
-  Max485BusHandler::Get()->WriteMessage(BufferViewU8(outerSendBuffer, bytesWritten), kFollowerBusIds[sCurrentFollower]);
+  Max485BusHandler::Get()->WriteMessage(BufferViewU8(outerSendBuffer, 0, bytesWritten),
+                                        kFollowerBusIds[sCurrentFollower]);
   sAwaitingResponse = true;
 #endif  // L_BUS_LEADER
 }

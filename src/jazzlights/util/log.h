@@ -69,4 +69,9 @@ std::unique_lock<std::mutex> GetEscapeBufferLock();
     abort();                                                                                     \
   } while (0)
 
+#define jll_buffer_debug2(bufferClass, ...) jll_buffer_debug(&bufferClass[0], bufferClass.size(), ##__VA_ARGS__)
+#define jll_buffer_info2(bufferClass, ...) jll_buffer_info(&bufferClass[0], bufferClass.size(), ##__VA_ARGS__)
+#define jll_buffer_error2(bufferClass, ...) jll_buffer_error(&bufferClass[0], bufferClass.size(), ##__VA_ARGS__)
+#define jll_buffer_fatal2(bufferClass, ...) jll_buffer_fatal(&bufferClass[0], bufferClass.size(), ##__VA_ARGS__)
+
 #endif  // JL_UTIL_LOG_H
