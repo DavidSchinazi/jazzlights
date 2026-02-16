@@ -28,7 +28,7 @@ template <typename T>
 class BufferView {
  public:
   explicit BufferView(T* data, size_t size) : data_(data), size_(size) {}
-  BufferView(const OwnedBuffer<T>& ownedBuffer) : data_(&ownedBuffer[0]), size_(ownedBuffer.size()) {}
+  BufferView(OwnedBuffer<T>& ownedBuffer) : data_(&ownedBuffer[0]), size_(ownedBuffer.size()) {}
   explicit BufferView(OwnedBuffer<T>& ownedBuffer, size_t startPosition, size_t endPosition)
       : data_(&ownedBuffer[startPosition]), size_(endPosition - startPosition) {}
   explicit BufferView(OwnedBuffer<T>& ownedBuffer, size_t startPosition)
