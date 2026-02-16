@@ -70,7 +70,7 @@ class Max485BusHandler {
   void WriteMessage(const BufferViewU8 message, BusId destBusId);
   void ReadMessage(BufferViewU8* message, BusId* outDestBusId);
 
-  constexpr size_t ComputeExpansion(size_t length) {
+  static constexpr size_t ComputeExpansion(size_t length) {
     return /*kSeparator=*/1 + /*busID=*/1 + CobsMaxEncodedSize(length) + /*CRC32=*/sizeof(uint32_t) + /*kSeparator=*/1 +
            /*endOfMessage=*/1;
   }
