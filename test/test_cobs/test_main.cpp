@@ -4,31 +4,25 @@
 #include <iostream>
 
 #include "jazzlights/pseudorandom.h"
+#include "jazzlights/util/buffer.h"
 #include "jazzlights/util/cobs.h"
 
 namespace jazzlights {
 
-void test_cobs_buffer(uint8_t* inputBuffer, size_t inputLength) {
-  if (inputBuffer == nullptr) {
-    TEST_FAIL_MESSAGE("empty input");
-    return;
-  }
-  size_t encodeBufferLength = CobsMaxEncodedSize(inputLength);
-  size_t decodeBufferLength = inputLength;
-  uint8_t* encodeBuffer = reinterpret_cast<uint8_t*>(malloc(encodeBufferLength));
-  uint8_t* decodeBuffer = reinterpret_cast<uint8_t*>(malloc(decodeBufferLength));
+void test_cobs_buffer(const BufferViewU8 inputBuffer) {
+  size_t encodeBufferLength = CobsMaxEncodedSize(inputBuffer.size());
+  size_t decodeBufferLength = inputBuffer.size();
+  OwnedBufferU8 encodeBuffer(encodeBufferLength);
+  OwnedBufferU8 decodeBuffer(decodeBufferLength);
   do {
-    if (encodeBuffer == nullptr || decodeBuffer == nullptr) {
-      TEST_FAIL_MESSAGE("malloc failure");
-      break;
-    }
-    size_t encodedLength = CobsEncode(inputBuffer, inputLength, encodeBuffer, encodeBufferLength);
-    if (encodedLength <= 0) {
+    BufferViewU8 encodedBuffer(encodeBuffer);
+    CobsEncode(inputBuffer, &encodedBuffer);
+    if (encodedBuffer.size() <= 0) {
       TEST_FAIL_MESSAGE("encode failure");
       break;
     }
     bool bad_encoding = false;
-    for (size_t i = 0; i < encodedLength; ++i) {
+    for (size_t i = 0; i < encodedBuffer.size(); ++i) {
       if (encodeBuffer[i] == 0x00) {
         bad_encoding = true;
         break;
@@ -38,36 +32,28 @@ void test_cobs_buffer(uint8_t* inputBuffer, size_t inputLength) {
       TEST_FAIL_MESSAGE("zero found in encoding");
       break;
     }
-    size_t decodedLength = CobsDecode(encodeBuffer, encodedLength, decodeBuffer, decodeBufferLength);
-    if (decodedLength <= 0) {
+    BufferViewU8 decodedBuffer(decodeBuffer);
+    CobsDecode(encodedBuffer, &decodedBuffer);
+    if (decodedBuffer.size() <= 0) {
       TEST_FAIL_MESSAGE("decode failure");
       break;
     }
-    if (decodedLength != inputLength) {
+    if (decodedBuffer.size() != inputBuffer.size()) {
       TEST_FAIL_MESSAGE("decode length mismatch");
       break;
     }
-    int res = memcmp(inputBuffer, decodeBuffer, inputLength);
+    int res = memcmp(&inputBuffer[0], &decodedBuffer[0], inputBuffer.size());
     if (res != 0) {
       TEST_FAIL_MESSAGE("decode mismatch");
       break;
     }
   } while (false);
-  free(encodeBuffer);
-  free(decodeBuffer);
 }
 
 void test_cobs(size_t inputLength) {
-  uint8_t* inputBuffer = reinterpret_cast<uint8_t*>(malloc(inputLength));
-  do {
-    if (inputBuffer == nullptr) {
-      TEST_FAIL_MESSAGE("malloc failure");
-      break;
-    }
-    for (size_t i = 0; i < inputLength; ++i) { inputBuffer[i] = UnpredictableRandom::GetByte(); }
-    test_cobs_buffer(inputBuffer, inputLength);
-  } while (false);
-  free(inputBuffer);
+  OwnedBufferU8 inputBuffer(inputLength);
+  for (size_t i = 0; i < inputBuffer.size(); ++i) { inputBuffer[i] = UnpredictableRandom::GetByte(); }
+  test_cobs_buffer(inputBuffer);
 }
 
 void test_short() { test_cobs(10); }
