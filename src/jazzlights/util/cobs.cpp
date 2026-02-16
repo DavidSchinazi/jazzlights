@@ -11,10 +11,10 @@
 
 #if JL_LOG_COBS_DATA
 #define jll_cobs_data(...) jll_info(__VA_ARGS__)
-#define jll_cobs_data_buffer(...) jll_buffer_info2(__VA_ARGS__)
+#define jll_cobs_data_buffer(...) jll_buffer_info(__VA_ARGS__)
 #else  // JL_LOG_COBS_DATA
 #define jll_cobs_data(...) jll_debug(__VA_ARGS__)
-#define jll_cobs_data_buffer(...) jll_buffer_debug2(__VA_ARGS__)
+#define jll_cobs_data_buffer(...) jll_buffer_debug(__VA_ARGS__)
 #endif  // JL_LOG_COBS_DATA
 
 namespace jazzlights {

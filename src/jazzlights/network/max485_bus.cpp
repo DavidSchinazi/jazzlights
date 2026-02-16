@@ -27,10 +27,10 @@ namespace {
 
 #if JL_LOG_MAX485_BUS_DATA
 #define jll_max485_data(...) jll_info(__VA_ARGS__)
-#define jll_max485_data_buffer(...) jll_buffer_info2(__VA_ARGS__)
+#define jll_max485_data_buffer(...) jll_buffer_info(__VA_ARGS__)
 #else  // JL_LOG_MAX485_BUS_DATA
 #define jll_max485_data(...) jll_debug(__VA_ARGS__)
-#define jll_max485_data_buffer(...) jll_buffer_debug2(__VA_ARGS__)
+#define jll_max485_data_buffer(...) jll_buffer_debug(__VA_ARGS__)
 #endif  // JL_LOG_MAX485_BUS_DATA
 
 using BusId = uint8_t;
@@ -300,30 +300,30 @@ void Max485BusHandler::WriteMessage(const BufferViewU8 message, BusId destBusId)
 void Max485BusHandler::DecodeMessage(const BufferViewU8 encodedBuffer, BufferViewU8* decodedMessage) {
   jll_max485_data_buffer(encodedBuffer, "DecodeMessage attempting to parse");
   if (encodedBuffer.size() < ComputeExpansion(0)) {
-    jll_buffer_error2(encodedBuffer, "Max485BusHandler DecodeMessage ignoring very short message");
+    jll_buffer_error(encodedBuffer, "Max485BusHandler DecodeMessage ignoring very short message");
     decodedMessage->resize(0);
     return;
   }
   size_t uartBufferIndex = 0;
   BusId separator = encodedBuffer[uartBufferIndex++];
   if (separator != kSeparator) {
-    jll_buffer_error2(encodedBuffer, "Max485BusHandler DecodeMessage ignoring message due to bad initial separator");
+    jll_buffer_error(encodedBuffer, "Max485BusHandler DecodeMessage ignoring message due to bad initial separator");
     decodedMessage->resize(0);
     return;
   }
   BusId destBusId = encodedBuffer[uartBufferIndex++];
   if (destBusId != kBusIdBroadcast && destBusId != kBusId) {
-    jll_buffer_error2(encodedBuffer, "Max485BusHandler DecodeMessage ignoring message not meant for us");
+    jll_buffer_error(encodedBuffer, "Max485BusHandler DecodeMessage ignoring message not meant for us");
     decodedMessage->resize(0);
     return;
   }
   if (encodedBuffer[encodedBuffer.size() - 2] != kSeparator) {
-    jll_buffer_error2(encodedBuffer, "Max485BusHandler DecodeMessage did not find end separator");
+    jll_buffer_error(encodedBuffer, "Max485BusHandler DecodeMessage did not find end separator");
     decodedMessage->resize(0);
     return;
   }
   if (encodedBuffer[encodedBuffer.size() - 1] != kBusIdEndOfMessage) {
-    jll_buffer_error2(encodedBuffer, "Max485BusHandler DecodeMessage did not find end of message");
+    jll_buffer_error(encodedBuffer, "Max485BusHandler DecodeMessage did not find end of message");
     decodedMessage->resize(0);
     return;
   }
@@ -333,7 +333,7 @@ void Max485BusHandler::DecodeMessage(const BufferViewU8 encodedBuffer, BufferVie
   BufferViewU8 decodedBuffer(decodedReadBuffer_, decodedReadBufferIndex_);
   CobsDecode(BufferViewU8(encodedBuffer, uartBufferIndex, encodedBuffer.size() - 2), &decodedBuffer);
   if (decodedBuffer.size() == 0) {
-    jll_buffer_error2(encodedBuffer, "Max485BusHandler DecodeMessage failed to CobsDecode incoming message");
+    jll_buffer_error(encodedBuffer, "Max485BusHandler DecodeMessage failed to CobsDecode incoming message");
     decodedMessage->resize(0);
     return;
   }
@@ -342,7 +342,7 @@ void Max485BusHandler::DecodeMessage(const BufferViewU8 encodedBuffer, BufferVie
                          "Max485BusHandler DecodeMessage computing incoming CRC32");
   uint32_t crc32 = esp_crc32_be(0, &decodedReadBuffer_[0], decodedReadBufferIndex_ - sizeof(uint32_t));
   if (memcmp(&decodedReadBuffer_[decodedReadBufferIndex_] - sizeof(crc32), &crc32, sizeof(uint32_t)) != 0) {
-    jll_buffer_error(&decodedReadBuffer_[0], decodedReadBufferIndex_,
+    jll_buffer_error(BufferViewU8(decodedReadBuffer_, 0, decodedReadBufferIndex_),
                      "Max485BusHandler DecodeMessage CRC32 check on %d bytes failed",
                      decodedReadBufferIndex_ - sizeof(uint32_t));
     decodedMessage->resize(0);
@@ -457,7 +457,7 @@ void RunMax485Bus(Milliseconds currentTime) {
   BusId destBusId = kSeparator;
   BufferViewU8 readMessage(outerRecvBuffer);
   Max485BusHandler::Get()->ReadMessage(&readMessage, &destBusId);
-  if (readMessage.size() > 0) { jll_buffer_info2(readMessage, "UART read message"); }
+  if (readMessage.size() > 0) { jll_buffer_info(readMessage, "UART read message"); }
 #if !JL_BUS_LEADER
   if (destBusId == kBusId) {
     outerRecvBuffer[readMessage.size()] = '\0';

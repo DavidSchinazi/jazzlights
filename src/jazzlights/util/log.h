@@ -33,11 +33,11 @@ std::unique_lock<std::mutex> GetEscapeBufferLock();
 
 #define _LOG_AT_LEVEL(levelStr, format, ...) ::printf(levelStr ": " format "\n", ##__VA_ARGS__)
 
-#define _LOG_BUFFER_AT_LEVEL(levelStr, input, inputLength, format, ...)            \
-  do {                                                                             \
-    std::unique_lock<std::mutex> lock(GetEscapeBufferLock());                      \
-    _LOG_AT_LEVEL(levelStr, format " [%zu bytes]: %s", ##__VA_ARGS__, inputLength, \
-                  EscapeIntoStaticBuffer(input, inputLength));                     \
+#define _LOG_BUFFER_AT_LEVEL(levelStr, buffer, format, ...)                            \
+  do {                                                                                 \
+    std::unique_lock<std::mutex> lock(GetEscapeBufferLock());                          \
+    _LOG_AT_LEVEL(levelStr, format " [%zu bytes]: %s", ##__VA_ARGS__, (buffer).size(), \
+                  EscapeIntoStaticBuffer(&(buffer)[0], (buffer).size()));              \
   } while (0)
 
 #define jll_debug(format, ...)                                                                            \
@@ -55,25 +55,22 @@ std::unique_lock<std::mutex> GetEscapeBufferLock();
   } while (0)
 
 // Note that the jll_buffer_* variants use a static buffer and are therefore not thread safe.
-#define jll_buffer_debug(input, inputLength, format, ...)                                         \
-  do {                                                                                            \
-    if (is_debug_logging_enabled()) {                                                             \
-      _LOG_BUFFER_AT_LEVEL(_JL_LOG_LEVEL_STRING_INFO, input, inputLength, format, ##__VA_ARGS__); \
-    }                                                                                             \
+#define jll_buffer_debug(buffer, format, ...)                                         \
+  do {                                                                                \
+    if (is_debug_logging_enabled()) {                                                 \
+      _LOG_BUFFER_AT_LEVEL(_JL_LOG_LEVEL_STRING_INFO, buffer, format, ##__VA_ARGS__); \
+    }                                                                                 \
   } while (0)
-#define jll_buffer_info(input, inputLength, format, ...) \
-  _LOG_BUFFER_AT_LEVEL(_JL_LOG_LEVEL_STRING_INFO, input, inputLength, format, ##__VA_ARGS__)
-#define jll_buffer_error(input, inputLength, format, ...) \
-  _LOG_BUFFER_AT_LEVEL(_JL_LOG_LEVEL_STRING_ERROR, input, inputLength, format, ##__VA_ARGS__)
-#define jll_buffer_fatal(input, inputLength, format, ...)                                        \
-  do {                                                                                           \
-    _LOG_BUFFER_AT_LEVEL(_JL_LOG_LEVEL_STRING_FATAL, input, inputLength, format, ##__VA_ARGS__); \
-    abort();                                                                                     \
+#define jll_buffer_info(buffer, format, ...) \
+  _LOG_BUFFER_AT_LEVEL(_JL_LOG_LEVEL_STRING_INFO, buffer, format, ##__VA_ARGS__)
+#define jll_buffer_error(buffer, format, ...) \
+  _LOG_BUFFER_AT_LEVEL(_JL_LOG_LEVEL_STRING_ERROR, buffer, format, ##__VA_ARGS__)
+#define jll_buffer_fatal(buffer, format, ...)                                        \
+  do {                                                                               \
+    _LOG_BUFFER_AT_LEVEL(_JL_LOG_LEVEL_STRING_FATAL, buffer, format, ##__VA_ARGS__); \
+    abort();                                                                         \
   } while (0)
 
 #define jll_buffer_debug2(bufferClass, ...) jll_buffer_debug(&(bufferClass)[0], (bufferClass).size(), ##__VA_ARGS__)
-#define jll_buffer_info2(bufferClass, ...) jll_buffer_info(&(bufferClass)[0], (bufferClass).size(), ##__VA_ARGS__)
-#define jll_buffer_error2(bufferClass, ...) jll_buffer_error(&(bufferClass)[0], (bufferClass).size(), ##__VA_ARGS__)
-#define jll_buffer_fatal2(bufferClass, ...) jll_buffer_fatal(&(bufferClass)[0], (bufferClass).size(), ##__VA_ARGS__)
 
 #endif  // JL_UTIL_LOG_H
