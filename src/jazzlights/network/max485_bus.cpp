@@ -70,7 +70,6 @@ class Max485BusHandler {
 
   void WriteMessage(const BufferViewU8 message, BusId destBusId);
   void ReadMessage(BufferViewU8* message, BusId* outDestBusId);
-  void ReadMessageOld(BufferViewU8* message, BusId* outDestBusId);
 
   static constexpr size_t ComputeExpansion(size_t length) {
     return /*kSeparator=*/1 + /*busID=*/1 + CobsMaxEncodedSize(length) + /*CRC32=*/sizeof(uint32_t) + /*kSeparator=*/1 +
@@ -83,7 +82,6 @@ class Max485BusHandler {
   void SetUp();
   void RunTask();
   void WriteData(const BufferViewU8 data);
-  void ReadData(BufferViewU8* data);
   void DecodeMessage(const BufferViewU8 encodedBuffer, BufferViewU8* decodedMessage);
   void ShiftEncodedReadBuffer(size_t messageStartIndex);
   void ShiftTaskRecvBuffer(size_t messageStartIndex);
@@ -110,8 +108,6 @@ class Max485BusHandler {
   size_t lengthInSharedRecvSelfMessageBuffer_ = 0;       // Protected by `recvMutex_`.
   OwnedBufferU8 sharedRecvBroadcastMessageBuffer_;       // Protected by `recvMutex_`.
   size_t lengthInSharedRecvBroadcastMessageBuffer_ = 0;  // Protected by `recvMutex_`.
-  OwnedBufferU8 sharedRecvBuffer_;                       // Protected by `recvMutex_`.
-  size_t lengthInSharedRecvBuffer_ = 0;                  // Protected by `recvMutex_`.
   OwnedBufferU8 encodedReadBuffer_;
   size_t encodedReadBufferIndex_ = 0;
   OwnedBufferU8 decodedReadBuffer_;
@@ -131,7 +127,6 @@ Max485BusHandler::Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, B
       taskMessageBuffer_(kUartBufferSize),
       sharedRecvSelfMessageBuffer_(kUartBufferSize),
       sharedRecvBroadcastMessageBuffer_(kUartBufferSize),
-      sharedRecvBuffer_(kUartBufferSize),
       encodedReadBuffer_(kUartBufferSize),
       decodedReadBuffer_(kUartBufferSize) {
   // Pin task to core 0 to ensure UART interrupts do not get in the way of LED writing on core 1.
@@ -176,8 +171,6 @@ void Max485BusHandler::RunTask() {
           BusId destBusId = kSeparator;
           CheckMessage(&destBusId);
           if (lengthInTaskMessageBuffer_ > 0) {
-            // jll_buffer_info(BufferViewU8(taskMessageBuffer_, 0, lengthInTaskMessageBuffer_),
-            //                 "ds33 found message dest=%d", static_cast<int>(destBusId));
             if (destBusId == kBusId) {
               const std::lock_guard<std::mutex> lock(recvMutex_);
               memcpy(&sharedRecvSelfMessageBuffer_[0], &taskMessageBuffer_[0], lengthInTaskMessageBuffer_);
@@ -189,13 +182,7 @@ void Max485BusHandler::RunTask() {
             } else {
               jll_fatal("Unexpected bus ID %d", static_cast<int>(destBusId));
             }
-          } else {
-            // jll_info("ds33 no msg");
           }
-          const std::lock_guard<std::mutex> lock(recvMutex_);
-          size_t lengthToCopy = std::min<size_t>(readLen, sharedRecvBuffer_.size() - lengthInSharedRecvBuffer_);
-          memcpy(&sharedRecvBuffer_[lengthInSharedRecvBuffer_], &taskRecvBuffer_[0], lengthToCopy);
-          lengthInSharedRecvBuffer_ += lengthToCopy;
         }
       }
     } break;
@@ -297,14 +284,6 @@ void Max485BusHandler::WriteData(const BufferViewU8 data) {
   } else if (res != pdPASS) {
     jll_error("UART%d event queue error %d", uartPort_, res);
   }
-}
-
-void Max485BusHandler::ReadData(BufferViewU8* data) {
-  const std::lock_guard<std::mutex> lock(recvMutex_);
-  const size_t readLength = std::min<size_t>(lengthInSharedRecvBuffer_, data->size());
-  memcpy(&(*data)[0], &sharedRecvBuffer_[0], readLength);
-  lengthInSharedRecvBuffer_ -= readLength;
-  data->resize(readLength);
 }
 
 void Max485BusHandler::WriteMessage(const BufferViewU8 message, BusId destBusId) {
@@ -437,83 +416,6 @@ void Max485BusHandler::ReadMessage(BufferViewU8* message, BusId* outDestBusId) {
   }
 }
 
-void Max485BusHandler::ReadMessageOld(BufferViewU8* message, BusId* outDestBusId) {
-  BufferViewU8 encodedReadBuffer(encodedReadBuffer_, encodedReadBufferIndex_);
-  ReadData(&encodedReadBuffer);
-  if (encodedReadBuffer.size() == 0) {
-    message->resize(0);
-    return;
-  }
-  jll_max485_data_buffer(encodedReadBuffer, "Max485BusHandler read");
-  encodedReadBufferIndex_ += encodedReadBuffer.size();
-  jll_max485_data_buffer(BufferViewU8(encodedReadBuffer_, 0, encodedReadBufferIndex_),
-                         "Max485BusHandler data we now have");
-  size_t messageStartIndex = 0;
-  while (messageStartIndex < encodedReadBufferIndex_) {
-    while (messageStartIndex < encodedReadBufferIndex_ && encodedReadBuffer_[messageStartIndex] != kSeparator) {
-      messageStartIndex++;
-    }
-    if (messageStartIndex >= encodedReadBufferIndex_) {
-      jll_max485_data_buffer(BufferViewU8(encodedReadBuffer_, 0, encodedReadBufferIndex_),
-                             "Max485BusHandler discarding full read buffer without separator");
-      encodedReadBufferIndex_ = 0;
-      message->resize(0);
-      return;
-    }
-    // Now encodedReadBuffer_[messageStartIndex] is the separator.
-    if (encodedReadBufferIndex_ - messageStartIndex < ComputeExpansion(0)) {
-      jll_max485_data_buffer(BufferViewU8(encodedReadBuffer_, 0, encodedReadBufferIndex_),
-                             "Max485BusHandler pausing because packet too short start=%zu", messageStartIndex);
-      ShiftEncodedReadBuffer(messageStartIndex);
-      message->resize(0);
-      return;
-    }
-    BusId destBusId = encodedReadBuffer_[messageStartIndex + 1];
-    if (destBusId != kBusIdBroadcast && destBusId != kBusId) {
-      messageStartIndex++;
-      jll_max485_data_buffer(BufferViewU8(encodedReadBuffer_, 0, encodedReadBufferIndex_),
-                             "Max485BusHandler skipping past message not meant for us, set start to %zu",
-                             messageStartIndex);
-      continue;
-    }
-    // Now we've confirmed that the first two bytes at messageStartIndex indicate a message for us, now to find the end.
-    size_t messageEndIndex = messageStartIndex + 2;
-    while (messageEndIndex < encodedReadBufferIndex_ && encodedReadBuffer_[messageEndIndex] != kSeparator) {
-      messageEndIndex++;
-    }
-    if (messageEndIndex + 1 >= encodedReadBufferIndex_) {
-      jll_max485_data_buffer(BufferViewU8(encodedReadBuffer_, 0, encodedReadBufferIndex_),
-                             "Max485BusHandler pausing because packet incomplete");
-      ShiftEncodedReadBuffer(messageStartIndex);
-      message->resize(0);
-      return;
-    }
-    messageEndIndex++;
-    if (encodedReadBuffer_[messageEndIndex] != kBusIdEndOfMessage) {
-      jll_max485_data_buffer(BufferViewU8(encodedReadBuffer_, 0, encodedReadBufferIndex_),
-                             "Max485BusHandler skipping past message without valid end");
-      messageStartIndex = messageEndIndex;
-      continue;
-    }
-    messageEndIndex++;
-    BufferViewU8 decodedMessage = *message;
-    DecodeMessage(BufferViewU8(encodedReadBuffer_, messageStartIndex, messageEndIndex), &decodedMessage);
-    if (decodedMessage.size() == 0) {
-      jll_max485_data_buffer(BufferViewU8(encodedReadBuffer_, 0, encodedReadBufferIndex_),
-                             "Max485BusHandler skipping past message which failed to decode start=%zu end=%zu",
-                             messageStartIndex, messageEndIndex);
-      messageStartIndex = messageEndIndex;
-      continue;
-    }
-    ShiftEncodedReadBuffer(messageEndIndex);
-    *outDestBusId = destBusId;
-    *message = decodedMessage;
-    return;
-  }
-  ShiftEncodedReadBuffer(messageStartIndex);
-  message->resize(0);
-}
-
 void Max485BusHandler::CheckMessage(BusId* destBusId) {
   jll_max485_data_buffer(BufferViewU8(taskRecvBuffer_, 0, lengthInTaskRecvBuffer_), "Max485BusHandler CheckMessage");
   size_t messageStartIndex = 0;
@@ -575,13 +477,9 @@ void Max485BusHandler::CheckMessage(BusId* destBusId) {
     }
     ShiftTaskRecvBuffer(messageEndIndex);
     lengthInTaskMessageBuffer_ = decodedMessage.size();
-    // jll_buffer_info(BufferViewU8(taskMessageBuffer_, 0, lengthInTaskMessageBuffer_), "ds33 task found a message
-    // yay");
-    // Success with decodedMessage
     return;
   }
   ShiftTaskRecvBuffer(messageStartIndex);
-  // Fail
   lengthInTaskMessageBuffer_ = 0;
 }
 
