@@ -274,27 +274,21 @@ void Max485BusHandler::WriteMessage(const BufferViewU8 message, BusId destBusId)
     jll_error("Cannot write message of length %zu", message.size());
     return;
   }
-  OwnedBufferU8 uartBuffer1(kUartBufferSize);
-  uartBuffer1[0] = kSeparator;
-  uartBuffer1[1] = destBusId;
-  memcpy(&uartBuffer1[2], &message[0], message.size());
-  size_t uartBufferIndex1 = 2 + message.size();
-  jll_max485_data_buffer(BufferViewU8(uartBuffer1, 0, uartBufferIndex1), "computing outgoing CRC32");
-  uint32_t crc32 = esp_crc32_be(0, &uartBuffer1[0], uartBufferIndex1);
-  memcpy(&uartBuffer1[uartBufferIndex1], &crc32, sizeof(crc32));
-  uartBufferIndex1 += sizeof(crc32);
-  // TODO change the COBS API so we can do this without a second buffer copy.
-
-  OwnedBufferU8 uartBuffer2(kUartBufferSize);
-  uartBuffer2[0] = kSeparator;
-  uartBuffer2[1] = destBusId;
-  BufferViewU8 encodedBuffer(uartBuffer2, 2);
-  CobsEncode(BufferViewU8(uartBuffer1, 2, uartBufferIndex1), &encodedBuffer);
-  size_t uartBufferIndex2 = 2 + encodedBuffer.size();
-  uartBuffer2[uartBufferIndex2++] = kSeparator;
-  uartBuffer2[uartBufferIndex2++] = kBusIdEndOfMessage;
-  jll_max485_data_buffer(BufferViewU8(uartBuffer2, 0, uartBufferIndex2), "Max485BusHandler writing");
-  return WriteData(BufferViewU8(uartBuffer2, 0, uartBufferIndex2));
+  OwnedBufferU8 writeBuffer(kUartBufferSize);
+  writeBuffer[0] = kSeparator;
+  writeBuffer[1] = destBusId;
+  jll_max485_data_buffer(BufferViewU8(writeBuffer, 0, 2), "computing outgoing CRC32 1/2");
+  uint32_t crc32 = esp_crc32_be(0, &writeBuffer[0], 2);
+  jll_max485_data_buffer(message, "computing outgoing CRC32 2/2");
+  crc32 = esp_crc32_be(crc32, &message[0], message.size());
+  BufferViewU8 cobsInput[2] = {message, BufferViewU8(reinterpret_cast<uint8_t*>(&crc32), sizeof(crc32))};
+  BufferViewU8 encodedBuffer(writeBuffer, 2);
+  CobsEncode(cobsInput, 2, &encodedBuffer);
+  writeBuffer[2 + encodedBuffer.size()] = kSeparator;
+  writeBuffer[2 + encodedBuffer.size() + 1] = kBusIdEndOfMessage;
+  BufferViewU8 dataToWrite(writeBuffer, 0, 2 + encodedBuffer.size() + 2);
+  jll_max485_data_buffer(dataToWrite, "Max485BusHandler writing");
+  return WriteData(dataToWrite);
 }
 
 void Max485BusHandler::DecodeMessage(const BufferViewU8 encodedBuffer, BufferViewU8* decodedMessage) {
