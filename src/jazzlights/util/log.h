@@ -12,11 +12,9 @@ namespace jazzlights {
 
 inline bool is_debug_logging_enabled() { return false; }
 
-size_t EscapeRawBuffer(const uint8_t* input, size_t inputLength, uint8_t* output, size_t outSize);
-
 // `EscapeIntoStaticBuffer()` uses a static malloc'ed buffer for the escaped string, so it is not thread-safe by
 // default. Callers need to take a mutex using `GetEscapeBufferLock()`. Use the `jll_buffer*` macros below.
-uint8_t* EscapeIntoStaticBuffer(const uint8_t* input, size_t inputLength);
+BufferViewU8 EscapeIntoStaticBuffer(const BufferViewU8 input);
 std::unique_lock<std::mutex> GetEscapeBufferLock();
 
 }  // namespace jazzlights
@@ -37,7 +35,7 @@ std::unique_lock<std::mutex> GetEscapeBufferLock();
   do {                                                                                 \
     std::unique_lock<std::mutex> lock(GetEscapeBufferLock());                          \
     _LOG_AT_LEVEL(levelStr, format " [%zu bytes]: %s", ##__VA_ARGS__, (buffer).size(), \
-                  EscapeIntoStaticBuffer(&(buffer)[0], (buffer).size()));              \
+                  &EscapeIntoStaticBuffer(buffer)[0]);                                 \
   } while (0)
 
 #define jll_debug(format, ...)                                                                            \
