@@ -19,25 +19,42 @@
 
 namespace jazzlights {
 
-void CobsEncode(const BufferViewU8 inputBuffer, BufferViewU8* encodedOutputBuffer) {
-  jll_cobs_data_buffer(inputBuffer, "COBS encode");
+void CobsEncode(const BufferViewU8 inputBuffers[], size_t numInputBuffers, BufferViewU8* encodedOutputBuffer) {
+  if (numInputBuffers == 0) {
+    encodedOutputBuffer->resize(0);
+    return;
+  } else if (numInputBuffers == 1) {
+    jll_cobs_data_buffer(inputBuffers[0], "COBS encode");
+  } else {
+    for (size_t i = 0; i < numInputBuffers; ++i) {
+      jll_cobs_data_buffer(inputBuffers[i], "COBS encode %zu/%zu", i, numInputBuffers);
+    }
+  }
+
   uint8_t code = 0x01;
+  size_t inputBufferNum = 0;
   size_t inputIndex = 0;
   size_t outputCodeIndex = 0;
   size_t outputIndex = 1;
-  while (inputIndex < inputBuffer.size()) {
+  while (true) {
+    while (inputIndex >= inputBuffers[inputBufferNum].size()) {
+      inputBufferNum++;
+      if (inputBufferNum >= numInputBuffers) { break; }
+      inputIndex = 0;
+    }
+    if (inputBufferNum >= numInputBuffers) { break; }
     if (outputIndex >= encodedOutputBuffer->size()) {
       jll_error("CobsEncode ran out of space");
       encodedOutputBuffer->resize(0);
       return;
     }
-    if (inputBuffer[inputIndex] == 0x00) {
+    if (inputBuffers[inputBufferNum][inputIndex] == 0x00) {
       (*encodedOutputBuffer)[outputCodeIndex] = code;
       code = 0x01;
       outputCodeIndex = outputIndex;
       outputIndex++;
     } else {
-      (*encodedOutputBuffer)[outputIndex] = inputBuffer[inputIndex];
+      (*encodedOutputBuffer)[outputIndex] = inputBuffers[inputBufferNum][inputIndex];
       outputIndex++;
       code++;
       if (code == 0xFF) {

@@ -12,7 +12,11 @@ namespace jazzlights {
 // COBS (Consistent Overhead Byte Stuffing) is a byte encoding free of zero-bytes that minimizes the maximal encoding
 // overhead from the original input. See <https://www.stuartcheshire.org/papers/COBSforToN.pdf> for details.
 
-void CobsEncode(const BufferViewU8 inputBuffer, BufferViewU8* encodedOutputBuffer);
+void CobsEncode(const BufferViewU8 inputBuffers[], size_t numInputBuffers, BufferViewU8* encodedOutputBuffer);
+
+inline void CobsEncode(const BufferViewU8 inputBuffer, BufferViewU8* encodedOutputBuffer) {
+  CobsEncode(&inputBuffer, 1, encodedOutputBuffer);
+}
 
 void CobsDecode(const BufferViewU8 encodedInputBuffer, BufferViewU8* outputBuffer);
 
