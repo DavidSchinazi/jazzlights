@@ -27,12 +27,13 @@ class BufferView {
  public:
   explicit BufferView(T* data, size_t size) : data_(data), size_(size) {}
   BufferView(const OwnedBuffer<T>& ownedBuffer) : data_(&ownedBuffer[0]), size_(ownedBuffer.size()) {}
+  explicit BufferView(const OwnedBuffer<T>& ownedBuffer, size_t size) : data_(&ownedBuffer[0]), size_(size) {}
   T& operator[](size_t position) { return data_[position]; }
   const T& operator[](size_t position) const { return data_[position]; }
   size_t size() const { return size_; }
 
  private:
-  T* data_;
+  const T* data_;
   size_t size_;
 };
 

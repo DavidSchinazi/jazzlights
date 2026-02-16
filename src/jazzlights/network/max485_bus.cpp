@@ -67,7 +67,7 @@ class Max485BusHandler {
   static Max485BusHandler* Get();
   ~Max485BusHandler();
 
-  void WriteMessage(const uint8_t* buffer, size_t length, BusId destBusId);
+  void WriteMessage(const BufferViewU8 message, BusId destBusId);
   size_t ReadMessage(uint8_t* buffer, size_t maxLength, BusId* outDestBusId);
 
   constexpr size_t ComputeExpansion(size_t length) {
@@ -270,16 +270,16 @@ size_t Max485BusHandler::ReadData(uint8_t* buffer, size_t maxLength) {
   return readLength;
 }
 
-void Max485BusHandler::WriteMessage(const uint8_t* buffer, size_t length, BusId destBusId) {
-  if (ComputeExpansion(length) > kUartBufferSize) {
-    jll_error("Cannot write message of length %zu", length);
+void Max485BusHandler::WriteMessage(const BufferViewU8 message, BusId destBusId) {
+  if (ComputeExpansion(message.size()) > kUartBufferSize) {
+    jll_error("Cannot write message of length %zu", message.size());
     return;
   }
   uint8_t uartBuffer1[kUartBufferSize];
   uartBuffer1[0] = kSeparator;
   uartBuffer1[1] = destBusId;
-  memcpy(uartBuffer1 + 2, buffer, length);
-  size_t uartBufferIndex1 = 2 + length;
+  memcpy(uartBuffer1 + 2, &message[0], message.size());
+  size_t uartBufferIndex1 = 2 + message.size();
   jll_max485_data_buffer(uartBuffer1, uartBufferIndex1, "computing outgoing CRC32");
   uint32_t crc32 = esp_crc32_be(0, uartBuffer1, uartBufferIndex1);
   memcpy(uartBuffer1 + uartBufferIndex1, &crc32, sizeof(crc32));
@@ -453,7 +453,7 @@ void RunMax485Bus(Milliseconds currentTime) {
     if (bytesWritten >= outerRecvBuffer.size()) { bytesWritten = outerRecvBuffer.size() - 1; }
     outerSendBuffer[bytesWritten] = '\0';
     jll_info("Follower " STRINGIFY(JL_ROLE) " sending %zu response bytes: %s", bytesWritten, &outerSendBuffer[0]);
-    Max485BusHandler::Get()->WriteMessage(&outerSendBuffer[0], bytesWritten, kBusIdLeader);
+    Max485BusHandler::Get()->WriteMessage(BufferViewU8(outerSendBuffer, bytesWritten), kBusIdLeader);
   }
 #else   // L_BUS_LEADER
   constexpr Milliseconds sFollowerResponseTimeOut = 500;
@@ -479,7 +479,7 @@ void RunMax485Bus(Milliseconds currentTime) {
   if (bytesWritten >= outerSendBuffer.size()) { bytesWritten = outerSendBuffer.size() - 1; }
   outerSendBuffer[bytesWritten] = '\0';
   jll_info("Leader " STRINGIFY(JL_ROLE) " sending %d bytes: %s", bytesWritten, &outerSendBuffer[0]);
-  Max485BusHandler::Get()->WriteMessage(&outerSendBuffer[0], bytesWritten, kFollowerBusIds[sCurrentFollower]);
+  Max485BusHandler::Get()->WriteMessage(BufferViewU8(outerSendBuffer, bytesWritten), kFollowerBusIds[sCurrentFollower]);
   sAwaitingResponse = true;
 #endif  // L_BUS_LEADER
 }
