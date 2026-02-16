@@ -69,7 +69,7 @@ class Max485BusHandler {
   ~Max485BusHandler();
 
   void WriteMessage(const BufferViewU8 message, BusId destBusId);
-  void ReadMessage(BufferViewU8* message, BusId* outDestBusId);
+  BufferViewU8 ReadMessage(OwnedBufferU8& readMessageBuffer, BusId* outDestBusId);
 
   static constexpr size_t ComputeExpansion(size_t length) {
     return /*kSeparator=*/1 + /*busID=*/1 + CobsMaxEncodedSize(length) + /*CRC32=*/sizeof(uint32_t) + /*kSeparator=*/1 +
@@ -385,21 +385,23 @@ void Max485BusHandler::ShiftTaskRecvBuffer(size_t messageStartIndex) {
   lengthInTaskRecvBuffer_ -= messageStartIndex;
 }
 
-void Max485BusHandler::ReadMessage(BufferViewU8* message, BusId* outDestBusId) {
-  if (!ready_) { return; }
+BufferViewU8 Max485BusHandler::ReadMessage(OwnedBufferU8& readMessageBuffer, BusId* outDestBusId) {
+  if (!ready_) { return BufferViewU8(); }
   const std::lock_guard<std::mutex> lock(recvMutex_);
   if (lengthInSharedRecvSelfMessageBuffer_ > 0) {
     *outDestBusId = kBusId;
-    memcpy(&(*message)[0], &sharedRecvSelfMessageBuffer_[0], lengthInSharedRecvSelfMessageBuffer_);
-    message->resize(lengthInSharedRecvSelfMessageBuffer_);
+    memcpy(&readMessageBuffer[0], &sharedRecvSelfMessageBuffer_[0], lengthInSharedRecvSelfMessageBuffer_);
+    BufferViewU8 ret(readMessageBuffer, 0, lengthInSharedRecvSelfMessageBuffer_);
     lengthInSharedRecvSelfMessageBuffer_ = 0;
+    return ret;
   } else if (lengthInSharedRecvBroadcastMessageBuffer_ > 0) {
     *outDestBusId = kBusIdBroadcast;
-    memcpy(&(*message)[0], &sharedRecvBroadcastMessageBuffer_[0], lengthInSharedRecvBroadcastMessageBuffer_);
-    message->resize(lengthInSharedRecvBroadcastMessageBuffer_);
+    memcpy(&readMessageBuffer[0], &sharedRecvBroadcastMessageBuffer_[0], lengthInSharedRecvBroadcastMessageBuffer_);
+    BufferViewU8 ret(readMessageBuffer, 0, lengthInSharedRecvBroadcastMessageBuffer_);
     lengthInSharedRecvBroadcastMessageBuffer_ = 0;
+    return ret;
   } else {
-    message->resize(0);
+    return BufferViewU8();
   }
 }
 
@@ -475,8 +477,7 @@ void RunMax485Bus(Milliseconds currentTime) {
   static OwnedBufferU8 outerRecvBuffer(kUartBufferSize);
   static OwnedBufferU8 outerSendBuffer(kUartBufferSize);
   BusId destBusId = kSeparator;
-  BufferViewU8 readMessage(outerRecvBuffer);
-  Max485BusHandler::Get()->ReadMessage(&readMessage, &destBusId);
+  BufferViewU8 readMessage = Max485BusHandler::Get()->ReadMessage(outerRecvBuffer, &destBusId);
   if (readMessage.size() > 0) { jll_buffer_info(readMessage, "UART read message"); }
 #if !JL_BUS_LEADER
   if (destBusId == kBusId) {
