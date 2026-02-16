@@ -93,6 +93,7 @@ class Max485BusHandler {
   QueueHandle_t queue_ = nullptr;
   std::mutex sendMutex_;
   std::mutex recvMutex_;
+  OwnedBufferU8 outerSendBuffer_;        // Only accessed on main rull loop.
   OwnedBufferU8 sharedSendBuffer_;       // Protected by `sendMutex_`.
   size_t lengthInSharedSendBuffer_ = 0;  // Protected by `sendMutex_`.
   OwnedBufferU8 taskSendBuffer_;         // Only accessed by task.
@@ -111,6 +112,7 @@ Max485BusHandler::Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, B
       txPin_(txPin),
       rxPin_(rxPin),
       bus_id_(bus_id),
+      outerSendBuffer_(kUartBufferSize),
       sharedSendBuffer_(kUartBufferSize),
       taskSendBuffer_(kUartBufferSize),
       taskRecvBuffer_(kUartBufferSize),
@@ -274,19 +276,18 @@ void Max485BusHandler::WriteMessage(const BufferViewU8 message, BusId destBusId)
     jll_error("Cannot write message of length %zu", message.size());
     return;
   }
-  OwnedBufferU8 writeBuffer(kUartBufferSize);
-  writeBuffer[0] = kSeparator;
-  writeBuffer[1] = destBusId;
-  jll_max485_data_buffer(BufferViewU8(writeBuffer, 0, 2), "computing outgoing CRC32 1/2");
-  uint32_t crc32 = esp_crc32_be(0, &writeBuffer[0], 2);
+  outerSendBuffer_[0] = kSeparator;
+  outerSendBuffer_[1] = destBusId;
+  jll_max485_data_buffer(BufferViewU8(outerSendBuffer_, 0, 2), "computing outgoing CRC32 1/2");
+  uint32_t crc32 = esp_crc32_be(0, &outerSendBuffer_[0], 2);
   jll_max485_data_buffer(message, "computing outgoing CRC32 2/2");
   crc32 = esp_crc32_be(crc32, &message[0], message.size());
   BufferViewU8 cobsInput[2] = {message, BufferViewU8(reinterpret_cast<uint8_t*>(&crc32), sizeof(crc32))};
-  BufferViewU8 encodedBuffer(writeBuffer, 2);
+  BufferViewU8 encodedBuffer(outerSendBuffer_, 2);
   CobsEncode(cobsInput, 2, &encodedBuffer);
-  writeBuffer[2 + encodedBuffer.size()] = kSeparator;
-  writeBuffer[2 + encodedBuffer.size() + 1] = kBusIdEndOfMessage;
-  BufferViewU8 dataToWrite(writeBuffer, 0, 2 + encodedBuffer.size() + 2);
+  outerSendBuffer_[2 + encodedBuffer.size()] = kSeparator;
+  outerSendBuffer_[2 + encodedBuffer.size() + 1] = kBusIdEndOfMessage;
+  BufferViewU8 dataToWrite(outerSendBuffer_, 0, 2 + encodedBuffer.size() + 2);
   jll_max485_data_buffer(dataToWrite, "Max485BusHandler writing");
   return WriteData(dataToWrite);
 }
