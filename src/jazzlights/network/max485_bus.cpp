@@ -82,7 +82,8 @@ class Max485BusHandler {
   void SetUp();
   void RunTask();
   void WriteData(const BufferViewU8 data);
-  BufferViewU8 DecodeMessage(const BufferViewU8 encodedBuffer, OwnedBufferU8& decodedMessageBuffer);
+  static BufferViewU8 DecodeMessage(const BufferViewU8 encodedBuffer, OwnedBufferU8& decodedReadBuffer,
+                                    OwnedBufferU8& decodedMessageBuffer);
   void ShiftEncodedReadBuffer(size_t messageStartIndex);
   void ShiftTaskRecvBuffer(size_t messageStartIndex);
   BufferViewU8 CheckMessage(BusId* destBusId);
@@ -102,6 +103,7 @@ class Max485BusHandler {
   size_t lengthInTaskSendBuffer_ = 0;                    // Only accessed by task.
   OwnedBufferU8 taskRecvBuffer_;                         // Only accessed by task.
   size_t lengthInTaskRecvBuffer_ = 0;                    // Only accessed by task.
+  OwnedBufferU8 taskDecodedReadBuffer_;                  // Only accessed by task.
   OwnedBufferU8 taskDecodedMessageBuffer_;               // Only accessed by task.
   OwnedBufferU8 sharedRecvSelfMessageBuffer_;            // Protected by `recvMutex_`.
   size_t lengthInSharedRecvSelfMessageBuffer_ = 0;       // Protected by `recvMutex_`.
@@ -109,8 +111,6 @@ class Max485BusHandler {
   size_t lengthInSharedRecvBroadcastMessageBuffer_ = 0;  // Protected by `recvMutex_`.
   OwnedBufferU8 encodedReadBuffer_;
   size_t encodedReadBufferIndex_ = 0;
-  OwnedBufferU8 decodedReadBuffer_;
-  size_t decodedReadBufferIndex_ = 0;
   std::atomic<bool> ready_ = false;
 };
 
@@ -127,7 +127,7 @@ Max485BusHandler::Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, B
       sharedRecvSelfMessageBuffer_(kUartBufferSize),
       sharedRecvBroadcastMessageBuffer_(kUartBufferSize),
       encodedReadBuffer_(kUartBufferSize),
-      decodedReadBuffer_(kUartBufferSize) {
+      taskDecodedReadBuffer_(kUartBufferSize) {
   // Pin task to core 0 to ensure UART interrupts do not get in the way of LED writing on core 1.
   if (xTaskCreatePinnedToCore(TaskFunction, "JL_MAX485_BUS", configMINIMAL_STACK_SIZE + 2000,
                               /*parameters=*/this, kHighestTaskPriority, &taskHandle_,
@@ -307,7 +307,9 @@ void Max485BusHandler::WriteMessage(const BufferViewU8 message, BusId destBusId)
   return WriteData(dataToWrite);
 }
 
-BufferViewU8 Max485BusHandler::DecodeMessage(const BufferViewU8 encodedBuffer, OwnedBufferU8& decodedMessageBuffer) {
+// static
+BufferViewU8 Max485BusHandler::DecodeMessage(const BufferViewU8 encodedBuffer, OwnedBufferU8& decodedReadBuffer,
+                                             OwnedBufferU8& decodedMessageBuffer) {
   jll_max485_data_buffer(encodedBuffer, "DecodeMessage attempting to parse");
   if (encodedBuffer.size() < ComputeExpansion(0)) {
     jll_buffer_error(encodedBuffer, "Max485BusHandler DecodeMessage ignoring very short message");
@@ -332,32 +334,32 @@ BufferViewU8 Max485BusHandler::DecodeMessage(const BufferViewU8 encodedBuffer, O
     jll_buffer_error(encodedBuffer, "Max485BusHandler DecodeMessage did not find end of message");
     return BufferViewU8();
   }
-  decodedReadBufferIndex_ = 0;
-  decodedReadBuffer_[decodedReadBufferIndex_++] = encodedBuffer[0];
-  decodedReadBuffer_[decodedReadBufferIndex_++] = encodedBuffer[1];
-  BufferViewU8 decodedBuffer(decodedReadBuffer_, decodedReadBufferIndex_);
+  size_t decodedReadBufferIndex = 0;
+  decodedReadBuffer[decodedReadBufferIndex++] = encodedBuffer[0];
+  decodedReadBuffer[decodedReadBufferIndex++] = encodedBuffer[1];
+  BufferViewU8 decodedBuffer(decodedReadBuffer, decodedReadBufferIndex);
   CobsDecode(BufferViewU8(encodedBuffer, uartBufferIndex, encodedBuffer.size() - 2), &decodedBuffer);
   if (decodedBuffer.size() == 0) {
     jll_buffer_error(encodedBuffer, "Max485BusHandler DecodeMessage failed to CobsDecode incoming message");
     return BufferViewU8();
   }
-  decodedReadBufferIndex_ += decodedBuffer.size();
-  jll_max485_data_buffer(BufferViewU8(decodedReadBuffer_, 0, decodedReadBufferIndex_ - sizeof(uint32_t)),
+  decodedReadBufferIndex += decodedBuffer.size();
+  jll_max485_data_buffer(BufferViewU8(decodedReadBuffer, 0, decodedReadBufferIndex - sizeof(uint32_t)),
                          "Max485BusHandler DecodeMessage computing incoming CRC32");
-  uint32_t crc32 = esp_crc32_be(0, &decodedReadBuffer_[0], decodedReadBufferIndex_ - sizeof(uint32_t));
-  if (memcmp(&decodedReadBuffer_[decodedReadBufferIndex_] - sizeof(crc32), &crc32, sizeof(uint32_t)) != 0) {
-    jll_buffer_error(BufferViewU8(decodedReadBuffer_, 0, decodedReadBufferIndex_),
+  uint32_t crc32 = esp_crc32_be(0, &decodedReadBuffer[0], decodedReadBufferIndex - sizeof(uint32_t));
+  if (memcmp(&decodedReadBuffer[decodedReadBufferIndex] - sizeof(crc32), &crc32, sizeof(uint32_t)) != 0) {
+    jll_buffer_error(BufferViewU8(decodedReadBuffer, 0, decodedReadBufferIndex),
                      "Max485BusHandler DecodeMessage CRC32 check on %d bytes failed",
-                     decodedReadBufferIndex_ - sizeof(uint32_t));
+                     decodedReadBufferIndex - sizeof(uint32_t));
     return BufferViewU8();
   }
-  size_t decodedMessageLength = decodedReadBufferIndex_ - 2 - sizeof(uint32_t);
+  size_t decodedMessageLength = decodedReadBufferIndex - 2 - sizeof(uint32_t);
   if (decodedMessageLength > decodedMessageBuffer.size()) {
     jll_error("Max485BusHandler DecodeMessage found message too long %zu > %zu", decodedMessageLength,
               decodedMessageBuffer.size());
     return BufferViewU8();
   }
-  memcpy(&decodedMessageBuffer[0], &decodedReadBuffer_[2], decodedMessageLength);
+  memcpy(&decodedMessageBuffer[0], &decodedReadBuffer[2], decodedMessageLength);
   return BufferViewU8(decodedMessageBuffer, 0, decodedMessageLength);
 }
 
@@ -454,8 +456,8 @@ BufferViewU8 Max485BusHandler::CheckMessage(BusId* destBusId) {
       continue;
     }
     messageEndIndex++;
-    BufferViewU8 decodedMessage =
-        DecodeMessage(BufferViewU8(taskRecvBuffer_, messageStartIndex, messageEndIndex), taskDecodedMessageBuffer_);
+    BufferViewU8 decodedMessage = DecodeMessage(BufferViewU8(taskRecvBuffer_, messageStartIndex, messageEndIndex),
+                                                taskDecodedReadBuffer_, taskDecodedMessageBuffer_);
     if (decodedMessage.empty()) {
       jll_max485_data_buffer(BufferViewU8(taskRecvBuffer_, 0, lengthInTaskRecvBuffer_),
                              "Max485BusHandler skipping past message which failed to decode start=%zu end=%zu",
