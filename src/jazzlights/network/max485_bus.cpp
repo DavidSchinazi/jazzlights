@@ -88,6 +88,8 @@ class Max485BusHandler {
   void ShiftTaskRecvBuffer(size_t messageStartIndex);
   BufferViewU8 TaskFindReceivedMessage(BusId* destBusId, BusId* srcBusId);
   void SendToUart(BufferViewU8 encodedData);
+  static BufferViewU8 EncodeMessage(const BufferViewU8 message, OwnedBufferU8& encodedMessageBuffer, BusId destBusId,
+                                    BusId srcBusId);
   bool IsReady() const;
 
   const uart_port_t uartPort_;         // Only modified in constructor.
@@ -293,27 +295,35 @@ void Max485BusHandler::WriteData(const BufferViewU8 data) {
   }
 }
 
-void Max485BusHandler::WriteMessage(const BufferViewU8 message, BusId destBusId) {
-  if (!IsReady()) { return; }
+// static
+BufferViewU8 Max485BusHandler::EncodeMessage(const BufferViewU8 message, OwnedBufferU8& encodedMessageBuffer,
+                                             BusId destBusId, BusId srcBusId) {
   if (ComputeExpansion(message.size()) > kUartBufferSize) {
-    jll_error("Cannot write message of length %zu", message.size());
-    return;
+    jll_error("Cannot encode message of length %zu", message.size());
+    return BufferViewU8();
   }
-  outerSendBuffer_[0] = kSeparator;
-  outerSendBuffer_[1] = destBusId;
-  outerSendBuffer_[2] = busIdSelf_;
-  jll_max485_data_buffer(BufferViewU8(outerSendBuffer_, 0, 3), "computing outgoing CRC32 1/2");
-  uint32_t crc32 = esp_crc32_be(0, &outerSendBuffer_[0], 3);
+  encodedMessageBuffer[0] = kSeparator;
+  encodedMessageBuffer[1] = destBusId;
+  encodedMessageBuffer[2] = srcBusId;
+  jll_max485_data_buffer(BufferViewU8(encodedMessageBuffer, 0, 3), "computing outgoing CRC32 1/2");
+  uint32_t crc32 = esp_crc32_be(0, &encodedMessageBuffer[0], 3);
   jll_max485_data_buffer(message, "computing outgoing CRC32 2/2");
   crc32 = esp_crc32_be(crc32, &message[0], message.size());
   BufferViewU8 cobsInput[2] = {message, BufferViewU8(reinterpret_cast<uint8_t*>(&crc32), sizeof(crc32))};
-  BufferViewU8 encodedBuffer(outerSendBuffer_, 3);
+  BufferViewU8 encodedBuffer(encodedMessageBuffer, 3);
   CobsEncode(cobsInput, 2, &encodedBuffer);
-  outerSendBuffer_[3 + encodedBuffer.size()] = kSeparator;
-  outerSendBuffer_[3 + encodedBuffer.size() + 1] = kBusIdEndOfMessage;
-  BufferViewU8 dataToWrite(outerSendBuffer_, 0, 3 + encodedBuffer.size() + 2);
-  jll_max485_data_buffer(dataToWrite, "Max485BusHandler writing");
-  return WriteData(dataToWrite);
+  encodedMessageBuffer[3 + encodedBuffer.size()] = kSeparator;
+  encodedMessageBuffer[3 + encodedBuffer.size() + 1] = kBusIdEndOfMessage;
+  BufferViewU8 encodedMessage(encodedMessageBuffer, 0, 3 + encodedBuffer.size() + 2);
+  jll_max485_data_buffer(encodedMessage, "Max485BusHandler encoded message");
+  return encodedMessage;
+}
+
+void Max485BusHandler::WriteMessage(const BufferViewU8 message, BusId destBusId) {
+  if (!IsReady()) { return; }
+  BufferViewU8 encodedMessage = EncodeMessage(message, outerSendBuffer_, destBusId, busIdSelf_);
+  if (encodedMessage.empty()) { return; }
+  return WriteData(encodedMessage);
 }
 
 // static
