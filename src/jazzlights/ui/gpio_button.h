@@ -21,7 +21,7 @@ class GpioPin {
     virtual void HandleChange(uint8_t changedPin, bool isClosed, int64_t timeOfChange) = 0;
   };
 
-  // Starts tracking a GPIO pin.
+  // Starts tracking a GPIO pin. `debounceDuration` is in microseconds.
   explicit GpioPin(uint8_t pin, PinInterface& pinInterface, int64_t debounceDuration);
   ~GpioPin();
 

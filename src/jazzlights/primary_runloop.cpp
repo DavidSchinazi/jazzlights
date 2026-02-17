@@ -15,6 +15,7 @@
 #include "jazzlights/network/max485_bus.h"
 #include "jazzlights/network/wifi.h"
 #include "jazzlights/player.h"
+#include "jazzlights/ui/hall_sensor.h"
 #include "jazzlights/ui/rotary_phone.h"
 #include "jazzlights/ui/ui.h"
 #include "jazzlights/ui/ui_atom_matrix.h"
@@ -47,6 +48,14 @@ static Esp32UiImpl* GetUi() {
 #if JL_WEBSOCKET_SERVER
 WebSocketServer websocket_server(80, player);
 #endif  // JL_WEBSOCKET_SERVER
+
+#if JL_HALL_SENSOR
+HallSensor* GetHallSensor() {
+  constexpr uint8_t kHallSensorPin = 33;
+  static HallSensor sHallSensor(kHallSensorPin);
+  return &sHallSensor;
+}
+#endif  // JL_HALL_SENSOR
 
 void SetupPrimaryRunLoop() {
 #if JL_DEBUG
@@ -100,6 +109,9 @@ void SetupPrimaryRunLoop() {
   GetUi()->FinalSetup(currentTime);
 
   runner.Start();
+#if JL_HALL_SENSOR
+  (void)GetHallSensor();
+#endif  // JL_HALL_SENSOR
 }
 
 void RunPrimaryRunLoop() {
@@ -126,6 +138,9 @@ void RunPrimaryRunLoop() {
   }
 #endif  // JL_WEBSOCKET_SERVER
   SAVE_TIME_POINT(PrimaryRunLoop, LoopEnd);
+#if JL_HALL_SENSOR
+  GetHallSensor()->RunLoop();
+#endif  // JL_HALL_SENSOR
 }
 
 }  // namespace jazzlights

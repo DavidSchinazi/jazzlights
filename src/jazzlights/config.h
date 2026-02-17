@@ -163,4 +163,8 @@
 #define JL_BUS_LEADER 0
 #endif  // JL_BUS_LEADER
 
+#ifndef JL_HALL_SENSOR
+#define JL_HALL_SENSOR 0
+#endif  // JL_HALL_SENSOR
+
 #endif  // JL_CONFIG_H
