@@ -41,13 +41,11 @@ constexpr BusId kBusIdEndOfMessage = 1;
 constexpr BusId kBusIdBroadcast = 2;
 constexpr BusId kBusIdLeader = 3;
 
-#ifndef JL_BUS_ID
 #if JL_BUS_LEADER
 #define JL_BUS_ID kBusIdLeader
-#else  // JL_BUS_ID
+#elif !defined(JL_BUS_ID)
 #error "Followers need to define JL_BUS_ID"
-#endif  // JL_BUS_ID
-#endif  // JL_BUS_LEADER
+#endif
 
 constexpr BusId kBusIdSelf = (JL_BUS_ID);
 
@@ -57,6 +55,14 @@ static_assert(kBusIdSelf >= kBusIdLeader, "low bus ID");
 #if !JL_BUS_LEADER
 static_assert(kBusIdSelf != kBusIdLeader, "follower bus ID cannot be equal to leader");
 #endif  // JL_BUS_LEADER
+
+std::vector<BusId> GetFollowers() {
+#if JL_BUS_LEADER
+  return {4, 5};
+#else   // JL_BUS_LEADER
+  return {};
+#endif  // JL_BUS_LEADER
+}
 
 constexpr size_t kUartBufferSize = 1024;
 constexpr size_t kUartDriverBufferSize = 2 * kUartBufferSize;
@@ -68,7 +74,7 @@ class Max485BusHandler {
   static Max485BusHandler* Get();
   ~Max485BusHandler();
 
-  void WriteMessage(const BufferViewU8 message, BusId destBusId);
+  void SetMessageToSend(const BufferViewU8 message);
   BufferViewU8 ReadMessage(OwnedBufferU8& readMessageBuffer, BusId* destBusId, BusId* srcBusId);
 
   static constexpr size_t ComputeExpansion(size_t length) {
@@ -78,11 +84,11 @@ class Max485BusHandler {
   }
 
  private:
-  explicit Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, BusId busIdSelf);
+  explicit Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, BusId busIdSelf,
+                            const std::vector<BusId>& followers);
   static void TaskFunction(void* parameters);
   void SetUp();
   void RunTask();
-  void WriteData(const BufferViewU8 data);
   static BufferViewU8 DecodeMessage(const BufferViewU8 encodedBuffer, OwnedBufferU8& decodedReadBuffer,
                                     OwnedBufferU8& decodedMessageBuffer, BusId busIdSelf);
   void ShiftTaskRecvBuffer(size_t messageStartIndex);
@@ -90,21 +96,26 @@ class Max485BusHandler {
   void SendToUart(BufferViewU8 encodedData);
   static BufferViewU8 EncodeMessage(const BufferViewU8 message, OwnedBufferU8& encodedMessageBuffer, BusId destBusId,
                                     BusId srcBusId);
+  void CopyEncodeAndSendMessage(BusId destBusId);
+  void SendMessageToNextFollower();
   bool IsReady() const;
 
-  const uart_port_t uartPort_;         // Only modified in constructor.
-  const int txPin_;                    // Only modified in constructor.
-  const int rxPin_;                    // Only modified in constructor.
-  const BusId busIdSelf_;              // Only modified in constructor.
-  TaskHandle_t taskHandle_ = nullptr;  // Only modified in constructor.
+  const uart_port_t uartPort_;          // Only modified in constructor.
+  const int txPin_;                     // Only modified in constructor.
+  const int rxPin_;                     // Only modified in constructor.
+  const BusId busIdSelf_;               // Only modified in constructor.
+  const std::vector<BusId> followers_;  // Only modified in constructor.
+  TaskHandle_t taskHandle_ = nullptr;   // Only modified in constructor.
   QueueHandle_t queue_ = nullptr;
+  std::atomic<bool> ready_ = false;
   std::mutex sendMutex_;
+  OwnedBufferU8 sharedSendMessageBuffer_;                // Protected by `sendMutex_`.
+  BufferViewU8 sharedSendMessage_;                       // Protected by `sendMutex_`.
+  size_t nextFollowerIndex_ = 0;                         // Only accessed by task.
+  OwnedBufferU8 taskSendMessageBuffer_;                  // Only accessed by task.
+  OwnedBufferU8 taskEncodedSendMessageBuffer_;           // Only accessed by task.
+  Milliseconds taskLastSendTimeExpectingResponse_ = -1;  // Only accessed by task.
   std::mutex recvMutex_;
-  OwnedBufferU8 outerSendBuffer_;                   // Only accessed on main rull loop.
-  OwnedBufferU8 sharedSendBuffer_;                  // Protected by `sendMutex_`.
-  size_t lengthInSharedSendBuffer_ = 0;             // Protected by `sendMutex_`.
-  OwnedBufferU8 taskSendBuffer_;                    // Only accessed by task.
-  size_t lengthInTaskSendBuffer_ = 0;               // Only accessed by task.
   OwnedBufferU8 taskRecvBuffer_;                    // Only accessed by task.
   size_t lengthInTaskRecvBuffer_ = 0;               // Only accessed by task.
   OwnedBufferU8 taskDecodedReadBuffer_;             // Only accessed by task.
@@ -115,19 +126,20 @@ class Max485BusHandler {
   OwnedBufferU8 sharedRecvBroadcastMessageBuffer_;  // Protected by `recvMutex_`.
   BufferViewU8 sharedRecvBroadcastMessage_;         // Protected by `recvMutex_`.
   BusId sharedRecvBroadcastSender_ = kSeparator;    // Protected by `recvMutex_`.
-  std::atomic<bool> ready_ = false;
 };
 
 bool Max485BusHandler::IsReady() const { return ready_.load(std::memory_order_relaxed); }
 
-Max485BusHandler::Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, BusId busIdSelf)
+Max485BusHandler::Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, BusId busIdSelf,
+                                   const std::vector<BusId>& followers)
     : uartPort_(uartPort),
       txPin_(txPin),
       rxPin_(rxPin),
       busIdSelf_(busIdSelf),
-      outerSendBuffer_(kUartBufferSize),
-      sharedSendBuffer_(kUartBufferSize),
-      taskSendBuffer_(kUartBufferSize),
+      followers_(followers),
+      sharedSendMessageBuffer_(kUartBufferSize),
+      taskSendMessageBuffer_(kUartBufferSize),
+      taskEncodedSendMessageBuffer_(kUartBufferSize),
       taskRecvBuffer_(kUartBufferSize),
       taskDecodedMessageBuffer_(kUartBufferSize),
       sharedRecvSelfMessageBuffer_(kUartBufferSize),
@@ -148,7 +160,7 @@ Max485BusHandler* Max485BusHandler::Get() {
   constexpr uart_port_t kUartPort = UART_NUM_2;
   constexpr int kTxPin = 26;
   constexpr int kRxPin = 32;
-  static Max485BusHandler sMax485BusHandler(kUartPort, kTxPin, kRxPin, kBusIdSelf);
+  static Max485BusHandler sMax485BusHandler(kUartPort, kTxPin, kRxPin, kBusIdSelf, GetFollowers());
   return &sMax485BusHandler;
 }
 
@@ -169,7 +181,7 @@ void Max485BusHandler::SendToUart(BufferViewU8 encodedData) {
       jll_max485_data("UART%d fully wrote %d bytes", uartPort_, bytes_written);
     } else {
       jll_buffer_error(encodedData, "UART%d partially wrote %d bytes", uartPort_, bytes_written);
-      // If this happens in practice we'll need handle partial writes more gracefully.
+      // If this happens in practice we'll need to handle partial writes more gracefully.
     }
   } else {
     jll_buffer_error(encodedData, "UART%d got error %d trying to write", uartPort_, bytes_written);
@@ -193,10 +205,19 @@ void Max485BusHandler::RunTask() {
           while (true) {
             BufferViewU8 taskMessageView = TaskFindReceivedMessage(&destBusId, &srcBusId);
             if (taskMessageView.empty()) { break; }
+            jll_buffer_info(taskMessageView, STRINGIFY(JL_ROLE) " received from %d to %d", static_cast<int>(srcBusId),
+                            static_cast<int>(destBusId));
             if (destBusId == busIdSelf_) {
-              const std::lock_guard<std::mutex> lock(recvMutex_);
-              sharedRecvSelfMessage_ = sharedRecvSelfMessageBuffer_.CopyIn(taskMessageView);
-              sharedRecvSelfSender_ = srcBusId;
+              {
+                const std::lock_guard<std::mutex> lock(recvMutex_);
+                sharedRecvSelfMessage_ = sharedRecvSelfMessageBuffer_.CopyIn(taskMessageView);
+                sharedRecvSelfSender_ = srcBusId;
+              }
+              if (busIdSelf_ == kBusIdLeader) {
+                SendMessageToNextFollower();
+              } else if (srcBusId == kBusIdLeader) {  // Send response.
+                CopyEncodeAndSendMessage(kBusIdLeader);
+              }
             } else if (destBusId == kBusIdBroadcast) {
               const std::lock_guard<std::mutex> lock(recvMutex_);
               sharedRecvBroadcastMessage_ = sharedRecvBroadcastMessageBuffer_.CopyIn(taskMessageView);
@@ -231,19 +252,18 @@ void Max485BusHandler::RunTask() {
       jll_error("UART%d pattern detected", uartPort_);
     } break;
     case kApplicationDataAvailable: {  // Our application has data to write to UART.
-      {
-        const std::lock_guard<std::mutex> lock(sendMutex_);
-        size_t lengthToCopy =
-            std::min<size_t>(lengthInSharedSendBuffer_, sharedSendBuffer_.size() - lengthInTaskSendBuffer_);
-        memcpy(&taskSendBuffer_[lengthInTaskSendBuffer_], &sharedSendBuffer_[0], lengthToCopy);
-        if (lengthToCopy < lengthInSharedSendBuffer_) {
-          memmove(&sharedSendBuffer_[0], &sharedSendBuffer_[lengthToCopy], lengthInSharedSendBuffer_ - lengthToCopy);
-        }
-        lengthInTaskSendBuffer_ += lengthToCopy;
-        lengthInSharedSendBuffer_ -= lengthToCopy;
+      constexpr Milliseconds kUartResponseTimeout = 500;
+      bool shouldSend = false;
+      if (taskLastSendTimeExpectingResponse_ < 0) {
+        jll_info("Initiating first send");
+        shouldSend = true;
+      } else if (timeMillis() - taskLastSendTimeExpectingResponse_ > kUartResponseTimeout) {
+        jll_info("Timed out waiting for response");
+        shouldSend = true;
+      } else {
+        jll_max485_data("Ignoring kApplicationDataAvailable");
       }
-      SendToUart(BufferViewU8(taskSendBuffer_, 0, lengthInTaskSendBuffer_));
-      lengthInTaskSendBuffer_ = 0;
+      if (shouldSend) { SendMessageToNextFollower(); }
     } break;
     default: {
       jll_info("UART%d unexpected event %d", uartPort_, static_cast<int>(event.type));
@@ -270,31 +290,6 @@ void Max485BusHandler::SetUp() {
   ready_.store(true, std::memory_order_relaxed);
 }
 
-void Max485BusHandler::WriteData(const BufferViewU8 data) {
-  if (data.size() > sharedSendBuffer_.size()) {
-    jll_error("UART%d refusing to send %zu bytes > %zu", uartPort_, data.size(), sharedSendBuffer_.size());
-    return;
-  }
-  {
-    const std::lock_guard<std::mutex> lock(sendMutex_);
-    if (lengthInSharedSendBuffer_ + data.size() > sharedSendBuffer_.size()) {
-      jll_error("UART%d cannot currently send %zu bytes, already have %zu and limit is %zu", uartPort_, data.size(),
-                lengthInSharedSendBuffer_, sharedSendBuffer_.size());
-      return;
-    }
-    memcpy(&sharedSendBuffer_[lengthInSharedSendBuffer_], &data[0], data.size());
-    lengthInSharedSendBuffer_ += data.size();
-  }
-  uart_event_t eventToSend = {};
-  eventToSend.type = kApplicationDataAvailable;
-  BaseType_t res = xQueueSendToBack(queue_, &eventToSend, /*ticksToWait=*/0);
-  if (res == errQUEUE_FULL) {
-    jll_error("UART%d event queue is full", uartPort_);
-  } else if (res != pdPASS) {
-    jll_error("UART%d event queue error %d", uartPort_, res);
-  }
-}
-
 // static
 BufferViewU8 Max485BusHandler::EncodeMessage(const BufferViewU8 message, OwnedBufferU8& encodedMessageBuffer,
                                              BusId destBusId, BusId srcBusId) {
@@ -319,11 +314,48 @@ BufferViewU8 Max485BusHandler::EncodeMessage(const BufferViewU8 message, OwnedBu
   return encodedMessage;
 }
 
-void Max485BusHandler::WriteMessage(const BufferViewU8 message, BusId destBusId) {
-  if (!IsReady()) { return; }
-  BufferViewU8 encodedMessage = EncodeMessage(message, outerSendBuffer_, destBusId, busIdSelf_);
-  if (encodedMessage.empty()) { return; }
-  return WriteData(encodedMessage);
+void Max485BusHandler::CopyEncodeAndSendMessage(BusId destBusId) {
+  BufferViewU8 taskSendMessage;
+  {
+    const std::lock_guard<std::mutex> lock(sendMutex_);
+    taskSendMessage = taskSendMessageBuffer_.CopyIn(sharedSendMessage_);
+  }
+  jll_buffer_info(taskSendMessage, STRINGIFY(JL_ROLE) " sending from %d to %d", static_cast<int>(busIdSelf_),
+                  static_cast<int>(destBusId));
+  BufferViewU8 taskEncodedSendMessage =
+      EncodeMessage(taskSendMessage, taskEncodedSendMessageBuffer_, destBusId, busIdSelf_);
+  if (!taskEncodedSendMessage.empty()) {
+    SendToUart(taskEncodedSendMessage);
+    if (destBusId != kBusIdBroadcast) { taskLastSendTimeExpectingResponse_ = timeMillis(); }
+  }
+}
+
+void Max485BusHandler::SendMessageToNextFollower() {
+  if (followers_.empty()) { return; }
+  BusId destBusId = followers_[nextFollowerIndex_];
+  nextFollowerIndex_++;
+  if (nextFollowerIndex_ >= followers_.size()) { nextFollowerIndex_ = 0; }
+  CopyEncodeAndSendMessage(destBusId);
+}
+
+void Max485BusHandler::SetMessageToSend(const BufferViewU8 message) {
+  if (message.size() > kUartBufferSize) {
+    jll_error("UART%d refusing to send message of length %zu > %zu", uartPort_, message.size(), kUartBufferSize);
+    return;
+  }
+  {
+    const std::lock_guard<std::mutex> lock(sendMutex_);
+    sharedSendMessage_ = sharedSendMessageBuffer_.CopyIn(message);
+  }
+  if (busIdSelf_ != kBusIdLeader) { return; }
+  uart_event_t eventToSend = {};
+  eventToSend.type = kApplicationDataAvailable;
+  BaseType_t res = xQueueSendToBack(queue_, &eventToSend, /*ticksToWait=*/0);
+  if (res == errQUEUE_FULL) {
+    jll_error("UART%d event queue is full", uartPort_);
+  } else if (res != pdPASS) {
+    jll_error("UART%d event queue error %d", uartPort_, res);
+  }
 }
 
 // static
@@ -441,7 +473,7 @@ BufferViewU8 Max485BusHandler::TaskFindReceivedMessage(BusId* destBusId, BusId* 
       continue;
     }
     *srcBusId = taskRecvBuffer_[messageStartIndex + 2];
-    // Now we've confirmed that the first two bytes at messageStartIndex indicate a message for us, now to find the end.
+    // We've confirmed that the first two bytes at messageStartIndex indicate a message for us, now to find the end.
     size_t messageEndIndex = messageStartIndex + 3;
     while (messageEndIndex < lengthInTaskRecvBuffer_ && taskRecvBuffer_[messageEndIndex] != kSeparator) {
       messageEndIndex++;
@@ -487,48 +519,26 @@ void RunMax485Bus(Milliseconds currentTime) {
   BusId srcBusId = kSeparator;
   BufferViewU8 readMessage = Max485BusHandler::Get()->ReadMessage(outerRecvBuffer, &destBusId, &srcBusId);
   if (readMessage.size() > 0) {
-    jll_buffer_info(readMessage, "Max485Bus read message from %d to %d", static_cast<int>(srcBusId),
+    jll_buffer_info(readMessage, STRINGIFY(JL_ROLE) " outer read message from %d to %d", static_cast<int>(srcBusId),
                     static_cast<int>(destBusId));
   }
-#if !JL_BUS_LEADER
-  if (destBusId == kBusIdSelf) {
-    outerRecvBuffer[readMessage.size()] = '\0';
-    int bytesWritten =
-        snprintf(reinterpret_cast<char*>(&outerSendBuffer[0]), outerRecvBuffer.size() - 1,
-                 "{" STRINGIFY(JL_ROLE) " is responding at %u to: %s}", currentTime, &outerRecvBuffer[0]);
-    if (bytesWritten >= outerRecvBuffer.size()) { bytesWritten = outerRecvBuffer.size() - 1; }
+  if (kBusIdSelf != kBusIdLeader) {  // We are a follower.
+    if (destBusId == kBusIdSelf) {
+      outerRecvBuffer[readMessage.size()] = '\0';
+      int bytesWritten =
+          snprintf(reinterpret_cast<char*>(&outerSendBuffer[0]), outerRecvBuffer.size() - 1,
+                   "{" STRINGIFY(JL_ROLE) " is responding at %u to: %s}", currentTime, &outerRecvBuffer[0]);
+      if (bytesWritten >= outerRecvBuffer.size()) { bytesWritten = outerRecvBuffer.size() - 1; }
+      outerSendBuffer[bytesWritten] = '\0';
+      Max485BusHandler::Get()->SetMessageToSend(BufferViewU8(outerSendBuffer, 0, bytesWritten));
+    }
+  } else {  // We are the leader.
+    int bytesWritten = snprintf(reinterpret_cast<char*>(&outerSendBuffer[0]), outerSendBuffer.size() - 1,
+                                "<" STRINGIFY(JL_ROLE) " says it is %u.>", currentTime);
+    if (bytesWritten >= outerSendBuffer.size()) { bytesWritten = outerSendBuffer.size() - 1; }
     outerSendBuffer[bytesWritten] = '\0';
-    jll_info("Follower " STRINGIFY(JL_ROLE) " sending %d response bytes: %s", bytesWritten, &outerSendBuffer[0]);
-    Max485BusHandler::Get()->WriteMessage(BufferViewU8(outerSendBuffer, 0, bytesWritten), kBusIdLeader);
+    Max485BusHandler::Get()->SetMessageToSend(BufferViewU8(outerSendBuffer, 0, bytesWritten));
   }
-#else   // L_BUS_LEADER
-  constexpr Milliseconds sFollowerResponseTimeOut = 500;
-  static Milliseconds sLastWriteTime = 0;
-  static bool sAwaitingResponse = true;
-  if (readMessage.size() > 0) { sAwaitingResponse = false; }
-  if (currentTime - sLastWriteTime < sFollowerResponseTimeOut && sAwaitingResponse) {
-    // Too soon to write.
-    return;
-  }
-  sLastWriteTime = currentTime;
-  constexpr BusId kFollowerBusIds[] = {4, 5};
-  constexpr char* kFollowerNames[] = {"B", "C"};
-  constexpr size_t kNumFollowers = sizeof(kFollowerBusIds) / sizeof(kFollowerBusIds[0]);
-  static_assert(kNumFollowers == sizeof(kFollowerNames) / sizeof(kFollowerNames[0]), "lengths need to match");
-  static size_t sCurrentFollower = kNumFollowers - 1;
-  sCurrentFollower++;
-  if (sCurrentFollower >= kNumFollowers) { sCurrentFollower = 0; }
-
-  int bytesWritten = snprintf(reinterpret_cast<char*>(&outerSendBuffer[0]), outerSendBuffer.size() - 1,
-                              "<" STRINGIFY(JL_ROLE) " says at %u : Hey %s what is up?>", currentTime,
-                              kFollowerNames[sCurrentFollower]);
-  if (bytesWritten >= outerSendBuffer.size()) { bytesWritten = outerSendBuffer.size() - 1; }
-  outerSendBuffer[bytesWritten] = '\0';
-  jll_info("Leader " STRINGIFY(JL_ROLE) " sending %d bytes: %s", bytesWritten, &outerSendBuffer[0]);
-  Max485BusHandler::Get()->WriteMessage(BufferViewU8(outerSendBuffer, 0, bytesWritten),
-                                        kFollowerBusIds[sCurrentFollower]);
-  sAwaitingResponse = true;
-#endif  // L_BUS_LEADER
 }
 
 }  // namespace jazzlights
