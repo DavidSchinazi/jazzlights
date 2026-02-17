@@ -64,8 +64,16 @@ std::vector<BusId> GetFollowers() {
 #endif  // JL_BUS_LEADER
 }
 
-constexpr size_t kUartBufferSize = 1024;
-constexpr size_t kUartDriverBufferSize = 2 * kUartBufferSize;
+constexpr size_t ComputeExpansion(size_t length) {
+  return /*separator*/ 1 + /*destBusID*/ 1 + /*srcBusID*/ 1 + CobsMaxEncodedSize(length + /*CRC32*/ sizeof(uint32_t)) +
+         /*separator*/ 1 + /*endOfMessage*/ 1;
+}
+
+constexpr size_t kMaxMessageLength = 1000;
+constexpr size_t kMaxEncodedMessageLength = ComputeExpansion(kMaxMessageLength);  // 1013.
+constexpr size_t kUartDriverBufferSize = 2048;
+static_assert(kUartDriverBufferSize >= 2 * kMaxEncodedMessageLength, "bad size");
+
 constexpr uart_event_type_t kApplicationDataAvailable = static_cast<uart_event_type_t>(UART_EVENT_MAX + 1);
 static_assert(kApplicationDataAvailable > UART_EVENT_MAX, "UART event types wrapped around");
 
@@ -76,12 +84,6 @@ class Max485BusHandler {
 
   void SetMessageToSend(const BufferViewU8 message);
   BufferViewU8 ReadMessage(OwnedBufferU8& readMessageBuffer, BusId* destBusId, BusId* srcBusId);
-
-  static constexpr size_t ComputeExpansion(size_t length) {
-    return /*separator*/ 1 + /*destBusID*/ 1 + /*srcBusID*/ 1 +
-           CobsMaxEncodedSize(length + /*CRC32*/ sizeof(uint32_t)) +
-           /*separator*/ 1 + /*endOfMessage*/ 1;
-  }
 
  private:
   explicit Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, BusId busIdSelf,
@@ -137,16 +139,14 @@ Max485BusHandler::Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, B
       rxPin_(rxPin),
       busIdSelf_(busIdSelf),
       followers_(followers),
-      sharedSendMessageBuffer_(kUartBufferSize),
-      taskSendMessageBuffer_(kUartBufferSize),
-      taskEncodedSendMessageBuffer_(kUartBufferSize),
-      taskRecvBuffer_(kUartBufferSize),
-      taskDecodedMessageBuffer_(kUartBufferSize),
-      sharedRecvSelfMessageBuffer_(kUartBufferSize),
-      sharedRecvSelfMessage_(),
-      sharedRecvBroadcastMessageBuffer_(kUartBufferSize),
-      sharedRecvBroadcastMessage_(),
-      taskDecodedReadBuffer_(kUartBufferSize) {
+      sharedSendMessageBuffer_(kMaxMessageLength),
+      taskSendMessageBuffer_(kMaxMessageLength),
+      taskEncodedSendMessageBuffer_(kMaxEncodedMessageLength),
+      taskRecvBuffer_(kUartDriverBufferSize),
+      taskDecodedMessageBuffer_(kMaxMessageLength),
+      sharedRecvSelfMessageBuffer_(kMaxMessageLength),
+      sharedRecvBroadcastMessageBuffer_(kMaxMessageLength),
+      taskDecodedReadBuffer_(kMaxEncodedMessageLength) {
   // Pin task to core 0 to ensure UART interrupts do not get in the way of LED writing on core 1.
   if (xTaskCreatePinnedToCore(TaskFunction, "JL_MAX485_BUS", configMINIMAL_STACK_SIZE + 2000,
                               /*parameters=*/this, kHighestTaskPriority, &taskHandle_,
@@ -293,7 +293,7 @@ void Max485BusHandler::SetUp() {
 // static
 BufferViewU8 Max485BusHandler::EncodeMessage(const BufferViewU8 message, OwnedBufferU8& encodedMessageBuffer,
                                              BusId destBusId, BusId srcBusId) {
-  if (ComputeExpansion(message.size()) > kUartBufferSize) {
+  if (message.size() > kMaxMessageLength) {
     jll_error("Cannot encode message of length %zu", message.size());
     return BufferViewU8();
   }
@@ -339,8 +339,8 @@ void Max485BusHandler::SendMessageToNextFollower() {
 }
 
 void Max485BusHandler::SetMessageToSend(const BufferViewU8 message) {
-  if (message.size() > kUartBufferSize) {
-    jll_error("UART%d refusing to send message of length %zu > %zu", uartPort_, message.size(), kUartBufferSize);
+  if (message.size() > kMaxMessageLength) {
+    jll_error("UART%d refusing to send message of length %zu", uartPort_, message.size());
     return;
   }
   {
@@ -513,8 +513,8 @@ BufferViewU8 Max485BusHandler::TaskFindReceivedMessage(BusId* destBusId, BusId* 
 void SetupMax485Bus(Milliseconds currentTime) { (void)Max485BusHandler::Get(); }
 
 void RunMax485Bus(Milliseconds currentTime) {
-  static OwnedBufferU8 outerRecvBuffer(kUartBufferSize);
-  static OwnedBufferU8 outerSendBuffer(kUartBufferSize);
+  static OwnedBufferU8 outerRecvBuffer(kMaxMessageLength);
+  static OwnedBufferU8 outerSendBuffer(kMaxMessageLength);
   BusId destBusId = kSeparator;
   BusId srcBusId = kSeparator;
   BufferViewU8 readMessage = Max485BusHandler::Get()->ReadMessage(outerRecvBuffer, &destBusId, &srcBusId);
