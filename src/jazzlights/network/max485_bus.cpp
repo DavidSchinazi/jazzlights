@@ -158,8 +158,18 @@ Max485BusHandler::Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, B
 // static
 Max485BusHandler* Max485BusHandler::Get() {
   constexpr uart_port_t kUartPort = UART_NUM_2;
+#if JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_LITE)
   constexpr int kTxPin = 26;
   constexpr int kRxPin = 32;
+#elif JL_IS_CONTROLLER(ATOM_S3) || JL_IS_CONTROLLER(ATOM_S3_LITE)
+  constexpr int kTxPin = 2;
+  constexpr int kRxPin = 1;
+#elif JL_IS_CONTROLLER(CORE2AWS)
+  constexpr int kTxPin = 2;
+  constexpr int kRxPin = 33;
+#else
+#error "unsupported controller for Max485BusHandler"
+#endif
   static Max485BusHandler sMax485BusHandler(kUartPort, kTxPin, kRxPin, kBusIdSelf, GetFollowers());
   return &sMax485BusHandler;
 }
