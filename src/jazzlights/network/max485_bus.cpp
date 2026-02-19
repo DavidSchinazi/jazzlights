@@ -109,7 +109,7 @@ class Max485BusHandler {
   const std::vector<BusId> followers_;  // Only modified in constructor.
   TaskHandle_t taskHandle_ = nullptr;   // Only modified in constructor.
   QueueHandle_t queue_ = nullptr;
-  std::atomic<bool> ready_ = false;
+  std::atomic<bool> ready_{false};
   std::mutex sendMutex_;
   OwnedBufferU8 sharedSendMessageBuffer_;                // Protected by `sendMutex_`.
   BufferViewU8 sharedSendMessage_;                       // Protected by `sendMutex_`.
@@ -283,7 +283,7 @@ void Max485BusHandler::SetUp() {
       .stop_bits = UART_STOP_BITS_1,
       .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
       .rx_flow_ctrl_thresh = 0,
-      .source_clk = UART_SCLK_DEFAULT,
+      .source_clk = UART_SCLK_APB,
   };
   ESP_ERROR_CHECK(uart_param_config(uartPort_, &uart_config));
   ESP_ERROR_CHECK(uart_set_pin(uartPort_, txPin_, rxPin_, /*rts=*/UART_PIN_NO_CHANGE, /*cts=*/UART_PIN_NO_CHANGE));
