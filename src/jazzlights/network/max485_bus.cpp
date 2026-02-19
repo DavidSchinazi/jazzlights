@@ -168,6 +168,9 @@ Max485BusHandler* Max485BusHandler::Get() {
   constexpr int kTxPin = 2;
   constexpr int kRxPin = 33;
 #else
+  // For CoreS3 and CoreS3-SE:
+  constexpr int kTxPin = 13;
+  constexpr int kRxPin = 1;
 #error "unsupported controller for Max485BusHandler"
 #endif
   static Max485BusHandler sMax485BusHandler(kUartPort, kTxPin, kRxPin, kBusIdSelf, GetFollowers());
