@@ -4,7 +4,7 @@
 
 #if JL_IS_CONTROLLER(CORE2AWS)
 
-#include <M5Core2.h>
+#include <M5Unified.h>
 
 #include "jazzlights/layout/matrix.h"
 #include "jazzlights/network/esp32_ble.h"
@@ -16,9 +16,9 @@ namespace jazzlights {
 
 namespace {
 
-static constexpr uint8_t kDefaultOnBrightness = 12;
+static constexpr uint8_t kDefaultOnBrightness = 32;
 static constexpr uint8_t kMinOnBrightness = 1;
-static constexpr uint8_t kMaxOnBrightness = 20;
+static constexpr uint8_t kMaxOnBrightness = 100;
 
 #if JL_DEV
 static constexpr uint8_t kInitialLedBrightness = 2;
@@ -41,32 +41,20 @@ static constexpr ScreenMode kInitialScreenMode = ScreenMode::kOff;
 static constexpr ScreenMode kInitialScreenMode = ScreenMode::kMainMenu;
 #endif  // JL_BUTTON_LOCK
 
-static void SetCore2ScreenBrightness(uint8_t brightness, bool allowUnsafe = false) {
-  jll_info("Setting screen brightness to %u%s", brightness, (allowUnsafe ? " (unsafe enabled)" : ""));
-  // brightness of 0 means backlight off.
-  // max safe brightness is 20, max unsafe brightness is 36.
-  // levels between 21 and 36 included should be used for short periods of time only.
-  // Inspired by https://github.com/Sarah-C/M5Stack_Core2_ScreenBrightness
-  if (brightness == 0) {
-    M5.Axp.SetDCDC3(false);
-    return;
-  }
-  M5.Axp.SetDCDC3(true);
-  const uint8_t maxBrightness = allowUnsafe ? 36 : 20;
-  if (brightness > maxBrightness) { brightness = maxBrightness; }
-  const uint16_t backlightVoltage = 2300 + brightness * 25;
-  constexpr uint8_t kBacklightVoltageAddress = 2;
-  M5.Axp.SetDCVoltage(kBacklightVoltageAddress, backlightVoltage);
+void CorePowerOff() {
+  // TODO reenable once we figure out IRAM limitation.
+  // M5.Power.powerOff();
 }
 
-static void SetupButtonsDrawZone() {
-  constexpr int16_t kButtonDrawOffset = 3;
-  for (Button* b : Button::instances) {
-    b->drawZone = ::Zone(/*x=*/b->x + kButtonDrawOffset,
-                         /*y=*/b->y + kButtonDrawOffset,
-                         /*w=*/b->w - 2 * kButtonDrawOffset,
-                         /*h=*/b->h - 2 * kButtonDrawOffset);
+static void SetCore2ScreenBrightness(uint8_t brightness) {
+  jll_info("Setting screen brightness to %u", brightness);
+  if (brightness == 0) {
+    M5.Display.clearDisplay();
+    M5.Display.sleep();
+    return;
   }
+  M5.Display.setBrightness(brightness);
+  M5.Display.wakeup();
 }
 
 void SetDefaultPrecedence(Player& player, Milliseconds currentTime) {
@@ -128,29 +116,271 @@ class Core2ScreenRenderer : public Renderer {
 ScreenMode gScreenMode = kInitialScreenMode;
 Core2ScreenRenderer core2ScreenRenderer;
 
-ButtonColors idleCol = {BLACK, WHITE, WHITE};
-ButtonColors idleEnabledCol = {WHITE, BLACK, WHITE};
-ButtonColors pressedCol = {RED, WHITE, WHITE};
-Button nextButton(/*x=*/160, /*y=*/0, /*w=*/160, /*h=*/60, /*rot1=*/false, "Next", idleCol, pressedCol);
-Button loopButton(/*x=*/160, /*y=*/60, /*w=*/160, /*h=*/60, /*rot1=*/false, "Loop", idleCol, pressedCol);
-Button patternControlButton(/*x=*/0, /*y=*/120, /*w=*/160, /*h=*/120, /*rot1=*/false, "Pattern Control", idleCol,
-                            pressedCol, BUTTON_DATUM, /*dx=*/0, /*dy=*/-25);
-Button systemButton(/*x=*/160, /*y=*/120, /*w=*/160, /*h=*/120, /*rot1=*/false, "System", idleCol, pressedCol,
-                    BUTTON_DATUM, /*dx=*/0, /*dy=*/-25);
-Button backButton(/*x=*/0, /*y=*/0, /*w=*/160, /*h=*/60, /*rot1=*/false, "Back", idleCol, pressedCol);
-// TODO split the player in half so we can render the selected pattern in the right half of the Back button.
-Button downButton(/*x=*/80, /*y=*/60, /*w=*/80, /*h=*/60, /*rot1=*/false, "Down", idleCol, pressedCol);
-Button upButton(/*x=*/0, /*y=*/60, /*w=*/80, /*h=*/60, /*rot1=*/false, "Up", idleCol, pressedCol);
-Button overrideButton(/*x=*/0, /*y=*/120, /*w=*/160, /*h=*/60, /*rot1=*/false, "Override", idleCol, pressedCol);
-Button confirmButton(/*x=*/0, /*y=*/180, /*w=*/160, /*h=*/60, /*rot1=*/false, "Confirm", idleCol, pressedCol);
-Button lockButton(/*x=*/160, /*y=*/180, /*w=*/160, /*h=*/60, /*rot1=*/false, "Lock", idleCol, pressedCol);
-Button shutdownButton(/*x=*/0, /*y=*/180, /*w=*/160, /*h=*/60, /*rot1=*/false, "Shutdown", idleCol, pressedCol);
-Button unlock1Button(/*x=*/160, /*y=*/0, /*w=*/160, /*h=*/60, /*rot1=*/false, "Unlock", idleCol, pressedCol);
-Button unlock2Button(/*x=*/0, /*y=*/180, /*w=*/160, /*h=*/60, /*rot1=*/false, "Unlock", idleCol, pressedCol);
-Button ledMinusButton(/*x=*/160, /*y=*/0, /*w=*/80, /*h=*/60, /*rot1=*/false, "LED-", idleCol, pressedCol);
-Button ledPlusButton(/*x=*/240, /*y=*/0, /*w=*/80, /*h=*/60, /*rot1=*/false, "LED+", idleCol, pressedCol);
-Button screenMinusButton(/*x=*/160, /*y=*/60, /*w=*/80, /*h=*/60, /*rot1=*/false, "Screen-", idleCol, pressedCol);
-Button screenPlusButton(/*x=*/240, /*y=*/60, /*w=*/80, /*h=*/60, /*rot1=*/false, "Screen+", idleCol, pressedCol);
+class TouchButton {
+ public:
+  using PaintFunction = std::function<void(TouchButton* button, int outline, int fill, int textColor)>;
+  void Setup(int16_t x, int16_t y, uint16_t w, uint16_t h, const char* label) {
+    x_ = x;
+    y_ = y;
+    w_ = w;
+    h_ = h;
+    lgfxButton_.initButtonUL(&M5.Lcd, x, y, w, h,
+                             /*outline=*/TFT_WHITE, /*fill=*/TFT_BLACK, /*textcolor=*/TFT_WHITE, "");
+    SetLabelText(label);
+  }
+
+  void SetLabelText(const char* label) {
+    label_ = std::string(label);
+    Paint();
+  }
+
+  void SetLabelDatum(int16_t x_delta, int16_t y_delta,
+                     lgfx::textdatum::textdatum_t datum = lgfx::textdatum::textdatum_t::middle_center) {
+    lgfxButton_.setLabelDatum(x_delta, y_delta, datum);
+    dx_ = x_delta;
+    dy_ = y_delta;
+    Paint();
+  }
+
+  void Hide() {
+    hidden_ = true;
+    MaybePaint();
+  }
+
+  void Draw(bool force = false) {
+    hidden_ = false;
+    MaybePaint(force);
+  }
+
+  void Paint();
+
+  bool IsPressed() const {
+    if (hidden_) { return false; }
+    return lgfxButton_.isPressed();
+  }
+  bool JustPressed() const {
+    if (hidden_) { return false; }
+    return lgfxButton_.justPressed();
+  }
+  bool JustReleased() const {
+    if (hidden_) { return false; }
+    return lgfxButton_.justReleased();
+  }
+
+  bool HandlePress(int16_t x, int16_t y) {
+    bool ret = false;
+    if (!hidden_) {
+      ret = lgfxButton_.contains(x, y);
+      lgfxButton_.press(ret);
+    }
+    MaybePaint();
+    return ret;
+  }
+  void HandleIdle() {
+    lgfxButton_.press(false);
+    MaybePaint();
+  }
+  void MaybePaint(bool force = false) {
+    DrawState drawState;
+    if (hidden_) {
+      drawState = DrawState::kHidden;
+    } else if (IsPressed()) {
+      drawState = DrawState::kPressed;
+    } else {
+      drawState = DrawState::kIdle;
+    }
+    if (force || drawState != lastDrawState_) {
+      lastDrawState_ = drawState;
+      Paint();
+    }
+  }
+
+  void PaintRectangle(int fill, int outline) {
+    uint16_t cornerRadius = std::min<uint16_t>(w_, h_) / 4;
+    M5.Lcd.fillRoundRect(x_ + 1, y_ + 1, w_ - 2, h_ - 2, cornerRadius, fill);
+    M5.Lcd.drawRoundRect(x_ + 1, y_ + 1, w_ - 2, h_ - 2, cornerRadius, outline);
+  }
+  void PaintText(int textColor, int fill, const char* label = nullptr) {
+    const char* printLabel = (label != nullptr ? label : label_.c_str());
+    M5.Lcd.setTextColor(textColor, fill);
+    M5.Lcd.drawString(printLabel, x_ + (w_ / 2) + dx_, y_ + (h_ / 2) + dy_);
+  }
+
+  bool hidden() const { return hidden_; }
+  void SetHighlight(bool highlight) { highlight_ = highlight; }
+  void SetCustomPaintFunction(PaintFunction customPaintFunction) { customPaintFunction_ = customPaintFunction; }
+
+ private:
+  enum class DrawState {
+    kNotDrawn,
+    kHidden,
+    kIdle,
+    kPressed,
+  };
+  LGFX_Button lgfxButton_;
+  std::string label_;
+  bool hidden_ = true;
+  bool highlight_ = false;
+  int16_t x_ = 0;
+  int16_t y_ = 0;
+  uint16_t w_ = 0;
+  uint16_t h_ = 0;
+  int16_t dx_ = 0;
+  int16_t dy_ = 0;
+  DrawState lastDrawState_ = DrawState::kNotDrawn;
+  PaintFunction customPaintFunction_;
+};
+
+class TouchButtonManager {
+ public:
+  TouchButton* AddButton(int16_t x, int16_t y, uint16_t w, uint16_t h, const char* label) {
+    buttons_.push_back(std::unique_ptr<TouchButton>(new TouchButton()));
+    std::unique_ptr<TouchButton>& button = buttons_.back();
+    button->Setup(x, y, w, h, label);
+    return button.get();
+  }
+
+  static TouchButtonManager* Get() {
+    static TouchButtonManager sTouchButtonManager;
+    return &sTouchButtonManager;
+  }
+
+  bool HandlePress(int16_t x, int16_t y) {
+    bool ret = false;
+    for (auto& button : buttons_) {
+      if (button->hidden()) {
+        if (button->HandlePress(x, y)) { ret = true; }
+      }
+    }
+    for (auto& button : buttons_) {
+      if (!button->hidden()) {
+        if (button->HandlePress(x, y)) { ret = true; }
+      }
+    }
+    return ret;
+  }
+  void HandleIdle() {
+    for (auto& button : buttons_) {
+      if (button->hidden()) { button->HandleIdle(); }
+    }
+    for (auto& button : buttons_) {
+      if (!button->hidden()) { button->HandleIdle(); }
+    }
+  }
+  void MaybePaint() {
+    for (auto& button : buttons_) {
+      if (button->hidden()) { button->MaybePaint(); }
+    }
+    for (auto& button : buttons_) {
+      if (!button->hidden()) { button->MaybePaint(); }
+    }
+  }
+
+  void RedrawRightHalf() {
+    M5.Lcd.fillRect(/*x=*/165, /*y=*/0, /*w=*/155, /*h=*/240, BLACK);
+    for (auto& button : buttons_) {
+      if (button->hidden()) { button->Paint(); }
+    }
+    for (auto& button : buttons_) {
+      if (!button->hidden()) { button->Paint(); }
+    }
+  }
+
+  void Redraw() {
+    M5.Lcd.fillScreen(BLACK);
+    for (auto& button : buttons_) {
+      if (button->hidden()) { button->Paint(); }
+    }
+    for (auto& button : buttons_) {
+      if (!button->hidden()) { button->Paint(); }
+    }
+  }
+
+ private:
+  std::vector<std::unique_ptr<TouchButton>> buttons_;
+};
+
+void TouchButton::Paint() {
+  TouchButtonManager::Get()->MaybePaint();
+  if (hidden_) {
+    M5.Lcd.drawRect(x_, y_, w_, h_, TFT_BLACK);
+    return;
+  }
+
+  auto previousTextStyle = M5.Lcd.getTextStyle();
+
+  M5.Lcd.setTextSize(1.0f, 0.0f);
+  M5.Lcd.setFont(&FreeSans9pt7b);
+  M5.Lcd.setTextDatum(lgfx::textdatum::textdatum_t::middle_center);
+  M5.Lcd.setTextPadding(0);
+
+  int fill = TFT_BLACK;
+  int textColor = TFT_WHITE;
+  int outline = TFT_WHITE;
+  if (IsPressed()) {
+    fill = TFT_RED;
+  } else if (highlight_) {
+    fill = TFT_WHITE;
+    textColor = TFT_BLACK;
+  }
+
+  M5.Lcd.startWrite();
+  if (customPaintFunction_) {
+    customPaintFunction_(this, outline, fill, textColor);
+  } else {
+    PaintRectangle(fill, outline);
+    PaintText(textColor, fill);
+  }
+
+  M5.Lcd.endWrite();
+
+  M5.Lcd.setTextStyle(previousTextStyle);
+}
+
+TouchButton* nextButton = nullptr;
+TouchButton* loopButton = nullptr;
+TouchButton* patternControlButton = nullptr;
+TouchButton* systemButton = nullptr;
+TouchButton* backButton = nullptr;
+TouchButton* downButton = nullptr;
+TouchButton* upButton = nullptr;
+TouchButton* overrideButton = nullptr;
+TouchButton* confirmButton = nullptr;
+TouchButton* lockButton = nullptr;
+TouchButton* shutdownButton = nullptr;
+TouchButton* unlock1Button = nullptr;
+TouchButton* unlock2Button = nullptr;
+TouchButton* ledMinusButton = nullptr;
+TouchButton* ledPlusButton = nullptr;
+TouchButton* screenMinusButton = nullptr;
+TouchButton* screenPlusButton = nullptr;
+
+void SetupButtons() {
+  nextButton = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/0, /*w=*/160, /*h=*/60, "Next");
+  loopButton = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/60, /*w=*/160, /*h=*/60, "Loop");
+
+  patternControlButton =
+      TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/120, /*w=*/160, /*h=*/120, "Pattern Control");
+  patternControlButton->SetLabelDatum(/*x_delta=*/0, /*y_delta=*/-25);
+  systemButton = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/120, /*w=*/160, /*h=*/120, "System");
+  systemButton->SetLabelDatum(/*x_delta=*/0, /*y_delta=*/-25);
+
+  backButton = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/160, /*h=*/60, "Back");
+  // TODO split the player in half so we can render the selected pattern in the right half of the Back button.
+  downButton = TouchButtonManager::Get()->AddButton(/*x=*/80, /*y=*/60, /*w=*/80, /*h=*/60, "Down");
+  upButton = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/60, /*w=*/80, /*h=*/60, "Up");
+  overrideButton = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/120, /*w=*/160, /*h=*/60, "Override");
+  confirmButton = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/180, /*w=*/160, /*h=*/60, "Confirm");
+  lockButton = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/180, /*w=*/160, /*h=*/60, "Lock");
+  shutdownButton = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/180, /*w=*/160, /*h=*/60, "Shutdown");
+  unlock1Button = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/0, /*w=*/160, /*h=*/60, "Unlock");
+  unlock2Button = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/180, /*w=*/160, /*h=*/60, "Unlock");
+  ledMinusButton = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/0, /*w=*/80, /*h=*/60, "LED-");
+  ledPlusButton = TouchButtonManager::Get()->AddButton(/*x=*/240, /*y=*/0, /*w=*/80, /*h=*/60, "LED+");
+  screenMinusButton = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/60, /*w=*/80, /*h=*/60, "Screen-");
+  screenPlusButton = TouchButtonManager::Get()->AddButton(/*x=*/240, /*y=*/60, /*w=*/80, /*h=*/60, "Screen+");
+}
+
 std::string gCurrentPatternName;
 constexpr Milliseconds kLockDelay = 60000;
 constexpr Milliseconds kUnlockingTime = 5000;
@@ -158,8 +388,17 @@ Milliseconds gLastScreenInteractionTime = -1;
 
 class PatternControlMenu {
  public:
+  enum class State {
+    kOff,
+    kPattern,
+    kPalette,
+    kColor,
+    kConfirmed,
+  };
   void draw() {
-    jll_info("PatternControlMenu::draw()");
+    // Temporarily hide the confirm button so we can set the right string before painting it.
+    confirmButton->Hide();
+    TouchButtonManager::Get()->MaybePaint();
     // Reset text datum and color in case we need to draw any.
     M5.Lcd.setTextDatum(TL_DATUM);  // Top Left.
     M5.Lcd.setTextColor(WHITE, BLACK);
@@ -167,7 +406,7 @@ class PatternControlMenu {
       case State::kOff:  // Fall through.
       case State::kPattern: {
         state_ = State::kPattern;
-        M5.Lcd.fillRect(x_, /*y=*/0, /*w=*/155, /*h=*/240, BLACK);
+        TouchButtonManager::Get()->RedrawRightHalf();
         if (selectedPatternIndex_ < kNumPatternsFirstPage) {
           for (uint8_t i = 0; i < kNumPatternsFirstPage; i++) {
             drawPatternTextLine(i, kSelectablePatterns[i].name, i == selectedPatternIndex_);
@@ -184,17 +423,17 @@ class PatternControlMenu {
         }
       } break;
       case State::kPalette: {
-        M5.Lcd.fillRect(x_, /*y=*/0, /*w=*/155, /*h=*/240, BLACK);
+        TouchButtonManager::Get()->RedrawRightHalf();
         for (uint8_t i = 0; i < kNumPalettes; i++) {
           drawPatternTextLine(i, kPaletteNames[i], i == selectedPaletteIndex_);
         }
       } break;
       case State::kColor: {
-        M5.Lcd.fillRect(x_, /*y=*/0, /*w=*/155, /*h=*/240, BLACK);
+        TouchButtonManager::Get()->RedrawRightHalf();
         for (uint8_t i = 0; i < kNumColors; i++) { drawPatternTextLine(i, kColorNames[i], i == selectedColorIndex_); }
       } break;
     }
-    drawConfirmButton();
+    confirmButton->Draw(/*force=*/true);
   }
   void downPressed() {
     if (state_ == State::kPattern) {
@@ -202,7 +441,7 @@ class PatternControlMenu {
         drawPatternTextLine(selectedPatternIndex_, kSelectablePatterns[selectedPatternIndex_].name, /*selected=*/false);
         selectedPatternIndex_++;
         drawPatternTextLine(selectedPatternIndex_, kSelectablePatterns[selectedPatternIndex_].name, /*selected=*/true);
-        drawConfirmButton();
+        confirmButton->Draw(/*force=*/true);
       } else if (selectedPatternIndex_ == kNumPatternsFirstPage - 1) {
         selectedPatternIndex_++;
         draw();
@@ -214,7 +453,7 @@ class PatternControlMenu {
         drawPatternTextLine(1 + selectedPatternIndex_ - kNumPatternsFirstPage,
                             kSelectablePatterns[selectedPatternIndex_].name,
                             /*selected=*/true);
-        drawConfirmButton();
+        confirmButton->Draw(/*force=*/true);
       }
     } else if (state_ == State::kPalette) {
       if (selectedPaletteIndex_ < kNumPalettes - 1) {
@@ -240,7 +479,6 @@ class PatternControlMenu {
         selectedPatternIndex_--;
         drawPatternTextLine(selectedPatternIndex_, kSelectablePatterns[selectedPatternIndex_].name,
                             /*selected=*/true);
-        drawConfirmButton();
       } else if (selectedPatternIndex_ == kNumPatternsFirstPage) {
         selectedPatternIndex_--;
         draw();
@@ -252,7 +490,6 @@ class PatternControlMenu {
         drawPatternTextLine(1 + selectedPatternIndex_ - kNumPatternsFirstPage,
                             kSelectablePatterns[selectedPatternIndex_].name,
                             /*selected=*/true);
-        drawConfirmButton();
       }
     } else if (state_ == State::kPalette) {
       if (selectedPaletteIndex_ > 0) {
@@ -267,6 +504,7 @@ class PatternControlMenu {
         drawPatternTextLine(selectedColorIndex_, kColorNames[selectedColorIndex_], /*selected=*/true);
       }
     }
+    confirmButton->Draw(/*force=*/true);
   }
   bool backPressed() {
     if (state_ == State::kPattern) {
@@ -279,13 +517,14 @@ class PatternControlMenu {
   }
   void overridePressed(Player& player, Milliseconds currentTime) {
     overrideEnabled_ = !overrideEnabled_;
-    overrideButton.off = overrideEnabled_ ? idleEnabledCol : idleCol;
-    overrideButton.setLabel(overrideEnabled_ ? "Override ON" : "Override");
+    overrideButton->SetHighlight(overrideEnabled_);
+    overrideButton->SetLabelText(overrideEnabled_ ? "Override ON" : "Override");
     if (overrideEnabled_) {
       SetOverridePrecedence(player, currentTime);
     } else {
       SetDefaultPrecedence(player, currentTime);
     }
+    overrideButton->Draw(/*force=*/true);
   }
   bool confirmPressed(Player& player, Milliseconds currentTime) {
     const char* confirmLabel;
@@ -314,6 +553,10 @@ class PatternControlMenu {
     }
     return false;
   }
+  State ConfirmButtonState() const {
+    if (state_ == State::kPattern) { return kSelectablePatterns[selectedPatternIndex_].nextState; }
+    return State::kConfirmed;
+  }
 
  private:
   bool setPattern(Player& player, PatternBits patternBits, Milliseconds currentTime) {
@@ -340,19 +583,6 @@ class PatternControlMenu {
     }
     return setPattern(player, patternBits + color * 0x100, currentTime);
   }
-  void drawConfirmButton() {
-    const char* confirmLabel;
-    switch (kSelectablePatterns[selectedPatternIndex_].nextState) {
-      case State::kOff: confirmLabel = "Error Off"; break;
-      case State::kPattern: confirmLabel = "Error Pattern"; break;
-      case State::kPalette: confirmLabel = "Select Palette"; break;
-      case State::kColor: confirmLabel = "Select CRGB"; break;
-      case State::kConfirmed: confirmLabel = "Confirm"; break;
-    }
-    confirmButton.setLabel(confirmLabel);
-    jll_info("drawing confirm button with label %s", confirmLabel);
-    confirmButton.draw();
-  }
   uint8_t dy() {
     if (dy_ == 0) { dy_ = M5.Lcd.fontHeight(); }  // By default this is 22.
     return dy_;
@@ -366,13 +596,6 @@ class PatternControlMenu {
     M5.Lcd.fillRect(x_, y, /*w=*/155, /*h=*/dy(), backgroundColor);
     M5.Lcd.drawString(text, x_, y);
   }
-  enum class State {
-    kOff,
-    kPattern,
-    kPalette,
-    kColor,
-    kConfirmed,
-  };
   struct SelectablePattern {
     const char* name;
     PatternBits bits;
@@ -427,108 +650,91 @@ class PatternControlMenu {
 
 PatternControlMenu gPatternControlMenu;
 
-void drawButtonOnlyInSubMenus(Button& b, ButtonColors bc) {
-  if (gScreenMode != ScreenMode::kOff && gScreenMode != ScreenMode::kLocked1 && gScreenMode != ScreenMode::kLocked2 &&
-      gScreenMode != ScreenMode::kMainMenu) {
-    M5Buttons::drawFunction(b, bc);
-  }
-}
-
-void drawButtonButOnlyInLocked1(Button& b, ButtonColors bc) {
-  if (gScreenMode == ScreenMode::kLocked1) { M5Buttons::drawFunction(b, bc); }
-}
-
-void drawButtonButOnlyInLocked2(Button& b, ButtonColors bc) {
-  if (gScreenMode == ScreenMode::kLocked2) { M5Buttons::drawFunction(b, bc); }
-}
-
-void drawPatternControlButton(Button& b, ButtonColors bc) {
-  if (gScreenMode != ScreenMode::kMainMenu) { return; }
-  jll_info("drawing pattern control button bg 0x%x outline 0x%x text 0x%x", bc.bg, bc.outline, bc.text);
-  // First call default draw function to draw button text, outline, and background.
-  M5Buttons::drawFunction(b, bc);
-  // Then add custom pattern string.
-  M5.Lcd.setTextColor(bc.text, bc.bg);
+void drawPatternControlButton(TouchButton* button, int outline, int fill, int textColor) {
+  button->PaintRectangle(fill, outline);
+  button->PaintText(textColor, fill);
   M5.Lcd.setTextDatum(BC_DATUM);  // Bottom Center.
   M5.Lcd.drawString(gCurrentPatternName.c_str(), /*x=*/80, /*y=*/210);
 }
 
-void drawSystemButton(Button& b, ButtonColors bc) {
-  if (gScreenMode != ScreenMode::kMainMenu) { return; }
-  jll_info("drawing system button bg 0x%x outline 0x%x text 0x%x", bc.bg, bc.outline, bc.text);
-  // First call default draw function to draw button text, outline, and background.
-  M5Buttons::drawFunction(b, bc);
-  // Then add custom system info.
-  M5.Lcd.setTextColor(bc.text, bc.bg);
+void drawSystemButton(TouchButton* button, int outline, int fill, int textColor) {
+  button->PaintRectangle(fill, outline);
+  button->PaintText(textColor, fill);
   M5.Lcd.setTextDatum(BC_DATUM);  // Bottom Center.
   M5.Lcd.drawString(BOOT_MESSAGE, /*x=*/240, /*y=*/210);
 }
 
+void drawConfirmButton(TouchButton* button, int outline, int fill, int textColor) {
+  const char* confirmLabel = "Error ?";
+  switch (gPatternControlMenu.ConfirmButtonState()) {
+    case PatternControlMenu::State::kOff: confirmLabel = "Error Off"; break;
+    case PatternControlMenu::State::kPattern: confirmLabel = "Error Pattern"; break;
+    case PatternControlMenu::State::kPalette: confirmLabel = "Select Palette"; break;
+    case PatternControlMenu::State::kColor: confirmLabel = "Select CRGB"; break;
+    case PatternControlMenu::State::kConfirmed: confirmLabel = "Confirm"; break;
+  }
+  button->PaintRectangle(fill, outline);
+  button->PaintText(textColor, fill, confirmLabel);
+}
+
 void DrawMainMenuButtons() {
-  jll_info("DrawMainMenuButtons");
-  unlock1Button.hide();
-  unlock2Button.hide();
-  nextButton.draw();
-  loopButton.draw();
-  patternControlButton.draw();
-  systemButton.draw();
+  unlock1Button->Hide();
+  unlock2Button->Hide();
+  nextButton->Draw();
+  loopButton->Draw();
+  patternControlButton->Draw();
+  systemButton->Draw();
 }
 
 void HideMainMenuButtons() {
-  jll_info("HideMainMenuButtons");
-  nextButton.hide();
-  loopButton.hide();
-  patternControlButton.hide();
-  systemButton.hide();
+  nextButton->Hide();
+  loopButton->Hide();
+  patternControlButton->Hide();
+  systemButton->Hide();
 }
 
 void DrawPatternControlMenuButtons() {
-  jll_info("DrawPatternControlMenuButtons");
-  unlock1Button.hide();
-  unlock2Button.hide();
-  backButton.draw();
-  downButton.draw();
-  upButton.draw();
-  overrideButton.draw();
-  confirmButton.draw();
+  unlock1Button->Hide();
+  unlock2Button->Hide();
+  backButton->Draw();
+  downButton->Draw();
+  upButton->Draw();
+  overrideButton->Draw();
 }
 
 void HidePatternControlMenuButtons() {
-  jll_info("HidePatternControlMenuButtons");
-  backButton.hide();
-  downButton.hide();
-  upButton.hide();
-  overrideButton.hide();
-  confirmButton.hide();
+  backButton->Hide();
+  downButton->Hide();
+  upButton->Hide();
+  overrideButton->Hide();
+  confirmButton->Hide();
 }
 
 void DrawSystemMenuButtons() {
-  jll_info("DrawSystemMenuButtons");
-  unlock1Button.hide();
-  unlock2Button.hide();
-  backButton.draw();
-  lockButton.draw();
-  shutdownButton.draw();
-  ledPlusButton.draw();
-  ledMinusButton.draw();
-  screenPlusButton.draw();
-  screenMinusButton.draw();
+  unlock1Button->Hide();
+  unlock2Button->Hide();
+  backButton->Draw();
+  lockButton->Draw();
+  shutdownButton->Draw();
+  ledPlusButton->Draw();
+  ledMinusButton->Draw();
+  screenPlusButton->Draw();
+  screenMinusButton->Draw();
 }
 
 void HideSystemMenuButtons() {
-  jll_info("HideSystemMenuButtons");
-  backButton.hide();
-  lockButton.hide();
-  shutdownButton.hide();
-  ledPlusButton.hide();
-  ledMinusButton.hide();
-  screenPlusButton.hide();
-  screenMinusButton.hide();
+  backButton->Hide();
+  lockButton->Hide();
+  shutdownButton->Hide();
+  ledPlusButton->Hide();
+  ledMinusButton->Hide();
+  screenPlusButton->Hide();
+  screenMinusButton->Hide();
 }
 
 void startMainMenu(Player& player, Milliseconds currentTime) {
   gScreenMode = ScreenMode::kMainMenu;
-  M5.Lcd.fillScreen(BLACK);
+  TouchButtonManager::Get()->Redraw();
   DrawMainMenuButtons();
   core2ScreenRenderer.setEnabled(true);
 }
@@ -536,12 +742,14 @@ void startMainMenu(Player& player, Milliseconds currentTime) {
 void lockScreen(Milliseconds currentTime) {
   gLastScreenInteractionTime = -1;
   gScreenMode = ScreenMode::kOff;
+  unlock1Button->Hide();
+  unlock2Button->Hide();
   HideSystemMenuButtons();
   HideMainMenuButtons();
   HidePatternControlMenuButtons();
   core2ScreenRenderer.setEnabled(false);
   SetCore2ScreenBrightness(0);
-  M5.Lcd.fillScreen(BLACK);
+  TouchButtonManager::Get()->Redraw();
 }
 
 void patternControlButtonPressed(Player& player, Milliseconds currentTime) {
@@ -549,7 +757,7 @@ void patternControlButtonPressed(Player& player, Milliseconds currentTime) {
   gLastScreenInteractionTime = currentTime;
   HideMainMenuButtons();
   core2ScreenRenderer.setEnabled(false);
-  M5.Lcd.fillScreen(BLACK);
+  TouchButtonManager::Get()->Redraw();
   DrawPatternControlMenuButtons();
   gPatternControlMenu.draw();
 }
@@ -567,34 +775,29 @@ Core2AwsUi::Core2AwsUi(Player& player, Milliseconds currentTime)
 
 void Core2AwsUi::InitialSetup(Milliseconds currentTime) {
   player_.set_brightness(ledBrightness_);
-  M5.begin(/*LCDEnable=*/true, /*SDEnable=*/false,
-           /*SerialEnable=*/false, /*I2CEnable=*/false,
-           /*mode=*/kMBusModeOutput);
+  auto cfg = M5.config();
+  cfg.serial_baudrate = 0;
+  M5.begin(cfg);
   if (gScreenMode == ScreenMode::kOff) {
     SetCore2ScreenBrightness(0);
   } else {
     SetCore2ScreenBrightness(onBrightness_);
   }
-  // TODO switch mode to kMBusModeInput once we power from pins instead of USB.
-  M5.Lcd.fillScreen(BLACK);
+  TouchButtonManager::Get()->Redraw();
+  SetupButtons();
   HidePatternControlMenuButtons();
   HideSystemMenuButtons();
-  unlock1Button.hide();
-  unlock2Button.hide();
-  patternControlButton.drawFn = drawPatternControlButton;
-  systemButton.drawFn = drawSystemButton;
-  backButton.drawFn = drawButtonOnlyInSubMenus;
-  confirmButton.drawFn = drawButtonOnlyInSubMenus;
-  lockButton.drawFn = drawButtonOnlyInSubMenus;
-  shutdownButton.drawFn = drawButtonOnlyInSubMenus;
-  unlock1Button.drawFn = drawButtonButOnlyInLocked1;
-  unlock2Button.drawFn = drawButtonButOnlyInLocked2;
-  SetupButtonsDrawZone();
+  unlock1Button->Hide();
+  unlock2Button->Hide();
+  patternControlButton->SetCustomPaintFunction(drawPatternControlButton);
+  systemButton->SetCustomPaintFunction(drawSystemButton);
+  confirmButton->SetCustomPaintFunction(drawConfirmButton);
   player_.addStrand(kCore2ScreenPixels, core2ScreenRenderer);
   SetDefaultPrecedence(player_, currentTime);
 }
 
 void Core2AwsUi::FinalSetup(Milliseconds currentTime) {
+  TouchButtonManager::Get()->MaybePaint();
   gCurrentPatternName = player_.currentEffectName();
   if (gScreenMode == ScreenMode::kMainMenu) {
     startMainMenu(player_, currentTime);
@@ -605,13 +808,14 @@ void Core2AwsUi::FinalSetup(Milliseconds currentTime) {
 }
 
 void Core2AwsUi::DrawSystemTextLines(Milliseconds currentTime) {
+  TouchButtonManager::Get()->MaybePaint();
   size_t i = 0;
   char line[100] = {};
   // LED Brighness.
   snprintf(line, sizeof(line) - 1, "LED Brgt %u/255", ledBrightness_);
   DrawSystemTextLine(i++, line);
   // Screen Brightness.
-  snprintf(line, sizeof(line) - 1, "Screen Brgt %u/20", onBrightness_);
+  snprintf(line, sizeof(line) - 1, "Scrn Brgt %u/%u", onBrightness_, kMaxOnBrightness);
   DrawSystemTextLine(i++, line);
   // BLE.
   snprintf(line, sizeof(line) - 1, "BLE: %s", Esp32BleNetwork::get()->getStatusStr(currentTime).c_str());
@@ -632,88 +836,96 @@ void Core2AwsUi::DrawSystemTextLines(Milliseconds currentTime) {
 }
 
 void Core2AwsUi::RunLoop(Milliseconds currentTime) {
-  M5.Touch.update();
-  M5.Buttons.update();
-  if (M5.background.wasPressed()) {
+  M5.update();
+  auto touchDetail = M5.Touch.getDetail();
+  if (touchDetail.isPressed()) {
     uint32_t freeHeap = ESP.getFreeHeap();
     uint32_t totalHeap = ESP.getHeapSize();
     // TODO enable PSRAM by adding "-DBOARD_HAS_PSRAM" and "-mfix-esp32-psram-cache-issue" to build_flags in
     // platformio.ini https://thingpulse.com/esp32-how-to-use-psram/
     uint32_t freePSRAM = ESP.getFreePsram();
     uint32_t totalPSRAM = ESP.getPsramSize();
-    ::Point pressed = M5.background.event.from;
-    int16_t px = pressed.x;
-    int16_t py = pressed.y;
+    int16_t px = touchDetail.x;
+    int16_t py = touchDetail.y;
     jll_info("%u background pressed x=%d y=%d, free RAM %u/%u free PSRAM %u/%u", currentTime, px, py,
              static_cast<unsigned int>(freeHeap), static_cast<unsigned int>(totalHeap),
              static_cast<unsigned int>(freePSRAM), static_cast<unsigned int>(totalPSRAM));
-    switch (gScreenMode) {
-      case ScreenMode::kOff: {
-        gLastScreenInteractionTime = currentTime;
-        SetCore2ScreenBrightness(onBrightness_);
-#if JL_BUTTON_LOCK
-        jll_info("%u starting unlock sequence from button press", currentTime);
-        gScreenMode = ScreenMode::kLocked1;
-        unlock1Button.draw();
-#else   // JL_BUTTON_LOCK
-        jll_info("%u unlocking from button press", currentTime);
-        startMainMenu(player_, currentTime);
-        gLastScreenInteractionTime = currentTime;
-#endif  // JL_BUTTON_LOCK
-      } break;
-      case ScreenMode::kMainMenu: {
-        gScreenMode = ScreenMode::kFullScreenPattern;
-        if (px < 160 && py < 120) {
-          jll_info("%u pattern screen pressed", currentTime);
-          HideMainMenuButtons();
-          M5.Lcd.fillScreen(BLACK);
-          core2ScreenRenderer.setFullScreen(true);
+    bool buttonPressed = TouchButtonManager::Get()->HandlePress(px, py);
+    if (!buttonPressed) {
+      switch (gScreenMode) {
+        case ScreenMode::kOff: {
+          jll_info("RunLoop kOff");
           gLastScreenInteractionTime = currentTime;
-        }
-      } break;
-      case ScreenMode::kFullScreenPattern: {
-        jll_info("%u full screen pattern pressed", currentTime);
-        core2ScreenRenderer.setFullScreen(false);
-        startMainMenu(player_, currentTime);
-        gLastScreenInteractionTime = currentTime;
-      } break;
-      case ScreenMode::kPatternControlMenu: {
-      } break;
-      case ScreenMode::kSystemMenu: {
-      } break;
-      case ScreenMode::kLocked1:  // fallthrough.
-      case ScreenMode::kLocked2: {
-        jll_info("%u locking screen due to background press while unlocking", currentTime);
-        lockScreen(currentTime);
-      } break;
+          SetCore2ScreenBrightness(onBrightness_);
+#if JL_BUTTON_LOCK
+          jll_info("%u starting unlock sequence from button press", currentTime);
+          gScreenMode = ScreenMode::kLocked1;
+          unlock2Button->Hide();
+          unlock1Button->Draw();
+#else   // JL_BUTTON_LOCK
+          jll_info("%u unlocking from button press", currentTime);
+          startMainMenu(player_, currentTime);
+          gLastScreenInteractionTime = currentTime;
+#endif  // JL_BUTTON_LOCK
+        } break;
+        case ScreenMode::kMainMenu: {
+          if (px < 160 && py < 120) {
+            gScreenMode = ScreenMode::kFullScreenPattern;
+            jll_info("%u pattern screen pressed", currentTime);
+            HideMainMenuButtons();
+            TouchButtonManager::Get()->Redraw();
+            core2ScreenRenderer.setFullScreen(true);
+            gLastScreenInteractionTime = currentTime;
+          }
+        } break;
+        case ScreenMode::kFullScreenPattern: {
+          jll_info("%u full screen pattern pressed", currentTime);
+          core2ScreenRenderer.setFullScreen(false);
+          startMainMenu(player_, currentTime);
+          gLastScreenInteractionTime = currentTime;
+        } break;
+        case ScreenMode::kPatternControlMenu: {
+        } break;
+        case ScreenMode::kSystemMenu: {
+        } break;
+        case ScreenMode::kLocked1: {
+          jll_info("%u ignoring background press during unlock1", currentTime);
+        } break;
+        case ScreenMode::kLocked2: {
+          jll_info("%u locking screen due to background press while unlocking", currentTime);
+          lockScreen(currentTime);
+        } break;
+      }
     }
+  } else {
+    TouchButtonManager::Get()->HandleIdle();
   }
-  if (nextButton.wasPressed()) {
+  if (nextButton->JustReleased()) {
     jll_info("%u next pressed", currentTime);
     if (gScreenMode == ScreenMode::kMainMenu) {
       gLastScreenInteractionTime = currentTime;
       player_.next(currentTime);
     }
   }
-  if (loopButton.wasPressed()) {
+  if (loopButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kMainMenu) {
       jll_info("%u loop pressed", currentTime);
       gLastScreenInteractionTime = currentTime;
       if (player_.isLooping()) {
         player_.stopLooping(currentTime);
-        loopButton.setLabel("Loop");
-        loopButton.off = idleCol;
+        loopButton->SetLabelText("Loop");
+        loopButton->SetHighlight(false);
       } else {
         player_.loopOne(currentTime);
-        loopButton.setLabel("Looping");
-        loopButton.off = idleEnabledCol;
+        loopButton->SetLabelText("Looping");
+        loopButton->SetHighlight(true);
       }
-      loopButton.draw();
+      loopButton->Draw(/*force=*/true);
     } else {
       jll_info("%u ignoring loop pressed", currentTime);
     }
   }
-  if (patternControlButton.wasPressed()) {
+  if (patternControlButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kMainMenu) {
       jll_info("%u pattern control button pressed", currentTime);
       patternControlButtonPressed(player_, currentTime);
@@ -721,21 +933,21 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
       jll_info("%u ignoring pattern control button pressed", currentTime);
     }
   }
-  if (systemButton.wasPressed()) {
+  if (systemButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kMainMenu) {
       jll_info("%u system button pressed", currentTime);
       gScreenMode = ScreenMode::kSystemMenu;
       gLastScreenInteractionTime = currentTime;
       HideMainMenuButtons();
       core2ScreenRenderer.setEnabled(false);
-      M5.Lcd.fillScreen(BLACK);
+      TouchButtonManager::Get()->Redraw();
       DrawSystemMenuButtons();
       DrawSystemTextLines(currentTime);
     } else {
       jll_info("%u ignoring system button pressed", currentTime);
     }
   }
-  if (backButton.wasPressed()) {
+  if (backButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kSystemMenu ||
         gScreenMode == ScreenMode::kPatternControlMenu && gPatternControlMenu.backPressed()) {
       jll_info("%u back button pressed", currentTime);
@@ -747,7 +959,7 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
       jll_info("%u ignoring back button pressed", currentTime);
     }
   }
-  if (downButton.wasPressed()) {
+  if (downButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kPatternControlMenu) {
       jll_info("%u down button pressed", currentTime);
       gLastScreenInteractionTime = currentTime;
@@ -756,7 +968,7 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
       jll_info("%u ignoring down button pressed", currentTime);
     }
   }
-  if (upButton.wasPressed()) {
+  if (upButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kPatternControlMenu) {
       jll_info("%u up button pressed", currentTime);
       gLastScreenInteractionTime = currentTime;
@@ -765,7 +977,7 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
       jll_info("%u ignoring up button pressed", currentTime);
     }
   }
-  if (overrideButton.wasPressed()) {
+  if (overrideButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kPatternControlMenu) {
       jll_info("%u override button pressed", currentTime);
       gLastScreenInteractionTime = currentTime;
@@ -774,7 +986,7 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
       jll_info("%u ignoring override button pressed", currentTime);
     }
   }
-  if (confirmButton.wasPressed()) {
+  if (confirmButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kPatternControlMenu) {
       jll_info("%u confirm button pressed", currentTime);
       confirmButtonPressed(player_, currentTime);
@@ -782,7 +994,7 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
       jll_info("%u ignoring confirm button pressed", currentTime);
     }
   }
-  if (lockButton.wasPressed()) {
+  if (lockButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kSystemMenu) {
       jll_info("%u lock button pressed", currentTime);
       lockScreen(currentTime);
@@ -790,19 +1002,19 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
       jll_info("%u ignoring lock button pressed", currentTime);
     }
   }
-  if (shutdownButton.wasPressed()) {
+  if (shutdownButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kSystemMenu) {
       jll_info("%u shutdown button pressed", currentTime);
-      M5.shutdown();
+      CorePowerOff();
     } else {
       jll_info("%u ignoring shutdown button pressed", currentTime);
     }
   }
-  if (unlock2Button.wasPressed()) {
+  if (unlock2Button->JustReleased()) {
     gLastScreenInteractionTime = currentTime;
     if (gScreenMode == ScreenMode::kLocked2) {
       jll_info("%u unlock2 button pressed", currentTime);
-      unlock2Button.hide();
+      unlock2Button->Hide();
       startMainMenu(player_, currentTime);
     } else if (gScreenMode == ScreenMode::kMainMenu) {
       jll_info("%u unlock2 button unexpectedly pressed in main menu, treating as pattern control button", currentTime);
@@ -813,19 +1025,19 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
       confirmButtonPressed(player_, currentTime);
     } else if (gScreenMode == ScreenMode::kSystemMenu) {
       jll_info("%u unlock2 button unexpectedly pressed in system menu, treating as shutdown button", currentTime);
-      M5.shutdown();
+      CorePowerOff();
     } else {
       jll_info("%u ignoring unlock2 button pressed", currentTime);
     }
   }
-  if (unlock1Button.wasPressed()) {
+  if (unlock1Button->JustReleased()) {
     gLastScreenInteractionTime = currentTime;
     if (gScreenMode == ScreenMode::kLocked1) {
       jll_info("%u unlock1 button pressed", currentTime);
       gScreenMode = ScreenMode::kLocked2;
-      unlock1Button.hide();
-      M5.Lcd.fillScreen(BLACK);
-      unlock2Button.draw();
+      unlock1Button->Hide();
+      TouchButtonManager::Get()->Redraw();
+      unlock2Button->Draw();
     } else if (gScreenMode == ScreenMode::kMainMenu) {
       jll_info("%u unlock1 button unexpectedly pressed in main menu, treating as next button", currentTime);
       player_.next(currentTime);
@@ -833,7 +1045,7 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
       jll_info("%u ignoring unlock1 button pressed", currentTime);
     }
   }
-  if (ledPlusButton.wasPressed()) {
+  if (ledPlusButton->JustReleased()) {
     jll_info("%u ledPlusButton button pressed", currentTime);
     if (ledBrightness_ < 255 && gScreenMode == ScreenMode::kSystemMenu) {
       ledBrightness_++;
@@ -842,7 +1054,7 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
       DrawSystemTextLines(currentTime);
     }
   }
-  if (ledMinusButton.wasPressed()) {
+  if (ledMinusButton->JustReleased()) {
     jll_info("%u ledMinusButton button pressed", currentTime);
     if (ledBrightness_ > 0 && gScreenMode == ScreenMode::kSystemMenu) {
       ledBrightness_--;
@@ -851,7 +1063,7 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
       DrawSystemTextLines(currentTime);
     }
   }
-  if (screenPlusButton.wasPressed()) {
+  if (screenPlusButton->JustReleased()) {
     jll_info("%u screenPlusButton button pressed", currentTime);
     if (onBrightness_ < kMaxOnBrightness && gScreenMode == ScreenMode::kSystemMenu) {
       onBrightness_++;
@@ -859,7 +1071,7 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
       DrawSystemTextLines(currentTime);
     }
   }
-  if (screenMinusButton.wasPressed()) {
+  if (screenMinusButton->JustReleased()) {
     jll_info("%u screenMinusButton button pressed", currentTime);
     if (onBrightness_ > kMinOnBrightness && gScreenMode == ScreenMode::kSystemMenu) {
       onBrightness_--;
@@ -873,7 +1085,7 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
     gCurrentPatternName = patternName;
     if (gScreenMode == ScreenMode::kMainMenu) {
       jll_info("%u drawing new pattern name in pattern control button", currentTime);
-      patternControlButton.draw();
+      patternControlButton->Draw(/*force=*/true);
     }
   }
 #if JL_BUTTON_LOCK
