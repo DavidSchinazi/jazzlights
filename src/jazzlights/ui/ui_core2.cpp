@@ -2,7 +2,7 @@
 
 #include "jazzlights/config.h"
 
-#if JL_IS_CONTROLLER(CORE2AWS)
+#if JL_IS_CONTROLLER(CORE2AWS) || JL_IS_CONTROLLER(CORES3)
 
 #include <M5Unified.h>
 

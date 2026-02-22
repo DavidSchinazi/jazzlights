@@ -34,7 +34,7 @@ FastLedRunner runner(&player);
 typedef AtomMatrixUi Esp32UiImpl;
 #elif JL_IS_CONTROLLER(ATOM_S3)
 typedef AtomS3Ui Esp32UiImpl;
-#elif JL_IS_CONTROLLER(CORE2AWS)
+#elif JL_IS_CONTROLLER(CORE2AWS) || JL_IS_CONTROLLER(CORES3)
 typedef Core2AwsUi Esp32UiImpl;
 #else
 typedef NoOpUi Esp32UiImpl;
