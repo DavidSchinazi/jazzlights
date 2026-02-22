@@ -432,6 +432,9 @@ class PatternControlMenu {
         TouchButtonManager::Get()->RedrawRightHalf();
         for (uint8_t i = 0; i < kNumColors; i++) { drawPatternTextLine(i, kColorNames[i], i == selectedColorIndex_); }
       } break;
+      case State::kConfirmed: {
+        // Do nothing.
+      } break;
     }
     confirmButton->Draw(/*force=*/true);
   }
@@ -527,7 +530,6 @@ class PatternControlMenu {
     overrideButton->Draw(/*force=*/true);
   }
   bool confirmPressed(Player& player, Milliseconds currentTime) {
-    const char* confirmLabel;
     if (state_ == State::kPattern) {
       State nextState = kSelectablePatterns[selectedPatternIndex_].nextState;
       if (nextState == State::kPalette || nextState == State::kColor) {
@@ -948,8 +950,8 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
     }
   }
   if (backButton->JustReleased()) {
-    if (gScreenMode == ScreenMode::kSystemMenu ||
-        gScreenMode == ScreenMode::kPatternControlMenu && gPatternControlMenu.backPressed()) {
+    if ((gScreenMode == ScreenMode::kSystemMenu || gScreenMode == ScreenMode::kPatternControlMenu) &&
+        gPatternControlMenu.backPressed()) {
       jll_info("%u back button pressed", currentTime);
       gLastScreenInteractionTime = currentTime;
       HidePatternControlMenuButtons();
