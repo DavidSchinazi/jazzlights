@@ -955,8 +955,8 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
     }
   }
   if (backButton->JustReleased()) {
-    if ((gScreenMode == ScreenMode::kSystemMenu || gScreenMode == ScreenMode::kPatternControlMenu) &&
-        gPatternControlMenu.backPressed()) {
+    if (gScreenMode == ScreenMode::kSystemMenu ||
+        (gScreenMode == ScreenMode::kPatternControlMenu) && gPatternControlMenu.backPressed()) {
       jll_info("%u back button pressed", currentTime);
       gLastScreenInteractionTime = currentTime;
       HidePatternControlMenuButtons();
