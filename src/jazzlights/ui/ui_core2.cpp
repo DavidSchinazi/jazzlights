@@ -41,9 +41,14 @@ static constexpr ScreenMode kInitialScreenMode = ScreenMode::kOff;
 static constexpr ScreenMode kInitialScreenMode = ScreenMode::kMainMenu;
 #endif  // JL_BUTTON_LOCK
 
+#ifndef JL_CORE_CAN_POWER_OFF
+#define JL_CORE_CAN_POWER_OFF 0
+#endif  // JL_CORE_CAN_POWER_OFF
+
 void CorePowerOff() {
-  // TODO reenable once we figure out IRAM limitation.
-  // M5.Power.powerOff();
+#if JL_CORE_CAN_POWER_OFF
+  M5.Power.powerOff();
+#endif  // JL_CORE_CAN_POWER_OFF
 }
 
 static void SetCore2ScreenBrightness(uint8_t brightness) {
