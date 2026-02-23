@@ -152,3 +152,23 @@ In an ideal world, we'd prefer to replace `sdkconfig` with `sdkconfig.defaults` 
 [here](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/kconfig.html#using-sdkconfig-defaults).
 However, that doesn't currently work with PlatformIO environments, see
 [this issue](https://github.com/platformio/platform-espressif32/issues/638).
+
+# Updates for ESP-IDF 5
+
+After updating to ESP-IDF 5, I tried this again and it did not work. Keeping the commands here just in case:
+
+```
+# THIS DOES NOT WORK
+export JL_ESP_IDF_VERSION="v5.3"
+git clone --recursive --branch "release/${JL_ESP_IDF_VERSION}" https://github.com/espressif/esp-idf.git
+cd esp-idf
+./install.sh esp32
+. ./export.sh
+cd ..
+git clone --recursive --branch "release/${JL_ESP_IDF_VERSION}" https://github.com/espressif/esp32-arduino-lib-builder
+cd esp32-arduino-lib-builder
+./build.sh -A "idf-release/${JL_ESP_IDF_VERSION}" -I "release/${JL_ESP_IDF_VERSION}" -t esp32 -b idf-libs
+ls out/tools/sdk/esp32/sdkconfig out/tools/esp32-arduino-libs/esp32/sdkconfig
+```
+
+What did work was to run `menuconfig` via `pio run -e vest_instrumentation -t menuconfig` and then hit `D` to save a minimal option.
