@@ -328,6 +328,7 @@ void Esp32WiFiNetwork::RunTask() {
     };
     ssize_t writeRes =
         sendto(socket_, udpPayload_, kReceiveBufferLength, /*flags=*/0, reinterpret_cast<sockaddr*>(&sin), sizeof(sin));
+    (void)writeRes;
   }
 
   // Now receive.
