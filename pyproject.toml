@@ -489,6 +489,7 @@ split-on-trailing-comma = false
 [tool.ruff.lint.per-file-ignores]
 "extras/scripts/*" = ["T20", "D100", "D103", "UP032", "PLW0603"]
 "extras/site/*" = ["T201", "D100", "D103", "UP032", "PLW0603"]
+"compare_sdkconfig.py" = ["ALL"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 25
