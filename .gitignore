@@ -11,6 +11,7 @@ build/
 !.vscode/*.code-snippets
 dependencies.lock
 managed_components/*
-sdkconfig.*.old
+sdkconfig.*
+!sdkconfig.*.defaults
 SCRATCH.txt
 __pycache__/

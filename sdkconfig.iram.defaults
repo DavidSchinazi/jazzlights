@@ -1,0 +1,9 @@
+# https://docs.espressif.com/projects/esp-idf/en/v5.3.2/esp32/api-guides/performance/ram-usage.html#optimizing-iram-usage
+CONFIG_SPIRAM_CACHE_LIBNUMPARSER_IN_IRAM=n
+CONFIG_SPIRAM_CACHE_LIBTIME_IN_IRAM=n
+CONFIG_SPIRAM_CACHE_LIBRAND_IN_IRAM=n
+CONFIG_SPIRAM_CACHE_LIBFILE_IN_IRAM=n
+
+# Note that this harms Wi-Fi performance.
+CONFIG_ESP32_WIFI_IRAM_OPT=n
+CONFIG_ESP32_WIFI_RX_IRAM_OPT=n
