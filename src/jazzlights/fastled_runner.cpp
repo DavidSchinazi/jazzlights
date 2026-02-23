@@ -167,7 +167,7 @@ void FastLedRunner::Start() {
   // The primary runloop is pinned to core 1. We were initially planning to pin FastLED writes to core 0, but that
   // causes visual glitches due to various Bluetooth and/or Wi-Fi interrupts firing on that core while LEDs are being
   // written to, so we instead pin FastLED to core 1.
-  BaseType_t ret = xTaskCreatePinnedToCore(TaskFunction, "FastLED", configMINIMAL_STACK_SIZE + 400,
+  BaseType_t ret = xTaskCreatePinnedToCore(TaskFunction, "FastLED", configMINIMAL_STACK_SIZE + 2000,
                                            /*parameters=*/this, kHighestTaskPriority, &taskHandle_,
                                            /*coreID=*/CONFIG_ARDUINO_RUNNING_CORE);
   if (ret != pdPASS) { jll_fatal("Failed to create FastLED task"); }

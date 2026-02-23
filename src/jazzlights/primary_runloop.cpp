@@ -131,12 +131,7 @@ void RunPrimaryRunLoop() {
   const bool shouldRender = true;
 #endif  // !PHONE
   SAVE_TIME_POINT(PrimaryRunLoop, PlayerCompute);
-#if JL_MOTOR
-  // TODO figure out why recent versions of FastLED crash on render.
-  (void)shouldRender;
-#else   // JL_MOTOR
   if (shouldRender) { runner.Render(); }
-#endif  // JL_MOTOR
 #if JL_WEBSOCKET_SERVER
   if (WiFiNetwork::get()->status() != INITIALIZING) {
     // This can't be called until after the networks have been initialized.
