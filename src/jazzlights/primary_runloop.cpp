@@ -10,6 +10,7 @@
 #include "jazzlights/fastled_runner.h"
 #include "jazzlights/instrumentation.h"
 #include "jazzlights/layout/layout_data.h"
+#include "jazzlights/motor.h"
 #include "jazzlights/network/esp32_ble.h"
 #include "jazzlights/network/ethernet.h"
 #include "jazzlights/network/max485_bus.h"
@@ -130,7 +131,12 @@ void RunPrimaryRunLoop() {
   const bool shouldRender = true;
 #endif  // !PHONE
   SAVE_TIME_POINT(PrimaryRunLoop, PlayerCompute);
+#if JL_MOTOR
+  // TODO figure out why recent versions of FastLED crash on render.
+  (void)shouldRender;
+#else   // JL_MOTOR
   if (shouldRender) { runner.Render(); }
+#endif  // JL_MOTOR
 #if JL_WEBSOCKET_SERVER
   if (WiFiNetwork::get()->status() != INITIALIZING) {
     // This can't be called until after the networks have been initialized.
@@ -141,6 +147,9 @@ void RunPrimaryRunLoop() {
 #if JL_HALL_SENSOR
   GetHallSensor()->RunLoop();
 #endif  // JL_HALL_SENSOR
+#if JL_MOTOR
+  StepperMotorTestRunLoop(currentTime);
+#endif  // JL_MOTOR
 }
 
 }  // namespace jazzlights
