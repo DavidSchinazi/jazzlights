@@ -140,6 +140,10 @@ void StepperMotorTestRunLoop(Milliseconds currentTime) {
   static constexpr int kEnablePin = 3;
   static constexpr int kDirectionPin = 1;
   static constexpr int kStepPin = 2;
+#elif JL_IS_CONTROLLER(CORES3)
+  static constexpr int kEnablePin = 17;
+  static constexpr int kDirectionPin = 8;
+  static constexpr int kStepPin = 9;
 #else
 #error "unknown controller for motor"
 #endif
