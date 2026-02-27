@@ -168,4 +168,27 @@
 #define JL_HALL_SENSOR 0
 #endif  // JL_HALL_SENSOR
 
+#if JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_LITE)
+inline constexpr int kPinB1 = 33;
+inline constexpr int kPinB2 = 23;
+inline constexpr int kPinC1 = 19;
+inline constexpr int kPinC2 = 22;
+#elif JL_IS_CONTROLLER(ATOM_S3)
+inline constexpr int kPinB1 = 8;
+inline constexpr int kPinB2 = 7;
+inline constexpr int kPinC1 = 6;
+inline constexpr int kPinC2 = 5;
+#elif JL_IS_CONTROLLER(CORES3)
+inline constexpr int kPinB1 = 8;
+inline constexpr int kPinB2 = 9;
+inline constexpr int kPinC1 = 18;
+inline constexpr int kPinC2 = 17;
+#elif JL_IS_CONTROLLER(CORE2AWS)
+// B1 is unusable for GPIO on Core2AWS.
+// inline constexpr int kPinB1 = 36;
+inline constexpr int kPinB2 = 26;
+inline constexpr int kPinC1 = 13;
+inline constexpr int kPinC2 = 14;
+#endif
+
 #endif  // JL_CONFIG_H

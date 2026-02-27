@@ -124,26 +124,15 @@ void StepperMotor::SetDirection(bool direction) {
 }
 
 void StepperMotorTestRunLoop(Milliseconds currentTime) {
-#if JL_IS_CONTROLLER(ATOM_LITE)
-  static constexpr int kEnablePin = 22;
-  static constexpr int kDirectionPin = 23;
-  static constexpr int kStepPin = 19;
-#elif JL_IS_CONTROLLER(ATOM_MATRIX)
-  static constexpr int kEnablePin = 22;
-  static constexpr int kDirectionPin = 33;
-  static constexpr int kStepPin = 23;
-#elif JL_IS_CONTROLLER(ATOM_S3)
-  static constexpr int kEnablePin = 5;
-  static constexpr int kDirectionPin = 8;
-  static constexpr int kStepPin = 7;
+#if JL_IS_CONTROLLER(ATOM_LITE) || JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_S3) || \
+    JL_IS_CONTROLLER(CORES3) || JL_IS_CONTROLLER(CORE2AWS)
+  static constexpr int kEnablePin = kPinC2;
+  static constexpr int kDirectionPin = kPinC1;
+  static constexpr int kStepPin = kPinB2;
 #elif JL_IS_CONTROLLER(M5STAMP_S3)
   static constexpr int kEnablePin = 3;
-  static constexpr int kDirectionPin = 1;
+  static constexpr int kDirectionPin = 4;
   static constexpr int kStepPin = 2;
-#elif JL_IS_CONTROLLER(CORES3)
-  static constexpr int kEnablePin = 17;
-  static constexpr int kDirectionPin = 8;
-  static constexpr int kStepPin = 9;
 #else
 #error "unknown controller for motor"
 #endif

@@ -1114,45 +1114,79 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
 #endif  // CORE2AWS
 
 /*
-  GPIO pins on Core2AWS for vehicles
-   0 = NS4168-LRCK = PortE1c
-   1 = USB_CP2104 RXD = PortD1c
-   2 = NS4168-DATA = PortE1b = PortE2c
-   3 = USB_CP2104 TXD = PortD2c
+
+Note that Core2 and Core2AWS use the same pins. Similarly, CoreS3-SE and CoreS3 Lite use the pins from CoreS3.
+
+Bus | Core | Core2| Core | CoreExt | Core
+Pos | Basic| AWS  |  S3  |  Port   | Func
+    | Pin  | Pin  | Pin  |         |
+----+------+------+------+---------+--------
+  1 | GND  | GND  | GND  |         |
+  2 | G35  | G35  | G10  |  D2.1   | ADC (unusable for GPIO on Core2Aws)
+  3 | GND  | GND  | GND  |         |
+  4 | G36  | G36  | G8   |  B1     | ADC/PB_IN (unusable for GPIO on Core2Aws)
+  5 | GND  | GND  | GND  |         |
+  6 | RST  | RST  | RST  |         | EN
+  7 | G23  | G23  | G37  |         | SPI_MOSI
+  8 | G25  | G25  | G5   |  E2.2   | DAC/SPK/GPIO/LED_Core2AwsBase
+  9 | G19  | G38  | G35  |         | SPI_MISO
+ 10 | G26  | G26  | G9   |  B2     | DAC/PB_OUT/LAN12_CS
+ 11 | G18  | G18  | G36  |         | SPI_SCK
+ 12 | 3V3  | 3V3  | 3V3  |         |
+ 13 | G3   | G3   | G44  |  D1.3   | RXD0 (USB_CP2104 serial)
+ 14 | G1   | G1   | G43  |  D2.3   | TXD0 (USB_CP2104 serial)
+ 15 | G16  | G13  | G18  |  C1     | RXD2/PC_RX
+ 16 | G17  | G14  | G17  |  C2     | TXD2/PC_TX
+ 17 | G21  | G21  | G12  |  D2.2   | Int_SDA
+ 18 | G22  | G22  | G11  |  D1.2   | Int_SCL
+ 19 | G2   | G32  | G2   |  A2     | PortA_SDA
+ 20 | G5   | G33  | G1   |  A1     | PortA_SCL/LAN12_RS485_TX/LAN13_CSN?
+ 21 | G12  | G27  | G6   |  E1.1   | GPIO
+ 22 | G13  | G19  | G7   |  E2.1   | GPIO/LAN12_RST/LAN13_RSTN?
+ 23 | G15  | G2   | G13  |E1.2/E2.3| I2S_DOUT/LAN12_RS485_RX/LAN13_CSN?
+ 24 | G0   | G0   | G0   |  E1.3   | I2S_LRCK/LAN13_RSTN?
+ 25 | HPWR |      | HVIN |         | HPWR
+ 26 | G34  | G34  | G14  |  D1.1   | I2S_DIN/LAN12_INT/LAN13_INTN? (unusable for GPIO on Core2Aws)
+ 27 | HPWR |      | HVIN |         | HPWR
+ 28 | 5V   | 5V   | 5V   |         |
+ 29 | HPWR |      | HVIN |         | HPWR
+ 30 | BAT  | BAT  | BAT  |         | BAT
+
+  Note that the original pinout docs for the Core Base LAN v1.2 used the GPIO numbers from the Core Basic instead of the
+  Core2. See mapping of differences below.
+
+  GPIO pins on Core2AWS with Base LAN v1.2 module:
+   0 = NS4168-LRCK = PortE1.3
+   1 = USB_CP2104 RXD = PortD1.3
+   2 = NS4168-DATA = PortE1.2 = PortE2.3
+   3 = USB_CP2104 TXD = PortD2.3
    4 = TF CS
    5 = LCD CS
   13 = PortC1
   14 = PortC2
   15 = LCD DC
   18 = W5500 SCLK = LCD SCLK = TF SCLK
-  19 = W5500 RST = PortE2a
-  21 = internal I2C SDA = PortD2b
-  22 = internal I2C SCL = PortD1b
+  19 = W5500 RST = PortE2.1
+  21 = internal I2C SDA = PortD2.2
+  22 = internal I2C SCL = PortD1.2
   23 = W5500 MOSI = LCD MOSI = TF MOSI
-  25 = LED (only when AWS expansion is used) = PortE2b
+  25 = LED (only when AWS expansion is used) = PortE2.2
   26 = W5500 CS = PortB2
-  27 = PortE1a
-  32 = PortA1
-  33 = PortA2
-  34 = W5500 INTn = PortD1a
-  35 = PortD2a
+  27 = PortE1.1
+  32 = PortA2
+  33 = PortA1
+  34 = W5500 INTn = PortD1.1
+  35 = PortD2.1
   36 = PortB1
   38 = LCD MISO = TF MISO = W5500 MISO
 
-  Good: A1,A2,B1,C1,C2,D2a,E1a,E2b -- total of 8 pins
+  Good: A1,A2,B1,C1,C2,D2.1,E1.1,E2.2 -- total of 8 pins
   Taken by W5500 ethernet: B2,D1
 
+  https://docs.m5stack.com/en/core/basic
   https://docs.m5stack.com/en/core/core2_for_aws
+  https://docs.m5stack.com/en/core/CoreS3
+  https://docs.m5stack.com/en/module/extport_for_core2
   https://docs.m5stack.com/en/base/lan_v12
-
-  Note that the pinout docs for the ethernet Core2 base are wrong:
-  bus position | Core2 pin | W5500 module pin
-             9 |        38 | 19 = W5500 MISO
-            15 |        13 | 16
-            16 |        14 | 17
-            19 |        32 |  2
-            20 |        33 |  5
-            21 |        27 | 12
-            22 |        19 | 13 = W5500 RST
-            23 |         2 | 15
+  https://docs.m5stack.com/en/module/LAN%20Module%2013.2
 */
