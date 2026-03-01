@@ -131,7 +131,7 @@ StepperMotor* GetMainStepperMotor() {
     JL_IS_CONTROLLER(CORES3) || JL_IS_CONTROLLER(CORE2AWS)
   static constexpr int kEnablePin = kPinC2;
   static constexpr int kDirectionPin = kPinC1;
-  static constexpr int kStepPin = kPinB2;
+  static constexpr int kStepPin = kPinE2;
 #elif JL_IS_CONTROLLER(M5STAMP_S3)
   static constexpr int kEnablePin = 3;
   static constexpr int kDirectionPin = 4;
