@@ -123,7 +123,7 @@ void StepperMotor::SetDirection(bool direction) {
   lastDirection_ = direction;
 }
 
-void StepperMotorTestRunLoop(Milliseconds currentTime) {
+StepperMotor* GetMainStepperMotor() {
 #if JL_IS_CONTROLLER(ATOM_LITE) || JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_S3) || \
     JL_IS_CONTROLLER(CORES3) || JL_IS_CONTROLLER(CORE2AWS)
   static constexpr int kEnablePin = kPinC2;
@@ -137,13 +137,17 @@ void StepperMotorTestRunLoop(Milliseconds currentTime) {
 #error "unknown controller for motor"
 #endif
   static StepperMotor sStepper(kEnablePin, kDirectionPin, kStepPin);
+  return &sStepper;
+}
+
+void StepperMotorTestRunLoop(Milliseconds currentTime) {
   static uint8_t sEpoch = 0;
   static constexpr int32_t kSpeeds[] = {3000, 0, -3000, 0};
   static constexpr Milliseconds kDurations[] = {1000, 5000, 1000, 5000};
   static_assert(sizeof(kSpeeds) / sizeof(kSpeeds[0]) == sizeof(kDurations) / sizeof(kDurations[0]), "bad sizes");
   static Milliseconds sTimeOfLastChange = -1;
   if (sTimeOfLastChange < 0 || currentTime - sTimeOfLastChange > kDurations[sEpoch]) {
-    sStepper.SetSpeed(kSpeeds[sEpoch]);
+    GetMainStepperMotor()->SetSpeed(kSpeeds[sEpoch]);
     sTimeOfLastChange = currentTime;
     sEpoch++;
     if (sEpoch >= (sizeof(kSpeeds) / sizeof(kSpeeds[0]))) { sEpoch = 0; }

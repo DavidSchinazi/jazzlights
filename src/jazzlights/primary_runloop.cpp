@@ -23,6 +23,7 @@
 #include "jazzlights/ui/ui_atom_s3.h"
 #include "jazzlights/ui/ui_core2.h"
 #include "jazzlights/ui/ui_disabled.h"
+#include "jazzlights/ui/ui_motor.h"
 #include "jazzlights/util/log.h"
 #include "jazzlights/websocket_server.h"
 
@@ -36,7 +37,11 @@ typedef AtomMatrixUi Esp32UiImpl;
 #elif JL_IS_CONTROLLER(ATOM_S3)
 typedef AtomS3Ui Esp32UiImpl;
 #elif JL_IS_CONTROLLER(CORE2AWS) || JL_IS_CONTROLLER(CORES3)
+#if JL_MOTOR
+typedef CoreMotorUi Esp32UiImpl;
+#else   // JL_MOTOR
 typedef Core2AwsUi Esp32UiImpl;
+#endif  // JL_MOTOR
 #else
 typedef NoOpUi Esp32UiImpl;
 #endif
@@ -141,9 +146,9 @@ void RunPrimaryRunLoop() {
 #if JL_HALL_SENSOR
   GetHallSensor()->RunLoop();
 #endif  // JL_HALL_SENSOR
-#if JL_MOTOR
+#if JL_MOTOR && !JL_UI_MOTOR
   StepperMotorTestRunLoop(currentTime);
-#endif  // JL_MOTOR
+#endif  // JL_MOTOR && !JL_UI_MOTOR
 }
 
 }  // namespace jazzlights

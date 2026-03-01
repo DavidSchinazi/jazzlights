@@ -48,6 +48,7 @@ class StepperMotor {
   static constexpr uint32_t kResolution = 1000000;
 };
 
+StepperMotor* GetMainStepperMotor();
 void StepperMotorTestRunLoop(Milliseconds currentTime);
 
 }  // namespace jazzlights
