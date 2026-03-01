@@ -24,8 +24,10 @@ void StepperMotor::SetSpeed(int32_t frequencyHz) {
   uint32_t halfPeriod;
   if (frequencyHz > 0) {
     SetDirection(true);
+    if (frequencyHz < 16) { frequencyHz = 16; }
     halfPeriod = kResolution / (2 * frequencyHz);
   } else if (frequencyHz < 0) {
+    if (frequencyHz > -16) { frequencyHz = -16; }
     SetDirection(false);
     halfPeriod = kResolution / (2 * -frequencyHz);
   } else {
