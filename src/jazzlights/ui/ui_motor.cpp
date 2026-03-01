@@ -4,6 +4,8 @@
 
 #include <M5Unified.h>
 
+#include <functional>
+
 #include "jazzlights/motor.h"
 #include "jazzlights/ui/touch_button.h"
 #include "jazzlights/util/log.h"
@@ -32,6 +34,9 @@ void CoreMotorUi::InitialSetup() {  // 320w * 240h
   backButton_ = TouchButtonManager::Get()->AddButton(0, 0, w, h, "Back");
   backButton_->Hide();
   speedDisplayButton_ = TouchButtonManager::Get()->AddButton(w, 0, 320 - w, h, "");
+  speedDisplayButton_->SetCustomPaintFunction(std::bind(&CoreMotorUi::DrawSpeedDisplayButton, this,
+                                                        std::placeholders::_1, std::placeholders::_2,
+                                                        std::placeholders::_3, std::placeholders::_4));
   speedDisplayButton_->Hide();
   for (int i = 1; i <= 9; i++) {
     char label[2] = {static_cast<char>('0' + i), '\0'};
@@ -74,7 +79,7 @@ void CoreMotorUi::RunLoop(Milliseconds currentTime) {
     for (int i = 0; i <= 9; i++) {
       if (keypadButtons_[i]->JustReleased()) {
         keypadValue_ = keypadValue_ * 10 + i;
-        UpdateSpeedDisplay();
+        speedDisplayButton_->Draw(/*force=*/true);
       }
     }
     if (backButton_->JustReleased()) {
@@ -92,7 +97,7 @@ void CoreMotorUi::RunLoop(Milliseconds currentTime) {
     }
     if (clearButton_->JustReleased()) {
       keypadValue_ = 0;
-      UpdateSpeedDisplay();
+      speedDisplayButton_->Draw(/*force=*/true);
     }
     if (confirmButton_->JustReleased()) {
       motorFrequencyHz_ = keypadValue_;
@@ -133,7 +138,7 @@ void CoreMotorUi::RunLoop(Milliseconds currentTime) {
       for (int i = 0; i <= 9; i++) { keypadButtons_[i]->Draw(); }
       clearButton_->Draw();
       confirmButton_->Draw();
-      UpdateSpeedDisplay();
+      speedDisplayButton_->Draw(/*force=*/true);
       TouchButtonManager::Get()->Redraw();
     }
   }
@@ -153,10 +158,11 @@ void CoreMotorUi::UpdateMotorSpeedButton() {
   motorSpeedButton_->SetLabelText(label);
 }
 
-void CoreMotorUi::UpdateSpeedDisplay() {
-  char label[32];
-  snprintf(label, sizeof(label), "%lld", static_cast<int64_t>(keypadValue_));
-  speedDisplayButton_->SetLabelText(label);
+void CoreMotorUi::DrawSpeedDisplayButton(TouchButton* button, int outline, int fill, int textColor) {
+  button->PaintRectangle(fill, /*outline=*/fill);  // Skip outline.
+  char label[32] = "_";
+  if (keypadValue_ > 0) { snprintf(label, sizeof(label), "%lld", static_cast<int64_t>(keypadValue_)); }
+  button->PaintText(textColor, fill, label);
 }
 
 }  // namespace jazzlights

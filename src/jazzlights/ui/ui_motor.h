@@ -37,7 +37,7 @@ class CoreMotorUi : public Esp32Ui {
  private:
   void SetMotorSpeed();
   void UpdateMotorSpeedButton();
-  void UpdateSpeedDisplay();
+  void DrawSpeedDisplayButton(TouchButton* button, int outline, int fill, int textColor);
   TouchButton* planetButton_ = nullptr;
   TouchButton* motorEnableButton_ = nullptr;
   TouchButton* motorDirectionButton_ = nullptr;
