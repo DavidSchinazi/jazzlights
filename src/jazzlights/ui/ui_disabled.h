@@ -9,9 +9,9 @@ namespace jazzlights {
 
 class NoOpUi : public Esp32Ui {
  public:
-  explicit NoOpUi(Player& player, Milliseconds currentTime) : Esp32Ui(player, currentTime) {}
-  void InitialSetup(Milliseconds currentTime) override;
-  void FinalSetup(Milliseconds /*currentTime*/) override {}
+  explicit NoOpUi(Player& player) : Esp32Ui(player) {}
+  void InitialSetup() override;
+  void FinalSetup() override {}
   void RunLoop(Milliseconds /*currentTime*/) override {}
 };
 

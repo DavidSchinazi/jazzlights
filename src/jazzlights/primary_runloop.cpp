@@ -42,7 +42,7 @@ typedef NoOpUi Esp32UiImpl;
 #endif
 
 static Esp32UiImpl* GetUi() {
-  static Esp32UiImpl ui(player, timeMillis());
+  static Esp32UiImpl ui(player);
   return &ui;
 }
 
@@ -69,10 +69,9 @@ void SetupPrimaryRunLoop() {
     vTaskDelay(100 / portTICK_PERIOD_MS);
   }
 #endif  // JL_DEBUG
-  Milliseconds currentTime = timeMillis();
   GetUi()->set_fastled_runner(&runner);
-  GetUi()->InitialSetup(currentTime);
-  SetupMax485Bus(currentTime);
+  GetUi()->InitialSetup();
+  SetupMax485Bus();
 
   AddLedsToRunner(&runner);
 
@@ -105,9 +104,9 @@ void SetupPrimaryRunLoop() {
 #if JL_ETHERNET
   player.connect(EthernetNetwork::get());
 #endif  // JL_ETHERNET
-  player.begin(currentTime);
+  player.begin();
 
-  GetUi()->FinalSetup(currentTime);
+  GetUi()->FinalSetup();
 
   runner.Start();
 #if JL_HALL_SENSOR

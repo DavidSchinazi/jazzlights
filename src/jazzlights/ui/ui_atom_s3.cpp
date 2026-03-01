@@ -99,8 +99,8 @@ void AtomS3Ui::UpdateScreen(Milliseconds currentTime) {
   Display(contents, currentTime);
 }
 
-AtomS3Ui::AtomS3Ui(Player& player, Milliseconds currentTime)
-    : Esp32Ui(player, currentTime), button_(kButtonPin, *this), brightnessCursor_(kInitialBrightnessCursor) {}
+AtomS3Ui::AtomS3Ui(Player& player)
+    : Esp32Ui(player), button_(kButtonPin, *this), brightnessCursor_(kInitialBrightnessCursor) {}
 
 bool AtomS3Ui::IsLocked() {
 #if JL_BUTTON_LOCK
@@ -123,14 +123,14 @@ void AtomS3Ui::HandleUnlockSequence(bool wasLongPress, Milliseconds currentTime)
   }
 }
 
-void AtomS3Ui::InitialSetup(Milliseconds currentTime) {
+void AtomS3Ui::InitialSetup() {
   auto cfg = M5.config();
   M5.begin(cfg);
   M5.Display.init();
-  Display(DisplayContents(DisplayContents::Mode::kOff), currentTime);
+  Display(DisplayContents(DisplayContents::Mode::kOff), timeMillis());
 }
 
-void AtomS3Ui::FinalSetup(Milliseconds /*currentTime*/) {}
+void AtomS3Ui::FinalSetup() {}
 
 void AtomS3Ui::RunLoop(Milliseconds currentTime) {
   button_.RunLoop();

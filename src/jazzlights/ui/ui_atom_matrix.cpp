@@ -217,8 +217,8 @@ void AtomMatrixUi::ScreenShort(Milliseconds currentTime) {
   ScreenNetwork(currentTime);
 }
 
-AtomMatrixUi::AtomMatrixUi(Player& player, Milliseconds currentTime)
-    : Esp32Ui(player, currentTime), button_(kButtonPin, *this), brightnessCursor_(kInitialBrightnessCursor) {}
+AtomMatrixUi::AtomMatrixUi(Player& player)
+    : Esp32Ui(player), button_(kButtonPin, *this), brightnessCursor_(kInitialBrightnessCursor) {}
 
 bool AtomMatrixUi::IsLocked() {
 #if JL_BUTTON_LOCK
@@ -383,13 +383,13 @@ void AtomMatrixUi::RunLoop(Milliseconds currentTime) {
   ScreenDisplay(currentTime);
 }
 
-void AtomMatrixUi::InitialSetup(Milliseconds currentTime) {
+void AtomMatrixUi::InitialSetup() {
   runner_->ConfigureUi<WS2812, /*DATA_PIN=*/27, GRB>(ATOM_SCREEN_NUM_LEDS);
-  ScreenClear(currentTime);
+  ScreenClear(timeMillis());
   player_.set_brightness(kBrightnessList[brightnessCursor_]);
 }
 
-void AtomMatrixUi::FinalSetup(Milliseconds /*currentTime*/) {}
+void AtomMatrixUi::FinalSetup() {}
 
 }  // namespace jazzlights
 

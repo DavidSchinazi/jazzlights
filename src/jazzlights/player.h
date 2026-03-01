@@ -31,7 +31,7 @@ class Player {
    * Call this when you're done adding strands, setting up
    * player configuration and connecting networks.
    */
-  void begin(Milliseconds currentTime);
+  void begin();
 
   /**
    *  Render current frame to all strands.

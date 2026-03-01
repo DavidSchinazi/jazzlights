@@ -557,10 +557,10 @@ void confirmButtonPressed(Player& player, Milliseconds currentTime) {
   }
 }
 
-Core2AwsUi::Core2AwsUi(Player& player, Milliseconds currentTime)
-    : Esp32Ui(player, currentTime), ledBrightness_(kInitialLedBrightness), onBrightness_(kDefaultOnBrightness) {}
+Core2AwsUi::Core2AwsUi(Player& player)
+    : Esp32Ui(player), ledBrightness_(kInitialLedBrightness), onBrightness_(kDefaultOnBrightness) {}
 
-void Core2AwsUi::InitialSetup(Milliseconds currentTime) {
+void Core2AwsUi::InitialSetup() {
   player_.set_brightness(ledBrightness_);
   auto cfg = M5.config();
   cfg.serial_baudrate = 0;
@@ -580,14 +580,14 @@ void Core2AwsUi::InitialSetup(Milliseconds currentTime) {
   systemButton->SetCustomPaintFunction(drawSystemButton);
   confirmButton->SetCustomPaintFunction(drawConfirmButton);
   player_.addStrand(kCore2ScreenPixels, core2ScreenRenderer);
-  SetDefaultPrecedence(player_, currentTime);
+  SetDefaultPrecedence(player_, timeMillis());
 }
 
-void Core2AwsUi::FinalSetup(Milliseconds currentTime) {
+void Core2AwsUi::FinalSetup() {
   TouchButtonManager::Get()->MaybePaint();
   gCurrentPatternName = player_.currentEffectName();
   if (gScreenMode == ScreenMode::kMainMenu) {
-    startMainMenu(player_, currentTime);
+    startMainMenu(player_, timeMillis());
   } else {
     HideMainMenuButtons();
     core2ScreenRenderer.setEnabled(false);

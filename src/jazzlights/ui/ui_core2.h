@@ -18,10 +18,10 @@ namespace jazzlights {
 
 class Core2AwsUi : public Esp32Ui {
  public:
-  explicit Core2AwsUi(Player& player, Milliseconds currentTime);
+  explicit Core2AwsUi(Player& player);
   // From Esp32Ui.
-  void InitialSetup(Milliseconds currentTime) override;
-  void FinalSetup(Milliseconds currentTime) override;
+  void InitialSetup() override;
+  void FinalSetup() override;
   void RunLoop(Milliseconds currentTime) override;
 
  private:

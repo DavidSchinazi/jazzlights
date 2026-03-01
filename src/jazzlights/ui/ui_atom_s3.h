@@ -12,10 +12,10 @@ namespace jazzlights {
 
 class AtomS3Ui : public Esp32Ui, public GpioButton::ButtonInterface {
  public:
-  explicit AtomS3Ui(Player& player, Milliseconds currentTime);
+  explicit AtomS3Ui(Player& player);
   // From Esp32Ui.
-  void InitialSetup(Milliseconds currentTime) override;
-  void FinalSetup(Milliseconds currentTime) override;
+  void InitialSetup() override;
+  void FinalSetup() override;
   void RunLoop(Milliseconds currentTime) override;
   // From GpioButton::ButtonInterface.
   void ShortPress(uint8_t pin) override;

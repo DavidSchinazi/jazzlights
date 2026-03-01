@@ -265,7 +265,7 @@ Player& Player::connect(Network* n) {
   return *this;
 }
 
-void Player::begin(Milliseconds currentTime) {
+void Player::begin() {
   xyIndexStore_.Reset();
   frame_.pixelCount = 0;
   frame_.viewport.origin.x = 0;
@@ -297,7 +297,7 @@ void Player::begin(Milliseconds currentTime) {
     localDeviceId_ = NetworkDeviceId(deviceIdBytes);
   }
   currentLeader_ = localDeviceId_;
-  currentTime = timeMillis();
+  Milliseconds currentTime = timeMillis();
   jll_info(
       "%u Starting JazzLights player %s; "
       "basePrecedence %u precedenceGain %u strands: %zu%s, "
@@ -376,7 +376,7 @@ void Player::triggerPatternOverride(Milliseconds currentTime) {
 #endif  // FAIRY_WAND
 
 bool Player::render(Milliseconds currentTime) {
-  if (!ready_) { begin(currentTime); }
+  if (!ready_) { begin(); }
 
   // First listen on all networks.
   for (Network* network : networks_) {

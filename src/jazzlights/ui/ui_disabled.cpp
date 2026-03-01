@@ -19,7 +19,7 @@ static constexpr uint8_t kBrightness = 32;
 #endif
 }  // namespace
 
-void NoOpUi::InitialSetup(Milliseconds /*currentTime*/) { player_.set_brightness(kBrightness); }
+void NoOpUi::InitialSetup() { player_.set_brightness(kBrightness); }
 
 }  // namespace jazzlights
 

@@ -8,12 +8,12 @@ namespace jazzlights {
 
 #if JL_MAX485_BUS
 
-void SetupMax485Bus(Milliseconds currentTime);
+void SetupMax485Bus();
 
 void RunMax485Bus(Milliseconds currentTime);
 
 #else   // JL_MAX485_BUS
-static inline void SetupMax485Bus(Milliseconds currentTime) { (void)currentTime; }
+static inline void SetupMax485Bus() {}
 static inline void RunMax485Bus(Milliseconds currentTime) { (void)currentTime; }
 #endif  // JL_MAX485_BUS
 

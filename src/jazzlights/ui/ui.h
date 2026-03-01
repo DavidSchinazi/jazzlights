@@ -16,13 +16,13 @@ namespace jazzlights {
 
 class Esp32Ui {
  public:
-  explicit Esp32Ui(Player& player, Milliseconds currentTime) : player_(player) { (void)currentTime; }
+  explicit Esp32Ui(Player& player) : player_(player) {}
   virtual ~Esp32Ui() = default;
 
   virtual void set_fastled_runner(FastLedRunner* runner) { (void)runner; }
 
-  virtual void InitialSetup(Milliseconds currentTime) = 0;
-  virtual void FinalSetup(Milliseconds currentTime) = 0;
+  virtual void InitialSetup() = 0;
+  virtual void FinalSetup() = 0;
   virtual void RunLoop(Milliseconds currentTime) = 0;
 
  protected:
