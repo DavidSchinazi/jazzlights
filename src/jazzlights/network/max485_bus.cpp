@@ -523,7 +523,7 @@ BufferViewU8 Max485BusHandler::TaskFindReceivedMessage(BusId* destBusId, BusId* 
 
 }  // namespace
 
-void SetupMax485Bus(Milliseconds currentTime) { (void)Max485BusHandler::Get(); }
+void SetupMax485Bus() { (void)Max485BusHandler::Get(); }
 
 void RunMax485Bus(Milliseconds currentTime) {
   static OwnedBufferU8 outerRecvBuffer(kMaxMessageLength);
