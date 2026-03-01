@@ -36,13 +36,20 @@ class CoreMotorUi : public Esp32Ui {
 
  private:
   void SetMotorSpeed();
+  void UpdateMotorSpeedButton();
+  void UpdateConfirmButton();
   TouchButton* planetButton_ = nullptr;
   TouchButton* motorEnableButton_ = nullptr;
   TouchButton* motorDirectionButton_ = nullptr;
   TouchButton* motorSpeedButton_ = nullptr;
+  TouchButton* keypadButtons_[10] = {};
+  TouchButton* clearButton_ = nullptr;
+  TouchButton* confirmButton_ = nullptr;
   int32_t motorFrequencyHz_ = 3000;
   bool motorEnabled_ = false;
   bool motorDirectionForward_ = true;
+  bool keypadActive_ = false;
+  int32_t keypadValue_ = 0;
 };
 
 }  // namespace jazzlights

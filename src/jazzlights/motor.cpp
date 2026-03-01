@@ -33,6 +33,7 @@ void StepperMotor::SetSpeed(int32_t frequencyHz) {
     ESP_ERROR_CHECK(mcpwm_timer_start_stop(timer_, MCPWM_TIMER_STOP_EMPTY));
     return;
   }
+  if (halfPeriod == 0) { halfPeriod = 1; }
   SetEnabled(true);
   ESP_ERROR_CHECK(mcpwm_timer_set_period(timer_, 2 * halfPeriod));
   ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(comparator_, halfPeriod));
