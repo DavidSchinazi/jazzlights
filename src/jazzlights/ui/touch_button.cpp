@@ -12,9 +12,6 @@
 #include "jazzlights/util/log.h"
 
 namespace jazzlights {
-namespace {
-//
-}  // namespace
 
 void TouchButton::Setup(int16_t x, int16_t y, uint16_t w, uint16_t h, const char* label) {
   x_ = x;
