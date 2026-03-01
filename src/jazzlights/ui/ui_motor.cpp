@@ -56,7 +56,7 @@ void CoreMotorUi::InitialSetup() {  // 320w * 240h
 }
 
 void CoreMotorUi::FinalSetup() {
-  planetButton_->Draw();
+  //   planetButton_->Draw();
   motorEnableButton_->Draw();
   motorDirectionButton_->Draw();
   motorSpeedButton_->Draw();
@@ -89,7 +89,7 @@ void CoreMotorUi::RunLoop(Milliseconds currentTime) {
       for (int i = 0; i <= 9; i++) { keypadButtons_[i]->Hide(); }
       clearButton_->Hide();
       confirmButton_->Hide();
-      planetButton_->Draw();
+      //   planetButton_->Draw();
       motorEnableButton_->Draw();
       motorDirectionButton_->Draw();
       motorSpeedButton_->Draw();
@@ -109,7 +109,7 @@ void CoreMotorUi::RunLoop(Milliseconds currentTime) {
       for (int i = 0; i <= 9; i++) { keypadButtons_[i]->Hide(); }
       clearButton_->Hide();
       confirmButton_->Hide();
-      planetButton_->Draw();
+      //   planetButton_->Draw();
       motorEnableButton_->Draw();
       motorDirectionButton_->Draw();
       motorSpeedButton_->Draw();
