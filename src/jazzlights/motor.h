@@ -3,10 +3,6 @@
 
 #include "jazzlights/config.h"
 
-#ifndef JL_MOTOR
-#define JL_MOTOR 0
-#endif  // JL_MOTOR
-
 #if JL_MOTOR
 
 #include <driver/gpio.h>

@@ -39,6 +39,14 @@
 #define JL_PLAYER_SLEEPS 1
 #endif
 
+#ifndef JL_PLAYER_SKIP_FLAME
+#if JL_MOTOR
+#define JL_PLAYER_SKIP_FLAME 1
+#else  // JL_MOTOR
+#define JL_PLAYER_SKIP_FLAME 0
+#endif  // JL_MOTOR
+#endif  // JL_PLAYER_SKIP_FLAME
+
 namespace jazzlights {
 namespace {
 // This value was intentionally selected by brute-forcing all possible values that start with rings-rainbow followed by
@@ -225,11 +233,15 @@ static const Effect* patternFromBits(PatternBits pattern) {
         return &hiphotic_pattern;
       }
     } else {
+#if JL_PLAYER_SKIP_FLAME
+      return &rings_pattern;
+#else   // JL_PLAYER_SKIP_FLAME
       if (patternbit(pattern, 2)) {  // 01x - flame
         return &flame_pattern;
       } else {  // 00x - rings
         return &rings_pattern;
       }
+#endif  // JL_PLAYER_SKIP_FLAME
     }
   }
   jll_fatal("Failed to pick an effect %s", displayBitsAsBinary(pattern).c_str());

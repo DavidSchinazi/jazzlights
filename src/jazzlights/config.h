@@ -168,6 +168,10 @@
 #define JL_HALL_SENSOR 0
 #endif  // JL_HALL_SENSOR
 
+#ifndef JL_MOTOR
+#define JL_MOTOR 0
+#endif  // JL_MOTOR
+
 #if JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_LITE)
 inline constexpr int kPinB1 = 33;
 inline constexpr int kPinB2 = 23;
