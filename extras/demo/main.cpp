@@ -34,7 +34,7 @@ int runMain(int argc, char** argv) {
   player.addStrand(layout, renderer);
   player.setRandomizeLocalDeviceId(true);
   player.connect(UnixUdpNetwork::get());
-  player.begin(timeMillis());
+  player.begin();
   if (startLooping) { player.loopOne(timeMillis()); }
   if (shouldSetPattern) { player.setPattern(pattern, timeMillis()); }
 

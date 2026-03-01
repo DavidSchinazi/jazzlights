@@ -29,7 +29,7 @@ int runMain(int argc, char** argv) {
   }
   player.addStrand(pixels, noopRenderer);
   if (useNetwork) { player.connect(UnixUdpNetwork::get()); }
-  player.begin(timeMillis());
+  player.begin();
   Milliseconds lastFpsEpochTime = 0;
   while (true) {
     const Milliseconds currentTime = timeMillis();
