@@ -28,17 +28,21 @@ void CoreMotorUi::InitialSetup() {  // 320w * 240h
   UpdateMotorSpeedButton();
 
   const int w = 320 / 3;
-  const int h = 240 / 4;
+  const int h = 240 / 5;
+  backButton_ = TouchButtonManager::Get()->AddButton(0, 0, w, h, "Back");
+  backButton_->Hide();
+  speedDisplayButton_ = TouchButtonManager::Get()->AddButton(w, 0, 320 - w, h, "");
+  speedDisplayButton_->Hide();
   for (int i = 1; i <= 9; i++) {
     char label[2] = {static_cast<char>('0' + i), '\0'};
-    keypadButtons_[i] = TouchButtonManager::Get()->AddButton(((i - 1) % 3) * w, ((i - 1) / 3) * h, w, h, label);
+    keypadButtons_[i] = TouchButtonManager::Get()->AddButton(((i - 1) % 3) * w, ((i - 1) / 3 + 1) * h, w, h, label);
     keypadButtons_[i]->Hide();
   }
-  keypadButtons_[0] = TouchButtonManager::Get()->AddButton(w, 3 * h, w, h, "0");
+  keypadButtons_[0] = TouchButtonManager::Get()->AddButton(w, 4 * h, w, h, "0");
   keypadButtons_[0]->Hide();
-  clearButton_ = TouchButtonManager::Get()->AddButton(0, 3 * h, w, h, "Clear");
+  clearButton_ = TouchButtonManager::Get()->AddButton(0, 4 * h, w, h, "Clear");
   clearButton_->Hide();
-  confirmButton_ = TouchButtonManager::Get()->AddButton(2 * w, 3 * h, 320 - 2 * w, h, "Confirm");
+  confirmButton_ = TouchButtonManager::Get()->AddButton(2 * w, 4 * h, 320 - 2 * w, h, "Confirm");
   confirmButton_->Hide();
 
   M5.Display.fillScreen(BLACK);
@@ -70,18 +74,33 @@ void CoreMotorUi::RunLoop(Milliseconds currentTime) {
     for (int i = 0; i <= 9; i++) {
       if (keypadButtons_[i]->JustReleased()) {
         keypadValue_ = keypadValue_ * 10 + i;
-        UpdateConfirmButton();
+        UpdateSpeedDisplay();
       }
+    }
+    if (backButton_->JustReleased()) {
+      keypadActive_ = false;
+      backButton_->Hide();
+      speedDisplayButton_->Hide();
+      for (int i = 0; i <= 9; i++) { keypadButtons_[i]->Hide(); }
+      clearButton_->Hide();
+      confirmButton_->Hide();
+      planetButton_->Draw();
+      motorEnableButton_->Draw();
+      motorDirectionButton_->Draw();
+      motorSpeedButton_->Draw();
+      TouchButtonManager::Get()->Redraw();
     }
     if (clearButton_->JustReleased()) {
       keypadValue_ = 0;
-      UpdateConfirmButton();
+      UpdateSpeedDisplay();
     }
     if (confirmButton_->JustReleased()) {
       motorFrequencyHz_ = keypadValue_;
       SetMotorSpeed();
       UpdateMotorSpeedButton();
       keypadActive_ = false;
+      backButton_->Hide();
+      speedDisplayButton_->Hide();
       for (int i = 0; i <= 9; i++) { keypadButtons_[i]->Hide(); }
       clearButton_->Hide();
       confirmButton_->Hide();
@@ -109,10 +128,12 @@ void CoreMotorUi::RunLoop(Milliseconds currentTime) {
       motorEnableButton_->Hide();
       motorDirectionButton_->Hide();
       motorSpeedButton_->Hide();
+      backButton_->Draw();
+      speedDisplayButton_->Draw();
       for (int i = 0; i <= 9; i++) { keypadButtons_[i]->Draw(); }
       clearButton_->Draw();
       confirmButton_->Draw();
-      UpdateConfirmButton();
+      UpdateSpeedDisplay();
       TouchButtonManager::Get()->Redraw();
     }
   }
@@ -132,10 +153,10 @@ void CoreMotorUi::UpdateMotorSpeedButton() {
   motorSpeedButton_->SetLabelText(label);
 }
 
-void CoreMotorUi::UpdateConfirmButton() {
+void CoreMotorUi::UpdateSpeedDisplay() {
   char label[32];
-  snprintf(label, sizeof(label), "OK: %lld", static_cast<int64_t>(keypadValue_));
-  confirmButton_->SetLabelText(label);
+  snprintf(label, sizeof(label), "%lld", static_cast<int64_t>(keypadValue_));
+  speedDisplayButton_->SetLabelText(label);
 }
 
 }  // namespace jazzlights
