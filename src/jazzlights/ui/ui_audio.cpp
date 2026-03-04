@@ -10,6 +10,7 @@
 #include "esp_dsp.h"
 #include "driver/i2s.h"
 #include "esp_log.h"
+#include "jazzlights/util/log.h"
 
 namespace jazzlights {
 
@@ -31,9 +32,11 @@ static float* fft_window = nullptr;
 AudioVisualizerUi::AudioVisualizerUi(Player& player) : Esp32Ui(player) {}
 
 void AudioVisualizerUi::InitialSetup() {
+    jll_info("Starting audio visualizer setup...");
     // Initialize M5CoreS3
     auto cfg = M5.config();
     M5.begin(cfg);
+    jll_info("M5CoreS3 initialized");
 
     // Setup I2S for microphone
     i2s_config_t i2s_config = {
@@ -58,6 +61,7 @@ void AudioVisualizerUi::InitialSetup() {
     ESP_ERROR_CHECK(i2s_driver_install(I2S_NUM_0, &i2s_config, 0, NULL));
     ESP_ERROR_CHECK(i2s_set_pin(I2S_NUM_0, &pin_config));
     ESP_ERROR_CHECK(i2s_set_clk(I2S_NUM_0, SAMPLE_RATE, I2S_BITS_PER_SAMPLE_16BIT, I2S_CHANNEL_MONO));
+    jll_info("I2S microphone initialized");
 
     // Allocate memory
     audio_buffer = (int16_t*)malloc(FFT_N * sizeof(int16_t));
@@ -68,17 +72,20 @@ void AudioVisualizerUi::InitialSetup() {
     // Initialize FFT
     ESP_ERROR_CHECK(dsps_fft2r_init_fc32(NULL, FFT_N));
     dsps_wind_hann_f32(fft_window, FFT_N);
+    jll_info("FFT initialized");
 
     M5.Lcd.fillScreen(BLACK);
+    jll_info("Audio visualizer setup complete");
 }
 
 void AudioVisualizerUi::FinalSetup() {}
 
 void AudioVisualizerUi::RunLoop(Milliseconds /*currentTime*/) {
     size_t bytes_read = 0;
-    i2s_read(I2S_NUM_0, audio_buffer, FFT_N * sizeof(int16_t), &bytes_read, portMAX_DELAY);
+    ESP_ERROR_CHECK(i2s_read(I2S_NUM_0, audio_buffer, FFT_N * sizeof(int16_t), &bytes_read, pdMS_TO_TICKS(100)));
 
     if (bytes_read > 0) {
+        jll_info("Read %d bytes from I2S", bytes_read);
         for (int i = 0; i < FFT_N; i++) {
             fft_input[i] = (float)audio_buffer[i];
         }
@@ -94,6 +101,7 @@ void AudioVisualizerUi::RunLoop(Milliseconds /*currentTime*/) {
             float imag = fft_input[i * 2 + 1];
             fft_output[i] = 10 * log10f(real * real + imag * imag);
         }
+        jll_info("FFT magnitude [10]: %f", fft_output[10]);
 
         M5.Lcd.fillScreen(BLACK);
 
@@ -106,6 +114,8 @@ void AudioVisualizerUi::RunLoop(Milliseconds /*currentTime*/) {
             int x = i * BAR_WIDTH;
             M5.Lcd.fillRect(x, SCREEN_HEIGHT - height, BAR_WIDTH - 1, height, GREEN);
         }
+    } else {
+        jll_info("Could not read from I2S");
     }
     vTaskDelay(pdMS_TO_TICKS(10));
 }
