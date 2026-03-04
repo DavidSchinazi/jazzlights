@@ -115,6 +115,7 @@ bool StepperMotor::Setup(int32_t frequencyHz) {
 void StepperMotor::SetEnabled(bool enabled) {
   if (enablePin_ == GPIO_NUM_NC) { return; }
   if (enabled == lastEnabled_) { return; }
+  jll_info("Setting enable pin %d to %u", enablePin_, (enabled ? 0 : 1));
   ESP_ERROR_CHECK(gpio_set_level(enablePin_, (enabled ? 0 : 1)));
   lastEnabled_ = enabled;
 }
@@ -122,6 +123,7 @@ void StepperMotor::SetEnabled(bool enabled) {
 void StepperMotor::SetDirection(bool direction) {
   if (directionPin_ == GPIO_NUM_NC) { return; }
   if (direction == lastDirection_) { return; }
+  jll_info("Setting direction pin %d to %u", directionPin_, (direction ? 1 : 0));
   ESP_ERROR_CHECK(gpio_set_level(directionPin_, (direction ? 1 : 0)));
   lastDirection_ = direction;
 }
