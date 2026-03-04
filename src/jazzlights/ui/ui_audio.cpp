@@ -9,6 +9,7 @@
 #include <M5Unified.h>
 #include "esp_dsp.h"
 #include "driver/i2s.h"
+#include "esp_log.h"
 
 namespace jazzlights {
 
@@ -54,9 +55,9 @@ void AudioVisualizerUi::InitialSetup() {
         .data_out_num = GPIO_NUM_NC,
         .data_in_num = GPIO_NUM_2
     };
-    i2s_driver_install(I2S_NUM_0, &i2s_config, 0, NULL);
-    i2s_set_pin(I2S_NUM_0, &pin_config);
-    i2s_set_clk(I2S_NUM_0, SAMPLE_RATE, I2S_BITS_PER_SAMPLE_16BIT, I2S_CHANNEL_MONO);
+    ESP_ERROR_CHECK(i2s_driver_install(I2S_NUM_0, &i2s_config, 0, NULL));
+    ESP_ERROR_CHECK(i2s_set_pin(I2S_NUM_0, &pin_config));
+    ESP_ERROR_CHECK(i2s_set_clk(I2S_NUM_0, SAMPLE_RATE, I2S_BITS_PER_SAMPLE_16BIT, I2S_CHANNEL_MONO));
 
     // Allocate memory
     audio_buffer = (int16_t*)malloc(FFT_N * sizeof(int16_t));
@@ -65,7 +66,7 @@ void AudioVisualizerUi::InitialSetup() {
     fft_window = (float*)malloc(FFT_N * sizeof(float));
 
     // Initialize FFT
-    dsps_fft2r_init_fc32(NULL, FFT_N);
+    ESP_ERROR_CHECK(dsps_fft2r_init_fc32(NULL, FFT_N));
     dsps_wind_hann_f32(fft_window, FFT_N);
 
     M5.Lcd.fillScreen(BLACK);
@@ -84,7 +85,7 @@ void AudioVisualizerUi::RunLoop(Milliseconds /*currentTime*/) {
 
         // Apply window and perform FFT
         dsps_mul_f32(fft_input, fft_window, fft_input, FFT_N, 1, 1, 1);
-        dsps_fft2r_fc32((float*)fft_input, FFT_N);
+        ESP_ERROR_CHECK(dsps_fft2r_fc32((float*)fft_input, FFT_N));
         dsps_bit_rev_fc32(fft_input, FFT_N);
 
         // Convert to magnitude
