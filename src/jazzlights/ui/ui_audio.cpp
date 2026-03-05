@@ -48,6 +48,7 @@ void AudioVisualizerUi::RunLoop(Milliseconds /*currentTime*/) {
   }
 
   waveform_buffer_[waveform_index_] = max_mag;
+  beat_buffer_[waveform_index_] = data.beat;
   waveform_index_ = (waveform_index_ + 1) % kScreenWidth;
 
   // Drawing
@@ -123,19 +124,27 @@ void AudioVisualizerUi::RunLoop(Milliseconds /*currentTime*/) {
       // Draw peak indicator (single line or small rect)
       if (ph > 0) { M5.Lcd.drawFastHLine(x, kScreenHeight - ph, bar_width - 1, WHITE); }
     }
+    // If beat detected, draw red border
+    if (data.beat) { M5.Lcd.drawRect(0, 0, kScreenWidth, kScreenHeight, RED); }
   } else {
     float max_db = data.agc_max;
     float min_db = data.agc_min;
     // Waveform drawing logic
     for (int i = 0; i < kScreenWidth; i++) {
-      float mag = waveform_buffer_[(waveform_index_ - 1 - i + kScreenWidth) % kScreenWidth];
+      int idx = (waveform_index_ - 1 - i + kScreenWidth) % kScreenWidth;
+      float mag = waveform_buffer_[idx];
+      bool is_beat = beat_buffer_[idx];
       int h = (int)((mag - min_db) * kScreenHeight / (max_db - min_db));
       if (h > kScreenHeight) h = kScreenHeight;
       if (h < 0) h = 0;
 
       // Clear top, draw line
-      if (h < kScreenHeight) { M5.Lcd.drawFastVLine(i, 0, kScreenHeight - h, BLACK); }
-      if (h > 0) { M5.Lcd.drawFastVLine(i, kScreenHeight - h, h, CYAN); }
+      if (is_beat) {
+        M5.Lcd.drawFastVLine(i, 0, kScreenHeight, RED);
+      } else {
+        if (h < kScreenHeight) { M5.Lcd.drawFastVLine(i, 0, kScreenHeight - h, BLACK); }
+        if (h > 0) { M5.Lcd.drawFastVLine(i, kScreenHeight - h, h, CYAN); }
+      }
     }
   }
   M5.Lcd.endWrite();

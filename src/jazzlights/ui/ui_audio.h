@@ -26,6 +26,7 @@ class AudioVisualizerUi : public Esp32Ui {
   enum class VisualizationMode { kSpectrum, kWaveform };
   VisualizationMode visualization_mode_ = VisualizationMode::kSpectrum;
   float waveform_buffer_[kScreenWidth] = {0};
+  bool beat_buffer_[kScreenWidth] = {false};
   int waveform_index_ = 0;
 };
 
