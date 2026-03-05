@@ -8,10 +8,9 @@
 #if JL_IS_CONTROLLER(CORES3)
 
 #include <M5Unified.h>
+#include <esp_dsp.h>
+#include <esp_log.h>
 
-#include "driver/i2s.h"
-#include "esp_dsp.h"
-#include "esp_log.h"
 #include "jazzlights/util/log.h"
 
 namespace jazzlights {
