@@ -24,6 +24,12 @@ class AudioVisualizerUi : public Esp32Ui {
  private:
   static void AudioTask(void* param);
   static constexpr int kNumBands = 32;
+  static constexpr int kScreenWidth = 320;
+  static constexpr int kScreenHeight = 240;
+  enum class VisualizationMode { kSpectrum, kWaveform };
+  VisualizationMode visualization_mode_ = VisualizationMode::kSpectrum;
+  float waveform_buffer_[kScreenWidth] = {0};
+  int waveform_index_ = 0;
   float band_magnitudes_[kNumBands] = {0};
   float peak_magnitudes_[kNumBands] = {0};
   std::mutex audio_data_mutex_;

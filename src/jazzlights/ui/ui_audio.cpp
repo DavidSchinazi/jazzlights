@@ -18,10 +18,6 @@ namespace jazzlights {
 #define FFT_N 256
 #define SAMPLE_RATE 16000
 
-// Screen dimensions
-#define SCREEN_WIDTH 320
-#define SCREEN_HEIGHT 240
-
 AudioVisualizerUi::AudioVisualizerUi(Player& player) : Esp32Ui(player) {}
 
 void AudioVisualizerUi::AudioTask(void* param) {
@@ -156,84 +152,113 @@ void AudioVisualizerUi::InitialSetup() {
 void AudioVisualizerUi::FinalSetup() {}
 
 void AudioVisualizerUi::RunLoop(Milliseconds /*currentTime*/) {
+  M5.update();
+  if (M5.Touch.getCount() > 0 && M5.Touch.getDetail(0).wasPressed()) {
+    visualization_mode_ = (visualization_mode_ == VisualizationMode::kSpectrum) ? VisualizationMode::kWaveform
+                                                                                : VisualizationMode::kSpectrum;
+    M5.Lcd.fillScreen(BLACK);
+  }
+
   float current_bands[kNumBands];
   float current_peaks[kNumBands];
+  float max_mag = 0;
   {
     std::lock_guard<std::mutex> lock(audio_data_mutex_);
     memcpy(current_bands, band_magnitudes_, sizeof(current_bands));
     memcpy(current_peaks, peak_magnitudes_, sizeof(current_peaks));
   }
 
+  for (int i = 0; i < kNumBands; i++) {
+    if (current_bands[i] > max_mag) max_mag = current_bands[i];
+  }
+
+  waveform_buffer_[waveform_index_] = max_mag;
+  waveform_index_ = (waveform_index_ + 1) % kScreenWidth;
+
   // Drawing
   M5.Lcd.startWrite();
-  int bar_width = SCREEN_WIDTH / kNumBands;
+  int bar_width = kScreenWidth / kNumBands;
   float min_db = 50.0f;  // Noise floor
   float max_db = 90.0f;  // Adjust based on sensitivity
 
-  for (int i = 0; i < kNumBands; i++) {
-    float mag = current_bands[i];
-    int h = (int)((mag - min_db) * SCREEN_HEIGHT / (max_db - min_db));
-    if (h > SCREEN_HEIGHT) h = SCREEN_HEIGHT;
-    if (h < 0) h = 0;
+  if (visualization_mode_ == VisualizationMode::kSpectrum) {
+    for (int i = 0; i < kNumBands; i++) {
+      float mag = current_bands[i];
+      int h = (int)((mag - min_db) * kScreenHeight / (max_db - min_db));
+      if (h > kScreenHeight) h = kScreenHeight;
+      if (h < 0) h = 0;
 
-    float pmag = current_peaks[i];
-    int ph = (int)((pmag - min_db) * SCREEN_HEIGHT / (max_db - min_db));
-    if (ph > SCREEN_HEIGHT) ph = SCREEN_HEIGHT;
-    if (ph < 0) ph = 0;
+      float pmag = current_peaks[i];
+      int ph = (int)((pmag - min_db) * kScreenHeight / (max_db - min_db));
+      if (ph > kScreenHeight) ph = kScreenHeight;
+      if (ph < 0) ph = 0;
 
-    int x = i * bar_width;
+      int x = i * bar_width;
 
-    // Calculate color based on frequency (Rainbow)
-    float hue = (float)i / kNumBands * 255.0f;
-    // Simple HSV to RGB mapping (V=1, S=1)
-    uint8_t r, g, b;
-    float sector = hue / 42.5f;  // 6 sectors
-    int i_sector = (int)sector;
-    float f_sector = sector - i_sector;
-    uint8_t p = 0;
-    uint8_t q = (uint8_t)(255 * (1.0f - f_sector));
-    uint8_t t = (uint8_t)(255 * f_sector);
-    switch (i_sector) {
-      case 0:
-        r = 255;
-        g = t;
-        b = p;
-        break;
-      case 1:
-        r = q;
-        g = 255;
-        b = p;
-        break;
-      case 2:
-        r = p;
-        g = 255;
-        b = t;
-        break;
-      case 3:
-        r = p;
-        g = q;
-        b = 255;
-        break;
-      case 4:
-        r = t;
-        g = p;
-        b = 255;
-        break;
-      default:
-        r = 255;
-        g = p;
-        b = q;
-        break;
+      // Calculate color based on frequency (Rainbow)
+      float hue = (float)i / kNumBands * 255.0f;
+      // Simple HSV to RGB mapping (V=1, S=1)
+      uint8_t r, g, b;
+      float sector = hue / 42.5f;  // 6 sectors
+      int i_sector = (int)sector;
+      float f_sector = sector - i_sector;
+      uint8_t p = 0;
+      uint8_t q = (uint8_t)(255 * (1.0f - f_sector));
+      uint8_t t = (uint8_t)(255 * f_sector);
+      switch (i_sector) {
+        case 0:
+          r = 255;
+          g = t;
+          b = p;
+          break;
+        case 1:
+          r = q;
+          g = 255;
+          b = p;
+          break;
+        case 2:
+          r = p;
+          g = 255;
+          b = t;
+          break;
+        case 3:
+          r = p;
+          g = q;
+          b = 255;
+          break;
+        case 4:
+          r = t;
+          g = p;
+          b = 255;
+          break;
+        default:
+          r = 255;
+          g = p;
+          b = q;
+          break;
+      }
+      uint16_t color = M5.Lcd.color565(r, g, b);
+
+      // Draw bar - clear background above bar
+      if (h < kScreenHeight) { M5.Lcd.fillRect(x, 0, bar_width - 1, kScreenHeight - h, BLACK); }
+      // Draw the main bar
+      M5.Lcd.fillRect(x, kScreenHeight - h, bar_width - 1, h, color);
+
+      // Draw peak indicator (single line or small rect)
+      if (ph > 0) { M5.Lcd.drawFastHLine(x, kScreenHeight - ph, bar_width - 1, WHITE); }
     }
-    uint16_t color = M5.Lcd.color565(r, g, b);
+  } else {
+    // Waveform drawing logic
+    for (int i = 0; i < kScreenWidth; i++) {
+      float mag = waveform_buffer_[(waveform_index_ - 1 - i + kScreenWidth) % kScreenWidth];
+      int h = (int)((mag - min_db) * kScreenHeight / (max_db - min_db));
+      if (h > kScreenHeight) h = kScreenHeight;
+      if (h < 0) h = 0;
 
-    // Draw bar - clear background above bar
-    if (h < SCREEN_HEIGHT) { M5.Lcd.fillRect(x, 0, bar_width - 1, SCREEN_HEIGHT - h, BLACK); }
-    // Draw the main bar
-    M5.Lcd.fillRect(x, SCREEN_HEIGHT - h, bar_width - 1, h, color);
-
-    // Draw peak indicator (single line or small rect)
-    if (ph > 0) { M5.Lcd.drawFastHLine(x, SCREEN_HEIGHT - ph, bar_width - 1, WHITE); }
+      // Clear top, draw line
+      if (h < kScreenHeight) { M5.Lcd.drawFastVLine(i, 0, kScreenHeight - h, BLACK); }
+      if (h > 0) { M5.Lcd.drawFastVLine(i, kScreenHeight - h, h, CYAN); }
+    }
   }
   M5.Lcd.endWrite();
 }
