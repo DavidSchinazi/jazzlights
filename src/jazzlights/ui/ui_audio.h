@@ -39,6 +39,8 @@ class AudioVisualizerUi : public Esp32Ui {
   float* fft_output_ = nullptr;
   float* fft_window_ = nullptr;
   Milliseconds last_peak_decay_time_ = 0;
+  float agc_min_ = 50.0f;
+  float agc_max_ = 90.0f;
 };
 
 }  // namespace jazzlights

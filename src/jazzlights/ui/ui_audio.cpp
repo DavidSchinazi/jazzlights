@@ -175,11 +175,36 @@ void AudioVisualizerUi::RunLoop(Milliseconds /*currentTime*/) {
   waveform_buffer_[waveform_index_] = max_mag;
   waveform_index_ = (waveform_index_ + 1) % kScreenWidth;
 
+  // AGC: Calculate min/max in waveform_buffer_
+  float current_min = 100.0f;
+  float current_max = -100.0f;
+  bool has_data = false;
+  for (int i = 0; i < kScreenWidth; i++) {
+    if (waveform_buffer_[i] > 0) {  // Only consider non-zero values
+      if (waveform_buffer_[i] < current_min) current_min = waveform_buffer_[i];
+      if (waveform_buffer_[i] > current_max) current_max = waveform_buffer_[i];
+      has_data = true;
+    }
+  }
+
+  if (has_data) {
+    // Ensure a minimum range to avoid extreme sensitivity when it's quiet
+    if (current_max - current_min < 10.0f) {
+      float center = (current_max + current_min) / 2.0f;
+      current_min = center - 5.0f;
+      current_max = center + 5.0f;
+    }
+    // Update smoothed AGC values
+    float agc_smoothing = 0.95f;
+    agc_min_ = agc_min_ * agc_smoothing + current_min * (1.0f - agc_smoothing);
+    agc_max_ = agc_max_ * agc_smoothing + current_max * (1.0f - agc_smoothing);
+  }
+
   // Drawing
   M5.Lcd.startWrite();
   int bar_width = kScreenWidth / kNumBands;
-  float min_db = 50.0f;  // Noise floor
-  float max_db = 90.0f;  // Adjust based on sensitivity
+  float min_db = agc_min_;
+  float max_db = agc_max_;
 
   if (visualization_mode_ == VisualizationMode::kSpectrum) {
     for (int i = 0; i < kNumBands; i++) {
