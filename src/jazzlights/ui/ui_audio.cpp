@@ -47,7 +47,8 @@ void AudioVisualizerUi::InitialSetup() {
   auto mic_cfg = M5.Mic.config();
   mic_cfg.sample_rate = SAMPLE_RATE;
   mic_cfg.stereo = false;
-  mic_cfg.magnification = 16;
+  mic_cfg.magnification = 8;
+  mic_cfg.noise_filter_level = 2;
   M5.Mic.config(mic_cfg);
   M5.Mic.begin();
   jll_info("M5 microphone initialized");
@@ -138,14 +139,17 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
     // Drawing
     M5.Lcd.startWrite();
     int bar_width = SCREEN_WIDTH / kNumBands;
-    float max_db = 80.0f;  // Adjust based on sensitivity
+    float min_db = 50.0f;  // Noise floor
+    float max_db = 90.0f;  // Adjust based on sensitivity
 
     for (int i = 0; i < kNumBands; i++) {
-      int h = (int)(band_magnitudes_[i] * SCREEN_HEIGHT / max_db);
+      float mag = band_magnitudes_[i];
+      int h = (int)((mag - min_db) * SCREEN_HEIGHT / (max_db - min_db));
       if (h > SCREEN_HEIGHT) h = SCREEN_HEIGHT;
       if (h < 0) h = 0;
 
-      int ph = (int)(peak_magnitudes_[i] * SCREEN_HEIGHT / max_db);
+      float pmag = peak_magnitudes_[i];
+      int ph = (int)((pmag - min_db) * SCREEN_HEIGHT / (max_db - min_db));
       if (ph > SCREEN_HEIGHT) ph = SCREEN_HEIGHT;
       if (ph < 0) ph = 0;
 
@@ -205,7 +209,6 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
     }
     M5.Lcd.endWrite();
   }
-  vTaskDelay(pdMS_TO_TICKS(10));
 }
 
 }  // namespace jazzlights
