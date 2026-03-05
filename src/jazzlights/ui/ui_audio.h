@@ -28,6 +28,7 @@ class AudioVisualizerUi : public Esp32Ui {
   float waveform_buffer_[kScreenWidth] = {0};
   bool beat_buffer_[kScreenWidth] = {false};
   int waveform_index_ = 0;
+  double last_waveform_update_ = 0;
 };
 
 }  // namespace jazzlights

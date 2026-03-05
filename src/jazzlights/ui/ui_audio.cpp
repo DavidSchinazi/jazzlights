@@ -31,7 +31,7 @@ void AudioVisualizerUi::InitialSetup() {
 
 void AudioVisualizerUi::FinalSetup() {}
 
-void AudioVisualizerUi::RunLoop(Milliseconds /*currentTime*/) {
+void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
   M5.update();
   if (M5.Touch.getCount() > 0 && M5.Touch.getDetail(0).wasPressed()) {
     visualization_mode_ = (visualization_mode_ == VisualizationMode::kSpectrum) ? VisualizationMode::kWaveform
@@ -47,9 +47,13 @@ void AudioVisualizerUi::RunLoop(Milliseconds /*currentTime*/) {
     if (data.bands[i] > max_mag) max_mag = data.bands[i];
   }
 
-  waveform_buffer_[waveform_index_] = max_mag;
-  beat_buffer_[waveform_index_] = data.beat;
-  waveform_index_ = (waveform_index_ + 1) % kScreenWidth;
+  if (last_waveform_update_ == 0 || currentTime - last_waveform_update_ > 5000) { last_waveform_update_ = currentTime; }
+  while (last_waveform_update_ + 12.5 <= (double)currentTime) {
+    waveform_buffer_[waveform_index_] = max_mag;
+    beat_buffer_[waveform_index_] = data.beat;
+    waveform_index_ = (waveform_index_ + 1) % kScreenWidth;
+    last_waveform_update_ += 12.5;
+  }
 
   // Drawing
   M5.Lcd.startWrite();
