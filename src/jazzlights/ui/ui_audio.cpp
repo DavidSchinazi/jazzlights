@@ -87,7 +87,7 @@ void AudioVisualizerUi::RunLoop(Milliseconds /*currentTime*/) {
       float imag = fft_input[i * 2 + 1];
       float power = real * real + imag * imag;
       fft_output[i] = 10 * log10f(power + 1e-10f);  // Add small epsilon to avoid log(0)
-      jll_info("FFT magnitude [%d]: %f (r=%f, i=%f, p=%f)", i, fft_output[i], real, imag, power);
+      //   jll_info("FFT magnitude [%d]: %f (r=%f, i=%f, p=%f)", i, fft_output[i], real, imag, power);
     }
 
     M5.Lcd.fillScreen(BLACK);
