@@ -63,6 +63,9 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
     float max_db = data.agc_max;
     float min_db = max_db - 30.0f;  // Use a fixed 30dB dynamic range for the spectrum to keep it bright
 
+    // Clear previous beat border
+    M5.Lcd.drawRect(0, 0, kScreenWidth, kScreenHeight, BLACK);
+
     for (int i = 0; i < Audio::kNumBands; i++) {
       float mag = data.bands[i];
       int h = (int)((mag - min_db) * kScreenHeight / (max_db - min_db));
