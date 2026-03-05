@@ -63,9 +63,6 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
     float max_db = data.agc_max;
     float min_db = max_db - 30.0f;  // Use a fixed 30dB dynamic range for the spectrum to keep it bright
 
-    // Clear previous beat border
-    M5.Lcd.drawRect(0, 0, kScreenWidth, kScreenHeight, BLACK);
-
     for (int i = 0; i < Audio::kNumBands; i++) {
       float mag = data.bands[i];
       int h = (int)((mag - min_db) * kScreenHeight / (max_db - min_db));
@@ -131,8 +128,6 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
       // Draw peak indicator (single line or small rect)
       if (ph > 0) { M5.Lcd.drawFastHLine(x, kScreenHeight - ph, bar_width - 1, WHITE); }
     }
-    // If beat detected, draw red border
-    if (data.beat) { M5.Lcd.drawRect(0, 0, kScreenWidth, kScreenHeight, RED); }
   } else {
     float max_db = data.agc_max;
     float min_db = data.agc_min;
