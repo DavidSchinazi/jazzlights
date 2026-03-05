@@ -1,11 +1,6 @@
 #include "jazzlights/ui/ui_audio.h"
 
-#include "jazzlights/config.h"
-#include "jazzlights/player.h"
-
-#if JL_AUDIO_VISUALIZER
-
-#if JL_IS_CONTROLLER(CORES3)
+#if JL_AUDIO_VISUALIZER && JL_IS_CONTROLLER(CORES3)
 
 #include <Arduino.h>
 #include <M5Unified.h>
@@ -14,6 +9,7 @@
 
 #include <cstring>
 
+#include "jazzlights/player.h"
 #include "jazzlights/util/log.h"
 
 namespace jazzlights {
@@ -103,7 +99,6 @@ void AudioVisualizerUi::AudioTask(void* param) {
 }
 
 AudioVisualizerUi::~AudioVisualizerUi() {
-#if JL_AUDIO_VISUALIZER && JL_IS_CONTROLLER(CORES3)
   if (audio_task_handle_ != nullptr) {
     vTaskDelete(audio_task_handle_);
     audio_task_handle_ = nullptr;
@@ -116,11 +111,9 @@ AudioVisualizerUi::~AudioVisualizerUi() {
   fft_input_ = nullptr;
   fft_output_ = nullptr;
   fft_window_ = nullptr;
-#endif
 }
 
 void AudioVisualizerUi::InitialSetup() {
-#if JL_AUDIO_VISUALIZER && JL_IS_CONTROLLER(CORES3)
   if (audio_buffer_ != nullptr) {
     return;  // Already initialized
   }
@@ -158,13 +151,11 @@ void AudioVisualizerUi::InitialSetup() {
   jll_info("Audio task created");
 
   jll_info("Audio visualizer setup complete");
-#endif
 }
 
 void AudioVisualizerUi::FinalSetup() {}
 
 void AudioVisualizerUi::RunLoop(Milliseconds /*currentTime*/) {
-#if JL_AUDIO_VISUALIZER && JL_IS_CONTROLLER(CORES3)
   float current_bands[kNumBands];
   float current_peaks[kNumBands];
   {
@@ -245,37 +236,8 @@ void AudioVisualizerUi::RunLoop(Milliseconds /*currentTime*/) {
     if (ph > 0) { M5.Lcd.drawFastHLine(x, SCREEN_HEIGHT - ph, bar_width - 1, WHITE); }
   }
   M5.Lcd.endWrite();
-#endif
 }
 
 }  // namespace jazzlights
 
-#else  // JL_IS_CONTROLLER(CORES3)
-
-namespace jazzlights {
-
-// Non-functional implementation for other controllers
-AudioVisualizerUi::AudioVisualizerUi(Player& player) : Esp32Ui(player) {}
-AudioVisualizerUi::~AudioVisualizerUi() {}
-void AudioVisualizerUi::InitialSetup() {}
-void AudioVisualizerUi::FinalSetup() {}
-void AudioVisualizerUi::RunLoop(Milliseconds /*currentTime*/) {}
-
-}  // namespace jazzlights
-
-#endif  // JL_IS_CONTROLLER(CORES3)
-
-#else  // JL_AUDIO_VISUALIZER
-
-namespace jazzlights {
-
-// Non-functional implementation when audio visualizer is disabled
-AudioVisualizerUi::AudioVisualizerUi(Player& player) : Esp32Ui(player) {}
-AudioVisualizerUi::~AudioVisualizerUi() {}
-void AudioVisualizerUi::InitialSetup() {}
-void AudioVisualizerUi::FinalSetup() {}
-void AudioVisualizerUi::RunLoop(Milliseconds /*currentTime*/) {}
-
-}  // namespace jazzlights
-
-#endif  // JL_AUDIO_VISUALIZER
+#endif  // JL_AUDIO_VISUALIZER && JL_IS_CONTROLLER(CORES3)
