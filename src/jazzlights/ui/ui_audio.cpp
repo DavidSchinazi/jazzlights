@@ -48,7 +48,7 @@ void AudioVisualizerUi::InitialSetup() {
   mic_cfg.sample_rate = SAMPLE_RATE;
   mic_cfg.stereo = false;
   mic_cfg.magnification = 8;
-  mic_cfg.noise_filter_level = 2;
+  mic_cfg.noise_filter_level = 4;
   M5.Mic.config(mic_cfg);
   M5.Mic.begin();
   jll_info("M5 microphone initialized");
