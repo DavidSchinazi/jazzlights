@@ -163,31 +163,40 @@ void Audio::AudioTask(void* param) {
           audio->agc_max_ = audio->agc_max_ * agc_smoothing + current_max * (1.0f - agc_smoothing);
         }
 
-        // Beat detection: use first 4 bands (bass)
-        float beat_energy = 0;
-        for (int i = 0; i < 4; i++) { beat_energy += new_bands[i]; }
-        beat_energy /= 4.0f;
+        // Beat detection: Spectral Flux on first 8 bands (bass/low-mids)
+        float flux = 0;
+        static float prev_bands[8] = {0};
+        for (int i = 0; i < 8; i++) {
+          float diff = new_bands[i] - prev_bands[i];
+          if (diff > 0) flux += diff;
+          prev_bands[i] = new_bands[i];
+        }
 
-        // Compare to average energy in the beat window
-        float avg_beat_energy = 0;
+        float beat_energy = 0;
+        for (int i = 0; i < 8; i++) { beat_energy += new_bands[i]; }
+        beat_energy /= 8.0f;
+
+        // Compare flux to average flux in the window
+        float avg_flux = 0;
         int count = 0;
         for (int i = 0; i < kBeatWindowSize; i++) {
           if (audio->beat_buffer_[i] > 0) {
-            avg_beat_energy += audio->beat_buffer_[i];
+            avg_flux += audio->beat_buffer_[i];
             count++;
           }
         }
-        avg_beat_energy = (count > 0) ? (avg_beat_energy / count) : 0;
+        avg_flux = (count > 0) ? (avg_flux / count) : 0;
 
         audio->beat_ = false;
         uint32_t now = millis();
-        if (beat_energy > avg_beat_energy * 1.15f && beat_energy > audio->agc_min_ + 5.0f &&
-            now - last_beat_time > 200) {
+        // Trigger if flux is significantly above average OR we have a very sharp spike
+        if ((flux > avg_flux * 1.4f || flux > avg_flux + 2.0f) && flux > 0.2f &&
+            beat_energy > audio->agc_min_ - 20.0f && now - last_beat_time > 150) {
           audio->beat_ = true;
           last_beat_time = now;
         }
 
-        audio->beat_buffer_[audio->beat_index_] = beat_energy;
+        audio->beat_buffer_[audio->beat_index_] = flux;
         audio->beat_index_ = (audio->beat_index_ + 1) % kBeatWindowSize;
       }
     }
