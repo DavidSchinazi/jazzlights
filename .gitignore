@@ -15,4 +15,4 @@ sdkconfig.*
 !sdkconfig.*.defaults
 SCRATCH.txt
 __pycache__/
-.gemini/settings.json
+.gemini/
