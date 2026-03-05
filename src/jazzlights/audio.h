@@ -1,0 +1,67 @@
+#ifndef JAZZLIGHTS_AUDIO_H
+#define JAZZLIGHTS_AUDIO_H
+
+#include "jazzlights/config.h"
+
+#if JL_AUDIO_VISUALIZER
+
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
+#include <cstdint>
+#include <mutex>
+
+#include "jazzlights/types.h"
+
+namespace jazzlights {
+
+class Audio {
+ public:
+  static Audio& Get();
+
+  void Initialize();
+
+  static constexpr int kNumBands = 32;
+
+  struct VisualizerData {
+    float bands[kNumBands];
+    float peaks[kNumBands];
+    float agc_min;
+    float agc_max;
+    bool beat;
+  };
+
+  void GetVisualizerData(VisualizerData* data);
+
+ private:
+  Audio() = default;
+  static void AudioTask(void* param);
+
+  std::mutex audio_data_mutex_;
+  TaskHandle_t audio_task_handle_ = nullptr;
+
+  float band_magnitudes_[kNumBands] = {0};
+  float peak_magnitudes_[kNumBands] = {0};
+  float agc_min_ = 50.0f;
+  float agc_max_ = 90.0f;
+  bool beat_ = false;
+
+  int16_t* audio_buffer_ = nullptr;
+  float* fft_input_ = nullptr;
+  float* fft_output_ = nullptr;
+  float* fft_window_ = nullptr;
+
+  static constexpr int kAgcWindowSize = 312;  // ~5 seconds at 16ms per sample
+  float agc_buffer_[kAgcWindowSize] = {0};
+  int agc_index_ = 0;
+
+  static constexpr int kBeatWindowSize = 60;  // ~1 second at 16ms per sample
+  float beat_buffer_[kBeatWindowSize] = {0};
+  int beat_index_ = 0;
+};
+
+}  // namespace jazzlights
+
+#endif  // JL_AUDIO_VISUALIZER
+
+#endif  // JAZZLIGHTS_AUDIO_H
