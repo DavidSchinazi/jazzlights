@@ -68,8 +68,8 @@ void AudioVisualizerUi::InitialSetup() {
 
   // Allocate memory
   audio_buffer = (int16_t*)malloc(FFT_N * sizeof(int16_t));
-  fft_input = (float*)malloc(FFT_N * sizeof(float));
-  fft_output = (float*)malloc(FFT_N * sizeof(float) * 2);
+  fft_input = (float*)malloc(FFT_N * 2 * sizeof(float));
+  fft_output = (float*)malloc(FFT_N * sizeof(float));
   fft_window = (float*)malloc(FFT_N * sizeof(float));
 
   // Initialize FFT
@@ -89,19 +89,23 @@ void AudioVisualizerUi::RunLoop(Milliseconds /*currentTime*/) {
 
   if (bytes_read > 0) {
     jll_info("Read %d bytes from I2S", bytes_read);
-    for (int i = 0; i < FFT_N; i++) { fft_input[i] = (float)audio_buffer[i]; }
+    for (int i = 0; i < FFT_N; i++) {
+      fft_input[i * 2] = (float)audio_buffer[i];
+      fft_input[i * 2 + 1] = 0.0f;
+    }
 
     // Apply window and perform FFT
-    dsps_mul_f32(fft_input, fft_window, fft_input, FFT_N, 1, 1, 1);
-    ESP_ERROR_CHECK(dsps_fft2r_fc32((float*)fft_input, FFT_N));
+    dsps_mul_f32(fft_input, fft_window, fft_input, FFT_N, 2, 1, 2);
+    ESP_ERROR_CHECK(dsps_fft2r_fc32(fft_input, FFT_N));
     dsps_bit_rev_fc32(fft_input, FFT_N);
 
     // Convert to magnitude
     for (int i = 0; i < FFT_N / 2; i++) {
       float real = fft_input[i * 2];
       float imag = fft_input[i * 2 + 1];
-      fft_output[i] = 10 * log10f(real * real + imag * imag);
-      jll_info("FFT magnitude [%d]: %f", i, fft_output[i]);
+      float power = real * real + imag * imag;
+      fft_output[i] = 10 * log10f(power + 1e-10f);  // Add small epsilon to avoid log(0)
+      jll_info("FFT magnitude [%d]: %f (r=%f, i=%f, p=%f)", i, fft_output[i], real, imag, power);
     }
 
     M5.Lcd.fillScreen(BLACK);
