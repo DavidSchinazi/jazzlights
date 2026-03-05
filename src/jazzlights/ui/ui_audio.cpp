@@ -40,31 +40,14 @@ void AudioVisualizerUi::InitialSetup() {
   M5.begin(cfg);
   jll_info("M5CoreS3 initialized");
 
-  // Setup I2S for microphone
-  i2s_config_t i2s_config = {
-      .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX),
-      .sample_rate = SAMPLE_RATE,
-      .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
-      .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
-      .communication_format = I2S_COMM_FORMAT_STAND_I2S,
-      .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
-      .dma_buf_count = 2,
-      .dma_buf_len = FFT_N,
-      .use_apll = false,
-      .tx_desc_auto_clear = false,
-      .fixed_mclk = 0,
-  };
-  i2s_pin_config_t pin_config = {
-      .mck_io_num = GPIO_NUM_0,
-      .bck_io_num = GPIO_NUM_34,
-      .ws_io_num = GPIO_NUM_33,
-      .data_out_num = GPIO_NUM_NC,
-      .data_in_num = GPIO_NUM_14,
-  };
-  ESP_ERROR_CHECK(i2s_driver_install(I2S_NUM_0, &i2s_config, 0, NULL));
-  ESP_ERROR_CHECK(i2s_set_pin(I2S_NUM_0, &pin_config));
-  ESP_ERROR_CHECK(i2s_set_clk(I2S_NUM_0, SAMPLE_RATE, I2S_BITS_PER_SAMPLE_16BIT, I2S_CHANNEL_MONO));
-  jll_info("I2S microphone initialized");
+  // Setup microphone using M5Unified
+  auto mic_cfg = M5.Mic.config();
+  mic_cfg.sample_rate = SAMPLE_RATE;
+  mic_cfg.stereo = false;
+  mic_cfg.magnification = 16;
+  M5.Mic.config(mic_cfg);
+  M5.Mic.begin();
+  jll_info("M5 microphone initialized");
 
   // Allocate memory
   audio_buffer = (int16_t*)malloc(FFT_N * sizeof(int16_t));
@@ -85,10 +68,9 @@ void AudioVisualizerUi::FinalSetup() {}
 
 void AudioVisualizerUi::RunLoop(Milliseconds /*currentTime*/) {
   size_t bytes_read = 0;
-  ESP_ERROR_CHECK(i2s_read(I2S_NUM_0, audio_buffer, FFT_N * sizeof(int16_t), &bytes_read, pdMS_TO_TICKS(100)));
-
-  if (bytes_read > 0) {
-    jll_info("Read %d bytes from I2S", bytes_read);
+  if (M5.Mic.record(audio_buffer, FFT_N, SAMPLE_RATE)) {
+    bytes_read = FFT_N * sizeof(int16_t);
+    jll_info("Read %d bytes from microphone, first sample: %d", bytes_read, audio_buffer[0]);
     for (int i = 0; i < FFT_N; i++) {
       fft_input[i * 2] = (float)audio_buffer[i];
       fft_input[i * 2 + 1] = 0.0f;
