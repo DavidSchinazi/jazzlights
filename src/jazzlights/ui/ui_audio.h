@@ -41,6 +41,9 @@ class AudioVisualizerUi : public Esp32Ui {
   Milliseconds last_peak_decay_time_ = 0;
   float agc_min_ = 50.0f;
   float agc_max_ = 90.0f;
+  static constexpr int kAgcWindowSize = 312;  // ~5 seconds at 16ms per sample
+  float agc_buffer_[kAgcWindowSize] = {0};
+  int agc_index_ = 0;
 };
 
 }  // namespace jazzlights

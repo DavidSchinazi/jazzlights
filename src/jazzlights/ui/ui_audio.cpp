@@ -88,6 +88,36 @@ void AudioVisualizerUi::AudioTask(void* param) {
             if (ui->peak_magnitudes_[i] < 0) ui->peak_magnitudes_[i] = 0;
           }
         }
+
+        // AGC Tracking: Update 5-second window
+        float max_band_mag = 0;
+        for (int i = 0; i < kNumBands; i++) {
+          if (ui->band_magnitudes_[i] > max_band_mag) max_band_mag = ui->band_magnitudes_[i];
+        }
+        ui->agc_buffer_[ui->agc_index_] = max_band_mag;
+        ui->agc_index_ = (ui->agc_index_ + 1) % kAgcWindowSize;
+
+        float current_min = 100.0f;
+        float current_max = -100.0f;
+        bool has_data = false;
+        for (int i = 0; i < kAgcWindowSize; i++) {
+          if (ui->agc_buffer_[i] > 0) {
+            if (ui->agc_buffer_[i] < current_min) current_min = ui->agc_buffer_[i];
+            if (ui->agc_buffer_[i] > current_max) current_max = ui->agc_buffer_[i];
+            has_data = true;
+          }
+        }
+
+        if (has_data) {
+          if (current_max - current_min < 10.0f) {
+            float center = (current_max + current_min) / 2.0f;
+            current_min = center - 5.0f;
+            current_max = center + 5.0f;
+          }
+          float agc_smoothing = 0.95f;
+          ui->agc_min_ = ui->agc_min_ * agc_smoothing + current_min * (1.0f - agc_smoothing);
+          ui->agc_max_ = ui->agc_max_ * agc_smoothing + current_max * (1.0f - agc_smoothing);
+        }
       }
     }
     vTaskDelay(1);
@@ -175,38 +205,14 @@ void AudioVisualizerUi::RunLoop(Milliseconds /*currentTime*/) {
   waveform_buffer_[waveform_index_] = max_mag;
   waveform_index_ = (waveform_index_ + 1) % kScreenWidth;
 
-  // AGC: Calculate min/max in waveform_buffer_
-  float current_min = 100.0f;
-  float current_max = -100.0f;
-  bool has_data = false;
-  for (int i = 0; i < kScreenWidth; i++) {
-    if (waveform_buffer_[i] > 0) {  // Only consider non-zero values
-      if (waveform_buffer_[i] < current_min) current_min = waveform_buffer_[i];
-      if (waveform_buffer_[i] > current_max) current_max = waveform_buffer_[i];
-      has_data = true;
-    }
-  }
-
-  if (has_data) {
-    // Ensure a minimum range to avoid extreme sensitivity when it's quiet
-    if (current_max - current_min < 10.0f) {
-      float center = (current_max + current_min) / 2.0f;
-      current_min = center - 5.0f;
-      current_max = center + 5.0f;
-    }
-    // Update smoothed AGC values
-    float agc_smoothing = 0.95f;
-    agc_min_ = agc_min_ * agc_smoothing + current_min * (1.0f - agc_smoothing);
-    agc_max_ = agc_max_ * agc_smoothing + current_max * (1.0f - agc_smoothing);
-  }
-
   // Drawing
   M5.Lcd.startWrite();
   int bar_width = kScreenWidth / kNumBands;
-  float min_db = agc_min_;
-  float max_db = agc_max_;
 
   if (visualization_mode_ == VisualizationMode::kSpectrum) {
+    float max_db = agc_max_;
+    float min_db = max_db - 30.0f;  // Use a fixed 30dB dynamic range for the spectrum to keep it bright
+
     for (int i = 0; i < kNumBands; i++) {
       float mag = current_bands[i];
       int h = (int)((mag - min_db) * kScreenHeight / (max_db - min_db));
@@ -273,6 +279,8 @@ void AudioVisualizerUi::RunLoop(Milliseconds /*currentTime*/) {
       if (ph > 0) { M5.Lcd.drawFastHLine(x, kScreenHeight - ph, bar_width - 1, WHITE); }
     }
   } else {
+    float max_db = agc_max_;
+    float min_db = agc_min_;
     // Waveform drawing logic
     for (int i = 0; i < kScreenWidth; i++) {
       float mag = waveform_buffer_[(waveform_index_ - 1 - i + kScreenWidth) % kScreenWidth];
