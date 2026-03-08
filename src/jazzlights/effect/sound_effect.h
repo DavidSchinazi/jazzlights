@@ -12,11 +12,15 @@ struct SoundState {
   CRGB brightestColor;
 };
 
-class SoundEffect : public EffectWithPaletteAndState<SoundState> {
+struct SoundPixelState {
+  CRGB lastColor;
+};
+
+class SoundEffect : public EffectWithPaletteXYIndexAndState<SoundState, SoundPixelState> {
  public:
   void innerBegin(const Frame& frame, SoundState* state) const override;
   void innerRewind(const Frame& frame, SoundState* state) const override;
-  ColorWithPalette innerColor(const Frame& frame, const Pixel& px, SoundState* state) const override;
+  ColorWithPalette innerColor(const Frame& frame, SoundState* state, const Pixel& px) const override;
   std::string effectNamePrefix(PatternBits pattern) const override { return "sound"; }
 };
 
