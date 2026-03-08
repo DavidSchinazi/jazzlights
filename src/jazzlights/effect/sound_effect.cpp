@@ -2,6 +2,8 @@
 
 #if JL_AUDIO_VISUALIZER
 
+#include <cmath>
+
 namespace jazzlights {
 
 void SoundEffect::innerBegin(const Frame& /*frame*/, SoundState* state) const {
@@ -17,10 +19,17 @@ ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, So
   double xRel = (px.coord.x - frame.viewport.origin.x) / frame.viewport.size.width;
   if (xRel < 0) xRel = 0;
   if (xRel > 0.999) xRel = 0.999;
-  int bandIdx = static_cast<int>(xRel * Audio::kNumBands);
+
+  // Use interpolation between bands for smoother visuals
+  double xBand = xRel * (Audio::kNumBands - 1);
+  int bandLow = static_cast<int>(xBand);
+  int bandHigh = bandLow + 1;
+  if (bandHigh >= Audio::kNumBands) bandHigh = Audio::kNumBands - 1;
+  float frac = xBand - bandLow;
+
+  float magnitude = state->audioData.bands[bandLow] * (1.0f - frac) + state->audioData.bands[bandHigh] * frac;
 
   // Get magnitude for this band (expected to be roughly between agc_min and agc_max)
-  float magnitude = state->audioData.bands[bandIdx];
   float range = state->audioData.agc_max - state->audioData.agc_min;
   if (range < 1.0f) range = 1.0f;
 
@@ -28,22 +37,29 @@ ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, So
   if (normalizedMag < 0) normalizedMag = 0;
   if (normalizedMag > 1.0f) normalizedMag = 1.0f;
 
-  // Vertical position for bar height
-  double yRel = 1.0 - (px.coord.y - frame.viewport.origin.y) / frame.viewport.size.height;
-  if (yRel < 0) yRel = 0;
+  // Center-out vertical position (0 at center, 1 at edges)
+  double centerY = frame.viewport.origin.y + frame.viewport.size.height / 2.0;
+  double yRel = 2.0 * fabs(px.coord.y - centerY) / frame.viewport.size.height;
   if (yRel > 1.0) yRel = 1.0;
 
   uint8_t colorIdx = static_cast<uint8_t>(xRel * 255);
+  OurColorPalette ocp = palette(frame);
 
   if (yRel < normalizedMag) {
     // Inside the bar
+    if (state->audioData.beat) {
+      // Highlight on beat
+      return ColorWithPalette(colorIdx + 128);
+    }
     return ColorWithPalette(colorIdx);
-  } else if (state->audioData.beat && yRel < normalizedMag + 0.1) {
-    // Small highlight on beat
-    return ColorWithPalette(colorIdx + 128);
+  } else {
+    // Background: dimmed version of the frequency color
+    // If it's a beat, make the background brighter
+    CRGB color = colorFromOurPalette(ocp, colorIdx);
+    uint8_t backgroundBrightness = state->audioData.beat ? 48 : 12;
+    color.nscale8_video(backgroundBrightness);
+    return ColorWithPalette::OverrideColor(color);
   }
-
-  return ColorWithPalette::OverrideColor(CRGB::Black);
 }
 
 }  // namespace jazzlights
