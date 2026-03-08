@@ -28,6 +28,7 @@ class Audio {
     float peaks[kNumBands];
     float agc_min;
     float agc_max;
+    float volume;
     bool beat;
   };
 
@@ -44,6 +45,7 @@ class Audio {
   float peak_magnitudes_[kNumBands] = {0};
   float agc_min_ = 50.0f;
   float agc_max_ = 90.0f;
+  float volume_ = 0;
   bool beat_ = false;
 
   int16_t* audio_buffer_ = nullptr;

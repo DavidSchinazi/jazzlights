@@ -63,6 +63,7 @@ void Audio::GetVisualizerData(VisualizerData* data) {
   memcpy(data->peaks, peak_magnitudes_, sizeof(peak_magnitudes_));
   data->agc_min = agc_min_;
   data->agc_max = agc_max_;
+  data->volume = volume_;
   data->beat = beat_;
 }
 
@@ -161,6 +162,18 @@ void Audio::AudioTask(void* param) {
           float agc_smoothing = 0.95f;
           audio->agc_min_ = audio->agc_min_ * agc_smoothing + current_min * (1.0f - agc_smoothing);
           audio->agc_max_ = audio->agc_max_ * agc_smoothing + current_max * (1.0f - agc_smoothing);
+
+          // Calculate overall volume (average normalized magnitude)
+          float range = audio->agc_max_ - audio->agc_min_;
+          if (range < 1.0f) range = 1.0f;
+          float totalNormMag = 0;
+          for (int i = 0; i < kNumBands; i++) {
+            float norm = (audio->band_magnitudes_[i] - audio->agc_min_) / range;
+            if (norm < 0) norm = 0;
+            if (norm > 1.0f) norm = 1.0f;
+            totalNormMag += norm;
+          }
+          audio->volume_ = totalNormMag / kNumBands;
         }
 
         // Beat detection: Spectral Flux on first 8 bands (bass/low-mids)

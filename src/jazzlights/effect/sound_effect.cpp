@@ -8,24 +8,10 @@ namespace jazzlights {
 
 void SoundEffect::innerBegin(const Frame& /*frame*/, SoundState* state) const {
   Audio::Get().GetVisualizerData(&state->audioData);
-  state->currentVolume = 0;
 }
 
 void SoundEffect::innerRewind(const Frame& /*frame*/, SoundState* state) const {
   Audio::Get().GetVisualizerData(&state->audioData);
-
-  // Calculate average normalized magnitude for currentVolume
-  float range = state->audioData.agc_max - state->audioData.agc_min;
-  if (range < 1.0f) range = 1.0f;
-
-  float totalNormMag = 0;
-  for (int i = 0; i < Audio::kNumBands; i++) {
-    float norm = (state->audioData.bands[i] - state->audioData.agc_min) / range;
-    if (norm < 0) norm = 0;
-    if (norm > 1.0f) norm = 1.0f;
-    totalNormMag += norm;
-  }
-  state->currentVolume = totalNormMag / Audio::kNumBands;
 }
 
 ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, SoundState* state) const {
@@ -67,12 +53,11 @@ ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, So
     return ColorWithPalette::OverrideColor(color);
   } else {
     // Background: dimmed version of the frequency color, scaled by overall volume
-    uint8_t backgroundBrightness = 12 + static_cast<uint8_t>(64.0f * state->currentVolume);
+    uint8_t backgroundBrightness = 12 + static_cast<uint8_t>(64.0f * state->audioData.volume);
     color.nscale8_video(backgroundBrightness);
     return ColorWithPalette::OverrideColor(color);
   }
 }
-
 }  // namespace jazzlights
 
 #endif  // JL_AUDIO_VISUALIZER
