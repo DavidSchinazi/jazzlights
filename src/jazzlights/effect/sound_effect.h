@@ -2,12 +2,14 @@
 #define JL_EFFECT_SOUND_EFFECT_H
 
 #include "jazzlights/audio.h"
+#include "jazzlights/fastled_wrapper.h"
 #include "jazzlights/palette.h"
 
 namespace jazzlights {
 
 struct SoundState {
   Audio::VisualizerData audioData;
+  CRGB brightestColor;
 };
 
 class SoundEffect : public EffectWithPaletteAndState<SoundState> {

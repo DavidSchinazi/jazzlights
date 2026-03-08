@@ -6,8 +6,20 @@
 
 namespace jazzlights {
 
-void SoundEffect::innerBegin(const Frame& /*frame*/, SoundState* state) const {
+void SoundEffect::innerBegin(const Frame& frame, SoundState* state) const {
   Audio::Get().GetVisualizerData(&state->audioData);
+
+  OurColorPalette ocp = palette(frame);
+  state->brightestColor = CRGB::Black;
+  uint32_t maxLuma = 0;
+  for (int i = 0; i < 256; i += 8) {
+    CRGB c = colorFromOurPalette(ocp, i);
+    uint32_t luma = c.r + c.g + c.b;
+    if (luma > maxLuma) {
+      maxLuma = luma;
+      state->brightestColor = c;
+    }
+  }
 }
 
 void SoundEffect::innerRewind(const Frame& /*frame*/, SoundState* state) const {
@@ -15,19 +27,50 @@ void SoundEffect::innerRewind(const Frame& /*frame*/, SoundState* state) const {
 }
 
 ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, SoundState* state) const {
-  // Map horizontal position to frequency band (0 to 31)
+  if (state->audioData.volume <= 0.0001f) { return ColorWithPalette::OverrideColor(CRGB::Black); }
+
+  // Map horizontal position to regions: Bass (0-20%), Mids (20-70%), Highs (70-100%)
   double xRel = (px.coord.x - frame.viewport.origin.x) / frame.viewport.size.width;
   if (xRel < 0) xRel = 0;
   if (xRel > 0.999) xRel = 0.999;
 
-  // Use interpolation between bands for smoother visuals
-  double xBand = xRel * (Audio::kNumBands - 1);
-  int bandLow = static_cast<int>(xBand);
-  int bandHigh = bandLow + 1;
-  if (bandHigh >= Audio::kNumBands) bandHigh = Audio::kNumBands - 1;
-  float frac = xBand - bandLow;
+  float magnitude = 0;
+  CRGB color;
+  OurColorPalette ocp = palette(frame);
 
-  float magnitude = state->audioData.bands[bandLow] * (1.0f - frac) + state->audioData.bands[bandHigh] * frac;
+  if (xRel < 0.2) {
+    // Bass Region (0-20%): Bands 0-3
+    double bassRel = xRel / 0.2;
+    double xBand = bassRel * 3.0;
+    int bandLow = static_cast<int>(xBand);
+    int bandHigh = bandLow + 1;
+    if (bandHigh > 3) bandHigh = 3;
+    float frac = xBand - bandLow;
+    magnitude = state->audioData.bands[bandLow] * (1.0f - frac) + state->audioData.bands[bandHigh] * frac;
+    color = state->brightestColor;
+  } else if (xRel < 0.7) {
+    // Mids Region (20-70%): Bands 4-19
+    double midsRel = (xRel - 0.2) / 0.5;
+    double xBand = 4.0 + midsRel * 15.0;
+    int bandLow = static_cast<int>(xBand);
+    int bandHigh = bandLow + 1;
+    if (bandHigh > 19) bandHigh = 19;
+    float frac = xBand - bandLow;
+    magnitude = state->audioData.bands[bandLow] * (1.0f - frac) + state->audioData.bands[bandHigh] * frac;
+    uint8_t colorIdx = static_cast<uint8_t>(midsRel * 170.0);
+    color = colorFromOurPalette(ocp, colorIdx);
+  } else {
+    // Highs Region (70-100%): Bands 20-31
+    double highsRel = (xRel - 0.7) / 0.3;
+    double xBand = 20.0 + highsRel * 11.0;
+    int bandLow = static_cast<int>(xBand);
+    int bandHigh = bandLow + 1;
+    if (bandHigh > 31) bandHigh = 31;
+    float frac = xBand - bandLow;
+    magnitude = state->audioData.bands[bandLow] * (1.0f - frac) + state->audioData.bands[bandHigh] * frac;
+    uint8_t colorIdx = 171 + static_cast<uint8_t>(highsRel * 84.0);
+    color = colorFromOurPalette(ocp, colorIdx);
+  }
 
   // Get magnitude for this band (expected to be roughly between agc_min and agc_max)
   float range = state->audioData.agc_max - state->audioData.agc_min;
@@ -42,21 +85,17 @@ ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, So
   double yRel = 2.0 * fabs(px.coord.y - centerY) / frame.viewport.size.height;
   if (yRel > 1.0) yRel = 1.0;
 
-  uint8_t colorIdx = static_cast<uint8_t>(xRel * 255);
-  OurColorPalette ocp = palette(frame);
-  CRGB color = colorFromOurPalette(ocp, colorIdx);
-
   if (yRel < normalizedMag) {
-    // Inside the bar: bright, slightly pulsing with band magnitude
-    uint8_t barBrightness = 192 + static_cast<uint8_t>(63.0f * normalizedMag);
+    // Inside the bar: brightness proportional to magnitude
+    uint8_t barBrightness = static_cast<uint8_t>(255.0f * normalizedMag);
+    if (barBrightness < 32 && normalizedMag > 0.05f) barBrightness = 32;
     color.nscale8_video(barBrightness);
-    return ColorWithPalette::OverrideColor(color);
   } else {
-    // Background: dimmed version of the frequency color, scaled by overall volume
-    uint8_t backgroundBrightness = 12 + static_cast<uint8_t>(64.0f * state->audioData.volume);
+    // Background: dimmed version of the color, scaled by overall volume
+    uint8_t backgroundBrightness = static_cast<uint8_t>(48.0f * state->audioData.volume);
     color.nscale8_video(backgroundBrightness);
-    return ColorWithPalette::OverrideColor(color);
   }
+  return ColorWithPalette::OverrideColor(color);
 }
 }  // namespace jazzlights
 
