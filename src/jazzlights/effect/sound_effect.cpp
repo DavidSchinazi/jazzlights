@@ -99,7 +99,12 @@ ColorWithPalette SoundEffect::innerColor(const Frame& frame, SoundState* state, 
   }
 
   SoundPixelState& pixelState = ps(frame);
-  color = nblend(pixelState.lastColor, color, 128);
+  // Asymmetrical smoothing: faster on the way up, slower on the way down
+  uint8_t blendAmount = 24;  // Default very smooth
+  if (color.r > pixelState.lastColor.r || color.g > pixelState.lastColor.g || color.b > pixelState.lastColor.b) {
+    blendAmount = 64;  // Faster response to brightness increases
+  }
+  color = nblend(pixelState.lastColor, color, blendAmount);
   pixelState.lastColor = color;
 
   return ColorWithPalette::OverrideColor(color);
