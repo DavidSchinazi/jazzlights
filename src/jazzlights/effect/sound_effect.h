@@ -12,16 +12,16 @@ struct SoundState {
   CRGB brightestColor;
 };
 
-struct SoundPixelState {
-  CRGB lastColor;
-};
-
-class SoundEffect : public EffectWithPaletteXYIndexAndState<SoundState, SoundPixelState> {
+class SoundEffect : public EffectWithPaletteAndState<SoundState> {
  public:
   void innerBegin(const Frame& frame, SoundState* state) const override;
   void innerRewind(const Frame& frame, SoundState* state) const override;
-  ColorWithPalette innerColor(const Frame& frame, SoundState* state, const Pixel& px) const override;
+  ColorWithPalette innerColor(const Frame& frame, const Pixel& px, SoundState* state) const override;
   std::string effectNamePrefix(PatternBits pattern) const override { return "sound"; }
+  size_t extraContextSize(const Frame& frame) const override;
+
+ private:
+  CRGB* lastColors(SoundState* state) const { return reinterpret_cast<CRGB*>(state + 1); }
 };
 
 }  // namespace jazzlights

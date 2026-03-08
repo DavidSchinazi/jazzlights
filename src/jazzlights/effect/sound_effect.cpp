@@ -3,8 +3,11 @@
 #if JL_AUDIO_VISUALIZER
 
 #include <cmath>
+#include <cstring>
 
 namespace jazzlights {
+
+size_t SoundEffect::extraContextSize(const Frame& frame) const { return sizeof(CRGB) * frame.pixelCount; }
 
 void SoundEffect::innerBegin(const Frame& frame, SoundState* state) const {
   Audio::Get().GetVisualizerData(&state->audioData);
@@ -20,13 +23,16 @@ void SoundEffect::innerBegin(const Frame& frame, SoundState* state) const {
       state->brightestColor = c;
     }
   }
+
+  // Initialize per-pixel state
+  memset(lastColors(state), 0, sizeof(CRGB) * frame.pixelCount);
 }
 
 void SoundEffect::innerRewind(const Frame& /*frame*/, SoundState* state) const {
   Audio::Get().GetVisualizerData(&state->audioData);
 }
 
-ColorWithPalette SoundEffect::innerColor(const Frame& frame, SoundState* state, const Pixel& px) const {
+ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, SoundState* state) const {
   CRGB color;
   if (state->audioData.volume <= 0.0001f) {
     color = CRGB::Black;
@@ -98,14 +104,15 @@ ColorWithPalette SoundEffect::innerColor(const Frame& frame, SoundState* state, 
     }
   }
 
-  SoundPixelState& pixelState = ps(frame);
+  CRGB* prevColors = lastColors(state);
+  CRGB& lastColor = prevColors[px.index];
   // Asymmetrical smoothing: faster on the way up, slower on the way down
   uint8_t blendAmount = 24;  // Default very smooth
-  if (color.r > pixelState.lastColor.r || color.g > pixelState.lastColor.g || color.b > pixelState.lastColor.b) {
+  if (color.r > lastColor.r || color.g > lastColor.g || color.b > lastColor.b) {
     blendAmount = 64;  // Faster response to brightness increases
   }
-  color = nblend(pixelState.lastColor, color, blendAmount);
-  pixelState.lastColor = color;
+  color = nblend(lastColor, color, blendAmount);
+  lastColor = color;
 
   return ColorWithPalette::OverrideColor(color);
 }
