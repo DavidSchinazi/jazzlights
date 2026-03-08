@@ -45,8 +45,10 @@ class Audio {
   float peak_magnitudes_[kNumBands] = {0};
   float agc_min_ = 50.0f;
   float agc_max_ = 90.0f;
+  float squelch_threshold_ = 75.0f;
   float volume_ = 0;
   bool beat_ = false;
+  float prev_bands_[8] = {0};
 
   int16_t* audio_buffer_ = nullptr;
   float* fft_input_ = nullptr;

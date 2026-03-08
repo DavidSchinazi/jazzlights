@@ -118,99 +118,116 @@ void Audio::AudioTask(void* param) {
         new_bands[i] = (count > 0) ? (sum / count) : 0;
       }
 
-      // Smoothing and Peak Decay
-      float smoothing = 0.7f;
-      float peak_decay = 0.5f;  // dB per frame
+      // Squelch: If maximum band magnitude is below threshold, zero out everything
+      float max_new_band_mag = 0;
+      for (int i = 0; i < kNumBands; i++) {
+        if (new_bands[i] > max_new_band_mag) { max_new_band_mag = new_bands[i]; }
+      }
 
-      {
+      if (max_new_band_mag < audio->squelch_threshold_) {
         std::lock_guard<std::mutex> lock(audio->audio_data_mutex_);
-        for (int i = 0; i < kNumBands; i++) {
-          audio->band_magnitudes_[i] = audio->band_magnitudes_[i] * smoothing + new_bands[i] * (1.0f - smoothing);
-          if (new_bands[i] > audio->peak_magnitudes_[i]) {
-            audio->peak_magnitudes_[i] = new_bands[i];
-          } else {
-            audio->peak_magnitudes_[i] -= peak_decay;
-            if (audio->peak_magnitudes_[i] < 0) audio->peak_magnitudes_[i] = 0;
-          }
-        }
-
-        // AGC Tracking: Update 5-second window
-        float max_band_mag = 0;
-        for (int i = 0; i < kNumBands; i++) {
-          if (audio->band_magnitudes_[i] > max_band_mag) max_band_mag = audio->band_magnitudes_[i];
-        }
-        audio->agc_buffer_[audio->agc_index_] = max_band_mag;
-        audio->agc_index_ = (audio->agc_index_ + 1) % kAgcWindowSize;
-
-        float current_min = 100.0f;
-        float current_max = -100.0f;
-        bool has_data = false;
-        for (int i = 0; i < kAgcWindowSize; i++) {
-          if (audio->agc_buffer_[i] > 0) {
-            if (audio->agc_buffer_[i] < current_min) current_min = audio->agc_buffer_[i];
-            if (audio->agc_buffer_[i] > current_max) current_max = audio->agc_buffer_[i];
-            has_data = true;
-          }
-        }
-
-        if (has_data) {
-          if (current_max - current_min < 10.0f) {
-            float center = (current_max + current_min) / 2.0f;
-            current_min = center - 5.0f;
-            current_max = center + 5.0f;
-          }
-          float agc_smoothing = 0.95f;
-          audio->agc_min_ = audio->agc_min_ * agc_smoothing + current_min * (1.0f - agc_smoothing);
-          audio->agc_max_ = audio->agc_max_ * agc_smoothing + current_max * (1.0f - agc_smoothing);
-
-          // Calculate overall volume (average normalized magnitude)
-          float range = audio->agc_max_ - audio->agc_min_;
-          if (range < 1.0f) range = 1.0f;
-          float totalNormMag = 0;
-          for (int i = 0; i < kNumBands; i++) {
-            float norm = (audio->band_magnitudes_[i] - audio->agc_min_) / range;
-            if (norm < 0) norm = 0;
-            if (norm > 1.0f) norm = 1.0f;
-            totalNormMag += norm;
-          }
-          audio->volume_ = totalNormMag / kNumBands;
-        }
-
-        // Beat detection: Spectral Flux on first 8 bands (bass/low-mids)
-        float flux = 0;
-        static float prev_bands[8] = {0};
-        for (int i = 0; i < 8; i++) {
-          float diff = new_bands[i] - prev_bands[i];
-          if (diff > 0) flux += diff;
-          prev_bands[i] = new_bands[i];
-        }
-
-        float beat_energy = 0;
-        for (int i = 0; i < 8; i++) { beat_energy += new_bands[i]; }
-        beat_energy /= 8.0f;
-
-        // Compare flux to average flux in the window
-        float avg_flux = 0;
-        int count = 0;
-        for (int i = 0; i < kBeatWindowSize; i++) {
-          if (audio->beat_buffer_[i] > 0) {
-            avg_flux += audio->beat_buffer_[i];
-            count++;
-          }
-        }
-        avg_flux = (count > 0) ? (avg_flux / count) : 0;
-
+        memset(audio->band_magnitudes_, 0, sizeof(audio->band_magnitudes_));
+        memset(audio->peak_magnitudes_, 0, sizeof(audio->peak_magnitudes_));
+        memset(audio->prev_bands_, 0, sizeof(audio->prev_bands_));
+        audio->volume_ = 0;
         audio->beat_ = false;
-        uint32_t now = millis();
-        // Trigger if flux is significantly above average OR we have a very sharp spike
-        if ((flux > avg_flux * 1.3f || flux > avg_flux + 1.5f) && flux > 0.15f &&
-            beat_energy > audio->agc_min_ - 25.0f && now - last_beat_time > 140) {
-          audio->beat_ = true;
-          last_beat_time = now;
-        }
-
-        audio->beat_buffer_[audio->beat_index_] = flux;
+        // We still want to update beat buffer to avoid large flux when sound returns
+        audio->beat_buffer_[audio->beat_index_] = 0;
         audio->beat_index_ = (audio->beat_index_ + 1) % kBeatWindowSize;
+      } else {
+        // Smoothing and Peak Decay
+        float smoothing = 0.7f;
+        float peak_decay = 0.5f;  // dB per frame
+
+        {
+          std::lock_guard<std::mutex> lock(audio->audio_data_mutex_);
+          for (int i = 0; i < kNumBands; i++) {
+            audio->band_magnitudes_[i] = audio->band_magnitudes_[i] * smoothing + new_bands[i] * (1.0f - smoothing);
+            if (new_bands[i] > audio->peak_magnitudes_[i]) {
+              audio->peak_magnitudes_[i] = new_bands[i];
+            } else {
+              audio->peak_magnitudes_[i] -= peak_decay;
+              if (audio->peak_magnitudes_[i] < 0) audio->peak_magnitudes_[i] = 0;
+            }
+          }
+
+          // AGC Tracking: Update 5-second window
+          float max_band_mag = 0;
+          for (int i = 0; i < kNumBands; i++) {
+            if (audio->band_magnitudes_[i] > max_band_mag) max_band_mag = audio->band_magnitudes_[i];
+          }
+          audio->agc_buffer_[audio->agc_index_] = max_band_mag;
+          audio->agc_index_ = (audio->agc_index_ + 1) % kAgcWindowSize;
+
+          float current_min = 100.0f;
+          float current_max = -100.0f;
+          bool has_data = false;
+          for (int i = 0; i < kAgcWindowSize; i++) {
+            if (audio->agc_buffer_[i] > 0) {
+              if (audio->agc_buffer_[i] < current_min) current_min = audio->agc_buffer_[i];
+              if (audio->agc_buffer_[i] > current_max) current_max = audio->agc_buffer_[i];
+              has_data = true;
+            }
+          }
+
+          if (has_data) {
+            if (current_max - current_min < 10.0f) {
+              float center = (current_max + current_min) / 2.0f;
+              current_min = center - 5.0f;
+              current_max = center + 5.0f;
+            }
+            float agc_smoothing = 0.95f;
+            audio->agc_min_ = audio->agc_min_ * agc_smoothing + current_min * (1.0f - agc_smoothing);
+            audio->agc_max_ = audio->agc_max_ * agc_smoothing + current_max * (1.0f - agc_smoothing);
+
+            // Calculate overall volume (average normalized magnitude)
+            float range = audio->agc_max_ - audio->agc_min_;
+            if (range < 1.0f) range = 1.0f;
+            float totalNormMag = 0;
+            for (int i = 0; i < kNumBands; i++) {
+              float norm = (audio->band_magnitudes_[i] - audio->agc_min_) / range;
+              if (norm < 0) norm = 0;
+              if (norm > 1.0f) norm = 1.0f;
+              totalNormMag += norm;
+            }
+            audio->volume_ = totalNormMag / kNumBands;
+          }
+
+          // Beat detection: Spectral Flux on first 8 bands (bass/low-mids)
+          float flux = 0;
+          for (int i = 0; i < 8; i++) {
+            float diff = new_bands[i] - audio->prev_bands_[i];
+            if (diff > 0) flux += diff;
+            audio->prev_bands_[i] = new_bands[i];
+          }
+
+          float beat_energy = 0;
+          for (int i = 0; i < 8; i++) { beat_energy += new_bands[i]; }
+          beat_energy /= 8.0f;
+
+          // Compare flux to average flux in the window
+          float avg_flux = 0;
+          int count = 0;
+          for (int i = 0; i < kBeatWindowSize; i++) {
+            if (audio->beat_buffer_[i] > 0) {
+              avg_flux += audio->beat_buffer_[i];
+              count++;
+            }
+          }
+          avg_flux = (count > 0) ? (avg_flux / count) : 0;
+
+          audio->beat_ = false;
+          uint32_t now = millis();
+          // Trigger if flux is significantly above average OR we have a very sharp spike
+          if ((flux > avg_flux * 1.3f || flux > avg_flux + 1.5f) && flux > 0.15f &&
+              beat_energy > audio->agc_min_ - 25.0f && now - last_beat_time > 140) {
+            audio->beat_ = true;
+            last_beat_time = now;
+          }
+
+          audio->beat_buffer_[audio->beat_index_] = flux;
+          audio->beat_index_ = (audio->beat_index_ + 1) % kBeatWindowSize;
+        }
       }
     }
     vTaskDelay(1);
