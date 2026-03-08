@@ -190,8 +190,8 @@ void Audio::AudioTask(void* param) {
         audio->beat_ = false;
         uint32_t now = millis();
         // Trigger if flux is significantly above average OR we have a very sharp spike
-        if ((flux > avg_flux * 1.4f || flux > avg_flux + 2.0f) && flux > 0.2f &&
-            beat_energy > audio->agc_min_ - 20.0f && now - last_beat_time > 150) {
+        if ((flux > avg_flux * 1.3f || flux > avg_flux + 1.5f) && flux > 0.15f &&
+            beat_energy > audio->agc_min_ - 25.0f && now - last_beat_time > 140) {
           audio->beat_ = true;
           last_beat_time = now;
         }
