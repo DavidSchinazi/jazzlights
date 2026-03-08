@@ -8,10 +8,24 @@ namespace jazzlights {
 
 void SoundEffect::innerBegin(const Frame& /*frame*/, SoundState* state) const {
   Audio::Get().GetVisualizerData(&state->audioData);
+  state->currentVolume = 0;
 }
 
 void SoundEffect::innerRewind(const Frame& /*frame*/, SoundState* state) const {
   Audio::Get().GetVisualizerData(&state->audioData);
+
+  // Calculate average normalized magnitude for currentVolume
+  float range = state->audioData.agc_max - state->audioData.agc_min;
+  if (range < 1.0f) range = 1.0f;
+
+  float totalNormMag = 0;
+  for (int i = 0; i < Audio::kNumBands; i++) {
+    float norm = (state->audioData.bands[i] - state->audioData.agc_min) / range;
+    if (norm < 0) norm = 0;
+    if (norm > 1.0f) norm = 1.0f;
+    totalNormMag += norm;
+  }
+  state->currentVolume = totalNormMag / Audio::kNumBands;
 }
 
 ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, SoundState* state) const {
@@ -44,19 +58,16 @@ ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, So
 
   uint8_t colorIdx = static_cast<uint8_t>(xRel * 255);
   OurColorPalette ocp = palette(frame);
+  CRGB color = colorFromOurPalette(ocp, colorIdx);
 
   if (yRel < normalizedMag) {
-    // Inside the bar
-    if (state->audioData.beat) {
-      // Highlight on beat
-      return ColorWithPalette(colorIdx + 128);
-    }
-    return ColorWithPalette(colorIdx);
+    // Inside the bar: bright, slightly pulsing with band magnitude
+    uint8_t barBrightness = 192 + static_cast<uint8_t>(63.0f * normalizedMag);
+    color.nscale8_video(barBrightness);
+    return ColorWithPalette::OverrideColor(color);
   } else {
-    // Background: dimmed version of the frequency color
-    // If it's a beat, make the background brighter
-    CRGB color = colorFromOurPalette(ocp, colorIdx);
-    uint8_t backgroundBrightness = state->audioData.beat ? 48 : 12;
+    // Background: dimmed version of the frequency color, scaled by overall volume
+    uint8_t backgroundBrightness = 12 + static_cast<uint8_t>(64.0f * state->currentVolume);
     color.nscale8_video(backgroundBrightness);
     return ColorWithPalette::OverrideColor(color);
   }

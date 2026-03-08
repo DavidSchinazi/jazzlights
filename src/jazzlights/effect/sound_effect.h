@@ -8,6 +8,7 @@ namespace jazzlights {
 
 struct SoundState {
   Audio::VisualizerData audioData;
+  float currentVolume;
 };
 
 class SoundEffect : public EffectWithPaletteAndState<SoundState> {
