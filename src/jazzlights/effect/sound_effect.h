@@ -1,0 +1,23 @@
+#ifndef JL_EFFECT_SOUND_EFFECT_H
+#define JL_EFFECT_SOUND_EFFECT_H
+
+#include "jazzlights/audio.h"
+#include "jazzlights/palette.h"
+
+namespace jazzlights {
+
+struct SoundState {
+  Audio::VisualizerData audioData;
+};
+
+class SoundEffect : public EffectWithPaletteAndState<SoundState> {
+ public:
+  void innerBegin(const Frame& frame, SoundState* state) const override;
+  void innerRewind(const Frame& frame, SoundState* state) const override;
+  ColorWithPalette innerColor(const Frame& frame, const Pixel& px, SoundState* state) const override;
+  std::string effectNamePrefix(PatternBits pattern) const override { return "sound"; }
+};
+
+}  // namespace jazzlights
+
+#endif  // JL_EFFECT_SOUND_EFFECT_H

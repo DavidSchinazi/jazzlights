@@ -23,6 +23,7 @@
 #include "jazzlights/effect/plasma.h"
 #include "jazzlights/effect/rings.h"
 #include "jazzlights/effect/solid.h"
+#include "jazzlights/effect/sound_effect.h"
 #include "jazzlights/effect/sync_test.h"
 #include "jazzlights/effect/the_matrix.h"
 #include "jazzlights/effect/threesine.h"
@@ -126,6 +127,9 @@ static const Effect* patternFromBits(PatternBits pattern) {
   static const Glitter glitter_pattern;
   static const TheMatrix thematrix_pattern;
   static const Rings rings_pattern;
+#if JL_AUDIO_VISUALIZER
+  static const SoundEffect sound_effect;
+#endif  // JL_AUDIO_VISUALIZER
   static const FunctionalEffect threesine_pattern = threesine();
   static const FunctionalEffect follow_strand_effect = follow_strand();
   static const FunctionalEffect mapping_effect = mapping();
@@ -226,6 +230,9 @@ static const Effect* patternFromBits(PatternBits pattern) {
 #endif  // CLOUDS
     return &red_effect;
   } else {
+#if JL_AUDIO_VISUALIZER
+    return &sound_effect;
+#endif  // JL_AUDIO_VISUALIZER
     if (patternbit(pattern, 1)) {
       if (patternbit(pattern, 2)) {  // 11x - spin
         return &spin_pattern;
