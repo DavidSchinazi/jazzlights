@@ -9,6 +9,7 @@ namespace jazzlights {
 
 struct SoundState {
   Audio::VisualizerData audioData;
+  float prevBands[Audio::kNumBands];
   CRGB brightestColor;
 };
 
