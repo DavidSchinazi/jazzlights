@@ -1,6 +1,10 @@
 #ifndef JL_ORRERY_LEADER_H
 #define JL_ORRERY_LEADER_H
 
+#include "jazzlights/config.h"
+
+#if JL_BUS_LEADER
+
 #include <cstdint>
 
 namespace jazzlights {
@@ -18,5 +22,7 @@ class OrreryLeader {
 };
 
 }  // namespace jazzlights
+
+#endif  // JL_BUS_LEADER
 
 #endif  // JL_ORRERY_LEADER_H

@@ -1,5 +1,7 @@
 #include "jazzlights/orrery_leader.h"
 
+#if JL_BUS_LEADER
+
 namespace jazzlights {
 
 void OrreryLeader::SetSpeed(Planet planet, int32_t speed) {
@@ -14,3 +16,5 @@ int32_t OrreryLeader::GetSpeed(Planet planet) const {
 }
 
 }  // namespace jazzlights
+
+#endif  // JL_BUS_LEADER
