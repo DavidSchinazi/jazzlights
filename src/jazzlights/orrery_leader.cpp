@@ -1,12 +1,37 @@
 #include "jazzlights/orrery_leader.h"
 
-#if JL_BUS_LEADER
+#if JL_MAX485_BUS
+
+#include <cinttypes>
+#include <cstdio>
+#include <cstring>
+
+#include "jazzlights/motor.h"
+#include "jazzlights/network/max485_bus.h"
+#include "jazzlights/util/log.h"
 
 namespace jazzlights {
 
+OrreryLeader* OrreryLeader::Get() {
+  static OrreryLeader sOrreryLeader;
+  return &sOrreryLeader;
+}
+
 void OrreryLeader::SetSpeed(Planet planet, int32_t speed) {
-  int planetIndex = static_cast<int>(planet);
-  if (planetIndex >= 0 && planetIndex < kNumPlanets) { speeds_[planetIndex] = speed; }
+  uint8_t planetIndex = static_cast<uint8_t>(planet);
+  if (planetIndex < kNumPlanets) {
+    if (speeds_[planetIndex] != speed) {
+      speeds_[planetIndex] = speed;
+      jll_info("OrreryLeader setting planet %u speed to %" PRId32, planetIndex, speed);
+#if JL_BUS_LEADER
+      OrreryMessage msg;
+      msg.type = OrreryMessageType::SetSpeed;
+      msg.planetIndex = planetIndex;
+      msg.speed = speed;
+      SetMax485BusMessageToSend(BufferViewU8(reinterpret_cast<uint8_t*>(&msg), sizeof(msg)));
+#endif  // JL_BUS_LEADER
+    }
+  }
 }
 
 int32_t OrreryLeader::GetSpeed(Planet planet) const {
@@ -15,6 +40,35 @@ int32_t OrreryLeader::GetSpeed(Planet planet) const {
   return 0;
 }
 
+void OrreryLeader::RunLoop(Milliseconds /*currentTime*/) {
+  static OwnedBufferU8 readBuffer(1000);
+  uint8_t destBusId, srcBusId;
+  BufferViewU8 message = ReadMax485BusMessage(readBuffer, &destBusId, &srcBusId);
+  if (message.empty() || message.size() < sizeof(OrreryMessage)) { return; }
+
+  const OrreryMessage* msg = reinterpret_cast<const OrreryMessage*>(message.data());
+
+#if JL_BUS_LEADER
+  if (msg->type == OrreryMessageType::AckSpeed) {
+    jll_info("OrreryLeader received ack for planet %u: %" PRId32, msg->planetIndex, msg->speed);
+  }
+#else  // JL_BUS_LEADER
+  if (msg->type == OrreryMessageType::SetSpeed) {
+    if (msg->planetIndex < kNumPlanets) {
+      jll_info("OrreryFollower applying speed %" PRId32 " for planet %u", msg->speed, msg->planetIndex);
+#if JL_MOTOR
+      GetMainStepperMotor()->SetSpeed(msg->speed);
+#endif  // JL_MOTOR
+      OrreryMessage ack;
+      ack.type = OrreryMessageType::AckSpeed;
+      ack.planetIndex = msg->planetIndex;
+      ack.speed = msg->speed;
+      SetMax485BusMessageToSend(BufferViewU8(reinterpret_cast<uint8_t*>(&ack), sizeof(ack)));
+    }
+  }
+#endif  // JL_BUS_LEADER
+}
+
 }  // namespace jazzlights
 
-#endif  // JL_BUS_LEADER
+#endif  // JL_MAX485_BUS
