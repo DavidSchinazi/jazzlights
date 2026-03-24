@@ -164,6 +164,9 @@ Max485BusHandler* Max485BusHandler::Get() {
 #elif JL_IS_CONTROLLER(ATOM_S3) || JL_IS_CONTROLLER(ATOM_S3_LITE)
   constexpr int kTxPin = 2;
   constexpr int kRxPin = 1;
+#elif JL_IS_CONTROLLER(M5STAMP_S3)
+  constexpr int kTxPin = 44;
+  constexpr int kRxPin = 43;
 #elif JL_IS_CONTROLLER(CORE2AWS)
   constexpr int kTxPin = 2;
   constexpr int kRxPin = 33;

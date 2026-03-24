@@ -41,6 +41,7 @@ int32_t OrreryLeader::GetSpeed(Planet planet) const {
 }
 
 void OrreryLeader::RunLoop(Milliseconds /*currentTime*/) {
+#if JL_BUS_LEADER
   static OwnedBufferU8 readBuffer(1000);
   uint8_t destBusId, srcBusId;
   BufferViewU8 message = ReadMax485BusMessage(readBuffer, &destBusId, &srcBusId);
@@ -48,23 +49,8 @@ void OrreryLeader::RunLoop(Milliseconds /*currentTime*/) {
 
   const OrreryMessage* msg = reinterpret_cast<const OrreryMessage*>(message.data());
 
-#if JL_BUS_LEADER
   if (msg->type == OrreryMessageType::AckSpeed) {
     jll_info("OrreryLeader received ack for planet %u: %" PRId32, msg->planetIndex, msg->speed);
-  }
-#else  // JL_BUS_LEADER
-  if (msg->type == OrreryMessageType::SetSpeed) {
-    if (msg->planetIndex < kNumPlanets) {
-      jll_info("OrreryFollower applying speed %" PRId32 " for planet %u", msg->speed, msg->planetIndex);
-#if JL_MOTOR
-      GetMainStepperMotor()->SetSpeed(msg->speed);
-#endif  // JL_MOTOR
-      OrreryMessage ack;
-      ack.type = OrreryMessageType::AckSpeed;
-      ack.planetIndex = msg->planetIndex;
-      ack.speed = msg->speed;
-      SetMax485BusMessageToSend(BufferViewU8(reinterpret_cast<uint8_t*>(&ack), sizeof(ack)));
-    }
   }
 #endif  // JL_BUS_LEADER
 }

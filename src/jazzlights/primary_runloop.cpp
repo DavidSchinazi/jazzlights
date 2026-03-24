@@ -16,6 +16,7 @@
 #include "jazzlights/network/max485_bus.h"
 #include "jazzlights/network/wifi.h"
 #include "jazzlights/orrery_leader.h"
+#include "jazzlights/orrery_planet.h"
 #include "jazzlights/player.h"
 #include "jazzlights/ui/hall_sensor.h"
 #include "jazzlights/ui/rotary_phone.h"
@@ -126,7 +127,11 @@ void RunPrimaryRunLoop() {
   GetUi()->RunLoop(currentTime);
   RunMax485Bus(currentTime);
 #if JL_MAX485_BUS
+#if JL_BUS_LEADER
   OrreryLeader::Get()->RunLoop(currentTime);
+#else   // JL_BUS_LEADER
+  OrreryPlanet::Get()->RunLoop(currentTime);
+#endif  // JL_BUS_LEADER
 #endif  // JL_MAX485_BUS
   SAVE_TIME_POINT(PrimaryRunLoop, UserInterface);
   Esp32BleNetwork::get()->runLoop(currentTime);
