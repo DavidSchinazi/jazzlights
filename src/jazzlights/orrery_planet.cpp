@@ -22,6 +22,10 @@ void OrreryPlanet::RunLoop(Milliseconds /*currentTime*/) {
   static OwnedBufferU8 readBuffer(1000);
   uint8_t destBusId, srcBusId;
   BufferViewU8 message = ReadMax485BusMessage(readBuffer, &destBusId, &srcBusId);
+  if (!message.empty()) {
+    jll_buffer_info(message, STRINGIFY(JL_ROLE) " planet read message from %d to %d", static_cast<int>(srcBusId),
+                    static_cast<int>(destBusId));
+  }
   if (message.empty() || message.size() < sizeof(OrreryMessage)) { return; }
 
   const OrreryMessage* msg = reinterpret_cast<const OrreryMessage*>(message.data());

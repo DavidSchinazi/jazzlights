@@ -53,6 +53,11 @@ pio run -e vest_instrumentation -t menuconfig
 
 # DS33 dual devices
 
+```
+JLENV=orrery_leader ; pio run -e $JLENV -t upload && pio device monitor -e $JLENV
+JLENV=orrery_mercury ; pio run -e $JLENV -t upload && pio device monitor -e $JLENV
+```
+
 ## Vests
 
 ```

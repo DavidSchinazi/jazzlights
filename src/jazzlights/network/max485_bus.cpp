@@ -34,6 +34,10 @@ namespace {
 #define jll_max485_data_buffer(...) jll_buffer_debug(__VA_ARGS__)
 #endif  // JL_LOG_MAX485_BUS_DATA
 
+#ifndef JL_TEST_MAX485
+#define JL_TEST_MAX485 0
+#endif  // JL_TEST_MAX485
+
 using BusId = uint8_t;
 
 constexpr uint8_t kSeparator = 0;
@@ -165,8 +169,8 @@ Max485BusHandler* Max485BusHandler::Get() {
   constexpr int kTxPin = 2;
   constexpr int kRxPin = 1;
 #elif JL_IS_CONTROLLER(M5STAMP_S3)
-  constexpr int kTxPin = 44;
-  constexpr int kRxPin = 43;
+  constexpr int kTxPin = 43;
+  constexpr int kRxPin = 44;
 #elif JL_IS_CONTROLLER(CORE2AWS)
   constexpr int kTxPin = 2;
   constexpr int kRxPin = 33;
@@ -535,6 +539,7 @@ BufferViewU8 ReadMax485BusMessage(OwnedBufferU8& readMessageBuffer, uint8_t* des
 void SetupMax485Bus() { (void)Max485BusHandler::Get(); }
 
 void RunMax485Bus(Milliseconds /*currentTime*/) {
+#if JL_TEST_MAX485
   static OwnedBufferU8 outerRecvBuffer(kMaxMessageLength);
   BusId destBusId = kSeparator;
   BusId srcBusId = kSeparator;
@@ -543,6 +548,7 @@ void RunMax485Bus(Milliseconds /*currentTime*/) {
     jll_buffer_info(readMessage, STRINGIFY(JL_ROLE) " outer read message from %d to %d", static_cast<int>(srcBusId),
                     static_cast<int>(destBusId));
   }
+#endif  // JL_TEST_MAX485
 }
 
 }  // namespace jazzlights

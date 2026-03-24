@@ -5,7 +5,17 @@
 
 namespace jazzlights {
 
-enum class Planet : uint8_t { Mercury = 0, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune, NumPlanets };
+enum class Planet : uint8_t {
+  Mercury = 4,
+  Venus = 5,
+  Earth = 6,
+  Mars = 7,
+  Jupiter = 8,
+  Saturn = 9,
+  Uranus = 10,
+  Neptune = 11,
+  NumPlanets = 12,
+};
 
 enum class OrreryMessageType : uint8_t {
   SetSpeed = 0x01,

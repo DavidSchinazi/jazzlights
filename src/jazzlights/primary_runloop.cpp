@@ -30,6 +30,10 @@
 #include "jazzlights/util/log.h"
 #include "jazzlights/websocket_server.h"
 
+#ifndef JL_TEST_MOTOR
+#define JL_TEST_MOTOR 0
+#endif  // JL_TEST_MOTOR
+
 namespace jazzlights {
 
 Player player;
@@ -158,9 +162,9 @@ void RunPrimaryRunLoop() {
 #if JL_HALL_SENSOR
   GetHallSensor()->RunLoop();
 #endif  // JL_HALL_SENSOR
-#if JL_MOTOR && !JL_UI_MOTOR
+#if JL_TEST_MOTOR
   StepperMotorTestRunLoop(currentTime);
-#endif  // JL_MOTOR && !JL_UI_MOTOR
+#endif  // JL_TEST_MOTOR
 }
 
 }  // namespace jazzlights
