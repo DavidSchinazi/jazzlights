@@ -1,5 +1,6 @@
 #include "jazzlights/ui/ui_audio.h"
 
+#ifdef ESP32
 #if JL_AUDIO_VISUALIZER && JL_IS_CONTROLLER(CORES3)
 
 #include <Arduino.h>
@@ -155,3 +156,4 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
 }  // namespace jazzlights
 
 #endif  // JL_AUDIO_VISUALIZER && JL_IS_CONTROLLER(CORES3)
+#endif  // ESP32

@@ -5,6 +5,8 @@
 #include "jazzlights/fastled_wrapper.h"
 #include "jazzlights/palette.h"
 
+#if JL_AUDIO_VISUALIZER
+
 namespace jazzlights {
 
 struct SoundState {
@@ -26,5 +28,7 @@ class SoundEffect : public EffectWithPaletteAndState<SoundState> {
 };
 
 }  // namespace jazzlights
+
+#endif  // JL_AUDIO_VISUALIZER
 
 #endif  // JL_EFFECT_SOUND_EFFECT_H

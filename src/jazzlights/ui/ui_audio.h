@@ -4,6 +4,8 @@
 #include "jazzlights/config.h"
 #include "jazzlights/ui/ui.h"
 
+#ifdef ESP32
+
 #if JL_AUDIO_VISUALIZER && JL_IS_CONTROLLER(CORES3)
 
 #include <mutex>
@@ -48,5 +50,7 @@ class AudioVisualizerUi : public Esp32Ui {
 }  // namespace jazzlights
 
 #endif  // JL_AUDIO_VISUALIZER && JL_IS_CONTROLLER(CORES3)
+
+#endif  // ESP32
 
 #endif  // JAZZLIGHTS_UI_AUDIO_H
