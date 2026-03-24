@@ -7,6 +7,7 @@
 #include <functional>
 
 #include "jazzlights/motor.h"
+#include "jazzlights/orrery_leader.h"
 #include "jazzlights/ui/touch_button.h"
 #include "jazzlights/util/log.h"
 
@@ -149,6 +150,9 @@ void CoreMotorUi::SetMotorSpeed() {
   int32_t motorFrequencyHz = motorFrequencyHz_;
   if (!motorEnabled_) { motorFrequencyHz = 0; }
   if (!motorDirectionForward_) { motorFrequencyHz = -motorFrequencyHz; }
+#if JL_MAX485_BUS
+  OrreryLeader::Get()->SetSpeed(Planet::Mercury, motorFrequencyHz);
+#endif  // JL_MAX485_BUS
   GetMainStepperMotor()->SetSpeed(motorFrequencyHz);
 }
 

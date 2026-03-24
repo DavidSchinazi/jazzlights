@@ -164,6 +164,9 @@ Max485BusHandler* Max485BusHandler::Get() {
 #elif JL_IS_CONTROLLER(ATOM_S3) || JL_IS_CONTROLLER(ATOM_S3_LITE)
   constexpr int kTxPin = 2;
   constexpr int kRxPin = 1;
+#elif JL_IS_CONTROLLER(M5STAMP_S3)
+  constexpr int kTxPin = 44;
+  constexpr int kRxPin = 43;
 #elif JL_IS_CONTROLLER(CORE2AWS)
   constexpr int kTxPin = 2;
   constexpr int kRxPin = 33;
@@ -523,34 +526,22 @@ BufferViewU8 Max485BusHandler::TaskFindReceivedMessage(BusId* destBusId, BusId* 
 
 }  // namespace
 
+void SetMax485BusMessageToSend(const BufferViewU8 message) { Max485BusHandler::Get()->SetMessageToSend(message); }
+
+BufferViewU8 ReadMax485BusMessage(OwnedBufferU8& readMessageBuffer, uint8_t* destBusId, uint8_t* srcBusId) {
+  return Max485BusHandler::Get()->ReadMessage(readMessageBuffer, destBusId, srcBusId);
+}
+
 void SetupMax485Bus() { (void)Max485BusHandler::Get(); }
 
-void RunMax485Bus(Milliseconds currentTime) {
+void RunMax485Bus(Milliseconds /*currentTime*/) {
   static OwnedBufferU8 outerRecvBuffer(kMaxMessageLength);
-  static OwnedBufferU8 outerSendBuffer(kMaxMessageLength);
   BusId destBusId = kSeparator;
   BusId srcBusId = kSeparator;
   BufferViewU8 readMessage = Max485BusHandler::Get()->ReadMessage(outerRecvBuffer, &destBusId, &srcBusId);
   if (readMessage.size() > 0) {
     jll_buffer_info(readMessage, STRINGIFY(JL_ROLE) " outer read message from %d to %d", static_cast<int>(srcBusId),
                     static_cast<int>(destBusId));
-  }
-  if (kBusIdSelf != kBusIdLeader) {  // We are a follower.
-    if (destBusId == kBusIdSelf) {
-      outerRecvBuffer[readMessage.size()] = '\0';
-      int bytesWritten =
-          snprintf(reinterpret_cast<char*>(&outerSendBuffer[0]), outerRecvBuffer.size() - 1,
-                   "{" STRINGIFY(JL_ROLE) " is responding at %u to: %s}", currentTime, &outerRecvBuffer[0]);
-      if (bytesWritten >= outerRecvBuffer.size()) { bytesWritten = outerRecvBuffer.size() - 1; }
-      outerSendBuffer[bytesWritten] = '\0';
-      Max485BusHandler::Get()->SetMessageToSend(BufferViewU8(outerSendBuffer, 0, bytesWritten));
-    }
-  } else {  // We are the leader.
-    int bytesWritten = snprintf(reinterpret_cast<char*>(&outerSendBuffer[0]), outerSendBuffer.size() - 1,
-                                "<" STRINGIFY(JL_ROLE) " says it is %u.>", currentTime);
-    if (bytesWritten >= outerSendBuffer.size()) { bytesWritten = outerSendBuffer.size() - 1; }
-    outerSendBuffer[bytesWritten] = '\0';
-    Max485BusHandler::Get()->SetMessageToSend(BufferViewU8(outerSendBuffer, 0, bytesWritten));
   }
 }
 

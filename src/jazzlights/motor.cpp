@@ -135,9 +135,9 @@ StepperMotor* GetMainStepperMotor() {
   static constexpr int kDirectionPin = kPinC1;
   static constexpr int kStepPin = kPinE2;
 #elif JL_IS_CONTROLLER(M5STAMP_S3)
-  static constexpr int kEnablePin = 3;
-  static constexpr int kDirectionPin = 4;
-  static constexpr int kStepPin = 2;
+  static constexpr int kEnablePin = 10;
+  static constexpr int kDirectionPin = 46;
+  static constexpr int kStepPin = 14;
 #else
 #error "unknown controller for motor"
 #endif

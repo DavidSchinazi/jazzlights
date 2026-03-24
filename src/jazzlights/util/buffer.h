@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <vector>
 
 namespace jazzlights {
@@ -44,6 +45,8 @@ class BufferView {
   explicit BufferView() : data_(nullptr), size_(0) {}
   T& operator[](size_t position) { return data_[position]; }
   const T& operator[](size_t position) const { return data_[position]; }
+  T* data() { return data_; }
+  const T* data() const { return data_; }
   size_t size() const { return size_; }
   void resize(size_t size) { size_ = size; }
   bool empty() const { return size() == 0; }
