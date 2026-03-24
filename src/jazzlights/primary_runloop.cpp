@@ -23,6 +23,7 @@
 #include "jazzlights/ui/ui.h"
 #include "jazzlights/ui/ui_atom_matrix.h"
 #include "jazzlights/ui/ui_atom_s3.h"
+#include "jazzlights/ui/ui_audio.h"
 #include "jazzlights/ui/ui_core2.h"
 #include "jazzlights/ui/ui_disabled.h"
 #include "jazzlights/ui/ui_motor.h"
@@ -39,7 +40,9 @@ typedef AtomMatrixUi Esp32UiImpl;
 #elif JL_IS_CONTROLLER(ATOM_S3)
 typedef AtomS3Ui Esp32UiImpl;
 #elif JL_IS_CONTROLLER(CORE2AWS) || JL_IS_CONTROLLER(CORES3)
-#if JL_MOTOR
+#if JL_AUDIO_VISUALIZER
+typedef AudioVisualizerUi Esp32UiImpl;
+#elif JL_MOTOR
 typedef CoreMotorUi Esp32UiImpl;
 #else   // JL_MOTOR
 typedef Core2AwsUi Esp32UiImpl;
