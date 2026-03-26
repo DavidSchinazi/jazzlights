@@ -82,7 +82,7 @@ void Audio::Initialize() {
 #if JL_IS_CONTROLLER(CORES3)
   i2s_std_config_t std_cfg = {
       .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(SAMPLE_RATE),
-      .slot_cfg = I2S_STD_MSB_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO),
+      .slot_cfg = I2S_STD_MSB_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO),
       .gpio_cfg =
           {
                      .mclk = GPIO_NUM_0,
@@ -95,7 +95,6 @@ void Audio::Initialize() {
   };
   ESP_ERROR_CHECK(i2s_channel_init_std_mode(rx_handle, &std_cfg));
   InitES7210();
-
 #elif JL_IS_CONTROLLER(CORE2AWS) || JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_S3)
   gpio_num_t clk_pin = GPIO_NUM_NC;
   gpio_num_t din_pin = GPIO_NUM_NC;
@@ -128,8 +127,9 @@ void Audio::Initialize() {
   ESP_ERROR_CHECK(i2s_channel_enable(rx_handle));
   jll_info("I2S microphone initialized");
 
-  // Allocate memory
-  audio_buffer_ = (int16_t*)malloc(FFT_N * sizeof(int16_t));
+  // Allocate memory. For CoreS3 we read stereo, so buffer must be larger.
+  // 2 samples per slot * FFT_N
+  audio_buffer_ = (int16_t*)malloc(FFT_N * 2 * sizeof(int16_t));
   fft_input_ = (float*)malloc(FFT_N * 2 * sizeof(float));
   fft_output_ = (float*)malloc(FFT_N * sizeof(float));
   fft_window_ = (float*)malloc(FFT_N * sizeof(float));
@@ -161,14 +161,23 @@ void Audio::AudioTask(void* param) {
   jll_info("Audio task started");
   uint32_t last_beat_time = 0;
   while (true) {
+    size_t bytes_to_read = FFT_N * sizeof(int16_t);
+#if JL_IS_CONTROLLER(CORES3)
+    bytes_to_read *= 2;  // Stereo
+#endif
     size_t bytes_read;
-    if (i2s_channel_read(rx_handle, audio->audio_buffer_, FFT_N * sizeof(int16_t), &bytes_read, portMAX_DELAY) ==
-        ESP_OK) {
+    if (i2s_channel_read(rx_handle, audio->audio_buffer_, bytes_to_read, &bytes_read, portMAX_DELAY) == ESP_OK) {
       // Replicate M5Unified processing: noise filter and magnification
-      const int32_t noise_filter_level = 4;
-      const float magnification = 8.0f / 2.0f;  // Based on M5Unified gain calculation with 1x oversampling
+      const int32_t noise_filter_level = 16;
+      const float magnification = 16.0f;
       for (int i = 0; i < FFT_N; i++) {
-        int32_t val = audio->audio_buffer_[i];
+        int16_t raw_val;
+#if JL_IS_CONTROLLER(CORES3)
+        raw_val = audio->audio_buffer_[i * 2];  // Use Left channel
+#else
+        raw_val = audio->audio_buffer_[i];
+#endif
+        int32_t val = raw_val;
         // IIR filter: v = (val * (256 - alpha) + prev * alpha + 128) >> 8
         int32_t v = (val * (256 - noise_filter_level) + (int32_t)audio->prev_sample_ * noise_filter_level + 128) >> 8;
         audio->prev_sample_ = (float)v;
@@ -252,46 +261,49 @@ void Audio::AudioTask(void* param) {
           }
 
           // AGC Tracking: Update 5-second window
-          float max_band_mag = 0;
-          for (int i = 0; i < kNumBands; i++) {
-            if (audio->band_magnitudes_[i] > max_band_mag) max_band_mag = audio->band_magnitudes_[i];
-          }
-          audio->agc_buffer_[audio->agc_index_] = max_band_mag;
-          audio->agc_index_ = (audio->agc_index_ + 1) % kAgcWindowSize;
-
-          float current_min = 100.0f;
-          float current_max = -100.0f;
-          bool has_data = false;
-          for (int i = 0; i < kAgcWindowSize; i++) {
-            if (audio->agc_buffer_[i] > 0) {
-              if (audio->agc_buffer_[i] < current_min) current_min = audio->agc_buffer_[i];
-              if (audio->agc_buffer_[i] > current_max) current_max = audio->agc_buffer_[i];
-              has_data = true;
-            }
-          }
-
-          if (has_data) {
-            if (current_max - current_min < 10.0f) {
-              float center = (current_max + current_min) / 2.0f;
-              current_min = center - 5.0f;
-              current_max = center + 5.0f;
-            }
-            float agc_smoothing = 0.95f;
-            audio->agc_min_ = audio->agc_min_ * agc_smoothing + current_min * (1.0f - agc_smoothing);
-            audio->agc_max_ = audio->agc_max_ * agc_smoothing + current_max * (1.0f - agc_smoothing);
-
-            // Calculate overall volume (average normalized magnitude)
-            float range = audio->agc_max_ - audio->agc_min_;
-            if (range < 1.0f) range = 1.0f;
-            float totalNormMag = 0;
+          if (audio->agc_enabled_) {
+            float max_band_mag = 0;
             for (int i = 0; i < kNumBands; i++) {
-              float norm = (audio->band_magnitudes_[i] - audio->agc_min_) / range;
-              if (norm < 0) norm = 0;
-              if (norm > 1.0f) norm = 1.0f;
-              totalNormMag += norm;
+              if (audio->band_magnitudes_[i] > max_band_mag) max_band_mag = audio->band_magnitudes_[i];
             }
-            audio->volume_ = totalNormMag / kNumBands;
+            audio->agc_buffer_[audio->agc_index_] = max_band_mag;
+            audio->agc_index_ = (audio->agc_index_ + 1) % kAgcWindowSize;
+
+            float current_min = 100.0f;
+            float current_max = -100.0f;
+            bool has_data = false;
+            for (int i = 0; i < kAgcWindowSize; i++) {
+              if (audio->agc_buffer_[i] > 0) {
+                if (audio->agc_buffer_[i] < current_min) current_min = audio->agc_buffer_[i];
+                if (audio->agc_buffer_[i] > current_max) current_max = audio->agc_buffer_[i];
+                has_data = true;
+              }
+            }
+
+            if (has_data) {
+              if (current_max - current_min < 10.0f) {
+                float center = (current_max + current_min) / 2.0f;
+                current_min = center - 5.0f;
+                current_max = center + 5.0f;
+              }
+              float agc_smoothing = 0.95f;
+              audio->agc_min_ = audio->agc_min_ * agc_smoothing + current_min * (1.0f - agc_smoothing);
+              audio->agc_max_ = audio->agc_max_ * agc_smoothing + current_max * (1.0f - agc_smoothing);
+            }
           }
+
+          // Calculate overall volume (average normalized magnitude)
+          // Uses current agc_min/max (either defaults or AGC-tracked values)
+          float range = audio->agc_max_ - audio->agc_min_;
+          if (range < 1.0f) range = 1.0f;
+          float totalNormMag = 0;
+          for (int i = 0; i < kNumBands; i++) {
+            float norm = (audio->band_magnitudes_[i] - audio->agc_min_) / range;
+            if (norm < 0) norm = 0;
+            if (norm > 1.0f) norm = 1.0f;
+            totalNormMag += norm;
+          }
+          audio->volume_ = totalNormMag / kNumBands;
 
           // Beat detection: Spectral Flux on first 8 bands (bass/low-mids)
           float flux = 0;

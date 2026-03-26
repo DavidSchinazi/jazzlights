@@ -34,6 +34,9 @@ class Audio {
 
   void GetVisualizerData(VisualizerData* data);
 
+  bool IsAgcEnabled() const { return agc_enabled_; }
+  void SetAgcEnabled(bool enabled) { agc_enabled_ = enabled; }
+
  private:
   Audio() = default;
   static void AudioTask(void* param);
@@ -43,8 +46,9 @@ class Audio {
 
   float band_magnitudes_[kNumBands] = {0};
   float peak_magnitudes_[kNumBands] = {0};
-  float agc_min_ = 50.0f;
-  float agc_max_ = 90.0f;
+  float agc_min_ = 40.0f;
+  float agc_max_ = 100.0f;
+  bool agc_enabled_ = true;
   float squelch_threshold_ = 75.0f;
   float volume_ = 0;
   bool beat_ = false;
