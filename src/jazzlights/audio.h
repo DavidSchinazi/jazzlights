@@ -49,6 +49,7 @@ class Audio {
   float volume_ = 0;
   bool beat_ = false;
   float prev_bands_[8] = {0};
+  float prev_sample_ = 0;
 
   int16_t* audio_buffer_ = nullptr;
   float* fft_input_ = nullptr;

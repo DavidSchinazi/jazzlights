@@ -2,8 +2,9 @@
 
 #if JL_AUDIO_VISUALIZER
 
-#include <Arduino.h>
 #include <M5Unified.h>
+#include <driver/i2s_pdm.h>
+#include <driver/i2s_std.h>
 #include <esp_dsp.h>
 #include <esp_log.h>
 
@@ -18,6 +19,52 @@ namespace jazzlights {
 #define FFT_N 256
 #define SAMPLE_RATE 16000
 
+static i2s_chan_handle_t rx_handle = nullptr;
+
+static void InitES7210() {
+  static const uint8_t es7210_init_data[][2] = {
+      {0x00, 0xFF}, // Reset
+      {0x00, 0x41}, // RESET_CTL
+      {0x01, 0x1F}, // CLK_ON_OFF
+      {0x06, 0x00}, // DIGITAL_PDN
+      {0x07, 0x20}, // ADC_OSR
+      {0x08, 0x10}, // MODE_CFG
+      {0x09, 0x30}, // TCT0_CHPINI
+      {0x0A, 0x30}, // TCT1_CHPINI
+      {0x20, 0x0A}, // ADC34_HPF2
+      {0x21, 0x2A}, // ADC34_HPF1
+      {0x22, 0x0A}, // ADC12_HPF2
+      {0x23, 0x2A}, // ADC12_HPF1
+      {0x02, 0xC1}, // Clock/Mode configuration
+      {0x04, 0x01}, // Clock/Mode configuration
+      {0x05, 0x00}, // Clock/Mode configuration
+      {0x11, 0x60}, // I2S/TDM configuration
+      {0x40, 0x42}, // ANALOG_SYS
+      {0x41, 0x70}, // MICBIAS12
+      {0x42, 0x70}, // MICBIAS34
+      {0x43, 0x1B}, // MIC1_GAIN
+      {0x44, 0x1B}, // MIC2_GAIN
+      {0x45, 0x00}, // MIC3_GAIN
+      {0x46, 0x00}, // MIC4_GAIN
+      {0x47, 0x00}, // MIC1_LP
+      {0x48, 0x00}, // MIC2_LP
+      {0x49, 0x00}, // MIC3_LP
+      {0x4A, 0x00}, // MIC4_LP
+      {0x4B, 0x00}, // MIC12_PDN
+      {0x4C, 0xFF}, // MIC34_PDN
+      {0x01, 0x14}, // CLK_ON_OFF
+  };
+
+  for (const auto& reg : es7210_init_data) {
+    if (reg[0] == 0x00 && reg[1] == 0xFF) {
+      M5.In_I2C.writeRegister8(0x40, 0x00, 0xFF, 400000);
+      vTaskDelay(pdMS_TO_TICKS(10));
+    } else {
+      M5.In_I2C.writeRegister8(0x40, reg[0], reg[1], 400000);
+    }
+  }
+}
+
 Audio& Audio::Get() {
   static Audio instance;
   return instance;
@@ -29,15 +76,57 @@ void Audio::Initialize() {
   }
   jll_info("Starting audio setup...");
 
-  // Setup microphone using M5Unified
-  auto mic_cfg = M5.Mic.config();
-  mic_cfg.sample_rate = SAMPLE_RATE;
-  mic_cfg.stereo = false;
-  mic_cfg.magnification = 8;
-  mic_cfg.noise_filter_level = 4;
-  M5.Mic.config(mic_cfg);
-  M5.Mic.begin();
-  jll_info("M5 microphone initialized");
+  i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
+  ESP_ERROR_CHECK(i2s_new_channel(&chan_cfg, NULL, &rx_handle));
+
+#if JL_IS_CONTROLLER(CORES3)
+  i2s_std_config_t std_cfg = {
+      .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(SAMPLE_RATE),
+      .slot_cfg = I2S_STD_MSB_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO),
+      .gpio_cfg =
+          {
+                     .mclk = GPIO_NUM_0,
+                     .bclk = GPIO_NUM_34,
+                     .ws = GPIO_NUM_33,
+                     .dout = I2S_GPIO_UNUSED,
+                     .din = GPIO_NUM_14,
+                     .invert_flags = {.mclk_inv = false, .bclk_inv = false, .ws_inv = false},
+                     },
+  };
+  ESP_ERROR_CHECK(i2s_channel_init_std_mode(rx_handle, &std_cfg));
+  InitES7210();
+
+#elif JL_IS_CONTROLLER(CORE2AWS) || JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_S3)
+  gpio_num_t clk_pin = GPIO_NUM_NC;
+  gpio_num_t din_pin = GPIO_NUM_NC;
+#if JL_IS_CONTROLLER(CORE2AWS)
+  clk_pin = GPIO_NUM_0;
+  din_pin = GPIO_NUM_34;
+  M5.Power.setLDO0(2800);
+#elif JL_IS_CONTROLLER(ATOM_MATRIX)
+  clk_pin = GPIO_NUM_22;
+  din_pin = GPIO_NUM_19;
+#elif JL_IS_CONTROLLER(ATOM_S3)
+  // Assuming ATOM S3U
+  clk_pin = GPIO_NUM_41;
+  din_pin = GPIO_NUM_42;
+#endif
+
+  i2s_pdm_rx_config_t pdm_rx_cfg = {
+      .clk_cfg = I2S_PDM_RX_CLK_DEFAULT_CONFIG(SAMPLE_RATE),
+      .slot_cfg = I2S_PDM_RX_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO),
+      .gpio_cfg =
+          {
+                     .clk = clk_pin,
+                     .din = din_pin,
+                     .invert_flags = {.clk_inv = false},
+                     },
+  };
+  ESP_ERROR_CHECK(i2s_channel_init_pdm_rx_mode(rx_handle, &pdm_rx_cfg));
+#endif
+
+  ESP_ERROR_CHECK(i2s_channel_enable(rx_handle));
+  jll_info("I2S microphone initialized");
 
   // Allocate memory
   audio_buffer_ = (int16_t*)malloc(FFT_N * sizeof(int16_t));
@@ -72,9 +161,20 @@ void Audio::AudioTask(void* param) {
   jll_info("Audio task started");
   uint32_t last_beat_time = 0;
   while (true) {
-    if (M5.Mic.record(audio->audio_buffer_, FFT_N, SAMPLE_RATE)) {
+    size_t bytes_read;
+    if (i2s_channel_read(rx_handle, audio->audio_buffer_, FFT_N * sizeof(int16_t), &bytes_read, portMAX_DELAY) ==
+        ESP_OK) {
+      // Replicate M5Unified processing: noise filter and magnification
+      const int32_t noise_filter_level = 4;
+      const float magnification = 8.0f / 2.0f;  // Based on M5Unified gain calculation with 1x oversampling
       for (int i = 0; i < FFT_N; i++) {
-        audio->fft_input_[i * 2] = (float)audio->audio_buffer_[i];
+        int32_t val = audio->audio_buffer_[i];
+        // IIR filter: v = (val * (256 - alpha) + prev * alpha + 128) >> 8
+        int32_t v = (val * (256 - noise_filter_level) + (int32_t)audio->prev_sample_ * noise_filter_level + 128) >> 8;
+        audio->prev_sample_ = (float)v;
+        float fval = (float)v * magnification;
+
+        audio->fft_input_[i * 2] = fval;
         audio->fft_input_[i * 2 + 1] = 0.0f;
       }
 
