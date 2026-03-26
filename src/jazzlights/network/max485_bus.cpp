@@ -62,7 +62,7 @@ static_assert(kBusIdSelf != kBusIdLeader, "follower bus ID cannot be equal to le
 
 std::vector<BusId> GetFollowers() {
 #if JL_BUS_LEADER
-  return {4, 5};
+  return {4};
 #else   // JL_BUS_LEADER
   return {};
 #endif  // JL_BUS_LEADER
