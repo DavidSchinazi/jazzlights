@@ -19,6 +19,8 @@ namespace jazzlights {
 #define FFT_N 256
 #define SAMPLE_RATE 16000
 
+#define JL_CORES3_USE_INTERNAL_MICROPHONE 0
+
 static i2s_chan_handle_t rx_handle = nullptr;
 
 static void InitES7210() {
@@ -76,38 +78,48 @@ void Audio::Initialize() {
   }
   jll_info("Starting audio setup...");
 
+#if JL_IS_CONTROLLER(CORES3) && !JL_CORES3_USE_INTERNAL_MICROPHONE
+  i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_1, I2S_ROLE_MASTER);
+#else
   i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
+#endif
   ESP_ERROR_CHECK(i2s_new_channel(&chan_cfg, NULL, &rx_handle));
 
 #if JL_IS_CONTROLLER(CORES3)
-#define USE_INTERNAL_MICROPHONE 0
   i2s_std_config_t std_cfg = {
       .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(SAMPLE_RATE),
+#if JL_CORES3_USE_INTERNAL_MICROPHONE
       .slot_cfg = I2S_STD_MSB_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO),
+#else
+      .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO),
+#endif
       .gpio_cfg =
           {
-#if USE_INTERNAL_MICROPHONE
+#if JL_CORES3_USE_INTERNAL_MICROPHONE
                      // Internal microphone on CoreS3-SE.
               .mclk = GPIO_NUM_0,
                      .bclk = GPIO_NUM_34,
                      .ws = GPIO_NUM_33,
                      .dout = I2S_GPIO_UNUSED,
                      .din = GPIO_NUM_14,
-#else   // USE_INTERNAL_MICROPHONE
+#else   // JL_CORES3_USE_INTERNAL_MICROPHONE
         // External I2S microphone using PCM1808
               .mclk = static_cast<gpio_num_t>(kPinE2_2),  // Master Clock on the ESP32, Slave Clock on the PCM1808
               .bclk = static_cast<gpio_num_t>(kPinC1),    // Bit Clock / Serial Clock
               .ws = static_cast<gpio_num_t>(kPinE1_1),    // LRC (Word Select == Left Right CLock)
               .dout = I2S_GPIO_UNUSED,
               .din = static_cast<gpio_num_t>(kPinC2),  // OUT
-#endif  // USE_INTERNAL_MICROPHONE
+#endif  // JL_CORES3_USE_INTERNAL_MICROPHONE
                      .invert_flags = {.mclk_inv = false, .bclk_inv = false, .ws_inv = false},
                      },
   };
+#if !JL_CORES3_USE_INTERNAL_MICROPHONE
+  std_cfg.slot_cfg.slot_bit_width = I2S_SLOT_BIT_WIDTH_32BIT;
+#endif
   ESP_ERROR_CHECK(i2s_channel_init_std_mode(rx_handle, &std_cfg));
-#if USE_INTERNAL_MICROPHONE
+#if JL_CORES3_USE_INTERNAL_MICROPHONE
   InitES7210();
-#endif  // USE_INTERNAL_MICROPHONE
+#endif  // JL_CORES3_USE_INTERNAL_MICROPHONE
 #elif JL_IS_CONTROLLER(CORE2AWS) || JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_S3)
   gpio_num_t clk_pin = GPIO_NUM_NC;
   gpio_num_t din_pin = GPIO_NUM_NC;
