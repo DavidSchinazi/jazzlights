@@ -93,7 +93,7 @@ class Max485BusHandler {
   explicit Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, BusId busIdSelf,
                             const std::vector<BusId>& followers);
   static void TaskFunction(void* parameters);
-  void SetUp();
+  void Setup();
   void RunTask();
   static BufferViewU8 DecodeMessage(const BufferViewU8 encodedBuffer, OwnedBufferU8& decodedReadBuffer,
                                     OwnedBufferU8& decodedMessageBuffer, BusId busIdSelf);
@@ -190,7 +190,7 @@ Max485BusHandler::~Max485BusHandler() { vTaskDelete(taskHandle_); }
 void Max485BusHandler::TaskFunction(void* parameters) {
   Max485BusHandler* handler = static_cast<Max485BusHandler*>(parameters);
   // Run setup here instead of in the constructor to ensure interrupts fire on the core that the task is pinned to.
-  handler->SetUp();
+  handler->Setup();
   while (true) { handler->RunTask(); }
 }
 
@@ -291,7 +291,7 @@ void Max485BusHandler::RunTask() {
   }
 }
 
-void Max485BusHandler::SetUp() {
+void Max485BusHandler::Setup() {
   constexpr int kEventQueueSize = 16;
   constexpr int kBaudRate = 115200;
   ESP_ERROR_CHECK(uart_driver_install(uartPort_, kUartDriverBufferSize, kUartDriverBufferSize, kEventQueueSize, &queue_,
