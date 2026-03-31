@@ -19,7 +19,7 @@ namespace jazzlights {
 #define FFT_N 256
 #define SAMPLE_RATE 16000
 
-#define JL_CORES3_USE_INTERNAL_MICROPHONE 01
+#define JL_CORES3_USE_INTERNAL_MICROPHONE 0
 
 static void InitES7210() {
   static const uint8_t es7210_init_data[][2] = {
