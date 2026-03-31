@@ -21,6 +21,50 @@ namespace jazzlights {
 
 #define JL_CORES3_USE_INTERNAL_MICROPHONE 01
 
+static void InitES7210() {
+  static const uint8_t es7210_init_data[][2] = {
+      {0x00, 0xFF}, // Reset
+      {0x00, 0x41}, // RESET_CTL
+      {0x01, 0x1F}, // CLK_ON_OFF
+      {0x06, 0x00}, // DIGITAL_PDN
+      {0x07, 0x20}, // ADC_OSR
+      {0x08, 0x10}, // MODE_CFG
+      {0x09, 0x30}, // TCT0_CHPINI
+      {0x0A, 0x30}, // TCT1_CHPINI
+      {0x20, 0x0A}, // ADC34_HPF2
+      {0x21, 0x2A}, // ADC34_HPF1
+      {0x22, 0x0A}, // ADC12_HPF2
+      {0x23, 0x2A}, // ADC12_HPF1
+      {0x02, 0xC1}, // Clock/Mode configuration
+      {0x04, 0x01}, // Clock/Mode configuration
+      {0x05, 0x00}, // Clock/Mode configuration
+      {0x11, 0x60}, // I2S/TDM configuration
+      {0x40, 0x42}, // ANALOG_SYS
+      {0x41, 0x70}, // MICBIAS12
+      {0x42, 0x70}, // MICBIAS34
+      {0x43, 0x1B}, // MIC1_GAIN
+      {0x44, 0x1B}, // MIC2_GAIN
+      {0x45, 0x00}, // MIC3_GAIN
+      {0x46, 0x00}, // MIC4_GAIN
+      {0x47, 0x00}, // MIC1_LP
+      {0x48, 0x00}, // MIC2_LP
+      {0x49, 0x00}, // MIC3_LP
+      {0x4A, 0x00}, // MIC4_LP
+      {0x4B, 0x00}, // MIC12_PDN
+      {0x4C, 0xFF}, // MIC34_PDN
+      {0x01, 0x14}, // CLK_ON_OFF
+  };
+
+  for (const auto& reg : es7210_init_data) {
+    if (reg[0] == 0x00 && reg[1] == 0xFF) {
+      M5.In_I2C.writeRegister8(0x40, 0x00, 0xFF, 400000);
+      vTaskDelay(pdMS_TO_TICKS(10));
+    } else {
+      M5.In_I2C.writeRegister8(0x40, reg[0], reg[1], 400000);
+    }
+  }
+}
+
 Audio& Audio::Get() {
   static Audio instance;
   return instance;
@@ -70,7 +114,11 @@ void Audio::Initialize() {
 #if !JL_CORES3_USE_INTERNAL_MICROPHONE
   std_cfg.slot_cfg.slot_bit_width = I2S_SLOT_BIT_WIDTH_32BIT;
 #endif
+
   ESP_ERROR_CHECK(i2s_channel_init_std_mode(rx_handle_, &std_cfg));
+#if JL_CORES3_USE_INTERNAL_MICROPHONE
+  InitES7210();
+#endif  // JL_CORES3_USE_INTERNAL_MICROPHONE
 #elif JL_IS_CONTROLLER(CORE2AWS) || JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_S3)
   gpio_num_t clk_pin = GPIO_NUM_NC;
   gpio_num_t din_pin = GPIO_NUM_NC;
