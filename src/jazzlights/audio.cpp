@@ -37,7 +37,7 @@ void Audio::Initialize() {
 #else
   i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
 #endif
-  ESP_ERROR_CHECK(i2s_new_channel(&chan_cfg, NULL, &rx_handle_));
+  ESP_ERROR_CHECK(i2s_new_channel(&chan_cfg, nullptr, &rx_handle_));
 
 #if JL_IS_CONTROLLER(CORES3)
   i2s_std_config_t std_cfg = {
@@ -118,7 +118,7 @@ void Audio::Initialize() {
   fft_window_ = (float*)malloc(FFT_N * sizeof(float));
 
   // Initialize FFT
-  ESP_ERROR_CHECK(dsps_fft2r_init_fc32(NULL, FFT_N));
+  ESP_ERROR_CHECK(dsps_fft2r_init_fc32(nullptr, FFT_N));
   dsps_wind_hann_f32(fft_window_, FFT_N);
   jll_info("FFT initialized");
 
