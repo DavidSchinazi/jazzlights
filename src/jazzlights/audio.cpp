@@ -15,9 +15,10 @@
 
 namespace jazzlights {
 
-// FFT constants
-#define FFT_N 256
-#define SAMPLE_RATE 16000
+namespace {
+static constexpr int kFFTSize = 256;
+static constexpr uint32_t kSampleRate = 16000;
+}  // namespace
 
 #define JL_CORES3_USE_INTERNAL_MICROPHONE 0
 
@@ -41,7 +42,7 @@ void Audio::Initialize() {
 
 #if JL_IS_CONTROLLER(CORES3)
   i2s_std_config_t std_cfg = {
-      .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(SAMPLE_RATE),
+      .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(kSampleRate),
 #if JL_CORES3_USE_INTERNAL_MICROPHONE
       .slot_cfg = I2S_STD_MSB_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO),
 #else
@@ -95,7 +96,7 @@ void Audio::Initialize() {
 #endif
 
   i2s_pdm_rx_config_t pdm_rx_cfg = {
-      .clk_cfg = I2S_PDM_RX_CLK_DEFAULT_CONFIG(SAMPLE_RATE),
+      .clk_cfg = I2S_PDM_RX_CLK_DEFAULT_CONFIG(kSampleRate),
       .slot_cfg = I2S_PDM_RX_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO),
       .gpio_cfg =
           {
@@ -111,15 +112,15 @@ void Audio::Initialize() {
   jll_info("I2S microphone initialized");
 
   // Allocate memory. For CoreS3 we read stereo, so buffer must be larger.
-  // 2 samples per slot * FFT_N
-  audio_buffer_ = (int16_t*)malloc(FFT_N * 2 * sizeof(int16_t));
-  fft_input_ = (float*)malloc(FFT_N * 2 * sizeof(float));
-  fft_output_ = (float*)malloc(FFT_N * sizeof(float));
-  fft_window_ = (float*)malloc(FFT_N * sizeof(float));
+  // 2 samples per slot * kFFTSize
+  audio_buffer_ = (int16_t*)malloc(kFFTSize * 2 * sizeof(int16_t));
+  fft_input_ = (float*)malloc(kFFTSize * 2 * sizeof(float));
+  fft_output_ = (float*)malloc(kFFTSize * sizeof(float));
+  fft_window_ = (float*)malloc(kFFTSize * sizeof(float));
 
   // Initialize FFT
-  ESP_ERROR_CHECK(dsps_fft2r_init_fc32(nullptr, FFT_N));
-  dsps_wind_hann_f32(fft_window_, FFT_N);
+  ESP_ERROR_CHECK(dsps_fft2r_init_fc32(nullptr, kFFTSize));
+  dsps_wind_hann_f32(fft_window_, kFFTSize);
   jll_info("FFT initialized");
 
   // Start audio task
@@ -149,7 +150,7 @@ void Audio::AudioTask(void* param) {
 }
 
 void Audio::ReadAndProcessAudio() {
-  size_t bytes_to_read = FFT_N * sizeof(int16_t);
+  size_t bytes_to_read = kFFTSize * sizeof(int16_t);
 #if JL_IS_CONTROLLER(CORES3)
   bytes_to_read *= 2;  // Stereo
 #endif
@@ -158,7 +159,7 @@ void Audio::ReadAndProcessAudio() {
     // Replicate M5Unified processing: noise filter and magnification
     const int32_t noise_filter_level = 16;
     const float magnification = 16.0f;
-    for (int i = 0; i < FFT_N; i++) {
+    for (int i = 0; i < kFFTSize; i++) {
       int16_t raw_val;
 #if JL_IS_CONTROLLER(CORES3)
       raw_val = audio_buffer_[i * 2];  // Use Left channel
@@ -176,12 +177,12 @@ void Audio::ReadAndProcessAudio() {
     }
 
     // Apply window and perform FFT
-    dsps_mul_f32(fft_input_, fft_window_, fft_input_, FFT_N, 2, 1, 2);
-    ESP_ERROR_CHECK(dsps_fft2r_fc32(fft_input_, FFT_N));
-    dsps_bit_rev_fc32(fft_input_, FFT_N);
+    dsps_mul_f32(fft_input_, fft_window_, fft_input_, kFFTSize, 2, 1, 2);
+    ESP_ERROR_CHECK(dsps_fft2r_fc32(fft_input_, kFFTSize));
+    dsps_bit_rev_fc32(fft_input_, kFFTSize);
 
     // Convert to magnitude (dB)
-    for (int i = 0; i < FFT_N / 2; i++) {
+    for (int i = 0; i < kFFTSize / 2; i++) {
       float real = fft_input_[i * 2];
       float imag = fft_input_[i * 2 + 1];
       float power = real * real + imag * imag;
@@ -200,11 +201,11 @@ void Audio::ReadAndProcessAudio() {
       float start_freq = powf(2.0f, log_min + i * log_step);
       float end_freq = powf(2.0f, log_min + (i + 1) * log_step);
 
-      int start_bin = (int)(start_freq / (SAMPLE_RATE / FFT_N));
-      int end_bin = (int)(end_freq / (SAMPLE_RATE / FFT_N));
+      int start_bin = (int)(start_freq / (kSampleRate / kFFTSize));
+      int end_bin = (int)(end_freq / (kSampleRate / kFFTSize));
       if (end_bin <= start_bin) end_bin = start_bin + 1;
       if (start_bin < 1) start_bin = 1;
-      if (end_bin > FFT_N / 2) end_bin = FFT_N / 2;
+      if (end_bin > kFFTSize / 2) end_bin = kFFTSize / 2;
 
       float sum = 0;
       int count = 0;
