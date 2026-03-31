@@ -22,22 +22,19 @@ static constexpr uint32_t kSampleRate = 16000;
 
 #define JL_CORES3_USE_INTERNAL_MICROPHONE 0
 
+#if JL_IS_CONTROLLER(CORES3) && !JL_CORES3_USE_INTERNAL_MICROPHONE
+static constexpr i2s_port_t kI2sPort = I2S_NUM_1;
+#else
+static constexpr i2s_port_t kI2sPort = I2S_NUM_0;
+#endif
+
 Audio& Audio::Get() {
   static Audio instance;
   return instance;
 }
 
 void Audio::Initialize() {
-  if (audio_buffer_ != nullptr) {
-    return;  // Already initialized
-  }
-  jll_info("Starting audio setup...");
-
-#if JL_IS_CONTROLLER(CORES3) && !JL_CORES3_USE_INTERNAL_MICROPHONE
-  i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_1, I2S_ROLE_MASTER);
-#else
-  i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
-#endif
+  i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(kI2sPort, I2S_ROLE_MASTER);
   ESP_ERROR_CHECK(i2s_new_channel(&chan_cfg, nullptr, &rx_handle_));
 
 #if JL_IS_CONTROLLER(CORES3)
