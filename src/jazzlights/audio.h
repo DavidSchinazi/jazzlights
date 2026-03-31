@@ -5,6 +5,7 @@
 
 #if JL_AUDIO_VISUALIZER
 
+#include <driver/i2s_types.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
@@ -40,9 +41,11 @@ class Audio {
  private:
   Audio() = default;
   static void AudioTask(void* param);
+  void ReadAndProcessAudio();
 
   std::mutex audio_data_mutex_;
   TaskHandle_t audio_task_handle_ = nullptr;
+  i2s_chan_handle_t rx_handle_ = nullptr;
 
   float band_magnitudes_[kNumBands] = {0};
   float peak_magnitudes_[kNumBands] = {0};
@@ -52,6 +55,7 @@ class Audio {
   float squelch_threshold_ = 75.0f;
   float volume_ = 0;
   bool beat_ = false;
+  uint32_t last_beat_time_ = 0;
   float prev_bands_[8] = {0};
   float prev_sample_ = 0;
 
