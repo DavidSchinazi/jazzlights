@@ -122,13 +122,9 @@ void Audio::Initialize() {
   ESP_ERROR_CHECK(dsps_fft2r_init_fc32(nullptr, kFFTSize));
   dsps_wind_hann_f32(fft_window_, kFFTSize);
   jll_info("FFT initialized");
-
-  // Start audio task
-  xTaskCreatePinnedToCore(AudioTask, "AudioTask", 8192, this, 1, &audio_task_handle_, 1);
-  jll_info("Audio task created");
-
-  jll_info("Audio setup complete");
 }
+
+void Audio::Setup() { xTaskCreatePinnedToCore(AudioTask, "JL_Audio", 8192, this, 1, &audio_task_handle_, 1); }
 
 void Audio::GetVisualizerData(VisualizerData* data) {
   std::lock_guard<std::mutex> lock(audio_data_mutex_);
@@ -142,6 +138,7 @@ void Audio::GetVisualizerData(VisualizerData* data) {
 
 void Audio::AudioTask(void* param) {
   Audio* audio = static_cast<Audio*>(param);
+  audio->Initialize();
   jll_info("Audio task started");
   while (true) {
     audio->ReadAndProcessAudio();

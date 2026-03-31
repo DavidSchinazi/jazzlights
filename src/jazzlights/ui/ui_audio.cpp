@@ -23,8 +23,6 @@ void AudioVisualizerUi::InitialSetup() {
   M5.begin(cfg);
   jll_info("M5CoreS3 initialized");
 
-  Audio::Get().Initialize();
-
   M5.Lcd.fillScreen(BLACK);
 
   jll_info("Audio visualizer UI setup complete");

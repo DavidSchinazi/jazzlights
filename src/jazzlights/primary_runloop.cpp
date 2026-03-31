@@ -123,6 +123,9 @@ void SetupPrimaryRunLoop() {
   GetUi()->FinalSetup();
 
   runner.Start();
+#if JL_AUDIO_VISUALIZER
+  Audio::Get().Setup();
+#endif  // JL_AUDIO_VISUALIZER
 #if JL_HALL_SENSOR
   (void)GetHallSensor();
 #endif  // JL_HALL_SENSOR

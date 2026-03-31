@@ -19,8 +19,7 @@ namespace jazzlights {
 class Audio {
  public:
   static Audio& Get();
-
-  void Initialize();
+  void Setup();
 
   static constexpr int kNumBands = 32;
 
@@ -41,6 +40,7 @@ class Audio {
  private:
   Audio() = default;
   static void AudioTask(void* param);
+  void Initialize();
   void ReadAndProcessAudio();
 
   std::mutex audio_data_mutex_;
