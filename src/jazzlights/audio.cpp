@@ -244,7 +244,7 @@ void Audio::ReadAndProcessAudio() {
         }
 
         // AGC Tracking: Update 5-second window
-        if (agc_enabled_) {
+        {
           float max_band_mag = 0;
           for (int i = 0; i < kNumBands; i++) {
             if (band_magnitudes_[i] > max_band_mag) max_band_mag = band_magnitudes_[i];
@@ -276,12 +276,14 @@ void Audio::ReadAndProcessAudio() {
         }
 
         // Calculate overall volume (average normalized magnitude)
-        // Uses current agc_min/max (either defaults or AGC-tracked values)
-        float range = agc_max_ - agc_min_;
+        // Uses current agc_min/max if enabled, otherwise defaults
+        float v_min = agc_enabled_ ? agc_min_ : 40.0f;
+        float v_max = agc_enabled_ ? agc_max_ : 100.0f;
+        float range = v_max - v_min;
         if (range < 1.0f) range = 1.0f;
         float totalNormMag = 0;
         for (int i = 0; i < kNumBands; i++) {
-          float norm = (band_magnitudes_[i] - agc_min_) / range;
+          float norm = (band_magnitudes_[i] - v_min) / range;
           if (norm < 0) norm = 0;
           if (norm > 1.0f) norm = 1.0f;
           totalNormMag += norm;
