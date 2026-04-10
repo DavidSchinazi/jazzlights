@@ -228,7 +228,7 @@ void Audio::ReadAndProcessAudio() {
       beat_index_ = (beat_index_ + 1) % kBeatWindowSize;
     } else {
       // Smoothing and Peak Decay
-      float smoothing = 0.7f;
+      float smoothing = 0.4f;
       float peak_decay = 0.5f;  // dB per frame
 
       {
@@ -264,10 +264,10 @@ void Audio::ReadAndProcessAudio() {
           }
 
           if (has_data) {
-            if (current_max - current_min < 10.0f) {
+            if (current_max - current_min < 4.0f) {
               float center = (current_max + current_min) / 2.0f;
-              current_min = center - 5.0f;
-              current_max = center + 5.0f;
+              current_min = center - 2.0f;
+              current_max = center + 2.0f;
             }
             float agc_smoothing = 0.95f;
             agc_min_ = agc_min_ * agc_smoothing + current_min * (1.0f - agc_smoothing);

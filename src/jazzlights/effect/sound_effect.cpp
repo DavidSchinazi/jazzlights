@@ -92,6 +92,8 @@ ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, So
   normalizedMag = (magnitude - state->audioData.agc_min) / range;
   if (normalizedMag < 0) normalizedMag = 0;
   if (normalizedMag > 1.0f) normalizedMag = 1.0f;
+  // Boost smaller changes to make them more visible
+  normalizedMag = powf(normalizedMag, 0.7f);
 
   transient = (magnitude - prevMagnitude) / range;
   if (transient < 0) transient = 0;
@@ -108,15 +110,15 @@ ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, So
     color.nscale8_video(barBrightness);
   } else {
     // Background: dimmed version of the color, scaled by overall volume
-    uint8_t backgroundBrightness = static_cast<uint8_t>(48.0f * state->audioData.volume);
+    uint8_t backgroundBrightness = static_cast<uint8_t>(48.0f * powf(state->audioData.volume, 0.7f));
     color.nscale8_video(backgroundBrightness);
   }
 
   // Add Sparkles!
   uint32_t sparkleChance = 0;
-  if (transient > 0.02f) {
+  if (transient > 0.005f) {
     // Audio-reactive sparkle based on transients
-    sparkleChance = static_cast<uint32_t>(transient * 1000.0f);
+    sparkleChance = static_cast<uint32_t>(transient * 5000.0f);
   } else if (state->audioData.volume < 0.01f) {
     // Rare random sparkle when quiet
     sparkleChance = 1;
@@ -135,9 +137,9 @@ ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, So
   CRGB* prevColors = lastColors(state);
   CRGB& lastColor = prevColors[px.index];
   // Asymmetrical smoothing: faster on the way up, slower on the way down
-  uint8_t blendAmount = 24;  // Default very smooth
+  uint8_t blendAmount = 48;  // Default was 24
   if (color.r > lastColor.r || color.g > lastColor.g || color.b > lastColor.b) {
-    blendAmount = 64;  // Faster response to brightness increases
+    blendAmount = 128;  // Was 64
   }
   color = nblend(lastColor, color, blendAmount);
   lastColor = color;
