@@ -189,6 +189,7 @@ inline constexpr int kPinB2 = 9;
 inline constexpr int kPinC1 = 18;
 inline constexpr int kPinC2 = 17;
 inline constexpr int kPinE1_1 = 6;
+inline constexpr int kPinE1_3 = 0;
 inline constexpr int kPinE2_2 = 5;
 #elif JL_IS_CONTROLLER(CORE2AWS)
 // B1 is unusable for GPIO on Core2AWS.
@@ -197,6 +198,7 @@ inline constexpr int kPinB2 = 26;
 inline constexpr int kPinC1 = 13;
 inline constexpr int kPinC2 = 14;
 inline constexpr int kPinE1_1 = 27;
+inline constexpr int kPinE1_3 = 0;
 inline constexpr int kPinE2_2 = 25;
 #endif
 

@@ -59,10 +59,10 @@ void Audio::Initialize() {
 #if JL_IS_CONTROLLER(CORE2AWS)
                   I2S_GPIO_UNUSED,  // ESP32 (original) cannot output MCLK on GPIO 25.
 #else
-                  static_cast<gpio_num_t>(kPinE2_2),  // Master Clock on the ESP32, Slave Clock on the PCM1808
+                  static_cast<gpio_num_t>(kPinE1_3),  // Master Clock on the ESP32, Slave Clock on the PCM1808
 #endif
               .bclk = static_cast<gpio_num_t>(kPinC1),  // Bit Clock / Serial Clock
-              .ws = static_cast<gpio_num_t>(kPinE1_1),  // LRC (Word Select == Left Right CLock)
+              .ws = static_cast<gpio_num_t>(kPinE2_2),  // LRC (Word Select == Left Right CLock)
               .dout = I2S_GPIO_UNUSED,
               .din = static_cast<gpio_num_t>(kPinC2),  // OUT
 #endif  // JL_CORES3_USE_INTERNAL_MICROPHONE
