@@ -51,7 +51,7 @@ class Audio {
   float peak_magnitudes_[kNumBands] = {0};
   float agc_min_ = 40.0f;
   float agc_max_ = 100.0f;
-  bool agc_enabled_ = true;
+  bool agc_enabled_ = false;
   float squelch_threshold_ = 75.0f;
   float volume_ = 0;
   bool beat_ = false;
