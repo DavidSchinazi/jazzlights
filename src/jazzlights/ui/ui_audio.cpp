@@ -1,7 +1,7 @@
 #include "jazzlights/ui/ui_audio.h"
 
 #ifdef ESP32
-#if JL_AUDIO_VISUALIZER && JL_IS_CONTROLLER(CORES3)
+#if JL_AUDIO_VISUALIZER && (JL_IS_CONTROLLER(CORES3) || JL_IS_CONTROLLER(CORE2AWS))
 
 #include <Arduino.h>
 #include <M5Unified.h>
@@ -18,10 +18,10 @@ AudioVisualizerUi::AudioVisualizerUi(Player& player) : Esp32Ui(player) {}
 
 void AudioVisualizerUi::InitialSetup() {
   jll_info("Starting audio visualizer UI setup...");
-  // Initialize M5CoreS3
+  // Initialize M5 device
   auto cfg = M5.config();
   M5.begin(cfg);
-  jll_info("M5CoreS3 initialized");
+  jll_info("M5 device initialized");
 
   M5.Lcd.fillScreen(BLACK);
 
@@ -153,5 +153,5 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
 
 }  // namespace jazzlights
 
-#endif  // JL_AUDIO_VISUALIZER && JL_IS_CONTROLLER(CORES3)
+#endif  // JL_AUDIO_VISUALIZER && (JL_IS_CONTROLLER(CORES3) || JL_IS_CONTROLLER(CORE2AWS))
 #endif  // ESP32

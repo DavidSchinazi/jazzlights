@@ -6,7 +6,7 @@
 
 #ifdef ESP32
 
-#if JL_AUDIO_VISUALIZER && JL_IS_CONTROLLER(CORES3)
+#if JL_AUDIO_VISUALIZER && (JL_IS_CONTROLLER(CORES3) || JL_IS_CONTROLLER(CORE2AWS))
 
 #include <mutex>
 
@@ -35,7 +35,7 @@ class AudioVisualizerUi : public Esp32Ui {
 
 }  // namespace jazzlights
 
-#else  // JL_AUDIO_VISUALIZER && JL_IS_CONTROLLER(CORES3)
+#else  // JL_AUDIO_VISUALIZER && (JL_IS_CONTROLLER(CORES3) || JL_IS_CONTROLLER(CORE2AWS))
 
 namespace jazzlights {
 
@@ -49,7 +49,7 @@ class AudioVisualizerUi : public Esp32Ui {
 
 }  // namespace jazzlights
 
-#endif  // JL_AUDIO_VISUALIZER && JL_IS_CONTROLLER(CORES3)
+#endif  // JL_AUDIO_VISUALIZER && (JL_IS_CONTROLLER(CORES3) || JL_IS_CONTROLLER(CORE2AWS))
 
 #endif  // ESP32
 

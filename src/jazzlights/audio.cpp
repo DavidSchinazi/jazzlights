@@ -22,7 +22,7 @@ static constexpr uint32_t kSampleRate = 16000;
 
 #define JL_CORES3_USE_INTERNAL_MICROPHONE 0
 
-#if JL_IS_CONTROLLER(CORES3) && !JL_CORES3_USE_INTERNAL_MICROPHONE
+#if (JL_IS_CONTROLLER(CORES3) && !JL_CORES3_USE_INTERNAL_MICROPHONE) || JL_IS_CONTROLLER(CORE2AWS)
 static constexpr i2s_port_t kI2sPort = I2S_NUM_1;
 #else
 static constexpr i2s_port_t kI2sPort = I2S_NUM_0;
@@ -37,53 +37,55 @@ void Audio::Initialize() {
   i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(kI2sPort, I2S_ROLE_MASTER);
   ESP_ERROR_CHECK(i2s_new_channel(&chan_cfg, nullptr, &rx_handle_));
 
-#if JL_IS_CONTROLLER(CORES3)
+#if JL_IS_CONTROLLER(CORES3) || JL_IS_CONTROLLER(CORE2AWS)
   i2s_std_config_t std_cfg = {
       .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(kSampleRate),
-#if JL_CORES3_USE_INTERNAL_MICROPHONE
+#if JL_IS_CONTROLLER(CORES3) && JL_CORES3_USE_INTERNAL_MICROPHONE
       .slot_cfg = I2S_STD_MSB_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO),
 #else
       .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO),
 #endif
       .gpio_cfg =
           {
-#if JL_CORES3_USE_INTERNAL_MICROPHONE
+#if JL_IS_CONTROLLER(CORES3) && JL_CORES3_USE_INTERNAL_MICROPHONE
                      // Internal microphone on CoreS3-SE.
               .mclk = GPIO_NUM_0,
                      .bclk = GPIO_NUM_34,
                      .ws = GPIO_NUM_33,
                      .dout = I2S_GPIO_UNUSED,
                      .din = GPIO_NUM_14,
-#else   // JL_CORES3_USE_INTERNAL_MICROPHONE
-        // External I2S microphone using PCM1808
-              .mclk = static_cast<gpio_num_t>(kPinE2_2),  // Master Clock on the ESP32, Slave Clock on the PCM1808
-              .bclk = static_cast<gpio_num_t>(kPinC1),    // Bit Clock / Serial Clock
-              .ws = static_cast<gpio_num_t>(kPinE1_1),    // LRC (Word Select == Left Right CLock)
+#else  // External I2S microphone using PCM1808
+              .mclk =
+#if JL_IS_CONTROLLER(CORE2AWS)
+                  I2S_GPIO_UNUSED,  // ESP32 (original) cannot output MCLK on GPIO 25.
+#else
+                  static_cast<gpio_num_t>(kPinE2_2),  // Master Clock on the ESP32, Slave Clock on the PCM1808
+#endif
+              .bclk = static_cast<gpio_num_t>(kPinC1),  // Bit Clock / Serial Clock
+              .ws = static_cast<gpio_num_t>(kPinE1_1),  // LRC (Word Select == Left Right CLock)
               .dout = I2S_GPIO_UNUSED,
               .din = static_cast<gpio_num_t>(kPinC2),  // OUT
 #endif  // JL_CORES3_USE_INTERNAL_MICROPHONE
                      .invert_flags = {.mclk_inv = false, .bclk_inv = false, .ws_inv = false},
                      },
   };
-#if !JL_CORES3_USE_INTERNAL_MICROPHONE
+#if JL_IS_CONTROLLER(CORES3) && !JL_CORES3_USE_INTERNAL_MICROPHONE
+  std_cfg.slot_cfg.slot_bit_width = I2S_SLOT_BIT_WIDTH_32BIT;
+#elif JL_IS_CONTROLLER(CORE2AWS)
   std_cfg.slot_cfg.slot_bit_width = I2S_SLOT_BIT_WIDTH_32BIT;
 #endif
 
   ESP_ERROR_CHECK(i2s_channel_init_std_mode(rx_handle_, &std_cfg));
-#if JL_CORES3_USE_INTERNAL_MICROPHONE
+#if JL_IS_CONTROLLER(CORES3) && JL_CORES3_USE_INTERNAL_MICROPHONE
   auto mic_cfg = M5.Mic.config();
   mic_cfg.pin_data_in = -1;  // Prevent M5Unified from initializing I2S and starting a task.
   M5.Mic.config(mic_cfg);
   M5.Mic.begin();
 #endif  // JL_CORES3_USE_INTERNAL_MICROPHONE
-#elif JL_IS_CONTROLLER(CORE2AWS) || JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_S3)
+#elif JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_S3)
   gpio_num_t clk_pin = GPIO_NUM_NC;
   gpio_num_t din_pin = GPIO_NUM_NC;
-#if JL_IS_CONTROLLER(CORE2AWS)
-  clk_pin = GPIO_NUM_0;
-  din_pin = GPIO_NUM_34;
-  M5.Power.setLDO0(2800);
-#elif JL_IS_CONTROLLER(ATOM_MATRIX)
+#if JL_IS_CONTROLLER(ATOM_MATRIX)
   clk_pin = GPIO_NUM_22;
   din_pin = GPIO_NUM_19;
 #elif JL_IS_CONTROLLER(ATOM_S3)
@@ -108,7 +110,7 @@ void Audio::Initialize() {
   ESP_ERROR_CHECK(i2s_channel_enable(rx_handle_));
   jll_info("I2S microphone initialized");
 
-  // Allocate memory. For CoreS3 we read stereo, so buffer must be larger.
+  // Allocate memory. For CoreS3 and Core2AWS we read stereo, so buffer must be larger.
   // 2 samples per slot * kFFTSize
   audio_buffer_ = (int16_t*)malloc(kFFTSize * 2 * sizeof(int16_t));
   fft_input_ = (float*)malloc(kFFTSize * 2 * sizeof(float));
@@ -145,7 +147,7 @@ void Audio::AudioTask(void* param) {
 
 void Audio::ReadAndProcessAudio() {
   size_t bytes_to_read = kFFTSize * sizeof(int16_t);
-#if JL_IS_CONTROLLER(CORES3)
+#if JL_IS_CONTROLLER(CORES3) || JL_IS_CONTROLLER(CORE2AWS)
   bytes_to_read *= 2;  // Stereo
 #endif
   size_t bytes_read;
@@ -155,7 +157,7 @@ void Audio::ReadAndProcessAudio() {
     const float magnification = 16.0f;
     for (int i = 0; i < kFFTSize; i++) {
       int16_t raw_val;
-#if JL_IS_CONTROLLER(CORES3)
+#if JL_IS_CONTROLLER(CORES3) || JL_IS_CONTROLLER(CORE2AWS)
       raw_val = audio_buffer_[i * 2];  // Use Left channel
 #else
       raw_val = audio_buffer_[i];
