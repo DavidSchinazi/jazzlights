@@ -39,6 +39,8 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
   if (M5.Touch.getCount() > 0 && M5.Touch.getDetail(0).wasPressed()) {
     visualization_mode_ = (visualization_mode_ == VisualizationMode::kSpectrum) ? VisualizationMode::kWaveform
                                                                                 : VisualizationMode::kSpectrum;
+    jll_info("%u Switched to %s mode", currentTime,
+             (visualization_mode_ == VisualizationMode::kSpectrum) ? "spectrum" : "waveform");
     M5.Lcd.fillScreen(BLACK);
   }
 
