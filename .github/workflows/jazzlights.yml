@@ -89,6 +89,7 @@ jobs:
           - shoe
           - hat
           - creature
+          - orrery_motor_test_m5stamp_s3
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -172,6 +173,7 @@ jobs:
           extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-shoe.json" --name "JazzLights Shoe" --version $(git rev-parse --short "$GITHUB_SHA") --firmware shoe.bin
           extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-hat.json" --name "JazzLights Hat" --version $(git rev-parse --short "$GITHUB_SHA") --firmware hat.bin
           extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-creature.json" --name "MISTical Creature" --version $(git rev-parse --short "$GITHUB_SHA") --firmware creature.bin
+          extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-motor-test.json" --name "Orrery Motor Test" --version $(git rev-parse --short "$GITHUB_SHA") --firmware-s3 orrery_motor_test_m5stamp_s3.bin
       - name: Download Binaries to Site Directory
         uses: actions/download-artifact@v4
         with:

@@ -9,7 +9,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--output", default="-")
 parser.add_argument("--name", default="JazzLights")
 parser.add_argument("--version", default="0")
-parser.add_argument("--firmware", default="firmware-merged.bin")
+parser.add_argument("--firmware")
 parser.add_argument("--firmware-s3")
 args = parser.parse_args()
 
@@ -18,13 +18,20 @@ manifest["name"] = args.name
 manifest["version"] = args.version
 manifest["new_install_prompt_erase"] = False
 manifest["new_install_improv_wait_time"] = 0
-manifest["builds"] = [
-    {"chipFamily": "ESP32", "parts": [{"path": args.firmware, "offset": 0}]}
-]
+manifest["builds"] = []
+if args.firmware:
+    manifest["builds"].append(
+        {"chipFamily": "ESP32", "parts": [{"path": args.firmware, "offset": 0}]}
+    )
 if args.firmware_s3:
     manifest["builds"].append(
         {"chipFamily": "ESP32-S3", "parts": [{"path": args.firmware_s3, "offset": 0}]}
     )
+if not args.firmware and not args.firmware_s3:
+    manifest["builds"].append(
+        {"chipFamily": "ESP32", "parts": [{"path": "firmware-merged.bin", "offset": 0}]}
+    )
+
 
 output_str = json.dumps(manifest, sort_keys=True, indent=4)
 
