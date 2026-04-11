@@ -35,6 +35,13 @@ void SoundEffect::innerRewind(const Frame& /*frame*/, SoundState* state) const {
 }
 
 ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, SoundState* state) const {
+  // Squelch: Turn off LEDs if the overall volume is very low
+  if (state->audioData.volume < 0.02f) {
+    CRGB* prevColors = lastColors(state);
+    prevColors[px.index] = CRGB::Black;
+    return ColorWithPalette::OverrideColor(CRGB::Black);
+  }
+
   CRGB color = CRGB::Black;
   float normalizedMag = 0;
   float transient = 0;
