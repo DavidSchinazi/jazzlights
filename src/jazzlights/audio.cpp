@@ -126,6 +126,7 @@ void Audio::GetVisualizerData(VisualizerData* data) {
   data->agc_max = agc_max_;
   data->volume = volume_;
   data->beat = beat_;
+  data->last_read_time = last_read_time_;
 }
 
 void Audio::AudioTask(void* param) {
@@ -145,6 +146,17 @@ void Audio::ReadAndProcessAudio() {
 #endif
   size_t bytes_read;
   if (i2s_channel_read(rx_handle_, audio_buffer_, bytes_to_read, &bytes_read, portMAX_DELAY) == ESP_OK) {
+    bool all_zero = true;
+    for (size_t i = 0; i < bytes_read / sizeof(int16_t); i++) {
+      if (audio_buffer_[i] != 0) {
+        all_zero = false;
+        break;
+      }
+    }
+    if (!all_zero) {
+      std::lock_guard<std::mutex> lock(audio_data_mutex_);
+      last_read_time_ = timeMillis();
+    }
     // Replicate M5Unified processing: noise filter and magnification
     const int32_t noise_filter_level = 16;
     const float magnification = 16.0f;

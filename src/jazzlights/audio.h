@@ -12,7 +12,7 @@
 #include <cstdint>
 #include <mutex>
 
-#include "jazzlights/types.h"
+#include "jazzlights/util/time.h"
 
 namespace jazzlights {
 
@@ -30,6 +30,7 @@ class Audio {
     float agc_max;
     float volume;
     bool beat;
+    Milliseconds last_read_time;
   };
 
   void GetVisualizerData(VisualizerData* data);
@@ -58,6 +59,7 @@ class Audio {
   uint32_t last_beat_time_ = 0;
   float prev_bands_[8] = {0};
   float prev_sample_ = 0;
+  Milliseconds last_read_time_ = -1;
 
   int16_t* audio_buffer_ = nullptr;
   float* fft_input_ = nullptr;
