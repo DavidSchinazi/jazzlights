@@ -93,7 +93,7 @@ ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, So
   if (normalizedMag < 0) normalizedMag = 0;
   if (normalizedMag > 1.0f) normalizedMag = 1.0f;
   // Boost smaller changes to make them more visible
-  normalizedMag = powf(normalizedMag, 0.7f);
+  normalizedMag = powf(normalizedMag, 0.5f);  // Was 0.7f - more aggressive boost for low levels
 
   transient = (magnitude - prevMagnitude) / range;
   if (transient < 0) transient = 0;
@@ -106,22 +106,21 @@ ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, So
   if (yRel < normalizedMag) {
     // Inside the bar: brightness proportional to magnitude
     uint8_t barBrightness = static_cast<uint8_t>(255.0f * normalizedMag);
-    if (barBrightness < 32 && normalizedMag > 0.05f) barBrightness = 32;
+    if (barBrightness < 48 && normalizedMag > 0.02f) barBrightness = 48;  // Was 32/0.05f
     color.nscale8_video(barBrightness);
   } else {
     // Background: dimmed version of the color, scaled by overall volume
-    uint8_t backgroundBrightness = static_cast<uint8_t>(48.0f * powf(state->audioData.volume, 0.7f));
+    // Reduced background brightness for better contrast
+    uint8_t backgroundBrightness = static_cast<uint8_t>(16.0f * powf(state->audioData.volume, 0.8f));  // Was 48.0f/0.7f
     color.nscale8_video(backgroundBrightness);
   }
 
   // Add Sparkles!
   uint32_t sparkleChance = 0;
-  if (transient > 0.005f) {
-    // Audio-reactive sparkle based on transients
-    sparkleChance = static_cast<uint32_t>(transient * 5000.0f);
-  } else if (state->audioData.volume < 0.01f) {
-    // Rare random sparkle when quiet
-    sparkleChance = 1;
+  // Only sparkle on significant transients and when there's an actual signal in this band
+  if (transient > 0.05f && normalizedMag > 0.2f) {
+    // Audio-reactive sparkle based on transients, scaled by the magnitude of the band
+    sparkleChance = static_cast<uint32_t>(transient * 10000.0f * normalizedMag);
   }
 
   if (sparkleChance > 0 &&
@@ -130,16 +129,16 @@ ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, So
     if (frame.predictableRandom->GetRandomByte() > 128) {
       color = CRGB::White;
     } else {
-      color += CRGB(64, 64, 64);
+      color += CRGB(128, 128, 128);  // Was 64
     }
   }
 
   CRGB* prevColors = lastColors(state);
   CRGB& lastColor = prevColors[px.index];
   // Asymmetrical smoothing: faster on the way up, slower on the way down
-  uint8_t blendAmount = 48;  // Default was 24
+  uint8_t blendAmount = 64;  // Was 48
   if (color.r > lastColor.r || color.g > lastColor.g || color.b > lastColor.b) {
-    blendAmount = 128;  // Was 64
+    blendAmount = 192;  // Was 128
   }
   color = nblend(lastColor, color, blendAmount);
   lastColor = color;
