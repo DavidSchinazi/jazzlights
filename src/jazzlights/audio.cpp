@@ -64,7 +64,7 @@ void Audio::Initialize() {
                      .invert_flags = {.mclk_inv = false, .bclk_inv = false, .ws_inv = false},
                      },
   };
-#if JL_IS_CONTROLLER(CORES3) && !JL_CORES3_USE_INTERNAL_MICROPHONE
+#if (JL_IS_CONTROLLER(CORES3) && !JL_CORES3_USE_INTERNAL_MICROPHONE) || JL_IS_CONTROLLER(CORE2AWS)
   std_cfg.slot_cfg.slot_bit_width = I2S_SLOT_BIT_WIDTH_32BIT;
 #endif
 
