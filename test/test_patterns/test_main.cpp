@@ -21,8 +21,15 @@
 
 namespace jazzlights {
 
+class NoOpRenderer : public Renderer {
+ public:
+  void renderPixel(size_t /*index*/, CRGB /*color*/) override {}
+};
+
 void test_pattern(const Effect& effect) {
   Matrix layout(1, 1);
+  NoOpRenderer renderer;
+  Strand strand = {layout, renderer, 0};
   PredictableRandom predictableRandom;
   XYIndexStore xyIndexStore;
   xyIndexStore.IngestLayout(&layout);
@@ -47,7 +54,7 @@ void test_pattern(const Effect& effect) {
   predictableRandom.ResetWithFrameTime(frame, effect.effectName(frame.pattern).c_str());
   effect.rewind(frame);
   Pixel px;
-  px.layout = &layout;
+  px.strand = &strand;
   px.index = 0;
   px.coord = {0.0, 0.0};
   CRGB col = effect.color(frame, px);

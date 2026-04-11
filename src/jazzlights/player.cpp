@@ -502,7 +502,7 @@ bool Player::render(Milliseconds currentTime) {
   effect->rewind(frame_);
   Pixel px;
   for (const Strand& s : strands_) {
-    px.layout = &s.layout;
+    px.strand = &s;
     const size_t numPixels = s.layout.pixelCount();
     for (size_t index = 0; index < numPixels; index++) {
       CRGB color;

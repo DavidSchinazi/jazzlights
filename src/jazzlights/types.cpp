@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "jazzlights/layout/layout.h"
+#include "jazzlights/player.h"
 #include "jazzlights/pseudorandom.h"
 #include "jazzlights/util/log.h"
 
@@ -84,7 +85,7 @@ void XYIndexStore::Finalize(const Box& viewport) {
 
 XYIndex XYIndexStore::FromPixel(const Pixel& pixel) const {
   for (const LayoutInfo& li : layoutInfos_) {
-    if (li.layout == pixel.layout) { return li.xyIndices[pixel.index]; }
+    if (li.layout == &pixel.strand->layout) { return li.xyIndices[pixel.index]; }
   }
   return XYIndex();
 }

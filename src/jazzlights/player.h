@@ -12,6 +12,12 @@
 
 namespace jazzlights {
 
+struct Strand {
+  const Layout& layout;
+  Renderer& renderer;
+  size_t index;
+};
+
 class Player {
  public:
   Player();
@@ -174,11 +180,6 @@ class Player {
   bool powerLimited_ = false;
   uint8_t brightness_ = 255;
 
-  struct Strand {
-    const Layout& layout;
-    Renderer& renderer;
-    size_t index;
-  };
   std::vector<Strand> strands_;
 
   void* effectContext_ = nullptr;

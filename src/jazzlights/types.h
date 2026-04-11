@@ -36,9 +36,11 @@ PatternBits randomizePatternBits(PatternBits pattern);
 constexpr Precedence OverridePrecedence() { return 36000; }
 
 class Layout;
+class Player;
+struct Strand;
 
 struct Pixel {
-  const Layout* layout = nullptr;
+  const Strand* strand = nullptr;
   size_t index = 0;
   Point coord = {0.0, 0.0};
 };

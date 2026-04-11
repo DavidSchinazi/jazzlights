@@ -49,7 +49,7 @@ class Clouds : public Effect {
     static const CRGB kBrightColor = CRGB(0xFCC97C);
     static const CRGB kDarkColor = CRGB(0x000000);
     static const CRGB kSkyColor = CRGB(0x000020);
-    if (px.layout != GetCloudsLayout()) { return kSkyColor; }
+    if (&px.strand->layout != GetCloudsLayout()) { return kSkyColor; }
     for (uint8_t s = 0; s < state(frame)->numStrikes; s++) {
       const double progress = state(frame)->strikes[s].progress;
       if (progress < 0.5) { continue; }
