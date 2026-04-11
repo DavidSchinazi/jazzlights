@@ -11,6 +11,7 @@ parser.add_argument("--name", default="JazzLights")
 parser.add_argument("--version", default="0")
 parser.add_argument("--firmware")
 parser.add_argument("--firmware-s3")
+parser.add_argument("--firmware-c6")
 args = parser.parse_args()
 
 manifest = {}
@@ -27,7 +28,11 @@ if args.firmware_s3:
     manifest["builds"].append(
         {"chipFamily": "ESP32-S3", "parts": [{"path": args.firmware_s3, "offset": 0}]}
     )
-if not args.firmware and not args.firmware_s3:
+if args.firmware_c6:
+    manifest["builds"].append(
+        {"chipFamily": "ESP32-C6", "parts": [{"path": args.firmware_c6, "offset": 0}]}
+    )
+if not args.firmware and not args.firmware_s3 and not args.firmware_c6:
     manifest["builds"].append(
         {"chipFamily": "ESP32", "parts": [{"path": "firmware-merged.bin", "offset": 0}]}
     )

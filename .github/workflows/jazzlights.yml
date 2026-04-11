@@ -86,9 +86,11 @@ jobs:
         pioenv:
           - vest
           - vest_s3
+          - vest_c6
           - shoe
           - hat
           - creature
+          - creature_c6
           - orrery_motor_test_m5stamp_s3
     runs-on: ubuntu-latest
     steps:
@@ -104,9 +106,9 @@ jobs:
           python-version: "3.12"
       - name: Install PlatformIO Core
         run: pip install --upgrade platformio
-      - name: PlatformIO Build Merged Vest Binary
+      - name: PlatformIO Build Merged Binary
         run: MERGED_BIN_PATH="${{ runner.temp }}/${{ matrix.pioenv }}.bin" pio run -t mergebin -e ${{ matrix.pioenv }}
-      - name: Upload Merged Vest Binary as Artifact
+      - name: Upload Merged Binary as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: merged-binary-${{ matrix.pioenv }}
@@ -169,10 +171,10 @@ jobs:
           cp -R extras/site/flash/esp-web-tools/*.js "${upload_dir}/flash/esp-web-tools/"
           cp extras/site/flash/index.html "${upload_dir}/flash/"
           cp extras/site/style.css "${upload_dir}/"
-          extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-vest.json" --name "JazzLights Vest" --version $(git rev-parse --short "$GITHUB_SHA") --firmware vest.bin --firmware-s3 vest_s3.bin
+          extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-vest.json" --name "JazzLights Vest" --version $(git rev-parse --short "$GITHUB_SHA") --firmware vest.bin --firmware-s3 vest_s3.bin  --firmware-c6 vest_c6.bin
           extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-shoe.json" --name "JazzLights Shoe" --version $(git rev-parse --short "$GITHUB_SHA") --firmware shoe.bin
           extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-hat.json" --name "JazzLights Hat" --version $(git rev-parse --short "$GITHUB_SHA") --firmware hat.bin
-          extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-creature.json" --name "MISTical Creature" --version $(git rev-parse --short "$GITHUB_SHA") --firmware creature.bin
+          extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-creature.json" --name "MISTical Creature" --version $(git rev-parse --short "$GITHUB_SHA") --firmware creature.bin --firmware-c6 creature_c6.bin
           extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-motor-test.json" --name "Orrery Motor Test" --version $(git rev-parse --short "$GITHUB_SHA") --firmware-s3 orrery_motor_test_m5stamp_s3.bin
       - name: Download Binaries to Site Directory
         uses: actions/download-artifact@v4
