@@ -18,6 +18,7 @@
 #include "jazzlights/effect/the_matrix.h"
 #include "jazzlights/effect/threesine.h"
 #include "jazzlights/layout/matrix.h"
+#include "jazzlights/renderer.h"
 
 namespace jazzlights {
 
