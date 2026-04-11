@@ -40,6 +40,10 @@
         <input type="radio" name="hardware" onchange="onButtonClicked()" value="creature" />
         Creature
       </label>
+      <label>
+        <input type="radio" name="hardware" onchange="onButtonClicked()" value="motor-test" />
+        Orrery Motor Test
+      </label>
     </div>
     <esp-web-install-button manifest="manifest-vest.json">
         <button slot="activate">Install</button>
@@ -50,9 +54,7 @@
     </esp-web-install-button>
     <p>
         Powered by
-        <a href="https://esphome.github.io/esp-web-tools/" target="_blank">
-            ESP Web Tools
-        </a>.
+        <a href="https://esphome.github.io/esp-web-tools/" target="_blank">ESP Web Tools</a>.
     </p>
 <script>
     function onButtonClicked() {
