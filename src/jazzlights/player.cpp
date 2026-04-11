@@ -509,7 +509,8 @@ bool Player::render(Milliseconds currentTime) {
       CRGB color;
       px.coord = s.layout.at(index);
       if (!IsEmpty(px.coord)) {
-        px.index = cumulativeIndex;
+        px.strandIndex = index;
+        px.cumulativeIndex = cumulativeIndex;
         color = effect->color(frame_, px);
       } else {
         color = CRGB::Black;

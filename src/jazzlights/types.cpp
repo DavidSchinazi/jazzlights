@@ -85,7 +85,7 @@ void XYIndexStore::Finalize(const Box& viewport) {
 
 XYIndex XYIndexStore::FromPixel(const Pixel& pixel) const {
   for (const LayoutInfo& li : layoutInfos_) {
-    if (li.layout == &pixel.strand->layout) { return li.xyIndices[pixel.index]; }
+    if (li.layout == &pixel.strand->layout) { return li.xyIndices[pixel.strandIndex]; }
   }
   return XYIndex();
 }

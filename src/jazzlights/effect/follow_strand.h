@@ -17,12 +17,12 @@ inline FunctionalEffect follow_strand() {
           black, black, black, black, blue,  blue,  blue,  black, black, black, black, black, black,
       };
       constexpr size_t numColors = sizeof(colors) / sizeof(colors[0]);
-      const size_t reverseIndex = (-pt.index % numColors) + numColors - 1;
+      const size_t reverseIndex = (-pt.strandIndex % numColors) + numColors - 1;
       int32_t col = colors[(offset + reverseIndex) % numColors];
-      if (pt.index == 0 || (fabs(pt.coord.x - pt.strand->layout.at(0).x) < 0.001 &&
-                            fabs(pt.coord.y - pt.strand->layout.at(0).y) < 0.001)) {
+      if (pt.strandIndex == 0 || (fabs(pt.coord.x - pt.strand->layout.at(0).x) < 0.001 &&
+                                  fabs(pt.coord.y - pt.strand->layout.at(0).y) < 0.001)) {
         col = blink ? 0xffffff : 0;
-      } else if (pt.index == pt.strand->layout.pixelCount() - 1 ||
+      } else if (pt.strandIndex == pt.strand->layout.pixelCount() - 1 ||
                  (fabs(pt.coord.x - pt.strand->layout.at(pt.strand->layout.pixelCount() - 1).x) < 0.001 &&
                   fabs(pt.coord.y - pt.strand->layout.at(pt.strand->layout.pixelCount() - 1).y) < 0.001)) {
         col = blink ? 0xff00ff : 0;

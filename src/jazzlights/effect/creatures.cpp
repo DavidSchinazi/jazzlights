@@ -219,7 +219,7 @@ CRGB Creatures::color(const Frame& frame, const Pixel& px) const {
   }
   size_t num_colors = state(frame)->num_colors;
   // Display the colors in order based on the current offset.
-  const size_t reverseIndex = (-px.index % num_colors) + num_colors - 1;
+  const size_t reverseIndex = (-px.strandIndex % num_colors) + num_colors - 1;
   return state(frame)->colors[(state(frame)->offset + reverseIndex) % num_colors];
 }
 

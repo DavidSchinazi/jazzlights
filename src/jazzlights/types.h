@@ -41,7 +41,8 @@ struct Strand;
 
 struct Pixel {
   const Strand* strand = nullptr;
-  size_t index = 0;
+  size_t strandIndex = 0;
+  size_t cumulativeIndex = 0;
   Point coord = {0.0, 0.0};
 };
 

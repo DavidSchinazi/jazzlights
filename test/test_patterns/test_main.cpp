@@ -55,7 +55,8 @@ void test_pattern(const Effect& effect) {
   effect.rewind(frame);
   Pixel px;
   px.strand = &strand;
-  px.index = 0;
+  px.strandIndex = 0;
+  px.cumulativeIndex = 0;
   px.coord = {0.0, 0.0};
   CRGB col = effect.color(frame, px);
   effect.afterColors(frame);

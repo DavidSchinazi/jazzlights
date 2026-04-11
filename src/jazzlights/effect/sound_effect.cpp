@@ -38,7 +38,7 @@ ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, So
   // Squelch: Turn off LEDs if the overall volume is very low
   if (state->audioData.volume < 0.02f) {
     CRGB* prevColors = lastColors(state);
-    prevColors[px.index] = CRGB::Black;
+    prevColors[px.cumulativeIndex] = CRGB::Black;
     return ColorWithPalette::OverrideColor(CRGB::Black);
   }
 
@@ -141,7 +141,7 @@ ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, So
   }
 
   CRGB* prevColors = lastColors(state);
-  CRGB& lastColor = prevColors[px.index];
+  CRGB& lastColor = prevColors[px.cumulativeIndex];
   // Asymmetrical smoothing: faster on the way up, slower on the way down
   uint8_t blendAmount = 64;  // Was 48
   if (color.r > lastColor.r || color.g > lastColor.g || color.b > lastColor.b) {
