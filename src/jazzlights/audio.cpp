@@ -153,10 +153,6 @@ void Audio::ReadAndProcessAudio() {
         break;
       }
     }
-    if (!all_zero) {
-      std::lock_guard<std::mutex> lock(audio_data_mutex_);
-      last_read_time_ = timeMillis();
-    }
     // Replicate M5Unified processing: noise filter and magnification
     const int32_t noise_filter_level = 16;
     const float magnification = 16.0f;
@@ -225,6 +221,7 @@ void Audio::ReadAndProcessAudio() {
 
     if (max_new_band_mag < squelch_threshold_) {
       std::lock_guard<std::mutex> lock(audio_data_mutex_);
+      if (!all_zero) { last_read_time_ = timeMillis(); }
       memset(band_magnitudes_, 0, sizeof(band_magnitudes_));
       memset(peak_magnitudes_, 0, sizeof(peak_magnitudes_));
       memset(prev_bands_, 0, sizeof(prev_bands_));
@@ -240,6 +237,7 @@ void Audio::ReadAndProcessAudio() {
 
       {
         std::lock_guard<std::mutex> lock(audio_data_mutex_);
+        if (!all_zero) { last_read_time_ = timeMillis(); }
         for (int i = 0; i < kNumBands; i++) {
           band_magnitudes_[i] = band_magnitudes_[i] * smoothing + new_bands[i] * (1.0f - smoothing);
           if (new_bands[i] > peak_magnitudes_[i]) {
