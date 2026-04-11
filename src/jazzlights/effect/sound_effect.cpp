@@ -47,7 +47,9 @@ ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, So
   float transient = 0;
 
   // Map horizontal position to regions: Bass (0-20%), Mids (20-70%), Highs (70-100%)
-  double xRel = (px.coord.x - frame.viewport.origin.x) / frame.viewport.size.width;
+  // Vary the regions slightly per strand
+  double xOffset = (static_cast<double>(px.strand->index % 3) - 1.0) * 0.05;
+  double xRel = (px.coord.x - frame.viewport.origin.x) / frame.viewport.size.width + xOffset;
   if (xRel < 0) xRel = 0;
   if (xRel > 0.999) xRel = 0.999;
 
@@ -76,7 +78,8 @@ ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, So
     float frac = xBand - bandLow;
     magnitude = state->audioData.bands[bandLow] * (1.0f - frac) + state->audioData.bands[bandHigh] * frac;
     prevMagnitude = state->prevBands[bandLow] * (1.0f - frac) + state->prevBands[bandHigh] * frac;
-    uint8_t colorIdx = static_cast<uint8_t>(midsRel * 170.0);
+    // Vary the color index per strand
+    uint8_t colorIdx = static_cast<uint8_t>(midsRel * 170.0) + (px.strand->index * 16);
     color = colorFromOurPalette(ocp, colorIdx);
   } else {
     // Highs Region (70-100%): Bands 20-31
@@ -88,7 +91,8 @@ ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, So
     float frac = xBand - bandLow;
     magnitude = state->audioData.bands[bandLow] * (1.0f - frac) + state->audioData.bands[bandHigh] * frac;
     prevMagnitude = state->prevBands[bandLow] * (1.0f - frac) + state->prevBands[bandHigh] * frac;
-    uint8_t colorIdx = 171 + static_cast<uint8_t>(highsRel * 84.0);
+    // Vary the color index per strand
+    uint8_t colorIdx = 171 + static_cast<uint8_t>(highsRel * 84.0) + (px.strand->index * 16);
     color = colorFromOurPalette(ocp, colorIdx);
   }
 
@@ -106,7 +110,9 @@ ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, So
   if (transient < 0) transient = 0;
 
   // Center-out vertical position (0 at center, 1 at edges)
-  double centerY = frame.viewport.origin.y + frame.viewport.size.height / 2.0;
+  // Vary the center slightly per strand
+  double yOffset = (static_cast<double>(px.strand->index % 5) - 2.0) * 0.1 * frame.viewport.size.height;
+  double centerY = frame.viewport.origin.y + frame.viewport.size.height / 2.0 + yOffset;
   double yRel = 2.0 * fabs(px.coord.y - centerY) / frame.viewport.size.height;
   if (yRel > 1.0) yRel = 1.0;
 
