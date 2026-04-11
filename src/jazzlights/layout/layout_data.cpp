@@ -43,9 +43,14 @@ Matrix pixels(/*w=*/32, /*h=*/1);
 }  // namespace
 
 void AddLedsToRunner(FastLedRunner* runner) {
-#if JL_IS_CONFIG(ROPELIGHT)
+#if JL_AUDIO_VISUALIZER
+  runner->AddLeds<WS2812B, kPinA2, RGB>(pixels);
+  runner->AddLeds<WS2812B, kPinA1, RGB>(pixels);
+  runner->AddLeds<WS2812B, kPinB2, RGB>(pixels);
+  runner->AddLeds<WS2812B, kPinB1, RGB>(pixels);
+#elif JL_IS_CONFIG(ROPELIGHT)
   runner->AddLeds<WS2812, LED_PIN, BRG>(pixels);
-#elif JL_IS_CONFIG(XMAS_TREE) || JL_IS_CONFIG(FAIRY_STRING) || JL_AUDIO_VISUALIZER
+#elif JL_IS_CONFIG(XMAS_TREE) || JL_IS_CONFIG(FAIRY_STRING)
   runner->AddLeds<WS2812B, LED_PIN, RGB>(pixels);
 #else
   runner->AddLeds<WS2812B, LED_PIN, GRB>(pixels);

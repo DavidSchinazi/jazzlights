@@ -174,16 +174,22 @@
 
 // For all of these GROVE ports, 1 is white and 2 is yellow.
 #if JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_LITE)
+inline constexpr int kPinA1 = 21;
+inline constexpr int kPinA2 = 25;
 inline constexpr int kPinB1 = 33;
 inline constexpr int kPinB2 = 23;
 inline constexpr int kPinC1 = 19;
 inline constexpr int kPinC2 = 22;
 #elif JL_IS_CONTROLLER(ATOM_S3)
+inline constexpr int kPinA1 = 39;
+inline constexpr int kPinA2 = 38;
 inline constexpr int kPinB1 = 8;
 inline constexpr int kPinB2 = 7;
 inline constexpr int kPinC1 = 6;
 inline constexpr int kPinC2 = 5;
 #elif JL_IS_CONTROLLER(CORES3)
+inline constexpr int kPinA1 = 1;
+inline constexpr int kPinA2 = 2;
 inline constexpr int kPinB1 = 8;
 inline constexpr int kPinB2 = 9;
 inline constexpr int kPinC1 = 18;
@@ -192,6 +198,8 @@ inline constexpr int kPinE1_1 = 6;
 inline constexpr int kPinE1_3 = 0;
 inline constexpr int kPinE2_2 = 5;
 #elif JL_IS_CONTROLLER(CORE2AWS)
+inline constexpr int kPinA1 = 33;
+inline constexpr int kPinA2 = 32;
 // B1 is unusable for GPIO on Core2AWS.
 // inline constexpr int kPinB1 = 36;
 inline constexpr int kPinB2 = 26;
