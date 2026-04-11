@@ -40,7 +40,7 @@ static constexpr int64_t kLongPressTime = 1000000;         // 1s.
 // reacting to these, we debounce the digital reads and only react after the
 // value has settled for kDebounceTime.
 
-GpioPin::GpioPin(uint8_t pin, PinInterface& pinInterface, int64_t debounceDuration)
+GpioPin::GpioPin(uint8_t pin, PinInterface& pinInterface, int64_t debounceDuration, bool closedIsHigh)
     : pinInterface_(pinInterface),
       queue_(xQueueCreate(/*num_queue_items=*/16, /*queue_item_size=*/sizeof(uint64_t))),
       lastRunloopQueueEventTime_(-1),
@@ -49,7 +49,8 @@ GpioPin::GpioPin(uint8_t pin, PinInterface& pinInterface, int64_t debounceDurati
       isClosedRawRunloop_(false),
       isClosedDebouncedRunloop_(false),
       pin_(pin),
-      debounceDuration_(debounceDuration) {
+      debounceDuration_(debounceDuration),
+      closedIsHigh_(closedIsHigh) {
   if (queue_ == nullptr) { jll_fatal("Failed to create GpioPin queue"); }
   InstallGpioIsrService();
 #if JL_ESP32C6 || defined(CONFIG_FREERTOS_UNICORE)
@@ -62,10 +63,12 @@ GpioPin::GpioPin(uint8_t pin, PinInterface& pinInterface, int64_t debounceDurati
 }
 
 GpioButton::GpioButton(uint8_t pin, ButtonInterface& buttonInterface)
-    : gpioPin_(pin, *this, kButtonDebounceDuration),
+    : gpioPin_(pin, *this, kButtonDebounceDuration, /*closedIsHigh=*/false),
       buttonInterface_(buttonInterface),
       lastEvent_(-1),
       isHeld_(false) {}
+
+GpioSwitch::GpioSwitch(uint8_t pin) : gpioPin_(pin, *this, kButtonDebounceDuration, /*closedIsHigh=*/true) {}
 
 // static
 void GpioPin::ConfigurePin(void* arg) {
@@ -73,8 +76,8 @@ void GpioPin::ConfigurePin(void* arg) {
   const gpio_config_t config = {
       .pin_bit_mask = (1ULL << gpioPin->pin_),
       .mode = GPIO_MODE_INPUT,
-      .pull_up_en = GPIO_PULLUP_ENABLE,
-      .pull_down_en = GPIO_PULLDOWN_DISABLE,
+      .pull_up_en = gpioPin->closedIsHigh_ ? GPIO_PULLUP_DISABLE : GPIO_PULLUP_ENABLE,
+      .pull_down_en = gpioPin->closedIsHigh_ ? GPIO_PULLDOWN_ENABLE : GPIO_PULLDOWN_DISABLE,
       .intr_type = GPIO_INTR_ANYEDGE,
   };
   ESP_ERROR_CHECK(gpio_config(&config));
@@ -89,6 +92,8 @@ GpioPin::~GpioPin() {
 }
 
 GpioButton::~GpioButton() {}
+
+GpioSwitch::~GpioSwitch() {}
 
 void GpioButton::HandleChange(uint8_t changedPin, bool isClosed, int64_t timeOfChange) {
   if (changedPin != pin()) { jll_fatal("Unexpected pin %u != %u", changedPin, pin()); }
@@ -107,6 +112,8 @@ void GpioButton::HandleChange(uint8_t changedPin, bool isClosed, int64_t timeOfC
     isHeld_ = false;
   }
 }
+
+void GpioSwitch::HandleChange(uint8_t /*pin*/, bool /*isClosed*/, int64_t /*timeOfChange*/) {}
 
 void GpioPin::RunLoop() {
   uint64_t state;
@@ -136,7 +143,8 @@ void GpioPin::RunLoop() {
   // However, in practice it appears that the interrupt sometimes does not fire. We call it here to remedy that. This
   // negates the CPU usage benefits of using the interrupt handler, but still maintains the benefit of keeping track of
   // events even if the main runloop is busy performing other tasks.
-  const bool liveIsClosed = gpio_get_level(static_cast<gpio_num_t>(pin_)) == 0;
+  const int closedValue = closedIsHigh_ ? 1 : 0;
+  const bool liveIsClosed = gpio_get_level(static_cast<gpio_num_t>(pin_)) == closedValue;
   if (liveIsClosed != isClosedRawRunloop_) {
     const int64_t currentTime64 = esp_timer_get_time();
     JL_GPIO_DEBUG(JL_GPIO_TIME_FMT " Pin %u is unexpectedly %s from runloop, adding event to queue",
@@ -179,6 +187,8 @@ void GpioButton::RunLoop() {
   }
 }
 
+void GpioSwitch::RunLoop() { gpioPin_.RunLoop(); }
+
 bool GpioButton::HasBeenPressedLongEnoughForLongPress() {
   return IsPressed() && (isHeld_ || esp_timer_get_time() - lastEvent_ >= kLongPressTime);
 }
@@ -190,7 +200,8 @@ void GpioPin::InterruptHandler(void* arg) { reinterpret_cast<GpioPin*>(arg)->Han
 // Instead use: ets_printf("foobar %d\n", 42);
 
 void GpioPin::HandleInterrupt() {
-  const bool newIsClosed = gpio_get_level(static_cast<gpio_num_t>(pin_)) == 0;
+  const int closedValue = closedIsHigh_ ? 1 : 0;
+  const bool newIsClosed = gpio_get_level(static_cast<gpio_num_t>(pin_)) == closedIsHigh_;
   if (newIsClosed != lastIsClosedInISR_) {
     lastIsClosedInISR_ = newIsClosed;
     const int64_t currentTime64 = esp_timer_get_time();

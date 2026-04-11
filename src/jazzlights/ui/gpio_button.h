@@ -22,7 +22,7 @@ class GpioPin {
   };
 
   // Starts tracking a GPIO pin. `debounceDuration` is in microseconds.
-  explicit GpioPin(uint8_t pin, PinInterface& pinInterface, int64_t debounceDuration);
+  explicit GpioPin(uint8_t pin, PinInterface& pinInterface, int64_t debounceDuration, bool closedIsHigh = false);
   ~GpioPin();
 
   // Called once per primary runloop.
@@ -48,6 +48,7 @@ class GpioPin {
   bool isClosedDebouncedRunloop_;
   const uint8_t pin_;
   const int64_t debounceDuration_;
+  const bool closedIsHigh_;
 };
 
 // Allows tracking buttons connected to ESP32 GPIO pins.
@@ -89,6 +90,29 @@ class GpioButton : public GpioPin::PinInterface {
   ButtonInterface& buttonInterface_;
   int64_t lastEvent_;
   bool isHeld_;
+};
+
+// Allows tracking switches connected to ESP32 GPIO pins.
+class GpioSwitch : public GpioPin::PinInterface {
+ public:
+  // Starts tracking a switch connected to a GPIO pin.
+  explicit GpioSwitch(uint8_t pin);
+  virtual ~GpioSwitch();
+
+  // Called once per primary runloop.
+  void RunLoop();
+
+  // Returns GPIO pin number.
+  uint8_t pin() const { return gpioPin_.pin(); }
+
+  // Returns whether the switch is currently closed.
+  bool IsClosed() const { return gpioPin_.IsClosed(); }
+
+  // From GpioPin::PinInterface.
+  void HandleChange(uint8_t pin, bool isClosed, int64_t timeOfChange) override;
+
+ private:
+  GpioPin gpioPin_;
 };
 
 }  // namespace jazzlights
