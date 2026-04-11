@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 # Adds PlatformIO post-processing to merge all the ESP flash images into a single image.
+# This can be installed locally by running some variation of:
+# python3 ~/.platformio/packages/tool-esptoolpy/esptool.py --port /dev/cu.usbmodem2101  --chip esp32s3 write_flash 0x0 /tmp/vest_s3.bin
 
 import os
 
@@ -33,7 +35,9 @@ def merge_bin_action(source, target, env):
             "-o",
             merged_bin,
             "--flash_mode",
-            board_config.get("build.flash_mode", "dio"),
+            # Temporarily force DIO to see if it resolves issue on ESP32-S3 and ESP32-C6.
+            "dio",
+            #  board_config.get("build.flash_mode", "dio"),
             "--flash_freq",
             "${__get_board_f_flash(__env__)}",
             "--flash_size",
