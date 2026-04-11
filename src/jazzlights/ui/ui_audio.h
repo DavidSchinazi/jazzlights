@@ -32,6 +32,7 @@ class AudioVisualizerUi : public Esp32Ui {
   int waveform_index_ = 0;
   double last_waveform_update_ = 0;
   bool showing_no_audio_data_ = false;
+  bool showing_squelch_ = false;
 };
 
 }  // namespace jazzlights

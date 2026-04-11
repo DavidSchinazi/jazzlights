@@ -126,6 +126,7 @@ void Audio::GetVisualizerData(VisualizerData* data) {
   data->agc_max = agc_max_;
   data->volume = volume_;
   data->beat = beat_;
+  data->squelch = is_squelched_;
   data->last_read_time = last_read_time_;
 }
 
@@ -227,6 +228,7 @@ void Audio::ReadAndProcessAudio() {
       memset(prev_bands_, 0, sizeof(prev_bands_));
       volume_ = 0;
       beat_ = false;
+      is_squelched_ = true;
       // We still want to update beat buffer to avoid large flux when sound returns
       beat_buffer_[beat_index_] = 0;
       beat_index_ = (beat_index_ + 1) % kBeatWindowSize;
@@ -238,6 +240,7 @@ void Audio::ReadAndProcessAudio() {
       {
         std::lock_guard<std::mutex> lock(audio_data_mutex_);
         if (!all_zero) { last_read_time_ = timeMillis(); }
+        is_squelched_ = false;
         for (int i = 0; i < kNumBands; i++) {
           band_magnitudes_[i] = band_magnitudes_[i] * smoothing + new_bands[i] * (1.0f - smoothing);
           if (new_bands[i] > peak_magnitudes_[i]) {
@@ -294,6 +297,7 @@ void Audio::ReadAndProcessAudio() {
           totalNormMag += norm;
         }
         volume_ = totalNormMag / kNumBands;
+        is_squelched_ = (volume_ < 0.4f);
 
         // Beat detection: Spectral Flux on first 8 bands (bass/low-mids)
         float flux = 0;

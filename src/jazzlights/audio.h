@@ -30,6 +30,7 @@ class Audio {
     float agc_max;
     float volume;
     bool beat;
+    bool squelch;
     Milliseconds last_read_time;
   };
 
@@ -56,6 +57,7 @@ class Audio {
   float squelch_threshold_ = 75.0f;
   float volume_ = 0;
   bool beat_ = false;
+  bool is_squelched_ = false;
   uint32_t last_beat_time_ = 0;
   float prev_bands_[8] = {0};
   float prev_sample_ = 0;

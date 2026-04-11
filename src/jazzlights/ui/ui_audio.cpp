@@ -70,11 +70,23 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
     M5.Lcd.fillScreen(BLACK);
   }
 
+  if (data.squelch != showing_squelch_) {
+    showing_squelch_ = data.squelch;
+    jll_info("%u %s 'Squelch' mode", currentTime, showing_squelch_ ? "Entered" : "Exited");
+    M5.Lcd.fillScreen(BLACK);
+  }
+
   if (showing_no_audio_data_) {
     M5.Lcd.setTextSize(2);
     M5.Lcd.setTextDatum(TC_DATUM);
     M5.Lcd.setTextColor(RED, BLACK);
     M5.Lcd.drawString("No Audio Data", kScreenWidth / 2, 20);
+    M5.Lcd.setTextSize(1);
+  } else if (showing_squelch_) {
+    M5.Lcd.setTextSize(2);
+    M5.Lcd.setTextDatum(TC_DATUM);
+    M5.Lcd.setTextColor(ORANGE, BLACK);
+    M5.Lcd.drawString("Squelch", kScreenWidth / 2, 20);
     M5.Lcd.setTextSize(1);
   } else {
     int bar_width = kScreenWidth / Audio::kNumBands;
