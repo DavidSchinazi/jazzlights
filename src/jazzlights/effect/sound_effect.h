@@ -13,6 +13,7 @@ struct SoundState {
   Audio::VisualizerData audioData;
   float prevBands[Audio::kNumBands];
   CRGB brightestColor;
+  bool isSquelched = false;
 };
 
 class SoundEffect : public EffectWithPaletteAndState<SoundState> {

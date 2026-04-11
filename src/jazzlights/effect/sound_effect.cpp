@@ -32,11 +32,18 @@ void SoundEffect::innerBegin(const Frame& frame, SoundState* state) const {
 void SoundEffect::innerRewind(const Frame& /*frame*/, SoundState* state) const {
   memcpy(state->prevBands, state->audioData.bands, sizeof(state->prevBands));
   Audio::Get().GetVisualizerData(&state->audioData);
+  bool wasSquelched = state->isSquelched;
+  state->isSquelched = (state->audioData.volume < 0.4f);
+  if (state->isSquelched && !wasSquelched) {
+    jll_info("Entering squelch mode (volume %f)", state->audioData.volume);
+  } else if (!state->isSquelched && wasSquelched) {
+    jll_info("Exiting squelch mode (volume %f)", state->audioData.volume);
+  }
 }
 
 ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, SoundState* state) const {
   // Squelch: Turn off LEDs if the overall volume is very low
-  if (state->audioData.volume < 0.02f) {
+  if (state->isSquelched) {
     CRGB* prevColors = lastColors(state);
     prevColors[px.cumulativeIndex] = CRGB::Black;
     return ColorWithPalette::OverrideColor(CRGB::Black);
@@ -131,7 +138,8 @@ ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, So
   // Add Sparkles!
   uint32_t sparkleChance = 0;
   // Only sparkle on significant transients and when there's an actual signal in this band
-  if (transient > 0.05f && normalizedMag > 0.2f) {
+  // and we're above the squelch threshold.
+  if (state->audioData.volume > 0.5f && transient > 0.05f && normalizedMag > 0.2f) {
     // Audio-reactive sparkle based on transients, scaled by the magnitude of the band
     sparkleChance = static_cast<uint32_t>(transient * 10000.0f * normalizedMag);
   }
