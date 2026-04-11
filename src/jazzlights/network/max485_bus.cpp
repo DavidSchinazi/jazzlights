@@ -13,6 +13,7 @@
 #include <mutex>
 
 #include "jazzlights/esp32_shared.h"
+#include "jazzlights/orrery_planet.h"
 #include "jazzlights/pseudorandom.h"
 #include "jazzlights/util/buffer.h"
 #include "jazzlights/util/cobs.h"
@@ -38,27 +39,27 @@ namespace {
 #define JL_TEST_MAX485 0
 #endif  // JL_TEST_MAX485
 
-using BusId = uint8_t;
-
 constexpr uint8_t kSeparator = 0;
 constexpr BusId kBusIdEndOfMessage = 1;
 constexpr BusId kBusIdBroadcast = 2;
 constexpr BusId kBusIdLeader = 3;
 
+BusId BusIdSelf() {
 #if JL_BUS_LEADER
-#define JL_BUS_ID kBusIdLeader
-#elif !defined(JL_BUS_ID)
-#error "Followers need to define JL_BUS_ID"
+  return kBusIdLeader;
+#elif defined(JL_BUS_ID)
+  return static_cast<BusId>(JL_BUS_ID);
+#else
+  return OrreryPlanet::Get()->GetBusId();
 #endif
-
-constexpr BusId kBusIdSelf = (JL_BUS_ID);
+}
 
 // While most bus ID values are available, we're reserving values above 128 for future use.
-static_assert(kBusIdSelf < 128, "high bus ID");
-static_assert(kBusIdSelf >= kBusIdLeader, "low bus ID");
-#if !JL_BUS_LEADER
-static_assert(kBusIdSelf != kBusIdLeader, "follower bus ID cannot be equal to leader");
-#endif  // JL_BUS_LEADER
+// static_assert(kBusIdSelf < 128, "high bus ID");
+// static_assert(kBusIdSelf >= kBusIdLeader, "low bus ID");
+// #if !JL_BUS_LEADER
+// static_assert(kBusIdSelf != kBusIdLeader, "follower bus ID cannot be equal to leader");
+// #endif  // JL_BUS_LEADER
 
 std::vector<BusId> GetFollowers() {
 #if JL_BUS_LEADER
@@ -180,7 +181,7 @@ Max485BusHandler* Max485BusHandler::Get() {
   constexpr int kRxPin = 1;
 #error "unsupported controller for Max485BusHandler"
 #endif
-  static Max485BusHandler sMax485BusHandler(kUartPort, kTxPin, kRxPin, kBusIdSelf, GetFollowers());
+  static Max485BusHandler sMax485BusHandler(kUartPort, kTxPin, kRxPin, BusIdSelf(), GetFollowers());
   return &sMax485BusHandler;
 }
 

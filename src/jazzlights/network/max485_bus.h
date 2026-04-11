@@ -9,6 +9,8 @@ namespace jazzlights {
 
 #if JL_MAX485_BUS
 
+using BusId = uint8_t;
+
 void SetupMax485Bus();
 
 void RunMax485Bus(Milliseconds currentTime);

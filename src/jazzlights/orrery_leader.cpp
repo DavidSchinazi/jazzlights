@@ -18,7 +18,7 @@ OrreryLeader* OrreryLeader::Get() {
 }
 
 void OrreryLeader::SetSpeed(Planet planet, int32_t speed) {
-  uint8_t planetIndex = static_cast<uint8_t>(planet);
+  uint8_t planetIndex = static_cast<uint8_t>(planet) - static_cast<uint8_t>(Planet::Mercury);
   if (planetIndex < kNumPlanets) {
     if (speeds_[planetIndex] != speed) {
       speeds_[planetIndex] = speed;
@@ -35,7 +35,7 @@ void OrreryLeader::SetSpeed(Planet planet, int32_t speed) {
 }
 
 int32_t OrreryLeader::GetSpeed(Planet planet) const {
-  int planetIndex = static_cast<int>(planet);
+  uint8_t planetIndex = static_cast<uint8_t>(planet) - static_cast<uint8_t>(Planet::Mercury);
   if (planetIndex >= 0 && planetIndex < kNumPlanets) { return speeds_[planetIndex]; }
   return 0;
 }

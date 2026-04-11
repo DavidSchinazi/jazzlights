@@ -14,7 +14,6 @@ namespace jazzlights {
 class OrreryLeader {
  public:
   static OrreryLeader* Get();
-  static constexpr int kNumPlanets = static_cast<int>(Planet::NumPlanets);
   void SetSpeed(Planet planet, int32_t speed);
   int32_t GetSpeed(Planet planet) const;
 

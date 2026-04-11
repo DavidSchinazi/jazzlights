@@ -12,27 +12,49 @@
 #include "jazzlights/util/log.h"
 
 namespace jazzlights {
+namespace {
+#if JL_IS_CONTROLLER(M5STAMP_S3)
+static constexpr uint8_t kPlanetSwitchPin0 = 12;
+static constexpr uint8_t kPlanetSwitchPin1 = 11;
+static constexpr uint8_t kPlanetSwitchPin2 = 9;
+#else
+#error "Unexpected controller"
+#endif
+}  // namespace
 
 OrreryPlanet* OrreryPlanet::Get() {
   static OrreryPlanet sOrreryPlanet;
   return &sOrreryPlanet;
 }
 
-void OrreryPlanet::RunLoop(Milliseconds /*currentTime*/) {
+OrreryPlanet::OrreryPlanet() : switch0_(kPlanetSwitchPin0), switch1_(kPlanetSwitchPin1), switch2_(kPlanetSwitchPin2) {
+  jll_info("OrreryPlanet created with busId %u", GetBusId());
+}
+
+BusId OrreryPlanet::GetBusId() const {
+  uint8_t switchesValue = (switch2_.IsClosed() ? 4 : 0) | (switch1_.IsClosed() ? 2 : 0) | (switch0_.IsClosed() ? 1 : 0);
+  return static_cast<BusId>(Planet::Mercury) + switchesValue;
+}
+
+void OrreryPlanet::RunLoop(Milliseconds currentTime) {
+  switch0_.RunLoop();
+  switch1_.RunLoop();
+  switch2_.RunLoop();
+
   static OwnedBufferU8 readBuffer(1000);
   uint8_t destBusId, srcBusId;
   BufferViewU8 message = ReadMax485BusMessage(readBuffer, &destBusId, &srcBusId);
+  const uint8_t ourPlanetIndex = GetBusId() - static_cast<uint8_t>(Planet::Mercury);
   if (!message.empty()) {
-    jll_buffer_info(message, STRINGIFY(JL_ROLE) " planet read message from %d to %d", static_cast<int>(srcBusId),
-                    static_cast<int>(destBusId));
+    jll_buffer_info(message, "Planet %u read message from %u to %u", ourPlanetIndex, srcBusId, destBusId);
   }
   if (message.empty() || message.size() < sizeof(OrreryMessage)) { return; }
 
   const OrreryMessage* msg = reinterpret_cast<const OrreryMessage*>(message.data());
 
   if (msg->type == OrreryMessageType::SetSpeed) {
-    if (msg->planetIndex < OrreryLeader::kNumPlanets) {
-      jll_info("OrreryFollower applying speed %" PRId32 " for planet %u", msg->speed, msg->planetIndex);
+    if (msg->planetIndex == ourPlanetIndex) {
+      jll_info("Planet %u applying speed %" PRId32, ourPlanetIndex, msg->speed);
 #if JL_MOTOR
       GetMainStepperMotor()->SetSpeed(msg->speed);
 #endif  // JL_MOTOR
