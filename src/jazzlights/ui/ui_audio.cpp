@@ -20,9 +20,13 @@ void AudioVisualizerUi::InitialSetup() {
   jll_info("Starting audio visualizer UI setup...");
   // Initialize M5 device
   auto cfg = M5.config();
+  cfg.serial_baudrate = 0;
+  cfg.internal_spk = false;
+  cfg.internal_mic = false;
   M5.begin(cfg);
   jll_info("M5 device initialized");
 
+  M5.Display.setBrightness(128);
   M5.Lcd.fillScreen(BLACK);
 
   jll_info("Audio visualizer UI setup complete");

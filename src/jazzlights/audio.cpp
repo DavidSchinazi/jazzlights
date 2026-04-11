@@ -66,8 +66,6 @@ void Audio::Initialize() {
   };
 #if JL_IS_CONTROLLER(CORES3) && !JL_CORES3_USE_INTERNAL_MICROPHONE
   std_cfg.slot_cfg.slot_bit_width = I2S_SLOT_BIT_WIDTH_32BIT;
-#elif JL_IS_CONTROLLER(CORE2AWS)
-  std_cfg.slot_cfg.slot_bit_width = I2S_SLOT_BIT_WIDTH_32BIT;
 #endif
 
   ESP_ERROR_CHECK(i2s_channel_init_std_mode(rx_handle_, &std_cfg));
