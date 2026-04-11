@@ -12,12 +12,6 @@
 
 namespace jazzlights {
 
-struct Strand {
-  const Layout& layout;
-  Renderer& renderer;
-  size_t index;
-};
-
 class Player {
  public:
   Player();

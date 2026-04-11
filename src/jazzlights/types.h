@@ -37,7 +37,13 @@ constexpr Precedence OverridePrecedence() { return 36000; }
 
 class Layout;
 class Player;
-struct Strand;
+class Renderer;
+
+struct Strand {
+  const Layout& layout;
+  Renderer& renderer;
+  size_t index;
+};
 
 struct Pixel {
   const Strand* strand = nullptr;
