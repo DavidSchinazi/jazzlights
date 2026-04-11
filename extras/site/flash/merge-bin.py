@@ -35,7 +35,7 @@ def merge_bin_action(source, target, env):
             "-o",
             merged_bin,
             "--flash_mode",
-            # Temporarily force DIO to see if it resolves issue on ESP32-S3 and ESP32-C6.
+            # Force DIO. Otherwise the web flasher does not work for ESP32-S3 and ESP32-C6.
             "dio",
             #  board_config.get("build.flash_mode", "dio"),
             "--flash_freq",
