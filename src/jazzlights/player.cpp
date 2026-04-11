@@ -501,6 +501,7 @@ bool Player::render(Milliseconds currentTime) {
   predictableRandom_.ResetWithFrameTime(frame_, effect->effectName(frame_.pattern).c_str());
   effect->rewind(frame_);
   Pixel px;
+  size_t cumulativeIndex = 0;
   for (const Strand& s : strands_) {
     px.strand = &s;
     const size_t numPixels = s.layout.pixelCount();
@@ -508,11 +509,12 @@ bool Player::render(Milliseconds currentTime) {
       CRGB color;
       px.coord = s.layout.at(index);
       if (!IsEmpty(px.coord)) {
-        px.index = index;
+        px.index = cumulativeIndex;
         color = effect->color(frame_, px);
       } else {
         color = CRGB::Black;
       }
+      cumulativeIndex++;
       s.renderer.renderPixel(index, color);
     }
   }
