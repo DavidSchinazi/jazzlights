@@ -273,7 +273,7 @@ Player::~Player() {
 }
 
 Player& Player::addStrand(const Layout& l, Renderer& r) {
-  strands_.push_back({l, r});
+  strands_.push_back({l, r, strands_.size()});
   return *this;
 }
 

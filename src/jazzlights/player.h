@@ -177,6 +177,7 @@ class Player {
   struct Strand {
     const Layout& layout;
     Renderer& renderer;
+    size_t index;
   };
   std::vector<Strand> strands_;
 
