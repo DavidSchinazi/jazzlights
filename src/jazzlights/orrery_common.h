@@ -1,6 +1,10 @@
 #ifndef JL_ORRERY_COMMON_H
 #define JL_ORRERY_COMMON_H
 
+#include "jazzlights/config.h"
+
+#if JL_MAX485_BUS
+
 #include <cstdint>
 
 #include "jazzlights/network/max485_bus.h"
@@ -32,5 +36,7 @@ struct OrreryMessage {
 } __attribute__((packed));
 
 }  // namespace jazzlights
+
+#endif  // JL_MAX485_BUS
 
 #endif  // JL_ORRERY_COMMON_H
