@@ -91,10 +91,8 @@ class Max485BusHandler {
   BufferViewU8 sharedRecvBroadcastMessage_;         // Protected by `recvMutex_`.
   BusId sharedRecvBroadcastSender_ = kSeparator;    // Protected by `recvMutex_`.
 };
-
-#else   // JL_MAX485_BUS
-#endif  // JL_MAX485_BUS
-
 }  // namespace jazzlights
+
+#endif  // JL_MAX485_BUS
 
 #endif  // JL_NETWORK_MAX485_BUS_H
