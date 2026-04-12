@@ -27,16 +27,25 @@ OrreryPlanet* OrreryPlanet::Get() {
   return &sOrreryPlanet;
 }
 
-OrreryPlanet::OrreryPlanet() : switch0_(kPlanetSwitchPin0), switch1_(kPlanetSwitchPin1), switch2_(kPlanetSwitchPin2) {
-  jll_info("OrreryPlanet created with busId %u", GetBusId());
+OrreryPlanet::OrreryPlanet()
+    : switch0_(kPlanetSwitchPin0, *this), switch1_(kPlanetSwitchPin1, *this), switch2_(kPlanetSwitchPin2, *this) {
+  UpdateBusId();
+  jll_info("OrreryPlanet created with busId %u", busId_);
 }
 
-BusId OrreryPlanet::GetBusId() const {
+void OrreryPlanet::UpdateBusId() {
   uint8_t switchesValue = (switch2_.IsClosed() ? 4 : 0) | (switch1_.IsClosed() ? 2 : 0) | (switch0_.IsClosed() ? 1 : 0);
-  return static_cast<BusId>(Planet::Mercury) + switchesValue;
+  busId_ = static_cast<BusId>(Planet::Mercury) + switchesValue;
 }
 
-void OrreryPlanet::RunLoop(Milliseconds currentTime) {
+void OrreryPlanet::StateChanged(uint8_t pin, bool isClosed) {
+  UpdateBusId();
+  jll_info("OrreryPlanet switch on pin %u is now %s, new busId %u", pin, (isClosed ? "closed" : "open"), busId_);
+}
+
+BusId OrreryPlanet::GetBusId() const { return busId_; }
+
+void OrreryPlanet::RunLoop(Milliseconds /*currentTime*/) {
   switch0_.RunLoop();
   switch1_.RunLoop();
   switch2_.RunLoop();

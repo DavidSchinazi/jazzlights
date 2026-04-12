@@ -11,7 +11,7 @@
 
 namespace jazzlights {
 
-class OrreryPlanet {
+class OrreryPlanet : public GpioSwitch::SwitchInterface {
  public:
   static OrreryPlanet* Get();
   void RunLoop(Milliseconds currentTime);
@@ -19,12 +19,18 @@ class OrreryPlanet {
   // Returns the BusId of the planet we are based on the switches.
   BusId GetBusId() const;
 
+  // From GpioSwitch::SwitchInterface.
+  void StateChanged(uint8_t pin, bool isClosed) override;
+
  private:
   OrreryPlanet();
+
+  void UpdateBusId();
 
   GpioSwitch switch0_;
   GpioSwitch switch1_;
   GpioSwitch switch2_;
+  BusId busId_;
 };
 
 }  // namespace jazzlights

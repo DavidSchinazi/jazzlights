@@ -68,7 +68,8 @@ GpioButton::GpioButton(uint8_t pin, ButtonInterface& buttonInterface)
       lastEvent_(-1),
       isHeld_(false) {}
 
-GpioSwitch::GpioSwitch(uint8_t pin) : gpioPin_(pin, *this, kButtonDebounceDuration, /*closedIsHigh=*/true) {}
+GpioSwitch::GpioSwitch(uint8_t pin, SwitchInterface& switchInterface)
+    : gpioPin_(pin, *this, kButtonDebounceDuration, /*closedIsHigh=*/true), switchInterface_(switchInterface) {}
 
 // static
 void GpioPin::ConfigurePin(void* arg) {
@@ -113,7 +114,10 @@ void GpioButton::HandleChange(uint8_t changedPin, bool isClosed, int64_t timeOfC
   }
 }
 
-void GpioSwitch::HandleChange(uint8_t /*pin*/, bool /*isClosed*/, int64_t /*timeOfChange*/) {}
+void GpioSwitch::HandleChange(uint8_t changedPin, bool isClosed, int64_t /*timeOfChange*/) {
+  if (changedPin != pin()) { jll_fatal("Unexpected pin %u != %u", changedPin, pin()); }
+  switchInterface_.StateChanged(pin(), isClosed);
+}
 
 void GpioPin::RunLoop() {
   uint64_t state;
@@ -201,7 +205,7 @@ void GpioPin::InterruptHandler(void* arg) { reinterpret_cast<GpioPin*>(arg)->Han
 
 void GpioPin::HandleInterrupt() {
   const int closedValue = closedIsHigh_ ? 1 : 0;
-  const bool newIsClosed = gpio_get_level(static_cast<gpio_num_t>(pin_)) == closedIsHigh_;
+  const bool newIsClosed = gpio_get_level(static_cast<gpio_num_t>(pin_)) == closedValue;
   if (newIsClosed != lastIsClosedInISR_) {
     lastIsClosedInISR_ = newIsClosed;
     const int64_t currentTime64 = esp_timer_get_time();

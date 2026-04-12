@@ -95,8 +95,16 @@ class GpioButton : public GpioPin::PinInterface {
 // Allows tracking switches connected to ESP32 GPIO pins.
 class GpioSwitch : public GpioPin::PinInterface {
  public:
+  // Virtual interface class that will receive switch callbacks.
+  class SwitchInterface {
+   public:
+    virtual ~SwitchInterface() = default;
+    // Called when the switch state changes.
+    virtual void StateChanged(uint8_t pin, bool isClosed) = 0;
+  };
+
   // Starts tracking a switch connected to a GPIO pin.
-  explicit GpioSwitch(uint8_t pin);
+  explicit GpioSwitch(uint8_t pin, SwitchInterface& switchInterface);
   virtual ~GpioSwitch();
 
   // Called once per primary runloop.
@@ -113,6 +121,7 @@ class GpioSwitch : public GpioPin::PinInterface {
 
  private:
   GpioPin gpioPin_;
+  SwitchInterface& switchInterface_;
 };
 
 }  // namespace jazzlights
