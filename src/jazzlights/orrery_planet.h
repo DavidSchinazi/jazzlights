@@ -31,6 +31,7 @@ class OrreryPlanet : public GpioSwitch::SwitchInterface {
   GpioSwitch switch1_;
   GpioSwitch switch2_;
   BusId busId_;
+  Max485BusHandler max485BusHandler_;
 };
 
 }  // namespace jazzlights

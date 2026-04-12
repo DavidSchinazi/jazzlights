@@ -85,7 +85,6 @@ void SetupPrimaryRunLoop() {
 #endif  // JL_DEBUG
   GetUi()->set_fastled_runner(&runner);
   GetUi()->InitialSetup();
-  SetupMax485Bus();
 
   AddLedsToRunner(&runner);
 
@@ -135,7 +134,6 @@ void RunPrimaryRunLoop() {
   SAVE_TIME_POINT(PrimaryRunLoop, LoopStart);
   Milliseconds currentTime = timeMillis();
   GetUi()->RunLoop(currentTime);
-  RunMax485Bus(currentTime);
 #if JL_MAX485_BUS
 #if JL_BUS_LEADER
   OrreryLeader::Get()->RunLoop(currentTime);

@@ -21,7 +21,6 @@
 #include "jazzlights/util/time.h"
 
 namespace jazzlights {
-namespace {
 
 #ifndef JL_LOG_MAX485_BUS_DATA
 #define JL_LOG_MAX485_BUS_DATA 0
@@ -39,10 +38,8 @@ namespace {
 #define JL_TEST_MAX485 0
 #endif  // JL_TEST_MAX485
 
-constexpr uint8_t kSeparator = 0;
-constexpr BusId kBusIdEndOfMessage = 1;
-constexpr BusId kBusIdBroadcast = 2;
-constexpr BusId kBusIdLeader = 3;
+constexpr uart_event_type_t kApplicationDataAvailable = static_cast<uart_event_type_t>(UART_EVENT_MAX + 1);
+static_assert(kApplicationDataAvailable > UART_EVENT_MAX, "UART event types wrapped around");
 
 BusId BusIdSelf() {
 #if JL_BUS_LEADER
@@ -54,13 +51,6 @@ BusId BusIdSelf() {
 #endif
 }
 
-// While most bus ID values are available, we're reserving values above 128 for future use.
-// static_assert(kBusIdSelf < 128, "high bus ID");
-// static_assert(kBusIdSelf >= kBusIdLeader, "low bus ID");
-// #if !JL_BUS_LEADER
-// static_assert(kBusIdSelf != kBusIdLeader, "follower bus ID cannot be equal to leader");
-// #endif  // JL_BUS_LEADER
-
 std::vector<BusId> GetFollowers() {
 #if JL_BUS_LEADER
   return {4};
@@ -68,72 +58,6 @@ std::vector<BusId> GetFollowers() {
   return {};
 #endif  // JL_BUS_LEADER
 }
-
-constexpr size_t ComputeExpansion(size_t length) {
-  return /*separator*/ 1 + /*destBusID*/ 1 + /*srcBusID*/ 1 + CobsMaxEncodedSize(length + /*CRC32*/ sizeof(uint32_t)) +
-         /*separator*/ 1 + /*endOfMessage*/ 1;
-}
-
-constexpr size_t kMaxMessageLength = 1000;
-constexpr size_t kMaxEncodedMessageLength = ComputeExpansion(kMaxMessageLength);  // 1013.
-constexpr size_t kUartDriverBufferSize = 2048;
-static_assert(kUartDriverBufferSize >= 2 * kMaxEncodedMessageLength, "bad size");
-
-constexpr uart_event_type_t kApplicationDataAvailable = static_cast<uart_event_type_t>(UART_EVENT_MAX + 1);
-static_assert(kApplicationDataAvailable > UART_EVENT_MAX, "UART event types wrapped around");
-
-class Max485BusHandler {
- public:
-  static Max485BusHandler* Get();
-  ~Max485BusHandler();
-
-  void SetMessageToSend(const BufferViewU8 message);
-  BufferViewU8 ReadMessage(OwnedBufferU8& readMessageBuffer, BusId* destBusId, BusId* srcBusId);
-
- private:
-  explicit Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, BusId busIdSelf,
-                            const std::vector<BusId>& followers);
-  static void TaskFunction(void* parameters);
-  void Setup();
-  void RunTask();
-  static BufferViewU8 DecodeMessage(const BufferViewU8 encodedBuffer, OwnedBufferU8& decodedReadBuffer,
-                                    OwnedBufferU8& decodedMessageBuffer, BusId busIdSelf);
-  void ShiftTaskRecvBuffer(size_t messageStartIndex);
-  BufferViewU8 TaskFindReceivedMessage(BusId* destBusId, BusId* srcBusId);
-  void SendToUart(BufferViewU8 encodedData);
-  static BufferViewU8 EncodeMessage(const BufferViewU8 message, OwnedBufferU8& encodedMessageBuffer, BusId destBusId,
-                                    BusId srcBusId);
-  void CopyEncodeAndSendMessage(BusId destBusId);
-  void SendMessageToNextFollower();
-  bool IsReady() const;
-
-  const uart_port_t uartPort_;          // Only modified in constructor.
-  const int txPin_;                     // Only modified in constructor.
-  const int rxPin_;                     // Only modified in constructor.
-  const BusId busIdSelf_;               // Only modified in constructor.
-  const std::vector<BusId> followers_;  // Only modified in constructor.
-  TaskHandle_t taskHandle_ = nullptr;   // Only modified in constructor.
-  QueueHandle_t queue_ = nullptr;
-  std::atomic<bool> ready_{false};
-  std::mutex sendMutex_;
-  OwnedBufferU8 sharedSendMessageBuffer_;                // Protected by `sendMutex_`.
-  BufferViewU8 sharedSendMessage_;                       // Protected by `sendMutex_`.
-  size_t nextFollowerIndex_ = 0;                         // Only accessed by task.
-  OwnedBufferU8 taskSendMessageBuffer_;                  // Only accessed by task.
-  OwnedBufferU8 taskEncodedSendMessageBuffer_;           // Only accessed by task.
-  Milliseconds taskLastSendTimeExpectingResponse_ = -1;  // Only accessed by task.
-  std::mutex recvMutex_;
-  OwnedBufferU8 taskRecvBuffer_;                    // Only accessed by task.
-  size_t lengthInTaskRecvBuffer_ = 0;               // Only accessed by task.
-  OwnedBufferU8 taskDecodedReadBuffer_;             // Only accessed by task.
-  OwnedBufferU8 taskDecodedMessageBuffer_;          // Only accessed by task.
-  OwnedBufferU8 sharedRecvSelfMessageBuffer_;       // Protected by `recvMutex_`.
-  BufferViewU8 sharedRecvSelfMessage_;              // Protected by `recvMutex_`.
-  BusId sharedRecvSelfSender_ = kSeparator;         // Protected by `recvMutex_`.
-  OwnedBufferU8 sharedRecvBroadcastMessageBuffer_;  // Protected by `recvMutex_`.
-  BufferViewU8 sharedRecvBroadcastMessage_;         // Protected by `recvMutex_`.
-  BusId sharedRecvBroadcastSender_ = kSeparator;    // Protected by `recvMutex_`.
-};
 
 bool Max485BusHandler::IsReady() const { return ready_.load(std::memory_order_relaxed); }
 
@@ -158,31 +82,6 @@ Max485BusHandler::Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, B
                               /*coreID=*/0) != pdPASS) {
     jll_fatal("Failed to create Max485BusHandler task");
   }
-}
-
-// static
-Max485BusHandler* Max485BusHandler::Get() {
-  constexpr uart_port_t kUartPort = UART_NUM_2;
-#if JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_LITE)
-  constexpr int kTxPin = 26;
-  constexpr int kRxPin = 32;
-#elif JL_IS_CONTROLLER(ATOM_S3) || JL_IS_CONTROLLER(ATOM_S3_LITE)
-  constexpr int kTxPin = 2;
-  constexpr int kRxPin = 1;
-#elif JL_IS_CONTROLLER(M5STAMP_S3)
-  constexpr int kTxPin = 43;
-  constexpr int kRxPin = 44;
-#elif JL_IS_CONTROLLER(CORE2AWS)
-  constexpr int kTxPin = 2;
-  constexpr int kRxPin = 33;
-#else
-  // For CoreS3 and CoreS3-SE:
-  constexpr int kTxPin = 13;
-  constexpr int kRxPin = 1;
-#error "unsupported controller for Max485BusHandler"
-#endif
-  static Max485BusHandler sMax485BusHandler(kUartPort, kTxPin, kRxPin, BusIdSelf(), GetFollowers());
-  return &sMax485BusHandler;
 }
 
 Max485BusHandler::~Max485BusHandler() { vTaskDelete(taskHandle_); }
@@ -527,29 +426,6 @@ BufferViewU8 Max485BusHandler::TaskFindReceivedMessage(BusId* destBusId, BusId* 
   }
   ShiftTaskRecvBuffer(messageStartIndex);
   return BufferViewU8();
-}
-
-}  // namespace
-
-void SetMax485BusMessageToSend(const BufferViewU8 message) { Max485BusHandler::Get()->SetMessageToSend(message); }
-
-BufferViewU8 ReadMax485BusMessage(OwnedBufferU8& readMessageBuffer, uint8_t* destBusId, uint8_t* srcBusId) {
-  return Max485BusHandler::Get()->ReadMessage(readMessageBuffer, destBusId, srcBusId);
-}
-
-void SetupMax485Bus() { (void)Max485BusHandler::Get(); }
-
-void RunMax485Bus(Milliseconds /*currentTime*/) {
-#if JL_TEST_MAX485
-  static OwnedBufferU8 outerRecvBuffer(kMaxMessageLength);
-  BusId destBusId = kSeparator;
-  BusId srcBusId = kSeparator;
-  BufferViewU8 readMessage = Max485BusHandler::Get()->ReadMessage(outerRecvBuffer, &destBusId, &srcBusId);
-  if (readMessage.size() > 0) {
-    jll_buffer_info(readMessage, STRINGIFY(JL_ROLE) " outer read message from %d to %d", static_cast<int>(srcBusId),
-                    static_cast<int>(destBusId));
-  }
-#endif  // JL_TEST_MAX485
 }
 
 }  // namespace jazzlights

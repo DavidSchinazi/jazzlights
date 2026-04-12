@@ -2,6 +2,7 @@
 #define JL_ORRERY_LEADER_H
 
 #include "jazzlights/config.h"
+#include "jazzlights/network/max485_bus.h"
 #include "jazzlights/orrery_common.h"
 #include "jazzlights/util/time.h"
 
@@ -20,8 +21,9 @@ class OrreryLeader {
   void RunLoop(Milliseconds currentTime);
 
  private:
-  OrreryLeader() = default;
+  OrreryLeader();
   int32_t speeds_[kNumPlanets] = {0};
+  Max485BusHandler max485BusHandler_;
 };
 
 }  // namespace jazzlights
