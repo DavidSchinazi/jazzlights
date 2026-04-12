@@ -25,21 +25,6 @@ using BusId = uint8_t;
 BusId BusIdSelf();
 std::vector<BusId> GetFollowers();
 
-constexpr uint8_t kSeparator = 0;
-constexpr BusId kBusIdEndOfMessage = 1;
-constexpr BusId kBusIdBroadcast = 2;
-constexpr BusId kBusIdLeader = 3;
-
-constexpr size_t kMaxMessageLength = 1000;
-
-constexpr size_t ComputeExpansion(size_t length) {
-  return /*separator*/ 1 + /*destBusID*/ 1 + /*srcBusID*/ 1 + CobsMaxEncodedSize(length + /*CRC32*/ sizeof(uint32_t)) +
-         /*separator*/ 1 + /*endOfMessage*/ 1;
-}
-
-constexpr size_t kMaxEncodedMessageLength = ComputeExpansion(kMaxMessageLength);  // 1013.
-constexpr size_t kUartDriverBufferSize = 2048;
-
 class Max485BusHandler {
  public:
   explicit Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, BusId busIdSelf,
@@ -50,6 +35,7 @@ class Max485BusHandler {
   BufferViewU8 ReadMessage(OwnedBufferU8& readMessageBuffer, BusId* destBusId, BusId* srcBusId);
 
  private:
+  inline static constexpr uint8_t kSeparator = 0;
   static void TaskFunction(void* parameters);
   void Setup();
   void RunTask();
