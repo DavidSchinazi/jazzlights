@@ -272,6 +272,18 @@ class NetworkReader {
     return true;
   }
 
+  // Uses two's complement.
+  bool ReadInt32(int32_t* out) {
+    uint32_t u;
+    if (!ReadUint32(&u)) { return false; }
+    if (u <= 0x7FFFFFFFU) {
+      *out = static_cast<int32_t>(u);
+    } else {
+      *out = -static_cast<int32_t>(0xFFFFFFFFU - u) - 1;
+    }
+    return true;
+  }
+
   bool ReadPatternBits(PatternBits* out) {
     // In theory we shouldn't need this because PatternBits is roughly a uint32_t, but we made it an unsigned int to
     // allow `printf("%u", pattern)` without warnings.
@@ -319,6 +331,17 @@ class NetworkWriter {
     data_[pos_ + 3] = static_cast<uint8_t>((in & 0x000000FF));
     pos_ += sizeof(in);
     return true;
+  }
+
+  // Uses two's complement.
+  bool WriteInt32(int32_t in) {
+    uint32_t uin;
+    if (in >= 0) {
+      uin = static_cast<uint32_t>(in);
+    } else {
+      uin = 0xFFFFFFFFU - static_cast<uint32_t>(-(in + 1));
+    }
+    return WriteUint32(uin);
   }
 
   bool WriteNetworkDeviceId(const NetworkDeviceId& in) {

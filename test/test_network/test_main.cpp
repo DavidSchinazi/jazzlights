@@ -37,10 +37,33 @@ void test_network_writer() {
   TEST_ASSERT_FALSE(writer.WriteUint8(u8));
 }
 
+void test_network_int32() {
+  int32_t values[] = {0, -1, 2147483647, -2147483648};
+  uint8_t expected_bytes[][4] = {
+      {0x00, 0x00, 0x00, 0x00},
+      {0xFF, 0xFF, 0xFF, 0xFF},
+      {0x7F, 0xFF, 0xFF, 0xFF},
+      {0x80, 0x00, 0x00, 0x00},
+  };
+
+  for (size_t i = 0; i < 4; ++i) {
+    uint8_t buffer[4];
+    NetworkWriter writer(buffer, sizeof(buffer));
+    TEST_ASSERT(writer.WriteInt32(values[i]));
+    for (size_t j = 0; j < 4; ++j) { TEST_ASSERT_EQUAL_HEX8(expected_bytes[i][j], buffer[j]); }
+
+    NetworkReader reader(buffer, sizeof(buffer));
+    int32_t out;
+    TEST_ASSERT(reader.ReadInt32(&out));
+    TEST_ASSERT_EQUAL_INT32(values[i], out);
+  }
+}
+
 void run_unity_tests() {
   UNITY_BEGIN();
   RUN_TEST(test_network_reader);
   RUN_TEST(test_network_writer);
+  RUN_TEST(test_network_int32);
   UNITY_END();
 }
 
