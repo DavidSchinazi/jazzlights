@@ -2,13 +2,14 @@
 #define JL_ORRERY_LEADER_H
 
 #include "jazzlights/config.h"
+
+#if JL_IS_CONFIG(ORRERY_LEADER)
+
+#include <cstdint>
+
 #include "jazzlights/network/max485_bus.h"
 #include "jazzlights/orrery_common.h"
 #include "jazzlights/util/time.h"
-
-#if JL_MAX485_BUS
-
-#include <cstdint>
 
 namespace jazzlights {
 
@@ -28,6 +29,6 @@ class OrreryLeader {
 
 }  // namespace jazzlights
 
-#endif  // JL_MAX485_BUS
+#endif  // JL_IS_CONFIG(ORRERY_LEADER)
 
 #endif  // JL_ORRERY_LEADER_H

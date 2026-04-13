@@ -3,7 +3,7 @@
 
 #include "jazzlights/config.h"
 
-#if JL_MAX485_BUS
+#if JL_IS_CONFIG(ORRERY_PLANET) || JL_IS_CONFIG(ORRERY_LEADER)
 
 #include <cstdint>
 
@@ -37,6 +37,6 @@ struct OrreryMessage {
 
 }  // namespace jazzlights
 
-#endif  // JL_MAX485_BUS
+#endif  // ORRERY
 
 #endif  // JL_ORRERY_COMMON_H

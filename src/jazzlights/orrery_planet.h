@@ -3,7 +3,7 @@
 
 #include "jazzlights/config.h"
 
-#if JL_MAX485_BUS
+#if JL_IS_CONFIG(ORRERY_PLANET)
 
 #include "jazzlights/network/max485_bus.h"
 #include "jazzlights/ui/gpio_button.h"
@@ -36,6 +36,6 @@ class OrreryPlanet : public GpioSwitch::SwitchInterface {
 
 }  // namespace jazzlights
 
-#endif  // JL_MAX485_BUS
+#endif  // JL_IS_CONFIG(ORRERY_PLANET)
 
 #endif  // JL_ORRERY_PLANET_H

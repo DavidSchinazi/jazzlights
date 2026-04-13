@@ -59,7 +59,7 @@ void AddLedsToRunner(FastLedRunner* runner) {
 
 }  // namespace jazzlights
 
-#elif JL_IS_CONFIG(PHONE) || JL_IS_CONFIG(ORRERY)
+#elif JL_IS_CONFIG(PHONE) || (JL_IS_CONFIG(ORRERY_LEADER) || JL_IS_CONFIG(ORRERY_PLANET))
 namespace jazzlights {
 void AddLedsToRunner(FastLedRunner* runner) {}
 }  // namespace jazzlights

@@ -1,6 +1,6 @@
 #include "jazzlights/orrery_planet.h"
 
-#if JL_MAX485_BUS
+#if JL_IS_CONFIG(ORRERY_PLANET)
 
 #include <cinttypes>
 #include <cstdio>
@@ -8,7 +8,7 @@
 
 #include "jazzlights/motor.h"
 #include "jazzlights/network/max485_bus.h"
-#include "jazzlights/orrery_leader.h"
+#include "jazzlights/orrery_common.h"
 #include "jazzlights/util/log.h"
 
 namespace jazzlights {
@@ -95,7 +95,7 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
   const OrreryMessage* msg = reinterpret_cast<const OrreryMessage*>(message.data());
 
   if (msg->type == OrreryMessageType::SetSpeed) {
-    if (msg->planetIndex == GetBusId()) {
+    if (msg->planetIndex == ourPlanetIndex) {
       jll_info("%u Planet %u applying speed %" PRId32, currentTime, ourPlanetIndex, msg->speed);
 #if JL_MOTOR
       GetMainStepperMotor()->SetSpeed(msg->speed);
@@ -113,4 +113,4 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
 
 }  // namespace jazzlights
 
-#endif  // JL_MAX485_BUS
+#endif  // JL_IS_CONFIG(ORRERY_PLANET)

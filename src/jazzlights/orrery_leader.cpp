@@ -1,6 +1,6 @@
 #include "jazzlights/orrery_leader.h"
 
-#if JL_MAX485_BUS
+#if JL_IS_CONFIG(ORRERY_LEADER)
 
 #include <cinttypes>
 #include <cstdio>
@@ -80,4 +80,4 @@ void OrreryLeader::RunLoop(Milliseconds /*currentTime*/) {
 
 }  // namespace jazzlights
 
-#endif  // JL_MAX485_BUS
+#endif  // JL_IS_CONFIG(ORRERY_LEADER)
