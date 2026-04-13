@@ -32,13 +32,18 @@ class Max485BusHandler {
   static inline constexpr BusId kBusIdBroadcast = 2;
   static inline constexpr BusId kBusIdLeader = 3;
 
-  explicit Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, BusId busIdSelf);
-  ~Max485BusHandler();
+  virtual ~Max485BusHandler();
 
-  void SetMessageToSend(BusId destBusId, const BufferViewU8 message);
   BufferViewU8 ReadMessage(OwnedBufferU8& readMessageBuffer, BusId* destBusId, BusId* srcBusId);
 
- private:
+ protected:
+  explicit Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, BusId busIdSelf);
+
+  bool SetMessageToSendInner(BusId destBusId, const BufferViewU8 message);
+  virtual void HandleReceivedMessage(BusId srcBusId, const BufferViewU8 message) = 0;
+  virtual void HandleApplicationDataAvailableToSend() = 0;
+  void CopyEncodeAndSendMessage(BusId destBusId);
+
   inline static constexpr uint8_t kSeparator = 0;
   static void TaskFunction(void* parameters);
   void Setup();
@@ -50,8 +55,6 @@ class Max485BusHandler {
   void SendToUart(BufferViewU8 encodedData);
   static BufferViewU8 EncodeMessage(const BufferViewU8 message, OwnedBufferU8& encodedMessageBuffer, BusId destBusId,
                                     BusId srcBusId);
-  void CopyEncodeAndSendMessage(BusId destBusId);
-  void SendMessageToNextFollower();
   bool IsReady() const;
 
   const uart_port_t uartPort_;         // Only modified in constructor.
@@ -64,8 +67,6 @@ class Max485BusHandler {
   std::mutex sendMutex_;
   std::map<BusId, OwnedBufferU8> sharedSendMessageBuffers_;  // Protected by `sendMutex_`.
   std::map<BusId, BufferViewU8> sharedSendMessages_;         // Protected by `sendMutex_`.
-  std::deque<BusId> highPriorityBusIds_;                     // Protected by `sendMutex_`.
-  BusId lastSentBusId_ = 0;                                  // Only accessed by task.
   OwnedBufferU8 taskSendMessageBuffer_;                      // Only accessed by task.
   OwnedBufferU8 taskEncodedSendMessageBuffer_;               // Only accessed by task.
   Milliseconds taskLastSendTimeExpectingResponse_ = -1;      // Only accessed by task.
@@ -80,7 +81,36 @@ class Max485BusHandler {
   OwnedBufferU8 sharedRecvBroadcastMessageBuffer_;  // Protected by `recvMutex_`.
   BufferViewU8 sharedRecvBroadcastMessage_;         // Protected by `recvMutex_`.
   BusId sharedRecvBroadcastSender_ = kSeparator;    // Protected by `recvMutex_`.
+
+  static inline constexpr uart_event_type_t kApplicationDataAvailable =
+      static_cast<uart_event_type_t>(UART_EVENT_MAX + 1);
 };
+
+class Max485BusLeader : public Max485BusHandler {
+ public:
+  explicit Max485BusLeader(uart_port_t uartPort, int txPin, int rxPin);
+  void SetMessageToSend(BusId destBusId, const BufferViewU8 message);
+
+ protected:
+  void HandleReceivedMessage(BusId srcBusId, const BufferViewU8 message) override;
+  void HandleApplicationDataAvailableToSend() override;
+
+ private:
+  void SendMessageToNextFollower();
+  std::deque<BusId> highPriorityBusIds_;  // Protected by `sendMutex_`.
+  BusId lastSentBusId_ = 0;               // Only accessed by task.
+};
+
+class Max485BusFollower : public Max485BusHandler {
+ public:
+  explicit Max485BusFollower(uart_port_t uartPort, int txPin, int rxPin, BusId busIdSelf);
+  void SetMessageToSend(const BufferViewU8 message);
+
+ protected:
+  void HandleReceivedMessage(BusId srcBusId, const BufferViewU8 message) override;
+  void HandleApplicationDataAvailableToSend() override;
+};
+
 }  // namespace jazzlights
 
 #endif  // JL_MAX485_BUS

@@ -24,7 +24,7 @@ class OrreryLeader {
  private:
   OrreryLeader();
   int32_t speeds_[kNumPlanets] = {0};
-  Max485BusHandler max485BusHandler_;
+  Max485BusLeader max485BusLeader_;
 };
 
 }  // namespace jazzlights

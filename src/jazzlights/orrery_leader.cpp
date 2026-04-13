@@ -38,7 +38,7 @@ OrreryLeader* OrreryLeader::Get() {
   return &sOrreryLeader;
 }
 
-OrreryLeader::OrreryLeader() : max485BusHandler_(UART_NUM_2, kMax485TxPin, kMax485RxPin, BusIdSelf()) {}
+OrreryLeader::OrreryLeader() : max485BusLeader_(UART_NUM_2, kMax485TxPin, kMax485RxPin) {}
 
 void OrreryLeader::SetSpeed(Planet planet, int32_t speed) {
   uint8_t planetIndex = static_cast<uint8_t>(planet) - static_cast<uint8_t>(Planet::Mercury);
@@ -51,8 +51,8 @@ void OrreryLeader::SetSpeed(Planet planet, int32_t speed) {
       msg.type = OrreryMessageType::SetSpeed;
       msg.planetIndex = planetIndex;
       msg.speed = speed;
-      max485BusHandler_.SetMessageToSend(static_cast<BusId>(planet),
-                                         BufferViewU8(reinterpret_cast<uint8_t*>(&msg), sizeof(msg)));
+      max485BusLeader_.SetMessageToSend(static_cast<BusId>(planet),
+                                        BufferViewU8(reinterpret_cast<uint8_t*>(&msg), sizeof(msg)));
 #endif  // JL_BUS_LEADER
     }
   }
@@ -68,7 +68,7 @@ void OrreryLeader::RunLoop(Milliseconds /*currentTime*/) {
 #if JL_BUS_LEADER
   static OwnedBufferU8 readBuffer(1000);
   uint8_t destBusId, srcBusId;
-  BufferViewU8 message = max485BusHandler_.ReadMessage(readBuffer, &destBusId, &srcBusId);
+  BufferViewU8 message = max485BusLeader_.ReadMessage(readBuffer, &destBusId, &srcBusId);
   if (message.empty() || message.size() < sizeof(OrreryMessage)) { return; }
 
   const OrreryMessage* msg = reinterpret_cast<const OrreryMessage*>(message.data());

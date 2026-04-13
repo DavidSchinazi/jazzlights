@@ -59,7 +59,7 @@ OrreryPlanet::OrreryPlanet()
       switch1_(kPlanetSwitchPin1, *this),
       switch2_(kPlanetSwitchPin2, *this),
       busId_(ComputeInitialBusId()),
-      max485BusHandler_(UART_NUM_2, kMax485TxPin, kMax485RxPin, busId_) {
+      max485BusFollower_(UART_NUM_2, kMax485TxPin, kMax485RxPin, busId_) {
   UpdateBusId();
   jll_info("%u OrreryPlanet created with busId %u", timeMillis(), busId_);
 }
@@ -84,7 +84,7 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
 
   static OwnedBufferU8 readBuffer(1000);
   uint8_t destBusId, srcBusId;
-  BufferViewU8 message = max485BusHandler_.ReadMessage(readBuffer, &destBusId, &srcBusId);
+  BufferViewU8 message = max485BusFollower_.ReadMessage(readBuffer, &destBusId, &srcBusId);
   const uint8_t ourPlanetIndex = GetBusId() - static_cast<uint8_t>(Planet::Mercury);
   if (!message.empty()) {
     jll_buffer_info(message, "%u Planet %u read message from %u to %u", currentTime, ourPlanetIndex, srcBusId,
@@ -104,8 +104,7 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
       ack.type = OrreryMessageType::AckSpeed;
       ack.planetIndex = msg->planetIndex;
       ack.speed = msg->speed;
-      max485BusHandler_.SetMessageToSend(Max485BusHandler::kBusIdLeader,
-                                         BufferViewU8(reinterpret_cast<uint8_t*>(&ack), sizeof(ack)));
+      max485BusFollower_.SetMessageToSend(BufferViewU8(reinterpret_cast<uint8_t*>(&ack), sizeof(ack)));
     } else {
       jll_info("%u Planet %u ignoring speed for planet %u", currentTime, ourPlanetIndex, msg->planetIndex);
     }
