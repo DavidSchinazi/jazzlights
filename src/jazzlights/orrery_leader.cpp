@@ -8,6 +8,7 @@
 
 #include "jazzlights/motor.h"
 #include "jazzlights/network/max485_bus.h"
+#include "jazzlights/network/network.h"
 #include "jazzlights/util/log.h"
 
 namespace jazzlights {
@@ -47,12 +48,13 @@ void OrreryLeader::SetSpeed(Planet planet, int32_t speed) {
       speeds_[planetIndex] = speed;
       jll_info("OrreryLeader setting planet %u speed to %" PRId32, planetIndex, speed);
 #if JL_BUS_LEADER
-      OrreryMessage msg;
-      msg.type = OrreryMessageType::SetSpeed;
-      msg.planetIndex = planetIndex;
-      msg.speed = speed;
-      max485BusLeader_.SetMessageToSend(static_cast<BusId>(planet),
-                                        BufferViewU8(reinterpret_cast<uint8_t*>(&msg), sizeof(msg)));
+      uint8_t messageBuffer[6];
+      NetworkWriter writer(messageBuffer, sizeof(messageBuffer));
+      if (writer.WriteUint8(static_cast<uint8_t>(OrreryMessageType::SetSpeed)) && writer.WriteUint8(planetIndex) &&
+          writer.WriteInt32(speed)) {
+        max485BusLeader_.SetMessageToSend(static_cast<BusId>(planet),
+                                          BufferViewU8(messageBuffer, writer.LengthWritten()));
+      }
 #endif  // JL_BUS_LEADER
     }
   }
@@ -69,12 +71,18 @@ void OrreryLeader::RunLoop(Milliseconds /*currentTime*/) {
   static OwnedBufferU8 readBuffer(1000);
   uint8_t destBusId, srcBusId;
   BufferViewU8 message = max485BusLeader_.ReadMessage(readBuffer, &destBusId, &srcBusId);
-  if (message.empty() || message.size() < sizeof(OrreryMessage)) { return; }
+  if (message.empty()) { return; }
 
-  const OrreryMessage* msg = reinterpret_cast<const OrreryMessage*>(message.data());
+  NetworkReader reader(message.data(), message.size());
+  uint8_t type;
+  if (!reader.ReadUint8(&type)) { return; }
 
-  if (msg->type == OrreryMessageType::AckSpeed) {
-    jll_info("OrreryLeader received ack for planet %u: %" PRId32, msg->planetIndex, msg->speed);
+  if (type == static_cast<uint8_t>(OrreryMessageType::AckSpeed)) {
+    uint8_t planetIndex;
+    int32_t speed;
+    if (reader.ReadUint8(&planetIndex) && reader.ReadInt32(&speed)) {
+      jll_info("OrreryLeader received ack for planet %u: %" PRId32, planetIndex, speed);
+    }
   }
 #endif  // JL_BUS_LEADER
 }

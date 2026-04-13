@@ -29,12 +29,6 @@ enum class OrreryMessageType : uint8_t {
   AckSpeed = 0x02,
 };
 
-struct OrreryMessage {
-  OrreryMessageType type;
-  uint8_t planetIndex;
-  int32_t speed;
-} __attribute__((packed));
-
 }  // namespace jazzlights
 
 #endif  // ORRERY

@@ -8,6 +8,7 @@
 
 #include "jazzlights/motor.h"
 #include "jazzlights/network/max485_bus.h"
+#include "jazzlights/network/network.h"
 #include "jazzlights/orrery_common.h"
 #include "jazzlights/util/log.h"
 
@@ -90,23 +91,30 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
     jll_buffer_info(message, "%u Planet %u read message from %u to %u", currentTime, ourPlanetIndex, srcBusId,
                     destBusId);
   }
-  if (message.empty() || message.size() < sizeof(OrreryMessage)) { return; }
+  if (message.empty()) { return; }
 
-  const OrreryMessage* msg = reinterpret_cast<const OrreryMessage*>(message.data());
+  NetworkReader reader(message.data(), message.size());
+  uint8_t type;
+  if (!reader.ReadUint8(&type)) { return; }
 
-  if (msg->type == OrreryMessageType::SetSpeed) {
-    if (msg->planetIndex == ourPlanetIndex) {
-      jll_info("%u Planet %u applying speed %" PRId32, currentTime, ourPlanetIndex, msg->speed);
+  if (type == static_cast<uint8_t>(OrreryMessageType::SetSpeed)) {
+    uint8_t planetIndex;
+    int32_t speed;
+    if (reader.ReadUint8(&planetIndex) && reader.ReadInt32(&speed)) {
+      if (planetIndex == ourPlanetIndex) {
+        jll_info("%u Planet %u applying speed %" PRId32, currentTime, ourPlanetIndex, speed);
 #if JL_MOTOR
-      GetMainStepperMotor()->SetSpeed(msg->speed);
+        GetMainStepperMotor()->SetSpeed(speed);
 #endif  // JL_MOTOR
-      OrreryMessage ack;
-      ack.type = OrreryMessageType::AckSpeed;
-      ack.planetIndex = msg->planetIndex;
-      ack.speed = msg->speed;
-      max485BusFollower_.SetMessageToSend(BufferViewU8(reinterpret_cast<uint8_t*>(&ack), sizeof(ack)));
-    } else {
-      jll_info("%u Planet %u ignoring speed for planet %u", currentTime, ourPlanetIndex, msg->planetIndex);
+        uint8_t ackBuffer[6];
+        NetworkWriter writer(ackBuffer, sizeof(ackBuffer));
+        if (writer.WriteUint8(static_cast<uint8_t>(OrreryMessageType::AckSpeed)) && writer.WriteUint8(planetIndex) &&
+            writer.WriteInt32(speed)) {
+          max485BusFollower_.SetMessageToSend(BufferViewU8(ackBuffer, writer.LengthWritten()));
+        }
+      } else {
+        jll_info("%u Planet %u ignoring speed for planet %u", currentTime, ourPlanetIndex, planetIndex);
+      }
     }
   }
 }
