@@ -38,10 +38,6 @@ namespace jazzlights {
 #define JL_TEST_MAX485 0
 #endif  // JL_TEST_MAX485
 
-constexpr BusId kBusIdEndOfMessage = 1;
-constexpr BusId kBusIdBroadcast = 2;
-constexpr BusId kBusIdLeader = 3;
-
 constexpr size_t kMaxMessageLength = 1000;
 
 constexpr size_t ComputeExpansion(size_t length) {
@@ -57,7 +53,7 @@ static_assert(kApplicationDataAvailable > UART_EVENT_MAX, "UART event types wrap
 
 BusId BusIdSelf() {
 #if JL_BUS_LEADER
-  return kBusIdLeader;
+  return Max485BusHandler::kBusIdLeader;
 #elif defined(JL_BUS_ID)
   return static_cast<BusId>(JL_BUS_ID);
 #else
@@ -82,7 +78,6 @@ Max485BusHandler::Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, B
       rxPin_(rxPin),
       busIdSelf_(busIdSelf),
       followers_(followers),
-      sharedSendMessageBuffer_(kMaxMessageLength),
       taskSendMessageBuffer_(kMaxMessageLength),
       taskEncodedSendMessageBuffer_(kMaxEncodedMessageLength),
       taskRecvBuffer_(kUartDriverBufferSize),
@@ -252,8 +247,11 @@ void Max485BusHandler::CopyEncodeAndSendMessage(BusId destBusId) {
   BufferViewU8 taskSendMessage;
   {
     const std::lock_guard<std::mutex> lock(sendMutex_);
-    taskSendMessage = taskSendMessageBuffer_.CopyIn(sharedSendMessage_);
+    auto it = sharedSendMessages_.find(destBusId);
+    if (it == sharedSendMessages_.end()) { it = sharedSendMessages_.find(kBusIdBroadcast); }
+    if (it != sharedSendMessages_.end()) { taskSendMessage = taskSendMessageBuffer_.CopyIn(it->second); }
   }
+  if (taskSendMessage.empty()) { return; }
   jll_buffer_info(taskSendMessage, "%u Sending from %d to %d", timeMillis(), static_cast<int>(busIdSelf_),
                   static_cast<int>(destBusId));
   BufferViewU8 taskEncodedSendMessage =
@@ -272,14 +270,17 @@ void Max485BusHandler::SendMessageToNextFollower() {
   CopyEncodeAndSendMessage(destBusId);
 }
 
-void Max485BusHandler::SetMessageToSend(const BufferViewU8 message) {
+void Max485BusHandler::SetMessageToSend(BusId destBusId, const BufferViewU8 message) {
   if (message.size() > kMaxMessageLength) {
     jll_error("%u UART%d refusing to send message of length %zu", timeMillis(), uartPort_, message.size());
     return;
   }
   {
     const std::lock_guard<std::mutex> lock(sendMutex_);
-    sharedSendMessage_ = sharedSendMessageBuffer_.CopyIn(message);
+    if (sharedSendMessageBuffers_.find(destBusId) == sharedSendMessageBuffers_.end()) {
+      sharedSendMessageBuffers_.emplace(destBusId, OwnedBufferU8(kMaxMessageLength));
+    }
+    sharedSendMessages_[destBusId] = sharedSendMessageBuffers_.at(destBusId).CopyIn(message);
   }
   if (busIdSelf_ != kBusIdLeader) { return; }
   uart_event_t eventToSend = {};

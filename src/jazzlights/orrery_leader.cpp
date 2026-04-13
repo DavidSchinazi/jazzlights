@@ -51,7 +51,8 @@ void OrreryLeader::SetSpeed(Planet planet, int32_t speed) {
       msg.type = OrreryMessageType::SetSpeed;
       msg.planetIndex = planetIndex;
       msg.speed = speed;
-      max485BusHandler_.SetMessageToSend(BufferViewU8(reinterpret_cast<uint8_t*>(&msg), sizeof(msg)));
+      max485BusHandler_.SetMessageToSend(static_cast<BusId>(planet),
+                                         BufferViewU8(reinterpret_cast<uint8_t*>(&msg), sizeof(msg)));
 #endif  // JL_BUS_LEADER
     }
   }

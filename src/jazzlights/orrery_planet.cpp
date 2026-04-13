@@ -104,7 +104,8 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
       ack.type = OrreryMessageType::AckSpeed;
       ack.planetIndex = msg->planetIndex;
       ack.speed = msg->speed;
-      max485BusHandler_.SetMessageToSend(BufferViewU8(reinterpret_cast<uint8_t*>(&ack), sizeof(ack)));
+      max485BusHandler_.SetMessageToSend(Max485BusHandler::kBusIdLeader,
+                                         BufferViewU8(reinterpret_cast<uint8_t*>(&ack), sizeof(ack)));
     } else {
       jll_info("%u Planet %u ignoring speed for planet %u", currentTime, ourPlanetIndex, msg->planetIndex);
     }

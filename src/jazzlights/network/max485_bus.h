@@ -12,6 +12,7 @@
 
 #include <atomic>
 #include <mutex>
+#include <unordered_map>
 #include <vector>
 
 #include "jazzlights/util/buffer.h"
@@ -27,11 +28,15 @@ std::vector<BusId> GetFollowers();
 
 class Max485BusHandler {
  public:
+  static inline constexpr BusId kBusIdEndOfMessage = 1;
+  static inline constexpr BusId kBusIdBroadcast = 2;
+  static inline constexpr BusId kBusIdLeader = 3;
+
   explicit Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, BusId busIdSelf,
                             const std::vector<BusId>& followers);
   ~Max485BusHandler();
 
-  void SetMessageToSend(const BufferViewU8 message);
+  void SetMessageToSend(BusId destBusId, const BufferViewU8 message);
   BufferViewU8 ReadMessage(OwnedBufferU8& readMessageBuffer, BusId* destBusId, BusId* srcBusId);
 
  private:
@@ -59,12 +64,12 @@ class Max485BusHandler {
   QueueHandle_t queue_ = nullptr;
   std::atomic<bool> ready_{false};
   std::mutex sendMutex_;
-  OwnedBufferU8 sharedSendMessageBuffer_;                // Protected by `sendMutex_`.
-  BufferViewU8 sharedSendMessage_;                       // Protected by `sendMutex_`.
-  size_t nextFollowerIndex_ = 0;                         // Only accessed by task.
-  OwnedBufferU8 taskSendMessageBuffer_;                  // Only accessed by task.
-  OwnedBufferU8 taskEncodedSendMessageBuffer_;           // Only accessed by task.
-  Milliseconds taskLastSendTimeExpectingResponse_ = -1;  // Only accessed by task.
+  std::unordered_map<BusId, OwnedBufferU8> sharedSendMessageBuffers_;  // Protected by `sendMutex_`.
+  std::unordered_map<BusId, BufferViewU8> sharedSendMessages_;         // Protected by `sendMutex_`.
+  size_t nextFollowerIndex_ = 0;                                       // Only accessed by task.
+  OwnedBufferU8 taskSendMessageBuffer_;                                // Only accessed by task.
+  OwnedBufferU8 taskEncodedSendMessageBuffer_;                         // Only accessed by task.
+  Milliseconds taskLastSendTimeExpectingResponse_ = -1;                // Only accessed by task.
   std::mutex recvMutex_;
   OwnedBufferU8 taskRecvBuffer_;                    // Only accessed by task.
   size_t lengthInTaskRecvBuffer_ = 0;               // Only accessed by task.
