@@ -11,6 +11,7 @@
 #include <freertos/task.h>
 
 #include <atomic>
+#include <deque>
 #include <map>
 #include <mutex>
 #include <vector>
@@ -63,6 +64,7 @@ class Max485BusHandler {
   std::mutex sendMutex_;
   std::map<BusId, OwnedBufferU8> sharedSendMessageBuffers_;  // Protected by `sendMutex_`.
   std::map<BusId, BufferViewU8> sharedSendMessages_;         // Protected by `sendMutex_`.
+  std::deque<BusId> highPriorityBusIds_;                     // Protected by `sendMutex_`.
   BusId lastSentBusId_ = 0;                                  // Only accessed by task.
   OwnedBufferU8 taskSendMessageBuffer_;                      // Only accessed by task.
   OwnedBufferU8 taskEncodedSendMessageBuffer_;               // Only accessed by task.

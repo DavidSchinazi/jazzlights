@@ -7,9 +7,11 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 
+#include <algorithm>
 #include <atomic>
 #include <cstdint>
 #include <cstring>
+#include <deque>
 #include <mutex>
 
 #include "jazzlights/esp32_shared.h"
@@ -256,11 +258,17 @@ void Max485BusHandler::SendMessageToNextFollower() {
   BusId destBusId = kSeparator;
   {
     const std::lock_guard<std::mutex> lock(sendMutex_);
-    if (sharedSendMessages_.empty()) { return; }
-    auto it = sharedSendMessages_.upper_bound(lastSentBusId_);
-    if (it == sharedSendMessages_.end()) { it = sharedSendMessages_.begin(); }
-    destBusId = it->first;
-    lastSentBusId_ = destBusId;
+    if (!highPriorityBusIds_.empty()) {
+      destBusId = highPriorityBusIds_.front();
+      highPriorityBusIds_.pop_front();
+      lastSentBusId_ = destBusId;
+    } else {
+      if (sharedSendMessages_.empty()) { return; }
+      auto it = sharedSendMessages_.upper_bound(lastSentBusId_);
+      if (it == sharedSendMessages_.end()) { it = sharedSendMessages_.begin(); }
+      destBusId = it->first;
+      lastSentBusId_ = destBusId;
+    }
   }
   if (destBusId != kSeparator) { CopyEncodeAndSendMessage(destBusId); }
 }
@@ -272,10 +280,23 @@ void Max485BusHandler::SetMessageToSend(BusId destBusId, const BufferViewU8 mess
   }
   {
     const std::lock_guard<std::mutex> lock(sendMutex_);
-    if (sharedSendMessageBuffers_.find(destBusId) == sharedSendMessageBuffers_.end()) {
-      sharedSendMessageBuffers_.emplace(destBusId, OwnedBufferU8(kMaxMessageLength));
+    auto it = sharedSendMessages_.find(destBusId);
+    bool isNew = false;
+    if (it == sharedSendMessages_.end()) {
+      isNew = true;
+    } else if (it->second.size() != message.size() || memcmp(it->second.data(), message.data(), message.size()) != 0) {
+      isNew = true;
     }
-    sharedSendMessages_[destBusId] = sharedSendMessageBuffers_.at(destBusId).CopyIn(message);
+
+    if (isNew) {
+      if (sharedSendMessageBuffers_.find(destBusId) == sharedSendMessageBuffers_.end()) {
+        sharedSendMessageBuffers_.emplace(destBusId, OwnedBufferU8(kMaxMessageLength));
+      }
+      sharedSendMessages_[destBusId] = sharedSendMessageBuffers_.at(destBusId).CopyIn(message);
+      if (std::find(highPriorityBusIds_.begin(), highPriorityBusIds_.end(), destBusId) == highPriorityBusIds_.end()) {
+        highPriorityBusIds_.push_back(destBusId);
+      }
+    }
   }
   if (busIdSelf_ != kBusIdLeader) { return; }
   uart_event_t eventToSend = {};
