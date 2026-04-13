@@ -61,23 +61,13 @@ BusId BusIdSelf() {
 #endif
 }
 
-std::vector<BusId> GetFollowers() {
-#if JL_BUS_LEADER
-  return {4};
-#else   // JL_BUS_LEADER
-  return {};
-#endif  // JL_BUS_LEADER
-}
-
 bool Max485BusHandler::IsReady() const { return ready_.load(std::memory_order_relaxed); }
 
-Max485BusHandler::Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, BusId busIdSelf,
-                                   const std::vector<BusId>& followers)
+Max485BusHandler::Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, BusId busIdSelf)
     : uartPort_(uartPort),
       txPin_(txPin),
       rxPin_(rxPin),
       busIdSelf_(busIdSelf),
-      followers_(followers),
       taskSendMessageBuffer_(kMaxMessageLength),
       taskEncodedSendMessageBuffer_(kMaxEncodedMessageLength),
       taskRecvBuffer_(kUartDriverBufferSize),
@@ -263,11 +253,16 @@ void Max485BusHandler::CopyEncodeAndSendMessage(BusId destBusId) {
 }
 
 void Max485BusHandler::SendMessageToNextFollower() {
-  if (followers_.empty()) { return; }
-  BusId destBusId = followers_[nextFollowerIndex_];
-  nextFollowerIndex_++;
-  if (nextFollowerIndex_ >= followers_.size()) { nextFollowerIndex_ = 0; }
-  CopyEncodeAndSendMessage(destBusId);
+  BusId destBusId = kSeparator;
+  {
+    const std::lock_guard<std::mutex> lock(sendMutex_);
+    if (sharedSendMessages_.empty()) { return; }
+    auto it = sharedSendMessages_.upper_bound(lastSentBusId_);
+    if (it == sharedSendMessages_.end()) { it = sharedSendMessages_.begin(); }
+    destBusId = it->first;
+    lastSentBusId_ = destBusId;
+  }
+  if (destBusId != kSeparator) { CopyEncodeAndSendMessage(destBusId); }
 }
 
 void Max485BusHandler::SetMessageToSend(BusId destBusId, const BufferViewU8 message) {

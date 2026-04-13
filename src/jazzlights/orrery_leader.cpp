@@ -38,7 +38,7 @@ OrreryLeader* OrreryLeader::Get() {
   return &sOrreryLeader;
 }
 
-OrreryLeader::OrreryLeader() : max485BusHandler_(UART_NUM_2, kMax485TxPin, kMax485RxPin, BusIdSelf(), GetFollowers()) {}
+OrreryLeader::OrreryLeader() : max485BusHandler_(UART_NUM_2, kMax485TxPin, kMax485RxPin, BusIdSelf()) {}
 
 void OrreryLeader::SetSpeed(Planet planet, int32_t speed) {
   uint8_t planetIndex = static_cast<uint8_t>(planet) - static_cast<uint8_t>(Planet::Mercury);

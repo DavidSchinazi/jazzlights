@@ -11,8 +11,8 @@
 #include <freertos/task.h>
 
 #include <atomic>
+#include <map>
 #include <mutex>
-#include <unordered_map>
 #include <vector>
 
 #include "jazzlights/util/buffer.h"
@@ -24,7 +24,6 @@ namespace jazzlights {
 using BusId = uint8_t;
 
 BusId BusIdSelf();
-std::vector<BusId> GetFollowers();
 
 class Max485BusHandler {
  public:
@@ -32,8 +31,7 @@ class Max485BusHandler {
   static inline constexpr BusId kBusIdBroadcast = 2;
   static inline constexpr BusId kBusIdLeader = 3;
 
-  explicit Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, BusId busIdSelf,
-                            const std::vector<BusId>& followers);
+  explicit Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, BusId busIdSelf);
   ~Max485BusHandler();
 
   void SetMessageToSend(BusId destBusId, const BufferViewU8 message);
@@ -55,21 +53,20 @@ class Max485BusHandler {
   void SendMessageToNextFollower();
   bool IsReady() const;
 
-  const uart_port_t uartPort_;          // Only modified in constructor.
-  const int txPin_;                     // Only modified in constructor.
-  const int rxPin_;                     // Only modified in constructor.
-  const BusId busIdSelf_;               // Only modified in constructor.
-  const std::vector<BusId> followers_;  // Only modified in constructor.
-  TaskHandle_t taskHandle_ = nullptr;   // Only modified in constructor.
+  const uart_port_t uartPort_;         // Only modified in constructor.
+  const int txPin_;                    // Only modified in constructor.
+  const int rxPin_;                    // Only modified in constructor.
+  const BusId busIdSelf_;              // Only modified in constructor.
+  TaskHandle_t taskHandle_ = nullptr;  // Only modified in constructor.
   QueueHandle_t queue_ = nullptr;
   std::atomic<bool> ready_{false};
   std::mutex sendMutex_;
-  std::unordered_map<BusId, OwnedBufferU8> sharedSendMessageBuffers_;  // Protected by `sendMutex_`.
-  std::unordered_map<BusId, BufferViewU8> sharedSendMessages_;         // Protected by `sendMutex_`.
-  size_t nextFollowerIndex_ = 0;                                       // Only accessed by task.
-  OwnedBufferU8 taskSendMessageBuffer_;                                // Only accessed by task.
-  OwnedBufferU8 taskEncodedSendMessageBuffer_;                         // Only accessed by task.
-  Milliseconds taskLastSendTimeExpectingResponse_ = -1;                // Only accessed by task.
+  std::map<BusId, OwnedBufferU8> sharedSendMessageBuffers_;  // Protected by `sendMutex_`.
+  std::map<BusId, BufferViewU8> sharedSendMessages_;         // Protected by `sendMutex_`.
+  BusId lastSentBusId_ = 0;                                  // Only accessed by task.
+  OwnedBufferU8 taskSendMessageBuffer_;                      // Only accessed by task.
+  OwnedBufferU8 taskEncodedSendMessageBuffer_;               // Only accessed by task.
+  Milliseconds taskLastSendTimeExpectingResponse_ = -1;      // Only accessed by task.
   std::mutex recvMutex_;
   OwnedBufferU8 taskRecvBuffer_;                    // Only accessed by task.
   size_t lengthInTaskRecvBuffer_ = 0;               // Only accessed by task.

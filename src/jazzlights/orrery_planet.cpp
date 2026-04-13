@@ -59,7 +59,7 @@ OrreryPlanet::OrreryPlanet()
       switch1_(kPlanetSwitchPin1, *this),
       switch2_(kPlanetSwitchPin2, *this),
       busId_(ComputeInitialBusId()),
-      max485BusHandler_(UART_NUM_2, kMax485TxPin, kMax485RxPin, busId_, GetFollowers()) {
+      max485BusHandler_(UART_NUM_2, kMax485TxPin, kMax485RxPin, busId_) {
   UpdateBusId();
   jll_info("%u OrreryPlanet created with busId %u", timeMillis(), busId_);
 }
