@@ -40,10 +40,13 @@ class OrreryLeaderUi : public Esp32Ui {
   TouchButton* keypadButtons_[10] = {};
   TouchButton* clearButton_ = nullptr;
   TouchButton* confirmButton_ = nullptr;
+  TouchButton* planetSelectButtons_[kNumPlanets] = {};
+  TouchButton* planetBackButton_ = nullptr;
   int32_t motorFrequencyHz_ = 10000;
   bool motorEnabled_ = false;
   bool motorDirectionForward_ = true;
   bool keypadActive_ = false;
+  bool planetSubmenuActive_ = false;
   int32_t keypadValue_ = 0;
   Planet currentPlanet_ = Planet::Mercury;
 };

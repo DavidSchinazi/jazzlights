@@ -79,6 +79,17 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
   confirmButton_ = TouchButtonManager::Get()->AddButton(2 * w, 4 * h, 320 - 2 * w, h, "Confirm");
   confirmButton_->Hide();
 
+  const int pw = 320 / 3;
+  const int ph = 240 / 4;
+  for (int i = 0; i < kNumPlanets; i++) {
+    Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
+    planetSelectButtons_[i] =
+        TouchButtonManager::Get()->AddButton((i % 3) * pw, (i / 3) * ph, pw, ph, GetPlanetName(planet));
+    planetSelectButtons_[i]->Hide();
+  }
+  planetBackButton_ = TouchButtonManager::Get()->AddButton(0, 3 * ph, 320, ph, "Back");
+  planetBackButton_->Hide();
+
   M5.Display.fillScreen(BLACK);
   M5.Display.setBrightness(kDefaultOnBrightness);
   M5.Display.wakeup();
@@ -144,26 +155,55 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       motorSpeedButton_->Draw();
       TouchButtonManager::Get()->Redraw();
     }
+  } else if (planetSubmenuActive_) {
+    for (int i = 0; i < kNumPlanets; i++) {
+      if (planetSelectButtons_[i]->JustReleased()) {
+        currentPlanet_ = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
+        UpdatePlanetButton();
+        // Update UI with current speed of that planet
+        int32_t speed = OrreryLeader::Get()->GetSpeed(currentPlanet_);
+        if (speed != 0) {
+          motorEnabled_ = true;
+          motorDirectionForward_ = (speed >= 0);
+          motorFrequencyHz_ = std::abs(speed);
+        } else {
+          motorEnabled_ = false;
+          motorDirectionForward_ = true;
+          motorFrequencyHz_ = 10000;
+        }
+        motorEnableButton_->SetLabelText(motorEnabled_ ? "Motor Enabled" : "Motor Disabled");
+        motorDirectionButton_->SetLabelText(motorDirectionForward_ ? "Motor Forward" : "Motor Reverse");
+        UpdateMotorSpeedButton();
+        planetSubmenuActive_ = false;
+        for (int j = 0; j < kNumPlanets; j++) { planetSelectButtons_[j]->Hide(); }
+        planetBackButton_->Hide();
+        planetButton_->Draw();
+        motorEnableButton_->Draw();
+        motorDirectionButton_->Draw();
+        motorSpeedButton_->Draw();
+        TouchButtonManager::Get()->Redraw();
+      }
+    }
+    if (planetBackButton_->JustReleased()) {
+      planetSubmenuActive_ = false;
+      for (int i = 0; i < kNumPlanets; i++) { planetSelectButtons_[i]->Hide(); }
+      planetBackButton_->Hide();
+      planetButton_->Draw();
+      motorEnableButton_->Draw();
+      motorDirectionButton_->Draw();
+      motorSpeedButton_->Draw();
+      TouchButtonManager::Get()->Redraw();
+    }
   } else {
     if (planetButton_->JustReleased()) {
-      uint8_t nextPlanet = static_cast<uint8_t>(currentPlanet_) + 1;
-      if (nextPlanet > static_cast<uint8_t>(Planet::Sun)) { nextPlanet = static_cast<uint8_t>(Planet::Mercury); }
-      currentPlanet_ = static_cast<Planet>(nextPlanet);
-      UpdatePlanetButton();
-      // Update UI with current speed of that planet
-      int32_t speed = OrreryLeader::Get()->GetSpeed(currentPlanet_);
-      if (speed != 0) {
-        motorEnabled_ = true;
-        motorDirectionForward_ = (speed >= 0);
-        motorFrequencyHz_ = std::abs(speed);
-      } else {
-        motorEnabled_ = false;
-        motorDirectionForward_ = true;
-        motorFrequencyHz_ = 10000;
-      }
-      motorEnableButton_->SetLabelText(motorEnabled_ ? "Motor Enabled" : "Motor Disabled");
-      motorDirectionButton_->SetLabelText(motorDirectionForward_ ? "Motor Forward" : "Motor Reverse");
-      UpdateMotorSpeedButton();
+      planetSubmenuActive_ = true;
+      planetButton_->Hide();
+      motorEnableButton_->Hide();
+      motorDirectionButton_->Hide();
+      motorSpeedButton_->Hide();
+      for (int i = 0; i < kNumPlanets; i++) { planetSelectButtons_[i]->Draw(); }
+      planetBackButton_->Draw();
+      TouchButtonManager::Get()->Redraw();
     }
     if (motorEnableButton_->JustReleased()) {
       motorEnabled_ = !motorEnabled_;
