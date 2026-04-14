@@ -52,18 +52,18 @@ OrreryPlanet::OrreryPlanet()
     : switch0_(kPlanetSwitchPin0, *this),
       switch1_(kPlanetSwitchPin1, *this),
       switch2_(kPlanetSwitchPin2, *this),
+      busId_(ComputeBusId()),
       max485BusFollower_(UART_NUM_2, kMax485TxPin, kMax485RxPin, busId_) {
-  UpdateBusId();
   jll_info("%u OrreryPlanet created with busId %u", timeMillis(), busId_);
 }
 
-void OrreryPlanet::UpdateBusId() {
+BusId OrreryPlanet::ComputeBusId() const {
   uint8_t switchesValue = (switch2_.IsClosed() ? 4 : 0) | (switch1_.IsClosed() ? 2 : 0) | (switch0_.IsClosed() ? 1 : 0);
-  busId_ = static_cast<BusId>(Planet::Mercury) + switchesValue;
+  return static_cast<BusId>(Planet::Mercury) + switchesValue;
 }
 
 void OrreryPlanet::StateChanged(uint8_t pin, bool isClosed) {
-  UpdateBusId();
+  busId_ = ComputeBusId();
   jll_info("%u OrreryPlanet switch on pin %u is now %s, new busId %u", timeMillis(), pin,
            (isClosed ? "closed" : "open"), busId_);
 }

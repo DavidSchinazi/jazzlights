@@ -25,7 +25,7 @@ class OrreryPlanet : public GpioSwitch::SwitchInterface {
  private:
   OrreryPlanet();
 
-  void UpdateBusId();
+  BusId ComputeBusId() const;
 
   GpioSwitch switch0_;
   GpioSwitch switch1_;
