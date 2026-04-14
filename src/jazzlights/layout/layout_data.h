@@ -33,8 +33,13 @@
 #define LED_PIN2 1
 #endif  // ORRERY
 #elif JL_IS_CONTROLLER(M5STAMP_S3)
+#if JL_IS_CONFIG(ORRERY_PLANET)
+#define LED_PIN 1
+#define LED_PIN2 2
+#else  // ORRERY_PLANET
 #define LED_PIN 13
 #define LED_PIN2 15
+#endif  // ORRERY_PLANET
 #else
 #error "Unexpected controller"
 #endif

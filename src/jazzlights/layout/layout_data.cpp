@@ -1,7 +1,8 @@
 #include "jazzlights/layout/layout_data.h"
 
 #if JL_IS_CONFIG(GAUNTLET) || JL_IS_CONFIG(HAMMER) || JL_IS_CONFIG(FAIRY_WAND) || JL_IS_CONFIG(ROPELIGHT) || \
-    JL_IS_CONFIG(SHOE) || JL_IS_CONFIG(XMAS_TREE) || JL_IS_CONFIG(CREATURE) || JL_IS_CONFIG(FAIRY_STRING)
+    JL_IS_CONFIG(SHOE) || JL_IS_CONFIG(XMAS_TREE) || JL_IS_CONFIG(CREATURE) || JL_IS_CONFIG(FAIRY_STRING) || \
+    JL_IS_CONFIG(ORRERY_PLANET)
 
 #include "jazzlights/layout/matrix.h"
 
@@ -40,6 +41,10 @@ Matrix pixels(/*w=*/20, /*h=*/20);
 Matrix pixels(/*w=*/32, /*h=*/1);
 #endif  // CREATURE
 
+#if JL_IS_CONFIG(ORRERY_PLANET)
+Matrix pixels(/*w=*/35, /*h=*/1);
+#endif  // ORRERY_PLANET
+
 }  // namespace
 
 void AddLedsToRunner(FastLedRunner* runner) {
@@ -59,7 +64,7 @@ void AddLedsToRunner(FastLedRunner* runner) {
 
 }  // namespace jazzlights
 
-#elif JL_IS_CONFIG(PHONE) || (JL_IS_CONFIG(ORRERY_LEADER) || JL_IS_CONFIG(ORRERY_PLANET))
+#elif JL_IS_CONFIG(PHONE) || JL_IS_CONFIG(ORRERY_LEADER)
 namespace jazzlights {
 void AddLedsToRunner(FastLedRunner* runner) {}
 }  // namespace jazzlights
