@@ -63,12 +63,13 @@ BusId OrreryPlanet::ComputeBusId() const {
 }
 
 void OrreryPlanet::StateChanged(uint8_t pin, bool isClosed) {
-  busId_ = ComputeBusId();
+  const BusId busId = ComputeBusId();
+  if (busId == busId_) { return; }
+  busId_ = busId;
+  max485BusFollower_.SetBusIdSelf(busId_);
   jll_info("%u OrreryPlanet switch on pin %u is now %s, new busId %u", timeMillis(), pin,
            (isClosed ? "closed" : "open"), busId_);
 }
-
-BusId OrreryPlanet::GetBusId() const { return busId_; }
 
 void OrreryPlanet::RunLoop(Milliseconds currentTime) {
   switch0_.RunLoop();
@@ -78,7 +79,7 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
   static OwnedBufferU8 readBuffer(1000);
   uint8_t destBusId, srcBusId;
   BufferViewU8 message = max485BusFollower_.ReadMessage(readBuffer, &destBusId, &srcBusId);
-  const uint8_t ourPlanetIndex = GetBusId() - static_cast<uint8_t>(Planet::Mercury);
+  const uint8_t ourPlanetIndex = busId_ - static_cast<uint8_t>(Planet::Mercury);
   if (!message.empty()) {
     jll_buffer_info(message, "%u Planet %u read message from %u to %u", currentTime, ourPlanetIndex, srcBusId,
                     destBusId);

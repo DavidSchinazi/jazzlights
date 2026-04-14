@@ -16,9 +16,6 @@ class OrreryPlanet : public GpioSwitch::SwitchInterface {
   static OrreryPlanet* Get();
   void RunLoop(Milliseconds currentTime);
 
-  // Returns the BusId of the planet we are based on the switches.
-  BusId GetBusId() const;
-
   // From GpioSwitch::SwitchInterface.
   void StateChanged(uint8_t pin, bool isClosed) override;
 

@@ -24,8 +24,6 @@ namespace jazzlights {
 
 using BusId = uint8_t;
 
-BusId BusIdSelf();
-
 class Max485BusHandler {
  public:
   static inline constexpr BusId kBusIdEndOfMessage = 1;
@@ -35,6 +33,8 @@ class Max485BusHandler {
   virtual ~Max485BusHandler();
 
   BufferViewU8 ReadMessage(OwnedBufferU8& readMessageBuffer, BusId* destBusId, BusId* srcBusId);
+
+  BusId GetBusIdSelf() const { return busIdSelf_.load(std::memory_order_relaxed); }
 
  protected:
   explicit Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, BusId busIdSelf);
@@ -60,9 +60,9 @@ class Max485BusHandler {
   const uart_port_t uartPort_;         // Only modified in constructor.
   const int txPin_;                    // Only modified in constructor.
   const int rxPin_;                    // Only modified in constructor.
-  const BusId busIdSelf_;              // Only modified in constructor.
   TaskHandle_t taskHandle_ = nullptr;  // Only modified in constructor.
   QueueHandle_t queue_ = nullptr;
+  std::atomic<BusId> busIdSelf_;
   std::atomic<bool> ready_{false};
   std::mutex sendMutex_;
   std::map<BusId, OwnedBufferU8> sharedSendMessageBuffers_;  // Protected by `sendMutex_`.
@@ -105,6 +105,7 @@ class Max485BusFollower : public Max485BusHandler {
  public:
   explicit Max485BusFollower(uart_port_t uartPort, int txPin, int rxPin, BusId busIdSelf);
   void SetMessageToSend(const BufferViewU8 message);
+  void SetBusIdSelf(BusId busIdSelf) { busIdSelf_.store(busIdSelf, std::memory_order_relaxed); }
 
  protected:
   void HandleReceivedMessage(BusId srcBusId, const BufferViewU8 message) override;
