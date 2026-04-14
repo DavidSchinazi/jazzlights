@@ -40,7 +40,7 @@ class OrreryLeaderUi : public Esp32Ui {
   TouchButton* keypadButtons_[10] = {};
   TouchButton* clearButton_ = nullptr;
   TouchButton* confirmButton_ = nullptr;
-  int32_t motorFrequencyHz_ = 0;
+  int32_t motorFrequencyHz_ = 10000;
   bool motorEnabled_ = false;
   bool motorDirectionForward_ = true;
   bool keypadActive_ = false;
