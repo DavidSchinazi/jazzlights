@@ -98,7 +98,7 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
   OrreryMessage msg;
   if (!ReadOrreryMessage(reader, &type, &msg)) { return; }
 
-  if (type == OrreryMessageType::SetSpeed) {
+  if (type == OrreryMessageType::LeaderCommand) {
     if (msg.speed.has_value()) {
       jll_info("%u Planet %u applying speed %" PRId32, currentTime, ourPlanetIndex, *msg.speed);
 #if JL_MOTOR
@@ -110,7 +110,7 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
       ackMsg.speed = *msg.speed;
       uint8_t ackBuffer[64];
       NetworkWriter writer(ackBuffer, sizeof(ackBuffer));
-      if (WriteOrreryMessage(OrreryMessageType::AckSpeed, ackMsg, writer)) {
+      if (WriteOrreryMessage(OrreryMessageType::FollowerResponse, ackMsg, writer)) {
         max485BusFollower_.SetMessageToSend(BufferViewU8(ackBuffer, writer.LengthWritten()));
       }
     }

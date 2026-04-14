@@ -34,8 +34,8 @@ enum class Planet : BusId {
 inline constexpr size_t kNumPlanets = 8;
 
 enum class OrreryMessageType : uint8_t {
-  SetSpeed = 0x01,
-  AckSpeed = 0x02,
+  LeaderCommand = 0x01,
+  FollowerResponse = 0x02,
 };
 
 struct OrreryMessage {

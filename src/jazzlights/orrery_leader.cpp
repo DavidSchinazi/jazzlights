@@ -56,7 +56,7 @@ void OrreryLeader::SetSpeed(Planet planet, int32_t speed) {
       msg.speed = speed;
       uint8_t messageBuffer[64];
       NetworkWriter writer(messageBuffer, sizeof(messageBuffer));
-      if (WriteOrreryMessage(OrreryMessageType::SetSpeed, msg, writer)) {
+      if (WriteOrreryMessage(OrreryMessageType::LeaderCommand, msg, writer)) {
         max485BusLeader_.SetMessageToSend(static_cast<BusId>(planet),
                                           BufferViewU8(messageBuffer, writer.LengthWritten()));
       }
@@ -83,9 +83,9 @@ void OrreryLeader::RunLoop(Milliseconds /*currentTime*/) {
   OrreryMessage msg;
   if (!ReadOrreryMessage(reader, &type, &msg)) { return; }
 
-  if (type == OrreryMessageType::AckSpeed) {
+  if (type == OrreryMessageType::FollowerResponse) {
     if (msg.speed.has_value()) {
-      jll_info("OrreryLeader received ack for planet %u: %" PRId32,
+      jll_info("OrreryLeader received response for planet %u: %" PRId32,
                static_cast<uint8_t>(srcBusId) - static_cast<uint8_t>(Planet::Mercury), *msg.speed);
     }
   }
