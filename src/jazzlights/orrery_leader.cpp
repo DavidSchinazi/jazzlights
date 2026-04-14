@@ -49,7 +49,6 @@ void OrreryLeader::SetSpeed(Planet planet, int32_t speed) {
     if (speeds_[planetIndex] != speed) {
       speeds_[planetIndex] = speed;
       jll_info("OrreryLeader setting planet %u speed to %" PRId32, planetIndex, speed);
-#if JL_BUS_LEADER
       OrreryMessage msg;
       msg.leaderBootId = bootId_;
       msg.leaderSequenceNumber = nextSequenceNumber_++;
@@ -60,7 +59,6 @@ void OrreryLeader::SetSpeed(Planet planet, int32_t speed) {
         max485BusLeader_.SetMessageToSend(static_cast<BusId>(planet),
                                           BufferViewU8(messageBuffer, writer.LengthWritten()));
       }
-#endif  // JL_BUS_LEADER
     }
   }
 }
@@ -72,7 +70,6 @@ int32_t OrreryLeader::GetSpeed(Planet planet) const {
 }
 
 void OrreryLeader::RunLoop(Milliseconds /*currentTime*/) {
-#if JL_BUS_LEADER
   static OwnedBufferU8 readBuffer(1000);
   uint8_t destBusId, srcBusId;
   BufferViewU8 message = max485BusLeader_.ReadMessage(readBuffer, &destBusId, &srcBusId);
@@ -89,7 +86,6 @@ void OrreryLeader::RunLoop(Milliseconds /*currentTime*/) {
                static_cast<uint8_t>(srcBusId) - static_cast<uint8_t>(Planet::Mercury), *msg.speed);
     }
   }
-#endif  // JL_BUS_LEADER
 }
 
 }  // namespace jazzlights

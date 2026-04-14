@@ -150,9 +150,9 @@ void CoreMotorUi::SetMotorSpeed() {
   int32_t motorFrequencyHz = motorFrequencyHz_;
   if (!motorEnabled_) { motorFrequencyHz = 0; }
   if (!motorDirectionForward_) { motorFrequencyHz = -motorFrequencyHz; }
-#if JL_MAX485_BUS
+#if JL_IS_CONFIG(ORRERY_LEADER)
   OrreryLeader::Get()->SetSpeed(Planet::Mercury, motorFrequencyHz);
-#endif  // JL_MAX485_BUS
+#endif  // ORRERY_LEADER
   GetMainStepperMotor()->SetSpeed(motorFrequencyHz);
 }
 

@@ -29,9 +29,10 @@ enum class Planet : BusId {
   Saturn = 9,
   Uranus = 10,
   Neptune = 11,
+  Sun = 12,  // Yes, the sun is a planet. Deal with it.
 };
 
-inline constexpr size_t kNumPlanets = 8;
+inline constexpr size_t kNumPlanets = 9;
 
 enum class OrreryMessageType : uint8_t {
   LeaderCommand = 0x01,

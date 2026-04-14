@@ -134,13 +134,11 @@ void RunPrimaryRunLoop() {
   SAVE_TIME_POINT(PrimaryRunLoop, LoopStart);
   Milliseconds currentTime = timeMillis();
   GetUi()->RunLoop(currentTime);
-#if JL_MAX485_BUS
-#if JL_BUS_LEADER
+#if JL_IS_CONFIG(ORRERY_LEADER)
   OrreryLeader::Get()->RunLoop(currentTime);
-#else   // JL_BUS_LEADER
+#elif JL_IS_CONFIG(ORRERY_PLANET)
   OrreryPlanet::Get()->RunLoop(currentTime);
-#endif  // JL_BUS_LEADER
-#endif  // JL_MAX485_BUS
+#endif  // ORRERY
   SAVE_TIME_POINT(PrimaryRunLoop, UserInterface);
   Esp32BleNetwork::get()->runLoop(currentTime);
   SAVE_TIME_POINT(PrimaryRunLoop, Bluetooth);
