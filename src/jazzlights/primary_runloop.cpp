@@ -27,6 +27,7 @@
 #include "jazzlights/ui/ui_core2.h"
 #include "jazzlights/ui/ui_disabled.h"
 #include "jazzlights/ui/ui_motor.h"
+#include "jazzlights/ui/ui_orrery_leader.h"
 #include "jazzlights/util/log.h"
 #include "jazzlights/websocket_server.h"
 
@@ -46,6 +47,8 @@ typedef AtomS3Ui Esp32UiImpl;
 #elif JL_IS_CONTROLLER(CORE2AWS) || JL_IS_CONTROLLER(CORES3)
 #if JL_AUDIO_VISUALIZER
 typedef AudioVisualizerUi Esp32UiImpl;
+#elif JL_IS_CONFIG(ORRERY_LEADER)
+typedef OrreryLeaderUi Esp32UiImpl;
 #elif JL_MOTOR
 typedef CoreMotorUi Esp32UiImpl;
 #else   // JL_MOTOR

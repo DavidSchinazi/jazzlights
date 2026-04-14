@@ -1,30 +1,54 @@
-#include "jazzlights/ui/ui_motor.h"
+#include "jazzlights/ui/ui_orrery_leader.h"
 
-#if JL_UI_MOTOR
+#if JL_IS_CONFIG(ORRERY_LEADER) && defined(ESP32) && (JL_IS_CONTROLLER(CORE2AWS) || JL_IS_CONTROLLER(CORES3))
 
 #include <M5Unified.h>
 
 #include <functional>
 
-#include "jazzlights/motor.h"
+#include "jazzlights/orrery_leader.h"
 #include "jazzlights/ui/touch_button.h"
 #include "jazzlights/util/log.h"
 
 namespace jazzlights {
 namespace {
 constexpr uint8_t kDefaultOnBrightness = 32;
+
+const char* GetPlanetName(Planet planet) {
+  switch (planet) {
+    case Planet::Mercury: return "Mercury";
+    case Planet::Venus: return "Venus";
+    case Planet::Earth: return "Earth";
+    case Planet::Mars: return "Mars";
+    case Planet::Jupiter: return "Jupiter";
+    case Planet::Saturn: return "Saturn";
+    case Planet::Uranus: return "Uranus";
+    case Planet::Neptune: return "Neptune";
+    case Planet::Sun: return "Sun";
+  }
+  return "Unknown";
+}
+
 }  // namespace
 
-CoreMotorUi::CoreMotorUi(Player& player) : Esp32Ui(player) {}
+OrreryLeaderUi::OrreryLeaderUi(Player& player) : Esp32Ui(player) {}
 
-void CoreMotorUi::InitialSetup() {  // 320w * 240h
+void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
   auto cfg = M5.config();
   cfg.serial_baudrate = 0;
   M5.begin(cfg);
 
-  motorEnableButton_ = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/0, /*w=*/160, /*h=*/60, "Motor Disabled");
-  motorDirectionButton_ =
-      TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/60, /*w=*/160, /*h=*/60, "Motor Forward");
+  planetButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/160, /*h=*/120, "");
+  UpdatePlanetButton();
+  int32_t speed = OrreryLeader::Get()->GetSpeed(currentPlanet_);
+  motorEnabled_ = (speed != 0);
+  motorDirectionForward_ = (speed >= 0);
+  motorFrequencyHz_ = std::abs(speed);
+
+  motorEnableButton_ = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/0, /*w=*/160, /*h=*/60,
+                                                            motorEnabled_ ? "Motor Enabled" : "Motor Disabled");
+  motorDirectionButton_ = TouchButtonManager::Get()->AddButton(
+      /*x=*/160, /*y=*/60, /*w=*/160, /*h=*/60, motorDirectionForward_ ? "Motor Forward" : "Motor Reverse");
   motorSpeedButton_ = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/120, /*w=*/160, /*h=*/60, "Motor Speed");
   UpdateMotorSpeedButton();
 
@@ -33,7 +57,7 @@ void CoreMotorUi::InitialSetup() {  // 320w * 240h
   backButton_ = TouchButtonManager::Get()->AddButton(0, 0, w, h, "Back");
   backButton_->Hide();
   speedDisplayButton_ = TouchButtonManager::Get()->AddButton(w, 0, 320 - w, h, "");
-  speedDisplayButton_->SetCustomPaintFunction(std::bind(&CoreMotorUi::DrawSpeedDisplayButton, this,
+  speedDisplayButton_->SetCustomPaintFunction(std::bind(&OrreryLeaderUi::DrawSpeedDisplayButton, this,
                                                         std::placeholders::_1, std::placeholders::_2,
                                                         std::placeholders::_3, std::placeholders::_4));
   speedDisplayButton_->Hide();
@@ -54,14 +78,15 @@ void CoreMotorUi::InitialSetup() {  // 320w * 240h
   M5.Display.wakeup();
 }
 
-void CoreMotorUi::FinalSetup() {
+void OrreryLeaderUi::FinalSetup() {
+  planetButton_->Draw();
   motorEnableButton_->Draw();
   motorDirectionButton_->Draw();
   motorSpeedButton_->Draw();
   TouchButtonManager::Get()->MaybePaint();
 }
 
-void CoreMotorUi::RunLoop(Milliseconds currentTime) {
+void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
   M5.update();
   auto touchDetail = M5.Touch.getDetail();
   if (touchDetail.isPressed()) {
@@ -87,6 +112,7 @@ void CoreMotorUi::RunLoop(Milliseconds currentTime) {
       for (int i = 0; i <= 9; i++) { keypadButtons_[i]->Hide(); }
       clearButton_->Hide();
       confirmButton_->Hide();
+      planetButton_->Draw();
       motorEnableButton_->Draw();
       motorDirectionButton_->Draw();
       motorSpeedButton_->Draw();
@@ -106,12 +132,27 @@ void CoreMotorUi::RunLoop(Milliseconds currentTime) {
       for (int i = 0; i <= 9; i++) { keypadButtons_[i]->Hide(); }
       clearButton_->Hide();
       confirmButton_->Hide();
+      planetButton_->Draw();
       motorEnableButton_->Draw();
       motorDirectionButton_->Draw();
       motorSpeedButton_->Draw();
       TouchButtonManager::Get()->Redraw();
     }
   } else {
+    if (planetButton_->JustReleased()) {
+      uint8_t nextPlanet = static_cast<uint8_t>(currentPlanet_) + 1;
+      if (nextPlanet > static_cast<uint8_t>(Planet::Sun)) { nextPlanet = static_cast<uint8_t>(Planet::Mercury); }
+      currentPlanet_ = static_cast<Planet>(nextPlanet);
+      UpdatePlanetButton();
+      // Update UI with current speed of that planet
+      int32_t speed = OrreryLeader::Get()->GetSpeed(currentPlanet_);
+      motorEnabled_ = (speed != 0);
+      motorDirectionForward_ = (speed >= 0);
+      motorFrequencyHz_ = std::abs(speed);
+      motorEnableButton_->SetLabelText(motorEnabled_ ? "Motor Enabled" : "Motor Disabled");
+      motorDirectionButton_->SetLabelText(motorDirectionForward_ ? "Motor Forward" : "Motor Reverse");
+      UpdateMotorSpeedButton();
+    }
     if (motorEnableButton_->JustReleased()) {
       motorEnabled_ = !motorEnabled_;
       motorEnableButton_->SetLabelText(motorEnabled_ ? "Motor Enabled" : "Motor Disabled");
@@ -125,6 +166,7 @@ void CoreMotorUi::RunLoop(Milliseconds currentTime) {
     if (motorSpeedButton_->JustReleased()) {
       keypadActive_ = true;
       keypadValue_ = 0;
+      planetButton_->Hide();
       motorEnableButton_->Hide();
       motorDirectionButton_->Hide();
       motorSpeedButton_->Hide();
@@ -140,20 +182,26 @@ void CoreMotorUi::RunLoop(Milliseconds currentTime) {
   TouchButtonManager::Get()->MaybePaint();
 }
 
-void CoreMotorUi::SetMotorSpeed() {
+void OrreryLeaderUi::SetMotorSpeed() {
   int32_t motorFrequencyHz = motorFrequencyHz_;
   if (!motorEnabled_) { motorFrequencyHz = 0; }
   if (!motorDirectionForward_) { motorFrequencyHz = -motorFrequencyHz; }
-  GetMainStepperMotor()->SetSpeed(motorFrequencyHz);
+  OrreryLeader::Get()->SetSpeed(currentPlanet_, motorFrequencyHz);
 }
 
-void CoreMotorUi::UpdateMotorSpeedButton() {
+void OrreryLeaderUi::UpdateMotorSpeedButton() {
   char label[32];
   snprintf(label, sizeof(label), "Speed: %lld", static_cast<int64_t>(motorFrequencyHz_));
   motorSpeedButton_->SetLabelText(label);
 }
 
-void CoreMotorUi::DrawSpeedDisplayButton(TouchButton* button, int outline, int fill, int textColor) {
+void OrreryLeaderUi::UpdatePlanetButton() {
+  char label[32];
+  snprintf(label, sizeof(label), "Planet: %s", GetPlanetName(currentPlanet_));
+  planetButton_->SetLabelText(label);
+}
+
+void OrreryLeaderUi::DrawSpeedDisplayButton(TouchButton* button, int outline, int fill, int textColor) {
   button->PaintRectangle(fill, /*outline=*/fill);  // Skip outline.
   char label[32] = "_";
   if (keypadValue_ > 0) { snprintf(label, sizeof(label), "%lld", static_cast<int64_t>(keypadValue_)); }
@@ -162,4 +210,4 @@ void CoreMotorUi::DrawSpeedDisplayButton(TouchButton* button, int outline, int f
 
 }  // namespace jazzlights
 
-#endif  // JL_UI_MOTOR
+#endif  // JL_IS_CONFIG(ORRERY_LEADER) && ESP32 && (CORE2AWS || CORES3)
