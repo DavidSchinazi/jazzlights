@@ -94,26 +94,24 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
   if (message.empty()) { return; }
 
   NetworkReader reader(message.data(), message.size());
-  uint8_t type;
-  if (!reader.ReadUint8(&type)) { return; }
+  OrreryMessageType type;
+  OrreryMessage msg;
+  if (!ReadOrreryMessage(reader, &type, &msg)) { return; }
 
-  if (type == static_cast<uint8_t>(OrreryMessageType::SetSpeed)) {
-    uint8_t planetIndex;
-    int32_t speed;
-    if (reader.ReadUint8(&planetIndex) && reader.ReadInt32(&speed)) {
-      if (planetIndex == ourPlanetIndex) {
-        jll_info("%u Planet %u applying speed %" PRId32, currentTime, ourPlanetIndex, speed);
+  if (type == OrreryMessageType::SetSpeed) {
+    if (msg.speed.has_value()) {
+      jll_info("%u Planet %u applying speed %" PRId32, currentTime, ourPlanetIndex, *msg.speed);
 #if JL_MOTOR
-        GetMainStepperMotor()->SetSpeed(speed);
+      GetMainStepperMotor()->SetSpeed(*msg.speed);
 #endif  // JL_MOTOR
-        uint8_t ackBuffer[6];
-        NetworkWriter writer(ackBuffer, sizeof(ackBuffer));
-        if (writer.WriteUint8(static_cast<uint8_t>(OrreryMessageType::AckSpeed)) && writer.WriteUint8(planetIndex) &&
-            writer.WriteInt32(speed)) {
-          max485BusFollower_.SetMessageToSend(BufferViewU8(ackBuffer, writer.LengthWritten()));
-        }
-      } else {
-        jll_info("%u Planet %u ignoring speed for planet %u", currentTime, ourPlanetIndex, planetIndex);
+      OrreryMessage ackMsg;
+      ackMsg.leaderBootId = msg.leaderBootId;
+      ackMsg.leaderSequenceNumber = msg.leaderSequenceNumber;
+      ackMsg.speed = *msg.speed;
+      uint8_t ackBuffer[64];
+      NetworkWriter writer(ackBuffer, sizeof(ackBuffer));
+      if (WriteOrreryMessage(OrreryMessageType::AckSpeed, ackMsg, writer)) {
+        max485BusFollower_.SetMessageToSend(BufferViewU8(ackBuffer, writer.LengthWritten()));
       }
     }
   }

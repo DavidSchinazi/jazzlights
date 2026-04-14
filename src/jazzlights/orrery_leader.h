@@ -23,6 +23,8 @@ class OrreryLeader {
 
  private:
   OrreryLeader();
+  const uint32_t bootId_;
+  uint32_t nextSequenceNumber_ = 0;
   int32_t speeds_[kNumPlanets] = {0};
   Max485BusLeader max485BusLeader_;
 };
