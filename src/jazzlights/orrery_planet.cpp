@@ -41,13 +41,6 @@ constexpr int kMax485RxPin = 1;
 #error "unsupported controller for Max485BusHandler"
 #endif
 
-BusId ComputeInitialBusId() {
-  // Since switches are not yet initialized when ComputeInitialBusId is called from the initializer list,
-  // we could either read the pins directly or assume they are open.
-  // However, the previous logic was calling UpdateBusId() which also relied on IsClosed() returning false.
-  // For consistency with existing behavior, we'll return the value corresponding to all open.
-  return static_cast<BusId>(Planet::Mercury);
-}
 }  // namespace
 
 OrreryPlanet* OrreryPlanet::Get() {
@@ -59,7 +52,6 @@ OrreryPlanet::OrreryPlanet()
     : switch0_(kPlanetSwitchPin0, *this),
       switch1_(kPlanetSwitchPin1, *this),
       switch2_(kPlanetSwitchPin2, *this),
-      busId_(ComputeInitialBusId()),
       max485BusFollower_(UART_NUM_2, kMax485TxPin, kMax485RxPin, busId_) {
   UpdateBusId();
   jll_info("%u OrreryPlanet created with busId %u", timeMillis(), busId_);
