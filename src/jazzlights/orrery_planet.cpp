@@ -50,7 +50,10 @@ OrreryPlanet* OrreryPlanet::Get() {
   return &sOrreryPlanet;
 }
 
-void OrreryPlanet::Setup(Player& player) { player_ = &player; }
+void OrreryPlanet::Setup(Player& player) {
+  player_ = &player;
+  player_->set_brightness(kDefaultPlanetBrightness);
+}
 
 OrreryPlanet::OrreryPlanet()
     : switch0_(kPlanetSwitchPin0, *this),
