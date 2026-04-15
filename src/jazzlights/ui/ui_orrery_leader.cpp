@@ -22,8 +22,11 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
   cfg.serial_baudrate = 0;
   M5.begin(cfg);
 
-  planetButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/160, /*h=*/120, "");
+  planetButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/160, /*h=*/60, "");
   UpdatePlanetButton();
+  ledBrightnessButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/60, /*w=*/160, /*h=*/60, "");
+  ledBrightness_ = OrreryLeader::Get()->GetBrightness(currentPlanet_);
+  UpdateLedBrightnessButton();
   int32_t speed = OrreryLeader::Get()->GetSpeed(currentPlanet_);
   if (speed != 0) {
     motorEnabled_ = true;
@@ -32,7 +35,7 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
   } else {
     motorEnabled_ = false;
     motorDirectionForward_ = true;
-    motorFrequencyHz_ = 10000;
+    motorFrequencyHz_ = kDefaultPlanetSpeed;
   }
 
   motorEnableButton_ = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/0, /*w=*/160, /*h=*/60,
@@ -81,6 +84,7 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
 
 void OrreryLeaderUi::FinalSetup() {
   planetButton_->Draw();
+  ledBrightnessButton_->Draw();
   motorEnableButton_->Draw();
   motorDirectionButton_->Draw();
   motorSpeedButton_->Draw();
@@ -108,12 +112,14 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
     }
     if (backButton_->JustReleased()) {
       keypadActive_ = false;
+      editingBrightness_ = false;
       backButton_->Hide();
       speedDisplayButton_->Hide();
       for (int i = 0; i <= 9; i++) { keypadButtons_[i]->Hide(); }
       clearButton_->Hide();
       confirmButton_->Hide();
       planetButton_->Draw();
+      ledBrightnessButton_->Draw();
       motorEnableButton_->Draw();
       motorDirectionButton_->Draw();
       motorSpeedButton_->Draw();
@@ -124,16 +130,25 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       speedDisplayButton_->Draw(/*force=*/true);
     }
     if (confirmButton_->JustReleased()) {
-      motorFrequencyHz_ = keypadValue_;
-      SetMotorSpeed();
-      UpdateMotorSpeedButton();
+      if (editingBrightness_) {
+        if (keypadValue_ > 255) { keypadValue_ = 255; }
+        ledBrightness_ = keypadValue_;
+        OrreryLeader::Get()->SetBrightness(currentPlanet_, ledBrightness_);
+        UpdateLedBrightnessButton();
+      } else {
+        motorFrequencyHz_ = keypadValue_;
+        SetMotorSpeed();
+        UpdateMotorSpeedButton();
+      }
       keypadActive_ = false;
+      editingBrightness_ = false;
       backButton_->Hide();
       speedDisplayButton_->Hide();
       for (int i = 0; i <= 9; i++) { keypadButtons_[i]->Hide(); }
       clearButton_->Hide();
       confirmButton_->Hide();
       planetButton_->Draw();
+      ledBrightnessButton_->Draw();
       motorEnableButton_->Draw();
       motorDirectionButton_->Draw();
       motorSpeedButton_->Draw();
@@ -153,15 +168,18 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
         } else {
           motorEnabled_ = false;
           motorDirectionForward_ = true;
-          motorFrequencyHz_ = 10000;
+          motorFrequencyHz_ = kDefaultPlanetSpeed;
         }
         motorEnableButton_->SetLabelText(motorEnabled_ ? "Motor Enabled" : "Motor Disabled");
         motorDirectionButton_->SetLabelText(motorDirectionForward_ ? "Motor Forward" : "Motor Reverse");
         UpdateMotorSpeedButton();
+        ledBrightness_ = OrreryLeader::Get()->GetBrightness(currentPlanet_);
+        UpdateLedBrightnessButton();
         planetSubmenuActive_ = false;
         for (int j = 0; j < kNumPlanets; j++) { planetSelectButtons_[j]->Hide(); }
         planetBackButton_->Hide();
         planetButton_->Draw();
+        ledBrightnessButton_->Draw();
         motorEnableButton_->Draw();
         motorDirectionButton_->Draw();
         motorSpeedButton_->Draw();
@@ -173,6 +191,7 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       for (int i = 0; i < kNumPlanets; i++) { planetSelectButtons_[i]->Hide(); }
       planetBackButton_->Hide();
       planetButton_->Draw();
+      ledBrightnessButton_->Draw();
       motorEnableButton_->Draw();
       motorDirectionButton_->Draw();
       motorSpeedButton_->Draw();
@@ -182,11 +201,29 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
     if (planetButton_->JustReleased()) {
       planetSubmenuActive_ = true;
       planetButton_->Hide();
+      ledBrightnessButton_->Hide();
       motorEnableButton_->Hide();
       motorDirectionButton_->Hide();
       motorSpeedButton_->Hide();
       for (int i = 0; i < kNumPlanets; i++) { planetSelectButtons_[i]->Draw(); }
       planetBackButton_->Draw();
+      TouchButtonManager::Get()->Redraw();
+    }
+    if (ledBrightnessButton_->JustReleased()) {
+      keypadActive_ = true;
+      editingBrightness_ = true;
+      keypadValue_ = 0;
+      planetButton_->Hide();
+      ledBrightnessButton_->Hide();
+      motorEnableButton_->Hide();
+      motorDirectionButton_->Hide();
+      motorSpeedButton_->Hide();
+      backButton_->Draw();
+      speedDisplayButton_->Draw();
+      for (int i = 0; i <= 9; i++) { keypadButtons_[i]->Draw(); }
+      clearButton_->Draw();
+      confirmButton_->Draw();
+      speedDisplayButton_->Draw(/*force=*/true);
       TouchButtonManager::Get()->Redraw();
     }
     if (motorEnableButton_->JustReleased()) {
@@ -201,8 +238,10 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
     }
     if (motorSpeedButton_->JustReleased()) {
       keypadActive_ = true;
+      editingBrightness_ = false;
       keypadValue_ = 0;
       planetButton_->Hide();
+      ledBrightnessButton_->Hide();
       motorEnableButton_->Hide();
       motorDirectionButton_->Hide();
       motorSpeedButton_->Hide();
@@ -229,6 +268,12 @@ void OrreryLeaderUi::UpdateMotorSpeedButton() {
   char label[32];
   snprintf(label, sizeof(label), "Speed: %lld", static_cast<int64_t>(motorFrequencyHz_));
   motorSpeedButton_->SetLabelText(label);
+}
+
+void OrreryLeaderUi::UpdateLedBrightnessButton() {
+  char label[32];
+  snprintf(label, sizeof(label), "Brightness: %u", ledBrightness_);
+  ledBrightnessButton_->SetLabelText(label);
 }
 
 void OrreryLeaderUi::UpdatePlanetButton() {

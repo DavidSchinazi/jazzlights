@@ -11,9 +11,12 @@
 
 namespace jazzlights {
 
+class Player;
+
 class OrreryPlanet : public GpioSwitch::SwitchInterface {
  public:
   static OrreryPlanet* Get();
+  void Setup(Player& player);
   void RunLoop(Milliseconds currentTime);
 
   // From GpioSwitch::SwitchInterface.
@@ -24,6 +27,7 @@ class OrreryPlanet : public GpioSwitch::SwitchInterface {
 
   BusId ComputeBusId() const;
 
+  Player* player_ = nullptr;
   GpioSwitch switch0_;
   GpioSwitch switch1_;
   GpioSwitch switch2_;

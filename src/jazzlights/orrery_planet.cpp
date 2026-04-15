@@ -10,6 +10,7 @@
 #include "jazzlights/network/max485_bus.h"
 #include "jazzlights/network/network.h"
 #include "jazzlights/orrery_common.h"
+#include "jazzlights/player.h"
 #include "jazzlights/util/log.h"
 
 namespace jazzlights {
@@ -47,6 +48,8 @@ OrreryPlanet* OrreryPlanet::Get() {
   static OrreryPlanet sOrreryPlanet;
   return &sOrreryPlanet;
 }
+
+void OrreryPlanet::Setup(Player& player) { player_ = &player; }
 
 OrreryPlanet::OrreryPlanet()
     : switch0_(kPlanetSwitchPin0, *this),
@@ -92,15 +95,26 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
   if (!ReadOrreryMessage(reader, &type, &msg)) { return; }
 
   if (type == OrreryMessageType::LeaderCommand) {
+    bool applySuccess = false;
+    OrreryMessage ackMsg;
+    ackMsg.leaderBootId = msg.leaderBootId;
+    ackMsg.leaderSequenceNumber = msg.leaderSequenceNumber;
     if (msg.speed.has_value()) {
       jll_info("%u Planet %s applying speed %" PRId32, currentTime, ourPlanetName, *msg.speed);
 #if JL_MOTOR
       GetMainStepperMotor()->SetSpeed(*msg.speed);
 #endif  // JL_MOTOR
-      OrreryMessage ackMsg;
-      ackMsg.leaderBootId = msg.leaderBootId;
-      ackMsg.leaderSequenceNumber = msg.leaderSequenceNumber;
       ackMsg.speed = *msg.speed;
+      applySuccess = true;
+    }
+    if (msg.ledBrightness.has_value()) {
+      jll_info("%u Planet %s applying brightness %u", currentTime, ourPlanetName, *msg.ledBrightness);
+      if (player_ != nullptr) { player_->set_brightness(*msg.ledBrightness); }
+      ackMsg.ledBrightness = *msg.ledBrightness;
+      applySuccess = true;
+    }
+
+    if (applySuccess) {
       uint8_t ackBuffer[64];
       NetworkWriter writer(ackBuffer, sizeof(ackBuffer));
       if (WriteOrreryMessage(OrreryMessageType::FollowerResponse, ackMsg, writer)) {

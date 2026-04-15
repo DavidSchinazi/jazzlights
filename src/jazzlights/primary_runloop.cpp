@@ -120,6 +120,9 @@ void SetupPrimaryRunLoop() {
 #if JL_ETHERNET
   player.connect(EthernetNetwork::get());
 #endif  // JL_ETHERNET
+#if JL_IS_CONFIG(ORRERY_PLANET)
+  OrreryPlanet::Get()->Setup(player);
+#endif  // JL_IS_CONFIG(ORRERY_PLANET)
   player.begin();
 
   GetUi()->FinalSetup();

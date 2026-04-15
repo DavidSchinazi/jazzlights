@@ -41,32 +41,65 @@ OrreryLeader* OrreryLeader::Get() {
 }
 
 OrreryLeader::OrreryLeader()
-    : bootId_(UnpredictableRandom::Get32bits()), max485BusLeader_(UART_NUM_2, kMax485TxPin, kMax485RxPin) {}
+    : bootId_(UnpredictableRandom::Get32bits()), max485BusLeader_(UART_NUM_2, kMax485TxPin, kMax485RxPin) {
+  for (int i = 0; i < kNumPlanets; i++) {
+    Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
+    OrreryMessage& msg = messages_[planet];
+    msg.leaderBootId = bootId_;
+    msg.leaderSequenceNumber = nextSequenceNumber_++;
+    msg.speed = 0;
+    msg.ledBrightness = kDefaultPlanetBrightness;
+  }
+}
 
 void OrreryLeader::SetSpeed(Planet planet, int32_t speed) {
-  uint8_t planetIndex = static_cast<uint8_t>(planet) - static_cast<uint8_t>(Planet::Mercury);
-  if (planetIndex < kNumPlanets) {
-    if (speeds_[planetIndex] != speed) {
-      speeds_[planetIndex] = speed;
-      jll_info("OrreryLeader setting planet %u speed to %" PRId32, planetIndex, speed);
-      OrreryMessage msg;
-      msg.leaderBootId = bootId_;
-      msg.leaderSequenceNumber = nextSequenceNumber_++;
+  auto it = messages_.find(planet);
+  if (it != messages_.end()) {
+    OrreryMessage& msg = it->second;
+    if (!msg.speed.has_value() || *msg.speed != speed) {
       msg.speed = speed;
-      uint8_t messageBuffer[64];
-      NetworkWriter writer(messageBuffer, sizeof(messageBuffer));
-      if (WriteOrreryMessage(OrreryMessageType::LeaderCommand, msg, writer)) {
-        max485BusLeader_.SetMessageToSend(static_cast<BusId>(planet),
-                                          BufferViewU8(messageBuffer, writer.LengthWritten()));
-      }
+      jll_info("OrreryLeader setting planet %s speed to %" PRId32, GetPlanetName(planet), speed);
+      SendMessage(planet);
     }
   }
 }
 
 int32_t OrreryLeader::GetSpeed(Planet planet) const {
-  uint8_t planetIndex = static_cast<uint8_t>(planet) - static_cast<uint8_t>(Planet::Mercury);
-  if (planetIndex >= 0 && planetIndex < kNumPlanets) { return speeds_[planetIndex]; }
+  auto it = messages_.find(planet);
+  if (it != messages_.end() && it->second.speed.has_value()) { return *it->second.speed; }
   return 0;
+}
+
+void OrreryLeader::SetBrightness(Planet planet, uint8_t brightness) {
+  auto it = messages_.find(planet);
+  if (it != messages_.end()) {
+    OrreryMessage& msg = it->second;
+    if (!msg.ledBrightness.has_value() || *msg.ledBrightness != brightness) {
+      msg.ledBrightness = brightness;
+      jll_info("OrreryLeader setting planet %s brightness to %u", GetPlanetName(planet), brightness);
+      SendMessage(planet);
+    }
+  }
+}
+
+uint8_t OrreryLeader::GetBrightness(Planet planet) const {
+  auto it = messages_.find(planet);
+  if (it != messages_.end() && it->second.ledBrightness.has_value()) { return *it->second.ledBrightness; }
+  return kDefaultPlanetBrightness;
+}
+
+void OrreryLeader::SendMessage(Planet planet) {
+  auto it = messages_.find(planet);
+  if (it != messages_.end()) {
+    OrreryMessage& msg = it->second;
+    msg.leaderSequenceNumber = nextSequenceNumber_++;
+    uint8_t messageBuffer[64];
+    NetworkWriter writer(messageBuffer, sizeof(messageBuffer));
+    if (WriteOrreryMessage(OrreryMessageType::LeaderCommand, msg, writer)) {
+      max485BusLeader_.SetMessageToSend(static_cast<BusId>(planet),
+                                        BufferViewU8(messageBuffer, writer.LengthWritten()));
+    }
+  }
 }
 
 void OrreryLeader::RunLoop(Milliseconds /*currentTime*/) {
