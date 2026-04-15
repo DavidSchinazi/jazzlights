@@ -194,7 +194,7 @@ class Player {
   bool color_overridden_ = false;
   bool force_clouds_ = true;
   CRGB color_override_;
-#elif JL_IS_CONFIG(CREATURE)
+#elif JL_IS_CONFIG(CREATURE) || JL_IS_CONFIG(ORRERY_PLANET)
   bool creatureIsFollowingNonCreature_ = false;
 #endif
 

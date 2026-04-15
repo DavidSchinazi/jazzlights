@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "jazzlights/effect/planet.h"
 #include "jazzlights/motor.h"
 #include "jazzlights/network/max485_bus.h"
 #include "jazzlights/network/network.h"
@@ -58,6 +59,7 @@ OrreryPlanet::OrreryPlanet()
       busId_(ComputeBusId()),
       max485BusFollower_(UART_NUM_2, kMax485TxPin, kMax485RxPin, busId_) {
   jll_info("%u OrreryPlanet created with busId %u", timeMillis(), busId_);
+  PlanetEffect::Get()->SetPlanet(static_cast<Planet>(busId_));
 }
 
 BusId OrreryPlanet::ComputeBusId() const {
@@ -70,6 +72,8 @@ void OrreryPlanet::StateChanged(uint8_t pin, bool isClosed) {
   if (busId == busId_) { return; }
   busId_ = busId;
   max485BusFollower_.SetBusIdSelf(busId_);
+
+  PlanetEffect::Get()->SetPlanet(static_cast<Planet>(busId_));
   jll_info("%u OrreryPlanet switch on pin %u is now %s, new planet %s (busId %u)", timeMillis(), pin,
            (isClosed ? "closed" : "open"), GetPlanetName(static_cast<Planet>(busId_)), busId_);
 }

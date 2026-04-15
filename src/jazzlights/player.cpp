@@ -20,6 +20,7 @@
 #include "jazzlights/effect/hiphotic.h"
 #include "jazzlights/effect/mapping.h"
 #include "jazzlights/effect/metaballs.h"
+#include "jazzlights/effect/planet.h"
 #include "jazzlights/effect/plasma.h"
 #include "jazzlights/effect/rings.h"
 #include "jazzlights/effect/solid.h"
@@ -62,6 +63,8 @@ constexpr PatternBits kStartingPattern = JL_START_PATTERN;
 constexpr PatternBits kWarmPattern = 0x00001500;
 #elif JL_IS_CONFIG(CREATURE)
 constexpr PatternBits kCreaturePattern = 0x0000FF00;
+#elif JL_IS_CONFIG(ORRERY_PLANET)
+constexpr PatternBits kPlanetPattern = 0x0000FE00;
 #endif
 }  // namespace
 
@@ -194,6 +197,9 @@ static const Effect* patternFromBits(PatternBits pattern) {
         case 0x14: return &threesine_pattern;
         case 0x15: return &warm_effect;
         case 0x16: return &warm_glow_effect;
+#if JL_IS_CONFIG(ORRERY_PLANET)
+        case 0xFE: return PlanetEffect::Get();
+#endif  // ORRERY_PLANET
         case 0xFF:
 #if JL_IS_CONFIG(CREATURE)
           return &creatures_effect;
@@ -346,6 +352,10 @@ void Player::begin() {
   currentPattern_ = kCreaturePattern;
   nextPattern_ = currentPattern_;
   loop_ = true;
+#elif JL_IS_CONFIG(ORRERY_PLANET)
+  currentPattern_ = kPlanetPattern;
+  nextPattern_ = currentPattern_;
+  loop_ = true;
 #endif
 #if defined(JL_START_LOOP) && JL_START_LOOP
   loop_ = true;
@@ -444,6 +454,8 @@ bool Player::render(Milliseconds currentTime) {
   }
 #elif JL_IS_CONFIG(CREATURE)
   if (!creatureIsFollowingNonCreature_) { effect = patternFromBits(kCreaturePattern); }
+#elif JL_IS_CONFIG(ORRERY_PLANET)
+  if (!creatureIsFollowingNonCreature_) { effect = patternFromBits(kPlanetPattern); }
 #endif  // FAIRY_WAND
 
   // Ensure effectContext_ is big enough for this effect.
@@ -736,7 +748,7 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
   const bool hadRecentUserInput = (lastUserInputTime_ >= 0 && lastUserInputTime_ <= currentTime &&
                                    currentTime - lastUserInputTime_ < kInputDuration);
   for (const OriginatorEntry& e : originatorEntries_) {
-#if !JL_IS_CONFIG(CREATURE)
+#if !JL_IS_CONFIG(CREATURE) && !JL_IS_CONFIG(ORRERY_PLANET)
     // Keep ourselves as leader if there was recent user button input or if we are looping, unless the originator has
     // admin-level precedence.
     if ((hadRecentUserInput || loop_) && e.precedence < kAdminPrecedence) { continue; }
@@ -772,7 +784,7 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
   Milliseconds lastOriginationTime;
   if (entry != nullptr) {
     // Update our state based on entry from leader.
-#if JL_IS_CONFIG(CREATURE)
+#if JL_IS_CONFIG(CREATURE) || JL_IS_CONFIG(ORRERY_PLANET)
     // Creatures only follow non-creatures if they have override enabled.
     const bool newCreatureIsFollowingNonCreature = precedence >= OverridePrecedence();
     if (creatureIsFollowingNonCreature_ != newCreatureIsFollowingNonCreature) {
@@ -800,7 +812,7 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
                ".p%u nh=%u %s new currentPattern %s (%08x)%s computed %u FPS wrote %u FPS %u%% %u/%ums",
                currentTime, DEVICE_ID_HEX(originator), precedence, currentNumHops_,
                NetworkTypeToString(followedNextHopNetworkType_), patternName(currentPattern_).c_str(), currentPattern_,
-#if JL_IS_CONFIG(CREATURE)
+#if JL_IS_CONFIG(CREATURE) || JL_IS_CONFIG(ORRERY_PLANET)
                (creatureIsFollowingNonCreature_ ? " creatureFollowing" : " creatureIgnoring"),
 #else   // CREATURE
                "",
@@ -816,10 +828,14 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
     currentPattern_ = kWarmPattern;
     nextPattern_ = currentPattern_;
     loop_ = true;
-#elif JL_IS_CONFIG(CREATURE)
+#elif JL_IS_CONFIG(CREATURE) || JL_IS_CONFIG(ORRERY_PLANET)
     if (creatureIsFollowingNonCreature_) { jll_info("%u now creatureIgnoring because we are leading", currentTime); }
     creatureIsFollowingNonCreature_ = false;
+#if JL_IS_CONFIG(CREATURE)
     currentPattern_ = kCreaturePattern;
+#elif JL_IS_CONFIG(ORRERY_PLANET)
+    currentPattern_ = kPlanetPattern;
+#endif  // CREATURE
     nextPattern_ = currentPattern_;
     loop_ = true;
 #endif

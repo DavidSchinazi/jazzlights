@@ -108,6 +108,9 @@ void SetupPrimaryRunLoop() {
 #elif JL_IS_CONFIG(CREATURE)
   player.setBasePrecedence(1);
   player.setPrecedenceGain(0);
+#elif JL_IS_CONFIG(ORRERY_PLANET)
+  player.setBasePrecedence(100);
+  player.setPrecedenceGain(100);
 #else
   player.setBasePrecedence(1000);
   player.setPrecedenceGain(1000);
