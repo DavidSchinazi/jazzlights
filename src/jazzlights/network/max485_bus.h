@@ -16,13 +16,12 @@
 #include <mutex>
 #include <vector>
 
+#include "jazzlights/orrery_common.h"
 #include "jazzlights/util/buffer.h"
 #include "jazzlights/util/cobs.h"
 #include "jazzlights/util/time.h"
 
 namespace jazzlights {
-
-using BusId = uint8_t;
 
 class Max485BusHandler {
  public:
@@ -39,7 +38,7 @@ class Max485BusHandler {
  protected:
   explicit Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, BusId busIdSelf);
 
-  bool SetMessageToSendInner(BusId destBusId, const BufferViewU8 message);
+  bool SetMessageToSendInner(BusId destBusId, const OrreryMessage& message);
   virtual void HandleReceivedMessage(BusId srcBusId, const BufferViewU8 message) = 0;
   virtual void HandleApplicationDataAvailableToSend(bool firstSend) = 0;
   void CopyEncodeAndSendMessage(BusId destBusId);
@@ -66,11 +65,10 @@ class Max485BusHandler {
   std::atomic<BusId> busIdSelf_;
   std::atomic<bool> ready_{false};
   std::mutex sendMutex_;
-  std::map<BusId, OwnedBufferU8> sharedSendMessageBuffers_;  // Protected by `sendMutex_`.
-  std::map<BusId, BufferViewU8> sharedSendMessages_;         // Protected by `sendMutex_`.
-  OwnedBufferU8 taskSendMessageBuffer_;                      // Only accessed by task.
-  OwnedBufferU8 taskEncodedSendMessageBuffer_;               // Only accessed by task.
-  Milliseconds taskLastSendTimeExpectingResponse_ = -1;      // Only accessed by task.
+  std::map<BusId, OrreryMessage> sharedSendMessages_;    // Protected by `sendMutex_`.
+  OwnedBufferU8 taskSendMessageBuffer_;                  // Only accessed by task.
+  OwnedBufferU8 taskEncodedSendMessageBuffer_;           // Only accessed by task.
+  Milliseconds taskLastSendTimeExpectingResponse_ = -1;  // Only accessed by task.
   std::mutex recvMutex_;
   OwnedBufferU8 taskRecvBuffer_;                    // Only accessed by task.
   size_t lengthInTaskRecvBuffer_ = 0;               // Only accessed by task.
@@ -90,7 +88,7 @@ class Max485BusHandler {
 class Max485BusLeader : public Max485BusHandler {
  public:
   explicit Max485BusLeader(uart_port_t uartPort, int txPin, int rxPin);
-  void SetMessageToSend(BusId destBusId, const BufferViewU8 message);
+  void SetMessageToSend(BusId destBusId, const OrreryMessage& message);
 
  protected:
   void HandleReceivedMessage(BusId srcBusId, const BufferViewU8 message) override;
@@ -110,7 +108,7 @@ class Max485BusLeader : public Max485BusHandler {
 class Max485BusFollower : public Max485BusHandler {
  public:
   explicit Max485BusFollower(uart_port_t uartPort, int txPin, int rxPin, BusId busIdSelf);
-  void SetMessageToSend(const BufferViewU8 message);
+  void SetMessageToSend(const OrreryMessage& message);
   void SetBusIdSelf(BusId busIdSelf) { busIdSelf_.store(busIdSelf, std::memory_order_relaxed); }
 
  protected:

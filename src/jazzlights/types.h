@@ -25,6 +25,7 @@ namespace jazzlights {
 JL_DEFINE_INT_TYPE(PatternBits, unsigned int, uint32_t);
 using Precedence = uint16_t;
 using NumHops = uint8_t;
+using BusId = uint8_t;
 
 // bitNum is [1-32] starting from the highest bit.
 constexpr bool patternbit(PatternBits pattern, uint8_t bitNum) {

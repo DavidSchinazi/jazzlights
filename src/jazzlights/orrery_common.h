@@ -8,14 +8,9 @@
 #include <cstdint>
 #include <optional>
 
-#include "jazzlights/network/max485_bus.h"
 #include "jazzlights/types.h"
 
 namespace jazzlights {
-
-#if !JL_MAX485_BUS
-using BusId = uint8_t;
-#endif
 
 class NetworkReader;
 class NetworkWriter;
@@ -42,6 +37,7 @@ enum class OrreryMessageType : uint8_t {
 };
 
 struct OrreryMessage {
+  OrreryMessageType type;
   uint32_t leaderBootId;
   uint32_t leaderSequenceNumber;
   std::optional<int32_t> speed;
@@ -50,10 +46,18 @@ struct OrreryMessage {
   std::optional<PatternBits> ledPattern;
   std::optional<uint8_t> ledBrightness;
   std::optional<Precedence> ledPrecedence;
+
+  bool operator==(const OrreryMessage& other) const {
+    return type == other.type && leaderBootId == other.leaderBootId &&
+           leaderSequenceNumber == other.leaderSequenceNumber && speed == other.speed && position == other.position &&
+           calibration == other.calibration && ledPattern == other.ledPattern && ledBrightness == other.ledBrightness &&
+           ledPrecedence == other.ledPrecedence;
+  }
+  bool operator!=(const OrreryMessage& other) const { return !(*this == other); }
 };
 
-bool WriteOrreryMessage(OrreryMessageType type, const OrreryMessage& msg, NetworkWriter& writer);
-bool ReadOrreryMessage(NetworkReader& reader, OrreryMessageType* type, OrreryMessage* msg);
+bool WriteOrreryMessage(const OrreryMessage& msg, NetworkWriter& writer);
+bool ReadOrreryMessage(NetworkReader& reader, OrreryMessage* msg);
 const char* GetPlanetName(Planet planet);
 
 }  // namespace jazzlights

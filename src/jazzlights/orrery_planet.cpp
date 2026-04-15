@@ -60,6 +60,7 @@ OrreryPlanet::OrreryPlanet()
       max485BusFollower_(UART_NUM_2, kMax485TxPin, kMax485RxPin, busId_) {
   jll_info("%u OrreryPlanet created with busId %u", timeMillis(), busId_);
   PlanetEffect::Get()->SetPlanet(static_cast<Planet>(busId_));
+  currentState_.type = OrreryMessageType::FollowerResponse;
 }
 
 BusId OrreryPlanet::ComputeBusId() const {
@@ -94,11 +95,10 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
   if (message.empty()) { return; }
 
   NetworkReader reader(message.data(), message.size());
-  OrreryMessageType type;
   OrreryMessage msg;
-  if (!ReadOrreryMessage(reader, &type, &msg)) { return; }
+  if (!ReadOrreryMessage(reader, &msg)) { return; }
 
-  if (type == OrreryMessageType::LeaderCommand) {
+  if (msg.type == OrreryMessageType::LeaderCommand) {
     currentState_.leaderBootId = msg.leaderBootId;
     currentState_.leaderSequenceNumber = msg.leaderSequenceNumber;
     if (msg.speed.has_value()) {
@@ -114,11 +114,7 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
       currentState_.ledBrightness = *msg.ledBrightness;
     }
 
-    uint8_t buffer[64];
-    NetworkWriter writer(buffer, sizeof(buffer));
-    if (WriteOrreryMessage(OrreryMessageType::FollowerResponse, currentState_, writer)) {
-      max485BusFollower_.SetMessageToSend(BufferViewU8(buffer, writer.LengthWritten()));
-    }
+    max485BusFollower_.SetMessageToSend(currentState_);
   }
 }
 

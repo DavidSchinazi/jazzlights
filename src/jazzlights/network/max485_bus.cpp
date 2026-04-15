@@ -15,6 +15,7 @@
 #include <mutex>
 
 #include "jazzlights/esp32_shared.h"
+#include "jazzlights/network/network.h"
 #include "jazzlights/orrery_planet.h"
 #include "jazzlights/pseudorandom.h"
 #include "jazzlights/util/buffer.h"
@@ -215,14 +216,26 @@ BufferViewU8 Max485BusHandler::EncodeMessage(const BufferViewU8 message, OwnedBu
 }
 
 void Max485BusHandler::CopyEncodeAndSendMessage(BusId destBusId) {
-  BufferViewU8 taskSendMessage;
+  OrreryMessage msg;
+  bool found = false;
   {
     const std::lock_guard<std::mutex> lock(sendMutex_);
     auto it = sharedSendMessages_.find(destBusId);
     if (it == sharedSendMessages_.end()) { it = sharedSendMessages_.find(kBusIdBroadcast); }
-    if (it != sharedSendMessages_.end()) { taskSendMessage = taskSendMessageBuffer_.CopyIn(it->second); }
+    if (it != sharedSendMessages_.end()) {
+      msg = it->second;
+      found = true;
+    }
   }
-  if (taskSendMessage.empty()) { return; }
+  if (!found) { return; }
+
+  NetworkWriter writer(&taskSendMessageBuffer_[0], taskSendMessageBuffer_.size());
+  if (!WriteOrreryMessage(msg, writer)) {
+    jll_error("%u Failed to serialize OrreryMessage", timeMillis());
+    return;
+  }
+  BufferViewU8 taskSendMessage(&taskSendMessageBuffer_[0], writer.LengthWritten());
+
   const BusId busIdSelf = GetBusIdSelf();
   jll_buffer_info(taskSendMessage, "%u Sending from %d to %d", timeMillis(), static_cast<int>(busIdSelf),
                   static_cast<int>(destBusId));
@@ -234,26 +247,11 @@ void Max485BusHandler::CopyEncodeAndSendMessage(BusId destBusId) {
   }
 }
 
-bool Max485BusHandler::SetMessageToSendInner(BusId destBusId, const BufferViewU8 message) {
-  if (message.size() > kMaxMessageLength) {
-    jll_error("%u UART%d refusing to send message of length %zu", timeMillis(), uartPort_, message.size());
-    return false;
-  }
+bool Max485BusHandler::SetMessageToSendInner(BusId destBusId, const OrreryMessage& message) {
   const std::lock_guard<std::mutex> lock(sendMutex_);
   auto it = sharedSendMessages_.find(destBusId);
-  bool isNew = false;
-  if (it == sharedSendMessages_.end()) {
-    isNew = true;
-  } else if (it->second.size() != message.size() || memcmp(it->second.data(), message.data(), message.size()) != 0) {
-    isNew = true;
-  }
-
-  if (isNew) {
-    if (sharedSendMessageBuffers_.find(destBusId) == sharedSendMessageBuffers_.end()) {
-      sharedSendMessageBuffers_.emplace(destBusId, OwnedBufferU8(kMaxMessageLength));
-    }
-    sharedSendMessages_[destBusId] = sharedSendMessageBuffers_.at(destBusId).CopyIn(message);
-  }
+  bool isNew = (it == sharedSendMessages_.end() || it->second != message);
+  if (isNew) { sharedSendMessages_[destBusId] = message; }
   return isNew;
 }
 
@@ -476,8 +474,7 @@ void Max485BusLeader::SendMessageToNextFollower() {
     lastSentBusId_ = destBusId;
   }
 }
-
-void Max485BusLeader::SetMessageToSend(BusId destBusId, const BufferViewU8 message) {
+void Max485BusLeader::SetMessageToSend(BusId destBusId, const OrreryMessage& message) {
   if (SetMessageToSendInner(destBusId, message)) {
     const std::lock_guard<std::mutex> lock(sendMutex_);
     if (std::find(highPriorityBusIds_.begin(), highPriorityBusIds_.end(), destBusId) == highPriorityBusIds_.end()) {
@@ -503,7 +500,7 @@ void Max485BusFollower::HandleReceivedMessage(BusId srcBusId, const BufferViewU8
 
 void Max485BusFollower::HandleApplicationDataAvailableToSend(bool firstSend) {}
 
-void Max485BusFollower::SetMessageToSend(const BufferViewU8 message) { SetMessageToSendInner(kBusIdLeader, message); }
+void Max485BusFollower::SetMessageToSend(const OrreryMessage& message) { SetMessageToSendInner(kBusIdLeader, message); }
 
 }  // namespace jazzlights
 

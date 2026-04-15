@@ -45,6 +45,7 @@ OrreryLeader::OrreryLeader()
   for (int i = 0; i < kNumPlanets; i++) {
     Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
     OrreryMessage& msg = messages_[planet];
+    msg.type = OrreryMessageType::LeaderCommand;
     msg.leaderBootId = bootId_;
     msg.leaderSequenceNumber = nextSequenceNumber_++;
     msg.speed = 0;
@@ -93,12 +94,7 @@ void OrreryLeader::SendMessage(Planet planet) {
   if (it != messages_.end()) {
     OrreryMessage& msg = it->second;
     msg.leaderSequenceNumber = nextSequenceNumber_++;
-    uint8_t messageBuffer[64];
-    NetworkWriter writer(messageBuffer, sizeof(messageBuffer));
-    if (WriteOrreryMessage(OrreryMessageType::LeaderCommand, msg, writer)) {
-      max485BusLeader_.SetMessageToSend(static_cast<BusId>(planet),
-                                        BufferViewU8(messageBuffer, writer.LengthWritten()));
-    }
+    max485BusLeader_.SetMessageToSend(static_cast<BusId>(planet), msg);
   }
 }
 
@@ -109,11 +105,10 @@ void OrreryLeader::RunLoop(Milliseconds /*currentTime*/) {
   if (message.empty()) { return; }
 
   NetworkReader reader(message.data(), message.size());
-  OrreryMessageType type;
   OrreryMessage msg;
-  if (!ReadOrreryMessage(reader, &type, &msg)) { return; }
+  if (!ReadOrreryMessage(reader, &msg)) { return; }
 
-  if (type == OrreryMessageType::FollowerResponse) {
+  if (msg.type == OrreryMessageType::FollowerResponse) {
     if (msg.speed.has_value()) {
       jll_info("OrreryLeader received response for planet %u: %" PRId32,
                static_cast<uint8_t>(srcBusId) - static_cast<uint8_t>(Planet::Mercury), *msg.speed);

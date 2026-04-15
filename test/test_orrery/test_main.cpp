@@ -7,6 +7,7 @@ namespace jazzlights {
 
 void test_orrery_message_serialization() {
   OrreryMessage msg1;
+  msg1.type = OrreryMessageType::LeaderCommand;
   msg1.leaderBootId = 0x12345678;
   msg1.leaderSequenceNumber = 0x87654321;
   msg1.speed = 1000;
@@ -18,14 +19,13 @@ void test_orrery_message_serialization() {
 
   uint8_t buffer[64];
   NetworkWriter writer(buffer, sizeof(buffer));
-  TEST_ASSERT(WriteOrreryMessage(OrreryMessageType::LeaderCommand, msg1, writer));
+  TEST_ASSERT(WriteOrreryMessage(msg1, writer));
 
   NetworkReader reader(buffer, writer.LengthWritten());
-  OrreryMessageType type;
   OrreryMessage msg2;
-  TEST_ASSERT(ReadOrreryMessage(reader, &type, &msg2));
+  TEST_ASSERT(ReadOrreryMessage(reader, &msg2));
 
-  TEST_ASSERT_EQUAL(static_cast<uint8_t>(OrreryMessageType::LeaderCommand), static_cast<uint8_t>(type));
+  TEST_ASSERT_EQUAL(static_cast<uint8_t>(OrreryMessageType::LeaderCommand), static_cast<uint8_t>(msg2.type));
   TEST_ASSERT_EQUAL_UINT32(msg1.leaderBootId, msg2.leaderBootId);
   TEST_ASSERT_EQUAL_UINT32(msg1.leaderSequenceNumber, msg2.leaderSequenceNumber);
   TEST_ASSERT(msg2.speed.has_value());
@@ -45,6 +45,7 @@ void test_orrery_message_serialization() {
 
 void test_orrery_message_sparse_serialization() {
   OrreryMessage msg1;
+  msg1.type = OrreryMessageType::FollowerResponse;
   msg1.leaderBootId = 0x11223344;
   msg1.leaderSequenceNumber = 0x55667788;
   msg1.speed = std::nullopt;
@@ -56,14 +57,13 @@ void test_orrery_message_sparse_serialization() {
 
   uint8_t buffer[64];
   NetworkWriter writer(buffer, sizeof(buffer));
-  TEST_ASSERT(WriteOrreryMessage(OrreryMessageType::FollowerResponse, msg1, writer));
+  TEST_ASSERT(WriteOrreryMessage(msg1, writer));
 
   NetworkReader reader(buffer, writer.LengthWritten());
-  OrreryMessageType type;
   OrreryMessage msg2;
-  TEST_ASSERT(ReadOrreryMessage(reader, &type, &msg2));
+  TEST_ASSERT(ReadOrreryMessage(reader, &msg2));
 
-  TEST_ASSERT_EQUAL(static_cast<uint8_t>(OrreryMessageType::FollowerResponse), static_cast<uint8_t>(type));
+  TEST_ASSERT_EQUAL(static_cast<uint8_t>(OrreryMessageType::FollowerResponse), static_cast<uint8_t>(msg2.type));
   TEST_ASSERT_EQUAL_UINT32(msg1.leaderBootId, msg2.leaderBootId);
   TEST_ASSERT_EQUAL_UINT32(msg1.leaderSequenceNumber, msg2.leaderSequenceNumber);
   TEST_ASSERT_FALSE(msg2.speed.has_value());

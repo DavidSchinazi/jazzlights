@@ -15,8 +15,8 @@ constexpr uint8_t kOrreryFlagLedBrightness = 0x10;
 constexpr uint8_t kOrreryFlagLedPrecedence = 0x20;
 }  // namespace
 
-bool WriteOrreryMessage(OrreryMessageType type, const OrreryMessage& msg, NetworkWriter& writer) {
-  if (!writer.WriteUint8(static_cast<uint8_t>(type))) { return false; }
+bool WriteOrreryMessage(const OrreryMessage& msg, NetworkWriter& writer) {
+  if (!writer.WriteUint8(static_cast<uint8_t>(msg.type))) { return false; }
   uint8_t flags = 0;
   if (msg.speed.has_value()) { flags |= kOrreryFlagSpeed; }
   if (msg.position.has_value()) { flags |= kOrreryFlagPosition; }
@@ -36,10 +36,10 @@ bool WriteOrreryMessage(OrreryMessageType type, const OrreryMessage& msg, Networ
   return true;
 }
 
-bool ReadOrreryMessage(NetworkReader& reader, OrreryMessageType* type, OrreryMessage* msg) {
+bool ReadOrreryMessage(NetworkReader& reader, OrreryMessage* msg) {
   uint8_t typeByte;
   if (!reader.ReadUint8(&typeByte)) { return false; }
-  *type = static_cast<OrreryMessageType>(typeByte);
+  msg->type = static_cast<OrreryMessageType>(typeByte);
   uint8_t flags;
   if (!reader.ReadUint8(&flags)) { return false; }
   if (!reader.ReadUint32(&msg->leaderBootId)) { return false; }
