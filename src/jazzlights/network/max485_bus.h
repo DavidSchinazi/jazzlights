@@ -97,8 +97,13 @@ class Max485BusLeader : public Max485BusHandler {
 
  private:
   void SendMessageToNextFollower();
-  std::deque<BusId> highPriorityBusIds_;  // Protected by `sendMutex_`.
-  BusId lastSentBusId_ = 0;               // Only accessed by task.
+  struct FollowerState {
+    int timeoutCount = 0;
+    int skipCount = 0;
+  };
+  std::map<BusId, FollowerState> followerStates_;  // Only accessed by task.
+  std::deque<BusId> highPriorityBusIds_;           // Protected by `sendMutex_`.
+  BusId lastSentBusId_ = 0;                        // Only accessed by task.
 };
 
 class Max485BusFollower : public Max485BusHandler {

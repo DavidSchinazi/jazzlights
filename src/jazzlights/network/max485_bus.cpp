@@ -408,7 +408,9 @@ BufferViewU8 Max485BusHandler::TaskFindReceivedMessage(BusId* destBusId, BusId* 
 Max485BusLeader::Max485BusLeader(uart_port_t uartPort, int txPin, int rxPin)
     : Max485BusHandler(uartPort, txPin, rxPin, kBusIdLeader) {}
 
-void Max485BusLeader::HandleReceivedMessage(BusId /*srcBusId*/, const BufferViewU8 /*message*/) {
+void Max485BusLeader::HandleReceivedMessage(BusId srcBusId, const BufferViewU8 /*message*/) {
+  followerStates_[srcBusId].timeoutCount = 0;
+  followerStates_[srcBusId].skipCount = 0;
   SendMessageToNextFollower();
 }
 
@@ -419,7 +421,13 @@ void Max485BusLeader::HandleApplicationDataAvailableToSend() {
     jll_info("%u Initiating first send", timeMillis());
     shouldSend = true;
   } else if (timeMillis() - taskLastSendTimeExpectingResponse_ > kUartResponseTimeout) {
-    jll_info("%u Timed out waiting for response", timeMillis());
+    int timeoutCount = -1;
+    if (lastSentBusId_ != kSeparator) {
+      followerStates_[lastSentBusId_].timeoutCount++;
+      timeoutCount = followerStates_[lastSentBusId_].timeoutCount;
+    }
+    jll_info("%u Timed out waiting for response from %d, count is now %d", timeMillis(),
+             static_cast<int>(lastSentBusId_), timeoutCount);
     shouldSend = true;
   } else {
     jll_max485_data("%u Ignoring kApplicationDataAvailable", timeMillis());
@@ -434,16 +442,36 @@ void Max485BusLeader::SendMessageToNextFollower() {
     if (!highPriorityBusIds_.empty()) {
       destBusId = highPriorityBusIds_.front();
       highPriorityBusIds_.pop_front();
-      lastSentBusId_ = destBusId;
     } else {
       if (sharedSendMessages_.empty()) { return; }
-      auto it = sharedSendMessages_.upper_bound(lastSentBusId_);
-      if (it == sharedSendMessages_.end()) { it = sharedSendMessages_.begin(); }
-      destBusId = it->first;
-      lastSentBusId_ = destBusId;
+      BusId candidate = lastSentBusId_;
+      BusId firstCandidate = kSeparator;
+      for (size_t i = 0; i < sharedSendMessages_.size(); i++) {
+        auto it = sharedSendMessages_.upper_bound(candidate);
+        if (it == sharedSendMessages_.end()) { it = sharedSendMessages_.begin(); }
+        candidate = it->first;
+        if (firstCandidate == kSeparator) { firstCandidate = candidate; }
+        FollowerState& state = followerStates_[candidate];
+        if (state.timeoutCount >= 3) {
+          // If a follower has timed out 3 times in a row, skip it 9 times.
+          if (state.skipCount < 9) {
+            state.skipCount++;
+            continue;
+          } else {
+            state.skipCount = 0;
+          }
+        }
+        destBusId = candidate;
+        break;
+      }
+      // If all followers are skipped, use the first one.
+      if (destBusId == kSeparator) { destBusId = firstCandidate; }
     }
   }
-  if (destBusId != kSeparator) { CopyEncodeAndSendMessage(destBusId); }
+  if (destBusId != kSeparator) {
+    CopyEncodeAndSendMessage(destBusId);
+    lastSentBusId_ = destBusId;
+  }
 }
 
 void Max485BusLeader::SetMessageToSend(BusId destBusId, const BufferViewU8 message) {
