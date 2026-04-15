@@ -41,7 +41,7 @@ class Max485BusHandler {
 
   bool SetMessageToSendInner(BusId destBusId, const BufferViewU8 message);
   virtual void HandleReceivedMessage(BusId srcBusId, const BufferViewU8 message) = 0;
-  virtual void HandleApplicationDataAvailableToSend() = 0;
+  virtual void HandleApplicationDataAvailableToSend(bool firstSend) = 0;
   void CopyEncodeAndSendMessage(BusId destBusId);
 
   inline static constexpr uint8_t kSeparator = 0;
@@ -60,6 +60,7 @@ class Max485BusHandler {
   const uart_port_t uartPort_;         // Only modified in constructor.
   const int txPin_;                    // Only modified in constructor.
   const int rxPin_;                    // Only modified in constructor.
+  const TickType_t receiveDelay_;      // Only modified in constructor.
   TaskHandle_t taskHandle_ = nullptr;  // Only modified in constructor.
   QueueHandle_t queue_ = nullptr;
   std::atomic<BusId> busIdSelf_;
@@ -93,7 +94,7 @@ class Max485BusLeader : public Max485BusHandler {
 
  protected:
   void HandleReceivedMessage(BusId srcBusId, const BufferViewU8 message) override;
-  void HandleApplicationDataAvailableToSend() override;
+  void HandleApplicationDataAvailableToSend(bool firstSend) override;
 
  private:
   void SendMessageToNextFollower();
@@ -114,7 +115,7 @@ class Max485BusFollower : public Max485BusHandler {
 
  protected:
   void HandleReceivedMessage(BusId srcBusId, const BufferViewU8 message) override;
-  void HandleApplicationDataAvailableToSend() override;
+  void HandleApplicationDataAvailableToSend(bool firstSend) override;
 };
 
 }  // namespace jazzlights

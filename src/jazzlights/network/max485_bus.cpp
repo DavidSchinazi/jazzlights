@@ -49,6 +49,8 @@ constexpr size_t ComputeExpansion(size_t length) {
 
 constexpr size_t kMaxEncodedMessageLength = ComputeExpansion(kMaxMessageLength);  // 1013.
 constexpr size_t kUartDriverBufferSize = 2048;
+constexpr Milliseconds kUartResponseTimeoutMs = 500;
+constexpr TickType_t kLeaderReceiveDelay = kUartResponseTimeoutMs / portTICK_PERIOD_MS;
 
 bool Max485BusHandler::IsReady() const { return ready_.load(std::memory_order_relaxed); }
 
@@ -56,6 +58,7 @@ Max485BusHandler::Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, B
     : uartPort_(uartPort),
       txPin_(txPin),
       rxPin_(rxPin),
+      receiveDelay_(busIdSelf == kBusIdLeader ? kLeaderReceiveDelay : portMAX_DELAY),
       busIdSelf_(busIdSelf),
       taskSendMessageBuffer_(kMaxMessageLength),
       taskEncodedSendMessageBuffer_(kMaxEncodedMessageLength),
@@ -98,7 +101,11 @@ void Max485BusHandler::SendToUart(BufferViewU8 encodedData) {
 
 void Max485BusHandler::RunTask() {
   uart_event_t event;
-  if (!xQueueReceive(queue_, &event, portMAX_DELAY)) { jll_fatal("%u Max485BusHandler queue error", timeMillis()); }
+  if (!xQueueReceive(queue_, &event, receiveDelay_)) {
+    // Timed out waiting to receive something.
+    HandleApplicationDataAvailableToSend(/*firstSend=*/false);
+    return;
+  }
   switch (event.type) {
     case UART_DATA: {  // There is data ready to be read.
       size_t lengthToRead = std::min<size_t>(event.size, taskRecvBuffer_.size());
@@ -156,7 +163,7 @@ void Max485BusHandler::RunTask() {
       jll_error("%u UART%d pattern detected", timeMillis(), uartPort_);
     } break;
     case kApplicationDataAvailable: {  // Our application has data to write to UART.
-      HandleApplicationDataAvailableToSend();
+      HandleApplicationDataAvailableToSend(/*firstSend=*/true);
     } break;
     default: {
       jll_info("%u UART%d unexpected event %d", timeMillis(), uartPort_, static_cast<int>(event.type));
@@ -414,23 +421,19 @@ void Max485BusLeader::HandleReceivedMessage(BusId srcBusId, const BufferViewU8 /
   SendMessageToNextFollower();
 }
 
-void Max485BusLeader::HandleApplicationDataAvailableToSend() {
-  constexpr Milliseconds kUartResponseTimeout = 500;
+void Max485BusLeader::HandleApplicationDataAvailableToSend(bool firstSend) {
   bool shouldSend = false;
-  if (taskLastSendTimeExpectingResponse_ < 0) {
+  if (firstSend && taskLastSendTimeExpectingResponse_ < 0) {
     jll_info("%u Initiating first send", timeMillis());
     shouldSend = true;
-  } else if (timeMillis() - taskLastSendTimeExpectingResponse_ > kUartResponseTimeout) {
-    int timeoutCount = -1;
-    if (lastSentBusId_ != kSeparator) {
-      followerStates_[lastSentBusId_].timeoutCount++;
-      timeoutCount = followerStates_[lastSentBusId_].timeoutCount;
-    }
+  } else if (lastSentBusId_ != kSeparator &&
+             timeMillis() - taskLastSendTimeExpectingResponse_ > kUartResponseTimeoutMs) {
+    followerStates_[lastSentBusId_].timeoutCount++;
     jll_info("%u Timed out waiting for response from %d, count is now %d", timeMillis(),
-             static_cast<int>(lastSentBusId_), timeoutCount);
+             static_cast<int>(lastSentBusId_), followerStates_[lastSentBusId_].timeoutCount);
     shouldSend = true;
   } else {
-    jll_max485_data("%u Ignoring kApplicationDataAvailable", timeMillis());
+    jll_max485_data("%u Ignoring %sfirstSend kApplicationDataAvailable", timeMillis(), (firstSend ? "" : "!"));
   }
   if (shouldSend) { SendMessageToNextFollower(); }
 }
@@ -498,7 +501,7 @@ void Max485BusFollower::HandleReceivedMessage(BusId srcBusId, const BufferViewU8
   if (srcBusId == kBusIdLeader) { CopyEncodeAndSendMessage(kBusIdLeader); }
 }
 
-void Max485BusFollower::HandleApplicationDataAvailableToSend() {}
+void Max485BusFollower::HandleApplicationDataAvailableToSend(bool firstSend) {}
 
 void Max485BusFollower::SetMessageToSend(const BufferViewU8 message) { SetMessageToSendInner(kBusIdLeader, message); }
 
