@@ -67,8 +67,8 @@ void OrreryPlanet::StateChanged(uint8_t pin, bool isClosed) {
   if (busId == busId_) { return; }
   busId_ = busId;
   max485BusFollower_.SetBusIdSelf(busId_);
-  jll_info("%u OrreryPlanet switch on pin %u is now %s, new busId %u", timeMillis(), pin,
-           (isClosed ? "closed" : "open"), busId_);
+  jll_info("%u OrreryPlanet switch on pin %u is now %s, new planet %s (busId %u)", timeMillis(), pin,
+           (isClosed ? "closed" : "open"), GetPlanetName(static_cast<Planet>(busId_)), busId_);
 }
 
 void OrreryPlanet::RunLoop(Milliseconds currentTime) {
@@ -79,9 +79,9 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
   static OwnedBufferU8 readBuffer(1000);
   uint8_t destBusId, srcBusId;
   BufferViewU8 message = max485BusFollower_.ReadMessage(readBuffer, &destBusId, &srcBusId);
-  const uint8_t ourPlanetIndex = busId_ - static_cast<uint8_t>(Planet::Mercury);
+  const char* ourPlanetName = GetPlanetName(static_cast<Planet>(busId_));
   if (!message.empty()) {
-    jll_buffer_info(message, "%u Planet %u read message from %u to %u", currentTime, ourPlanetIndex, srcBusId,
+    jll_buffer_info(message, "%u Planet %s read message from %u to %u", currentTime, ourPlanetName, srcBusId,
                     destBusId);
   }
   if (message.empty()) { return; }
@@ -93,7 +93,7 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
 
   if (type == OrreryMessageType::LeaderCommand) {
     if (msg.speed.has_value()) {
-      jll_info("%u Planet %u applying speed %" PRId32, currentTime, ourPlanetIndex, *msg.speed);
+      jll_info("%u Planet %s applying speed %" PRId32, currentTime, ourPlanetName, *msg.speed);
 #if JL_MOTOR
       GetMainStepperMotor()->SetSpeed(*msg.speed);
 #endif  // JL_MOTOR

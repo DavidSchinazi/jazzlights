@@ -13,22 +13,6 @@
 namespace jazzlights {
 namespace {
 constexpr uint8_t kDefaultOnBrightness = 32;
-
-const char* GetPlanetName(Planet planet) {
-  switch (planet) {
-    case Planet::Mercury: return "Mercury";
-    case Planet::Venus: return "Venus";
-    case Planet::Earth: return "Earth";
-    case Planet::Mars: return "Mars";
-    case Planet::Jupiter: return "Jupiter";
-    case Planet::Saturn: return "Saturn";
-    case Planet::Uranus: return "Uranus";
-    case Planet::Neptune: return "Neptune";
-    case Planet::Sun: return "Sun";
-  }
-  return "Unknown";
-}
-
 }  // namespace
 
 OrreryLeaderUi::OrreryLeaderUi(Player& player) : Esp32Ui(player) {}

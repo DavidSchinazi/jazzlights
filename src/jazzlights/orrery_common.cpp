@@ -89,6 +89,21 @@ bool ReadOrreryMessage(NetworkReader& reader, OrreryMessageType* type, OrreryMes
   return true;
 }
 
+const char* GetPlanetName(Planet planet) {
+  switch (planet) {
+    case Planet::Mercury: return "Mercury";
+    case Planet::Venus: return "Venus";
+    case Planet::Earth: return "Earth";
+    case Planet::Mars: return "Mars";
+    case Planet::Jupiter: return "Jupiter";
+    case Planet::Saturn: return "Saturn";
+    case Planet::Uranus: return "Uranus";
+    case Planet::Neptune: return "Neptune";
+    case Planet::Sun: return "Sun";
+  }
+  return "Unknown";
+}
+
 }  // namespace jazzlights
 
 #endif  // JL_IS_CONFIG(ORRERY_PLANET) || JL_IS_CONFIG(ORRERY_LEADER)

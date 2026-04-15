@@ -52,6 +52,7 @@ struct OrreryMessage {
 
 bool WriteOrreryMessage(OrreryMessageType type, const OrreryMessage& msg, NetworkWriter& writer);
 bool ReadOrreryMessage(NetworkReader& reader, OrreryMessageType* type, OrreryMessage* msg);
+const char* GetPlanetName(Planet planet);
 
 }  // namespace jazzlights
 
