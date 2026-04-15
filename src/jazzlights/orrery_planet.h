@@ -6,6 +6,7 @@
 #if JL_IS_CONFIG(ORRERY_PLANET)
 
 #include "jazzlights/network/max485_bus.h"
+#include "jazzlights/orrery_common.h"
 #include "jazzlights/ui/gpio_button.h"
 #include "jazzlights/util/time.h"
 
@@ -28,6 +29,7 @@ class OrreryPlanet : public GpioSwitch::SwitchInterface {
   BusId ComputeBusId() const;
 
   Player* player_ = nullptr;
+  OrreryMessage currentState_ = {};
   GpioSwitch switch0_;
   GpioSwitch switch1_;
   GpioSwitch switch2_;

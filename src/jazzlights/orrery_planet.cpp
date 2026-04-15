@@ -95,31 +95,25 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
   if (!ReadOrreryMessage(reader, &type, &msg)) { return; }
 
   if (type == OrreryMessageType::LeaderCommand) {
-    bool applySuccess = false;
-    OrreryMessage ackMsg;
-    ackMsg.leaderBootId = msg.leaderBootId;
-    ackMsg.leaderSequenceNumber = msg.leaderSequenceNumber;
+    currentState_.leaderBootId = msg.leaderBootId;
+    currentState_.leaderSequenceNumber = msg.leaderSequenceNumber;
     if (msg.speed.has_value()) {
       jll_info("%u Planet %s applying speed %" PRId32, currentTime, ourPlanetName, *msg.speed);
 #if JL_MOTOR
       GetMainStepperMotor()->SetSpeed(*msg.speed);
 #endif  // JL_MOTOR
-      ackMsg.speed = *msg.speed;
-      applySuccess = true;
+      currentState_.speed = *msg.speed;
     }
     if (msg.ledBrightness.has_value()) {
       jll_info("%u Planet %s applying brightness %u", currentTime, ourPlanetName, *msg.ledBrightness);
       if (player_ != nullptr) { player_->set_brightness(*msg.ledBrightness); }
-      ackMsg.ledBrightness = *msg.ledBrightness;
-      applySuccess = true;
+      currentState_.ledBrightness = *msg.ledBrightness;
     }
 
-    if (applySuccess) {
-      uint8_t ackBuffer[64];
-      NetworkWriter writer(ackBuffer, sizeof(ackBuffer));
-      if (WriteOrreryMessage(OrreryMessageType::FollowerResponse, ackMsg, writer)) {
-        max485BusFollower_.SetMessageToSend(BufferViewU8(ackBuffer, writer.LengthWritten()));
-      }
+    uint8_t buffer[64];
+    NetworkWriter writer(buffer, sizeof(buffer));
+    if (WriteOrreryMessage(OrreryMessageType::FollowerResponse, currentState_, writer)) {
+      max485BusFollower_.SetMessageToSend(BufferViewU8(buffer, writer.LengthWritten()));
     }
   }
 }
