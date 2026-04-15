@@ -20,6 +20,10 @@ Milliseconds timeMillis();
 
 typedef int32_t FramesPerSecond;
 
+#ifdef ESP32
+Milliseconds timeMillisFromEspTime(int64_t espTime);
+#endif  // ESP32
+
 }  // namespace jazzlights
 
 #endif  // JL_UTIL_TIME_H

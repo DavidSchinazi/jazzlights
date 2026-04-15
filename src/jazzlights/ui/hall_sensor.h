@@ -6,6 +6,7 @@
 #if JL_HALL_SENSOR
 
 #include "jazzlights/ui/gpio_button.h"
+#include "jazzlights/util/time.h"
 
 namespace jazzlights {
 
@@ -14,6 +15,7 @@ class HallSensor : public GpioPin::PinInterface {
   explicit HallSensor(uint8_t pin);
   ~HallSensor() = default;
   bool IsClosed() const { return pin_.IsClosed(); }
+  Milliseconds GetTimeLastOpened() const;
 
   // Called once per primary runloop.
   void RunLoop() { pin_.RunLoop(); }
@@ -23,6 +25,7 @@ class HallSensor : public GpioPin::PinInterface {
 
  private:
   GpioPin pin_;
+  Milliseconds timeLastOpened_ = -1;
 };
 
 }  // namespace jazzlights

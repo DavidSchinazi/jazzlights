@@ -18,7 +18,6 @@
 #include "jazzlights/orrery_leader.h"
 #include "jazzlights/orrery_planet.h"
 #include "jazzlights/player.h"
-#include "jazzlights/ui/hall_sensor.h"
 #include "jazzlights/ui/rotary_phone.h"
 #include "jazzlights/ui/ui.h"
 #include "jazzlights/ui/ui_atom_matrix.h"
@@ -66,14 +65,6 @@ static Esp32UiImpl* GetUi() {
 #if JL_WEBSOCKET_SERVER
 WebSocketServer websocket_server(80, player);
 #endif  // JL_WEBSOCKET_SERVER
-
-#if JL_HALL_SENSOR
-HallSensor* GetHallSensor() {
-  constexpr uint8_t kHallSensorPin = 33;
-  static HallSensor sHallSensor(kHallSensorPin);
-  return &sHallSensor;
-}
-#endif  // JL_HALL_SENSOR
 
 void SetupPrimaryRunLoop() {
 #if JL_DEBUG
@@ -134,9 +125,6 @@ void SetupPrimaryRunLoop() {
 #if JL_AUDIO_VISUALIZER
   Audio::Get().Setup();
 #endif  // JL_AUDIO_VISUALIZER
-#if JL_HALL_SENSOR
-  (void)GetHallSensor();
-#endif  // JL_HALL_SENSOR
 }
 
 void RunPrimaryRunLoop() {
@@ -167,9 +155,6 @@ void RunPrimaryRunLoop() {
   }
 #endif  // JL_WEBSOCKET_SERVER
   SAVE_TIME_POINT(PrimaryRunLoop, LoopEnd);
-#if JL_HALL_SENSOR
-  GetHallSensor()->RunLoop();
-#endif  // JL_HALL_SENSOR
 #if JL_TEST_MOTOR
   StepperMotorTestRunLoop(currentTime);
 #endif  // JL_TEST_MOTOR

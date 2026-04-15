@@ -12,11 +12,17 @@
 
 namespace jazzlights {
 
+static constexpr int64_t kTimeStartOffset = 100000;
+#ifdef ESP32
+static constexpr int64_t kEsp32TimeDivider = 1000;
+Milliseconds timeMillisFromEspTime(int64_t espTime) { return static_cast<Milliseconds>(espTime / kEsp32TimeDivider); }
+#endif  // ESP32
+
 Milliseconds timeMillis() {
 #ifdef ESP32
   // We measured this on the Atom Matrix ESP32 and it appears that timeMillis() takes about one microsecond and
   // esp_timer_get_time() takes about half a microsecond.
-  const int64_t systemTime = esp_timer_get_time() / 1000;
+  const int64_t systemTime = esp_timer_get_time() / kEsp32TimeDivider;
 #else   // ESP32
   static auto t0 = std::chrono::steady_clock::now();
   const int64_t systemTime =
@@ -32,7 +38,7 @@ Milliseconds timeMillis() {
   // We add 100000 here to have the time start at 100s. That allows subtracting without having the time become negative.
   // In particular, without this addition, we would not properly handle received pattern time sync messages because the
   // currentPatternStartTime could become negative and would be clamped at zero.
-  return static_cast<Milliseconds>(systemTime + 100000);
+  return static_cast<Milliseconds>(systemTime + kTimeStartOffset);
 }
 
 }  // namespace jazzlights

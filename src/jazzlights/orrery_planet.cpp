@@ -12,6 +12,7 @@
 #include "jazzlights/network/network.h"
 #include "jazzlights/orrery_common.h"
 #include "jazzlights/player.h"
+#include "jazzlights/ui/hall_sensor.h"
 #include "jazzlights/util/log.h"
 
 namespace jazzlights {
@@ -20,6 +21,7 @@ namespace {
 static constexpr uint8_t kPlanetSwitchPin0 = 12;
 static constexpr uint8_t kPlanetSwitchPin1 = 11;
 static constexpr uint8_t kPlanetSwitchPin2 = 9;
+static constexpr uint8_t kHallSensorPin = 15;
 #else
 #error "Unexpected controller"
 #endif
@@ -43,6 +45,13 @@ constexpr int kMax485RxPin = 1;
 #error "unsupported controller for Max485BusHandler"
 #endif
 
+#if JL_HALL_SENSOR
+HallSensor* GetHallSensor() {
+  static HallSensor sHallSensor(kHallSensorPin);
+  return &sHallSensor;
+}
+#endif  // JL_HALL_SENSOR
+
 }  // namespace
 
 OrreryPlanet* OrreryPlanet::Get() {
@@ -53,6 +62,9 @@ OrreryPlanet* OrreryPlanet::Get() {
 void OrreryPlanet::Setup(Player& player) {
   player_ = &player;
   player_->set_brightness(kDefaultPlanetBrightness);
+#if JL_HALL_SENSOR
+  (void)GetHallSensor();
+#endif  // JL_HALL_SENSOR
 }
 
 OrreryPlanet::OrreryPlanet()
@@ -86,6 +98,12 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
   switch0_.RunLoop();
   switch1_.RunLoop();
   switch2_.RunLoop();
+
+  std::optional<Milliseconds> timeHallSensorLastOpened;
+#if JL_HALL_SENSOR
+  GetHallSensor()->RunLoop();
+  timeHallSensorLastOpened = GetHallSensor()->GetTimeLastOpened();
+#endif  // JL_HALL_SENSOR
 
   static OwnedBufferU8 readBuffer(1000);
   uint8_t destBusId, srcBusId;
