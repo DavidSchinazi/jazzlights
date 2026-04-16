@@ -47,6 +47,14 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
   motorSpeedButton_ = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/120, /*w=*/160, /*h=*/60, "Motor Speed");
   UpdateMotorSpeedButton();
 
+  uint32_t ledPattern = OrreryLeader::Get()->GetLedPattern(currentPlanet_);
+  planetHalf_ = (ledPattern & 0x80000000) != 0;
+  planetOffset_ = (ledPattern >> 16) & 0xFF;
+  planetHalfButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/180, /*w=*/160, /*h=*/60, "");
+  UpdatePlanetHalfButton();
+  planetOffsetButton_ = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/180, /*w=*/160, /*h=*/60, "");
+  UpdatePlanetOffsetButton();
+
   const int w = 320 / 3;
   const int h = 240 / 5;
   backButton_ = TouchButtonManager::Get()->AddButton(0, 0, w, h, "Back");
@@ -91,6 +99,8 @@ void OrreryLeaderUi::FinalSetup() {
   motorEnableButton_->Draw();
   motorDirectionButton_->Draw();
   motorSpeedButton_->Draw();
+  planetHalfButton_->Draw();
+  planetOffsetButton_->Draw();
   TouchButtonManager::Get()->MaybePaint();
 }
 
@@ -117,6 +127,7 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
     if (backButton_->JustReleased()) {
       keypadActive_ = false;
       editingBrightness_ = false;
+      editingOffset_ = false;
       backButton_->Hide();
       speedDisplayButton_->Hide();
       for (int i = 0; i <= 9; i++) { keypadButtons_[i]->Hide(); }
@@ -128,6 +139,8 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       motorEnableButton_->Draw();
       motorDirectionButton_->Draw();
       motorSpeedButton_->Draw();
+      planetHalfButton_->Draw();
+      planetOffsetButton_->Draw();
       TouchButtonManager::Get()->Redraw();
     }
     if (clearButton_->JustReleased()) {
@@ -140,6 +153,11 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
         ledBrightness_ = keypadValue_;
         OrreryLeader::Get()->SetBrightness(currentPlanet_, ledBrightness_);
         UpdateLedBrightnessButton();
+      } else if (editingOffset_) {
+        if (keypadValue_ > 255) { keypadValue_ = 255; }
+        planetOffset_ = keypadValue_;
+        UpdatePlanetOffsetButton();
+        UpdatePlanetPattern();
       } else {
         motorFrequencyHz_ = keypadValue_;
         SetMotorSpeed();
@@ -147,6 +165,7 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       }
       keypadActive_ = false;
       editingBrightness_ = false;
+      editingOffset_ = false;
       backButton_->Hide();
       speedDisplayButton_->Hide();
       for (int i = 0; i <= 9; i++) { keypadButtons_[i]->Hide(); }
@@ -158,6 +177,8 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       motorEnableButton_->Draw();
       motorDirectionButton_->Draw();
       motorSpeedButton_->Draw();
+      planetHalfButton_->Draw();
+      planetOffsetButton_->Draw();
       TouchButtonManager::Get()->Redraw();
     }
   } else if (planetSubmenuActive_) {
@@ -181,6 +202,11 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
         UpdateMotorSpeedButton();
         ledBrightness_ = OrreryLeader::Get()->GetBrightness(currentPlanet_);
         UpdateLedBrightnessButton();
+        uint32_t ledPattern = OrreryLeader::Get()->GetLedPattern(currentPlanet_);
+        planetHalf_ = (ledPattern & 0x80000000) != 0;
+        planetOffset_ = (ledPattern >> 16) & 0xFF;
+        UpdatePlanetHalfButton();
+        UpdatePlanetOffsetButton();
         planetSubmenuActive_ = false;
         for (int j = 0; j < kNumPlanets; j++) { planetSelectButtons_[j]->Hide(); }
         planetBackButton_->Hide();
@@ -190,6 +216,8 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
         motorEnableButton_->Draw();
         motorDirectionButton_->Draw();
         motorSpeedButton_->Draw();
+        planetHalfButton_->Draw();
+        planetOffsetButton_->Draw();
         TouchButtonManager::Get()->Redraw();
       }
     }
@@ -203,6 +231,8 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       motorEnableButton_->Draw();
       motorDirectionButton_->Draw();
       motorSpeedButton_->Draw();
+      planetHalfButton_->Draw();
+      planetOffsetButton_->Draw();
       TouchButtonManager::Get()->Redraw();
     }
   } else {
@@ -214,6 +244,8 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       motorEnableButton_->Hide();
       motorDirectionButton_->Hide();
       motorSpeedButton_->Hide();
+      planetHalfButton_->Hide();
+      planetOffsetButton_->Hide();
       for (int i = 0; i < kNumPlanets; i++) { planetSelectButtons_[i]->Draw(); }
       planetBackButton_->Draw();
       TouchButtonManager::Get()->Redraw();
@@ -221,6 +253,7 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
     if (ledBrightnessButton_->JustReleased()) {
       keypadActive_ = true;
       editingBrightness_ = true;
+      editingOffset_ = false;
       keypadValue_ = 0;
       planetButton_->Hide();
       ledBrightnessButton_->Hide();
@@ -228,6 +261,8 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       motorEnableButton_->Hide();
       motorDirectionButton_->Hide();
       motorSpeedButton_->Hide();
+      planetHalfButton_->Hide();
+      planetOffsetButton_->Hide();
       backButton_->Draw();
       speedDisplayButton_->Draw();
       for (int i = 0; i <= 9; i++) { keypadButtons_[i]->Draw(); }
@@ -249,6 +284,7 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
     if (motorSpeedButton_->JustReleased()) {
       keypadActive_ = true;
       editingBrightness_ = false;
+      editingOffset_ = false;
       keypadValue_ = 0;
       planetButton_->Hide();
       ledBrightnessButton_->Hide();
@@ -256,6 +292,34 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       motorEnableButton_->Hide();
       motorDirectionButton_->Hide();
       motorSpeedButton_->Hide();
+      planetHalfButton_->Hide();
+      planetOffsetButton_->Hide();
+      backButton_->Draw();
+      speedDisplayButton_->Draw();
+      for (int i = 0; i <= 9; i++) { keypadButtons_[i]->Draw(); }
+      clearButton_->Draw();
+      confirmButton_->Draw();
+      speedDisplayButton_->Draw(/*force=*/true);
+      TouchButtonManager::Get()->Redraw();
+    }
+    if (planetHalfButton_->JustReleased()) {
+      planetHalf_ = !planetHalf_;
+      UpdatePlanetHalfButton();
+      UpdatePlanetPattern();
+    }
+    if (planetOffsetButton_->JustReleased()) {
+      keypadActive_ = true;
+      editingBrightness_ = false;
+      editingOffset_ = true;
+      keypadValue_ = 0;
+      planetButton_->Hide();
+      ledBrightnessButton_->Hide();
+      hallSensorButton_->Hide();
+      motorEnableButton_->Hide();
+      motorDirectionButton_->Hide();
+      motorSpeedButton_->Hide();
+      planetHalfButton_->Hide();
+      planetOffsetButton_->Hide();
       backButton_->Draw();
       speedDisplayButton_->Draw();
       for (int i = 0; i <= 9; i++) { keypadButtons_[i]->Draw(); }
@@ -291,6 +355,19 @@ void OrreryLeaderUi::UpdatePlanetButton() {
   char label[32];
   snprintf(label, sizeof(label), "Planet: %s", GetPlanetName(currentPlanet_));
   planetButton_->SetLabelText(label);
+}
+
+void OrreryLeaderUi::UpdatePlanetHalfButton() { planetHalfButton_->SetLabelText(planetHalf_ ? "Half" : "Full"); }
+
+void OrreryLeaderUi::UpdatePlanetOffsetButton() {
+  char label[32];
+  snprintf(label, sizeof(label), "Offset: %u", planetOffset_);
+  planetOffsetButton_->SetLabelText(label);
+}
+
+void OrreryLeaderUi::UpdatePlanetPattern() {
+  uint32_t ledPattern = 0x0000FE00 | (planetHalf_ ? 0x80000000 : 0) | (planetOffset_ << 16);
+  OrreryLeader::Get()->SetLedPattern(currentPlanet_, ledPattern);
 }
 
 void OrreryLeaderUi::UpdateHallSensorButton() {

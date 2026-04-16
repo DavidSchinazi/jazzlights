@@ -90,6 +90,24 @@ uint8_t OrreryLeader::GetBrightness(Planet planet) const {
   return kDefaultPlanetBrightness;
 }
 
+void OrreryLeader::SetLedPattern(Planet planet, uint32_t ledPattern) {
+  auto it = messages_.find(planet);
+  if (it != messages_.end()) {
+    OrreryMessage& msg = it->second;
+    if (!msg.ledPattern.has_value() || *msg.ledPattern != ledPattern) {
+      msg.ledPattern = ledPattern;
+      jll_info("OrreryLeader setting planet %s LED pattern to 0x%08" PRIx32, GetPlanetName(planet), ledPattern);
+      SendMessage(planet);
+    }
+  }
+}
+
+uint32_t OrreryLeader::GetLedPattern(Planet planet) const {
+  auto it = messages_.find(planet);
+  if (it != messages_.end() && it->second.ledPattern.has_value()) { return *it->second.ledPattern; }
+  return kPlanetPattern;
+}
+
 std::optional<uint32_t> OrreryLeader::GetTimeHallSensorLastOpened(Planet planet) const {
   auto it = responses_.find(planet);
   if (it != responses_.end()) { return it->second.timeHallSensorLastOpened; }

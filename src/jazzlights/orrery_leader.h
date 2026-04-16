@@ -21,6 +21,8 @@ class OrreryLeader {
   int32_t GetSpeed(Planet planet) const;
   void SetBrightness(Planet planet, uint8_t brightness);
   uint8_t GetBrightness(Planet planet) const;
+  void SetLedPattern(Planet planet, uint32_t ledPattern);
+  uint32_t GetLedPattern(Planet planet) const;
   std::optional<uint32_t> GetTimeHallSensorLastOpened(Planet planet) const;
 
   void RunLoop(Milliseconds currentTime);
