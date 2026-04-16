@@ -8,13 +8,14 @@
 #include "jazzlights/network/max485_bus.h"
 #include "jazzlights/orrery_common.h"
 #include "jazzlights/ui/gpio_button.h"
+#include "jazzlights/ui/hall_sensor.h"
 #include "jazzlights/util/time.h"
 
 namespace jazzlights {
 
 class Player;
 
-class OrreryPlanet : public GpioSwitch::SwitchInterface {
+class OrreryPlanet : public GpioSwitch::SwitchInterface, public HallSensor::HallSensorInterface {
  public:
   static OrreryPlanet* Get();
   void Setup(Player& player);
@@ -23,6 +24,9 @@ class OrreryPlanet : public GpioSwitch::SwitchInterface {
   // From GpioSwitch::SwitchInterface.
   void StateChanged(uint8_t pin, bool isClosed) override;
 
+  // From HallSensor::HallSensorInterface.
+  void HandleHallSensorChange(uint8_t pin, bool isClosed, Milliseconds timeOfChange) override;
+
  private:
   OrreryPlanet();
 
@@ -30,6 +34,9 @@ class OrreryPlanet : public GpioSwitch::SwitchInterface {
 
   Player* player_ = nullptr;
   OrreryMessage currentState_ = {};
+  HallSensor hallSensor_;
+  std::optional<Milliseconds> timeHallSensorLastOpened_;
+  std::optional<Milliseconds> timeHallSensorLastClosed_;
   GpioSwitch switch0_;
   GpioSwitch switch1_;
   GpioSwitch switch2_;

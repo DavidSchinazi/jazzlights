@@ -12,10 +12,16 @@ namespace jazzlights {
 
 class HallSensor : public GpioPin::PinInterface {
  public:
-  explicit HallSensor(uint8_t pin);
+  // Virtual interface class that will receive pin callbacks.
+  class HallSensorInterface {
+   public:
+    virtual ~HallSensorInterface() = default;
+    // Called when the state changes.
+    virtual void HandleHallSensorChange(uint8_t pin, bool isClosed, Milliseconds timeOfChange) = 0;
+  };
+  explicit HallSensor(uint8_t pin, HallSensorInterface& interface);
   ~HallSensor() = default;
   bool IsClosed() const { return pin_.IsClosed(); }
-  Milliseconds GetTimeLastOpened() const;
 
   // Called once per primary runloop.
   void RunLoop() { pin_.RunLoop(); }
@@ -25,7 +31,7 @@ class HallSensor : public GpioPin::PinInterface {
 
  private:
   GpioPin pin_;
-  Milliseconds timeLastOpened_ = -1;
+  HallSensorInterface& interface_;
 };
 
 }  // namespace jazzlights

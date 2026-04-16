@@ -16,17 +16,11 @@ namespace {
 constexpr int64_t kHallSensorDebounceDuration = 20000;  // 20ms.
 }  // namespace
 
-HallSensor::HallSensor(uint8_t pin) : pin_(pin, *this, kHallSensorDebounceDuration) {}
+HallSensor::HallSensor(uint8_t pin, HallSensorInterface& interface)
+    : pin_(pin, *this, kHallSensorDebounceDuration), interface_(interface) {}
 
 void HallSensor::HandleChange(uint8_t pin, bool isClosed, int64_t timeOfChange) {
-  jll_info("%lld Hall sensor at pin %d is now %s", timeOfChange, static_cast<int>(pin), (isClosed ? "closed" : "open"));
-  if (!isClosed) { timeLastOpened_ = timeMillisFromEspTime(timeOfChange); }
-}
-
-Milliseconds HallSensor::GetTimeLastOpened() const {
-  if (timeLastOpened_ < 0) { return -1; }
-  if (IsClosed()) { return 0; }
-  return timeLastOpened_;
+  interface_.HandleHallSensorChange(pin, isClosed, timeMillisFromEspTime(timeOfChange));
 }
 
 }  // namespace jazzlights

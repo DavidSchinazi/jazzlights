@@ -45,13 +45,6 @@ constexpr int kMax485RxPin = 1;
 #error "unsupported controller for Max485BusHandler"
 #endif
 
-#if JL_HALL_SENSOR
-HallSensor* GetHallSensor() {
-  static HallSensor sHallSensor(kHallSensorPin);
-  return &sHallSensor;
-}
-#endif  // JL_HALL_SENSOR
-
 }  // namespace
 
 OrreryPlanet* OrreryPlanet::Get() {
@@ -69,13 +62,11 @@ void OrreryPlanet::Setup(Player& player) {
   currentState_.ledBasePrecedence = kDefaultPlanetBasePrecedence;
   player_->setPrecedenceGain(kDefaultPlanetPrecedenceGain);
   currentState_.ledPrecedenceGain = kDefaultPlanetPrecedenceGain;
-#if JL_HALL_SENSOR
-  (void)GetHallSensor();
-#endif  // JL_HALL_SENSOR
 }
 
 OrreryPlanet::OrreryPlanet()
-    : switch0_(kPlanetSwitchPin0, *this),
+    : hallSensor_(kHallSensorPin, *this),
+      switch0_(kPlanetSwitchPin0, *this),
       switch1_(kPlanetSwitchPin1, *this),
       switch2_(kPlanetSwitchPin2, *this),
       busId_(ComputeBusId()),
@@ -101,16 +92,20 @@ void OrreryPlanet::StateChanged(uint8_t pin, bool isClosed) {
            (isClosed ? "closed" : "open"), GetPlanetName(static_cast<Planet>(busId_)), busId_);
 }
 
+void OrreryPlanet::HandleHallSensorChange(uint8_t pin, bool isClosed, Milliseconds timeOfChange) {
+  jll_info("%u Hall sensor at pin %d is now %s", timeOfChange, static_cast<int>(pin), (isClosed ? "closed" : "open"));
+  if (isClosed) {
+    timeHallSensorLastClosed_ = timeOfChange;
+  } else {
+    timeHallSensorLastOpened_ = timeOfChange;
+  }
+}
+
 void OrreryPlanet::RunLoop(Milliseconds currentTime) {
+  hallSensor_.RunLoop();
   switch0_.RunLoop();
   switch1_.RunLoop();
   switch2_.RunLoop();
-
-  std::optional<Milliseconds> timeHallSensorLastOpened;
-#if JL_HALL_SENSOR
-  GetHallSensor()->RunLoop();
-  timeHallSensorLastOpened = GetHallSensor()->GetTimeLastOpened();
-#endif  // JL_HALL_SENSOR
 
   BusId destBusId, srcBusId;
   OrreryMessage msg;
@@ -150,7 +145,7 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
       currentState_.ledPrecedenceGain = *msg.ledPrecedenceGain;
     }
 
-    currentState_.timeHallSensorLastOpened = timeHallSensorLastOpened;
+    currentState_.timeHallSensorLastOpened = timeHallSensorLastOpened_;
     max485BusFollower_.SetMessageToSend(currentState_);
   }
 }
