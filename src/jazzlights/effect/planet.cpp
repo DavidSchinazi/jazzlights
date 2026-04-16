@@ -12,16 +12,16 @@ const TProgmemRGBPalette16* GetPlanetPalette(Planet planet) {
   switch (planet) {
     case Planet::Mercury: {
       static const TProgmemRGBPalette16 MercuryPalette_p FL_PROGMEM = {
-          CRGB::Gray,    CRGB::DarkGray,  CRGB::DimGray, CRGB::SlateGray, CRGB::Gray,    CRGB::DarkGray,
-          CRGB::DimGray, CRGB::SlateGray, CRGB::Gray,    CRGB::DarkGray,  CRGB::DimGray, CRGB::SlateGray,
-          CRGB::Gray,    CRGB::DarkGray,  CRGB::DimGray, CRGB::White};
+          CRGB::Black, CRGB::DimGray, CRGB::Gray, CRGB::White, CRGB::SlateGray, CRGB::DarkGray,
+          CRGB::Black, CRGB::DimGray, CRGB::Gray, CRGB::White, CRGB::SlateGray, CRGB::DarkGray,
+          CRGB::Black, CRGB::DimGray, CRGB::Gray, CRGB::White};
       return &MercuryPalette_p;
     }
     case Planet::Venus: {
       static const TProgmemRGBPalette16 VenusPalette_p FL_PROGMEM = {
-          CRGB::Yellow, CRGB::LightYellow, CRGB::Beige,  CRGB::Khaki,       CRGB::Yellow, CRGB::LightYellow,
-          CRGB::Beige,  CRGB::Khaki,       CRGB::Yellow, CRGB::LightYellow, CRGB::Beige,  CRGB::Khaki,
-          CRGB::Yellow, CRGB::LightYellow, CRGB::Beige,  CRGB::White};
+          CRGB::Yellow, CRGB::Orange, CRGB::LightYellow, CRGB::Gold, CRGB::Beige,       CRGB::Khaki,
+          CRGB::Orange, CRGB::White,  CRGB::Yellow,      CRGB::Gold, CRGB::LightYellow, CRGB::Khaki,
+          CRGB::Beige,  CRGB::Orange, CRGB::Yellow,      CRGB::White};
       return &VenusPalette_p;
     }
     case Planet::Earth: {
@@ -32,38 +32,38 @@ const TProgmemRGBPalette16* GetPlanetPalette(Planet planet) {
     }
     case Planet::Mars: {
       static const TProgmemRGBPalette16 MarsPalette_p FL_PROGMEM = {
-          CRGB::Red,    CRGB::DarkRed,   CRGB::Maroon, CRGB::OrangeRed, CRGB::Red,    CRGB::DarkRed,
-          CRGB::Maroon, CRGB::OrangeRed, CRGB::Red,    CRGB::DarkRed,   CRGB::Maroon, CRGB::OrangeRed,
-          CRGB::Red,    CRGB::DarkRed,   CRGB::Maroon, CRGB::White};
+          CRGB::Red,   CRGB::Black,   CRGB::DarkRed,   CRGB::OrangeRed, CRGB::Maroon, CRGB::Red,
+          CRGB::Black, CRGB::White,   CRGB::DarkRed,   CRGB::OrangeRed, CRGB::Maroon, CRGB::Red,
+          CRGB::Black, CRGB::DarkRed, CRGB::OrangeRed, CRGB::White};
       return &MarsPalette_p;
     }
     case Planet::Jupiter: {
       static const TProgmemRGBPalette16 JupiterPalette_p FL_PROGMEM = {
-          CRGB::Sienna,     CRGB::BurlyWood, CRGB::SandyBrown, CRGB::Tan,       CRGB::Sienna,     CRGB::BurlyWood,
-          CRGB::SandyBrown, CRGB::Tan,       CRGB::Sienna,     CRGB::BurlyWood, CRGB::SandyBrown, CRGB::Tan,
-          CRGB::Sienna,     CRGB::BurlyWood, CRGB::SandyBrown, CRGB::White};
+          CRGB::Sienna, CRGB::BurlyWood, CRGB::SandyBrown, CRGB::White,     CRGB::Sienna,     CRGB::Orange,
+          CRGB::Maroon, CRGB::Tan,       CRGB::Sienna,     CRGB::BurlyWood, CRGB::SandyBrown, CRGB::White,
+          CRGB::Sienna, CRGB::Orange,    CRGB::Maroon,     CRGB::Tan};
       return &JupiterPalette_p;
     }
     case Planet::Saturn: {
       static const TProgmemRGBPalette16 SaturnPalette_p FL_PROGMEM = {
-          CRGB::Wheat,    CRGB::NavajoWhite, CRGB::Moccasin, CRGB::Gold,        CRGB::Wheat,    CRGB::NavajoWhite,
-          CRGB::Moccasin, CRGB::Gold,        CRGB::Wheat,    CRGB::NavajoWhite, CRGB::Moccasin, CRGB::Gold,
-          CRGB::Wheat,    CRGB::NavajoWhite, CRGB::Moccasin, CRGB::White};
+          CRGB::Wheat,    CRGB::NavajoWhite, CRGB::Sienna,   CRGB::Gold,        CRGB::Wheat,  CRGB::Tan,
+          CRGB::Moccasin, CRGB::White,       CRGB::Wheat,    CRGB::NavajoWhite, CRGB::Sienna, CRGB::Gold,
+          CRGB::Wheat,    CRGB::Tan,         CRGB::Moccasin, CRGB::White};
       return &SaturnPalette_p;
     }
     case Planet::Uranus: {
       static const TProgmemRGBPalette16 UranusPalette_p FL_PROGMEM = {
-          CRGB::LightCyan, CRGB::PaleTurquoise, CRGB::Aquamarine, CRGB::Turquoise,
-          CRGB::LightCyan, CRGB::PaleTurquoise, CRGB::Aquamarine, CRGB::Turquoise,
-          CRGB::LightCyan, CRGB::PaleTurquoise, CRGB::Aquamarine, CRGB::Turquoise,
+          CRGB::LightCyan, CRGB::PaleTurquoise, CRGB::CadetBlue,  CRGB::Turquoise,
+          CRGB::LightCyan, CRGB::PaleTurquoise, CRGB::Aquamarine, CRGB::White,
+          CRGB::LightCyan, CRGB::PaleTurquoise, CRGB::CadetBlue,  CRGB::Turquoise,
           CRGB::LightCyan, CRGB::PaleTurquoise, CRGB::Aquamarine, CRGB::White};
       return &UranusPalette_p;
     }
     case Planet::Neptune: {
       static const TProgmemRGBPalette16 NeptunePalette_p FL_PROGMEM = {
-          CRGB::Blue,      CRGB::DeepSkyBlue,  CRGB::RoyalBlue, CRGB::MidnightBlue, CRGB::Blue,      CRGB::DeepSkyBlue,
-          CRGB::RoyalBlue, CRGB::MidnightBlue, CRGB::Blue,      CRGB::DeepSkyBlue,  CRGB::RoyalBlue, CRGB::MidnightBlue,
-          CRGB::Blue,      CRGB::DeepSkyBlue,  CRGB::RoyalBlue, CRGB::White};
+          CRGB::Blue,      CRGB::DeepSkyBlue, CRGB::Navy,      CRGB::MidnightBlue, CRGB::Blue, CRGB::DeepSkyBlue,
+          CRGB::RoyalBlue, CRGB::White,       CRGB::Blue,      CRGB::DeepSkyBlue,  CRGB::Navy, CRGB::MidnightBlue,
+          CRGB::Blue,      CRGB::DeepSkyBlue, CRGB::RoyalBlue, CRGB::White};
       return &NeptunePalette_p;
     }
     case Planet::Sun: {
