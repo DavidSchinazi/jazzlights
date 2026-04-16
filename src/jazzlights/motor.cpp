@@ -13,13 +13,23 @@
 
 namespace jazzlights {
 
+#ifndef JL_MOTOR_DEBUG
+#define JL_MOTOR_DEBUG 0
+#endif  // JL_MOTOR_DEBUG
+
+#if JL_MOTOR_DEBUG
+#define jll_motor_debug(...) jll_info(__VA_ARGS__)
+#else  // JL_MOTOR_DEBUG
+#define jll_motor_debug(...) jll_debug(__VA_ARGS__)
+#endif  // JL_MOTOR_DEBUG
+
 StepperMotor::StepperMotor(int enablePin, int directionPin, int stepPin)
     : enablePin_(static_cast<gpio_num_t>(enablePin)),
       directionPin_(static_cast<gpio_num_t>(directionPin)),
       stepPin_(static_cast<gpio_num_t>(stepPin)) {}
 
 void StepperMotor::SetSpeed(int32_t frequencyHz) {
-  jll_info("%u Setting speed to %lldHz", timeMillis(), static_cast<int64_t>(frequencyHz));
+  jll_info("%u Setting motor speed to %lldHz", timeMillis(), static_cast<int64_t>(frequencyHz));
   if (Setup(frequencyHz)) { return; }
   uint32_t halfPeriod;
   if (frequencyHz > 0) {
@@ -115,7 +125,7 @@ bool StepperMotor::Setup(int32_t frequencyHz) {
 void StepperMotor::SetEnabled(bool enabled) {
   if (enablePin_ == GPIO_NUM_NC) { return; }
   if (enabled == lastEnabled_) { return; }
-  jll_info("Setting enable pin %d to %u", enablePin_, (enabled ? 0 : 1));
+  jll_motor_debug("%u Setting enable pin %d to %u", timeMillis(), enablePin_, (enabled ? 0 : 1));
   ESP_ERROR_CHECK(gpio_set_level(enablePin_, (enabled ? 0 : 1)));
   lastEnabled_ = enabled;
 }
@@ -123,7 +133,7 @@ void StepperMotor::SetEnabled(bool enabled) {
 void StepperMotor::SetDirection(bool direction) {
   if (directionPin_ == GPIO_NUM_NC) { return; }
   if (direction == lastDirection_) { return; }
-  jll_info("Setting direction pin %d to %u", directionPin_, (direction ? 1 : 0));
+  jll_motor_debug("%u Setting direction pin %d to %u", timeMillis(), directionPin_, (direction ? 1 : 0));
   ESP_ERROR_CHECK(gpio_set_level(directionPin_, (direction ? 1 : 0)));
   lastDirection_ = direction;
 }
