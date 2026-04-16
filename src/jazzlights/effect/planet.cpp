@@ -76,6 +76,21 @@ const TProgmemRGBPalette16* GetPlanetPalette(Planet planet) {
   return &CloudColors_p;
 }
 
+uint8_t GetNumPixels(Planet planet) {
+  switch (planet) {
+    case Planet::Mercury: return 12;
+    case Planet::Venus:
+    case Planet::Mars: return 16;
+    case Planet::Earth: return 24;
+    case Planet::Jupiter:
+    case Planet::Saturn:
+    case Planet::Uranus:
+    case Planet::Neptune:
+    case Planet::Sun: return 35;
+  }
+  return 35;
+}
+
 }  // namespace
 
 PlanetEffect* PlanetEffect::Get() {
@@ -83,9 +98,12 @@ PlanetEffect* PlanetEffect::Get() {
   return &sPlanetEffect;
 }
 
-PlanetEffect::PlanetEffect() {}
+PlanetEffect::PlanetEffect() { SetPlanet(Planet::Mercury); }
 
-void PlanetEffect::SetPlanet(Planet planet) { currentPlanet_ = planet; }
+void PlanetEffect::SetPlanet(Planet planet) {
+  currentPlanet_ = planet;
+  numPixels_ = GetNumPixels(planet);
+}
 
 size_t PlanetEffect::contextSize(const Frame& /*frame*/) const { return 0; }
 
@@ -96,8 +114,9 @@ void PlanetEffect::rewind(const Frame& /*frame*/) const {}
 void PlanetEffect::afterColors(const Frame& /*frame*/) const {}
 
 CRGB PlanetEffect::color(const Frame& frame, const Pixel& px) const {
+  if (px.cumulativeIndex >= numPixels_) { return CRGB::Black; }
   const TProgmemRGBPalette16* palette = GetPlanetPalette(currentPlanet_);
-  uint8_t colorIndex = (px.cumulativeIndex * 16) + (256 * frame.time / kEffectDuration);
+  uint8_t colorIndex = (256 * px.cumulativeIndex / numPixels_) + (256 * frame.time / kEffectDuration);
   return ColorFromPalette(*palette, colorIndex);
 }
 

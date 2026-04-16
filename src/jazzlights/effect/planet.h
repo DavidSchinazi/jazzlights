@@ -25,7 +25,8 @@ class PlanetEffect : public Effect {
 
  private:
   PlanetEffect();
-  Planet currentPlanet_ = Planet::Earth;
+  Planet currentPlanet_;
+  uint8_t numPixels_;
 };
 
 }  // namespace jazzlights
