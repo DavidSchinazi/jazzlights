@@ -50,6 +50,7 @@ OrreryLeader::OrreryLeader()
     msg.leaderSequenceNumber = nextSequenceNumber_++;
     msg.speed = 0;
     msg.ledBrightness = kDefaultPlanetBrightness;
+    msg.ledPattern = kPlanetPattern;
   }
 }
 

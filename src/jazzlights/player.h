@@ -202,8 +202,7 @@ class Player {
 #endif
 
 #if JL_IS_CONFIG(ORRERY_PLANET)
-  static inline constexpr PatternBits kPlanetPattern = 0x0000FE00;
-  PatternBits planetPattern_ = kPlanetPattern;
+  PatternBits planetPattern_ = 0;
 #endif  // ORRERY_PLANET
 
   NumLedWritesGetter* numLedWritesGetter_ = nullptr;

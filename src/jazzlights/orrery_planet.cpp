@@ -62,6 +62,9 @@ OrreryPlanet* OrreryPlanet::Get() {
 void OrreryPlanet::Setup(Player& player) {
   player_ = &player;
   player_->set_brightness(kDefaultPlanetBrightness);
+  currentState_.ledBrightness = kDefaultPlanetBrightness;
+  player_->SetPlanetPattern(kPlanetPattern);
+  currentState_.ledPattern = kPlanetPattern;
 #if JL_HALL_SENSOR
   (void)GetHallSensor();
 #endif  // JL_HALL_SENSOR
@@ -124,6 +127,13 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
       jll_info("%u Planet %s applying brightness %u", currentTime, ourPlanetName, *msg.ledBrightness);
       if (player_ != nullptr) { player_->set_brightness(*msg.ledBrightness); }
       currentState_.ledBrightness = *msg.ledBrightness;
+    }
+    if (msg.ledPattern.has_value()) {
+      if (player_ != nullptr && player_->GetPlanetPattern() != *msg.ledPattern) {
+        jll_info("%u Planet %s applying pattern %08x from leader", currentTime, ourPlanetName, *msg.ledPattern);
+        player_->SetPlanetPattern(*msg.ledPattern);
+      }
+      currentState_.ledPattern = *msg.ledPattern;
     }
 
     currentState_.timeHallSensorLastOpened = timeHallSensorLastOpened;
