@@ -97,7 +97,7 @@ void PlanetEffect::afterColors(const Frame& /*frame*/) const {}
 
 CRGB PlanetEffect::color(const Frame& frame, const Pixel& px) const {
   const TProgmemRGBPalette16* palette = GetPlanetPalette(currentPlanet_);
-  uint8_t colorIndex = (px.cumulativeIndex * 16) + (frame.time / 32);
+  uint8_t colorIndex = (px.cumulativeIndex * 16) + (256 * frame.time / kEffectDuration);
   return ColorFromPalette(*palette, colorIndex);
 }
 
