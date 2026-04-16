@@ -111,7 +111,7 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
   if (touchDetail.isPressed()) {
     int16_t px = touchDetail.x;
     int16_t py = touchDetail.y;
-    jll_info("%u button pressed x=%d y=%d", currentTime, px, py);
+    jll_debug("%u button pressed x=%d y=%d", currentTime, px, py);
     bool buttonPressed = TouchButtonManager::Get()->HandlePress(px, py);
   } else {
     TouchButtonManager::Get()->HandleIdle();

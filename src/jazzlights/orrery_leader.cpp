@@ -130,13 +130,7 @@ void OrreryLeader::RunLoop(Milliseconds /*currentTime*/) {
   OrreryMessage msg;
   if (!max485BusLeader_.ReadMessage(&msg, &destBusId, &srcBusId)) { return; }
 
-  if (msg.type == OrreryMessageType::FollowerResponse) {
-    responses_[static_cast<Planet>(srcBusId)] = msg;
-    if (msg.speed.has_value()) {
-      jll_info("OrreryLeader received response for planet %u: %" PRId32,
-               static_cast<uint8_t>(srcBusId) - static_cast<uint8_t>(Planet::Mercury), *msg.speed);
-    }
-  }
+  if (msg.type == OrreryMessageType::FollowerResponse) { responses_[static_cast<Planet>(srcBusId)] = msg; }
 }
 
 }  // namespace jazzlights
