@@ -12,8 +12,9 @@ constexpr uint8_t kOrreryFlagPosition = 0x02;
 constexpr uint8_t kOrreryFlagCalibration = 0x04;
 constexpr uint8_t kOrreryFlagLedPattern = 0x08;
 constexpr uint8_t kOrreryFlagLedBrightness = 0x10;
-constexpr uint8_t kOrreryFlagLedPrecedence = 0x20;
+constexpr uint8_t kOrreryFlagLedBasePrecedence = 0x20;
 constexpr uint8_t kOrreryFlagTimeHallSensorLastOpened = 0x40;
+constexpr uint8_t kOrreryFlagLedPrecedenceGain = 0x80;
 }  // namespace
 
 bool WriteOrreryMessage(const OrreryMessage& msg, NetworkWriter& writer) {
@@ -25,7 +26,8 @@ bool WriteOrreryMessage(const OrreryMessage& msg, NetworkWriter& writer) {
   if (msg.timeHallSensorLastOpened.has_value()) { flags |= kOrreryFlagTimeHallSensorLastOpened; }
   if (msg.ledPattern.has_value()) { flags |= kOrreryFlagLedPattern; }
   if (msg.ledBrightness.has_value()) { flags |= kOrreryFlagLedBrightness; }
-  if (msg.ledPrecedence.has_value()) { flags |= kOrreryFlagLedPrecedence; }
+  if (msg.ledBasePrecedence.has_value()) { flags |= kOrreryFlagLedBasePrecedence; }
+  if (msg.ledPrecedenceGain.has_value()) { flags |= kOrreryFlagLedPrecedenceGain; }
   if (!writer.WriteUint8(flags)) { return false; }
   if (!writer.WriteUint32(msg.leaderBootId)) { return false; }
   if (!writer.WriteUint32(msg.leaderSequenceNumber)) { return false; }
@@ -37,7 +39,8 @@ bool WriteOrreryMessage(const OrreryMessage& msg, NetworkWriter& writer) {
   }
   if (msg.ledPattern.has_value() && !writer.WriteUint32(static_cast<uint32_t>(*msg.ledPattern))) { return false; }
   if (msg.ledBrightness.has_value() && !writer.WriteUint8(*msg.ledBrightness)) { return false; }
-  if (msg.ledPrecedence.has_value() && !writer.WriteUint16(*msg.ledPrecedence)) { return false; }
+  if (msg.ledBasePrecedence.has_value() && !writer.WriteUint16(*msg.ledBasePrecedence)) { return false; }
+  if (msg.ledPrecedenceGain.has_value() && !writer.WriteUint16(*msg.ledPrecedenceGain)) { return false; }
   return true;
 }
 
@@ -91,12 +94,19 @@ bool ReadOrreryMessage(NetworkReader& reader, OrreryMessage* msg) {
   } else {
     msg->ledBrightness = std::nullopt;
   }
-  if (flags & kOrreryFlagLedPrecedence) {
-    Precedence ledPrecedence;
-    if (!reader.ReadUint16(&ledPrecedence)) { return false; }
-    msg->ledPrecedence = ledPrecedence;
+  if (flags & kOrreryFlagLedBasePrecedence) {
+    Precedence ledBasePrecedence;
+    if (!reader.ReadUint16(&ledBasePrecedence)) { return false; }
+    msg->ledBasePrecedence = ledBasePrecedence;
   } else {
-    msg->ledPrecedence = std::nullopt;
+    msg->ledBasePrecedence = std::nullopt;
+  }
+  if (flags & kOrreryFlagLedPrecedenceGain) {
+    Precedence ledPrecedenceGain;
+    if (!reader.ReadUint16(&ledPrecedenceGain)) { return false; }
+    msg->ledPrecedenceGain = ledPrecedenceGain;
+  } else {
+    msg->ledPrecedenceGain = std::nullopt;
   }
   return true;
 }

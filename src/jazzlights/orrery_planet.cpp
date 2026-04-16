@@ -65,6 +65,10 @@ void OrreryPlanet::Setup(Player& player) {
   currentState_.ledBrightness = kDefaultPlanetBrightness;
   player_->SetPlanetPattern(kPlanetPattern);
   currentState_.ledPattern = kPlanetPattern;
+  player_->setBasePrecedence(kDefaultPlanetBasePrecedence);
+  currentState_.ledBasePrecedence = kDefaultPlanetBasePrecedence;
+  player_->setPrecedenceGain(kDefaultPlanetPrecedenceGain);
+  currentState_.ledPrecedenceGain = kDefaultPlanetPrecedenceGain;
 #if JL_HALL_SENSOR
   (void)GetHallSensor();
 #endif  // JL_HALL_SENSOR
@@ -134,6 +138,16 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
         player_->SetPlanetPattern(*msg.ledPattern);
       }
       currentState_.ledPattern = *msg.ledPattern;
+    }
+    if (msg.ledBasePrecedence.has_value()) {
+      jll_info("%u Planet %s applying base precedence %u", currentTime, ourPlanetName, *msg.ledBasePrecedence);
+      if (player_ != nullptr) { player_->setBasePrecedence(*msg.ledBasePrecedence); }
+      currentState_.ledBasePrecedence = *msg.ledBasePrecedence;
+    }
+    if (msg.ledPrecedenceGain.has_value()) {
+      jll_info("%u Planet %s applying precedence gain %u", currentTime, ourPlanetName, *msg.ledPrecedenceGain);
+      if (player_ != nullptr) { player_->setPrecedenceGain(*msg.ledPrecedenceGain); }
+      currentState_.ledPrecedenceGain = *msg.ledPrecedenceGain;
     }
 
     currentState_.timeHallSensorLastOpened = timeHallSensorLastOpened;

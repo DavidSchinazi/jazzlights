@@ -32,6 +32,8 @@ inline constexpr size_t kNumPlanets = 9;
 inline constexpr int32_t kDefaultPlanetSpeed = 10000;
 inline constexpr uint8_t kDefaultPlanetBrightness = 64;
 inline constexpr PatternBits kPlanetPattern = 0x0000FE00;
+inline constexpr Precedence kDefaultPlanetBasePrecedence = 100;
+inline constexpr Precedence kDefaultPlanetPrecedenceGain = 100;
 
 enum class OrreryMessageType : uint8_t {
   LeaderCommand = 0x01,
@@ -48,14 +50,15 @@ struct OrreryMessage {
   std::optional<Milliseconds> timeHallSensorLastOpened;
   std::optional<PatternBits> ledPattern;
   std::optional<uint8_t> ledBrightness;
-  std::optional<Precedence> ledPrecedence;
+  std::optional<Precedence> ledBasePrecedence;
+  std::optional<Precedence> ledPrecedenceGain;
 
   bool operator==(const OrreryMessage& other) const {
     return type == other.type && leaderBootId == other.leaderBootId &&
            leaderSequenceNumber == other.leaderSequenceNumber && speed == other.speed && position == other.position &&
            calibration == other.calibration && timeHallSensorLastOpened == other.timeHallSensorLastOpened &&
            ledPattern == other.ledPattern && ledBrightness == other.ledBrightness &&
-           ledPrecedence == other.ledPrecedence;
+           ledBasePrecedence == other.ledBasePrecedence && ledPrecedenceGain == other.ledPrecedenceGain;
   }
   bool operator!=(const OrreryMessage& other) const { return !(*this == other); }
 };

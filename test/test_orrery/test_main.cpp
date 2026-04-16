@@ -15,7 +15,8 @@ void test_orrery_message_serialization() {
   msg1.calibration = 0;
   msg1.ledPattern = 0xABCDEF;
   msg1.ledBrightness = 200;
-  msg1.ledPrecedence = 10000;
+  msg1.ledBasePrecedence = 10000;
+  msg1.ledPrecedenceGain = 500;
 
   uint8_t buffer[64];
   NetworkWriter writer(buffer, sizeof(buffer));
@@ -38,8 +39,10 @@ void test_orrery_message_serialization() {
   TEST_ASSERT_EQUAL_UINT32(static_cast<uint32_t>(*msg1.ledPattern), static_cast<uint32_t>(*msg2.ledPattern));
   TEST_ASSERT(msg2.ledBrightness.has_value());
   TEST_ASSERT_EQUAL_UINT8(*msg1.ledBrightness, *msg2.ledBrightness);
-  TEST_ASSERT(msg2.ledPrecedence.has_value());
-  TEST_ASSERT_EQUAL_UINT16(*msg1.ledPrecedence, *msg2.ledPrecedence);
+  TEST_ASSERT(msg2.ledBasePrecedence.has_value());
+  TEST_ASSERT_EQUAL_UINT16(*msg1.ledBasePrecedence, *msg2.ledBasePrecedence);
+  TEST_ASSERT(msg2.ledPrecedenceGain.has_value());
+  TEST_ASSERT_EQUAL_UINT16(*msg1.ledPrecedenceGain, *msg2.ledPrecedenceGain);
   TEST_ASSERT(reader.Done());
 }
 
@@ -53,7 +56,8 @@ void test_orrery_message_sparse_serialization() {
   msg1.calibration = std::nullopt;
   msg1.ledPattern = std::nullopt;
   msg1.ledBrightness = 128;
-  msg1.ledPrecedence = std::nullopt;
+  msg1.ledBasePrecedence = std::nullopt;
+  msg1.ledPrecedenceGain = std::nullopt;
 
   uint8_t buffer[64];
   NetworkWriter writer(buffer, sizeof(buffer));
@@ -73,7 +77,8 @@ void test_orrery_message_sparse_serialization() {
   TEST_ASSERT_FALSE(msg2.ledPattern.has_value());
   TEST_ASSERT(msg2.ledBrightness.has_value());
   TEST_ASSERT_EQUAL_UINT8(*msg1.ledBrightness, *msg2.ledBrightness);
-  TEST_ASSERT_FALSE(msg2.ledPrecedence.has_value());
+  TEST_ASSERT_FALSE(msg2.ledBasePrecedence.has_value());
+  TEST_ASSERT_FALSE(msg2.ledPrecedenceGain.has_value());
   TEST_ASSERT(reader.Done());
 }
 

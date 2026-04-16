@@ -51,6 +51,8 @@ OrreryLeader::OrreryLeader()
     msg.speed = 0;
     msg.ledBrightness = kDefaultPlanetBrightness;
     msg.ledPattern = kPlanetPattern;
+    msg.ledBasePrecedence = kDefaultPlanetBasePrecedence;
+    msg.ledPrecedenceGain = kDefaultPlanetPrecedenceGain;
   }
 }
 
