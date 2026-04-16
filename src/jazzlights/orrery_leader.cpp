@@ -99,14 +99,9 @@ void OrreryLeader::SendMessage(Planet planet) {
 }
 
 void OrreryLeader::RunLoop(Milliseconds /*currentTime*/) {
-  static OwnedBufferU8 readBuffer(1000);
-  uint8_t destBusId, srcBusId;
-  BufferViewU8 message = max485BusLeader_.ReadMessage(readBuffer, &destBusId, &srcBusId);
-  if (message.empty()) { return; }
-
-  NetworkReader reader(message.data(), message.size());
+  BusId destBusId, srcBusId;
   OrreryMessage msg;
-  if (!ReadOrreryMessage(reader, &msg)) { return; }
+  if (!max485BusLeader_.ReadMessage(&msg, &destBusId, &srcBusId)) { return; }
 
   if (msg.type == OrreryMessageType::FollowerResponse) {
     if (msg.speed.has_value()) {

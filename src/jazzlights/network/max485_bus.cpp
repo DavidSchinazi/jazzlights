@@ -65,8 +65,6 @@ Max485BusHandler::Max485BusHandler(uart_port_t uartPort, int txPin, int rxPin, B
       taskEncodedSendMessageBuffer_(kMaxEncodedMessageLength),
       taskRecvBuffer_(kUartDriverBufferSize),
       taskDecodedMessageBuffer_(kMaxMessageLength),
-      sharedRecvSelfMessageBuffer_(kMaxMessageLength),
-      sharedRecvBroadcastMessageBuffer_(kMaxMessageLength),
       taskDecodedReadBuffer_(kMaxEncodedMessageLength) {
   // Pin task to core 0 to ensure UART interrupts do not get in the way of LED writing on core 1.
   if (xTaskCreatePinnedToCore(TaskFunction, "JL_MAX485_BUS", configMINIMAL_STACK_SIZE + 2000,
@@ -123,19 +121,19 @@ void Max485BusHandler::RunTask() {
             if (taskMessageView.empty()) { break; }
             jll_buffer_info(taskMessageView, "%u Received from %d to %d", timeMillis(), static_cast<int>(srcBusId),
                             static_cast<int>(destBusId));
-            if (destBusId == GetBusIdSelf()) {
-              {
-                const std::lock_guard<std::mutex> lock(recvMutex_);
-                sharedRecvSelfMessage_ = sharedRecvSelfMessageBuffer_.CopyIn(taskMessageView);
-                sharedRecvSelfSender_ = srcBusId;
+            OrreryMessage orreryMessage;
+            NetworkReader reader(taskMessageView.data(), taskMessageView.size());
+            if (ReadOrreryMessage(reader, &orreryMessage)) {
+              if (destBusId == GetBusIdSelf() || destBusId == kBusIdBroadcast) {
+                {
+                  const std::lock_guard<std::mutex> lock(recvMutex_);
+                  sharedReceivedMessages_.push_back(
+                      {.srcBusId = srcBusId, .destBusId = destBusId, .message = orreryMessage});
+                }
+                if (destBusId == GetBusIdSelf()) { HandleReceivedMessage(srcBusId, orreryMessage); }
+              } else {
+                jll_fatal("%u Unexpected bus ID %d", timeMillis(), static_cast<int>(destBusId));
               }
-              HandleReceivedMessage(srcBusId, taskMessageView);
-            } else if (destBusId == kBusIdBroadcast) {
-              const std::lock_guard<std::mutex> lock(recvMutex_);
-              sharedRecvBroadcastMessage_ = sharedRecvBroadcastMessageBuffer_.CopyIn(taskMessageView);
-              sharedRecvBroadcastSender_ = srcBusId;
-            } else {
-              jll_fatal("%u Unexpected bus ID %d", timeMillis(), static_cast<int>(destBusId));
             }
           }
         }
@@ -323,24 +321,16 @@ void Max485BusHandler::ShiftTaskRecvBuffer(size_t messageStartIndex) {
   lengthInTaskRecvBuffer_ -= messageStartIndex;
 }
 
-BufferViewU8 Max485BusHandler::ReadMessage(OwnedBufferU8& readMessageBuffer, BusId* destBusId, BusId* srcBusId) {
-  if (!IsReady()) { return BufferViewU8(); }
+bool Max485BusHandler::ReadMessage(OrreryMessage* message, BusId* destBusId, BusId* srcBusId) {
+  if (!IsReady()) { return false; }
   const std::lock_guard<std::mutex> lock(recvMutex_);
-  if (!sharedRecvSelfMessage_.empty()) {
-    *destBusId = GetBusIdSelf();
-    *srcBusId = sharedRecvSelfSender_;
-    BufferViewU8 ret = readMessageBuffer.CopyIn(sharedRecvSelfMessage_);
-    sharedRecvSelfMessage_ = BufferViewU8();
-    return ret;
-  } else if (!sharedRecvBroadcastMessage_.empty()) {
-    *destBusId = kBusIdBroadcast;
-    *srcBusId = sharedRecvBroadcastSender_;
-    BufferViewU8 ret = readMessageBuffer.CopyIn(sharedRecvBroadcastMessage_);
-    sharedRecvBroadcastMessage_ = BufferViewU8();
-    return ret;
-  } else {
-    return BufferViewU8();
-  }
+  if (sharedReceivedMessages_.empty()) { return false; }
+  const ReceivedMessage& rm = sharedReceivedMessages_.front();
+  *message = rm.message;
+  *destBusId = rm.destBusId;
+  *srcBusId = rm.srcBusId;
+  sharedReceivedMessages_.pop_front();
+  return true;
 }
 
 BufferViewU8 Max485BusHandler::TaskFindReceivedMessage(BusId* destBusId, BusId* srcBusId) {
@@ -413,7 +403,7 @@ BufferViewU8 Max485BusHandler::TaskFindReceivedMessage(BusId* destBusId, BusId* 
 Max485BusLeader::Max485BusLeader(uart_port_t uartPort, int txPin, int rxPin)
     : Max485BusHandler(uartPort, txPin, rxPin, kBusIdLeader) {}
 
-void Max485BusLeader::HandleReceivedMessage(BusId srcBusId, const BufferViewU8 /*message*/) {
+void Max485BusLeader::HandleReceivedMessage(BusId srcBusId, const OrreryMessage& /*message*/) {
   followerStates_[srcBusId].timeoutCount = 0;
   followerStates_[srcBusId].skipCount = 0;
   SendMessageToNextFollower();
@@ -494,7 +484,7 @@ void Max485BusLeader::SetMessageToSend(BusId destBusId, const OrreryMessage& mes
 Max485BusFollower::Max485BusFollower(uart_port_t uartPort, int txPin, int rxPin, BusId busIdSelf)
     : Max485BusHandler(uartPort, txPin, rxPin, busIdSelf) {}
 
-void Max485BusFollower::HandleReceivedMessage(BusId srcBusId, const BufferViewU8 /*message*/) {
+void Max485BusFollower::HandleReceivedMessage(BusId srcBusId, const OrreryMessage& /*message*/) {
   if (srcBusId == kBusIdLeader) { CopyEncodeAndSendMessage(kBusIdLeader); }
 }
 

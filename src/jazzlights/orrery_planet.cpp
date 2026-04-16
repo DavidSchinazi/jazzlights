@@ -105,19 +105,10 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
   timeHallSensorLastOpened = GetHallSensor()->GetTimeLastOpened();
 #endif  // JL_HALL_SENSOR
 
-  static OwnedBufferU8 readBuffer(1000);
-  uint8_t destBusId, srcBusId;
-  BufferViewU8 message = max485BusFollower_.ReadMessage(readBuffer, &destBusId, &srcBusId);
-  const char* ourPlanetName = GetPlanetName(static_cast<Planet>(busId_));
-  if (!message.empty()) {
-    jll_buffer_info(message, "%u Planet %s read message from %u to %u", currentTime, ourPlanetName, srcBusId,
-                    destBusId);
-  }
-  if (message.empty()) { return; }
-
-  NetworkReader reader(message.data(), message.size());
+  BusId destBusId, srcBusId;
   OrreryMessage msg;
-  if (!ReadOrreryMessage(reader, &msg)) { return; }
+  if (!max485BusFollower_.ReadMessage(&msg, &destBusId, &srcBusId)) { return; }
+  const char* ourPlanetName = GetPlanetName(static_cast<Planet>(busId_));
 
   if (msg.type == OrreryMessageType::LeaderCommand) {
     currentState_.leaderBootId = msg.leaderBootId;
