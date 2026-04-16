@@ -27,6 +27,8 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
   ledBrightnessButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/60, /*w=*/160, /*h=*/60, "");
   ledBrightness_ = OrreryLeader::Get()->GetBrightness(currentPlanet_);
   UpdateLedBrightnessButton();
+  hallSensorButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/120, /*w=*/160, /*h=*/60, "");
+  UpdateHallSensorButton();
   int32_t speed = OrreryLeader::Get()->GetSpeed(currentPlanet_);
   if (speed != 0) {
     motorEnabled_ = true;
@@ -85,6 +87,7 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
 void OrreryLeaderUi::FinalSetup() {
   planetButton_->Draw();
   ledBrightnessButton_->Draw();
+  hallSensorButton_->Draw();
   motorEnableButton_->Draw();
   motorDirectionButton_->Draw();
   motorSpeedButton_->Draw();
@@ -92,6 +95,7 @@ void OrreryLeaderUi::FinalSetup() {
 }
 
 void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
+  UpdateHallSensorButton();
   M5.update();
   auto touchDetail = M5.Touch.getDetail();
   if (touchDetail.isPressed()) {
@@ -120,6 +124,7 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       confirmButton_->Hide();
       planetButton_->Draw();
       ledBrightnessButton_->Draw();
+      hallSensorButton_->Draw();
       motorEnableButton_->Draw();
       motorDirectionButton_->Draw();
       motorSpeedButton_->Draw();
@@ -149,6 +154,7 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       confirmButton_->Hide();
       planetButton_->Draw();
       ledBrightnessButton_->Draw();
+      hallSensorButton_->Draw();
       motorEnableButton_->Draw();
       motorDirectionButton_->Draw();
       motorSpeedButton_->Draw();
@@ -180,6 +186,7 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
         planetBackButton_->Hide();
         planetButton_->Draw();
         ledBrightnessButton_->Draw();
+        hallSensorButton_->Draw();
         motorEnableButton_->Draw();
         motorDirectionButton_->Draw();
         motorSpeedButton_->Draw();
@@ -192,6 +199,7 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       planetBackButton_->Hide();
       planetButton_->Draw();
       ledBrightnessButton_->Draw();
+      hallSensorButton_->Draw();
       motorEnableButton_->Draw();
       motorDirectionButton_->Draw();
       motorSpeedButton_->Draw();
@@ -202,6 +210,7 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       planetSubmenuActive_ = true;
       planetButton_->Hide();
       ledBrightnessButton_->Hide();
+      hallSensorButton_->Hide();
       motorEnableButton_->Hide();
       motorDirectionButton_->Hide();
       motorSpeedButton_->Hide();
@@ -215,6 +224,7 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       keypadValue_ = 0;
       planetButton_->Hide();
       ledBrightnessButton_->Hide();
+      hallSensorButton_->Hide();
       motorEnableButton_->Hide();
       motorDirectionButton_->Hide();
       motorSpeedButton_->Hide();
@@ -242,6 +252,7 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       keypadValue_ = 0;
       planetButton_->Hide();
       ledBrightnessButton_->Hide();
+      hallSensorButton_->Hide();
       motorEnableButton_->Hide();
       motorDirectionButton_->Hide();
       motorSpeedButton_->Hide();
@@ -280,6 +291,18 @@ void OrreryLeaderUi::UpdatePlanetButton() {
   char label[32];
   snprintf(label, sizeof(label), "Planet: %s", GetPlanetName(currentPlanet_));
   planetButton_->SetLabelText(label);
+}
+
+void OrreryLeaderUi::UpdateHallSensorButton() {
+  std::optional<uint32_t> timeHallSensorLastOpened = OrreryLeader::Get()->GetTimeHallSensorLastOpened(currentPlanet_);
+  char label[32];
+  if (timeHallSensorLastOpened.has_value()) {
+    snprintf(label, sizeof(label), "HS: %llds",
+             static_cast<long long>((timeMillis() - *timeHallSensorLastOpened) / 1000));
+  } else {
+    snprintf(label, sizeof(label), "HS: Unknown");
+  }
+  hallSensorButton_->SetLabelText(label);
 }
 
 void OrreryLeaderUi::DrawSpeedDisplayButton(TouchButton* button, int outline, int fill, int textColor) {

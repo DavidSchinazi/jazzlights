@@ -43,6 +43,7 @@ struct OrreryMessage {
   std::optional<int32_t> speed;
   std::optional<uint32_t> position;
   std::optional<uint32_t> calibration;
+  std::optional<Milliseconds> timeHallSensorLastOpened;
   std::optional<PatternBits> ledPattern;
   std::optional<uint8_t> ledBrightness;
   std::optional<Precedence> ledPrecedence;
@@ -50,7 +51,8 @@ struct OrreryMessage {
   bool operator==(const OrreryMessage& other) const {
     return type == other.type && leaderBootId == other.leaderBootId &&
            leaderSequenceNumber == other.leaderSequenceNumber && speed == other.speed && position == other.position &&
-           calibration == other.calibration && ledPattern == other.ledPattern && ledBrightness == other.ledBrightness &&
+           calibration == other.calibration && timeHallSensorLastOpened == other.timeHallSensorLastOpened &&
+           ledPattern == other.ledPattern && ledBrightness == other.ledBrightness &&
            ledPrecedence == other.ledPrecedence;
   }
   bool operator!=(const OrreryMessage& other) const { return !(*this == other); }

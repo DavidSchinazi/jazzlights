@@ -21,6 +21,7 @@ class OrreryLeader {
   int32_t GetSpeed(Planet planet) const;
   void SetBrightness(Planet planet, uint8_t brightness);
   uint8_t GetBrightness(Planet planet) const;
+  std::optional<uint32_t> GetTimeHallSensorLastOpened(Planet planet) const;
 
   void RunLoop(Milliseconds currentTime);
 
@@ -30,6 +31,7 @@ class OrreryLeader {
   const uint32_t bootId_;
   uint32_t nextSequenceNumber_ = 0;
   std::unordered_map<Planet, OrreryMessage> messages_;
+  std::unordered_map<Planet, OrreryMessage> responses_;
   Max485BusLeader max485BusLeader_;
 };
 

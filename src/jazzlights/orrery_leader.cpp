@@ -89,6 +89,12 @@ uint8_t OrreryLeader::GetBrightness(Planet planet) const {
   return kDefaultPlanetBrightness;
 }
 
+std::optional<uint32_t> OrreryLeader::GetTimeHallSensorLastOpened(Planet planet) const {
+  auto it = responses_.find(planet);
+  if (it != responses_.end()) { return it->second.timeHallSensorLastOpened; }
+  return std::nullopt;
+}
+
 void OrreryLeader::SendMessage(Planet planet) {
   auto it = messages_.find(planet);
   if (it != messages_.end()) {
@@ -104,6 +110,7 @@ void OrreryLeader::RunLoop(Milliseconds /*currentTime*/) {
   if (!max485BusLeader_.ReadMessage(&msg, &destBusId, &srcBusId)) { return; }
 
   if (msg.type == OrreryMessageType::FollowerResponse) {
+    responses_[static_cast<Planet>(srcBusId)] = msg;
     if (msg.speed.has_value()) {
       jll_info("OrreryLeader received response for planet %u: %" PRId32,
                static_cast<uint8_t>(srcBusId) - static_cast<uint8_t>(Planet::Mercury), *msg.speed);

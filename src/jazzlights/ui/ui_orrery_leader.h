@@ -31,9 +31,11 @@ class OrreryLeaderUi : public Esp32Ui {
   void UpdateMotorSpeedButton();
   void UpdateLedBrightnessButton();
   void UpdatePlanetButton();
+  void UpdateHallSensorButton();
   void DrawSpeedDisplayButton(TouchButton* button, int outline, int fill, int textColor);
   TouchButton* planetButton_ = nullptr;
   TouchButton* ledBrightnessButton_ = nullptr;
+  TouchButton* hallSensorButton_ = nullptr;
   TouchButton* motorEnableButton_ = nullptr;
   TouchButton* motorDirectionButton_ = nullptr;
   TouchButton* motorSpeedButton_ = nullptr;

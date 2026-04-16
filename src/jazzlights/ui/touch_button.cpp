@@ -24,6 +24,7 @@ void TouchButton::Setup(int16_t x, int16_t y, uint16_t w, uint16_t h, const char
 }
 
 void TouchButton::SetLabelText(const char* label) {
+  if (label_ == label) { return; }
   label_ = std::string(label);
   Paint();
 }

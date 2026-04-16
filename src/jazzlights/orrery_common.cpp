@@ -13,6 +13,7 @@ constexpr uint8_t kOrreryFlagCalibration = 0x04;
 constexpr uint8_t kOrreryFlagLedPattern = 0x08;
 constexpr uint8_t kOrreryFlagLedBrightness = 0x10;
 constexpr uint8_t kOrreryFlagLedPrecedence = 0x20;
+constexpr uint8_t kOrreryFlagTimeHallSensorLastOpened = 0x40;
 }  // namespace
 
 bool WriteOrreryMessage(const OrreryMessage& msg, NetworkWriter& writer) {
@@ -21,6 +22,7 @@ bool WriteOrreryMessage(const OrreryMessage& msg, NetworkWriter& writer) {
   if (msg.speed.has_value()) { flags |= kOrreryFlagSpeed; }
   if (msg.position.has_value()) { flags |= kOrreryFlagPosition; }
   if (msg.calibration.has_value()) { flags |= kOrreryFlagCalibration; }
+  if (msg.timeHallSensorLastOpened.has_value()) { flags |= kOrreryFlagTimeHallSensorLastOpened; }
   if (msg.ledPattern.has_value()) { flags |= kOrreryFlagLedPattern; }
   if (msg.ledBrightness.has_value()) { flags |= kOrreryFlagLedBrightness; }
   if (msg.ledPrecedence.has_value()) { flags |= kOrreryFlagLedPrecedence; }
@@ -30,6 +32,9 @@ bool WriteOrreryMessage(const OrreryMessage& msg, NetworkWriter& writer) {
   if (msg.speed.has_value() && !writer.WriteInt32(*msg.speed)) { return false; }
   if (msg.position.has_value() && !writer.WriteUint32(*msg.position)) { return false; }
   if (msg.calibration.has_value() && !writer.WriteUint32(*msg.calibration)) { return false; }
+  if (msg.timeHallSensorLastOpened.has_value() && !writer.WriteUint32(timeMillis() - *msg.timeHallSensorLastOpened)) {
+    return false;
+  }
   if (msg.ledPattern.has_value() && !writer.WriteUint32(static_cast<uint32_t>(*msg.ledPattern))) { return false; }
   if (msg.ledBrightness.has_value() && !writer.WriteUint8(*msg.ledBrightness)) { return false; }
   if (msg.ledPrecedence.has_value() && !writer.WriteUint16(*msg.ledPrecedence)) { return false; }
@@ -64,6 +69,13 @@ bool ReadOrreryMessage(NetworkReader& reader, OrreryMessage* msg) {
     msg->calibration = calibration;
   } else {
     msg->calibration = std::nullopt;
+  }
+  if (flags & kOrreryFlagTimeHallSensorLastOpened) {
+    uint32_t delta;
+    if (!reader.ReadUint32(&delta)) { return false; }
+    msg->timeHallSensorLastOpened = timeMillis() - delta;
+  } else {
+    msg->timeHallSensorLastOpened = std::nullopt;
   }
   if (flags & kOrreryFlagLedPattern) {
     PatternBits ledPattern;

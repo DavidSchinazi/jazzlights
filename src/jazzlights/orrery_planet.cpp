@@ -126,6 +126,7 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
       currentState_.ledBrightness = *msg.ledBrightness;
     }
 
+    currentState_.timeHallSensorLastOpened = timeHallSensorLastOpened;
     max485BusFollower_.SetMessageToSend(currentState_);
   }
 }

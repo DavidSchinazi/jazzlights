@@ -15,7 +15,9 @@ namespace jazzlights {
 static constexpr int64_t kTimeStartOffset = 100000;
 #ifdef ESP32
 static constexpr int64_t kEsp32TimeDivider = 1000;
-Milliseconds timeMillisFromEspTime(int64_t espTime) { return static_cast<Milliseconds>(espTime / kEsp32TimeDivider); }
+Milliseconds timeMillisFromEspTime(int64_t espTime) {
+  return static_cast<Milliseconds>(espTime / kEsp32TimeDivider + kTimeStartOffset);
+}
 #endif  // ESP32
 
 Milliseconds timeMillis() {
