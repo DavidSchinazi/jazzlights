@@ -9,6 +9,7 @@
 #include <optional>
 
 #include "jazzlights/types.h"
+#include "jazzlights/util/time.h"
 
 namespace jazzlights {
 
