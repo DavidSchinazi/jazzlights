@@ -105,16 +105,27 @@ void PlanetEffect::SetPlanet(Planet planet) {
   numPixels_ = GetNumPixels(planet);
 }
 
-size_t PlanetEffect::contextSize(const Frame& /*frame*/) const { return 0; }
+size_t PlanetEffect::contextSize(const Frame& /*frame*/) const { return sizeof(State); }
 
 void PlanetEffect::begin(const Frame& /*frame*/) const {}
 
-void PlanetEffect::rewind(const Frame& /*frame*/) const {}
+void PlanetEffect::rewind(const Frame& frame) const {
+  State* state = static_cast<State*>(frame.context);
+  state->half = (frame.pattern & 0x80000000) != 0;
+  state->offset = (frame.pattern >> 16) & 0xFF;
+}
 
 void PlanetEffect::afterColors(const Frame& /*frame*/) const {}
 
 CRGB PlanetEffect::color(const Frame& frame, const Pixel& px) const {
   if (px.cumulativeIndex >= numPixels_) { return CRGB::Black; }
+  State* state = static_cast<State*>(frame.context);
+  if (state->half) {
+    int offsetDistance = static_cast<int>(px.cumulativeIndex) - static_cast<int>(state->offset);
+    if (offsetDistance < 0) { offsetDistance += numPixels_; }
+    offsetDistance = std::min(offsetDistance, static_cast<int>(numPixels_) - offsetDistance);
+    if (offsetDistance > numPixels_ / 4) { return CRGB::Black; }
+  }
   const TProgmemRGBPalette16* palette = GetPlanetPalette(currentPlanet_);
   uint8_t colorIndex = (256 * px.cumulativeIndex / numPixels_) + (256 * frame.time / kEffectDuration);
   return ColorFromPalette(*palette, colorIndex);

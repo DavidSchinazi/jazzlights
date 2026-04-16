@@ -24,6 +24,10 @@ class PlanetEffect : public Effect {
   std::string effectName(PatternBits pattern) const override;
 
  private:
+  struct State {
+    bool half;
+    uint8_t offset;
+  };
   PlanetEffect();
   Planet currentPlanet_;
   uint8_t numPixels_;

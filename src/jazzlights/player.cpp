@@ -442,6 +442,10 @@ bool Player::render(Milliseconds currentTime) {
   }
 #endif  // CLOUDS
 
+#if JL_IS_CONFIG(ORRERY_PLANET)
+  if (!creatureIsFollowingNonCreature_) { frame_.pattern = planetPattern_; }
+#endif  // ORRERY_PLANET
+
   const Effect* effect = patternFromBits(frame_.pattern);
 #if JL_IS_CONFIG(FAIRY_WAND)
   constexpr Milliseconds kOverridePatternDuration = 8000;
