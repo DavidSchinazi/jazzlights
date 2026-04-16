@@ -119,8 +119,8 @@ void Max485BusHandler::RunTask() {
           while (true) {
             BufferViewU8 taskMessageView = TaskFindReceivedMessage(&destBusId, &srcBusId);
             if (taskMessageView.empty()) { break; }
-            jll_buffer_info(taskMessageView, "%u Received from %d to %d", timeMillis(), static_cast<int>(srcBusId),
-                            static_cast<int>(destBusId));
+            jll_max485_data_buffer(taskMessageView, "%u Received from %d to %d", timeMillis(),
+                                   static_cast<int>(srcBusId), static_cast<int>(destBusId));
             OrreryMessage orreryMessage;
             NetworkReader reader(taskMessageView.data(), taskMessageView.size());
             if (ReadOrreryMessage(reader, &orreryMessage)) {
@@ -235,8 +235,8 @@ void Max485BusHandler::CopyEncodeAndSendMessage(BusId destBusId) {
   BufferViewU8 taskSendMessage(&taskSendMessageBuffer_[0], writer.LengthWritten());
 
   const BusId busIdSelf = GetBusIdSelf();
-  jll_buffer_info(taskSendMessage, "%u Sending from %d to %d", timeMillis(), static_cast<int>(busIdSelf),
-                  static_cast<int>(destBusId));
+  jll_max485_data_buffer(taskSendMessage, "%u Sending from %d to %d", timeMillis(), static_cast<int>(busIdSelf),
+                         static_cast<int>(destBusId));
   BufferViewU8 taskEncodedSendMessage =
       EncodeMessage(taskSendMessage, taskEncodedSendMessageBuffer_, destBusId, busIdSelf);
   if (!taskEncodedSendMessage.empty()) {
