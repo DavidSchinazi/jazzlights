@@ -130,7 +130,10 @@ class Player {
   bool color_overridden() const { return color_overridden_; }
   CRGB color_override() const { return color_override_; }
   void CloudNext(Milliseconds currentTime);
-#endif  // CLOUDS
+#elif JL_IS_CONFIG(ORRERY_PLANET)
+  void SetPlanetPattern(PatternBits planetPattern) { planetPattern_ = planetPattern; }
+  PatternBits GetPlanetPattern() const { return planetPattern_; }
+#endif
 
   class NumLedWritesGetter {
    public:
@@ -197,6 +200,11 @@ class Player {
 #elif JL_IS_CONFIG(CREATURE) || JL_IS_CONFIG(ORRERY_PLANET)
   bool creatureIsFollowingNonCreature_ = false;
 #endif
+
+#if JL_IS_CONFIG(ORRERY_PLANET)
+  static inline constexpr PatternBits kPlanetPattern = 0x0000FE00;
+  PatternBits planetPattern_ = kPlanetPattern;
+#endif  // ORRERY_PLANET
 
   NumLedWritesGetter* numLedWritesGetter_ = nullptr;
   std::vector<Network*> networks_;

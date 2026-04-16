@@ -63,8 +63,6 @@ constexpr PatternBits kStartingPattern = JL_START_PATTERN;
 constexpr PatternBits kWarmPattern = 0x00001500;
 #elif JL_IS_CONFIG(CREATURE)
 constexpr PatternBits kCreaturePattern = 0x0000FF00;
-#elif JL_IS_CONFIG(ORRERY_PLANET)
-constexpr PatternBits kPlanetPattern = 0x0000FE00;
 #endif
 }  // namespace
 
@@ -353,7 +351,7 @@ void Player::begin() {
   nextPattern_ = currentPattern_;
   loop_ = true;
 #elif JL_IS_CONFIG(ORRERY_PLANET)
-  currentPattern_ = kPlanetPattern;
+  currentPattern_ = planetPattern_;
   nextPattern_ = currentPattern_;
   loop_ = true;
 #endif
@@ -455,7 +453,7 @@ bool Player::render(Milliseconds currentTime) {
 #elif JL_IS_CONFIG(CREATURE)
   if (!creatureIsFollowingNonCreature_) { effect = patternFromBits(kCreaturePattern); }
 #elif JL_IS_CONFIG(ORRERY_PLANET)
-  if (!creatureIsFollowingNonCreature_) { effect = patternFromBits(kPlanetPattern); }
+  if (!creatureIsFollowingNonCreature_) { effect = patternFromBits(planetPattern_); }
 #endif  // FAIRY_WAND
 
   // Ensure effectContext_ is big enough for this effect.
@@ -834,7 +832,7 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
 #if JL_IS_CONFIG(CREATURE)
     currentPattern_ = kCreaturePattern;
 #elif JL_IS_CONFIG(ORRERY_PLANET)
-    currentPattern_ = kPlanetPattern;
+    currentPattern_ = planetPattern_;
 #endif  // CREATURE
     nextPattern_ = currentPattern_;
     loop_ = true;
