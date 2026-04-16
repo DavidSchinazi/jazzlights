@@ -178,7 +178,7 @@ NetworkStatus ArduinoEspWiFiNetwork::update(NetworkStatus status, Milliseconds c
     case CONNECTING: {
       switch (newWiFiStatus) {
         case WL_NO_SHIELD:
-          jll_error("%u Wi-Fi connection to %s failed: there's no WiFi shield", currentTime, WiFiSsid());
+          jll_error("%u Wi-Fi connection to %s failed: there's no Wi-Fi shield", currentTime, WiFiSsid());
           return CONNECTION_FAILED;
 
         case WL_NO_SSID_AVAIL:

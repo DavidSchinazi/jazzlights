@@ -53,7 +53,7 @@ const char* NetworkTypeToString(NetworkType type) {
   switch (type) {
     case NetworkType::kLeading: return "Lead";
     case NetworkType::kBLE: return "BLE";
-    case NetworkType::kWiFi: return "WiFi";
+    case NetworkType::kWiFi: return "Wi-Fi";
     case NetworkType::kEthernet: return "Eth";
     case NetworkType::kOther: return "Other";
   }
