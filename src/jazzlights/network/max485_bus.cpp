@@ -127,6 +127,11 @@ void Max485BusHandler::RunTask() {
               if (destBusId == GetBusIdSelf() || destBusId == kBusIdBroadcast) {
                 {
                   const std::lock_guard<std::mutex> lock(recvMutex_);
+                  static constexpr size_t kMaxRecvQueueSize = 16;
+                  if (sharedReceivedMessages_.size() > kMaxRecvQueueSize) {
+                    jll_error("%u Max485 receive queue full, dropping some messages", timeMillis());
+                    for (size_t i = 0; i < kMaxRecvQueueSize / 2; i++) { sharedReceivedMessages_.pop_front(); }
+                  }
                   sharedReceivedMessages_.push_back(
                       {.srcBusId = srcBusId, .destBusId = destBusId, .message = orreryMessage});
                 }
