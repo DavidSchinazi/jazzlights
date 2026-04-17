@@ -146,9 +146,9 @@ void OrreryLeader::SendMessage(Planet planet) {
 void OrreryLeader::RunLoop(Milliseconds /*currentTime*/) {
   BusId destBusId, srcBusId;
   OrreryMessage msg;
-  if (!max485BusLeader_.ReadMessage(&msg, &destBusId, &srcBusId)) { return; }
-
-  if (msg.type == OrreryMessageType::FollowerResponse) { responses_[static_cast<Planet>(srcBusId)] = msg; }
+  while (max485BusLeader_.ReadMessage(&msg, &destBusId, &srcBusId)) {
+    if (msg.type == OrreryMessageType::FollowerResponse) { responses_[static_cast<Planet>(srcBusId)] = msg; }
+  }
 }
 
 }  // namespace jazzlights

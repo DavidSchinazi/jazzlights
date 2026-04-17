@@ -111,47 +111,48 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
 
   BusId destBusId, srcBusId;
   OrreryMessage msg;
-  if (!max485BusFollower_.ReadMessage(&msg, &destBusId, &srcBusId)) { return; }
-  const char* ourPlanetName = GetPlanetName(static_cast<Planet>(busId_));
+  while (max485BusFollower_.ReadMessage(&msg, &destBusId, &srcBusId)) {
+    const char* ourPlanetName = GetPlanetName(static_cast<Planet>(busId_));
 
-  if (msg.type == OrreryMessageType::LeaderCommand) {
-    currentState_.leaderBootId = msg.leaderBootId;
-    currentState_.leaderSequenceNumber = msg.leaderSequenceNumber;
-    if (msg.speed.has_value() && msg.speed != currentState_.speed) {
-      jll_info("%u Planet %s applying speed %" PRId32, currentTime, ourPlanetName, *msg.speed);
+    if (msg.type == OrreryMessageType::LeaderCommand) {
+      currentState_.leaderBootId = msg.leaderBootId;
+      currentState_.leaderSequenceNumber = msg.leaderSequenceNumber;
+      if (msg.speed.has_value() && msg.speed != currentState_.speed) {
+        jll_info("%u Planet %s applying speed %" PRId32, currentTime, ourPlanetName, *msg.speed);
 #if JL_MOTOR
-      GetMainStepperMotor()->SetSpeed(*msg.speed);
+        GetMainStepperMotor()->SetSpeed(*msg.speed);
 #endif  // JL_MOTOR
-      currentState_.speed = *msg.speed;
-    }
-    if (msg.ledBrightness.has_value() && msg.ledBrightness != currentState_.ledBrightness) {
-      jll_info("%u Planet %s applying brightness %u", currentTime, ourPlanetName, *msg.ledBrightness);
-      if (player_ != nullptr) { player_->set_brightness(*msg.ledBrightness); }
-      currentState_.ledBrightness = *msg.ledBrightness;
-    }
-    if (msg.ledPattern.has_value() && msg.ledPattern != currentState_.ledPattern) {
-      if (player_ != nullptr && player_->GetPlanetPattern() != *msg.ledPattern) {
-        jll_info("%u Planet %s applying pattern %08x from leader", currentTime, ourPlanetName, *msg.ledPattern);
-        player_->SetPlanetPattern(*msg.ledPattern);
+        currentState_.speed = *msg.speed;
       }
-      currentState_.ledPattern = *msg.ledPattern;
-    }
-    if (msg.ledBasePrecedence.has_value() && msg.ledBasePrecedence != currentState_.ledBasePrecedence) {
-      jll_info("%u Planet %s applying base precedence %u", currentTime, ourPlanetName, *msg.ledBasePrecedence);
-      if (player_ != nullptr) { player_->setBasePrecedence(*msg.ledBasePrecedence); }
-      currentState_.ledBasePrecedence = *msg.ledBasePrecedence;
-    }
-    if (msg.ledPrecedenceGain.has_value() && msg.ledPrecedenceGain != currentState_.ledPrecedenceGain) {
-      jll_info("%u Planet %s applying precedence gain %u", currentTime, ourPlanetName, *msg.ledPrecedenceGain);
-      if (player_ != nullptr) { player_->setPrecedenceGain(*msg.ledPrecedenceGain); }
-      currentState_.ledPrecedenceGain = *msg.ledPrecedenceGain;
-    }
+      if (msg.ledBrightness.has_value() && msg.ledBrightness != currentState_.ledBrightness) {
+        jll_info("%u Planet %s applying brightness %u", currentTime, ourPlanetName, *msg.ledBrightness);
+        if (player_ != nullptr) { player_->set_brightness(*msg.ledBrightness); }
+        currentState_.ledBrightness = *msg.ledBrightness;
+      }
+      if (msg.ledPattern.has_value() && msg.ledPattern != currentState_.ledPattern) {
+        if (player_ != nullptr && player_->GetPlanetPattern() != *msg.ledPattern) {
+          jll_info("%u Planet %s applying pattern %08x from leader", currentTime, ourPlanetName, *msg.ledPattern);
+          player_->SetPlanetPattern(*msg.ledPattern);
+        }
+        currentState_.ledPattern = *msg.ledPattern;
+      }
+      if (msg.ledBasePrecedence.has_value() && msg.ledBasePrecedence != currentState_.ledBasePrecedence) {
+        jll_info("%u Planet %s applying base precedence %u", currentTime, ourPlanetName, *msg.ledBasePrecedence);
+        if (player_ != nullptr) { player_->setBasePrecedence(*msg.ledBasePrecedence); }
+        currentState_.ledBasePrecedence = *msg.ledBasePrecedence;
+      }
+      if (msg.ledPrecedenceGain.has_value() && msg.ledPrecedenceGain != currentState_.ledPrecedenceGain) {
+        jll_info("%u Planet %s applying precedence gain %u", currentTime, ourPlanetName, *msg.ledPrecedenceGain);
+        if (player_ != nullptr) { player_->setPrecedenceGain(*msg.ledPrecedenceGain); }
+        currentState_.ledPrecedenceGain = *msg.ledPrecedenceGain;
+      }
 
-    currentState_.timeHallSensorLastOpened = timeHallSensorLastOpened_;
-    currentState_.timeHallSensorLastClosed = timeHallSensorLastClosed_;
-    currentState_.lastOpenDuration = lastOpenDuration_;
-    currentState_.lastClosedDuration = lastClosedDuration_;
-    max485BusFollower_.SetMessageToSend(currentState_);
+      currentState_.timeHallSensorLastOpened = timeHallSensorLastOpened_;
+      currentState_.timeHallSensorLastClosed = timeHallSensorLastClosed_;
+      currentState_.lastOpenDuration = lastOpenDuration_;
+      currentState_.lastClosedDuration = lastClosedDuration_;
+      max485BusFollower_.SetMessageToSend(currentState_);
+    }
   }
 }
 
