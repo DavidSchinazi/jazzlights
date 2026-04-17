@@ -94,6 +94,7 @@ void OrreryPlanet::StateChanged(uint8_t pin, bool isClosed) {
 
 void OrreryPlanet::HandleHallSensorChange(uint8_t pin, bool isClosed, Milliseconds timeOfChange) {
   jll_info("%u Hall sensor at pin %d is now %s", timeOfChange, static_cast<int>(pin), (isClosed ? "closed" : "open"));
+  PlanetEffect::Get()->SetHallSensorClosed(isClosed);
   if (isClosed) {
     if (timeHallSensorLastOpened_.has_value()) { lastOpenDuration_ = timeOfChange - *timeHallSensorLastOpened_; }
     timeHallSensorLastClosed_ = timeOfChange;

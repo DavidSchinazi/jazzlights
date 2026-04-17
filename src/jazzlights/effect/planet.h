@@ -14,6 +14,7 @@ class PlanetEffect : public Effect {
  public:
   static PlanetEffect* Get();
   void SetPlanet(Planet planet);
+  void SetHallSensorClosed(bool isClosed);
 
   // From Effect.
   size_t contextSize(const Frame& frame) const override;
@@ -26,11 +27,14 @@ class PlanetEffect : public Effect {
  private:
   struct State {
     bool half;
+    bool hall;
+    bool hallSensorClosed;
     uint8_t offset;
   };
   PlanetEffect();
   Planet currentPlanet_;
   uint8_t numPixels_;
+  bool hallSensorClosed_ = false;
 };
 
 }  // namespace jazzlights

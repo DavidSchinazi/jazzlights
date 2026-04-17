@@ -56,7 +56,12 @@ class OrreryLeaderUi : public Esp32Ui {
   TouchButton* hallSensorInfoButtons_[4] = {};
   int32_t motorFrequencyHz_ = kDefaultPlanetSpeed;
   uint8_t ledBrightness_ = kDefaultPlanetBrightness;
-  bool planetHalf_ = false;
+  enum class PlanetPatternMode {
+    Full,
+    Half,
+    Hall,
+  };
+  PlanetPatternMode planetPatternMode_ = PlanetPatternMode::Full;
   uint8_t planetOffset_ = 0;
   bool motorEnabled_ = false;
   bool motorDirectionForward_ = true;

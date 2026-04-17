@@ -105,6 +105,8 @@ void PlanetEffect::SetPlanet(Planet planet) {
   numPixels_ = GetNumPixels(planet);
 }
 
+void PlanetEffect::SetHallSensorClosed(bool isClosed) { hallSensorClosed_ = isClosed; }
+
 size_t PlanetEffect::contextSize(const Frame& /*frame*/) const { return sizeof(State); }
 
 void PlanetEffect::begin(const Frame& /*frame*/) const {}
@@ -112,7 +114,9 @@ void PlanetEffect::begin(const Frame& /*frame*/) const {}
 void PlanetEffect::rewind(const Frame& frame) const {
   State* state = static_cast<State*>(frame.context);
   state->half = (frame.pattern & 0x80000000) != 0;
+  state->hall = (frame.pattern & 0x40000000) != 0;
   state->offset = (frame.pattern >> 16) & 0xFF;
+  state->hallSensorClosed = hallSensorClosed_;
 }
 
 void PlanetEffect::afterColors(const Frame& /*frame*/) const {}
@@ -120,6 +124,7 @@ void PlanetEffect::afterColors(const Frame& /*frame*/) const {}
 CRGB PlanetEffect::color(const Frame& frame, const Pixel& px) const {
   if (px.cumulativeIndex >= numPixels_) { return CRGB::Black; }
   State* state = static_cast<State*>(frame.context);
+  if (state->hall) { return state->hallSensorClosed ? CRGB::Blue : CRGB::Red; }
   if (state->half) {
     int offsetDistance = static_cast<int>(px.cumulativeIndex) - static_cast<int>(state->offset);
     if (offsetDistance < 0) { offsetDistance += numPixels_; }
