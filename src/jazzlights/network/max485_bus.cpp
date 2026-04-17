@@ -124,6 +124,14 @@ void Max485BusHandler::RunTask() {
             OrreryMessage orreryMessage;
             NetworkReader reader(taskMessageView.data(), taskMessageView.size());
             if (ReadOrreryMessage(reader, &orreryMessage)) {
+#if JL_LOG_MAX485_MESSAGES
+              auto itLogged = lastLoggedRecvMessages_.find(srcBusId);
+              if (itLogged == lastLoggedRecvMessages_.end() || itLogged->second != orreryMessage) {
+                jll_info("%u Received from %d to %d: %s", timeMillis(), static_cast<int>(srcBusId),
+                         static_cast<int>(destBusId), OrreryMessageToString(orreryMessage).c_str());
+                lastLoggedRecvMessages_[srcBusId] = orreryMessage;
+              }
+#endif  // JL_LOG_MAX485_MESSAGES
               if (destBusId == GetBusIdSelf() || destBusId == kBusIdBroadcast) {
                 {
                   const std::lock_guard<std::mutex> lock(recvMutex_);
@@ -240,6 +248,14 @@ void Max485BusHandler::CopyEncodeAndSendMessage(BusId destBusId) {
   BufferViewU8 taskSendMessage(&taskSendMessageBuffer_[0], writer.LengthWritten());
 
   const BusId busIdSelf = GetBusIdSelf();
+#if JL_LOG_MAX485_MESSAGES
+  auto itLogged = lastLoggedMessages_.find(destBusId);
+  if (itLogged == lastLoggedMessages_.end() || itLogged->second != msg) {
+    jll_info("%u Sending from %d to %d: %s", timeMillis(), static_cast<int>(busIdSelf), static_cast<int>(destBusId),
+             OrreryMessageToString(msg).c_str());
+    lastLoggedMessages_[destBusId] = msg;
+  }
+#endif  // JL_LOG_MAX485_MESSAGES
   jll_max485_data_buffer(taskSendMessage, "%u Sending from %d to %d", timeMillis(), static_cast<int>(busIdSelf),
                          static_cast<int>(destBusId));
   BufferViewU8 taskEncodedSendMessage =

@@ -21,6 +21,10 @@
 #include "jazzlights/util/cobs.h"
 #include "jazzlights/util/time.h"
 
+#ifndef JL_LOG_MAX485_MESSAGES
+#define JL_LOG_MAX485_MESSAGES 0
+#endif  // JL_LOG_MAX485_MESSAGES
+
 namespace jazzlights {
 
 class Max485BusHandler {
@@ -65,7 +69,11 @@ class Max485BusHandler {
   std::atomic<BusId> busIdSelf_;
   std::atomic<bool> ready_{false};
   std::mutex sendMutex_;
-  std::map<BusId, OrreryMessage> sharedSendMessages_;    // Protected by `sendMutex_`.
+  std::map<BusId, OrreryMessage> sharedSendMessages_;  // Protected by `sendMutex_`.
+#if JL_LOG_MAX485_MESSAGES
+  std::map<BusId, OrreryMessage> lastLoggedMessages_;      // Only accessed by task.
+  std::map<BusId, OrreryMessage> lastLoggedRecvMessages_;  // Only accessed by task.
+#endif
   OwnedBufferU8 taskSendMessageBuffer_;                  // Only accessed by task.
   OwnedBufferU8 taskEncodedSendMessageBuffer_;           // Only accessed by task.
   Milliseconds taskLastSendTimeExpectingResponse_ = -1;  // Only accessed by task.
