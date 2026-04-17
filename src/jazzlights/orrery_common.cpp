@@ -15,6 +15,10 @@ constexpr uint8_t kOrreryFlagLedBrightness = 0x10;
 constexpr uint8_t kOrreryFlagLedBasePrecedence = 0x20;
 constexpr uint8_t kOrreryFlagTimeHallSensorLastOpened = 0x40;
 constexpr uint8_t kOrreryFlagLedPrecedenceGain = 0x80;
+
+constexpr uint8_t kOrreryFlag2TimeHallSensorLastClosed = 0x01;
+constexpr uint8_t kOrreryFlag2LastOpenDuration = 0x02;
+constexpr uint8_t kOrreryFlag2LastClosedDuration = 0x04;
 }  // namespace
 
 bool WriteOrreryMessage(const OrreryMessage& msg, NetworkWriter& writer) {
@@ -29,6 +33,13 @@ bool WriteOrreryMessage(const OrreryMessage& msg, NetworkWriter& writer) {
   if (msg.ledBasePrecedence.has_value()) { flags |= kOrreryFlagLedBasePrecedence; }
   if (msg.ledPrecedenceGain.has_value()) { flags |= kOrreryFlagLedPrecedenceGain; }
   if (!writer.WriteUint8(flags)) { return false; }
+
+  uint8_t flags2 = 0;
+  if (msg.timeHallSensorLastClosed.has_value()) { flags2 |= kOrreryFlag2TimeHallSensorLastClosed; }
+  if (msg.lastOpenDuration.has_value()) { flags2 |= kOrreryFlag2LastOpenDuration; }
+  if (msg.lastClosedDuration.has_value()) { flags2 |= kOrreryFlag2LastClosedDuration; }
+  if (!writer.WriteUint8(flags2)) { return false; }
+
   if (!writer.WriteUint32(msg.leaderBootId)) { return false; }
   if (!writer.WriteUint32(msg.leaderSequenceNumber)) { return false; }
   if (msg.speed.has_value() && !writer.WriteInt32(*msg.speed)) { return false; }
@@ -37,6 +48,11 @@ bool WriteOrreryMessage(const OrreryMessage& msg, NetworkWriter& writer) {
   if (msg.timeHallSensorLastOpened.has_value() && !writer.WriteUint32(timeMillis() - *msg.timeHallSensorLastOpened)) {
     return false;
   }
+  if (msg.timeHallSensorLastClosed.has_value() && !writer.WriteUint32(timeMillis() - *msg.timeHallSensorLastClosed)) {
+    return false;
+  }
+  if (msg.lastOpenDuration.has_value() && !writer.WriteUint32(*msg.lastOpenDuration)) { return false; }
+  if (msg.lastClosedDuration.has_value() && !writer.WriteUint32(*msg.lastClosedDuration)) { return false; }
   if (msg.ledPattern.has_value() && !writer.WriteUint32(static_cast<uint32_t>(*msg.ledPattern))) { return false; }
   if (msg.ledBrightness.has_value() && !writer.WriteUint8(*msg.ledBrightness)) { return false; }
   if (msg.ledBasePrecedence.has_value() && !writer.WriteUint16(*msg.ledBasePrecedence)) { return false; }
@@ -50,6 +66,9 @@ bool ReadOrreryMessage(NetworkReader& reader, OrreryMessage* msg) {
   msg->type = static_cast<OrreryMessageType>(typeByte);
   uint8_t flags;
   if (!reader.ReadUint8(&flags)) { return false; }
+  uint8_t flags2;
+  if (!reader.ReadUint8(&flags2)) { return false; }
+
   if (!reader.ReadUint32(&msg->leaderBootId)) { return false; }
   if (!reader.ReadUint32(&msg->leaderSequenceNumber)) { return false; }
   if (flags & kOrreryFlagSpeed) {
@@ -79,6 +98,27 @@ bool ReadOrreryMessage(NetworkReader& reader, OrreryMessage* msg) {
     msg->timeHallSensorLastOpened = timeMillis() - delta;
   } else {
     msg->timeHallSensorLastOpened = std::nullopt;
+  }
+  if (flags2 & kOrreryFlag2TimeHallSensorLastClosed) {
+    uint32_t delta;
+    if (!reader.ReadUint32(&delta)) { return false; }
+    msg->timeHallSensorLastClosed = timeMillis() - delta;
+  } else {
+    msg->timeHallSensorLastClosed = std::nullopt;
+  }
+  if (flags2 & kOrreryFlag2LastOpenDuration) {
+    uint32_t lastOpenDuration;
+    if (!reader.ReadUint32(&lastOpenDuration)) { return false; }
+    msg->lastOpenDuration = lastOpenDuration;
+  } else {
+    msg->lastOpenDuration = std::nullopt;
+  }
+  if (flags2 & kOrreryFlag2LastClosedDuration) {
+    uint32_t lastClosedDuration;
+    if (!reader.ReadUint32(&lastClosedDuration)) { return false; }
+    msg->lastClosedDuration = lastClosedDuration;
+  } else {
+    msg->lastClosedDuration = std::nullopt;
   }
   if (flags & kOrreryFlagLedPattern) {
     PatternBits ledPattern;

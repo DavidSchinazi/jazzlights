@@ -87,6 +87,13 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
   planetBackButton_ = TouchButtonManager::Get()->AddButton(0, 3 * ph, 320, ph, "Back");
   planetBackButton_->Hide();
 
+  hallSensorBackButton_ = TouchButtonManager::Get()->AddButton(0, 0, 320, 60, "Back");
+  hallSensorBackButton_->Hide();
+  for (int i = 0; i < 4; i++) {
+    hallSensorInfoButtons_[i] = TouchButtonManager::Get()->AddButton(0, 60 + i * 45, 320, 45, "");
+    hallSensorInfoButtons_[i]->Hide();
+  }
+
   M5.Display.fillScreen(BLACK);
   M5.Display.setBrightness(kDefaultOnBrightness);
   M5.Display.wakeup();
@@ -106,6 +113,7 @@ void OrreryLeaderUi::FinalSetup() {
 
 void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
   UpdateHallSensorButton();
+  UpdateHallSensorSubmenu();
   M5.update();
   auto touchDetail = M5.Touch.getDetail();
   if (touchDetail.isPressed()) {
@@ -235,6 +243,21 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       planetOffsetButton_->Draw();
       TouchButtonManager::Get()->Redraw();
     }
+  } else if (hallSensorSubmenuActive_) {
+    if (hallSensorBackButton_->JustReleased()) {
+      hallSensorSubmenuActive_ = false;
+      hallSensorBackButton_->Hide();
+      for (int i = 0; i < 4; i++) { hallSensorInfoButtons_[i]->Hide(); }
+      planetButton_->Draw();
+      ledBrightnessButton_->Draw();
+      hallSensorButton_->Draw();
+      motorEnableButton_->Draw();
+      motorDirectionButton_->Draw();
+      motorSpeedButton_->Draw();
+      planetHalfButton_->Draw();
+      planetOffsetButton_->Draw();
+      TouchButtonManager::Get()->Redraw();
+    }
   } else {
     if (planetButton_->JustReleased()) {
       planetSubmenuActive_ = true;
@@ -269,6 +292,21 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       clearButton_->Draw();
       confirmButton_->Draw();
       speedDisplayButton_->Draw(/*force=*/true);
+      TouchButtonManager::Get()->Redraw();
+    }
+    if (hallSensorButton_->JustReleased()) {
+      hallSensorSubmenuActive_ = true;
+      planetButton_->Hide();
+      ledBrightnessButton_->Hide();
+      hallSensorButton_->Hide();
+      motorEnableButton_->Hide();
+      motorDirectionButton_->Hide();
+      motorSpeedButton_->Hide();
+      planetHalfButton_->Hide();
+      planetOffsetButton_->Hide();
+      hallSensorBackButton_->Draw();
+      for (int i = 0; i < 4; i++) { hallSensorInfoButtons_[i]->Draw(); }
+      UpdateHallSensorSubmenu();
       TouchButtonManager::Get()->Redraw();
     }
     if (motorEnableButton_->JustReleased()) {
@@ -371,15 +409,60 @@ void OrreryLeaderUi::UpdatePlanetPattern() {
 }
 
 void OrreryLeaderUi::UpdateHallSensorButton() {
-  std::optional<uint32_t> timeHallSensorLastOpened = OrreryLeader::Get()->GetTimeHallSensorLastOpened(currentPlanet_);
+  std::optional<Milliseconds> lastOpened = OrreryLeader::Get()->GetTimeHallSensorLastOpened(currentPlanet_);
+  std::optional<Milliseconds> lastClosed = OrreryLeader::Get()->GetTimeHallSensorLastClosed(currentPlanet_);
   char label[32];
-  if (timeHallSensorLastOpened.has_value()) {
-    snprintf(label, sizeof(label), "HS: %llds",
-             static_cast<long long>((timeMillis() - *timeHallSensorLastOpened) / 1000));
+  if (lastOpened.has_value() || lastClosed.has_value()) {
+    bool isClosed = false;
+    if (lastOpened.has_value() && lastClosed.has_value()) {
+      isClosed = (*lastClosed > *lastOpened);
+    } else if (lastClosed.has_value()) {
+      isClosed = true;
+    }
+    snprintf(label, sizeof(label), "HS: %s", isClosed ? "Closed" : "Open");
   } else {
     snprintf(label, sizeof(label), "HS: Unknown");
   }
   hallSensorButton_->SetLabelText(label);
+}
+
+void OrreryLeaderUi::UpdateHallSensorSubmenu() {
+  if (!hallSensorSubmenuActive_) { return; }
+  std::optional<Milliseconds> lastOpened = OrreryLeader::Get()->GetTimeHallSensorLastOpened(currentPlanet_);
+  std::optional<Milliseconds> lastClosed = OrreryLeader::Get()->GetTimeHallSensorLastClosed(currentPlanet_);
+  std::optional<Milliseconds> lastOpenDuration = OrreryLeader::Get()->GetLastOpenDuration(currentPlanet_);
+  std::optional<Milliseconds> lastClosedDuration = OrreryLeader::Get()->GetLastClosedDuration(currentPlanet_);
+
+  char label[64];
+  if (lastOpened.has_value()) {
+    snprintf(label, sizeof(label), "Last Opened: %llds ago",
+             static_cast<long long>((timeMillis() - *lastOpened) / 1000));
+  } else {
+    snprintf(label, sizeof(label), "Last Opened: Unknown");
+  }
+  hallSensorInfoButtons_[0]->SetLabelText(label);
+
+  if (lastClosed.has_value()) {
+    snprintf(label, sizeof(label), "Last Closed: %llds ago",
+             static_cast<long long>((timeMillis() - *lastClosed) / 1000));
+  } else {
+    snprintf(label, sizeof(label), "Last Closed: Unknown");
+  }
+  hallSensorInfoButtons_[1]->SetLabelText(label);
+
+  if (lastOpenDuration.has_value()) {
+    snprintf(label, sizeof(label), "Last Open Dur: %lldms", static_cast<long long>(*lastOpenDuration));
+  } else {
+    snprintf(label, sizeof(label), "Last Open Dur: Unknown");
+  }
+  hallSensorInfoButtons_[2]->SetLabelText(label);
+
+  if (lastClosedDuration.has_value()) {
+    snprintf(label, sizeof(label), "Last Closed Dur: %lldms", static_cast<long long>(*lastClosedDuration));
+  } else {
+    snprintf(label, sizeof(label), "Last Closed Dur: Unknown");
+  }
+  hallSensorInfoButtons_[3]->SetLabelText(label);
 }
 
 void OrreryLeaderUi::DrawSpeedDisplayButton(TouchButton* button, int outline, int fill, int textColor) {

@@ -37,6 +37,8 @@ class OrreryPlanet : public GpioSwitch::SwitchInterface, public HallSensor::Hall
   HallSensor hallSensor_;
   std::optional<Milliseconds> timeHallSensorLastOpened_;
   std::optional<Milliseconds> timeHallSensorLastClosed_;
+  std::optional<Milliseconds> lastOpenDuration_;
+  std::optional<Milliseconds> lastClosedDuration_;
   GpioSwitch switch0_;
   GpioSwitch switch1_;
   GpioSwitch switch2_;

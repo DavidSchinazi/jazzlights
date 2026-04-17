@@ -46,6 +46,41 @@ void test_orrery_message_serialization() {
   TEST_ASSERT(reader.Done());
 }
 
+void test_orrery_message_hall_sensor_serialization() {
+  OrreryMessage msg1;
+  msg1.type = OrreryMessageType::FollowerResponse;
+  msg1.leaderBootId = 0xDEADBEEF;
+  msg1.leaderSequenceNumber = 0xCAFEBABE;
+  msg1.timeHallSensorLastOpened = 10000;
+  msg1.timeHallSensorLastClosed = 20000;
+  msg1.lastOpenDuration = 1234;
+  msg1.lastClosedDuration = 5678;
+
+  uint8_t buffer[64];
+  NetworkWriter writer(buffer, sizeof(buffer));
+  TEST_ASSERT(WriteOrreryMessage(msg1, writer));
+
+  NetworkReader reader(buffer, writer.LengthWritten());
+  OrreryMessage msg2;
+  TEST_ASSERT(ReadOrreryMessage(reader, &msg2));
+
+  TEST_ASSERT_EQUAL(static_cast<uint8_t>(OrreryMessageType::FollowerResponse), static_cast<uint8_t>(msg2.type));
+  TEST_ASSERT(msg2.timeHallSensorLastOpened.has_value());
+  // Note: timeHallSensorLastOpened is relative to timeMillis() during Write/Read
+  // So we can only test approximate equality if we want to be safe, but since this is native and fast, it should be
+  // exact if timeMillis() doesn't change. Actually, WriteOrreryMessage uses timeMillis() -
+  // *msg.timeHallSensorLastOpened. ReadOrreryMessage uses timeMillis() - delta. So msg2.timeHallSensorLastOpened =
+  // timeMillis() - (timeMillis() - msg1.timeHallSensorLastOpened) = msg1.timeHallSensorLastOpened.
+  TEST_ASSERT_EQUAL_UINT32(*msg1.timeHallSensorLastOpened, *msg2.timeHallSensorLastOpened);
+  TEST_ASSERT(msg2.timeHallSensorLastClosed.has_value());
+  TEST_ASSERT_EQUAL_UINT32(*msg1.timeHallSensorLastClosed, *msg2.timeHallSensorLastClosed);
+  TEST_ASSERT(msg2.lastOpenDuration.has_value());
+  TEST_ASSERT_EQUAL_UINT32(*msg1.lastOpenDuration, *msg2.lastOpenDuration);
+  TEST_ASSERT(msg2.lastClosedDuration.has_value());
+  TEST_ASSERT_EQUAL_UINT32(*msg1.lastClosedDuration, *msg2.lastClosedDuration);
+  TEST_ASSERT(reader.Done());
+}
+
 void test_orrery_message_sparse_serialization() {
   OrreryMessage msg1;
   msg1.type = OrreryMessageType::FollowerResponse;
@@ -85,6 +120,7 @@ void test_orrery_message_sparse_serialization() {
 void run_unity_tests() {
   UNITY_BEGIN();
   RUN_TEST(test_orrery_message_serialization);
+  RUN_TEST(test_orrery_message_hall_sensor_serialization);
   RUN_TEST(test_orrery_message_sparse_serialization);
   UNITY_END();
 }

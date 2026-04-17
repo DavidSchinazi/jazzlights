@@ -48,6 +48,9 @@ struct OrreryMessage {
   std::optional<uint32_t> position;
   std::optional<uint32_t> calibration;
   std::optional<Milliseconds> timeHallSensorLastOpened;
+  std::optional<Milliseconds> timeHallSensorLastClosed;
+  std::optional<Milliseconds> lastOpenDuration;
+  std::optional<Milliseconds> lastClosedDuration;
   std::optional<PatternBits> ledPattern;
   std::optional<uint8_t> ledBrightness;
   std::optional<Precedence> ledBasePrecedence;
@@ -57,8 +60,10 @@ struct OrreryMessage {
     return type == other.type && leaderBootId == other.leaderBootId &&
            leaderSequenceNumber == other.leaderSequenceNumber && speed == other.speed && position == other.position &&
            calibration == other.calibration && timeHallSensorLastOpened == other.timeHallSensorLastOpened &&
-           ledPattern == other.ledPattern && ledBrightness == other.ledBrightness &&
-           ledBasePrecedence == other.ledBasePrecedence && ledPrecedenceGain == other.ledPrecedenceGain;
+           timeHallSensorLastClosed == other.timeHallSensorLastClosed && lastOpenDuration == other.lastOpenDuration &&
+           lastClosedDuration == other.lastClosedDuration && ledPattern == other.ledPattern &&
+           ledBrightness == other.ledBrightness && ledBasePrecedence == other.ledBasePrecedence &&
+           ledPrecedenceGain == other.ledPrecedenceGain;
   }
   bool operator!=(const OrreryMessage& other) const { return !(*this == other); }
 };

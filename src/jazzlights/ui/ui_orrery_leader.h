@@ -34,6 +34,7 @@ class OrreryLeaderUi : public Esp32Ui {
   void UpdatePlanetHalfButton();
   void UpdatePlanetOffsetButton();
   void UpdateHallSensorButton();
+  void UpdateHallSensorSubmenu();
   void UpdatePlanetPattern();
   void DrawSpeedDisplayButton(TouchButton* button, int outline, int fill, int textColor);
   TouchButton* planetButton_ = nullptr;
@@ -51,6 +52,8 @@ class OrreryLeaderUi : public Esp32Ui {
   TouchButton* confirmButton_ = nullptr;
   TouchButton* planetSelectButtons_[kNumPlanets] = {};
   TouchButton* planetBackButton_ = nullptr;
+  TouchButton* hallSensorBackButton_ = nullptr;
+  TouchButton* hallSensorInfoButtons_[4] = {};
   int32_t motorFrequencyHz_ = kDefaultPlanetSpeed;
   uint8_t ledBrightness_ = kDefaultPlanetBrightness;
   bool planetHalf_ = false;
@@ -61,6 +64,7 @@ class OrreryLeaderUi : public Esp32Ui {
   bool editingBrightness_ = false;
   bool editingOffset_ = false;
   bool planetSubmenuActive_ = false;
+  bool hallSensorSubmenuActive_ = false;
   int32_t keypadValue_ = 0;
   Planet currentPlanet_ = Planet::Mercury;
 };

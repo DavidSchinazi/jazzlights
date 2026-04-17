@@ -95,8 +95,10 @@ void OrreryPlanet::StateChanged(uint8_t pin, bool isClosed) {
 void OrreryPlanet::HandleHallSensorChange(uint8_t pin, bool isClosed, Milliseconds timeOfChange) {
   jll_info("%u Hall sensor at pin %d is now %s", timeOfChange, static_cast<int>(pin), (isClosed ? "closed" : "open"));
   if (isClosed) {
+    if (timeHallSensorLastOpened_.has_value()) { lastOpenDuration_ = timeOfChange - *timeHallSensorLastOpened_; }
     timeHallSensorLastClosed_ = timeOfChange;
   } else {
+    if (timeHallSensorLastClosed_.has_value()) { lastClosedDuration_ = timeOfChange - *timeHallSensorLastClosed_; }
     timeHallSensorLastOpened_ = timeOfChange;
   }
 }
@@ -146,6 +148,9 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
     }
 
     currentState_.timeHallSensorLastOpened = timeHallSensorLastOpened_;
+    currentState_.timeHallSensorLastClosed = timeHallSensorLastClosed_;
+    currentState_.lastOpenDuration = lastOpenDuration_;
+    currentState_.lastClosedDuration = lastClosedDuration_;
     max485BusFollower_.SetMessageToSend(currentState_);
   }
 }

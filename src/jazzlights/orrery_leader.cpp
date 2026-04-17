@@ -110,9 +110,27 @@ uint32_t OrreryLeader::GetLedPattern(Planet planet) const {
   return kPlanetPattern;
 }
 
-std::optional<uint32_t> OrreryLeader::GetTimeHallSensorLastOpened(Planet planet) const {
+std::optional<Milliseconds> OrreryLeader::GetTimeHallSensorLastOpened(Planet planet) const {
   auto it = responses_.find(planet);
   if (it != responses_.end()) { return it->second.timeHallSensorLastOpened; }
+  return std::nullopt;
+}
+
+std::optional<Milliseconds> OrreryLeader::GetTimeHallSensorLastClosed(Planet planet) const {
+  auto it = responses_.find(planet);
+  if (it != responses_.end()) { return it->second.timeHallSensorLastClosed; }
+  return std::nullopt;
+}
+
+std::optional<Milliseconds> OrreryLeader::GetLastOpenDuration(Planet planet) const {
+  auto it = responses_.find(planet);
+  if (it != responses_.end()) { return it->second.lastOpenDuration; }
+  return std::nullopt;
+}
+
+std::optional<Milliseconds> OrreryLeader::GetLastClosedDuration(Planet planet) const {
+  auto it = responses_.find(planet);
+  if (it != responses_.end()) { return it->second.lastClosedDuration; }
   return std::nullopt;
 }
 
