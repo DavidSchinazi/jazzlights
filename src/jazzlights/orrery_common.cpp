@@ -1,5 +1,7 @@
 #include "jazzlights/orrery_common.h"
 
+#include <cinttypes>
+
 #if JL_IS_CONFIG(ORRERY_PLANET) || JL_IS_CONFIG(ORRERY_LEADER) || PIO_UNIT_TESTING
 
 #include "jazzlights/network/network.h"
@@ -149,6 +151,49 @@ bool ReadOrreryMessage(NetworkReader& reader, OrreryMessage* msg) {
     msg->ledPrecedenceGain = std::nullopt;
   }
   return true;
+}
+
+std::string OrreryMessageToString(const OrreryMessage& msg) {
+  char buf[512];
+  int n = snprintf(buf, sizeof(buf), "%s seq=%" PRIu32 " boot=%08" PRIx32,
+                   msg.type == OrreryMessageType::LeaderCommand ? "LeaderCommand" : "FollowerResponse",
+                   static_cast<uint32_t>(msg.leaderSequenceNumber), static_cast<uint32_t>(msg.leaderBootId));
+  if (msg.speed.has_value()) {
+    n += snprintf(buf + n, sizeof(buf) - n, " speed=%" PRId32, static_cast<int32_t>(*msg.speed));
+  }
+  if (msg.position.has_value()) {
+    n += snprintf(buf + n, sizeof(buf) - n, " pos=%" PRIu32, static_cast<uint32_t>(*msg.position));
+  }
+  if (msg.calibration.has_value()) {
+    n += snprintf(buf + n, sizeof(buf) - n, " cal=%" PRIu32, static_cast<uint32_t>(*msg.calibration));
+  }
+  if (msg.timeHallSensorLastOpened.has_value()) {
+    n += snprintf(buf + n, sizeof(buf) - n, " lastOpen=%" PRId64 "s_ago",
+                  static_cast<int64_t>((timeMillis() - *msg.timeHallSensorLastOpened) / 1000));
+  }
+  if (msg.timeHallSensorLastClosed.has_value()) {
+    n += snprintf(buf + n, sizeof(buf) - n, " lastClosed=%" PRId64 "s_ago",
+                  static_cast<int64_t>((timeMillis() - *msg.timeHallSensorLastClosed) / 1000));
+  }
+  if (msg.lastOpenDuration.has_value()) {
+    n += snprintf(buf + n, sizeof(buf) - n, " openDur=%" PRIu32 "ms", static_cast<uint32_t>(*msg.lastOpenDuration));
+  }
+  if (msg.lastClosedDuration.has_value()) {
+    n += snprintf(buf + n, sizeof(buf) - n, " closedDur=%" PRIu32 "ms", static_cast<uint32_t>(*msg.lastClosedDuration));
+  }
+  if (msg.ledPattern.has_value()) {
+    n += snprintf(buf + n, sizeof(buf) - n, " pattern=%08" PRIx32, static_cast<uint32_t>(*msg.ledPattern));
+  }
+  if (msg.ledBrightness.has_value()) {
+    n += snprintf(buf + n, sizeof(buf) - n, " brightness=%u", static_cast<unsigned int>(*msg.ledBrightness));
+  }
+  if (msg.ledBasePrecedence.has_value()) {
+    n += snprintf(buf + n, sizeof(buf) - n, " basePrec=%u", static_cast<unsigned int>(*msg.ledBasePrecedence));
+  }
+  if (msg.ledPrecedenceGain.has_value()) {
+    n += snprintf(buf + n, sizeof(buf) - n, " precGain=%u", static_cast<unsigned int>(*msg.ledPrecedenceGain));
+  }
+  return std::string(buf);
 }
 
 const char* GetPlanetName(Planet planet) {

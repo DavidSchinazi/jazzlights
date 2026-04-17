@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <string>
 
 #include "jazzlights/types.h"
 #include "jazzlights/util/time.h"
@@ -70,6 +71,7 @@ struct OrreryMessage {
 
 bool WriteOrreryMessage(const OrreryMessage& msg, NetworkWriter& writer);
 bool ReadOrreryMessage(NetworkReader& reader, OrreryMessage* msg);
+std::string OrreryMessageToString(const OrreryMessage& msg);
 const char* GetPlanetName(Planet planet);
 
 }  // namespace jazzlights
