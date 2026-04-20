@@ -3,6 +3,7 @@
 #if JL_IS_CONFIG(ORRERY_PLANET)
 
 #include <cinttypes>
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 
@@ -70,7 +71,8 @@ OrreryPlanet::OrreryPlanet()
       switch1_(kPlanetSwitchPin1, *this),
       switch2_(kPlanetSwitchPin2, *this),
       busId_(ComputeBusId()),
-      max485BusFollower_(UART_NUM_2, kMax485TxPin, kMax485RxPin, busId_) {
+      max485BusFollower_(UART_NUM_2, kMax485TxPin, kMax485RxPin, busId_),
+      lastSpeedUpdateTime_(timeMillis()) {
   jll_info("%u OrreryPlanet created with busId %u", timeMillis(), busId_);
   PlanetEffect::Get()->SetPlanet(static_cast<Planet>(busId_));
   currentState_.type = OrreryMessageType::FollowerResponse;
@@ -110,6 +112,25 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
   switch1_.RunLoop();
   switch2_.RunLoop();
 
+  const Milliseconds dt = currentTime - lastSpeedUpdateTime_;
+  if (dt > 0) {
+    const float maxChange = 250.0f * dt / 1000.0f;
+    if (actualSpeed_ < static_cast<float>(requestedSpeed_)) {
+      actualSpeed_ = std::min(static_cast<float>(requestedSpeed_), actualSpeed_ + maxChange);
+    } else if (actualSpeed_ > static_cast<float>(requestedSpeed_)) {
+      actualSpeed_ = std::max(static_cast<float>(requestedSpeed_), actualSpeed_ - maxChange);
+    }
+    lastSpeedUpdateTime_ = currentTime;
+
+    const int32_t roundedSpeed = static_cast<int32_t>(std::round(actualSpeed_));
+    if (!currentState_.speed.has_value() || roundedSpeed != *currentState_.speed) {
+#if JL_MOTOR
+      GetMainStepperMotor()->SetSpeed(roundedSpeed);
+#endif  // JL_MOTOR
+      currentState_.speed = roundedSpeed;
+    }
+  }
+
   BusId destBusId, srcBusId;
   OrreryMessage msg;
   while (max485BusFollower_.ReadMessage(&msg, &destBusId, &srcBusId)) {
@@ -118,12 +139,10 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
     if (msg.type == OrreryMessageType::LeaderCommand) {
       currentState_.leaderBootId = msg.leaderBootId;
       currentState_.leaderSequenceNumber = msg.leaderSequenceNumber;
-      if (msg.speed.has_value() && msg.speed != currentState_.speed) {
-        jll_info("%u Planet %s applying speed %" PRId32, currentTime, ourPlanetName, *msg.speed);
-#if JL_MOTOR
-        GetMainStepperMotor()->SetSpeed(*msg.speed);
-#endif  // JL_MOTOR
-        currentState_.speed = *msg.speed;
+      if (msg.speed.has_value() && *msg.speed != requestedSpeed_) {
+        jll_info("%u Planet %s requested speed changed from %" PRId32 " to %" PRId32, currentTime, ourPlanetName,
+                 requestedSpeed_, *msg.speed);
+        requestedSpeed_ = *msg.speed;
       }
       if (msg.ledBrightness.has_value() && msg.ledBrightness != currentState_.ledBrightness) {
         jll_info("%u Planet %s applying brightness %u", currentTime, ourPlanetName, *msg.ledBrightness);

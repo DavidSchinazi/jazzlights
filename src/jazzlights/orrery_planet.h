@@ -44,6 +44,9 @@ class OrreryPlanet : public GpioSwitch::SwitchInterface, public HallSensor::Hall
   GpioSwitch switch2_;
   BusId busId_;
   Max485BusFollower max485BusFollower_;
+  int32_t requestedSpeed_ = 0;
+  float actualSpeed_ = 0.0f;
+  Milliseconds lastSpeedUpdateTime_ = 0;
 };
 
 }  // namespace jazzlights
