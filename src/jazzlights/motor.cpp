@@ -30,7 +30,7 @@ StepperMotor::StepperMotor(int enablePin, int directionPin, int stepPin)
       stepPin_(static_cast<gpio_num_t>(stepPin)) {}
 
 void StepperMotor::SetSpeed(int32_t frequencyHz) {
-  jll_info("%u Setting motor speed to %lldHz", timeMillis(), static_cast<int64_t>(frequencyHz));
+  // jll_info("%u Setting motor speed to %lldHz", timeMillis(), static_cast<int64_t>(frequencyHz));
   if (Setup(frequencyHz)) { return; }
   uint32_t halfPeriod;
   if (frequencyHz > 0) {

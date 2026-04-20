@@ -68,7 +68,7 @@ void OrreryLeader::SetSpeed(Planet planet, int32_t speed) {
     OrreryMessage& msg = it->second;
     if (!msg.speed.has_value() || *msg.speed != speed) {
       msg.speed = speed;
-      jll_info("OrreryLeader setting planet %s speed to %" PRId32, GetPlanetName(planet), speed);
+      jll_info("OrreryLeader setting planet %s milli-RPM to %" PRId32, GetPlanetName(planet), speed);
       SendMessage(planet);
     }
   }
@@ -78,6 +78,31 @@ int32_t OrreryLeader::GetSpeed(Planet planet) const {
   if (planet == Planet::All) { planet = Planet::Mercury; }
   auto it = messages_.find(planet);
   if (it != messages_.end() && it->second.speed.has_value()) { return *it->second.speed; }
+  return 0;
+}
+
+void OrreryLeader::SetPosition(Planet planet, uint32_t position) {
+  if (planet == Planet::All) {
+    for (int i = 0; i < kNumPlanets; i++) {
+      SetPosition(static_cast<Planet>(static_cast<int>(Planet::Mercury) + i), position);
+    }
+    return;
+  }
+  auto it = messages_.find(planet);
+  if (it != messages_.end()) {
+    OrreryMessage& msg = it->second;
+    if (!msg.position.has_value() || *msg.position != position) {
+      msg.position = position;
+      jll_info("OrreryLeader setting planet %s position to %" PRIu32, GetPlanetName(planet), position);
+      SendMessage(planet);
+    }
+  }
+}
+
+uint32_t OrreryLeader::GetPosition(Planet planet) const {
+  if (planet == Planet::All) { planet = Planet::Mercury; }
+  auto it = responses_.find(planet);
+  if (it != responses_.end() && it->second.position.has_value()) { return *it->second.position; }
   return 0;
 }
 

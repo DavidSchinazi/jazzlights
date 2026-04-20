@@ -32,6 +32,8 @@ class OrreryPlanet : public GpioSwitch::SwitchInterface, public HallSensor::Hall
 
   BusId ComputeBusId() const;
 
+  void IncrementStepCount();
+
   Player* player_ = nullptr;
   OrreryMessage currentState_ = {};
   HallSensor hallSensor_;
@@ -46,7 +48,14 @@ class OrreryPlanet : public GpioSwitch::SwitchInterface, public HallSensor::Hall
   Max485BusFollower max485BusFollower_;
   int32_t requestedSpeed_ = 0;
   float actualSpeed_ = 0.0f;
-  Milliseconds lastSpeedUpdateTime_ = 0;
+  float roundedSpeed_ = 0.0f;
+  Milliseconds lastSpeedUpdateTime_;
+  Milliseconds lastStepCountIncrement_;
+  float currentSteps_ = 0.0f;
+  float positionalSteps_ = 0.0f;
+  float stepsPerRev_ = 3200.0f;
+  std::optional<uint32_t> targetPosition_ = std::nullopt;
+  bool arrivedAtTarget_ = false;
 };
 
 }  // namespace jazzlights

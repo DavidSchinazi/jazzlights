@@ -40,20 +40,13 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
   ledBackButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/180, /*w=*/320, /*h=*/60, "Back");
 
   // Motor submenu buttons.
-  int32_t speed = OrreryLeader::Get()->GetSpeed(currentPlanet_);
-  if (speed != 0) {
-    motorEnabled_ = true;
-    motorDirectionForward_ = (speed >= 0);
-    motorFrequencyHz_ = std::abs(speed);
-  } else {
-    motorEnabled_ = false;
-    motorDirectionForward_ = true;
-    motorFrequencyHz_ = kDefaultPlanetSpeed;
-  }
+  motorMilliRpm_ = OrreryLeader::Get()->GetSpeed(currentPlanet_);
+  targetPosition_ = OrreryLeader::Get()->GetPosition(currentPlanet_);
+  motorEnabled_ = (motorMilliRpm_ != 0);
   motorEnableButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/320, /*h=*/60,
                                                             motorEnabled_ ? "Motor Enabled" : "Motor Disabled");
-  motorDirectionButton_ = TouchButtonManager::Get()->AddButton(
-      /*x=*/0, /*y=*/60, /*w=*/320, /*h=*/60, motorDirectionForward_ ? "Motor Forward" : "Motor Reverse");
+  motorPositionButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/60, /*w=*/320, /*h=*/60, "");
+  UpdateMotorPositionButton();
   motorSpeedButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/120, /*w=*/320, /*h=*/60, "");
   UpdateMotorSpeedButton();
   motorBackButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/180, /*w=*/320, /*h=*/60, "Back");
@@ -129,7 +122,7 @@ void OrreryLeaderUi::HideAll() {
   planetOffsetButton_->Hide();
   ledBackButton_->Hide();
   motorEnableButton_->Hide();
-  motorDirectionButton_->Hide();
+  motorPositionButton_->Hide();
   motorSpeedButton_->Hide();
   motorBackButton_->Hide();
   for (int i = 0; i < 4; i++) { hallSensorInfoButtons_[i]->Hide(); }
@@ -177,7 +170,7 @@ void OrreryLeaderUi::DrawLedMenu() {
 void OrreryLeaderUi::DrawMotorMenu() {
   HideAll();
   motorEnableButton_->Draw();
-  motorDirectionButton_->Draw();
+  motorPositionButton_->Draw();
   motorSpeedButton_->Draw();
   motorBackButton_->Draw();
   TouchButtonManager::Get()->Redraw();
@@ -233,6 +226,7 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       keypadActive_ = false;
       editingBrightness_ = false;
       editingOffset_ = false;
+      editingPosition_ = false;
       if (ledSubmenuActive_) {
         DrawLedMenu();
       } else if (motorSubmenuActive_) {
@@ -256,14 +250,19 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
         planetOffset_ = keypadValue_;
         UpdatePlanetOffsetButton();
         UpdatePlanetPattern();
+      } else if (editingPosition_) {
+        targetPosition_ = keypadValue_;
+        OrreryLeader::Get()->SetPosition(currentPlanet_, targetPosition_);
+        UpdateMotorPositionButton();
       } else {
-        motorFrequencyHz_ = keypadValue_;
+        motorMilliRpm_ = keypadValue_;
         SetMotorSpeed();
         UpdateMotorSpeedButton();
       }
       keypadActive_ = false;
       editingBrightness_ = false;
       editingOffset_ = false;
+      editingPosition_ = false;
       if (ledSubmenuActive_) {
         DrawLedMenu();
       } else if (motorSubmenuActive_) {
@@ -282,18 +281,11 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
         }
         UpdatePlanetButton();
         // Update UI with current speed of that planet
-        int32_t speed = OrreryLeader::Get()->GetSpeed(currentPlanet_);
-        if (speed != 0) {
-          motorEnabled_ = true;
-          motorDirectionForward_ = (speed >= 0);
-          motorFrequencyHz_ = std::abs(speed);
-        } else {
-          motorEnabled_ = false;
-          motorDirectionForward_ = true;
-          motorFrequencyHz_ = kDefaultPlanetSpeed;
-        }
+        motorMilliRpm_ = OrreryLeader::Get()->GetSpeed(currentPlanet_);
+        targetPosition_ = OrreryLeader::Get()->GetPosition(currentPlanet_);
+        motorEnabled_ = (motorMilliRpm_ != 0);
         motorEnableButton_->SetLabelText(motorEnabled_ ? "Motor Enabled" : "Motor Disabled");
-        motorDirectionButton_->SetLabelText(motorDirectionForward_ ? "Motor Forward" : "Motor Reverse");
+        UpdateMotorPositionButton();
         UpdateMotorSpeedButton();
         ledBrightness_ = OrreryLeader::Get()->GetBrightness(currentPlanet_);
         UpdateLedBrightnessButton();
@@ -352,15 +344,19 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       motorEnableButton_->SetLabelText(motorEnabled_ ? "Motor Enabled" : "Motor Disabled");
       SetMotorSpeed();
     }
-    if (motorDirectionButton_->JustReleased()) {
-      motorDirectionForward_ = !motorDirectionForward_;
-      motorDirectionButton_->SetLabelText(motorDirectionForward_ ? "Motor Forward" : "Motor Reverse");
-      SetMotorSpeed();
+    if (motorPositionButton_->JustReleased()) {
+      keypadActive_ = true;
+      editingBrightness_ = false;
+      editingOffset_ = false;
+      editingPosition_ = true;
+      keypadValue_ = 0;
+      DrawKeypad();
     }
     if (motorSpeedButton_->JustReleased()) {
       keypadActive_ = true;
       editingBrightness_ = false;
       editingOffset_ = false;
+      editingPosition_ = false;
       keypadValue_ = 0;
       DrawKeypad();
     }
@@ -404,16 +400,23 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
 }
 
 void OrreryLeaderUi::SetMotorSpeed() {
-  int32_t motorFrequencyHz = motorFrequencyHz_;
-  if (!motorEnabled_) { motorFrequencyHz = 0; }
-  if (!motorDirectionForward_) { motorFrequencyHz = -motorFrequencyHz; }
-  OrreryLeader::Get()->SetSpeed(currentPlanet_, motorFrequencyHz);
+  if (motorEnabled_) {
+    OrreryLeader::Get()->SetSpeed(currentPlanet_, motorMilliRpm_);
+  } else {
+    OrreryLeader::Get()->SetSpeed(currentPlanet_, 0);
+  }
 }
 
 void OrreryLeaderUi::UpdateMotorSpeedButton() {
   char label[32];
-  snprintf(label, sizeof(label), "Speed: %lld", static_cast<int64_t>(motorFrequencyHz_));
+  snprintf(label, sizeof(label), "RPM: %.3f", motorMilliRpm_ / 1000.0f);
   motorSpeedButton_->SetLabelText(label);
+}
+
+void OrreryLeaderUi::UpdateMotorPositionButton() {
+  char label[32];
+  snprintf(label, sizeof(label), "Pos: %.2f deg", targetPosition_ / 1000.0f);
+  motorPositionButton_->SetLabelText(label);
 }
 
 void OrreryLeaderUi::UpdateLedBrightnessButton() {

@@ -72,7 +72,8 @@ OrreryPlanet::OrreryPlanet()
       switch2_(kPlanetSwitchPin2, *this),
       busId_(ComputeBusId()),
       max485BusFollower_(UART_NUM_2, kMax485TxPin, kMax485RxPin, busId_),
-      lastSpeedUpdateTime_(timeMillis()) {
+      lastSpeedUpdateTime_(timeMillis()),
+      lastStepCountIncrement_(timeMillis()) {
   jll_info("%u OrreryPlanet created with busId %u", timeMillis(), busId_);
   PlanetEffect::Get()->SetPlanet(static_cast<Planet>(busId_));
   currentState_.type = OrreryMessageType::FollowerResponse;
@@ -94,10 +95,31 @@ void OrreryPlanet::StateChanged(uint8_t pin, bool isClosed) {
            (isClosed ? "closed" : "open"), GetPlanetName(static_cast<Planet>(busId_)), busId_);
 }
 
+void OrreryPlanet::IncrementStepCount() {
+  Milliseconds currentTime = timeMillis();
+  Milliseconds timeSinceLastStepCountIncrement = currentTime - lastStepCountIncrement_;
+  if (timeSinceLastStepCountIncrement <= 0) { return; }
+  currentSteps_ += (roundedSpeed_ * timeSinceLastStepCountIncrement) / 1000.0f;
+  lastStepCountIncrement_ = currentTime;
+}
+
 void OrreryPlanet::HandleHallSensorChange(uint8_t pin, bool isClosed, Milliseconds timeOfChange) {
   jll_info("%u Hall sensor at pin %d is now %s", timeOfChange, static_cast<int>(pin), (isClosed ? "closed" : "open"));
   PlanetEffect::Get()->SetHallSensorClosed(isClosed);
   if (isClosed) {
+    IncrementStepCount();
+    if (currentSteps_ > 0) {
+      float previousStepsPerRev = stepsPerRev_;
+#if 1
+      stepsPerRev_ = currentSteps_;
+      jll_info("%u Calibrated stepsPerRev from %.2f to %.2f", timeOfChange, previousStepsPerRev, stepsPerRev_);
+#else
+      stepsPerRev_ = 0.8f * stepsPerRev_ + 0.2f * currentSteps_;
+      jll_info("%u Calibrated stepsPerRev: %.2f smoothed from %.2f to %.2f", timeOfChange, currentSteps_,
+               previousStepsPerRev, stepsPerRev_);
+#endif
+      currentSteps_ = 0;
+    }
     if (timeHallSensorLastOpened_.has_value()) { lastOpenDuration_ = timeOfChange - *timeHallSensorLastOpened_; }
     timeHallSensorLastClosed_ = timeOfChange;
   } else {
@@ -114,21 +136,77 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
 
   const Milliseconds dt = currentTime - lastSpeedUpdateTime_;
   if (dt > 0) {
+    positionalSteps_ = currentSteps_ + ((roundedSpeed_ * (currentTime - lastStepCountIncrement_)) / 1000.0f);
+    while (positionalSteps_ >= stepsPerRev_) { positionalSteps_ -= stepsPerRev_; }
+    while (positionalSteps_ < 0) { positionalSteps_ += stepsPerRev_; }
+
+    int32_t effectiveRequestedSpeed = requestedSpeed_;
+    if (arrivedAtTarget_) {
+      effectiveRequestedSpeed = 0;
+      actualSpeed_ = 0;
+    } else if (targetPosition_.has_value()) {
+      const float targetSteps = (*targetPosition_ / 360000.0f) * stepsPerRev_;
+      float stepsToGo = targetSteps - positionalSteps_;
+      while (stepsToGo < (-stepsPerRev_ / 100.0f)) { stepsToGo += stepsPerRev_; }
+
+      static Milliseconds lastLogTime = -1;
+      if (lastLogTime < 0 || currentTime - lastLogTime > 1000) {
+        lastLogTime = currentTime;
+        jll_info("%u targetSteps %f currentSteps %f positionalSteps %f stepsToGo %f actualSpeed_ %f", currentTime,
+                 targetSteps, currentSteps_, positionalSteps_, stepsToGo, actualSpeed_);
+      }
+
+      if (stepsToGo < (stepsPerRev_ / 100.0f) && std::abs(actualSpeed_) < 10.0f) {
+        effectiveRequestedSpeed = 0;
+        actualSpeed_ = 0;
+        arrivedAtTarget_ = true;
+        jll_info(
+            "%u Planet %s arrived at target position %lu targetSteps %f currentSteps %f positionalSteps %f "
+            "stepsToGo %f actualSpeed %f",
+            currentTime, GetPlanetName(static_cast<Planet>(busId_)), *targetPosition_, targetSteps, currentSteps_,
+            positionalSteps_, stepsToGo, actualSpeed_);
+
+      } else {
+        // Distance to stop at current deceleration (250 steps/s^2) is v^2 / 500.
+        const float stop_distance = (actualSpeed_ * actualSpeed_) / 500.0f;
+
+        static Milliseconds lastLogTime3 = -1;
+        if (lastLogTime3 < 0 || currentTime - lastLogTime3 > 1000) {
+          lastLogTime3 = currentTime;
+          jll_info("%u targetSteps %f currentSteps %f positionalSteps %f stepsToGo %f actualSpeed_ %f stop_distance %f",
+                   currentTime, targetSteps, currentSteps_, positionalSteps_, stepsToGo, actualSpeed_, stop_distance);
+        }
+        if (stepsToGo <= stop_distance) { effectiveRequestedSpeed = 0; }
+      }
+    }
+
     const float maxChange = 250.0f * dt / 1000.0f;
-    if (actualSpeed_ < static_cast<float>(requestedSpeed_)) {
-      actualSpeed_ = std::min(static_cast<float>(requestedSpeed_), actualSpeed_ + maxChange);
-    } else if (actualSpeed_ > static_cast<float>(requestedSpeed_)) {
-      actualSpeed_ = std::max(static_cast<float>(requestedSpeed_), actualSpeed_ - maxChange);
+    if (actualSpeed_ < static_cast<float>(effectiveRequestedSpeed)) {
+      actualSpeed_ = std::min(static_cast<float>(effectiveRequestedSpeed), actualSpeed_ + maxChange);
+    } else if (actualSpeed_ > static_cast<float>(effectiveRequestedSpeed)) {
+      actualSpeed_ = std::max(static_cast<float>(effectiveRequestedSpeed), actualSpeed_ - maxChange);
     }
     lastSpeedUpdateTime_ = currentTime;
 
-    const int32_t roundedSpeed = static_cast<int32_t>(std::round(actualSpeed_));
-    if (!currentState_.speed.has_value() || roundedSpeed != *currentState_.speed) {
-#if JL_MOTOR
-      GetMainStepperMotor()->SetSpeed(roundedSpeed);
-#endif  // JL_MOTOR
-      currentState_.speed = roundedSpeed;
+    roundedSpeed_ = std::round(actualSpeed_);
+    constexpr int32_t kMaxMotorSpeedHz = 10000;
+    if (roundedSpeed_ > kMaxMotorSpeedHz) { roundedSpeed_ = kMaxMotorSpeedHz; }
+    if (roundedSpeed_ < -kMaxMotorSpeedHz) { roundedSpeed_ = -kMaxMotorSpeedHz; }
+
+    static Milliseconds lastLogTime2 = -1;
+    if (lastLogTime2 < 0 || currentTime - lastLogTime2 > 1000) {
+      lastLogTime2 = currentTime;
+      jll_info("%u Setting roundedSpeed to %f; currentSteps %f positionalSteps %f actualSpeed %f", currentTime,
+               roundedSpeed_, currentSteps_, positionalSteps_, actualSpeed_);
     }
+    if (!currentState_.speed.has_value() || roundedSpeed_ != *currentState_.speed) {
+      IncrementStepCount();
+#if JL_MOTOR
+      GetMainStepperMotor()->SetSpeed(static_cast<int32_t>(roundedSpeed_));
+#endif  // JL_MOTOR
+      currentState_.speed = roundedSpeed_;
+    }
+    currentState_.position = static_cast<uint32_t>((positionalSteps_ / stepsPerRev_) * 360000.0f);
   }
 
   BusId destBusId, srcBusId;
@@ -139,10 +217,21 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
     if (msg.type == OrreryMessageType::LeaderCommand) {
       currentState_.leaderBootId = msg.leaderBootId;
       currentState_.leaderSequenceNumber = msg.leaderSequenceNumber;
-      if (msg.speed.has_value() && *msg.speed != requestedSpeed_) {
-        jll_info("%u Planet %s requested speed changed from %" PRId32 " to %" PRId32, currentTime, ourPlanetName,
-                 requestedSpeed_, *msg.speed);
-        requestedSpeed_ = *msg.speed;
+      if (msg.speed.has_value()) {
+        const int32_t targetFrequency = std::round((*msg.speed / 60000.0f) * stepsPerRev_);
+        if (targetFrequency != requestedSpeed_) {
+          jll_info("%u Planet %s requested milli-RPM %" PRId32 " (target frequency %" PRId32 "Hz)", currentTime,
+                   ourPlanetName, *msg.speed, targetFrequency);
+          requestedSpeed_ = targetFrequency;
+        }
+      }
+      if (!msg.position.has_value()) {
+        targetPosition_ = std::nullopt;
+        arrivedAtTarget_ = false;
+      } else if (msg.position.has_value() && (!targetPosition_.has_value() || *msg.position != *targetPosition_)) {
+        jll_info("%u Planet %s requested position %" PRIu32, currentTime, ourPlanetName, *msg.position);
+        targetPosition_ = msg.position;
+        arrivedAtTarget_ = false;
       }
       if (msg.ledBrightness.has_value() && msg.ledBrightness != currentState_.ledBrightness) {
         jll_info("%u Planet %s applying brightness %u", currentTime, ourPlanetName, *msg.ledBrightness);

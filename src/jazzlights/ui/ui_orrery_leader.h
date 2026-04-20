@@ -41,6 +41,7 @@ class OrreryLeaderUi : public Esp32Ui {
   void UpdateCalibrationMenuButton();
   void UpdateStatusMenuButton();
   void UpdateStatusSubmenu();
+  void UpdateMotorPositionButton();
   void DrawSpeedDisplayButton(TouchButton* button, int outline, int fill, int textColor);
   void HideAll();
   void DrawMainMenu();
@@ -57,7 +58,7 @@ class OrreryLeaderUi : public Esp32Ui {
   TouchButton* statusMenuButton_ = nullptr;
   TouchButton* ledBrightnessButton_ = nullptr;
   TouchButton* motorEnableButton_ = nullptr;
-  TouchButton* motorDirectionButton_ = nullptr;
+  TouchButton* motorPositionButton_ = nullptr;
   TouchButton* motorSpeedButton_ = nullptr;
   TouchButton* planetHalfButton_ = nullptr;
   TouchButton* planetOffsetButton_ = nullptr;
@@ -74,7 +75,7 @@ class OrreryLeaderUi : public Esp32Ui {
   TouchButton* statusBackButton_ = nullptr;
   TouchButton* hallSensorInfoButtons_[4] = {};
   TouchButton* statusInfoButtons_[kNumPlanets] = {};
-  int32_t motorFrequencyHz_ = kDefaultPlanetSpeed;
+  int32_t motorMilliRpm_ = 0;
   uint8_t ledBrightness_ = kDefaultPlanetBrightness;
   enum class PlanetPatternMode {
     Full,
@@ -84,10 +85,10 @@ class OrreryLeaderUi : public Esp32Ui {
   PlanetPatternMode planetPatternMode_ = PlanetPatternMode::Full;
   uint8_t planetOffset_ = 0;
   bool motorEnabled_ = false;
-  bool motorDirectionForward_ = true;
   bool keypadActive_ = false;
   bool editingBrightness_ = false;
   bool editingOffset_ = false;
+  bool editingPosition_ = false;
   bool ledSubmenuActive_ = false;
   bool motorSubmenuActive_ = false;
   bool planetSubmenuActive_ = false;
@@ -95,6 +96,7 @@ class OrreryLeaderUi : public Esp32Ui {
   bool statusSubmenuActive_ = false;
   int32_t keypadValue_ = 0;
   Planet currentPlanet_ = Planet::Mercury;
+  uint32_t targetPosition_ = 0;
 };
 
 }  // namespace jazzlights
