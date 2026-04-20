@@ -23,12 +23,11 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
   M5.begin(cfg);
 
   // Main menu buttons.
-  planetButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/320, /*h=*/40, "");
-  ledMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/40, /*w=*/320, /*h=*/40, "LED");
-  motorMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/80, /*w=*/320, /*h=*/40, "Motor");
-  calibrationMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/120, /*w=*/320, /*h=*/40, "Calibration");
-  statusMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/160, /*w=*/320, /*h=*/40, "Status");
-  backButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/200, /*w=*/320, /*h=*/40, "");
+  planetButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/320, /*h=*/48, "");
+  ledMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/48, /*w=*/320, /*h=*/48, "LED");
+  motorMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/96, /*w=*/320, /*h=*/48, "Motor");
+  calibrationMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/144, /*w=*/320, /*h=*/48, "Calibration");
+  statusMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/192, /*w=*/320, /*h=*/48, "Status");
 
   // LED submenu buttons.
   ledBrightnessButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/320, /*h=*/60, "");
@@ -139,7 +138,6 @@ void OrreryLeaderUi::HideAll() {
   statusBackButton_->Hide();
   statusMenuButton_->Hide();
   keypadBackButton_->Hide();
-  backButton_->Hide();
 
   speedDisplayButton_->Hide();
   for (int i = 0; i <= 9; i++) { keypadButtons_[i]->Hide(); }
@@ -156,7 +154,6 @@ void OrreryLeaderUi::DrawMainMenu() {
   motorMenuButton_->Draw();
   calibrationMenuButton_->Draw();
   statusMenuButton_->Draw();
-  backButton_->Draw();
   TouchButtonManager::Get()->Redraw();
 }
 
@@ -462,10 +459,7 @@ void OrreryLeaderUi::UpdateLedMenuButton() { ledMenuButton_->SetLabelText("LED")
 
 void OrreryLeaderUi::UpdateMotorMenuButton() { motorMenuButton_->SetLabelText("Motor"); }
 
-void OrreryLeaderUi::UpdateStatusMenuButton() {
-  statusMenuButton_->SetLabelText("Status");
-  backButton_->SetLabelText("Back");
-}
+void OrreryLeaderUi::UpdateStatusMenuButton() { statusMenuButton_->SetLabelText("Status"); }
 
 void OrreryLeaderUi::UpdateStatusSubmenu() {
   if (!statusSubmenuActive_) { return; }

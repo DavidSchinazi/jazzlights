@@ -62,7 +62,6 @@ class OrreryLeaderUi : public Esp32Ui {
   TouchButton* planetHalfButton_ = nullptr;
   TouchButton* planetOffsetButton_ = nullptr;
   TouchButton* keypadBackButton_ = nullptr;
-  TouchButton* backButton_ = nullptr;
   TouchButton* speedDisplayButton_ = nullptr;
   TouchButton* keypadButtons_[10] = {};
   TouchButton* clearButton_ = nullptr;
