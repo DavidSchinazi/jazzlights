@@ -21,6 +21,7 @@
 #include <memory>
 #include <string>
 
+#include "jazzlights/orrery_common.h"
 #include "jazzlights/ui/touch_button.h"
 #include "jazzlights/ui/ui.h"
 
@@ -46,7 +47,7 @@ class CoreMotorUi : public Esp32Ui {
   TouchButton* keypadButtons_[10] = {};
   TouchButton* clearButton_ = nullptr;
   TouchButton* confirmButton_ = nullptr;
-  int32_t motorFrequencyHz_ = 10000;
+  int32_t motorFrequencyHz_ = kDefaultPlanetSpeed;
   bool motorEnabled_ = false;
   bool motorDirectionForward_ = true;
   bool keypadActive_ = false;
