@@ -46,6 +46,8 @@ constexpr int kMax485RxPin = 1;
 #error "unsupported controller for Max485BusHandler"
 #endif
 
+constexpr float kStartupStepsPerRev = 13000.0f;
+
 }  // namespace
 
 OrreryPlanet* OrreryPlanet::Get() {
@@ -73,7 +75,8 @@ OrreryPlanet::OrreryPlanet()
       busId_(ComputeBusId()),
       max485BusFollower_(UART_NUM_2, kMax485TxPin, kMax485RxPin, busId_),
       lastSpeedUpdateTime_(timeMillis()),
-      lastStepCountIncrement_(timeMillis()) {
+      lastStepCountIncrement_(timeMillis()),
+      stepsPerRev_(kStartupStepsPerRev) {
   jll_info("%u OrreryPlanet created with busId %u", timeMillis(), busId_);
   PlanetEffect::Get()->SetPlanet(static_cast<Planet>(busId_));
   currentState_.type = OrreryMessageType::FollowerResponse;
@@ -108,10 +111,12 @@ void OrreryPlanet::HandleHallSensorChange(uint8_t pin, bool isClosed, Millisecon
   PlanetEffect::Get()->SetHallSensorClosed(isClosed);
   if (isClosed) {
     IncrementStepCount();
-    if (currentSteps_ > 0) {
+    if (ignoreNextCalibration_) {
+      ignoreNextCalibration_ = false;
+    } else if (currentSteps_ != 0) {
       float previousStepsPerRev = stepsPerRev_;
 #if 1
-      stepsPerRev_ = currentSteps_;
+      stepsPerRev_ = std::abs(currentSteps_);
       jll_info("%u Calibrated stepsPerRev from %.2f to %.2f", timeOfChange, previousStepsPerRev, stepsPerRev_);
 #else
       stepsPerRev_ = 0.8f * stepsPerRev_ + 0.2f * currentSteps_;
@@ -200,6 +205,9 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
                roundedSpeed_, currentSteps_, positionalSteps_, actualSpeed_);
     }
     if (!currentState_.speed.has_value() || roundedSpeed_ != *currentState_.speed) {
+      bool wasForward = currentState_.speed.has_value() && *currentState_.speed >= 0;
+      bool isForward = roundedSpeed_ >= 0;
+      if (!currentState_.speed.has_value() || wasForward != isForward) { ignoreNextCalibration_ = true; }
       IncrementStepCount();
 #if JL_MOTOR
       GetMainStepperMotor()->SetSpeed(static_cast<int32_t>(roundedSpeed_));

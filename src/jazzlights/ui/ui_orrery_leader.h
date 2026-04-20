@@ -41,6 +41,7 @@ class OrreryLeaderUi : public Esp32Ui {
   void UpdateCalibrationMenuButton();
   void UpdateStatusMenuButton();
   void UpdateStatusSubmenu();
+  void UpdateMotorDirectionButton();
   void UpdateMotorPositionButton();
   void DrawSpeedDisplayButton(TouchButton* button, int outline, int fill, int textColor);
   void HideAll();
@@ -58,6 +59,7 @@ class OrreryLeaderUi : public Esp32Ui {
   TouchButton* statusMenuButton_ = nullptr;
   TouchButton* ledBrightnessButton_ = nullptr;
   TouchButton* motorEnableButton_ = nullptr;
+  TouchButton* motorDirectionButton_ = nullptr;
   TouchButton* motorPositionButton_ = nullptr;
   TouchButton* motorSpeedButton_ = nullptr;
   TouchButton* planetHalfButton_ = nullptr;
@@ -85,6 +87,7 @@ class OrreryLeaderUi : public Esp32Ui {
   PlanetPatternMode planetPatternMode_ = PlanetPatternMode::Full;
   uint8_t planetOffset_ = 0;
   bool motorEnabled_ = false;
+  bool motorForward_ = true;
   bool keypadActive_ = false;
   bool editingBrightness_ = false;
   bool editingOffset_ = false;

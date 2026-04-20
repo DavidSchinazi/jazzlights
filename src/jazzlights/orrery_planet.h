@@ -53,9 +53,10 @@ class OrreryPlanet : public GpioSwitch::SwitchInterface, public HallSensor::Hall
   Milliseconds lastStepCountIncrement_;
   float currentSteps_ = 0.0f;
   float positionalSteps_ = 0.0f;
-  float stepsPerRev_ = 3200.0f;
+  float stepsPerRev_;
   std::optional<uint32_t> targetPosition_ = std::nullopt;
   bool arrivedAtTarget_ = false;
+  bool ignoreNextCalibration_ = true;
 };
 
 }  // namespace jazzlights
