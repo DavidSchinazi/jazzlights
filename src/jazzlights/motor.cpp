@@ -7,6 +7,7 @@
 #include <driver/mcpwm_gen.h>
 #include <driver/mcpwm_oper.h>
 #include <driver/mcpwm_timer.h>
+#include <inttypes.h>
 
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/time.h"
@@ -72,9 +73,11 @@ bool StepperMotor::Setup(int32_t frequencyHz) {
 
   uint32_t halfPeriod;
   if (frequencyHz > 0) {
+    if (frequencyHz < 16) { frequencyHz = 16; }
     SetDirection(true);
     halfPeriod = kResolution / (2 * frequencyHz);
   } else if (frequencyHz < 0) {
+    if (frequencyHz > -16) { frequencyHz = -16; }
     SetDirection(false);
     halfPeriod = kResolution / (2 * -frequencyHz);
   }
