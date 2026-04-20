@@ -22,13 +22,24 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
   cfg.serial_baudrate = 0;
   M5.begin(cfg);
 
-  planetButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/160, /*h=*/60, "");
+  // Main menu buttons.
+  planetButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/320, /*h=*/60, "");
   UpdatePlanetButton();
-  ledBrightnessButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/60, /*w=*/160, /*h=*/60, "");
+  ledMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/60, /*w=*/320, /*h=*/60, "LED");
+  motorMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/120, /*w=*/320, /*h=*/60, "Motor");
+  calibrationMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/180, /*w=*/320, /*h=*/60, "Calibration");
+
+  // LED submenu buttons.
+  ledBrightnessButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/320, /*h=*/60, "");
   ledBrightness_ = OrreryLeader::Get()->GetBrightness(currentPlanet_);
   UpdateLedBrightnessButton();
-  hallSensorButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/120, /*w=*/160, /*h=*/60, "");
-  UpdateHallSensorButton();
+  planetHalfButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/60, /*w=*/320, /*h=*/60, "");
+  UpdatePlanetHalfButton();
+  planetOffsetButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/120, /*w=*/320, /*h=*/60, "");
+  UpdatePlanetOffsetButton();
+  ledBackButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/180, /*w=*/320, /*h=*/60, "Back");
+
+  // Motor submenu buttons.
   int32_t speed = OrreryLeader::Get()->GetSpeed(currentPlanet_);
   if (speed != 0) {
     motorEnabled_ = true;
@@ -39,14 +50,46 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
     motorDirectionForward_ = true;
     motorFrequencyHz_ = kDefaultPlanetSpeed;
   }
-
-  motorEnableButton_ = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/0, /*w=*/160, /*h=*/60,
+  motorEnableButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/320, /*h=*/60,
                                                             motorEnabled_ ? "Motor Enabled" : "Motor Disabled");
   motorDirectionButton_ = TouchButtonManager::Get()->AddButton(
-      /*x=*/160, /*y=*/60, /*w=*/160, /*h=*/60, motorDirectionForward_ ? "Motor Forward" : "Motor Reverse");
-  motorSpeedButton_ = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/120, /*w=*/160, /*h=*/60, "Motor Speed");
+      /*x=*/0, /*y=*/60, /*w=*/320, /*h=*/60, motorDirectionForward_ ? "Motor Forward" : "Motor Reverse");
+  motorSpeedButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/120, /*w=*/320, /*h=*/60, "");
   UpdateMotorSpeedButton();
+  motorBackButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/180, /*w=*/320, /*h=*/60, "Back");
 
+  // Calibration submenu buttons.
+  for (int i = 0; i < 4; i++) {
+    hallSensorInfoButtons_[i] = TouchButtonManager::Get()->AddButton(0, i * 45, 320, 45, "");
+  }
+  hallSensorBackButton_ = TouchButtonManager::Get()->AddButton(0, 180, 320, 60, "Back");
+
+  // Common UI.
+  const int w = 320 / 3;
+  const int h = 240 / 5;
+  backButton_ = TouchButtonManager::Get()->AddButton(0, 0, w, h, "Back");
+  speedDisplayButton_ = TouchButtonManager::Get()->AddButton(w, 0, 320 - w, h, "");
+  speedDisplayButton_->SetCustomPaintFunction(std::bind(&OrreryLeaderUi::DrawSpeedDisplayButton, this,
+                                                        std::placeholders::_1, std::placeholders::_2,
+                                                        std::placeholders::_3, std::placeholders::_4));
+  for (int i = 1; i <= 9; i++) {
+    char label[2] = {static_cast<char>('0' + i), '\0'};
+    keypadButtons_[i] = TouchButtonManager::Get()->AddButton(((i - 1) % 3) * w, ((i - 1) / 3 + 1) * h, w, h, label);
+  }
+  keypadButtons_[0] = TouchButtonManager::Get()->AddButton(w, 4 * h, w, h, "0");
+  clearButton_ = TouchButtonManager::Get()->AddButton(0, 4 * h, w, h, "Clear");
+  confirmButton_ = TouchButtonManager::Get()->AddButton(2 * w, 4 * h, 320 - 2 * w, h, "Confirm");
+
+  const int pw = 320 / 3;
+  const int ph = 240 / 4;
+  for (int i = 0; i < kNumPlanets; i++) {
+    Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
+    planetSelectButtons_[i] =
+        TouchButtonManager::Get()->AddButton((i % 3) * pw, (i / 3) * ph, pw, ph, GetPlanetName(planet));
+  }
+  planetBackButton_ = TouchButtonManager::Get()->AddButton(0, 3 * ph, 320, ph, "Back");
+
+  // Initialize LED pattern mode.
   uint32_t ledPattern = OrreryLeader::Get()->GetLedPattern(currentPlanet_);
   if (ledPattern & 0x80000000) {
     planetPatternMode_ = PlanetPatternMode::Half;
@@ -56,77 +99,103 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
     planetPatternMode_ = PlanetPatternMode::Full;
   }
   planetOffset_ = (ledPattern >> 16) & 0xFF;
-  planetHalfButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/180, /*w=*/160, /*h=*/60, "");
   UpdatePlanetHalfButton();
-  planetOffsetButton_ = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/180, /*w=*/160, /*h=*/60, "");
   UpdatePlanetOffsetButton();
 
-  const int w = 320 / 3;
-  const int h = 240 / 5;
-  backButton_ = TouchButtonManager::Get()->AddButton(0, 0, w, h, "Back");
-  backButton_->Hide();
-  speedDisplayButton_ = TouchButtonManager::Get()->AddButton(w, 0, 320 - w, h, "");
-  speedDisplayButton_->SetCustomPaintFunction(std::bind(&OrreryLeaderUi::DrawSpeedDisplayButton, this,
-                                                        std::placeholders::_1, std::placeholders::_2,
-                                                        std::placeholders::_3, std::placeholders::_4));
-  speedDisplayButton_->Hide();
-  for (int i = 1; i <= 9; i++) {
-    char label[2] = {static_cast<char>('0' + i), '\0'};
-    keypadButtons_[i] = TouchButtonManager::Get()->AddButton(((i - 1) % 3) * w, ((i - 1) / 3 + 1) * h, w, h, label);
-    keypadButtons_[i]->Hide();
-  }
-  keypadButtons_[0] = TouchButtonManager::Get()->AddButton(w, 4 * h, w, h, "0");
-  keypadButtons_[0]->Hide();
-  clearButton_ = TouchButtonManager::Get()->AddButton(0, 4 * h, w, h, "Clear");
-  clearButton_->Hide();
-  confirmButton_ = TouchButtonManager::Get()->AddButton(2 * w, 4 * h, 320 - 2 * w, h, "Confirm");
-  confirmButton_->Hide();
-
-  const int pw = 320 / 3;
-  const int ph = 240 / 4;
-  for (int i = 0; i < kNumPlanets; i++) {
-    Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
-    planetSelectButtons_[i] =
-        TouchButtonManager::Get()->AddButton((i % 3) * pw, (i / 3) * ph, pw, ph, GetPlanetName(planet));
-    planetSelectButtons_[i]->Hide();
-  }
-  planetBackButton_ = TouchButtonManager::Get()->AddButton(0, 3 * ph, 320, ph, "Back");
-  planetBackButton_->Hide();
-
-  hallSensorBackButton_ = TouchButtonManager::Get()->AddButton(0, 0, 320, 60, "Back");
-  hallSensorBackButton_->Hide();
-  for (int i = 0; i < 4; i++) {
-    hallSensorInfoButtons_[i] = TouchButtonManager::Get()->AddButton(0, 60 + i * 45, 320, 45, "");
-    hallSensorInfoButtons_[i]->Hide();
-  }
-
+  HideAll();
   M5.Display.fillScreen(BLACK);
   M5.Display.setBrightness(kDefaultOnBrightness);
   M5.Display.wakeup();
 }
 
-void OrreryLeaderUi::FinalSetup() {
+void OrreryLeaderUi::FinalSetup() { DrawMainMenu(); }
+
+void OrreryLeaderUi::HideAll() {
+  planetButton_->Hide();
+  ledMenuButton_->Hide();
+  motorMenuButton_->Hide();
+  calibrationMenuButton_->Hide();
+  ledBrightnessButton_->Hide();
+  planetHalfButton_->Hide();
+  planetOffsetButton_->Hide();
+  ledBackButton_->Hide();
+  motorEnableButton_->Hide();
+  motorDirectionButton_->Hide();
+  motorSpeedButton_->Hide();
+  motorBackButton_->Hide();
+  for (int i = 0; i < 4; i++) { hallSensorInfoButtons_[i]->Hide(); }
+  hallSensorBackButton_->Hide();
+  backButton_->Hide();
+  speedDisplayButton_->Hide();
+  for (int i = 0; i <= 9; i++) { keypadButtons_[i]->Hide(); }
+  clearButton_->Hide();
+  confirmButton_->Hide();
+  for (int i = 0; i < kNumPlanets; i++) { planetSelectButtons_[i]->Hide(); }
+  planetBackButton_->Hide();
+}
+
+void OrreryLeaderUi::DrawMainMenu() {
+  HideAll();
   planetButton_->Draw();
+  ledMenuButton_->Draw();
+  motorMenuButton_->Draw();
+  calibrationMenuButton_->Draw();
+  TouchButtonManager::Get()->Redraw();
+}
+
+void OrreryLeaderUi::DrawLedMenu() {
+  HideAll();
   ledBrightnessButton_->Draw();
-  hallSensorButton_->Draw();
+  planetHalfButton_->Draw();
+  planetOffsetButton_->Draw();
+  ledBackButton_->Draw();
+  TouchButtonManager::Get()->Redraw();
+}
+
+void OrreryLeaderUi::DrawMotorMenu() {
+  HideAll();
   motorEnableButton_->Draw();
   motorDirectionButton_->Draw();
   motorSpeedButton_->Draw();
-  planetHalfButton_->Draw();
-  planetOffsetButton_->Draw();
-  TouchButtonManager::Get()->MaybePaint();
+  motorBackButton_->Draw();
+  TouchButtonManager::Get()->Redraw();
+}
+
+void OrreryLeaderUi::DrawCalibrationMenu() {
+  HideAll();
+  for (int i = 0; i < 4; i++) { hallSensorInfoButtons_[i]->Draw(); }
+  hallSensorBackButton_->Draw();
+  UpdateHallSensorSubmenu();
+  TouchButtonManager::Get()->Redraw();
+}
+
+void OrreryLeaderUi::DrawKeypad() {
+  HideAll();
+  backButton_->Draw();
+  speedDisplayButton_->Draw();
+  for (int i = 0; i <= 9; i++) { keypadButtons_[i]->Draw(); }
+  clearButton_->Draw();
+  confirmButton_->Draw();
+  speedDisplayButton_->Draw(/*force=*/true);
+  TouchButtonManager::Get()->Redraw();
+}
+
+void OrreryLeaderUi::DrawPlanetMenu() {
+  HideAll();
+  for (int i = 0; i < kNumPlanets; i++) { planetSelectButtons_[i]->Draw(); }
+  planetBackButton_->Draw();
+  TouchButtonManager::Get()->Redraw();
 }
 
 void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
-  UpdateHallSensorButton();
+  UpdateCalibrationMenuButton();
   UpdateHallSensorSubmenu();
   M5.update();
   auto touchDetail = M5.Touch.getDetail();
   if (touchDetail.isPressed()) {
     int16_t px = touchDetail.x;
     int16_t py = touchDetail.y;
-    jll_debug("%u button pressed x=%d y=%d", currentTime, px, py);
-    bool buttonPressed = TouchButtonManager::Get()->HandlePress(px, py);
+    TouchButtonManager::Get()->HandlePress(px, py);
   } else {
     TouchButtonManager::Get()->HandleIdle();
   }
@@ -142,20 +211,13 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       keypadActive_ = false;
       editingBrightness_ = false;
       editingOffset_ = false;
-      backButton_->Hide();
-      speedDisplayButton_->Hide();
-      for (int i = 0; i <= 9; i++) { keypadButtons_[i]->Hide(); }
-      clearButton_->Hide();
-      confirmButton_->Hide();
-      planetButton_->Draw();
-      ledBrightnessButton_->Draw();
-      hallSensorButton_->Draw();
-      motorEnableButton_->Draw();
-      motorDirectionButton_->Draw();
-      motorSpeedButton_->Draw();
-      planetHalfButton_->Draw();
-      planetOffsetButton_->Draw();
-      TouchButtonManager::Get()->Redraw();
+      if (ledSubmenuActive_) {
+        DrawLedMenu();
+      } else if (motorSubmenuActive_) {
+        DrawMotorMenu();
+      } else {
+        DrawMainMenu();
+      }
     }
     if (clearButton_->JustReleased()) {
       keypadValue_ = 0;
@@ -180,20 +242,13 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       keypadActive_ = false;
       editingBrightness_ = false;
       editingOffset_ = false;
-      backButton_->Hide();
-      speedDisplayButton_->Hide();
-      for (int i = 0; i <= 9; i++) { keypadButtons_[i]->Hide(); }
-      clearButton_->Hide();
-      confirmButton_->Hide();
-      planetButton_->Draw();
-      ledBrightnessButton_->Draw();
-      hallSensorButton_->Draw();
-      motorEnableButton_->Draw();
-      motorDirectionButton_->Draw();
-      motorSpeedButton_->Draw();
-      planetHalfButton_->Draw();
-      planetOffsetButton_->Draw();
-      TouchButtonManager::Get()->Redraw();
+      if (ledSubmenuActive_) {
+        DrawLedMenu();
+      } else if (motorSubmenuActive_) {
+        DrawMotorMenu();
+      } else {
+        DrawMainMenu();
+      }
     }
   } else if (planetSubmenuActive_) {
     for (int i = 0; i < kNumPlanets; i++) {
@@ -228,129 +283,20 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
         UpdatePlanetHalfButton();
         UpdatePlanetOffsetButton();
         planetSubmenuActive_ = false;
-        for (int j = 0; j < kNumPlanets; j++) { planetSelectButtons_[j]->Hide(); }
-        planetBackButton_->Hide();
-        planetButton_->Draw();
-        ledBrightnessButton_->Draw();
-        hallSensorButton_->Draw();
-        motorEnableButton_->Draw();
-        motorDirectionButton_->Draw();
-        motorSpeedButton_->Draw();
-        planetHalfButton_->Draw();
-        planetOffsetButton_->Draw();
-        TouchButtonManager::Get()->Redraw();
+        DrawMainMenu();
       }
     }
     if (planetBackButton_->JustReleased()) {
       planetSubmenuActive_ = false;
-      for (int i = 0; i < kNumPlanets; i++) { planetSelectButtons_[i]->Hide(); }
-      planetBackButton_->Hide();
-      planetButton_->Draw();
-      ledBrightnessButton_->Draw();
-      hallSensorButton_->Draw();
-      motorEnableButton_->Draw();
-      motorDirectionButton_->Draw();
-      motorSpeedButton_->Draw();
-      planetHalfButton_->Draw();
-      planetOffsetButton_->Draw();
-      TouchButtonManager::Get()->Redraw();
+      DrawMainMenu();
     }
-  } else if (hallSensorSubmenuActive_) {
-    if (hallSensorBackButton_->JustReleased()) {
-      hallSensorSubmenuActive_ = false;
-      hallSensorBackButton_->Hide();
-      for (int i = 0; i < 4; i++) { hallSensorInfoButtons_[i]->Hide(); }
-      planetButton_->Draw();
-      ledBrightnessButton_->Draw();
-      hallSensorButton_->Draw();
-      motorEnableButton_->Draw();
-      motorDirectionButton_->Draw();
-      motorSpeedButton_->Draw();
-      planetHalfButton_->Draw();
-      planetOffsetButton_->Draw();
-      TouchButtonManager::Get()->Redraw();
-    }
-  } else {
-    if (planetButton_->JustReleased()) {
-      planetSubmenuActive_ = true;
-      planetButton_->Hide();
-      ledBrightnessButton_->Hide();
-      hallSensorButton_->Hide();
-      motorEnableButton_->Hide();
-      motorDirectionButton_->Hide();
-      motorSpeedButton_->Hide();
-      planetHalfButton_->Hide();
-      planetOffsetButton_->Hide();
-      for (int i = 0; i < kNumPlanets; i++) { planetSelectButtons_[i]->Draw(); }
-      planetBackButton_->Draw();
-      TouchButtonManager::Get()->Redraw();
-    }
+  } else if (ledSubmenuActive_) {
     if (ledBrightnessButton_->JustReleased()) {
       keypadActive_ = true;
       editingBrightness_ = true;
       editingOffset_ = false;
       keypadValue_ = 0;
-      planetButton_->Hide();
-      ledBrightnessButton_->Hide();
-      hallSensorButton_->Hide();
-      motorEnableButton_->Hide();
-      motorDirectionButton_->Hide();
-      motorSpeedButton_->Hide();
-      planetHalfButton_->Hide();
-      planetOffsetButton_->Hide();
-      backButton_->Draw();
-      speedDisplayButton_->Draw();
-      for (int i = 0; i <= 9; i++) { keypadButtons_[i]->Draw(); }
-      clearButton_->Draw();
-      confirmButton_->Draw();
-      speedDisplayButton_->Draw(/*force=*/true);
-      TouchButtonManager::Get()->Redraw();
-    }
-    if (hallSensorButton_->JustReleased()) {
-      hallSensorSubmenuActive_ = true;
-      planetButton_->Hide();
-      ledBrightnessButton_->Hide();
-      hallSensorButton_->Hide();
-      motorEnableButton_->Hide();
-      motorDirectionButton_->Hide();
-      motorSpeedButton_->Hide();
-      planetHalfButton_->Hide();
-      planetOffsetButton_->Hide();
-      hallSensorBackButton_->Draw();
-      for (int i = 0; i < 4; i++) { hallSensorInfoButtons_[i]->Draw(); }
-      UpdateHallSensorSubmenu();
-      TouchButtonManager::Get()->Redraw();
-    }
-    if (motorEnableButton_->JustReleased()) {
-      motorEnabled_ = !motorEnabled_;
-      motorEnableButton_->SetLabelText(motorEnabled_ ? "Motor Enabled" : "Motor Disabled");
-      SetMotorSpeed();
-    }
-    if (motorDirectionButton_->JustReleased()) {
-      motorDirectionForward_ = !motorDirectionForward_;
-      motorDirectionButton_->SetLabelText(motorDirectionForward_ ? "Motor Forward" : "Motor Reverse");
-      SetMotorSpeed();
-    }
-    if (motorSpeedButton_->JustReleased()) {
-      keypadActive_ = true;
-      editingBrightness_ = false;
-      editingOffset_ = false;
-      keypadValue_ = 0;
-      planetButton_->Hide();
-      ledBrightnessButton_->Hide();
-      hallSensorButton_->Hide();
-      motorEnableButton_->Hide();
-      motorDirectionButton_->Hide();
-      motorSpeedButton_->Hide();
-      planetHalfButton_->Hide();
-      planetOffsetButton_->Hide();
-      backButton_->Draw();
-      speedDisplayButton_->Draw();
-      for (int i = 0; i <= 9; i++) { keypadButtons_[i]->Draw(); }
-      clearButton_->Draw();
-      confirmButton_->Draw();
-      speedDisplayButton_->Draw(/*force=*/true);
-      TouchButtonManager::Get()->Redraw();
+      DrawKeypad();
     }
     if (planetHalfButton_->JustReleased()) {
       if (planetPatternMode_ == PlanetPatternMode::Full) {
@@ -368,21 +314,55 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       editingBrightness_ = false;
       editingOffset_ = true;
       keypadValue_ = 0;
-      planetButton_->Hide();
-      ledBrightnessButton_->Hide();
-      hallSensorButton_->Hide();
-      motorEnableButton_->Hide();
-      motorDirectionButton_->Hide();
-      motorSpeedButton_->Hide();
-      planetHalfButton_->Hide();
-      planetOffsetButton_->Hide();
-      backButton_->Draw();
-      speedDisplayButton_->Draw();
-      for (int i = 0; i <= 9; i++) { keypadButtons_[i]->Draw(); }
-      clearButton_->Draw();
-      confirmButton_->Draw();
-      speedDisplayButton_->Draw(/*force=*/true);
-      TouchButtonManager::Get()->Redraw();
+      DrawKeypad();
+    }
+    if (ledBackButton_->JustReleased()) {
+      ledSubmenuActive_ = false;
+      DrawMainMenu();
+    }
+  } else if (motorSubmenuActive_) {
+    if (motorEnableButton_->JustReleased()) {
+      motorEnabled_ = !motorEnabled_;
+      motorEnableButton_->SetLabelText(motorEnabled_ ? "Motor Enabled" : "Motor Disabled");
+      SetMotorSpeed();
+    }
+    if (motorDirectionButton_->JustReleased()) {
+      motorDirectionForward_ = !motorDirectionForward_;
+      motorDirectionButton_->SetLabelText(motorDirectionForward_ ? "Motor Forward" : "Motor Reverse");
+      SetMotorSpeed();
+    }
+    if (motorSpeedButton_->JustReleased()) {
+      keypadActive_ = true;
+      editingBrightness_ = false;
+      editingOffset_ = false;
+      keypadValue_ = 0;
+      DrawKeypad();
+    }
+    if (motorBackButton_->JustReleased()) {
+      motorSubmenuActive_ = false;
+      DrawMainMenu();
+    }
+  } else if (hallSensorSubmenuActive_) {
+    if (hallSensorBackButton_->JustReleased()) {
+      hallSensorSubmenuActive_ = false;
+      DrawMainMenu();
+    }
+  } else {
+    if (planetButton_->JustReleased()) {
+      planetSubmenuActive_ = true;
+      DrawPlanetMenu();
+    }
+    if (ledMenuButton_->JustReleased()) {
+      ledSubmenuActive_ = true;
+      DrawLedMenu();
+    }
+    if (motorMenuButton_->JustReleased()) {
+      motorSubmenuActive_ = true;
+      DrawMotorMenu();
+    }
+    if (calibrationMenuButton_->JustReleased()) {
+      hallSensorSubmenuActive_ = true;
+      DrawCalibrationMenu();
     }
   }
   TouchButtonManager::Get()->MaybePaint();
@@ -439,7 +419,11 @@ void OrreryLeaderUi::UpdatePlanetPattern() {
   OrreryLeader::Get()->SetLedPattern(currentPlanet_, ledPattern);
 }
 
-void OrreryLeaderUi::UpdateHallSensorButton() {
+void OrreryLeaderUi::UpdateLedMenuButton() { ledMenuButton_->SetLabelText("LED"); }
+
+void OrreryLeaderUi::UpdateMotorMenuButton() { motorMenuButton_->SetLabelText("Motor"); }
+
+void OrreryLeaderUi::UpdateCalibrationMenuButton() {
   std::optional<Milliseconds> lastOpened = OrreryLeader::Get()->GetTimeHallSensorLastOpened(currentPlanet_);
   std::optional<Milliseconds> lastClosed = OrreryLeader::Get()->GetTimeHallSensorLastClosed(currentPlanet_);
   char label[32];
@@ -450,11 +434,11 @@ void OrreryLeaderUi::UpdateHallSensorButton() {
     } else if (lastClosed.has_value()) {
       isClosed = true;
     }
-    snprintf(label, sizeof(label), "HS: %s", isClosed ? "Closed" : "Open");
+    snprintf(label, sizeof(label), "Calibration - HS: %s", isClosed ? "Closed" : "Open");
   } else {
-    snprintf(label, sizeof(label), "HS: Unknown");
+    snprintf(label, sizeof(label), "Calibration - HS: Unknown");
   }
-  hallSensorButton_->SetLabelText(label);
+  calibrationMenuButton_->SetLabelText(label);
 }
 
 void OrreryLeaderUi::UpdateHallSensorSubmenu() {
