@@ -96,7 +96,8 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
     planetSelectButtons_[i] =
         TouchButtonManager::Get()->AddButton((i % 3) * pw, (i / 3) * ph, pw, ph, GetPlanetName(planet));
   }
-  planetBackButton_ = TouchButtonManager::Get()->AddButton(0, 3 * ph, 320, ph, "Back");
+  planetSelectButtons_[kNumPlanets] = TouchButtonManager::Get()->AddButton(0, 3 * ph, 160, ph, "Global");
+  planetBackButton_ = TouchButtonManager::Get()->AddButton(160, 3 * ph, 160, ph, "Back");
 
   // Initialize LED pattern mode.
   uint32_t ledPattern = OrreryLeader::Get()->GetLedPattern(currentPlanet_);
@@ -144,7 +145,7 @@ void OrreryLeaderUi::HideAll() {
   for (int i = 0; i <= 9; i++) { keypadButtons_[i]->Hide(); }
   clearButton_->Hide();
   confirmButton_->Hide();
-  for (int i = 0; i < kNumPlanets; i++) { planetSelectButtons_[i]->Hide(); }
+  for (int i = 0; i <= kNumPlanets; i++) { planetSelectButtons_[i]->Hide(); }
   planetBackButton_->Hide();
 }
 
@@ -206,7 +207,7 @@ void OrreryLeaderUi::DrawKeypad() {
 
 void OrreryLeaderUi::DrawPlanetMenu() {
   HideAll();
-  for (int i = 0; i < kNumPlanets; i++) { planetSelectButtons_[i]->Draw(); }
+  for (int i = 0; i <= kNumPlanets; i++) { planetSelectButtons_[i]->Draw(); }
   planetBackButton_->Draw();
   TouchButtonManager::Get()->Redraw();
 }
@@ -275,9 +276,13 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       }
     }
   } else if (planetSubmenuActive_) {
-    for (int i = 0; i < kNumPlanets; i++) {
+    for (int i = 0; i <= kNumPlanets; i++) {
       if (planetSelectButtons_[i]->JustReleased()) {
-        currentPlanet_ = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
+        if (i == kNumPlanets) {
+          currentPlanet_ = Planet::All;
+        } else {
+          currentPlanet_ = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
+        }
         UpdatePlanetButton();
         // Update UI with current speed of that planet
         int32_t speed = OrreryLeader::Get()->GetSpeed(currentPlanet_);

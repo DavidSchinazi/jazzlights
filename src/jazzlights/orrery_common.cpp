@@ -207,6 +207,7 @@ const char* GetPlanetName(Planet planet) {
     case Planet::Uranus: return "Uranus";
     case Planet::Neptune: return "Neptune";
     case Planet::Sun: return "Sun";
+    case Planet::All: return "Global";
   }
   return "Unknown";
 }

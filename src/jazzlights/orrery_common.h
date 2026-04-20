@@ -27,6 +27,7 @@ enum class Planet : BusId {
   Uranus = 10,
   Neptune = 11,
   Sun = 12,  // Yes, the sun is a planet. Deal with it.
+  All = 255,
 };
 
 inline constexpr size_t kNumPlanets = 9;

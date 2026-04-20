@@ -57,6 +57,12 @@ OrreryLeader::OrreryLeader()
 }
 
 void OrreryLeader::SetSpeed(Planet planet, int32_t speed) {
+  if (planet == Planet::All) {
+    for (int i = 0; i < kNumPlanets; i++) {
+      SetSpeed(static_cast<Planet>(static_cast<int>(Planet::Mercury) + i), speed);
+    }
+    return;
+  }
   auto it = messages_.find(planet);
   if (it != messages_.end()) {
     OrreryMessage& msg = it->second;
@@ -69,12 +75,19 @@ void OrreryLeader::SetSpeed(Planet planet, int32_t speed) {
 }
 
 int32_t OrreryLeader::GetSpeed(Planet planet) const {
+  if (planet == Planet::All) { planet = Planet::Mercury; }
   auto it = messages_.find(planet);
   if (it != messages_.end() && it->second.speed.has_value()) { return *it->second.speed; }
   return 0;
 }
 
 void OrreryLeader::SetBrightness(Planet planet, uint8_t brightness) {
+  if (planet == Planet::All) {
+    for (int i = 0; i < kNumPlanets; i++) {
+      SetBrightness(static_cast<Planet>(static_cast<int>(Planet::Mercury) + i), brightness);
+    }
+    return;
+  }
   auto it = messages_.find(planet);
   if (it != messages_.end()) {
     OrreryMessage& msg = it->second;
@@ -87,12 +100,19 @@ void OrreryLeader::SetBrightness(Planet planet, uint8_t brightness) {
 }
 
 uint8_t OrreryLeader::GetBrightness(Planet planet) const {
+  if (planet == Planet::All) { planet = Planet::Mercury; }
   auto it = messages_.find(planet);
   if (it != messages_.end() && it->second.ledBrightness.has_value()) { return *it->second.ledBrightness; }
   return kDefaultPlanetBrightness;
 }
 
 void OrreryLeader::SetLedPattern(Planet planet, uint32_t ledPattern) {
+  if (planet == Planet::All) {
+    for (int i = 0; i < kNumPlanets; i++) {
+      SetLedPattern(static_cast<Planet>(static_cast<int>(Planet::Mercury) + i), ledPattern);
+    }
+    return;
+  }
   auto it = messages_.find(planet);
   if (it != messages_.end()) {
     OrreryMessage& msg = it->second;
@@ -105,6 +125,7 @@ void OrreryLeader::SetLedPattern(Planet planet, uint32_t ledPattern) {
 }
 
 uint32_t OrreryLeader::GetLedPattern(Planet planet) const {
+  if (planet == Planet::All) { planet = Planet::Mercury; }
   auto it = messages_.find(planet);
   if (it != messages_.end() && it->second.ledPattern.has_value()) { return *it->second.ledPattern; }
   return kPlanetPattern;
