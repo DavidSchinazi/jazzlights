@@ -134,6 +134,12 @@ std::optional<Milliseconds> OrreryLeader::GetLastClosedDuration(Planet planet) c
   return std::nullopt;
 }
 
+std::optional<Milliseconds> OrreryLeader::GetLastHeardTime(Planet planet) const {
+  auto it = lastHeardTime_.find(planet);
+  if (it != lastHeardTime_.end()) { return it->second; }
+  return std::nullopt;
+}
+
 void OrreryLeader::SendMessage(Planet planet) {
   auto it = messages_.find(planet);
   if (it != messages_.end()) {
@@ -143,11 +149,15 @@ void OrreryLeader::SendMessage(Planet planet) {
   }
 }
 
-void OrreryLeader::RunLoop(Milliseconds /*currentTime*/) {
+void OrreryLeader::RunLoop(Milliseconds currentTime) {
   BusId destBusId, srcBusId;
   OrreryMessage msg;
   while (max485BusLeader_.ReadMessage(&msg, &destBusId, &srcBusId)) {
-    if (msg.type == OrreryMessageType::FollowerResponse) { responses_[static_cast<Planet>(srcBusId)] = msg; }
+    if (msg.type == OrreryMessageType::FollowerResponse) {
+      Planet planet = static_cast<Planet>(srcBusId);
+      responses_[planet] = msg;
+      lastHeardTime_[planet] = currentTime;
+    }
   }
 }
 

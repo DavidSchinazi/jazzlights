@@ -23,11 +23,12 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
   M5.begin(cfg);
 
   // Main menu buttons.
-  planetButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/320, /*h=*/60, "");
-  UpdatePlanetButton();
-  ledMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/60, /*w=*/320, /*h=*/60, "LED");
-  motorMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/120, /*w=*/320, /*h=*/60, "Motor");
-  calibrationMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/180, /*w=*/320, /*h=*/60, "Calibration");
+  planetButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/320, /*h=*/40, "");
+  ledMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/40, /*w=*/320, /*h=*/40, "LED");
+  motorMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/80, /*w=*/320, /*h=*/40, "Motor");
+  calibrationMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/120, /*w=*/320, /*h=*/40, "Calibration");
+  statusMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/160, /*w=*/320, /*h=*/40, "Status");
+  backButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/200, /*w=*/320, /*h=*/40, "");
 
   // LED submenu buttons.
   ledBrightnessButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/320, /*h=*/60, "");
@@ -64,10 +65,18 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
   }
   hallSensorBackButton_ = TouchButtonManager::Get()->AddButton(0, 180, 320, 60, "Back");
 
+  // Status submenu buttons.
+  for (int i = 0; i < kNumPlanets; i++) {
+    statusInfoButtons_[i] = TouchButtonManager::Get()->AddButton(0, i * 22, 320, 22, "");
+  }
+  statusBackButton_ = TouchButtonManager::Get()->AddButton(0, 240 - 42, 320, 42, "Back");
+  UpdateStatusMenuButton();
+  UpdatePlanetButton();
+
   // Common UI.
   const int w = 320 / 3;
   const int h = 240 / 5;
-  backButton_ = TouchButtonManager::Get()->AddButton(0, 0, w, h, "Back");
+  keypadBackButton_ = TouchButtonManager::Get()->AddButton(0, 0, w, h, "Back");
   speedDisplayButton_ = TouchButtonManager::Get()->AddButton(w, 0, 320 - w, h, "");
   speedDisplayButton_->SetCustomPaintFunction(std::bind(&OrreryLeaderUi::DrawSpeedDisplayButton, this,
                                                         std::placeholders::_1, std::placeholders::_2,
@@ -125,7 +134,12 @@ void OrreryLeaderUi::HideAll() {
   motorBackButton_->Hide();
   for (int i = 0; i < 4; i++) { hallSensorInfoButtons_[i]->Hide(); }
   hallSensorBackButton_->Hide();
+  for (int i = 0; i < kNumPlanets; i++) { statusInfoButtons_[i]->Hide(); }
+  statusBackButton_->Hide();
+  statusMenuButton_->Hide();
+  keypadBackButton_->Hide();
   backButton_->Hide();
+
   speedDisplayButton_->Hide();
   for (int i = 0; i <= 9; i++) { keypadButtons_[i]->Hide(); }
   clearButton_->Hide();
@@ -140,6 +154,16 @@ void OrreryLeaderUi::DrawMainMenu() {
   ledMenuButton_->Draw();
   motorMenuButton_->Draw();
   calibrationMenuButton_->Draw();
+  statusMenuButton_->Draw();
+  backButton_->Draw();
+  TouchButtonManager::Get()->Redraw();
+}
+
+void OrreryLeaderUi::DrawStatusMenu() {
+  HideAll();
+  for (int i = 0; i < kNumPlanets; i++) { statusInfoButtons_[i]->Draw(); }
+  statusBackButton_->Draw();
+  UpdateStatusSubmenu();
   TouchButtonManager::Get()->Redraw();
 }
 
@@ -171,7 +195,7 @@ void OrreryLeaderUi::DrawCalibrationMenu() {
 
 void OrreryLeaderUi::DrawKeypad() {
   HideAll();
-  backButton_->Draw();
+  keypadBackButton_->Draw();
   speedDisplayButton_->Draw();
   for (int i = 0; i <= 9; i++) { keypadButtons_[i]->Draw(); }
   clearButton_->Draw();
@@ -189,7 +213,7 @@ void OrreryLeaderUi::DrawPlanetMenu() {
 
 void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
   UpdateCalibrationMenuButton();
-  UpdateHallSensorSubmenu();
+  UpdateStatusSubmenu();
   M5.update();
   auto touchDetail = M5.Touch.getDetail();
   if (touchDetail.isPressed()) {
@@ -207,7 +231,7 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
         speedDisplayButton_->Draw(/*force=*/true);
       }
     }
-    if (backButton_->JustReleased()) {
+    if (keypadBackButton_->JustReleased()) {
       keypadActive_ = false;
       editingBrightness_ = false;
       editingOffset_ = false;
@@ -347,6 +371,11 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       hallSensorSubmenuActive_ = false;
       DrawMainMenu();
     }
+  } else if (statusSubmenuActive_) {
+    if (statusBackButton_->JustReleased()) {
+      statusSubmenuActive_ = false;
+      DrawMainMenu();
+    }
   } else {
     if (planetButton_->JustReleased()) {
       planetSubmenuActive_ = true;
@@ -363,6 +392,10 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
     if (calibrationMenuButton_->JustReleased()) {
       hallSensorSubmenuActive_ = true;
       DrawCalibrationMenu();
+    }
+    if (statusMenuButton_->JustReleased()) {
+      statusSubmenuActive_ = true;
+      DrawStatusMenu();
     }
   }
   TouchButtonManager::Get()->MaybePaint();
@@ -391,6 +424,7 @@ void OrreryLeaderUi::UpdatePlanetButton() {
   char label[32];
   snprintf(label, sizeof(label), "Planet: %s", GetPlanetName(currentPlanet_));
   planetButton_->SetLabelText(label);
+  UpdateStatusMenuButton();
 }
 
 void OrreryLeaderUi::UpdatePlanetHalfButton() {
@@ -422,6 +456,27 @@ void OrreryLeaderUi::UpdatePlanetPattern() {
 void OrreryLeaderUi::UpdateLedMenuButton() { ledMenuButton_->SetLabelText("LED"); }
 
 void OrreryLeaderUi::UpdateMotorMenuButton() { motorMenuButton_->SetLabelText("Motor"); }
+
+void OrreryLeaderUi::UpdateStatusMenuButton() {
+  statusMenuButton_->SetLabelText("Status");
+  backButton_->SetLabelText("Back");
+}
+
+void OrreryLeaderUi::UpdateStatusSubmenu() {
+  if (!statusSubmenuActive_) { return; }
+  for (int i = 0; i < kNumPlanets; i++) {
+    Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
+    std::optional<Milliseconds> lastHeard = OrreryLeader::Get()->GetLastHeardTime(planet);
+    char label[64];
+    if (lastHeard.has_value()) {
+      snprintf(label, sizeof(label), "%s: %llds ago", GetPlanetName(planet),
+               static_cast<long long>((timeMillis() - *lastHeard) / 1000));
+    } else {
+      snprintf(label, sizeof(label), "%s: Never heard", GetPlanetName(planet));
+    }
+    statusInfoButtons_[i]->SetLabelText(label);
+  }
+}
 
 void OrreryLeaderUi::UpdateCalibrationMenuButton() {
   std::optional<Milliseconds> lastOpened = OrreryLeader::Get()->GetTimeHallSensorLastOpened(currentPlanet_);

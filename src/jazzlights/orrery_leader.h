@@ -28,6 +28,8 @@ class OrreryLeader {
   std::optional<Milliseconds> GetLastOpenDuration(Planet planet) const;
   std::optional<Milliseconds> GetLastClosedDuration(Planet planet) const;
 
+  std::optional<Milliseconds> GetLastHeardTime(Planet planet) const;
+
   void RunLoop(Milliseconds currentTime);
 
  private:
@@ -37,6 +39,7 @@ class OrreryLeader {
   uint32_t nextSequenceNumber_ = 0;
   std::unordered_map<Planet, OrreryMessage> messages_;
   std::unordered_map<Planet, OrreryMessage> responses_;
+  std::unordered_map<Planet, Milliseconds> lastHeardTime_;
   Max485BusLeader max485BusLeader_;
 };
 
