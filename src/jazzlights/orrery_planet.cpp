@@ -21,7 +21,7 @@ namespace {
 static constexpr uint8_t kPlanetSwitchPin0 = 12;
 static constexpr uint8_t kPlanetSwitchPin1 = 11;
 static constexpr uint8_t kPlanetSwitchPin2 = 9;
-static constexpr uint8_t kHallSensorPin = 15;
+static constexpr uint8_t kHallSensorPin = 4;
 #else
 #error "Unexpected controller"
 #endif
