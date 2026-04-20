@@ -52,7 +52,6 @@ void AddLedsToRunner(FastLedRunner* runner) {
   runner->AddLeds<WS2812B, kPinA2, RGB>(pixels);
   runner->AddLeds<WS2812B, kPinA1, RGB>(pixels);
   runner->AddLeds<WS2812B, kPinB2, RGB>(pixels);
-  runner->AddLeds<WS2812B, kPinB1, RGB>(pixels);
 #elif JL_IS_CONFIG(ROPELIGHT)
   runner->AddLeds<WS2812, LED_PIN, BRG>(pixels);
 #elif JL_IS_CONFIG(XMAS_TREE) || JL_IS_CONFIG(FAIRY_STRING)
