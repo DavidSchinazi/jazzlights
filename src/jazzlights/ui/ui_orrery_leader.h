@@ -43,6 +43,7 @@ class OrreryLeaderUi : public Esp32Ui {
   void UpdateStatusSubmenu();
   void UpdateMotorDirectionButton();
   void UpdateMotorPositionButton();
+  void UpdateMotorCurrentPositionButton();
   void DrawSpeedDisplayButton(TouchButton* button, int outline, int fill, int textColor);
   void HideAll();
   void DrawMainMenu();
@@ -61,6 +62,7 @@ class OrreryLeaderUi : public Esp32Ui {
   TouchButton* motorEnableButton_ = nullptr;
   TouchButton* motorDirectionButton_ = nullptr;
   TouchButton* motorPositionButton_ = nullptr;
+  TouchButton* motorCurrentPositionButton_ = nullptr;
   TouchButton* motorSpeedButton_ = nullptr;
   TouchButton* planetHalfButton_ = nullptr;
   TouchButton* planetOffsetButton_ = nullptr;
@@ -98,8 +100,9 @@ class OrreryLeaderUi : public Esp32Ui {
   bool hallSensorSubmenuActive_ = false;
   bool statusSubmenuActive_ = false;
   int32_t keypadValue_ = 0;
+  bool keypadHasValue_ = false;
   Planet currentPlanet_ = Planet::Mercury;
-  uint32_t targetPosition_ = 0;
+  std::optional<uint32_t> targetPosition_;
 };
 
 }  // namespace jazzlights

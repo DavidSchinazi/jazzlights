@@ -19,8 +19,8 @@ class OrreryLeader {
   static OrreryLeader* Get();
   void SetSpeed(Planet planet, int32_t speed);
   int32_t GetSpeed(Planet planet) const;
-  void SetPosition(Planet planet, uint32_t position);
-  uint32_t GetPosition(Planet planet) const;
+  void SetPosition(Planet planet, std::optional<uint32_t> position);
+  std::optional<uint32_t> GetPosition(Planet planet) const;
   void SetBrightness(Planet planet, uint8_t brightness);
   uint8_t GetBrightness(Planet planet) const;
   void SetLedPattern(Planet planet, uint32_t ledPattern);
