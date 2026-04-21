@@ -125,6 +125,7 @@ void OrreryPlanet::HandleHallSensorChange(uint8_t pin, bool isClosed, Millisecon
       float previousStepsPerRev = stepsPerRev_;
 #if 1
       stepsPerRev_ = std::abs(currentSteps_);
+      currentState_.calibration = static_cast<uint32_t>(std::round(stepsPerRev_));
       jll_info("%u Calibrated stepsPerRev from %.2f to %.2f", timeOfChange, previousStepsPerRev, stepsPerRev_);
 #else
       stepsPerRev_ = 0.8f * stepsPerRev_ + 0.2f * currentSteps_;

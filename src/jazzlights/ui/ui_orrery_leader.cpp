@@ -46,17 +46,19 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
   motorMilliRpm_ = std::abs(speed);
   targetPosition_ = OrreryLeader::Get()->GetPosition(currentPlanet_);
   motorEnabled_ = (speed != 0);
-  motorEnableButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/320, /*h=*/40,
+  motorEnableButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/320, /*h=*/34,
                                                             motorEnabled_ ? "Motor Enabled" : "Motor Disabled");
-  motorDirectionButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/40, /*w=*/320, /*h=*/40, "");
+  motorDirectionButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/34, /*w=*/320, /*h=*/34, "");
   UpdateMotorDirectionButton();
-  motorPositionButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/80, /*w=*/320, /*h=*/40, "");
+  motorPositionButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/68, /*w=*/320, /*h=*/34, "");
   UpdateMotorPositionButton();
-  motorCurrentPositionButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/120, /*w=*/320, /*h=*/40, "");
+  motorCurrentPositionButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/102, /*w=*/320, /*h=*/34, "");
   UpdateMotorCurrentPositionButton();
-  motorSpeedButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/160, /*w=*/320, /*h=*/40, "");
+  motorCalibrationButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/136, /*w=*/320, /*h=*/34, "");
+  UpdateMotorCalibrationButton();
+  motorSpeedButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/170, /*w=*/320, /*h=*/34, "");
   UpdateMotorSpeedButton();
-  motorBackButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/200, /*w=*/320, /*h=*/40, "Back");
+  motorBackButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/204, /*w=*/320, /*h=*/34, "Back");
 
   // Calibration submenu buttons.
   for (int i = 0; i < 4; i++) {
@@ -132,6 +134,7 @@ void OrreryLeaderUi::HideAll() {
   motorDirectionButton_->Hide();
   motorPositionButton_->Hide();
   motorCurrentPositionButton_->Hide();
+  motorCalibrationButton_->Hide();
   motorSpeedButton_->Hide();
   motorBackButton_->Hide();
   for (int i = 0; i < 4; i++) { hallSensorInfoButtons_[i]->Hide(); }
@@ -182,9 +185,11 @@ void OrreryLeaderUi::DrawMotorMenu() {
   motorDirectionButton_->Draw();
   motorPositionButton_->Draw();
   motorCurrentPositionButton_->Draw();
+  motorCalibrationButton_->Draw();
   motorSpeedButton_->Draw();
   motorBackButton_->Draw();
   UpdateMotorCurrentPositionButton();
+  UpdateMotorCalibrationButton();
   TouchButtonManager::Get()->Redraw();
 }
 
@@ -217,7 +222,10 @@ void OrreryLeaderUi::DrawPlanetMenu() {
 void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
   UpdateCalibrationMenuButton();
   UpdateStatusSubmenu();
-  if (motorSubmenuActive_ && !keypadActive_) { UpdateMotorCurrentPositionButton(); }
+  if (motorSubmenuActive_ && !keypadActive_) {
+    UpdateMotorCurrentPositionButton();
+    UpdateMotorCalibrationButton();
+  }
   M5.update();
   auto touchDetail = M5.Touch.getDetail();
   if (touchDetail.isPressed()) {
@@ -311,6 +319,7 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
         UpdateMotorDirectionButton();
         UpdateMotorPositionButton();
         UpdateMotorSpeedButton();
+        UpdateMotorCalibrationButton();
         ledBrightness_ = OrreryLeader::Get()->GetBrightness(currentPlanet_);
         UpdateLedBrightnessButton();
         uint32_t ledPattern = OrreryLeader::Get()->GetLedPattern(currentPlanet_);
@@ -468,9 +477,20 @@ void OrreryLeaderUi::UpdateMotorCurrentPositionButton() {
   if (currentPos.has_value()) {
     snprintf(label, sizeof(label), "Current: %lu deg", (unsigned long)(*currentPos / 1000));
   } else {
-    snprintf(label, sizeof(label), "Current: unknown");
+    snprintf(label, sizeof(label), "Current: Unknown");
   }
   motorCurrentPositionButton_->SetLabelText(label);
+}
+
+void OrreryLeaderUi::UpdateMotorCalibrationButton() {
+  char label[32];
+  std::optional<uint32_t> calibration = OrreryLeader::Get()->GetCalibration(currentPlanet_);
+  if (calibration.has_value()) {
+    snprintf(label, sizeof(label), "Calib: %lu steps/rev", (unsigned long)*calibration);
+  } else {
+    snprintf(label, sizeof(label), "Calib: Unknown");
+  }
+  motorCalibrationButton_->SetLabelText(label);
 }
 
 void OrreryLeaderUi::UpdateLedBrightnessButton() {

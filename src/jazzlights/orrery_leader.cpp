@@ -111,6 +111,13 @@ std::optional<uint32_t> OrreryLeader::GetPosition(Planet planet) const {
   return std::nullopt;
 }
 
+std::optional<uint32_t> OrreryLeader::GetCalibration(Planet planet) const {
+  if (planet == Planet::All) { planet = Planet::Mercury; }
+  auto it = responses_.find(planet);
+  if (it != responses_.end()) { return it->second.calibration; }
+  return std::nullopt;
+}
+
 void OrreryLeader::SetBrightness(Planet planet, uint8_t brightness) {
   if (planet == Planet::All) {
     for (int i = 0; i < kNumPlanets; i++) {
