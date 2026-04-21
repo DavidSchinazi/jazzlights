@@ -1,0 +1,28 @@
+multiflash.py
+  h_669488c0e21d79 83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "0d76bc15f0f1c0a6b6d49dd8e79fea72b17ac587",
+  "prompts": {
+    "c2e3e98ca0786e35": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "98f045e8-5f77-4229-a912-da7c53ae91c6",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Claudio Spiess",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 83,
+      "overriden_lines": 0
+    }
+  },
+  "humans": {
+    "h_669488c0e21d79": {
+      "author": "Claudio Spiess"
+    }
+  }
+}
