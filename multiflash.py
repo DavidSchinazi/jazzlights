@@ -29,7 +29,6 @@ import serial.tools.list_ports
 import typer
 
 # --- CONFIGURATION ---
-# BUILD_DIR = Path(".pio/build/creature_c6")
 BAUD_RATE = "1500000"
 POLL_INTERVAL = 1.0
 TARGET_VID = 0x303A  # Espressif's registered Vendor ID
@@ -53,7 +52,6 @@ def print_port_info_table(new_port_objects):
     table.add_column("Location")
     table.add_column("Manufacturer")
     table.add_column("Product")
-    # table.add_column("Interface")
 
     for p in new_port_objects:
         vid = f"0x{p.vid:04X}" if p.vid else "N/A"
@@ -69,7 +67,6 @@ def print_port_info_table(new_port_objects):
             str(p.location) if p.location else "N/A",
             str(p.manufacturer) if p.manufacturer else "N/A",
             str(p.product) if p.product else "N/A",
-            # str(p.interface) if p.interface else "N/A",
         )
 
     console.print(table)
@@ -83,7 +80,7 @@ def flash_device(port: str, build_dir: Path):
     command = [
         "esptool",
         "--chip",
-        "auto",  # "esp32c6", # "auto"
+        "auto",
         "--port",
         port,
         "--baud",
