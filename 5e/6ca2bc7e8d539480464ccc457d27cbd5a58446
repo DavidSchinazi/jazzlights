@@ -1,0 +1,32 @@
+pio_configs/creature.ini
+  h_669488c0e21d79 1-155
+pio_configs/vest.ini
+  h_669488c0e21d79 1-196
+src/jazzlights/audio.cpp
+  h_669488c0e21d79 23-25,27,42-64,66-96,99-118,121-157,159-176,178-189
+pio_configs/wearables.ini
+  h_669488c0e21d79 1-197
+sdkconfig_size.md
+  h_669488c0e21d79 1-14
+platformio.ini
+  h_669488c0e21d79 4-13,18-21,49-53,112-116,118-141,270-271,273-276,278-279,281-284
+src/jazzlights/layout/layout_data.h
+  h_669488c0e21d79 13
+no_spiffs.csv
+  h_669488c0e21d79 1-5
+src/jazzlights/config.h
+  h_669488c0e21d79 58,188-194
+pio_configs/orrery.ini
+  h_669488c0e21d79 1-70
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "5e6ca2bc7e8d539480464ccc457d27cbd5a58446",
+  "prompts": {},
+  "humans": {
+    "h_669488c0e21d79": {
+      "author": "Claudio Spiess"
+    }
+  }
+}
