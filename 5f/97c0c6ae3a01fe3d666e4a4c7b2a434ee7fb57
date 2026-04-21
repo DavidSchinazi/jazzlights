@@ -1,0 +1,14 @@
+multiflash.py
+  h_669488c0e21d79 1-243
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "5f97c0c6ae3a01fe3d666e4a4c7b2a434ee7fb57",
+  "prompts": {},
+  "humans": {
+    "h_669488c0e21d79": {
+      "author": "Claudio Spiess"
+    }
+  }
+}
