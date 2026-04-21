@@ -15,13 +15,13 @@ namespace jazzlights {
 
 class Player;
 
-class OrreryPlanet : public GpioSwitch::SwitchInterface, public HallSensor::HallSensorInterface {
+class OrreryPlanet : public GpioSwitchInterface, public HallSensor::HallSensorInterface {
  public:
   static OrreryPlanet* Get();
   void Setup(Player& player);
   void RunLoop(Milliseconds currentTime);
 
-  // From GpioSwitch::SwitchInterface.
+  // From GpioSwitchInterface.
   void StateChanged(uint8_t pin, bool isClosed) override;
 
   // From HallSensor::HallSensorInterface.
@@ -41,10 +41,10 @@ class OrreryPlanet : public GpioSwitch::SwitchInterface, public HallSensor::Hall
   std::optional<Milliseconds> timeHallSensorLastClosed_;
   std::optional<Milliseconds> lastOpenDuration_;
   std::optional<Milliseconds> lastClosedDuration_;
-  GpioSwitch switch0_;
-  GpioSwitch switch1_;
-  GpioSwitch switch2_;
-  GpioSwitch switch3_;
+  GpioSwitchHigh switch0_;
+  GpioSwitchHigh switch1_;
+  GpioSwitchHigh switch2_;
+  GpioSwitchHigh switch3_;
   BusId busId_;
   Max485BusFollower max485BusFollower_;
   int32_t requestedSpeed_ = 0;

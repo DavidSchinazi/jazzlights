@@ -10,11 +10,12 @@
 
 #include "jazzlights/network/max485_bus.h"
 #include "jazzlights/orrery_common.h"
+#include "jazzlights/ui/gpio_button.h"
 #include "jazzlights/util/time.h"
 
 namespace jazzlights {
 
-class OrreryLeader {
+class OrreryLeader : public GpioSwitchInterface {
  public:
   static OrreryLeader* Get();
   void SetSpeed(Planet planet, int32_t speed);
@@ -31,6 +32,9 @@ class OrreryLeader {
   std::optional<Milliseconds> GetLastOpenDuration(Planet planet) const;
   std::optional<Milliseconds> GetLastClosedDuration(Planet planet) const;
 
+  // From GpioSwitchInterface.
+  void StateChanged(uint8_t pin, bool isClosed) override;
+
   std::optional<Milliseconds> GetLastHeardTime(Planet planet) const;
 
   void RunLoop(Milliseconds currentTime);
@@ -44,6 +48,9 @@ class OrreryLeader {
   std::unordered_map<Planet, OrreryMessage> responses_;
   std::unordered_map<Planet, Milliseconds> lastHeardTime_;
   Max485BusLeader max485BusLeader_;
+  GpioSwitchLow switch1_;
+  GpioSwitchLow switch3_;
+  GpioSwitchLow switch4_;
 };
 
 }  // namespace jazzlights

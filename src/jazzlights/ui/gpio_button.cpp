@@ -68,8 +68,9 @@ GpioButton::GpioButton(uint8_t pin, ButtonInterface& buttonInterface)
       lastEvent_(-1),
       isHeld_(false) {}
 
-GpioSwitch::GpioSwitch(uint8_t pin, SwitchInterface& switchInterface)
-    : gpioPin_(pin, *this, kButtonDebounceDuration, /*closedIsHigh=*/true), switchInterface_(switchInterface) {}
+template <bool closedIsHigh>
+GpioSwitch<closedIsHigh>::GpioSwitch(uint8_t pin, SwitchInterface& switchInterface)
+    : gpioPin_(pin, *this, kButtonDebounceDuration, closedIsHigh), switchInterface_(switchInterface) {}
 
 // static
 void GpioPin::ConfigurePin(void* arg) {
@@ -94,7 +95,8 @@ GpioPin::~GpioPin() {
 
 GpioButton::~GpioButton() {}
 
-GpioSwitch::~GpioSwitch() {}
+template <bool closedIsHigh>
+GpioSwitch<closedIsHigh>::~GpioSwitch() {}
 
 void GpioButton::HandleChange(uint8_t changedPin, bool isClosed, int64_t timeOfChange) {
   if (changedPin != pin()) { jll_fatal("Unexpected pin %u != %u", changedPin, pin()); }
@@ -114,7 +116,8 @@ void GpioButton::HandleChange(uint8_t changedPin, bool isClosed, int64_t timeOfC
   }
 }
 
-void GpioSwitch::HandleChange(uint8_t changedPin, bool isClosed, int64_t /*timeOfChange*/) {
+template <bool closedIsHigh>
+void GpioSwitch<closedIsHigh>::HandleChange(uint8_t changedPin, bool isClosed, int64_t /*timeOfChange*/) {
   if (changedPin != pin()) { jll_fatal("Unexpected pin %u != %u", changedPin, pin()); }
   switchInterface_.StateChanged(pin(), isClosed);
 }
@@ -191,7 +194,13 @@ void GpioButton::RunLoop() {
   }
 }
 
-void GpioSwitch::RunLoop() { gpioPin_.RunLoop(); }
+template <bool closedIsHigh>
+void GpioSwitch<closedIsHigh>::RunLoop() {
+  gpioPin_.RunLoop();
+}
+
+template class GpioSwitch<true>;
+template class GpioSwitch<false>;
 
 bool GpioButton::HasBeenPressedLongEnoughForLongPress() {
   return IsPressed() && (isHeld_ || esp_timer_get_time() - lastEvent_ >= kLongPressTime);

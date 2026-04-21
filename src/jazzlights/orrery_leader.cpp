@@ -41,7 +41,11 @@ OrreryLeader* OrreryLeader::Get() {
 }
 
 OrreryLeader::OrreryLeader()
-    : bootId_(UnpredictableRandom::Get32bits()), max485BusLeader_(UART_NUM_2, kMax485TxPin, kMax485RxPin) {
+    : bootId_(UnpredictableRandom::Get32bits()),
+      max485BusLeader_(UART_NUM_2, kMax485TxPin, kMax485RxPin),
+      switch1_(kPinB2, *this),
+      switch3_(kPinC2, *this),
+      switch4_(kPinC1, *this) {
   for (int i = 0; i < kNumPlanets; i++) {
     Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
     OrreryMessage& msg = messages_[planet];
@@ -208,6 +212,9 @@ void OrreryLeader::SendMessage(Planet planet) {
 }
 
 void OrreryLeader::RunLoop(Milliseconds currentTime) {
+  switch1_.RunLoop();
+  switch3_.RunLoop();
+  switch4_.RunLoop();
   BusId destBusId, srcBusId;
   OrreryMessage msg;
   while (max485BusLeader_.ReadMessage(&msg, &destBusId, &srcBusId)) {
@@ -218,6 +225,10 @@ void OrreryLeader::RunLoop(Milliseconds currentTime) {
       if (msg.calibration.has_value()) { messages_[planet].calibration = msg.calibration; }
     }
   }
+}
+
+void OrreryLeader::StateChanged(uint8_t pin, bool isClosed) {
+  jll_info("%u switch on pin %u is now %s", timeMillis(), pin, (isClosed ? "closed" : "open"));
 }
 
 }  // namespace jazzlights
