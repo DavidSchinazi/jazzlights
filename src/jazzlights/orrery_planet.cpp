@@ -211,8 +211,8 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
     static Milliseconds lastLogTime2 = -1;
     if (lastLogTime2 < 0 || currentTime - lastLogTime2 > 1000) {
       lastLogTime2 = currentTime;
-      jll_info("%u Setting roundedSpeed to %f; currentSteps %f positionalSteps %f actualSpeed %f", currentTime,
-               roundedSpeed_, currentSteps_, positionalSteps_, actualSpeed_);
+      jll_info("%u Setting roundedSpeed to %f; currentSteps %f positionalSteps %f actualSpeed %f stepsPerRev %f",
+               currentTime, roundedSpeed_, currentSteps_, positionalSteps_, actualSpeed_, stepsPerRev_);
     }
     if (!currentState_.speed.has_value() || roundedSpeed_ != *currentState_.speed) {
       bool wasForward = currentState_.speed.has_value() && *currentState_.speed >= 0;
@@ -272,6 +272,13 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
         jll_info("%u Planet %s applying precedence gain %u", currentTime, ourPlanetName, *msg.ledPrecedenceGain);
         if (player_ != nullptr) { player_->setPrecedenceGain(*msg.ledPrecedenceGain); }
         currentState_.ledPrecedenceGain = *msg.ledPrecedenceGain;
+      }
+      if (msg.calibration.has_value() && !currentState_.calibration.has_value()) {
+        if (static_cast<float>(*msg.calibration) != stepsPerRev_) {
+          jll_info("%u Planet %s applying calibration %" PRIu32 " from leader", currentTime, ourPlanetName,
+                   *msg.calibration);
+          stepsPerRev_ = *msg.calibration;
+        }
       }
 
       currentState_.timeHallSensorLastOpened = timeHallSensorLastOpened_;

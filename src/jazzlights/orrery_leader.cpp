@@ -215,6 +215,7 @@ void OrreryLeader::RunLoop(Milliseconds currentTime) {
       Planet planet = static_cast<Planet>(srcBusId);
       responses_[planet] = msg;
       lastHeardTime_[planet] = currentTime;
+      if (msg.calibration.has_value()) { messages_[planet].calibration = msg.calibration; }
     }
   }
 }
