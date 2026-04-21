@@ -22,6 +22,7 @@ namespace {
 static constexpr uint8_t kPlanetSwitchPin0 = 12;
 static constexpr uint8_t kPlanetSwitchPin1 = 11;
 static constexpr uint8_t kPlanetSwitchPin2 = 9;
+static constexpr uint8_t kPlanetSwitchPin3 = 8;
 static constexpr uint8_t kHallSensorPin = 4;
 #else
 #error "Unexpected controller"
@@ -72,6 +73,7 @@ OrreryPlanet::OrreryPlanet()
       switch0_(kPlanetSwitchPin0, *this),
       switch1_(kPlanetSwitchPin1, *this),
       switch2_(kPlanetSwitchPin2, *this),
+      switch3_(kPlanetSwitchPin3, *this),
       busId_(ComputeBusId()),
       max485BusFollower_(UART_NUM_2, kMax485TxPin, kMax485RxPin, busId_),
       lastSpeedUpdateTime_(timeMillis()),
@@ -88,13 +90,19 @@ BusId OrreryPlanet::ComputeBusId() const {
 }
 
 void OrreryPlanet::StateChanged(uint8_t pin, bool isClosed) {
+  if (pin == kPlanetSwitchPin3) {
+    jll_info("%u OrreryPlanet motor direction switch on pin %u is now %s", timeMillis(), pin,
+             (isClosed ? "closed" : "open"));
+    GetMainStepperMotor()->SetRunBackwards(isClosed);
+    return;
+  }
   const BusId busId = ComputeBusId();
   if (busId == busId_) { return; }
   busId_ = busId;
   max485BusFollower_.SetBusIdSelf(busId_);
 
   PlanetEffect::Get()->SetPlanet(static_cast<Planet>(busId_));
-  jll_info("%u OrreryPlanet switch on pin %u is now %s, new planet %s (busId %u)", timeMillis(), pin,
+  jll_info("%u OrreryPlanet planet switch on pin %u is now %s, new planet %s (busId %u)", timeMillis(), pin,
            (isClosed ? "closed" : "open"), GetPlanetName(static_cast<Planet>(busId_)), busId_);
 }
 
@@ -138,6 +146,7 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
   switch0_.RunLoop();
   switch1_.RunLoop();
   switch2_.RunLoop();
+  switch3_.RunLoop();
 
   const Milliseconds dt = currentTime - lastSpeedUpdateTime_;
   if (dt > 0) {

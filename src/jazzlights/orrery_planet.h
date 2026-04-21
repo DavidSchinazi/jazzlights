@@ -44,6 +44,7 @@ class OrreryPlanet : public GpioSwitch::SwitchInterface, public HallSensor::Hall
   GpioSwitch switch0_;
   GpioSwitch switch1_;
   GpioSwitch switch2_;
+  GpioSwitch switch3_;
   BusId busId_;
   Max485BusFollower max485BusFollower_;
   int32_t requestedSpeed_ = 0;

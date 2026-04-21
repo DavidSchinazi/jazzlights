@@ -25,6 +25,7 @@ class StepperMotor {
   StepperMotor& operator=(StepperMotor&&) = delete;
 
   void SetSpeed(int32_t frequencyHz);
+  void SetRunBackwards(bool runBackwards);
 
  private:
   bool Setup(int32_t frequencyHz);
@@ -37,6 +38,7 @@ class StepperMotor {
   bool lastEnabled_ = false;
   bool lastDirection_ = false;
   bool isSetup_ = false;
+  bool runBackwards_ = false;
   mcpwm_timer_handle_t timer_ = nullptr;
   mcpwm_oper_handle_t oper_ = nullptr;
   mcpwm_gen_handle_t generator_ = nullptr;

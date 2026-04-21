@@ -136,9 +136,19 @@ void StepperMotor::SetEnabled(bool enabled) {
 void StepperMotor::SetDirection(bool direction) {
   if (directionPin_ == GPIO_NUM_NC) { return; }
   if (direction == lastDirection_) { return; }
-  jll_motor_debug("%u Setting direction pin %d to %u", timeMillis(), directionPin_, (direction ? 1 : 0));
-  ESP_ERROR_CHECK(gpio_set_level(directionPin_, (direction ? 1 : 0)));
+  unsigned int pinValue = direction ? 1 : 0;
+  if (runBackwards_) { pinValue = !pinValue; }
+  jll_motor_debug("%u Setting direction pin %d to %u", timeMillis(), directionPin_, pinValue);
+  ESP_ERROR_CHECK(gpio_set_level(directionPin_, pinValue));
   lastDirection_ = direction;
+}
+
+void StepperMotor::SetRunBackwards(bool runBackwards) {
+  runBackwards_ = runBackwards;
+  if (!isSetup_) { return; }
+  bool previousDirection = lastDirection_;
+  lastDirection_ = !lastDirection_;
+  SetDirection(previousDirection);
 }
 
 StepperMotor* GetMainStepperMotor() {
