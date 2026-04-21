@@ -42,6 +42,7 @@ class OrreryLeader : public GpioSwitchInterface {
  private:
   OrreryLeader();
   void SendMessage(Planet planet);
+  void HandleSwitch4(bool isClosed);
   const uint32_t bootId_;
   uint32_t nextSequenceNumber_ = 0;
   std::unordered_map<Planet, OrreryMessage> messages_;

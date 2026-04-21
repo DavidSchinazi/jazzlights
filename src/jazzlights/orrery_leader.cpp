@@ -33,6 +33,11 @@ constexpr int kMax485TxPin = 13;
 constexpr int kMax485RxPin = 1;
 #error "unsupported controller for Max485BusHandler"
 #endif
+
+constexpr int kSwitch1Pin = kPinB2;
+constexpr int kSwitch3Pin = kPinC2;
+constexpr int kSwitch4Pin = kPinC1;
+
 }  // namespace
 
 OrreryLeader* OrreryLeader::Get() {
@@ -43,9 +48,9 @@ OrreryLeader* OrreryLeader::Get() {
 OrreryLeader::OrreryLeader()
     : bootId_(UnpredictableRandom::Get32bits()),
       max485BusLeader_(UART_NUM_2, kMax485TxPin, kMax485RxPin),
-      switch1_(kPinB2, *this),
-      switch3_(kPinC2, *this),
-      switch4_(kPinC1, *this) {
+      switch1_(kSwitch1Pin, *this),
+      switch3_(kSwitch3Pin, *this),
+      switch4_(kSwitch4Pin, *this) {
   for (int i = 0; i < kNumPlanets; i++) {
     Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
     OrreryMessage& msg = messages_[planet];
@@ -59,6 +64,7 @@ OrreryLeader::OrreryLeader()
     msg.ledPrecedenceGain = kDefaultPlanetPrecedenceGain;
     SendMessage(planet);
   }
+  HandleSwitch4(switch4_.IsClosed());
 }
 
 void OrreryLeader::SetSpeed(Planet planet, int32_t speed) {
@@ -229,6 +235,20 @@ void OrreryLeader::RunLoop(Milliseconds currentTime) {
 
 void OrreryLeader::StateChanged(uint8_t pin, bool isClosed) {
   jll_info("%u switch on pin %u is now %s", timeMillis(), pin, (isClosed ? "closed" : "open"));
+  if (pin == kSwitch4Pin) { HandleSwitch4(isClosed); }
+}
+
+void OrreryLeader::HandleSwitch4(bool isClosed) {
+  for (int i = 0; i < kNumPlanets; i++) {
+    Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
+    uint32_t pattern = GetLedPattern(planet);
+    if (isClosed) {
+      pattern |= kPlanetPatternHallSensorBit;
+    } else {
+      pattern &= ~kPlanetPatternHallSensorBit;
+    }
+    SetLedPattern(planet, pattern);
+  }
 }
 
 }  // namespace jazzlights

@@ -34,6 +34,10 @@ inline constexpr size_t kNumPlanets = 9;
 inline constexpr int32_t kDefaultPlanetSpeed = 1000;
 inline constexpr uint8_t kDefaultPlanetBrightness = 64;
 inline constexpr PatternBits kPlanetPattern = 0x0000FE00;
+inline constexpr PatternBits kPlanetPatternHalfBit = 0x80000000;
+inline constexpr PatternBits kPlanetPatternHallSensorBit = 0x40000000;
+inline constexpr size_t kPlanetPatternOffsetShift = 16;
+inline constexpr PatternBits kPlanetPatternOffsetMask = 0xFF;
 inline constexpr Precedence kDefaultPlanetBasePrecedence = 100;
 inline constexpr Precedence kDefaultPlanetPrecedenceGain = 100;
 

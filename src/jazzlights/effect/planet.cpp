@@ -113,9 +113,9 @@ void PlanetEffect::begin(const Frame& /*frame*/) const {}
 
 void PlanetEffect::rewind(const Frame& frame) const {
   State* state = static_cast<State*>(frame.context);
-  state->half = (frame.pattern & 0x80000000) != 0;
-  state->hall = (frame.pattern & 0x40000000) != 0;
-  state->offset = (frame.pattern >> 16) & 0xFF;
+  state->half = (frame.pattern & kPlanetPatternHalfBit) != 0;
+  state->hall = (frame.pattern & kPlanetPatternHallSensorBit) != 0;
+  state->offset = (frame.pattern >> kPlanetPatternOffsetShift) & kPlanetPatternOffsetMask;
   state->hallSensorClosed = hallSensorClosed_;
 }
 

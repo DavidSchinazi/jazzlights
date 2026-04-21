@@ -102,14 +102,14 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
 
   // Initialize LED pattern mode.
   uint32_t ledPattern = OrreryLeader::Get()->GetLedPattern(currentPlanet_);
-  if (ledPattern & 0x80000000) {
-    planetPatternMode_ = PlanetPatternMode::Half;
-  } else if (ledPattern & 0x40000000) {
+  if (ledPattern & kPlanetPatternHallSensorBit) {
     planetPatternMode_ = PlanetPatternMode::Hall;
+  } else if (ledPattern & kPlanetPatternHalfBit) {
+    planetPatternMode_ = PlanetPatternMode::Half;
   } else {
     planetPatternMode_ = PlanetPatternMode::Full;
   }
-  planetOffset_ = (ledPattern >> 16) & 0xFF;
+  planetOffset_ = (ledPattern >> kPlanetPatternOffsetShift) & kPlanetPatternOffsetMask;
   UpdatePlanetHalfButton();
   UpdatePlanetOffsetButton();
 
@@ -323,14 +323,14 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
         ledBrightness_ = OrreryLeader::Get()->GetBrightness(currentPlanet_);
         UpdateLedBrightnessButton();
         uint32_t ledPattern = OrreryLeader::Get()->GetLedPattern(currentPlanet_);
-        if (ledPattern & 0x80000000) {
-          planetPatternMode_ = PlanetPatternMode::Half;
-        } else if (ledPattern & 0x40000000) {
+        if (ledPattern & kPlanetPatternHallSensorBit) {
           planetPatternMode_ = PlanetPatternMode::Hall;
+        } else if (ledPattern & kPlanetPatternHalfBit) {
+          planetPatternMode_ = PlanetPatternMode::Half;
         } else {
           planetPatternMode_ = PlanetPatternMode::Full;
         }
-        planetOffset_ = (ledPattern >> 16) & 0xFF;
+        planetOffset_ = (ledPattern >> kPlanetPatternOffsetShift) & kPlanetPatternOffsetMask;
         UpdatePlanetHalfButton();
         UpdatePlanetOffsetButton();
         planetSubmenuActive_ = false;
@@ -523,11 +523,11 @@ void OrreryLeaderUi::UpdatePlanetOffsetButton() {
 }
 
 void OrreryLeaderUi::UpdatePlanetPattern() {
-  uint32_t ledPattern = 0x0000FE00 | (planetOffset_ << 16);
-  if (planetPatternMode_ == PlanetPatternMode::Half) {
-    ledPattern |= 0x80000000;
-  } else if (planetPatternMode_ == PlanetPatternMode::Hall) {
-    ledPattern |= 0x40000000;
+  uint32_t ledPattern = kPlanetPattern | (planetOffset_ << kPlanetPatternOffsetShift);
+  if (planetPatternMode_ == PlanetPatternMode::Hall) {
+    ledPattern |= kPlanetPatternHallSensorBit;
+  } else if (planetPatternMode_ == PlanetPatternMode::Half) {
+    ledPattern |= kPlanetPatternHalfBit;
   }
   OrreryLeader::Get()->SetLedPattern(currentPlanet_, ledPattern);
 }
