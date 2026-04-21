@@ -35,7 +35,7 @@ class Max485BusHandler {
 
   virtual ~Max485BusHandler();
 
-  bool ReadMessage(OrreryMessage* message, BusId* destBusId, BusId* srcBusId);
+  bool ReadMessage(OrreryMessage* message, BusId* destBusId, BusId* srcBusId, Milliseconds* rtt = nullptr);
 
   BusId GetBusIdSelf() const { return busIdSelf_.load(std::memory_order_relaxed); }
 
@@ -86,6 +86,7 @@ class Max485BusHandler {
     BusId srcBusId;
     BusId destBusId;
     OrreryMessage message;
+    Milliseconds rtt = -1;
   };
   std::deque<ReceivedMessage> sharedReceivedMessages_;  // Protected by `recvMutex_`.
 

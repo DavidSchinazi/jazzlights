@@ -208,6 +208,12 @@ std::optional<Milliseconds> OrreryLeader::GetLastHeardTime(Planet planet) const 
   return std::nullopt;
 }
 
+std::optional<Milliseconds> OrreryLeader::GetMaxRtt(Planet planet) const {
+  auto it = maxRtt_.find(planet);
+  if (it != maxRtt_.end()) { return it->second; }
+  return std::nullopt;
+}
+
 void OrreryLeader::SendMessage(Planet planet) {
   auto it = messages_.find(planet);
   if (it != messages_.end()) {
@@ -223,11 +229,15 @@ void OrreryLeader::RunLoop(Milliseconds currentTime) {
   switch4_.RunLoop();
   BusId destBusId, srcBusId;
   OrreryMessage msg;
-  while (max485BusLeader_.ReadMessage(&msg, &destBusId, &srcBusId)) {
+  Milliseconds rtt;
+  while (max485BusLeader_.ReadMessage(&msg, &destBusId, &srcBusId, &rtt)) {
     if (msg.type == OrreryMessageType::FollowerResponse) {
       Planet planet = static_cast<Planet>(srcBusId);
       responses_[planet] = msg;
       lastHeardTime_[planet] = currentTime;
+      if (rtt >= 0) {
+        if (maxRtt_.find(planet) == maxRtt_.end() || rtt > maxRtt_[planet]) { maxRtt_[planet] = rtt; }
+      }
       if (msg.calibration.has_value()) { messages_[planet].calibration = msg.calibration; }
     }
   }

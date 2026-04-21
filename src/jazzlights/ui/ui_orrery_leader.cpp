@@ -543,10 +543,16 @@ void OrreryLeaderUi::UpdateStatusSubmenu() {
   for (int i = 0; i < kNumPlanets; i++) {
     Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
     std::optional<Milliseconds> lastHeard = OrreryLeader::Get()->GetLastHeardTime(planet);
+    std::optional<Milliseconds> maxRtt = OrreryLeader::Get()->GetMaxRtt(planet);
     char label[64];
     if (lastHeard.has_value()) {
-      snprintf(label, sizeof(label), "%s: %llds ago", GetPlanetName(planet),
-               static_cast<long long>((timeMillis() - *lastHeard) / 1000));
+      if (maxRtt.has_value()) {
+        snprintf(label, sizeof(label), "%s: %llds ago, max %lldms", GetPlanetName(planet),
+                 static_cast<long long>((timeMillis() - *lastHeard) / 1000), static_cast<long long>(*maxRtt));
+      } else {
+        snprintf(label, sizeof(label), "%s: %llds ago", GetPlanetName(planet),
+                 static_cast<long long>((timeMillis() - *lastHeard) / 1000));
+      }
     } else {
       snprintf(label, sizeof(label), "%s: Never heard", GetPlanetName(planet));
     }

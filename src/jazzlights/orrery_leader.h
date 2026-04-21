@@ -36,6 +36,7 @@ class OrreryLeader : public GpioSwitchInterface {
   void StateChanged(uint8_t pin, bool isClosed) override;
 
   std::optional<Milliseconds> GetLastHeardTime(Planet planet) const;
+  std::optional<Milliseconds> GetMaxRtt(Planet planet) const;
 
   void RunLoop(Milliseconds currentTime);
 
@@ -48,6 +49,7 @@ class OrreryLeader : public GpioSwitchInterface {
   std::unordered_map<Planet, OrreryMessage> messages_;
   std::unordered_map<Planet, OrreryMessage> responses_;
   std::unordered_map<Planet, Milliseconds> lastHeardTime_;
+  std::unordered_map<Planet, Milliseconds> maxRtt_;
   Max485BusLeader max485BusLeader_;
   GpioSwitchLow switch1_;
   GpioSwitchLow switch3_;

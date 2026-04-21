@@ -140,8 +140,13 @@ void Max485BusHandler::RunTask() {
                     jll_error("%u Max485 receive queue full, dropping some messages", timeMillis());
                     for (size_t i = 0; i < kMaxRecvQueueSize / 2; i++) { sharedReceivedMessages_.pop_front(); }
                   }
+                  Milliseconds rtt = -1;
+                  if (destBusId == GetBusIdSelf() && taskLastSendTimeExpectingResponse_ >= 0) {
+                    rtt = timeMillis() - taskLastSendTimeExpectingResponse_;
+                    taskLastSendTimeExpectingResponse_ = -1;
+                  }
                   sharedReceivedMessages_.push_back(
-                      {.srcBusId = srcBusId, .destBusId = destBusId, .message = orreryMessage});
+                      {.srcBusId = srcBusId, .destBusId = destBusId, .message = orreryMessage, .rtt = rtt});
                 }
                 if (destBusId == GetBusIdSelf()) { HandleReceivedMessage(srcBusId, orreryMessage); }
               } else {
@@ -262,7 +267,9 @@ void Max485BusHandler::CopyEncodeAndSendMessage(BusId destBusId) {
       EncodeMessage(taskSendMessage, taskEncodedSendMessageBuffer_, destBusId, busIdSelf);
   if (!taskEncodedSendMessage.empty()) {
     SendToUart(taskEncodedSendMessage);
-    if (destBusId != kBusIdBroadcast) { taskLastSendTimeExpectingResponse_ = timeMillis(); }
+    if (busIdSelf == kBusIdLeader && destBusId != kBusIdBroadcast) {
+      taskLastSendTimeExpectingResponse_ = timeMillis();
+    }
   }
 }
 
@@ -342,7 +349,7 @@ void Max485BusHandler::ShiftTaskRecvBuffer(size_t messageStartIndex) {
   lengthInTaskRecvBuffer_ -= messageStartIndex;
 }
 
-bool Max485BusHandler::ReadMessage(OrreryMessage* message, BusId* destBusId, BusId* srcBusId) {
+bool Max485BusHandler::ReadMessage(OrreryMessage* message, BusId* destBusId, BusId* srcBusId, Milliseconds* rtt) {
   if (!IsReady()) { return false; }
   const std::lock_guard<std::mutex> lock(recvMutex_);
   if (sharedReceivedMessages_.empty()) { return false; }
@@ -350,6 +357,7 @@ bool Max485BusHandler::ReadMessage(OrreryMessage* message, BusId* destBusId, Bus
   *message = rm.message;
   *destBusId = rm.destBusId;
   *srcBusId = rm.srcBusId;
+  if (rtt != nullptr) { *rtt = rm.rtt; }
   sharedReceivedMessages_.pop_front();
   return true;
 }
