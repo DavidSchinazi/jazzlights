@@ -97,7 +97,15 @@ void OrreryLeader::SetScene(OrreryScene scene) {
   } else if (scene == OrreryScene::Align) {
     waitingForAlignment_ = true;
     SetPosition(Planet::All, 0);
-    SetSpeed(Planet::All, 1000);
+    for (int i = 0; i < kNumPlanets; i++) {
+      Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
+      int32_t speed = GetSpeed(planet);
+      if (0 <= speed && speed < 1000) {
+        SetSpeed(planet, 1000);
+      } else if (-1000 < speed && speed <= 0) {
+        SetSpeed(planet, -1000);
+      }
+    }
   }
 }
 
@@ -296,7 +304,7 @@ void OrreryLeader::RunLoop(Milliseconds currentTime) {
         uint32_t pos = *resp.position;
         if (pos < 4000 || pos > 356000) { atZero = true; }
       }
-      if (!atZero || !resp.speed.has_value() || *resp.speed != 0) {
+      if (!atZero || !resp.speed.has_value() || *resp.speed > 10) {
         allArrived = false;
         break;
       }
