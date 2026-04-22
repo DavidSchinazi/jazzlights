@@ -85,5 +85,9 @@
     "semaphore": "cpp",
     "span": "cpp",
     "stop_token": "cpp"
-  }
+  },
+  "clangd.arguments": [
+    "--compile-commands-dir=/Users/claudio/Projects/jazzlights/.pio/build/vest",
+    "--query-driver=/Users/claudio/.platformio/packages/toolchain-*/bin/*,/Users/claudio/.platformio/packages/tool-*/bin/*"
+  ]
 }

@@ -17,3 +17,4 @@ SCRATCH.txt
 __pycache__/
 .gemini/
 GEMINI.md
+.clangd
