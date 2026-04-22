@@ -40,6 +40,14 @@ constexpr int kSwitch4Pin = kPinC1;
 
 }  // namespace
 
+const char* OrrerySceneToString(OrreryScene scene) {
+  switch (scene) {
+    case OrreryScene::Paused: return "Paused";
+    case OrreryScene::Realistic: return "Realistic";
+  }
+  return "Unknown";
+}
+
 OrreryLeader* OrreryLeader::Get() {
   static OrreryLeader sOrreryLeader;
   return &sOrreryLeader;
@@ -50,7 +58,8 @@ OrreryLeader::OrreryLeader()
       max485BusLeader_(UART_NUM_2, kMax485TxPin, kMax485RxPin),
       switch1_(kSwitch1Pin, *this),
       switch3_(kSwitch3Pin, *this),
-      switch4_(kSwitch4Pin, *this) {
+      switch4_(kSwitch4Pin, *this),
+      scene_(OrreryScene::Paused) {
   for (int i = 0; i < kNumPlanets; i++) {
     Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
     OrreryMessage& msg = messages_[planet];
@@ -65,6 +74,24 @@ OrreryLeader::OrreryLeader()
     SendMessage(planet);
   }
   HandleSwitch4(switch4_.IsClosed());
+}
+
+void OrreryLeader::SetScene(OrreryScene scene) {
+  scene_ = scene;
+  jll_info("OrreryLeader setting scene to %s", OrrerySceneToString(scene));
+  if (scene == OrreryScene::Paused) {
+    SetSpeed(Planet::All, 0);
+  } else if (scene == OrreryScene::Realistic) {
+    SetSpeed(Planet::Mercury, 4152);
+    SetSpeed(Planet::Venus, 1625);
+    SetSpeed(Planet::Earth, 1000);
+    SetSpeed(Planet::Mars, 532);
+    SetSpeed(Planet::Jupiter, 84);
+    SetSpeed(Planet::Saturn, 34);
+    SetSpeed(Planet::Uranus, 12);
+    SetSpeed(Planet::Neptune, 6);
+    SetSpeed(Planet::Sun, 14610);
+  }
 }
 
 void OrreryLeader::SetSpeed(Planet planet, int32_t speed) {

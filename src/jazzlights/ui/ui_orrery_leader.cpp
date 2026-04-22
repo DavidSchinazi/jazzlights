@@ -24,11 +24,13 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
   M5.begin(cfg);
 
   // Main menu buttons.
-  planetButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/320, /*h=*/48, "");
-  ledMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/48, /*w=*/320, /*h=*/48, "LED");
-  motorMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/96, /*w=*/320, /*h=*/48, "Motor");
-  calibrationMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/144, /*w=*/320, /*h=*/48, "Calibration");
-  statusMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/192, /*w=*/320, /*h=*/48, "Status");
+  planetButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/320, /*h=*/40, "");
+  sceneButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/40, /*w=*/320, /*h=*/40, "");
+  UpdateSceneButton();
+  ledMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/80, /*w=*/320, /*h=*/40, "LED");
+  motorMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/120, /*w=*/320, /*h=*/40, "Motor");
+  calibrationMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/160, /*w=*/320, /*h=*/40, "Calibration");
+  statusMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/200, /*w=*/320, /*h=*/40, "Status");
 
   // LED submenu buttons.
   ledBrightnessButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/320, /*h=*/60, "");
@@ -100,6 +102,13 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
   planetSelectButtons_[kNumPlanets] = TouchButtonManager::Get()->AddButton(0, 3 * ph, 160, ph, "Global");
   planetBackButton_ = TouchButtonManager::Get()->AddButton(160, 3 * ph, 160, ph, "Back");
 
+  // Scene menu buttons.
+  sceneSelectButtons_[0] =
+      TouchButtonManager::Get()->AddButton(0, 0, 320, 80, OrrerySceneToString(OrreryScene::Paused));
+  sceneSelectButtons_[1] =
+      TouchButtonManager::Get()->AddButton(0, 80, 320, 80, OrrerySceneToString(OrreryScene::Realistic));
+  sceneBackButton_ = TouchButtonManager::Get()->AddButton(0, 160, 320, 80, "Back");
+
   // Initialize LED pattern mode.
   uint32_t ledPattern = OrreryLeader::Get()->GetLedPattern(currentPlanet_);
   if (ledPattern & kPlanetPatternHallSensorBit) {
@@ -123,6 +132,7 @@ void OrreryLeaderUi::FinalSetup() { DrawMainMenu(); }
 
 void OrreryLeaderUi::HideAll() {
   planetButton_->Hide();
+  sceneButton_->Hide();
   ledMenuButton_->Hide();
   motorMenuButton_->Hide();
   calibrationMenuButton_->Hide();
@@ -150,11 +160,14 @@ void OrreryLeaderUi::HideAll() {
   confirmButton_->Hide();
   for (int i = 0; i <= kNumPlanets; i++) { planetSelectButtons_[i]->Hide(); }
   planetBackButton_->Hide();
+  for (int i = 0; i < 2; i++) { sceneSelectButtons_[i]->Hide(); }
+  sceneBackButton_->Hide();
 }
 
 void OrreryLeaderUi::DrawMainMenu() {
   HideAll();
   planetButton_->Draw();
+  sceneButton_->Draw();
   ledMenuButton_->Draw();
   motorMenuButton_->Draw();
   calibrationMenuButton_->Draw();
@@ -216,6 +229,13 @@ void OrreryLeaderUi::DrawPlanetMenu() {
   HideAll();
   for (int i = 0; i <= kNumPlanets; i++) { planetSelectButtons_[i]->Draw(); }
   planetBackButton_->Draw();
+  TouchButtonManager::Get()->Redraw();
+}
+
+void OrreryLeaderUi::DrawSceneMenu() {
+  HideAll();
+  for (int i = 0; i < 2; i++) { sceneSelectButtons_[i]->Draw(); }
+  sceneBackButton_->Draw();
   TouchButtonManager::Get()->Redraw();
 }
 
@@ -341,6 +361,27 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       planetSubmenuActive_ = false;
       DrawMainMenu();
     }
+  } else if (sceneSubmenuActive_) {
+    for (int i = 0; i < 2; i++) {
+      if (sceneSelectButtons_[i]->JustReleased()) {
+        OrreryLeader::Get()->SetScene(static_cast<OrreryScene>(i));
+        UpdateSceneButton();
+        // Update local motor state for current planet.
+        int32_t speed = OrreryLeader::Get()->GetSpeed(currentPlanet_);
+        motorForward_ = (speed >= 0);
+        motorMilliRpm_ = std::abs(speed);
+        motorEnabled_ = (speed != 0);
+        motorEnableButton_->SetLabelText(motorEnabled_ ? "Motor Enabled" : "Motor Disabled");
+        UpdateMotorDirectionButton();
+        UpdateMotorSpeedButton();
+        sceneSubmenuActive_ = false;
+        DrawMainMenu();
+      }
+    }
+    if (sceneBackButton_->JustReleased()) {
+      sceneSubmenuActive_ = false;
+      DrawMainMenu();
+    }
   } else if (ledSubmenuActive_) {
     if (ledBrightnessButton_->JustReleased()) {
       keypadActive_ = true;
@@ -421,6 +462,10 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       planetSubmenuActive_ = true;
       DrawPlanetMenu();
     }
+    if (sceneButton_->JustReleased()) {
+      sceneSubmenuActive_ = true;
+      DrawSceneMenu();
+    }
     if (ledMenuButton_->JustReleased()) {
       ledSubmenuActive_ = true;
       DrawLedMenu();
@@ -459,6 +504,12 @@ void OrreryLeaderUi::UpdateMotorSpeedButton() {
   char label[32];
   snprintf(label, sizeof(label), "RPM: %.3f", motorMilliRpm_ / 1000.0f);
   motorSpeedButton_->SetLabelText(label);
+}
+
+void OrreryLeaderUi::UpdateSceneButton() {
+  char label[32];
+  snprintf(label, sizeof(label), "Scene: %s", OrrerySceneToString(OrreryLeader::Get()->GetScene()));
+  sceneButton_->SetLabelText(label);
 }
 
 void OrreryLeaderUi::UpdateMotorPositionButton() {

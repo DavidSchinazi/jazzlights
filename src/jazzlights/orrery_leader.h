@@ -15,9 +15,18 @@
 
 namespace jazzlights {
 
+enum class OrreryScene {
+  Paused,
+  Realistic,
+};
+
+const char* OrrerySceneToString(OrreryScene scene);
+
 class OrreryLeader : public GpioSwitchInterface {
  public:
   static OrreryLeader* Get();
+  void SetScene(OrreryScene scene);
+  OrreryScene GetScene() const { return scene_; }
   void SetSpeed(Planet planet, int32_t speed);
   int32_t GetSpeed(Planet planet) const;
   void SetPosition(Planet planet, std::optional<uint32_t> position);
@@ -44,6 +53,7 @@ class OrreryLeader : public GpioSwitchInterface {
   OrreryLeader();
   void SendMessage(Planet planet);
   void HandleSwitch4(bool isClosed);
+  OrreryScene scene_;
   const uint32_t bootId_;
   uint32_t nextSequenceNumber_ = 0;
   std::unordered_map<Planet, OrreryMessage> messages_;
