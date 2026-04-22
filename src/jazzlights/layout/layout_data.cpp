@@ -170,7 +170,7 @@ Matrix pixels(/*w=*/40, /*h=*/1);
 }  // namespace
 
 void AddLedsToRunner(FastLedRunner* runner) {
-#if JL_AUDIO_VISUALIZER
+#if JL_AUDIO_VISUALIZER && !(JL_IS_CONTROLLER(M5STICK_C))
   runner->AddLeds<WS2812B, kPinA2, RGB>(pixels);
   runner->AddLeds<WS2812B, kPinA1, RGB>(pixels);
   runner->AddLeds<WS2812B, kPinB2, RGB>(pixels);

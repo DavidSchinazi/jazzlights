@@ -75,7 +75,7 @@ void Audio::Initialize() {
   M5.Mic.config(mic_cfg);
   M5.Mic.begin();
 #endif  // JL_CORES3_USE_INTERNAL_MICROPHONE
-#elif JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_S3)
+#elif JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_S3) || JL_IS_CONTROLLER(M5STICK_C)
   gpio_num_t clk_pin = GPIO_NUM_NC;
   gpio_num_t din_pin = GPIO_NUM_NC;
 #if JL_IS_CONTROLLER(ATOM_MATRIX)
@@ -85,6 +85,10 @@ void Audio::Initialize() {
   // Assuming ATOM S3U
   clk_pin = GPIO_NUM_41;
   din_pin = GPIO_NUM_42;
+#elif JL_IS_CONTROLLER(M5STICK_C)
+  // This doesn't actually work yet.
+  clk_pin = GPIO_NUM_0;
+  din_pin = GPIO_NUM_34;
 #endif
 
   i2s_pdm_rx_config_t pdm_rx_cfg = {

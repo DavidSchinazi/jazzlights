@@ -1,7 +1,7 @@
 #include "jazzlights/ui/ui_audio.h"
 
 #ifdef ESP32
-#if JL_AUDIO_VISUALIZER && (JL_IS_CONTROLLER(CORES3) || JL_IS_CONTROLLER(CORE2AWS))
+#if JL_AUDIO_VISUALIZER && (JL_IS_CONTROLLER(CORES3) || JL_IS_CONTROLLER(CORE2AWS) || JL_IS_CONTROLLER(M5STICK_C))
 
 #include <Arduino.h>
 #include <M5Unified.h>
@@ -28,17 +28,24 @@ void AudioVisualizerUi::InitialSetup() {
   M5.begin(cfg);
   jll_info("M5 device initialized");
 
+#if JL_IS_CONTROLLER(M5STICK_C)
+  M5.Display.setRotation(1);
+#endif  // M5STICK_C
+
   M5.Display.setBrightness(128);
   M5.Display.fillScreen(BLACK);
-
-  jll_info("Audio visualizer UI setup complete");
+  screen_width_ = M5.Display.width();
+  screen_height_ = M5.Display.height();
+  waveform_buffer_.assign(screen_width_, 0.0f);
+  beat_buffer_.assign(screen_width_, false);
+  jll_info("Audio visualizer UI setup complete w=%d h=%d", screen_width_, screen_height_);
 }
 
 void AudioVisualizerUi::FinalSetup() {}
 
 void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
   M5.update();
-  if (M5.Touch.getCount() > 0 && M5.Touch.getDetail(0).wasPressed()) {
+  if ((M5.Touch.getCount() > 0 && M5.Touch.getDetail(0).wasPressed()) || M5.BtnB.wasPressed()) {
     auto detail = M5.Touch.getDetail(0);
     if (visualization_mode_ == VisualizationMode::kMenu) {
       if (detail.y >= 10 && detail.y <= 48 && detail.x >= 20 && detail.x <= 300) {
@@ -77,8 +84,8 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
         M5.Display.fillScreen(BLACK);
       }
     } else if (visualization_mode_ == VisualizationMode::kBrightnessKeypad) {
-      const int w = kScreenWidth / 3;
-      const int h = kScreenHeight / 5;
+      const int w = screen_width_ / 3;
+      const int h = screen_height_ / 5;
       int col = detail.x / w;
       int row = detail.y / h;
       if (row == 0 && col == 0) {
@@ -110,8 +117,8 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
         }
       }
     } else if (visualization_mode_ == VisualizationMode::kPaletteMenu) {
-      const int w = kScreenWidth / 3;
-      const int h = kScreenHeight / 3;
+      const int w = screen_width_ / 3;
+      const int h = screen_height_ / 3;
       int col = detail.x / w;
       int row = detail.y / h;
       if (row == 0 && col == 0) {
@@ -163,7 +170,7 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
   while (last_waveform_update_ + 12.5 <= (double)currentTime) {
     waveform_buffer_[waveform_index_] = max_mag;
     beat_buffer_[waveform_index_] = data.beat;
-    waveform_index_ = (waveform_index_ + 1) % kScreenWidth;
+    waveform_index_ = (waveform_index_ + 1) % screen_width_;
     last_waveform_update_ += 12.5;
   }
 
@@ -188,10 +195,10 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
     M5.Display.setTextDatum(MC_DATUM);
     M5.Display.setTextColor(WHITE, BLACK);
     M5.Display.drawRect(20, 10, 280, 38, WHITE);
-    M5.Display.drawString("Spectrum Analyzer", kScreenWidth / 2, 29);
+    M5.Display.drawString("Spectrum Analyzer", screen_width_ / 2, 29);
 
     M5.Display.drawRect(20, 53, 280, 38, WHITE);
-    M5.Display.drawString("Beat Detection", kScreenWidth / 2, 72);
+    M5.Display.drawString("Beat Detection", screen_width_ / 2, 72);
 
     M5.Display.drawRect(20, 96, 280, 38, WHITE);
     const char* mode_label = "UNKNOWN";
@@ -202,11 +209,11 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
     }
     char buf[64];
     snprintf(buf, sizeof(buf), "Sound Reactive: %s", mode_label);
-    M5.Display.drawString(buf, kScreenWidth / 2, 115);
+    M5.Display.drawString(buf, screen_width_ / 2, 115);
 
     M5.Display.drawRect(20, 139, 280, 38, WHITE);
     snprintf(buf, sizeof(buf), "Brightness: %u", player_.brightness());
-    M5.Display.drawString(buf, kScreenWidth / 2, 158);
+    M5.Display.drawString(buf, screen_width_ / 2, 158);
 
     M5.Display.drawRect(20, 182, 280, 38, WHITE);
     if (player_.paletteIsForced()) {
@@ -214,35 +221,35 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
     } else {
       snprintf(buf, sizeof(buf), "Palette: Default");
     }
-    M5.Display.drawString(buf, kScreenWidth / 2, 201);
+    M5.Display.drawString(buf, screen_width_ / 2, 201);
 
     if (showing_no_audio_data_) {
       M5.Display.setTextColor(RED, BLACK);
-      M5.Display.drawString("No Audio Data", kScreenWidth / 2, 230);
+      M5.Display.drawString("No Audio Data", screen_width_ / 2, 230);
     } else if (showing_squelch_) {
       M5.Display.setTextColor(ORANGE, BLACK);
-      M5.Display.drawString("Squelch", kScreenWidth / 2, 230);
+      M5.Display.drawString("Squelch", screen_width_ / 2, 230);
     } else {
-      M5.Display.fillRect(0, 225, kScreenWidth, 15, BLACK);
+      M5.Display.fillRect(0, 225, screen_width_, 15, BLACK);
     }
   } else if (visualization_mode_ == VisualizationMode::kBrightnessKeypad) {
-    const int w = kScreenWidth / 3;
-    const int h = kScreenHeight / 5;
+    const int w = screen_width_ / 3;
+    const int h = screen_height_ / 5;
     M5.Display.setTextSize(2);
     M5.Display.setTextColor(WHITE, BLACK);
     M5.Display.drawRect(0, 0, w, h, WHITE);
     M5.Display.setTextDatum(MC_DATUM);
     M5.Display.drawString("Back", w / 2, h / 2);
 
-    M5.Display.drawRect(w, 0, kScreenWidth - w, h, WHITE);
-    M5.Display.fillRect(w + 2, 2, kScreenWidth - w - 4, h - 4, BLACK);
+    M5.Display.drawRect(w, 0, screen_width_ - w, h, WHITE);
+    M5.Display.fillRect(w + 2, 2, screen_width_ - w - 4, h - 4, BLACK);
     char buf[64];
     if (keypad_has_value_) {
       snprintf(buf, sizeof(buf), "%" PRId32, keypad_value_);
     } else {
       snprintf(buf, sizeof(buf), "_ (curr %u)", player_.brightness());
     }
-    M5.Display.drawString(buf, w + (kScreenWidth - w) / 2, h / 2);
+    M5.Display.drawString(buf, w + (screen_width_ - w) / 2, h / 2);
 
     for (int i = 1; i <= 9; i++) {
       int row = (i - 1) / 3 + 1;
@@ -258,8 +265,8 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
     M5.Display.drawRect(2 * w, 4 * h, w, h, WHITE);
     M5.Display.drawString("Confirm", 2 * w + w / 2, 4 * h + h / 2);
   } else if (visualization_mode_ == VisualizationMode::kPaletteMenu) {
-    const int w = kScreenWidth / 3;
-    const int h = kScreenHeight / 3;
+    const int w = screen_width_ / 3;
+    const int h = screen_height_ / 3;
     M5.Display.setTextSize(2);
     M5.Display.setTextColor(WHITE, BLACK);
     M5.Display.setTextDatum(MC_DATUM);
@@ -289,29 +296,29 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
     M5.Display.setTextSize(2);
     M5.Display.setTextDatum(TC_DATUM);
     M5.Display.setTextColor(RED, BLACK);
-    M5.Display.drawString("No Audio Data", kScreenWidth / 2, 20);
+    M5.Display.drawString("No Audio Data", screen_width_ / 2, 20);
     M5.Display.setTextSize(1);
   } else if (showing_squelch_) {
     M5.Display.setTextSize(2);
     M5.Display.setTextDatum(TC_DATUM);
     M5.Display.setTextColor(ORANGE, BLACK);
-    M5.Display.drawString("Squelch", kScreenWidth / 2, 20);
+    M5.Display.drawString("Squelch", screen_width_ / 2, 20);
     M5.Display.setTextSize(1);
   } else {
-    int bar_width = kScreenWidth / Audio::kNumBands;
+    int bar_width = screen_width_ / Audio::kNumBands;
     if (visualization_mode_ == VisualizationMode::kSpectrum) {
       float max_db = data.agc_max;
       float min_db = max_db - 30.0f;  // Use a fixed 30dB dynamic range for the spectrum to keep it bright
 
       for (int i = 0; i < Audio::kNumBands; i++) {
         float mag = data.bands[i];
-        int h = (int)((mag - min_db) * kScreenHeight / (max_db - min_db));
-        if (h > kScreenHeight) h = kScreenHeight;
+        int h = (int)((mag - min_db) * screen_height_ / (max_db - min_db));
+        if (h > screen_height_) h = screen_height_;
         if (h < 0) h = 0;
 
         float pmag = data.peaks[i];
-        int ph = (int)((pmag - min_db) * kScreenHeight / (max_db - min_db));
-        if (ph > kScreenHeight) ph = kScreenHeight;
+        int ph = (int)((pmag - min_db) * screen_height_ / (max_db - min_db));
+        if (ph > screen_height_) ph = screen_height_;
         if (ph < 0) ph = 0;
 
         int x = i * bar_width;
@@ -361,31 +368,31 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
         uint16_t color = M5.Display.color565(r, g, b);
 
         // Draw bar - clear background above bar
-        if (h < kScreenHeight) { M5.Display.fillRect(x, 0, bar_width - 1, kScreenHeight - h, BLACK); }
+        if (h < screen_height_) { M5.Display.fillRect(x, 0, bar_width - 1, screen_height_ - h, BLACK); }
         // Draw the main bar
-        M5.Display.fillRect(x, kScreenHeight - h, bar_width - 1, h, color);
+        M5.Display.fillRect(x, screen_height_ - h, bar_width - 1, h, color);
 
         // Draw peak indicator (single line or small rect)
-        if (ph > 0) { M5.Display.drawFastHLine(x, kScreenHeight - ph, bar_width - 1, WHITE); }
+        if (ph > 0) { M5.Display.drawFastHLine(x, screen_height_ - ph, bar_width - 1, WHITE); }
       }
     } else {
       float max_db = data.agc_max;
       float min_db = data.agc_min;
       // Waveform drawing logic
-      for (int i = 0; i < kScreenWidth; i++) {
-        int idx = (waveform_index_ - 1 - i + kScreenWidth) % kScreenWidth;
+      for (int i = 0; i < screen_width_; i++) {
+        int idx = (waveform_index_ - 1 - i + screen_width_) % screen_width_;
         float mag = waveform_buffer_[idx];
         bool is_beat = beat_buffer_[idx];
-        int h = (int)((mag - min_db) * kScreenHeight / (max_db - min_db));
-        if (h > kScreenHeight) h = kScreenHeight;
+        int h = (int)((mag - min_db) * screen_height_ / (max_db - min_db));
+        if (h > screen_height_) h = screen_height_;
         if (h < 0) h = 0;
 
         // Clear top, draw line
         if (is_beat) {
-          M5.Display.drawFastVLine(i, 0, kScreenHeight, RED);
+          M5.Display.drawFastVLine(i, 0, screen_height_, RED);
         } else {
-          if (h < kScreenHeight) { M5.Display.drawFastVLine(i, 0, kScreenHeight - h, BLACK); }
-          if (h > 0) { M5.Display.drawFastVLine(i, kScreenHeight - h, h, CYAN); }
+          if (h < screen_height_) { M5.Display.drawFastVLine(i, 0, screen_height_ - h, BLACK); }
+          if (h > 0) { M5.Display.drawFastVLine(i, screen_height_ - h, h, CYAN); }
         }
       }
     }
@@ -396,5 +403,5 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
 
 }  // namespace jazzlights
 
-#endif  // JL_AUDIO_VISUALIZER && (JL_IS_CONTROLLER(CORES3) || JL_IS_CONTROLLER(CORE2AWS))
+#endif  // JL_AUDIO_VISUALIZER && (CORES3 || CORE2AWS || M5STICK_C)
 #endif  // ESP32
