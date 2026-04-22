@@ -2,6 +2,11 @@
 
 #include "jazzlights/config.h"
 
+#if JL_M5_EXT_POWER
+// We have to enable power to Grove
+#include <M5Unified.h>
+#endif
+
 #ifdef ESP32
 
 #include <memory>
@@ -25,6 +30,7 @@
 #include "jazzlights/ui/ui_audio.h"
 #include "jazzlights/ui/ui_core2.h"
 #include "jazzlights/ui/ui_disabled.h"
+#include "jazzlights/ui/ui_m5stick_c.h"
 #include "jazzlights/ui/ui_motor.h"
 #include "jazzlights/ui/ui_orrery_leader.h"
 #include "jazzlights/util/log.h"
@@ -43,6 +49,8 @@ FastLedRunner runner(&player);
 typedef AtomMatrixUi Esp32UiImpl;
 #elif JL_IS_CONTROLLER(ATOM_S3)
 typedef AtomS3Ui Esp32UiImpl;
+#elif JL_IS_CONTROLLER(M5STICK_C)
+typedef M5StickCUi Esp32UiImpl;
 #elif JL_IS_CONTROLLER(CORE2AWS) || JL_IS_CONTROLLER(CORES3)
 #if JL_AUDIO_VISUALIZER
 typedef AudioVisualizerUi Esp32UiImpl;
@@ -77,6 +85,17 @@ void SetupPrimaryRunLoop() {
     vTaskDelay(100 / portTICK_PERIOD_MS);
   }
 #endif  // JL_DEBUG
+
+#if JL_M5_EXT_POWER
+  // See https://docs.m5stack.com/en/core/StickS3#ext_5v_en
+  // Without begin() here,
+  // M5stick_c freezes shortly after boot,
+  // at least with AudioVisualizerUi
+  M5.begin();
+  M5.Power.setExtOutput(true);
+  jll_info("Enabled external power");
+#endif  // JL_M5_EXT_POWER
+
   GetUi()->set_fastled_runner(&runner);
   GetUi()->InitialSetup();
 
