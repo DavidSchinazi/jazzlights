@@ -1,7 +1,7 @@
 #include "jazzlights/ui/ui_audio.h"
 
 #ifdef ESP32
-#if JL_AUDIO_VISUALIZER && (JL_IS_CONTROLLER(CORES3) || JL_IS_CONTROLLER(CORE2AWS))
+#if JL_AUDIO_VISUALIZER
 
 #include <Arduino.h>
 #include <M5Unified.h>
@@ -26,8 +26,17 @@ void AudioVisualizerUi::InitialSetup() {
   M5.begin(cfg);
   jll_info("M5 device initialized");
 
+#if JL_IS_CONTROLLER(M5STICK_C)
+  M5.Display.setRotation(1);
+#endif
+
   M5.Display.setBrightness(128);
-  M5.Lcd.fillScreen(BLACK);
+  M5.Display.fillScreen(BLACK);
+  kScreenWidth = M5.Display.width();
+  kScreenHeight = M5.Display.height();
+  waveform_buffer_.assign(kScreenWidth, 0.0f);
+  beat_buffer_.assign(kScreenWidth, false);
+  jll_info("Screen initialized with width %d and height %d", kScreenWidth, kScreenHeight);
 
   jll_info("Audio visualizer UI setup complete");
 }
@@ -36,12 +45,12 @@ void AudioVisualizerUi::FinalSetup() {}
 
 void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
   M5.update();
-  if (M5.Touch.getCount() > 0 && M5.Touch.getDetail(0).wasPressed()) {
+  if ((M5.Touch.getCount() > 0 && M5.Touch.getDetail(0).wasPressed()) || M5.BtnB.wasPressed()) {
     visualization_mode_ = (visualization_mode_ == VisualizationMode::kSpectrum) ? VisualizationMode::kWaveform
                                                                                 : VisualizationMode::kSpectrum;
     jll_info("%u Switched to %s mode", currentTime,
              (visualization_mode_ == VisualizationMode::kSpectrum) ? "spectrum" : "waveform");
-    M5.Lcd.fillScreen(BLACK);
+    M5.Display.fillScreen(BLACK);
   }
 
   Audio::VisualizerData data;
@@ -61,33 +70,33 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
   }
 
   // Drawing
-  M5.Lcd.startWrite();
+  M5.Display.startWrite();
 
   const bool no_audio_data = data.last_read_time < 0 || currentTime - data.last_read_time > 1000;
   if (no_audio_data != showing_no_audio_data_) {
     showing_no_audio_data_ = no_audio_data;
     jll_info("%u %s 'No Audio Data' mode", currentTime, showing_no_audio_data_ ? "Entered" : "Exited");
-    M5.Lcd.fillScreen(BLACK);
+    M5.Display.fillScreen(BLACK);
   }
 
   if (data.squelch != showing_squelch_) {
     showing_squelch_ = data.squelch;
     jll_info("%u %s 'Squelch' mode", currentTime, showing_squelch_ ? "Entered" : "Exited");
-    M5.Lcd.fillScreen(BLACK);
+    M5.Display.fillScreen(BLACK);
   }
 
   if (showing_no_audio_data_) {
-    M5.Lcd.setTextSize(2);
-    M5.Lcd.setTextDatum(TC_DATUM);
-    M5.Lcd.setTextColor(RED, BLACK);
-    M5.Lcd.drawString("No Audio Data", kScreenWidth / 2, 20);
-    M5.Lcd.setTextSize(1);
+    M5.Display.setTextSize(2);
+    M5.Display.setTextDatum(TC_DATUM);
+    M5.Display.setTextColor(RED, BLACK);
+    M5.Display.drawString("No Audio Data", kScreenWidth / 2, 20);
+    M5.Display.setTextSize(1);
   } else if (showing_squelch_) {
-    M5.Lcd.setTextSize(2);
-    M5.Lcd.setTextDatum(TC_DATUM);
-    M5.Lcd.setTextColor(ORANGE, BLACK);
-    M5.Lcd.drawString("Squelch", kScreenWidth / 2, 20);
-    M5.Lcd.setTextSize(1);
+    M5.Display.setTextSize(2);
+    M5.Display.setTextDatum(TC_DATUM);
+    M5.Display.setTextColor(ORANGE, BLACK);
+    M5.Display.drawString("Squelch", kScreenWidth / 2, 20);
+    M5.Display.setTextSize(1);
   } else {
     int bar_width = kScreenWidth / Audio::kNumBands;
     if (visualization_mode_ == VisualizationMode::kSpectrum) {
@@ -149,15 +158,15 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
             b = q;
             break;
         }
-        uint16_t color = M5.Lcd.color565(r, g, b);
+        uint16_t color = M5.Display.color565(r, g, b);
 
         // Draw bar - clear background above bar
-        if (h < kScreenHeight) { M5.Lcd.fillRect(x, 0, bar_width - 1, kScreenHeight - h, BLACK); }
+        if (h < kScreenHeight) { M5.Display.fillRect(x, 0, bar_width - 1, kScreenHeight - h, BLACK); }
         // Draw the main bar
-        M5.Lcd.fillRect(x, kScreenHeight - h, bar_width - 1, h, color);
+        M5.Display.fillRect(x, kScreenHeight - h, bar_width - 1, h, color);
 
         // Draw peak indicator (single line or small rect)
-        if (ph > 0) { M5.Lcd.drawFastHLine(x, kScreenHeight - ph, bar_width - 1, WHITE); }
+        if (ph > 0) { M5.Display.drawFastHLine(x, kScreenHeight - ph, bar_width - 1, WHITE); }
       }
     } else {
       float max_db = data.agc_max;
@@ -173,16 +182,16 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
 
         // Clear top, draw line
         if (is_beat) {
-          M5.Lcd.drawFastVLine(i, 0, kScreenHeight, RED);
+          M5.Display.drawFastVLine(i, 0, kScreenHeight, RED);
         } else {
-          if (h < kScreenHeight) { M5.Lcd.drawFastVLine(i, 0, kScreenHeight - h, BLACK); }
-          if (h > 0) { M5.Lcd.drawFastVLine(i, kScreenHeight - h, h, CYAN); }
+          if (h < kScreenHeight) { M5.Display.drawFastVLine(i, 0, kScreenHeight - h, BLACK); }
+          if (h > 0) { M5.Display.drawFastVLine(i, kScreenHeight - h, h, CYAN); }
         }
       }
     }
   }
 
-  M5.Lcd.endWrite();
+  M5.Display.endWrite();
 }
 
 }  // namespace jazzlights

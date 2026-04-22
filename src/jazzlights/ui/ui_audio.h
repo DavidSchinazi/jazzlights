@@ -6,9 +6,10 @@
 
 #ifdef ESP32
 
-#if JL_AUDIO_VISUALIZER && (JL_IS_CONTROLLER(CORES3) || JL_IS_CONTROLLER(CORE2AWS))
+#if JL_AUDIO_VISUALIZER
 
 #include <mutex>
+#include <vector>
 
 #include "jazzlights/audio.h"
 
@@ -23,12 +24,12 @@ class AudioVisualizerUi : public Esp32Ui {
   void RunLoop(Milliseconds currentTime) override;
 
  private:
-  static constexpr int kScreenWidth = 320;
-  static constexpr int kScreenHeight = 240;
+  int kScreenWidth;
+  int kScreenHeight;
   enum class VisualizationMode { kSpectrum, kWaveform };
   VisualizationMode visualization_mode_ = VisualizationMode::kSpectrum;
-  float waveform_buffer_[kScreenWidth] = {0};
-  bool beat_buffer_[kScreenWidth] = {false};
+  std::vector<float> waveform_buffer_;
+  std::vector<bool> beat_buffer_;
   int waveform_index_ = 0;
   double last_waveform_update_ = 0;
   bool showing_no_audio_data_ = false;
@@ -37,7 +38,7 @@ class AudioVisualizerUi : public Esp32Ui {
 
 }  // namespace jazzlights
 
-#else  // JL_AUDIO_VISUALIZER && (JL_IS_CONTROLLER(CORES3) || JL_IS_CONTROLLER(CORE2AWS))
+#else  // JL_AUDIO_VISUALIZER
 
 namespace jazzlights {
 
@@ -51,7 +52,7 @@ class AudioVisualizerUi : public Esp32Ui {
 
 }  // namespace jazzlights
 
-#endif  // JL_AUDIO_VISUALIZER && (JL_IS_CONTROLLER(CORES3) || JL_IS_CONTROLLER(CORE2AWS))
+#endif  // JL_AUDIO_VISUALIZER
 
 #endif  // ESP32
 
