@@ -18,7 +18,7 @@ void TouchButton::Setup(int16_t x, int16_t y, uint16_t w, uint16_t h, const char
   y_ = y;
   w_ = w;
   h_ = h;
-  lgfxButton_.initButtonUL(&M5.Lcd, x, y, w, h,
+  lgfxButton_.initButtonUL(&M5.Display, x, y, w, h,
                            /*outline=*/TFT_WHITE, /*fill=*/TFT_BLACK, /*textcolor=*/TFT_WHITE, "");
   SetLabelText(label);
 }
@@ -49,16 +49,16 @@ void TouchButton::Draw(bool force) {
 void TouchButton::Paint() {
   TouchButtonManager::Get()->MaybePaint();
   if (hidden_) {
-    M5.Lcd.drawRect(x_, y_, w_, h_, TFT_BLACK);
+    M5.Display.drawRect(x_, y_, w_, h_, TFT_BLACK);
     return;
   }
 
-  auto previousTextStyle = M5.Lcd.getTextStyle();
+  auto previousTextStyle = M5.Display.getTextStyle();
 
-  M5.Lcd.setTextSize(1.0f, 0.0f);
-  M5.Lcd.setFont(&FreeSans9pt7b);
-  M5.Lcd.setTextDatum(lgfx::textdatum::textdatum_t::middle_center);
-  M5.Lcd.setTextPadding(0);
+  M5.Display.setTextSize(1.0f, 0.0f);
+  M5.Display.setFont(&fonts::FreeSans9pt7b);
+  M5.Display.setTextDatum(lgfx::textdatum::textdatum_t::middle_center);
+  M5.Display.setTextPadding(0);
 
   int fill = TFT_BLACK;
   int textColor = TFT_WHITE;
@@ -70,7 +70,7 @@ void TouchButton::Paint() {
     textColor = TFT_BLACK;
   }
 
-  M5.Lcd.startWrite();
+  M5.Display.startWrite();
   if (customPaintFunction_) {
     customPaintFunction_(this, outline, fill, textColor);
   } else {
@@ -78,9 +78,9 @@ void TouchButton::Paint() {
     PaintText(textColor, fill);
   }
 
-  M5.Lcd.endWrite();
+  M5.Display.endWrite();
 
-  M5.Lcd.setTextStyle(previousTextStyle);
+  M5.Display.setTextStyle(previousTextStyle);
 }
 
 bool TouchButton::IsPressed() const {
@@ -130,14 +130,14 @@ void TouchButton::MaybePaint(bool force) {
 
 void TouchButton::PaintRectangle(int fill, int outline) {
   uint16_t cornerRadius = std::min<uint16_t>(w_, h_) / 4;
-  M5.Lcd.fillRoundRect(x_ + 1, y_ + 1, w_ - 2, h_ - 2, cornerRadius, fill);
-  M5.Lcd.drawRoundRect(x_ + 1, y_ + 1, w_ - 2, h_ - 2, cornerRadius, outline);
+  M5.Display.fillRoundRect(x_ + 1, y_ + 1, w_ - 2, h_ - 2, cornerRadius, fill);
+  M5.Display.drawRoundRect(x_ + 1, y_ + 1, w_ - 2, h_ - 2, cornerRadius, outline);
 }
 
 void TouchButton::PaintText(int textColor, int fill, const char* label) {
   const char* printLabel = (label != nullptr ? label : label_.c_str());
-  M5.Lcd.setTextColor(textColor, fill);
-  M5.Lcd.drawString(printLabel, x_ + (w_ / 2) + dx_, y_ + (h_ / 2) + dy_);
+  M5.Display.setTextColor(textColor, fill);
+  M5.Display.drawString(printLabel, x_ + (w_ / 2) + dx_, y_ + (h_ / 2) + dy_);
 }
 
 TouchButton* TouchButtonManager::AddButton(int16_t x, int16_t y, uint16_t w, uint16_t h, const char* label) {
@@ -187,7 +187,7 @@ void TouchButtonManager::MaybePaint() {
 }
 
 void TouchButtonManager::RedrawRightHalf() {
-  M5.Lcd.fillRect(/*x=*/165, /*y=*/0, /*w=*/155, /*h=*/240, BLACK);
+  M5.Display.fillRect(/*x=*/165, /*y=*/0, /*w=*/155, /*h=*/240, BLACK);
   for (auto& button : buttons_) {
     if (button->IsHidden()) { button->Paint(); }
   }
@@ -197,7 +197,7 @@ void TouchButtonManager::RedrawRightHalf() {
 }
 
 void TouchButtonManager::Redraw() {
-  M5.Lcd.fillScreen(BLACK);
+  M5.Display.fillScreen(BLACK);
   for (auto& button : buttons_) {
     if (button->IsHidden()) { button->Paint(); }
   }
