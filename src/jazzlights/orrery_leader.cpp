@@ -84,15 +84,16 @@ void OrreryLeader::SetScene(OrreryScene scene) {
   if (scene == OrreryScene::Paused) {
     SetSpeed(Planet::All, 0);
   } else if (scene == OrreryScene::Realistic) {
-    SetSpeed(Planet::Mercury, 4152);
-    SetSpeed(Planet::Venus, 1625);
-    SetSpeed(Planet::Earth, 1000);
-    SetSpeed(Planet::Mars, 532);
-    SetSpeed(Planet::Jupiter, 84);
-    SetSpeed(Planet::Saturn, 34);
-    SetSpeed(Planet::Uranus, 12);
-    SetSpeed(Planet::Neptune, 6);
-    SetSpeed(Planet::Sun, 14610);
+    // These values are based on the real speeds of the planets with a log scale applied.
+    // RPM = 670.163 * log10(realSpeed) + 5419.638
+    SetSpeed(Planet::Mercury, 2000);
+    SetSpeed(Planet::Venus, 1723);
+    SetSpeed(Planet::Earth, 1580);
+    SetSpeed(Planet::Mars, 1393);
+    SetSpeed(Planet::Jupiter, 849);
+    SetSpeed(Planet::Saturn, 580);
+    SetSpeed(Planet::Uranus, 270);
+    SetSpeed(Planet::Neptune, 100);
   } else if (scene == OrreryScene::Align) {
     waitingForAlignment_ = true;
     SetPosition(Planet::All, 0);
