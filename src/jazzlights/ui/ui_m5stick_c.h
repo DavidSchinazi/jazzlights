@@ -83,6 +83,6 @@ class M5StickCUi : public Esp32Ui, public GpioButton::ButtonInterface {
 
 }  // namespace jazzlights
 
-#endif  // JL_IS_CONTROLLER(ATOM_S3)
+#endif  // JL_IS_CONTROLLER(M5STICK_C)
 #endif  // ESP32
-#endif  // JL_UI_UI_ATOM_S3_H
+#endif  // JL_UI_UI_M5STICK_C_H

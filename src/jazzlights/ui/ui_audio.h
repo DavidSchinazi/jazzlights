@@ -9,6 +9,7 @@
 #if JL_AUDIO_VISUALIZER
 
 #include <mutex>
+#include <vector>
 
 #include "jazzlights/audio.h"
 

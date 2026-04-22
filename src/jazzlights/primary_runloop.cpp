@@ -98,6 +98,9 @@ void SetupPrimaryRunLoop() {
 
 #if JL_M5_EXT_POWER
   // See https://docs.m5stack.com/en/core/StickS3#ext_5v_en
+  // Without begin() here,
+  // M5stick_c freezes shortly after boot,
+  // at least with AudioVisualizerUi
   M5.begin();
   M5.Power.setExtOutput(true);
   jll_info("Enabled external power");

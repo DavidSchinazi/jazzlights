@@ -269,5 +269,5 @@ bool M5StickCUi::DisplayContents::operator==(const DisplayContents& other) const
 
 }  // namespace jazzlights
 
-#endif  // JL_IS_CONTROLLER(M5StickCUi)
+#endif  // JL_IS_CONTROLLER(M5STICK_C)
 #endif  // ESP32
