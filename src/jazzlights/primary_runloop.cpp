@@ -43,6 +43,12 @@ FastLedRunner runner(&player);
 typedef AtomMatrixUi Esp32UiImpl;
 #elif JL_IS_CONTROLLER(ATOM_S3)
 typedef AtomS3Ui Esp32UiImpl;
+#elif JL_IS_CONTROLLER(M5STICK_C)
+#if JL_AUDIO_VISUALIZER
+typedef AudioVisualizerUi Esp32UiImpl;
+#else
+typedef M5StickCUi Esp32UiImpl;
+#endif  // JL_AUDIO_VISUALIZER
 #elif JL_IS_CONTROLLER(CORE2AWS) || JL_IS_CONTROLLER(CORES3)
 #if JL_AUDIO_VISUALIZER
 typedef AudioVisualizerUi Esp32UiImpl;
@@ -77,6 +83,13 @@ void SetupPrimaryRunLoop() {
     vTaskDelay(100 / portTICK_PERIOD_MS);
   }
 #endif  // JL_DEBUG
+
+#if JL_IS_M5_DEVICE && JL_M5_LOGGING
+  M5.Log.setLogLevel(m5::log_target_serial, is_debug_logging_enabled() ? ESP_LOG_DEBUG : ESP_LOG_INFO);
+  M5.Log.setLogLevel(m5::log_target_display, ESP_LOG_NONE);
+  M5.Log.setEnableColor(m5::log_target_serial, true);
+#endif  // JL_IS_M5_DEVICE && JL_M5_LOGGING
+
   GetUi()->set_fastled_runner(&runner);
   GetUi()->InitialSetup();
 
