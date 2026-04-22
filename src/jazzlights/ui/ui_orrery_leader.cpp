@@ -242,6 +242,19 @@ void OrreryLeaderUi::DrawSceneMenu() {
 void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
   UpdateCalibrationMenuButton();
   UpdateStatusSubmenu();
+  OrreryScene currentScene = OrreryLeader::Get()->GetScene();
+  if (currentScene != lastScene_) {
+    UpdateSceneButton();
+    // Update local motor state for current planet.
+    int32_t speed = OrreryLeader::Get()->GetSpeed(currentPlanet_);
+    motorForward_ = (speed >= 0);
+    motorMilliRpm_ = std::abs(speed);
+    motorEnabled_ = (speed != 0);
+    motorEnableButton_->SetLabelText(motorEnabled_ ? "Motor Enabled" : "Motor Disabled");
+    UpdateMotorDirectionButton();
+    UpdateMotorSpeedButton();
+    lastScene_ = currentScene;
+  }
   if (motorSubmenuActive_ && !keypadActive_) {
     UpdateMotorCurrentPositionButton();
     UpdateMotorCalibrationButton();

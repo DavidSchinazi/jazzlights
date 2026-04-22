@@ -52,6 +52,7 @@ class OrreryLeader : public GpioSwitchInterface {
  private:
   OrreryLeader();
   void SendMessage(Planet planet);
+  void HandleSwitch1(bool isClosed);
   void HandleSwitch4(bool isClosed);
   OrreryScene scene_;
   const uint32_t bootId_;

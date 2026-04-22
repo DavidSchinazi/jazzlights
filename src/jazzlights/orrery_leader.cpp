@@ -73,6 +73,7 @@ OrreryLeader::OrreryLeader()
     msg.ledPrecedenceGain = kDefaultPlanetPrecedenceGain;
     SendMessage(planet);
   }
+  HandleSwitch1(switch1_.IsClosed());
   HandleSwitch4(switch4_.IsClosed());
 }
 
@@ -272,8 +273,14 @@ void OrreryLeader::RunLoop(Milliseconds currentTime) {
 
 void OrreryLeader::StateChanged(uint8_t pin, bool isClosed) {
   jll_info("%u switch on pin %u is now %s", timeMillis(), pin, (isClosed ? "closed" : "open"));
-  if (pin == kSwitch4Pin) { HandleSwitch4(isClosed); }
+  if (pin == kSwitch1Pin) {
+    HandleSwitch1(isClosed);
+  } else if (pin == kSwitch4Pin) {
+    HandleSwitch4(isClosed);
+  }
 }
+
+void OrreryLeader::HandleSwitch1(bool isClosed) { SetScene(isClosed ? OrreryScene::Paused : OrreryScene::Realistic); }
 
 void OrreryLeader::HandleSwitch4(bool isClosed) {
   for (int i = 0; i < kNumPlanets; i++) {

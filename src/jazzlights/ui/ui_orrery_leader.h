@@ -13,6 +13,7 @@
 #include <string>
 
 #include "jazzlights/orrery_common.h"
+#include "jazzlights/orrery_leader.h"
 #include "jazzlights/ui/touch_button.h"
 #include "jazzlights/ui/ui.h"
 
@@ -94,6 +95,7 @@ class OrreryLeaderUi : public Esp32Ui {
     Hall,
   };
   PlanetPatternMode planetPatternMode_ = PlanetPatternMode::Full;
+  OrreryScene lastScene_ = static_cast<OrreryScene>(-1);
   uint8_t planetOffset_ = 0;
   bool motorEnabled_ = false;
   bool motorForward_ = true;
