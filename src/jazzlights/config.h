@@ -55,6 +55,7 @@
 #define JL_CONTROLLER_M5STAMP_S3 8
 #define JL_CONTROLLER_M5_NANO_C6 9
 #define JL_CONTROLLER_CORES3 10
+#define JL_CONTROLLER_M5STICK_C 11
 
 #define JL_IS_CONTROLLER(controller_) \
   (JL_MERGE_TOKENS(JL_CONTROLLER_, JL_CONTROLLER) == JL_MERGE_TOKENS(JL_CONTROLLER_, controller_))
@@ -169,6 +170,26 @@
 #define JL_MOTOR 0
 #endif  // JL_MOTOR
 
+#if !defined(JL_IS_M5_DEVICE) && __has_include(<M5Unified.h>)
+#define JL_IS_M5_DEVICE 1
+#else
+#define JL_IS_M5_DEVICE 0
+#endif  // JL_IS_M5_DEVICE
+
+#ifndef JL_M5_LOGGING
+#if JL_IS_M5_DEVICE
+// default to 0 unless explicitly enabled
+#define JL_M5_LOGGING 0
+#else
+#define JL_M5_LOGGING 0
+#endif
+#endif  // JL_M5_LOGGING
+
+// See https://docs.m5stack.com/en/core/StickS3#ext_5v_en
+#ifndef JL_M5_EXT_POWER
+#define JL_M5_EXT_POWER (JL_IS_CONTROLLER(M5STICK_C) || JL_IS_CONTROLLER(M5STICK_S3))
+#endif  // JL_M5_EXT_POWER
+
 // For all of these GROVE ports, 1 is white and 2 is yellow.
 #if JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_LITE)
 inline constexpr int kPinA1 = 21;
@@ -184,6 +205,13 @@ inline constexpr int kPinB1 = 8;
 inline constexpr int kPinB2 = 7;
 inline constexpr int kPinC1 = 6;
 inline constexpr int kPinC2 = 5;
+#elif JL_IS_CONTROLLER(M5STICK_C)
+// https://static-cdn.m5stack.com/resource/docs/products/core/m5stickc_plus/m5stickc_plus_sch_01.webp
+// Hat pins are 26, 36/25, and 0
+// Grove is 32 (yellow), 33 (white)
+inline constexpr int kPinA1 = 26;
+inline constexpr int kPinA2 = 25;
+inline constexpr int kPinB1 = 0;
 #elif JL_IS_CONTROLLER(CORES3)
 inline constexpr int kPinA1 = 1;
 inline constexpr int kPinA2 = 2;

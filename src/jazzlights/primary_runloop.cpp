@@ -2,6 +2,11 @@
 
 #include "jazzlights/config.h"
 
+#if JL_IS_M5_DEVICE || JL_M5_EXT_POWER
+// We have to enable power to Grove
+#include <M5Unified.h>
+#endif
+
 #ifdef ESP32
 
 #include <memory>
@@ -25,6 +30,7 @@
 #include "jazzlights/ui/ui_audio.h"
 #include "jazzlights/ui/ui_core2.h"
 #include "jazzlights/ui/ui_disabled.h"
+#include "jazzlights/ui/ui_m5stick_c.h"
 #include "jazzlights/ui/ui_motor.h"
 #include "jazzlights/ui/ui_orrery_leader.h"
 #include "jazzlights/util/log.h"
@@ -43,6 +49,12 @@ FastLedRunner runner(&player);
 typedef AtomMatrixUi Esp32UiImpl;
 #elif JL_IS_CONTROLLER(ATOM_S3)
 typedef AtomS3Ui Esp32UiImpl;
+#elif JL_IS_CONTROLLER(M5STICK_C)
+#if JL_AUDIO_VISUALIZER
+typedef AudioVisualizerUi Esp32UiImpl;
+#else
+typedef M5StickCUi Esp32UiImpl;
+#endif  // JL_AUDIO_VISUALIZER
 #elif JL_IS_CONTROLLER(CORE2AWS) || JL_IS_CONTROLLER(CORES3)
 #if JL_AUDIO_VISUALIZER
 typedef AudioVisualizerUi Esp32UiImpl;
@@ -77,6 +89,20 @@ void SetupPrimaryRunLoop() {
     vTaskDelay(100 / portTICK_PERIOD_MS);
   }
 #endif  // JL_DEBUG
+
+#if JL_IS_M5_DEVICE && JL_M5_LOGGING
+  M5.Log.setLogLevel(m5::log_target_serial, is_debug_logging_enabled() ? ESP_LOG_DEBUG : ESP_LOG_INFO);
+  M5.Log.setLogLevel(m5::log_target_display, ESP_LOG_NONE);
+  M5.Log.setEnableColor(m5::log_target_serial, true);
+#endif  // JL_IS_M5_DEVICE && JL_M5_LOGGING
+
+#if JL_M5_EXT_POWER
+  // See https://docs.m5stack.com/en/core/StickS3#ext_5v_en
+  M5.begin();
+  M5.Power.setExtOutput(true);
+  jll_info("Enabled external power");
+#endif  // JL_M5_EXT_POWER
+
   GetUi()->set_fastled_runner(&runner);
   GetUi()->InitialSetup();
 

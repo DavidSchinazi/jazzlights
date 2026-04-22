@@ -75,12 +75,12 @@ void DrawSystemTextLine(uint8_t i, const char* text) {
   constexpr uint8_t kSytemLineHeight = 22;
   constexpr uint8_t kSytemStartX = 5;
   constexpr uint8_t kSytemStartY = 65;
-  M5.Lcd.setTextDatum(TL_DATUM);  // Top Left.
+  M5.Display.setTextDatum(TL_DATUM);  // Top Left.
   const uint16_t x = kSytemStartX;
   const uint16_t y = kSytemStartY + i * kSytemLineHeight;
-  M5.Lcd.setTextColor(WHITE, BLACK);
-  M5.Lcd.fillRect(x, y, /*w=*/155, /*h=*/kSytemLineHeight, BLACK);
-  M5.Lcd.drawString(text, x, y);
+  M5.Display.setTextColor(WHITE, BLACK);
+  M5.Display.fillRect(x, y, /*w=*/155, /*h=*/kSytemLineHeight, BLACK);
+  M5.Display.drawString(text, x, y);
 }
 
 static const Matrix kCore2ScreenPixels(40, 30);
@@ -102,10 +102,10 @@ class Core2ScreenRenderer : public Renderer {
       for (size_t yi = 0; yi < factor; yi++) { rowColors16_[x * factor + xi + yi * 40 * factor] = color16; }
     }
     if (x == 39) {
-      bool swap = M5.Lcd.getSwapBytes();
-      M5.Lcd.setSwapBytes(true);
-      M5.Lcd.pushImage(/*x0=*/0, /*y0=*/y * factor, /*w=*/40 * factor, /*h=*/factor, rowColors16_);
-      M5.Lcd.setSwapBytes(swap);
+      bool swap = M5.Display.getSwapBytes();
+      M5.Display.setSwapBytes(true);
+      M5.Display.pushImage(/*x0=*/0, /*y0=*/y * factor, /*w=*/40 * factor, /*h=*/factor, rowColors16_);
+      M5.Display.setSwapBytes(swap);
     }
   }
 
@@ -185,8 +185,8 @@ class PatternControlMenu {
     confirmButton->Hide();
     TouchButtonManager::Get()->MaybePaint();
     // Reset text datum and color in case we need to draw any.
-    M5.Lcd.setTextDatum(TL_DATUM);  // Top Left.
-    M5.Lcd.setTextColor(WHITE, BLACK);
+    M5.Display.setTextDatum(TL_DATUM);  // Top Left.
+    M5.Display.setTextColor(WHITE, BLACK);
     switch (state_) {
       case State::kOff:  // Fall through.
       case State::kPattern: {
@@ -196,11 +196,11 @@ class PatternControlMenu {
           for (uint8_t i = 0; i < kNumPatternsFirstPage; i++) {
             drawPatternTextLine(i, kSelectablePatterns[i].name, i == selectedPatternIndex_);
           }
-          M5.Lcd.setTextColor(WHITE, BLACK);
-          M5.Lcd.drawString("More Patterns...", x_, kNumPatternsFirstPage * dy());
+          M5.Display.setTextColor(WHITE, BLACK);
+          M5.Display.drawString("More Patterns...", x_, kNumPatternsFirstPage * dy());
         } else {
-          M5.Lcd.setTextColor(WHITE, BLACK);
-          M5.Lcd.drawString("Previous Patterns...", x_, /*y=*/0);
+          M5.Display.setTextColor(WHITE, BLACK);
+          M5.Display.drawString("Previous Patterns...", x_, /*y=*/0);
           for (uint8_t i = 0; i < kNumPatternsSecondPage; i++) {
             drawPatternTextLine(i + 1, kSelectablePatterns[i + kNumPatternsFirstPage].name,
                                 i + kNumPatternsFirstPage == selectedPatternIndex_);
@@ -371,17 +371,17 @@ class PatternControlMenu {
     return setPattern(player, patternBits + color * 0x100, currentTime);
   }
   uint8_t dy() {
-    if (dy_ == 0) { dy_ = M5.Lcd.fontHeight(); }  // By default this is 22.
+    if (dy_ == 0) { dy_ = M5.Display.fontHeight(); }  // By default this is 22.
     return dy_;
   }
   void drawPatternTextLine(uint8_t i, const char* text, bool selected) {
-    M5.Lcd.setTextDatum(TL_DATUM);  // Top Left.
+    M5.Display.setTextDatum(TL_DATUM);  // Top Left.
     const uint16_t y = i * dy();
     const uint16_t textColor = selected ? BLACK : WHITE;
     const uint16_t backgroundColor = selected ? WHITE : BLACK;
-    M5.Lcd.setTextColor(textColor, backgroundColor);
-    M5.Lcd.fillRect(x_, y, /*w=*/155, /*h=*/dy(), backgroundColor);
-    M5.Lcd.drawString(text, x_, y);
+    M5.Display.setTextColor(textColor, backgroundColor);
+    M5.Display.fillRect(x_, y, /*w=*/155, /*h=*/dy(), backgroundColor);
+    M5.Display.drawString(text, x_, y);
   }
   struct SelectablePattern {
     const char* name;
@@ -440,15 +440,15 @@ PatternControlMenu gPatternControlMenu;
 void drawPatternControlButton(TouchButton* button, int outline, int fill, int textColor) {
   button->PaintRectangle(fill, outline);
   button->PaintText(textColor, fill);
-  M5.Lcd.setTextDatum(BC_DATUM);  // Bottom Center.
-  M5.Lcd.drawString(gCurrentPatternName.c_str(), /*x=*/80, /*y=*/210);
+  M5.Display.setTextDatum(BC_DATUM);  // Bottom Center.
+  M5.Display.drawString(gCurrentPatternName.c_str(), /*x=*/80, /*y=*/210);
 }
 
 void drawSystemButton(TouchButton* button, int outline, int fill, int textColor) {
   button->PaintRectangle(fill, outline);
   button->PaintText(textColor, fill);
-  M5.Lcd.setTextDatum(BC_DATUM);  // Bottom Center.
-  M5.Lcd.drawString(BOOT_MESSAGE, /*x=*/240, /*y=*/210);
+  M5.Display.setTextDatum(BC_DATUM);  // Bottom Center.
+  M5.Display.drawString(BOOT_MESSAGE, /*x=*/240, /*y=*/210);
 }
 
 void drawConfirmButton(TouchButton* button, int outline, int fill, int textColor) {
