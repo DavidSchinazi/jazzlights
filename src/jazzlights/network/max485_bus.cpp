@@ -43,18 +43,20 @@ namespace jazzlights {
 
 namespace {
 
-constexpr size_t kMaxMessageLength = 1000;
+constexpr size_t kMaxMessageLength = 100;
 
 constexpr size_t ComputeExpansion(size_t length) {
   return /*separator*/ 1 + /*destBusID*/ 1 + /*srcBusID*/ 1 + CobsMaxEncodedSize(length + /*CRC32*/ sizeof(uint32_t)) +
          /*separator*/ 1 + /*endOfMessage*/ 1;
 }
 
-constexpr size_t kMaxEncodedMessageLength = ComputeExpansion(kMaxMessageLength);  // 1013.
+constexpr size_t kMaxEncodedMessageLength = ComputeExpansion(kMaxMessageLength);
 constexpr size_t kUartDriverBufferSize = 2048;
 static_assert(kUartDriverBufferSize >= kMaxEncodedMessageLength, "bad size");
 
-constexpr Milliseconds kUartResponseTimeoutMs = 500;
+// This timeout formula was established based on the following empirical measurements using a 10m shiedled cable.
+// In (message size in bytes, maximum observed RTT in ms) pairs: (50, 14), (100, 23), (500, 92), (1000, 180).
+constexpr Milliseconds kUartResponseTimeoutMs = ((kMaxMessageLength * 2) / 5) + 10;
 constexpr TickType_t kLeaderReceiveDelay = kUartResponseTimeoutMs / portTICK_PERIOD_MS;
 
 }  // namespace

@@ -62,6 +62,9 @@ struct OrreryMessage {
   std::optional<Precedence> ledBasePrecedence;
   std::optional<Precedence> ledPrecedenceGain;
 
+  // IMPORTANT: If additional data is added to OrreryMessage, kMaxMessageLength needs to be adjusted in
+  // Max485BusHandler.
+
   bool operator==(const OrreryMessage& other) const {
     return type == other.type && leaderBootId == other.leaderBootId &&
            leaderSequenceNumber == other.leaderSequenceNumber && speed == other.speed && position == other.position &&
