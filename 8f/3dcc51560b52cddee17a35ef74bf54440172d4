@@ -1,0 +1,14 @@
+src/jazzlights/primary_runloop.cpp
+  h_669488c0e21d79 53-55,57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "8f3dcc51560b52cddee17a35ef74bf54440172d4",
+  "prompts": {},
+  "humans": {
+    "h_669488c0e21d79": {
+      "author": "Claudio Spiess"
+    }
+  }
+}
