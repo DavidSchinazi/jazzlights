@@ -46,7 +46,7 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
   int32_t speed = OrreryLeader::Get()->GetSpeed(currentPlanet_);
   motorForward_ = (speed >= 0);
   motorMilliRpm_ = std::abs(speed);
-  targetPosition_ = OrreryLeader::Get()->GetPosition(currentPlanet_);
+  targetPosition_ = OrreryLeader::Get()->GetTargetPosition(currentPlanet_);
   motorEnabled_ = (speed != 0);
   motorEnableButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/320, /*h=*/34,
                                                             motorEnabled_ ? "Motor Enabled" : "Motor Disabled");
@@ -348,7 +348,7 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
         int32_t speed = OrreryLeader::Get()->GetSpeed(currentPlanet_);
         motorForward_ = (speed >= 0);
         motorMilliRpm_ = std::abs(speed);
-        targetPosition_ = OrreryLeader::Get()->GetPosition(currentPlanet_);
+        targetPosition_ = OrreryLeader::Get()->GetTargetPosition(currentPlanet_);
         motorEnabled_ = (speed != 0);
         motorEnableButton_->SetLabelText(motorEnabled_ ? "Motor Enabled" : "Motor Disabled");
         UpdateMotorDirectionButton();

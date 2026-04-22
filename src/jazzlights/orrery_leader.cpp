@@ -111,6 +111,9 @@ void OrreryLeader::SetScene(OrreryScene scene) {
 
 void OrreryLeader::SetSpeed(Planet planet, int32_t speed) {
   if (planet == Planet::All) {
+    OrreryMessage msg;
+    msg.speed = speed;
+    SendBroadcastMessage(msg);
     for (int i = 0; i < kNumPlanetsWithoutSun; i++) {
       SetSpeed(static_cast<Planet>(static_cast<int>(Planet::Mercury) + i), speed);
     }
@@ -136,6 +139,9 @@ int32_t OrreryLeader::GetSpeed(Planet planet) const {
 
 void OrreryLeader::SetPosition(Planet planet, std::optional<uint32_t> position) {
   if (planet == Planet::All) {
+    OrreryMessage msg;
+    msg.position = position.has_value() ? *position : kOrreryPositionNone;
+    SendBroadcastMessage(msg);
     for (int i = 0; i < kNumPlanetsWithoutSun; i++) {
       SetPosition(static_cast<Planet>(static_cast<int>(Planet::Mercury) + i), position);
     }
@@ -144,8 +150,9 @@ void OrreryLeader::SetPosition(Planet planet, std::optional<uint32_t> position) 
   auto it = messages_.find(planet);
   if (it != messages_.end()) {
     OrreryMessage& msg = it->second;
-    if (msg.position != position) {
-      msg.position = position;
+    std::optional<uint32_t> wirePosition = position.has_value() ? position : kOrreryPositionNone;
+    if (msg.position != wirePosition) {
+      msg.position = wirePosition;
       if (position.has_value()) {
         jll_info("OrreryLeader setting planet %s position to %" PRIu32, GetPlanetName(planet), *position);
       } else {
@@ -163,6 +170,15 @@ std::optional<uint32_t> OrreryLeader::GetPosition(Planet planet) const {
   return std::nullopt;
 }
 
+std::optional<uint32_t> OrreryLeader::GetTargetPosition(Planet planet) const {
+  if (planet == Planet::All) { planet = Planet::Mercury; }
+  auto it = messages_.find(planet);
+  if (it != messages_.end() && it->second.position.has_value() && *it->second.position != kOrreryPositionNone) {
+    return it->second.position;
+  }
+  return std::nullopt;
+}
+
 std::optional<uint32_t> OrreryLeader::GetCalibration(Planet planet) const {
   if (planet == Planet::All) { planet = Planet::Mercury; }
   auto it = responses_.find(planet);
@@ -172,6 +188,9 @@ std::optional<uint32_t> OrreryLeader::GetCalibration(Planet planet) const {
 
 void OrreryLeader::SetBrightness(Planet planet, uint8_t brightness) {
   if (planet == Planet::All) {
+    OrreryMessage msg;
+    msg.ledBrightness = brightness;
+    SendBroadcastMessage(msg);
     for (int i = 0; i < kNumPlanets; i++) {
       SetBrightness(static_cast<Planet>(static_cast<int>(Planet::Mercury) + i), brightness);
     }
@@ -197,6 +216,9 @@ uint8_t OrreryLeader::GetBrightness(Planet planet) const {
 
 void OrreryLeader::SetLedPattern(Planet planet, uint32_t ledPattern) {
   if (planet == Planet::All) {
+    OrreryMessage msg;
+    msg.ledPattern = ledPattern;
+    SendBroadcastMessage(msg);
     for (int i = 0; i < kNumPlanets; i++) {
       SetLedPattern(static_cast<Planet>(static_cast<int>(Planet::Mercury) + i), ledPattern);
     }
@@ -263,6 +285,14 @@ void OrreryLeader::SendMessage(Planet planet) {
     msg.leaderSequenceNumber = nextSequenceNumber_++;
     max485BusLeader_.SetMessageToSend(static_cast<BusId>(planet), msg);
   }
+}
+
+void OrreryLeader::SendBroadcastMessage(const OrreryMessage& msg) {
+  OrreryMessage broadcastMsg = msg;
+  broadcastMsg.type = OrreryMessageType::LeaderCommand;
+  broadcastMsg.leaderBootId = bootId_;
+  broadcastMsg.leaderSequenceNumber = nextSequenceNumber_++;
+  max485BusLeader_.SetMessageToSend(Max485BusHandler::kBusIdBroadcast, broadcastMsg);
 }
 
 void OrreryLeader::RunLoop(Milliseconds currentTime) {

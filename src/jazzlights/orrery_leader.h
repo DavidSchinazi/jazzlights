@@ -32,6 +32,7 @@ class OrreryLeader : public GpioSwitchInterface {
   int32_t GetSpeed(Planet planet) const;
   void SetPosition(Planet planet, std::optional<uint32_t> position);
   std::optional<uint32_t> GetPosition(Planet planet) const;
+  std::optional<uint32_t> GetTargetPosition(Planet planet) const;
   std::optional<uint32_t> GetCalibration(Planet planet) const;
   void SetBrightness(Planet planet, uint8_t brightness);
   uint8_t GetBrightness(Planet planet) const;
@@ -53,6 +54,7 @@ class OrreryLeader : public GpioSwitchInterface {
  private:
   OrreryLeader();
   void SendMessage(Planet planet);
+  void SendBroadcastMessage(const OrreryMessage& msg);
   void HandleSwitch1(bool isClosed);
   void HandleSwitch4(bool isClosed);
   OrreryScene scene_;

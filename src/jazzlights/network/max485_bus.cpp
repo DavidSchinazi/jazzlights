@@ -257,10 +257,10 @@ void Max485BusHandler::CopyEncodeAndSendMessage(BusId destBusId) {
   {
     const std::lock_guard<std::mutex> lock(sendMutex_);
     auto it = sharedSendMessages_.find(destBusId);
-    if (it == sharedSendMessages_.end()) { it = sharedSendMessages_.find(kBusIdBroadcast); }
     if (it != sharedSendMessages_.end()) {
       msg = it->second;
       found = true;
+      if (destBusId == kBusIdBroadcast) { sharedSendMessages_.erase(it); }
     }
   }
   if (!found) { return; }
@@ -508,6 +508,7 @@ void Max485BusLeader::SendMessageToNextFollower() {
         auto it = sharedSendMessages_.upper_bound(candidate);
         if (it == sharedSendMessages_.end()) { it = sharedSendMessages_.begin(); }
         candidate = it->first;
+        if (candidate == kBusIdBroadcast) { continue; }
         if (firstCandidate == kSeparator) { firstCandidate = candidate; }
         FollowerState& state = followerStates_[candidate];
         if (state.timeoutCount >= 3) {

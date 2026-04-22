@@ -289,13 +289,18 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
           requestedSpeed_ = targetFrequency;
         }
       }
-      if (!msg.position.has_value()) {
-        targetPosition_ = std::nullopt;
-        arrivedAtTarget_ = false;
-      } else if (msg.position.has_value() && (!targetPosition_.has_value() || *msg.position != *targetPosition_)) {
-        jll_info("%u Planet %s requested position %" PRIu32, currentTime, ourPlanetName, *msg.position);
-        targetPosition_ = msg.position;
-        arrivedAtTarget_ = false;
+      if (msg.position.has_value()) {
+        if (*msg.position == kOrreryPositionNone) {
+          if (targetPosition_.has_value()) {
+            jll_info("%u Planet %s clearing target position", currentTime, ourPlanetName);
+            targetPosition_ = std::nullopt;
+            arrivedAtTarget_ = false;
+          }
+        } else if (!targetPosition_.has_value() || *msg.position != *targetPosition_) {
+          jll_info("%u Planet %s requested position %" PRIu32, currentTime, ourPlanetName, *msg.position);
+          targetPosition_ = msg.position;
+          arrivedAtTarget_ = false;
+        }
       }
       if (msg.calibration.has_value() && !currentState_.calibration.has_value()) {
         if (static_cast<float>(*msg.calibration) != stepsPerRev_) {

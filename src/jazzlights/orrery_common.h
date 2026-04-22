@@ -41,6 +41,7 @@ inline constexpr size_t kPlanetPatternOffsetShift = 16;
 inline constexpr PatternBits kPlanetPatternOffsetMask = 0xFF;
 inline constexpr Precedence kDefaultPlanetBasePrecedence = 100;
 inline constexpr Precedence kDefaultPlanetPrecedenceGain = 100;
+inline constexpr uint32_t kOrreryPositionNone = 0xFFFFFFFF;
 
 enum class OrreryMessageType : uint8_t {
   LeaderCommand = 0x01,
