@@ -47,7 +47,8 @@ constexpr int kMax485RxPin = 1;
 #error "unsupported controller for Max485BusHandler"
 #endif
 
-constexpr float kStartupStepsPerRev = 13000.0f;
+// This value was measured empirically on the orrery.
+constexpr float kStartupStepsPerRev = 17000.0f;
 
 }  // namespace
 
