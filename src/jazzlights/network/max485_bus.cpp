@@ -41,6 +41,16 @@ namespace jazzlights {
 #define JL_TEST_MAX485 0
 #endif  // JL_TEST_MAX485
 
+#ifndef JL_LOG_TIMEOUTS
+#define JL_LOG_TIMEOUTS 0
+#endif  // JL_LOG_TIMEOUTS
+
+#if JL_LOG_TIMEOUTS
+#define jll_timeout(...) jll_info(__VA_ARGS__)
+#else  // JL_LOG_TIMEOUTS
+#define jll_timeout(...) jll_debug(__VA_ARGS__)
+#endif  // JL_LOG_TIMEOUTS
+
 namespace {
 
 constexpr size_t kMaxMessageLength = 100;
@@ -474,8 +484,8 @@ void Max485BusLeader::HandleApplicationDataAvailableToSend(bool firstSend) {
   } else if (lastSentBusId_ != kSeparator &&
              timeMillis() - taskLastSendTimeExpectingResponse_ > kUartResponseTimeoutMs) {
     followerStates_[lastSentBusId_].timeoutCount++;
-    jll_info("%u Timed out waiting for response from %d, count is now %d", timeMillis(),
-             static_cast<int>(lastSentBusId_), followerStates_[lastSentBusId_].timeoutCount);
+    jll_timeout("%u Timed out waiting for response from %d, count is now %d", timeMillis(),
+                static_cast<int>(lastSentBusId_), followerStates_[lastSentBusId_].timeoutCount);
     shouldSend = true;
   } else {
     jll_max485_data("%u Ignoring %sfirstSend kApplicationDataAvailable", timeMillis(), (firstSend ? "" : "!"));
