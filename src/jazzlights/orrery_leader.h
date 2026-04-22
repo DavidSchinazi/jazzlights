@@ -18,6 +18,7 @@ namespace jazzlights {
 enum class OrreryScene {
   Paused,
   Realistic,
+  Align,
 };
 
 const char* OrrerySceneToString(OrreryScene scene);
@@ -65,6 +66,7 @@ class OrreryLeader : public GpioSwitchInterface {
   GpioSwitchLow switch1_;
   GpioSwitchLow switch3_;
   GpioSwitchLow switch4_;
+  bool waitingForAlignment_ = false;
 };
 
 }  // namespace jazzlights

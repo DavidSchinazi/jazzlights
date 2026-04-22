@@ -44,6 +44,7 @@ const char* OrrerySceneToString(OrreryScene scene) {
   switch (scene) {
     case OrreryScene::Paused: return "Paused";
     case OrreryScene::Realistic: return "Realistic";
+    case OrreryScene::Align: return "Align";
   }
   return "Unknown";
 }
@@ -92,6 +93,10 @@ void OrreryLeader::SetScene(OrreryScene scene) {
     SetSpeed(Planet::Uranus, 12);
     SetSpeed(Planet::Neptune, 6);
     SetSpeed(Planet::Sun, 14610);
+  } else if (scene == OrreryScene::Align) {
+    waitingForAlignment_ = true;
+    SetPosition(Planet::All, 0);
+    SetSpeed(Planet::All, 1000);
   }
 }
 
@@ -267,6 +272,39 @@ void OrreryLeader::RunLoop(Milliseconds currentTime) {
         if (maxRtt_.find(planet) == maxRtt_.end() || rtt > maxRtt_[planet]) { maxRtt_[planet] = rtt; }
       }
       if (msg.calibration.has_value()) { messages_[planet].calibration = msg.calibration; }
+    }
+  }
+
+  if (scene_ == OrreryScene::Align && waitingForAlignment_) {
+    bool allArrived = true;
+    for (int i = 0; i < kNumPlanets; i++) {
+      Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
+      auto itHeard = lastHeardTime_.find(planet);
+      if (itHeard == lastHeardTime_.end() || currentTime - itHeard->second > 10000) {
+        // Consider arrived if we haven't heard from it for 10s.
+        continue;
+      }
+      auto it = responses_.find(planet);
+      if (it == responses_.end()) {
+        // Consider arrived if we've never heard from it.
+        continue;
+      }
+      const OrreryMessage& resp = it->second;
+      bool atZero = false;
+      if (resp.position.has_value()) {
+        uint32_t pos = *resp.position;
+        if (pos < 4000 || pos > 356000) { atZero = true; }
+      }
+      if (!atZero || !resp.speed.has_value() || *resp.speed != 0) {
+        allArrived = false;
+        break;
+      }
+    }
+    if (allArrived) {
+      jll_info("%u Planets have aligned", timeMillis());
+      waitingForAlignment_ = false;
+      SetPosition(Planet::All, std::nullopt);
+      SetSpeed(Planet::All, 1000);
     }
   }
 }

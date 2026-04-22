@@ -104,10 +104,12 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
 
   // Scene menu buttons.
   sceneSelectButtons_[0] =
-      TouchButtonManager::Get()->AddButton(0, 0, 320, 80, OrrerySceneToString(OrreryScene::Paused));
+      TouchButtonManager::Get()->AddButton(0, 0, 320, 60, OrrerySceneToString(OrreryScene::Paused));
   sceneSelectButtons_[1] =
-      TouchButtonManager::Get()->AddButton(0, 80, 320, 80, OrrerySceneToString(OrreryScene::Realistic));
-  sceneBackButton_ = TouchButtonManager::Get()->AddButton(0, 160, 320, 80, "Back");
+      TouchButtonManager::Get()->AddButton(0, 60, 320, 60, OrrerySceneToString(OrreryScene::Realistic));
+  sceneSelectButtons_[2] =
+      TouchButtonManager::Get()->AddButton(0, 120, 320, 60, OrrerySceneToString(OrreryScene::Align));
+  sceneBackButton_ = TouchButtonManager::Get()->AddButton(0, 180, 320, 60, "Back");
 
   // Initialize LED pattern mode.
   uint32_t ledPattern = OrreryLeader::Get()->GetLedPattern(currentPlanet_);
@@ -160,7 +162,7 @@ void OrreryLeaderUi::HideAll() {
   confirmButton_->Hide();
   for (int i = 0; i <= kNumPlanets; i++) { planetSelectButtons_[i]->Hide(); }
   planetBackButton_->Hide();
-  for (int i = 0; i < 2; i++) { sceneSelectButtons_[i]->Hide(); }
+  for (int i = 0; i < 3; i++) { sceneSelectButtons_[i]->Hide(); }
   sceneBackButton_->Hide();
 }
 
@@ -234,7 +236,7 @@ void OrreryLeaderUi::DrawPlanetMenu() {
 
 void OrreryLeaderUi::DrawSceneMenu() {
   HideAll();
-  for (int i = 0; i < 2; i++) { sceneSelectButtons_[i]->Draw(); }
+  for (int i = 0; i < 3; i++) { sceneSelectButtons_[i]->Draw(); }
   sceneBackButton_->Draw();
   TouchButtonManager::Get()->Redraw();
 }
@@ -375,7 +377,7 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       DrawMainMenu();
     }
   } else if (sceneSubmenuActive_) {
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 3; i++) {
       if (sceneSelectButtons_[i]->JustReleased()) {
         OrreryLeader::Get()->SetScene(static_cast<OrreryScene>(i));
         UpdateSceneButton();
