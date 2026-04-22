@@ -43,12 +43,6 @@ FastLedRunner runner(&player);
 typedef AtomMatrixUi Esp32UiImpl;
 #elif JL_IS_CONTROLLER(ATOM_S3)
 typedef AtomS3Ui Esp32UiImpl;
-#elif JL_IS_CONTROLLER(M5STICK_C)
-#if JL_AUDIO_VISUALIZER
-typedef AudioVisualizerUi Esp32UiImpl;
-#else
-typedef M5StickCUi Esp32UiImpl;
-#endif  // JL_AUDIO_VISUALIZER
 #elif JL_IS_CONTROLLER(CORE2AWS) || JL_IS_CONTROLLER(CORES3)
 #if JL_AUDIO_VISUALIZER
 typedef AudioVisualizerUi Esp32UiImpl;
