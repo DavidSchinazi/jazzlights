@@ -97,7 +97,7 @@ void OrreryLeader::SetScene(OrreryScene scene) {
   } else if (scene == OrreryScene::Align) {
     waitingForAlignment_ = true;
     SetPosition(Planet::All, 0);
-    for (int i = 0; i < kNumPlanets; i++) {
+    for (int i = 0; i < kNumPlanetsWithoutSun; i++) {
       Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
       int32_t speed = GetSpeed(planet);
       if (0 <= speed && speed < 1000) {
@@ -111,7 +111,7 @@ void OrreryLeader::SetScene(OrreryScene scene) {
 
 void OrreryLeader::SetSpeed(Planet planet, int32_t speed) {
   if (planet == Planet::All) {
-    for (int i = 0; i < kNumPlanets; i++) {
+    for (int i = 0; i < kNumPlanetsWithoutSun; i++) {
       SetSpeed(static_cast<Planet>(static_cast<int>(Planet::Mercury) + i), speed);
     }
     return;
@@ -136,7 +136,7 @@ int32_t OrreryLeader::GetSpeed(Planet planet) const {
 
 void OrreryLeader::SetPosition(Planet planet, std::optional<uint32_t> position) {
   if (planet == Planet::All) {
-    for (int i = 0; i < kNumPlanets; i++) {
+    for (int i = 0; i < kNumPlanetsWithoutSun; i++) {
       SetPosition(static_cast<Planet>(static_cast<int>(Planet::Mercury) + i), position);
     }
     return;
@@ -286,7 +286,7 @@ void OrreryLeader::RunLoop(Milliseconds currentTime) {
 
   if (scene_ == OrreryScene::Align && waitingForAlignment_) {
     bool allArrived = true;
-    for (int i = 0; i < kNumPlanets; i++) {
+    for (int i = 0; i < kNumPlanetsWithoutSun; i++) {
       Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
       auto itHeard = lastHeardTime_.find(planet);
       if (itHeard == lastHeardTime_.end() || currentTime - itHeard->second > 10000) {

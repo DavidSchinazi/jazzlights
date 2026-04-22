@@ -18,6 +18,7 @@
 
 namespace jazzlights {
 namespace {
+#if !JL_ORRERY_SUN
 #if JL_IS_CONTROLLER(M5STAMP_S3)
 static constexpr uint8_t kPlanetSwitchPin0 = 12;
 static constexpr uint8_t kPlanetSwitchPin1 = 11;
@@ -27,6 +28,11 @@ static constexpr uint8_t kHallSensorPin = 4;
 #else
 #error "Unexpected controller"
 #endif
+
+// This value was measured empirically on the orrery.
+constexpr float kStartupStepsPerRev = 17000.0f;
+
+#endif  // !JL_ORRERY_SUN
 
 #if JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_LITE)
 constexpr int kMax485TxPin = 26;
@@ -46,9 +52,6 @@ constexpr int kMax485TxPin = 13;
 constexpr int kMax485RxPin = 1;
 #error "unsupported controller for Max485BusHandler"
 #endif
-
-// This value was measured empirically on the orrery.
-constexpr float kStartupStepsPerRev = 17000.0f;
 
 }  // namespace
 
@@ -70,20 +73,27 @@ void OrreryPlanet::Setup(Player& player) {
 }
 
 OrreryPlanet::OrreryPlanet()
-    : hallSensor_(kHallSensorPin, *this),
+    :
+#if !JL_ORRERY_SUN
+      hallSensor_(kHallSensorPin, *this),
       switch0_(kPlanetSwitchPin0, *this),
       switch1_(kPlanetSwitchPin1, *this),
       switch2_(kPlanetSwitchPin2, *this),
       switch3_(kPlanetSwitchPin3, *this),
-      busId_(ComputeBusId()),
-      max485BusFollower_(UART_NUM_2, kMax485TxPin, kMax485RxPin, busId_),
       lastSpeedUpdateTime_(timeMillis()),
       lastStepCountIncrement_(timeMillis()),
-      stepsPerRev_(kStartupStepsPerRev) {
+      stepsPerRev_(kStartupStepsPerRev),
+      busId_(ComputeBusId()),
+#else   // !JL_ORRERY_SUN
+      busId_(static_cast<BusId>(Planet::Sun)),
+#endif  // !JL_ORRERY_SUN
+      max485BusFollower_(UART_NUM_2, kMax485TxPin, kMax485RxPin, busId_) {
   jll_info("%u OrreryPlanet created with busId %u", timeMillis(), busId_);
   PlanetEffect::Get()->SetPlanet(static_cast<Planet>(busId_));
   currentState_.type = OrreryMessageType::FollowerResponse;
 }
+
+#if !JL_ORRERY_SUN
 
 BusId OrreryPlanet::ComputeBusId() const {
   uint8_t switchesValue = (switch2_.IsClosed() ? 4 : 0) | (switch1_.IsClosed() ? 2 : 0) | (switch0_.IsClosed() ? 1 : 0);
@@ -162,7 +172,10 @@ void OrreryPlanet::HandleHallSensorChange(uint8_t pin, bool isClosed, Millisecon
   }
 }
 
+#endif  // !JL_ORRERY_SUN
+
 void OrreryPlanet::RunLoop(Milliseconds currentTime) {
+#if !JL_ORRERY_SUN
   hallSensor_.RunLoop();
   switch0_.RunLoop();
   switch1_.RunLoop();
@@ -252,13 +265,12 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
       }
       if (wasForward * isForward <= 0) { ignoreNextCalibration_ = true; }
       IncrementStepCount();
-#if JL_MOTOR
       GetMainStepperMotor()->SetSpeed(static_cast<int32_t>(roundedSpeed_));
-#endif  // JL_MOTOR
       currentState_.speed = roundedSpeed_;
     }
     currentState_.position = static_cast<uint32_t>((positionalSteps_ / stepsPerRev_) * 360000.0f);
   }
+#endif  // !JL_ORRERY_SUN
 
   BusId destBusId, srcBusId;
   OrreryMessage msg;
@@ -268,6 +280,7 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
     if (msg.type == OrreryMessageType::LeaderCommand) {
       currentState_.leaderBootId = msg.leaderBootId;
       currentState_.leaderSequenceNumber = msg.leaderSequenceNumber;
+#if !JL_ORRERY_SUN
       if (msg.speed.has_value()) {
         const int32_t targetFrequency = std::round((*msg.speed / 60000.0f) * stepsPerRev_);
         if (targetFrequency != requestedSpeed_) {
@@ -284,6 +297,20 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
         targetPosition_ = msg.position;
         arrivedAtTarget_ = false;
       }
+      if (msg.calibration.has_value() && !currentState_.calibration.has_value()) {
+        if (static_cast<float>(*msg.calibration) != stepsPerRev_) {
+          jll_info("%u Planet %s applying calibration %" PRIu32 " from leader", currentTime, ourPlanetName,
+                   *msg.calibration);
+          stepsPerRev_ = *msg.calibration;
+        }
+      }
+
+      currentState_.timeHallSensorLastOpened = timeHallSensorLastOpened_;
+      currentState_.timeHallSensorLastClosed = timeHallSensorLastClosed_;
+      currentState_.lastOpenDuration = lastOpenDuration_;
+      currentState_.lastClosedDuration = lastClosedDuration_;
+#endif  // !JL_ORRERY_SUN
+
       if (msg.ledBrightness.has_value() && msg.ledBrightness != currentState_.ledBrightness) {
         jll_info("%u Planet %s applying brightness %u", currentTime, ourPlanetName, *msg.ledBrightness);
         if (player_ != nullptr) { player_->set_brightness(*msg.ledBrightness); }
@@ -306,18 +333,6 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
         if (player_ != nullptr) { player_->setPrecedenceGain(*msg.ledPrecedenceGain); }
         currentState_.ledPrecedenceGain = *msg.ledPrecedenceGain;
       }
-      if (msg.calibration.has_value() && !currentState_.calibration.has_value()) {
-        if (static_cast<float>(*msg.calibration) != stepsPerRev_) {
-          jll_info("%u Planet %s applying calibration %" PRIu32 " from leader", currentTime, ourPlanetName,
-                   *msg.calibration);
-          stepsPerRev_ = *msg.calibration;
-        }
-      }
-
-      currentState_.timeHallSensorLastOpened = timeHallSensorLastOpened_;
-      currentState_.timeHallSensorLastClosed = timeHallSensorLastClosed_;
-      currentState_.lastOpenDuration = lastOpenDuration_;
-      currentState_.lastClosedDuration = lastClosedDuration_;
       max485BusFollower_.SetMessageToSend(currentState_);
     }
   }

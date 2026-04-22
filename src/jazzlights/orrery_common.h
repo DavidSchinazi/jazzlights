@@ -30,6 +30,7 @@ enum class Planet : BusId {
   All = 255,
 };
 
+inline constexpr size_t kNumPlanetsWithoutSun = 8;
 inline constexpr size_t kNumPlanets = 9;
 inline constexpr int32_t kDefaultPlanetSpeed = 1000;
 inline constexpr uint8_t kDefaultPlanetBrightness = 64;

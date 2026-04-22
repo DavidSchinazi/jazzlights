@@ -123,6 +123,7 @@ void PlanetEffect::afterColors(const Frame& /*frame*/) const {}
 
 CRGB PlanetEffect::color(const Frame& frame, const Pixel& px) const {
   if (px.cumulativeIndex >= numPixels_) { return CRGB::Black; }
+#if !JL_ORRERY_SUN
   State* state = static_cast<State*>(frame.context);
   if (state->hall) { return state->hallSensorClosed ? CRGB::Blue : CRGB::Red; }
   if (state->half) {
@@ -131,6 +132,7 @@ CRGB PlanetEffect::color(const Frame& frame, const Pixel& px) const {
     offsetDistance = std::min(offsetDistance, static_cast<int>(numPixels_) - offsetDistance);
     if (offsetDistance > numPixels_ / 4) { return CRGB::Black; }
   }
+#endif  // !JL_ORRERY_SUN
   const TProgmemRGBPalette16* palette = GetPlanetPalette(currentPlanet_);
   uint8_t colorIndex = (256 * px.cumulativeIndex / numPixels_) + (256 * frame.time / kEffectDuration);
   return ColorFromPalette(*palette, colorIndex);

@@ -15,27 +15,34 @@ namespace jazzlights {
 
 class Player;
 
-class OrreryPlanet : public GpioSwitchInterface, public HallSensor::HallSensorInterface {
+class OrreryPlanet
+#if !JL_ORRERY_SUN
+    : public GpioSwitchInterface,
+      public HallSensor::HallSensorInterface
+#endif  // !JL_ORRERY_SUN
+{
  public:
   static OrreryPlanet* Get();
   void Setup(Player& player);
   void RunLoop(Milliseconds currentTime);
-
+#if !JL_ORRERY_SUN
   // From GpioSwitchInterface.
   void StateChanged(uint8_t pin, bool isClosed) override;
 
   // From HallSensor::HallSensorInterface.
   void HandleHallSensorChange(uint8_t pin, bool isClosed, Milliseconds timeOfChange) override;
-
+#endif  // !JL_ORRERY_SUN
  private:
   OrreryPlanet();
 
+#if !JL_ORRERY_SUN
   BusId ComputeBusId() const;
-
   void IncrementStepCount();
+#endif  // !JL_ORRERY_SUN
 
   Player* player_ = nullptr;
   OrreryMessage currentState_ = {};
+#if !JL_ORRERY_SUN
   HallSensor hallSensor_;
   std::optional<Milliseconds> timeHallSensorLastOpened_;
   std::optional<Milliseconds> timeHallSensorLastClosed_;
@@ -45,8 +52,6 @@ class OrreryPlanet : public GpioSwitchInterface, public HallSensor::HallSensorIn
   GpioSwitchHigh switch1_;
   GpioSwitchHigh switch2_;
   GpioSwitchHigh switch3_;
-  BusId busId_;
-  Max485BusFollower max485BusFollower_;
   int32_t requestedSpeed_ = 0;
   float actualSpeed_ = 0.0f;
   float roundedSpeed_ = 0.0f;
@@ -58,6 +63,9 @@ class OrreryPlanet : public GpioSwitchInterface, public HallSensor::HallSensorIn
   std::optional<uint32_t> targetPosition_ = std::nullopt;
   bool arrivedAtTarget_ = false;
   bool ignoreNextCalibration_ = true;
+#endif  // !JL_ORRERY_SUN
+  BusId busId_;
+  Max485BusFollower max485BusFollower_;
 };
 
 }  // namespace jazzlights
