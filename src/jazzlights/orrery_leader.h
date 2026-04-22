@@ -19,6 +19,7 @@ enum class OrreryScene {
   Paused,
   Realistic,
   Align,
+  Silly,
 };
 
 const char* OrrerySceneToString(OrreryScene scene);

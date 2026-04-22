@@ -45,6 +45,7 @@ const char* OrrerySceneToString(OrreryScene scene) {
     case OrreryScene::Paused: return "Paused";
     case OrreryScene::Realistic: return "Realistic";
     case OrreryScene::Align: return "Align";
+    case OrreryScene::Silly: return "Silly";
   }
   return "Unknown";
 }
@@ -83,17 +84,28 @@ void OrreryLeader::SetScene(OrreryScene scene) {
   jll_info("OrreryLeader setting scene to %s", OrrerySceneToString(scene));
   if (scene == OrreryScene::Paused) {
     SetSpeed(Planet::All, 0);
-  } else if (scene == OrreryScene::Realistic) {
+  } else if (scene == OrreryScene::Realistic || scene == OrreryScene::Silly) {
     // These values are based on the real speeds of the planets with a log scale applied.
     // RPM = 670.163 * log10(realSpeed) + 5419.638
-    SetSpeed(Planet::Mercury, 2000);
-    SetSpeed(Planet::Venus, 1723);
-    SetSpeed(Planet::Earth, 1580);
-    SetSpeed(Planet::Mars, 1393);
-    SetSpeed(Planet::Jupiter, 849);
-    SetSpeed(Planet::Saturn, 580);
-    SetSpeed(Planet::Uranus, 270);
-    SetSpeed(Planet::Neptune, 100);
+    struct PlanetSpeed {
+      Planet planet;
+      int32_t speed;
+    };
+    const PlanetSpeed speeds[] = {
+        {Planet::Mercury, 2000},
+        {  Planet::Venus, 1723},
+        {  Planet::Earth, 1580},
+        {   Planet::Mars, 1393},
+        {Planet::Jupiter,  849},
+        { Planet::Saturn,  580},
+        { Planet::Uranus,  270},
+        {Planet::Neptune,  100},
+    };
+    for (size_t i = 0; i < sizeof(speeds) / sizeof(speeds[0]); i++) {
+      int32_t speed = speeds[i].speed;
+      if (scene == OrreryScene::Silly && (i % 2) == 1) { speed = -speed; }
+      SetSpeed(speeds[i].planet, speed);
+    }
   } else if (scene == OrreryScene::Align) {
     waitingForAlignment_ = true;
     SetPosition(Planet::All, 0);
