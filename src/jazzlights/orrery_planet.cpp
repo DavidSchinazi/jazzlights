@@ -125,18 +125,33 @@ void OrreryPlanet::HandleHallSensorChange(uint8_t pin, bool isClosed, Millisecon
       jll_info("%u Ignoring calibration stepsPerRev %.2f, staying with %.2f", timeOfChange, std::abs(currentSteps_),
                stepsPerRev_);
     } else if (currentSteps_ != 0) {
-      float previousStepsPerRev = stepsPerRev_;
-      if (currentState_.calibration.has_value()) {
-        static constexpr float kCalibrationSmoothing = 0.5f;
-        stepsPerRev_ = kCalibrationSmoothing * stepsPerRev_ + (1.0f - kCalibrationSmoothing) * std::abs(currentSteps_);
-        jll_info("%u Calibrated stepsPerRev: new measurement %.2f smoothed from %.2f to %.2f", timeOfChange,
-                 std::abs(currentSteps_), previousStepsPerRev, stepsPerRev_);
-      } else {
-        stepsPerRev_ = std::abs(currentSteps_);
-        jll_info("%u First calibration of stepsPerRev from %.2f to %.2f", timeOfChange, previousStepsPerRev,
+      float currentStepsAbs = std::abs(currentSteps_);
+      if (currentStepsAbs < kStartupStepsPerRev * 0.6f || currentStepsAbs > kStartupStepsPerRev * 1.5f) {
+        jll_info("%u Fully ignoring out of bounds calibration value %.2f, keeping %.2f", timeOfChange, currentStepsAbs,
                  stepsPerRev_);
+      } else {
+        const float lowBound = kStartupStepsPerRev * 0.75f;
+        const float highBound = kStartupStepsPerRev * 1.25f;
+        if (currentStepsAbs < lowBound) {
+          jll_info("%u Clamping low calibration value %.2f to %.2f", timeOfChange, currentStepsAbs, lowBound);
+          currentStepsAbs = lowBound;
+        } else if (currentStepsAbs > highBound) {
+          jll_info("%u Clamping high calibration value %.2f to %.2f", timeOfChange, currentStepsAbs, highBound);
+          currentStepsAbs = highBound;
+        }
+        float previousStepsPerRev = stepsPerRev_;
+        if (currentState_.calibration.has_value()) {
+          static constexpr float kCalibrationSmoothing = 0.5f;
+          stepsPerRev_ = kCalibrationSmoothing * stepsPerRev_ + (1.0f - kCalibrationSmoothing) * currentStepsAbs;
+          jll_info("%u Calibrated stepsPerRev: new measurement %.2f smoothed from %.2f to %.2f", timeOfChange,
+                   currentStepsAbs, previousStepsPerRev, stepsPerRev_);
+        } else {
+          stepsPerRev_ = currentStepsAbs;
+          jll_info("%u First calibration of stepsPerRev from %.2f to %.2f", timeOfChange, previousStepsPerRev,
+                   stepsPerRev_);
+        }
+        currentState_.calibration = static_cast<uint32_t>(std::round(stepsPerRev_));
       }
-      currentState_.calibration = static_cast<uint32_t>(std::round(stepsPerRev_));
       currentSteps_ = 0;
     }
     if (timeHallSensorLastOpened_.has_value()) { lastOpenDuration_ = timeOfChange - *timeHallSensorLastOpened_; }
