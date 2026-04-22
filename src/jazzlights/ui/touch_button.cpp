@@ -56,7 +56,7 @@ void TouchButton::Paint() {
   auto previousTextStyle = M5.Display.getTextStyle();
 
   M5.Display.setTextSize(1.0f, 0.0f);
-  M5.Display.setFont(&FreeSans9pt7b);
+  M5.Display.setFont(&fonts::FreeSans9pt7b);
   M5.Display.setTextDatum(lgfx::textdatum::textdatum_t::middle_center);
   M5.Display.setTextPadding(0);
 
