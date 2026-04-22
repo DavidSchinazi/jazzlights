@@ -1,0 +1,32 @@
+.gitignore
+  4b53d8c907aa7cc8 20
+.envrc
+  4b53d8c907aa7cc8 1
+.vscode/settings.json
+  4b53d8c907aa7cc8 88-92
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "c81ee09c4d97889817f717b15c450c1356a29fa4",
+  "prompts": {
+    "4b53d8c907aa7cc8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c07e1c24-4a90-41d7-b906-6d350fcd22c4",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Claudio Spiess",
+      "messages": [],
+      "total_additions": 602,
+      "total_deletions": 527,
+      "accepted_lines": 356,
+      "overriden_lines": 0
+    }
+  },
+  "humans": {
+    "h_669488c0e21d79": {
+      "author": "Claudio Spiess"
+    }
+  }
+}
