@@ -2,9 +2,13 @@
 
 #include "jazzlights/config.h"
 
-#if JL_M5_EXT_POWER
+#if defined(JL_M5_EXT_POWER) && JL_M5_EXT_POWER
 // We have to enable power to Grove
+#if __has_include(<M5Unified.h>)
 #include <M5Unified.h>
+#else
+#error "M5Unified.h is required when JL_M5_EXT_POWER is enabled"
+#endif  // M5Unified.h
 #endif
 
 #ifdef ESP32
