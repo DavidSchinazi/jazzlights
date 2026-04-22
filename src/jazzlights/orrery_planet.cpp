@@ -126,15 +126,17 @@ void OrreryPlanet::HandleHallSensorChange(uint8_t pin, bool isClosed, Millisecon
                stepsPerRev_);
     } else if (currentSteps_ != 0) {
       float previousStepsPerRev = stepsPerRev_;
-#if 1
-      stepsPerRev_ = std::abs(currentSteps_);
+      if (currentState_.calibration.has_value()) {
+        static constexpr float kCalibrationSmoothing = 0.5f;
+        stepsPerRev_ = kCalibrationSmoothing * stepsPerRev_ + (1.0f - kCalibrationSmoothing) * std::abs(currentSteps_);
+        jll_info("%u Calibrated stepsPerRev: new measurement %.2f smoothed from %.2f to %.2f", timeOfChange,
+                 std::abs(currentSteps_), previousStepsPerRev, stepsPerRev_);
+      } else {
+        stepsPerRev_ = std::abs(currentSteps_);
+        jll_info("%u First calibration of stepsPerRev from %.2f to %.2f", timeOfChange, previousStepsPerRev,
+                 stepsPerRev_);
+      }
       currentState_.calibration = static_cast<uint32_t>(std::round(stepsPerRev_));
-      jll_info("%u Calibrated stepsPerRev from %.2f to %.2f", timeOfChange, previousStepsPerRev, stepsPerRev_);
-#else
-      stepsPerRev_ = 0.8f * stepsPerRev_ + 0.2f * currentSteps_;
-      jll_info("%u Calibrated stepsPerRev: %.2f smoothed from %.2f to %.2f", timeOfChange, currentSteps_,
-               previousStepsPerRev, stepsPerRev_);
-#endif
       currentSteps_ = 0;
     }
     if (timeHallSensorLastOpened_.has_value()) { lastOpenDuration_ = timeOfChange - *timeHallSensorLastOpened_; }
