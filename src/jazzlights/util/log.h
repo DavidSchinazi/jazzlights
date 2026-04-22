@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <mutex>
 
+#include "jazzlights/config.h"
 #if JL_IS_M5_DEVICE && JL_M5_LOGGING
 #include <M5Unified.h>
 #endif  // JL_IS_M5_DEVICE && JL_M5_LOGGING

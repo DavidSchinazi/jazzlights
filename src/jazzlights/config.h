@@ -169,10 +169,12 @@
 #define JL_MOTOR 0
 #endif  // JL_MOTOR
 
-#if !defined(JL_IS_M5_DEVICE) && __has_include(<M5Unified.h>)
+#ifndef JL_IS_M5_DEVICE
+#if defined(__has_include) && __has_include(<M5Unified.h>)
 #define JL_IS_M5_DEVICE 1
 #else
 #define JL_IS_M5_DEVICE 0
+#endif  // defined(__has_include) && __has_include(<M5Unified.h>)
 #endif  // JL_IS_M5_DEVICE
 
 #ifndef JL_M5_LOGGING
