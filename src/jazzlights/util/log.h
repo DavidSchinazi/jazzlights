@@ -6,6 +6,11 @@
 #include <cstdlib>
 #include <mutex>
 
+#include "jazzlights/config.h"
+#if JL_IS_M5_DEVICE && JL_M5_LOGGING
+#include <M5Unified.h>
+#endif  // JL_IS_M5_DEVICE && JL_M5_LOGGING
+
 #include "jazzlights/util/buffer.h"
 
 namespace jazzlights {
@@ -38,6 +43,20 @@ std::unique_lock<std::mutex> GetEscapeBufferLock();
                   &EscapeIntoStaticBuffer(buffer)[0]);                                 \
   } while (0)
 
+#if JL_IS_M5_DEVICE && JL_M5_LOGGING
+
+#define jll_debug(format, ...) M5_LOGD(format, ##__VA_ARGS__)
+#define jll_info(format, ...) M5_LOGI(format, ##__VA_ARGS__)
+#define jll_error(format, ...) M5_LOGE(format, ##__VA_ARGS__)
+
+#define jll_fatal(format, ...)      \
+  do {                              \
+    M5_LOGE(format, ##__VA_ARGS__); \
+    abort();                        \
+  } while (0)
+
+#else  // JL_IS_M5_DEVICE && JL_M5_LOGGING
+
 #define jll_debug(format, ...)                                                                            \
   do {                                                                                                    \
     if (is_debug_logging_enabled()) { _LOG_AT_LEVEL(_JL_LOG_LEVEL_STRING_DEBUG, format, ##__VA_ARGS__); } \
@@ -51,6 +70,8 @@ std::unique_lock<std::mutex> GetEscapeBufferLock();
     _LOG_AT_LEVEL(_JL_LOG_LEVEL_STRING_FATAL, format, ##__VA_ARGS__); \
     abort();                                                          \
   } while (0)
+
+#endif  // JL_IS_M5_DEVICE && JL_M5_LOGGING
 
 // Note that the jll_buffer_* variants use a static buffer and are therefore not thread safe.
 #define jll_buffer_debug(buffer, format, ...)                                         \

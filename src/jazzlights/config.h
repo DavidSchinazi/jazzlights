@@ -169,6 +169,23 @@
 #define JL_MOTOR 0
 #endif  // JL_MOTOR
 
+#ifndef JL_IS_M5_DEVICE
+#if defined(__has_include) && __has_include(<M5Unified.h>)
+#define JL_IS_M5_DEVICE 1
+#else
+#define JL_IS_M5_DEVICE 0
+#endif  // defined(__has_include) && __has_include(<M5Unified.h>)
+#endif  // JL_IS_M5_DEVICE
+
+#ifndef JL_M5_LOGGING
+#if JL_IS_M5_DEVICE
+// default to 0 unless explicitly enabled
+#define JL_M5_LOGGING 0
+#else
+#define JL_M5_LOGGING 0
+#endif
+#endif  // JL_M5_LOGGING
+
 // For all of these GROVE ports, 1 is white and 2 is yellow.
 #if JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_LITE)
 inline constexpr int kPinA1 = 21;
