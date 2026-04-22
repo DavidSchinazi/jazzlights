@@ -122,6 +122,8 @@ void OrreryPlanet::HandleHallSensorChange(uint8_t pin, bool isClosed, Millisecon
     IncrementStepCount();
     if (ignoreNextCalibration_) {
       ignoreNextCalibration_ = false;
+      jll_info("%u Ignoring calibration stepsPerRev %.2f, staying with %.2f", timeOfChange, std::abs(currentSteps_),
+               stepsPerRev_);
     } else if (currentSteps_ != 0) {
       float previousStepsPerRev = stepsPerRev_;
 #if 1
@@ -216,9 +218,22 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
                currentTime, roundedSpeed_, currentSteps_, positionalSteps_, actualSpeed_, stepsPerRev_);
     }
     if (!currentState_.speed.has_value() || roundedSpeed_ != *currentState_.speed) {
-      bool wasForward = currentState_.speed.has_value() && *currentState_.speed >= 0;
-      bool isForward = roundedSpeed_ >= 0;
-      if (!currentState_.speed.has_value() || wasForward != isForward) { ignoreNextCalibration_ = true; }
+      // Ignore calibration if the motor stops or reverses direction.
+      int wasForward = 0;
+      if (currentState_.speed.has_value()) {
+        if (*currentState_.speed > 0) {
+          wasForward = 1;
+        } else if (*currentState_.speed < 0) {
+          wasForward = -1;
+        }
+      }
+      int isForward = 0;
+      if (roundedSpeed_ > 0) {
+        isForward = 1;
+      } else if (roundedSpeed_ < 0) {
+        isForward = -1;
+      }
+      if (wasForward * isForward <= 0) { ignoreNextCalibration_ = true; }
       IncrementStepCount();
 #if JL_MOTOR
       GetMainStepperMotor()->SetSpeed(static_cast<int32_t>(roundedSpeed_));
