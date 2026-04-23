@@ -436,7 +436,7 @@ void OrreryLeader::RunLoop(Milliseconds currentTime) {
         if (!resp.position.has_value()) { continue; }
         bool atZero = false;
         uint32_t pos = *resp.position;
-        if (pos < 4000 || pos > 356000) { atZero = true; }
+        if (pos < 6000 || pos > 354000) { atZero = true; }
         if (!atZero || !resp.speed.has_value() || *resp.speed > 10) {
           allArrived = false;
           break;
