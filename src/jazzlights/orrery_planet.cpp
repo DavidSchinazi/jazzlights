@@ -198,7 +198,7 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
     if (arrivedAtTarget_) {
       effectiveRequestedSpeed = 0;
       actualSpeed_ = 0;
-    } else if (targetPosition_.has_value()) {
+    } else if (targetPosition_.has_value() && currentState_.calibration.has_value()) {
       const float targetSteps = (*targetPosition_ / 360000.0f) * stepsPerRev_;
       float stepsToGo = targetSteps - positionalSteps_;
       if (actualSpeed_ < 0) { stepsToGo = -stepsToGo; }
