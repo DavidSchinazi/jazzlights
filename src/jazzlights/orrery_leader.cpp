@@ -46,6 +46,15 @@ const char* OrrerySceneToString(OrreryScene scene) {
     case OrreryScene::Realistic: return "Realistic";
     case OrreryScene::Align: return "Align";
     case OrreryScene::Silly: return "Silly";
+    case OrreryScene::FocusMercury: return "FocusMercury";
+    case OrreryScene::FocusVenus: return "FocusVenus";
+    case OrreryScene::FocusEarth: return "FocusEarth";
+    case OrreryScene::FocusMars: return "FocusMars";
+    case OrreryScene::FocusJupiter: return "FocusJupiter";
+    case OrreryScene::FocusSaturn: return "FocusSaturn";
+    case OrreryScene::FocusUranus: return "FocusUranus";
+    case OrreryScene::FocusNeptune: return "FocusNeptune";
+    case OrreryScene::FocusSun: return "FocusSun";
   }
   return "Unknown";
 }
@@ -86,7 +95,11 @@ void OrreryLeader::SetScene(OrreryScene scene) {
   jll_info("OrreryLeader setting scene to %s", OrrerySceneToString(scene));
   if (scene == OrreryScene::Paused) {
     SetSpeed(Planet::All, 0);
-  } else if (scene == OrreryScene::Realistic || scene == OrreryScene::Silly) {
+  } else if (scene == OrreryScene::Realistic || scene == OrreryScene::Silly || scene == OrreryScene::FocusMercury ||
+             scene == OrreryScene::FocusVenus || scene == OrreryScene::FocusEarth || scene == OrreryScene::FocusMars ||
+             scene == OrreryScene::FocusJupiter || scene == OrreryScene::FocusSaturn ||
+             scene == OrreryScene::FocusUranus || scene == OrreryScene::FocusNeptune ||
+             scene == OrreryScene::FocusSun) {
     // These values are based on the real speeds of the planets with a log scale applied.
     // RPM = 670.163 * log10(realSpeed) + 5419.638
     struct PlanetSpeed {
@@ -107,6 +120,32 @@ void OrreryLeader::SetScene(OrreryScene scene) {
       int32_t speed = speeds[i].speed;
       if (scene == OrreryScene::Silly && (i % 2) == 1) { speed = -speed; }
       SetSpeed(speeds[i].planet, speed);
+    }
+    if (scene != OrreryScene::Realistic && scene != OrreryScene::Silly) {
+      Planet focusedPlanet = Planet::All;
+      if (scene == OrreryScene::FocusMercury) {
+        focusedPlanet = Planet::Mercury;
+      } else if (scene == OrreryScene::FocusVenus) {
+        focusedPlanet = Planet::Venus;
+      } else if (scene == OrreryScene::FocusEarth) {
+        focusedPlanet = Planet::Earth;
+      } else if (scene == OrreryScene::FocusMars) {
+        focusedPlanet = Planet::Mars;
+      } else if (scene == OrreryScene::FocusJupiter) {
+        focusedPlanet = Planet::Jupiter;
+      } else if (scene == OrreryScene::FocusSaturn) {
+        focusedPlanet = Planet::Saturn;
+      } else if (scene == OrreryScene::FocusUranus) {
+        focusedPlanet = Planet::Uranus;
+      } else if (scene == OrreryScene::FocusNeptune) {
+        focusedPlanet = Planet::Neptune;
+      } else if (scene == OrreryScene::FocusSun) {
+        focusedPlanet = Planet::Sun;
+      }
+      for (int i = 0; i < kNumPlanets; i++) {
+        Planet p = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
+        SetBrightness(p, p == focusedPlanet ? kDefaultPlanetBrightness : 0);
+      }
     }
   } else if (scene == OrreryScene::Align) {
     waitingForAlignment_ = true;
@@ -339,6 +378,15 @@ void OrreryLeader::RunLoop(Milliseconds currentTime) {
 
   if (scene_ == OrreryScene::Silly && currentTime - sceneStartTime_ > 5 * 60 * 1000) {
     jll_info("%u Silly scene ending after 5 minutes, starting Realistic scene", currentTime);
+    SetScene(OrreryScene::Realistic);
+  }
+
+  if ((scene_ == OrreryScene::FocusMercury || scene_ == OrreryScene::FocusVenus || scene_ == OrreryScene::FocusEarth ||
+       scene_ == OrreryScene::FocusMars || scene_ == OrreryScene::FocusJupiter || scene_ == OrreryScene::FocusSaturn ||
+       scene_ == OrreryScene::FocusUranus || scene_ == OrreryScene::FocusNeptune || scene_ == OrreryScene::FocusSun) &&
+      currentTime - sceneStartTime_ > 60 * 1000) {
+    jll_info("%u Focus scene ending after 1 minute, starting Realistic scene", currentTime);
+    SetBrightness(Planet::All, kDefaultPlanetBrightness);
     SetScene(OrreryScene::Realistic);
   }
 

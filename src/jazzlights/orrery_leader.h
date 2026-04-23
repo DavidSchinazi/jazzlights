@@ -20,6 +20,15 @@ enum class OrreryScene {
   Realistic,
   Align,
   Silly,
+  FocusMercury,
+  FocusVenus,
+  FocusEarth,
+  FocusMars,
+  FocusJupiter,
+  FocusSaturn,
+  FocusUranus,
+  FocusNeptune,
+  FocusSun,
 };
 
 const char* OrrerySceneToString(OrreryScene scene);
