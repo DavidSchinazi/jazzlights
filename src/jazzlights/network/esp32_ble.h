@@ -11,16 +11,17 @@
 
 #if !JL_DISABLE_BLUETOOTH
 
-#include <esp_gap_ble_api.h>
-
 #include <atomic>
 #include <list>
 #include <mutex>
 
+// Forward declaration for NimBLE gap event type used in the private callback.
+struct ble_gap_event;
+
 namespace jazzlights {
 
-// This class interfaces with the ESP32 Bluetooth Low Energy module. It is
-// designed to allow both sending and receiving by alternating between the two.
+// This class interfaces with the ESP32 Bluetooth Low Energy module via NimBLE.
+// It alternates between scanning (receiving) and advertising (sending).
 // All calls are thread-safe.
 class Esp32BleNetwork : public Network {
  public:
@@ -45,15 +46,12 @@ class Esp32BleNetwork : public Network {
  private:
   // All public calls in this class are static, but internally they are backed by a
   // singleton which keeps state and uses a mutex to allow safe access from callers
-  // and the internal BLE thread.
+  // and the internal NimBLE host thread.
   enum class State {
     kInvalid,
     kIdle,
-    kStartingScan,
     kScanning,
     kStoppingScan,
-    kConfiguringAdvertising,
-    kStartingAdvertising,
     kAdvertising,
     kStoppingAdvertising,
   };
@@ -66,7 +64,6 @@ class Esp32BleNetwork : public Network {
   void StopScanning(Milliseconds currentTime);
   void StartAdvertising(Milliseconds currentTime);
   void StopAdvertising(Milliseconds currentTime);
-  void StartConfigureAdvertising(Milliseconds currentTime);
   void MaybeUpdateAdvertisingState(Milliseconds currentTime);
   void StopAdvertisingIn(Milliseconds duration);
   void StopScanningIn(Milliseconds duration);
@@ -74,10 +71,9 @@ class Esp32BleNetwork : public Network {
                             const uint8_t* innerPayload, int rssi, Milliseconds currentTime);
   uint8_t GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_t maxInnerPayloadLength, Milliseconds currentTime);
   void UpdateState(State expectedCurrentState, State newState);
-  bool ExtractShouldTriggerSendAsap();
-  void GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param, Milliseconds currentTime);
+  int GapEventCallbackInner(struct ble_gap_event* event, Milliseconds currentTime);
 
-  static void GapCallback(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param);
+  static int GapEventCallback(struct ble_gap_event* event, void* arg);
 
   static NetworkDeviceId InitBluetoothStackAndQueryLocalDeviceId();
 

@@ -3,26 +3,17 @@
 #ifdef ESP32
 #if !JL_DISABLE_BLUETOOTH
 
-#include <esp_bt.h>
-#include <esp_bt_main.h>
-#include <esp_gap_ble_api.h>
-#include <esp_random.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+#include "host/ble_gap.h"
+#include "host/ble_hs.h"
+#include "nimble/nimble_port.h"
+#include "nimble/nimble_port_freertos.h"
 
-#include <cmath>
 #include <string>
-#include <unordered_map>
 
 #include "jazzlights/pseudorandom.h"
 #include "jazzlights/util/log.h"
-
-// This is an Arduino header and in theory we shouldn't need it, but see comment near btStarted() below.
-#include <esp32-hal-bt.h>
-
-#if !JL_ESP32S3 && !JL_ESP32C3 && !JL_ESP32C6
-#define JL_BLE4 1
-#else
-#define JL_BLE4 0
-#endif
 
 #ifndef ESP32_BLE_DEBUG_OVERRIDE
 #define ESP32_BLE_DEBUG_OVERRIDE 0
@@ -47,11 +38,49 @@ constexpr uint8_t kAdvType = 0x96;
 void convertToHex(char* target, size_t targetLength, const uint8_t* source, uint8_t sourceLength) {
   if (targetLength <= static_cast<size_t>(sourceLength) * 2) { return; }
   for (uint8_t i = 0; i < sourceLength; i++) {
-    sprintf(target, "%.2x", (char)*source);
+    sprintf(target, "%.2x", static_cast<unsigned>(*source));
     source++;
     target += 2;
   }
   *target = '\0';
+}
+
+// NimBLE stores addresses in little-endian byte order (LSB first).
+// We reverse them to MSB-first (network byte order) so MAC addresses are
+// human-readable in logs and consistent with payload serialisation.
+NetworkDeviceId NimBleAddrToNetworkDeviceId(const uint8_t nimble_addr[6]) {
+  uint8_t msb_first[6];
+  for (int i = 0; i < 6; i++) { msb_first[i] = nimble_addr[5 - i]; }
+  return NetworkDeviceId(msb_first);
+}
+
+// State written once from the NimBLE host task during OnSync, then read-only.
+static SemaphoreHandle_t s_syncSemaphore = nullptr;
+static uint8_t s_ownAddrType = BLE_ADDR_PUBLIC;
+static NetworkDeviceId s_localDeviceId;
+
+// Called from the NimBLE host task once it has synced with the controller.
+static void OnSync() {
+  int rc = ble_hs_id_infer_auto(0, &s_ownAddrType);
+  if (rc != 0) {
+    jll_error("%u ble_hs_id_infer_auto failed: %d", timeMillis(), rc);
+    s_ownAddrType = BLE_ADDR_PUBLIC;
+  }
+  uint8_t rawAddr[6] = {};
+  ble_hs_id_copy_addr(s_ownAddrType, rawAddr, nullptr);
+  s_localDeviceId = NimBleAddrToNetworkDeviceId(rawAddr);
+  jll_info("%u Initialized NimBLE with local MAC address %s (type %u)", timeMillis(),
+           s_localDeviceId.toString().c_str(), s_ownAddrType);
+  if (s_syncSemaphore != nullptr) { xSemaphoreGive(s_syncSemaphore); }
+}
+
+// Called from the NimBLE host task on BLE stack reset (error recovery).
+static void OnReset(int reason) { jll_error("%u NimBLE reset, reason=%d", timeMillis(), reason); }
+
+// The NimBLE host task: runs the port event loop until stopped.
+static void NimbleHostTask(void* /*param*/) {
+  nimble_port_run();
+  nimble_port_freertos_deinit();
 }
 
 }  // namespace
@@ -67,37 +96,96 @@ void Esp32BleNetwork::UpdateState(Esp32BleNetwork::State expectedCurrentState, E
 
 void Esp32BleNetwork::StartScanning(Milliseconds currentTime) {
   ESP32_BLE_DEBUG("%u Starting scan...", currentTime);
-  UpdateState(State::kIdle, State::kStartingScan);
-  // Set scan duration to one hour so it never stops unless we request it to.
-  // For some reasons very high values do not work.
-  constexpr uint32_t kScanDurationSeconds = 3600;
-  ESP_ERROR_CHECK(esp_ble_gap_start_scanning(kScanDurationSeconds));
+  {
+    const std::lock_guard<std::mutex> lock(mutex_);
+    if (state_ != State::kIdle) {
+      jll_error("%u StartScanning called in non-idle state %s", currentTime, StateToString(state_).c_str());
+      return;
+    }
+  }
+  struct ble_gap_disc_params disc_params = {};
+  disc_params.itvl = 16000;           // 10s in 625µs units.
+  disc_params.window = 16000;         // 10s in 625µs units.
+  disc_params.filter_policy = BLE_HCI_SCAN_FILT_NO_WL;
+  disc_params.limited = 0;
+  disc_params.passive = 1;
+  disc_params.filter_duplicates = 0;
+  int rc = ble_gap_disc(s_ownAddrType, BLE_HS_FOREVER, &disc_params, &Esp32BleNetwork::GapEventCallback, nullptr);
+  if (rc != 0) {
+    jll_error("%u ble_gap_disc failed: %d", currentTime, rc);
+    return;
+  }
+  {
+    const std::lock_guard<std::mutex> lock(mutex_);
+    state_ = State::kScanning;
+  }
+  StopScanningIn(UnpredictableRandom::GetNumberBetween(500, 1000));
 }
 
 void Esp32BleNetwork::StopScanning(Milliseconds currentTime) {
   ESP32_BLE_DEBUG("%u Stopping scan...", currentTime);
   UpdateState(State::kScanning, State::kStoppingScan);
-  ESP_ERROR_CHECK(esp_ble_gap_stop_scanning());
-}
-
-void Esp32BleNetwork::StartAdvertising(Milliseconds currentTime) {
-  ESP32_BLE_DEBUG("%u StartAdvertising", currentTime);
-  UpdateState(State::kConfiguringAdvertising, State::kStartingAdvertising);
-  esp_ble_adv_params_t advParams = {};
-  advParams.adv_int_min = 0x20;
-  advParams.adv_int_max = 0x40;
-  advParams.adv_type = ADV_TYPE_IND;
-  advParams.own_addr_type = BLE_ADDR_TYPE_PUBLIC;
-  advParams.peer_addr_type = BLE_ADDR_TYPE_PUBLIC;
-  advParams.channel_map = ADV_CHNL_ALL;
-  advParams.adv_filter_policy = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY;
-  ESP_ERROR_CHECK(esp_ble_gap_start_advertising(&advParams));
+  int rc = ble_gap_disc_cancel();
+  if (rc != 0 && rc != BLE_HS_EALREADY) {
+    jll_error("%u ble_gap_disc_cancel failed: %d", currentTime, rc);
+  }
 }
 
 void Esp32BleNetwork::StopAdvertising(Milliseconds currentTime) {
   ESP32_BLE_DEBUG("%u StopAdvertising", currentTime);
   UpdateState(State::kAdvertising, State::kStoppingAdvertising);
-  ESP_ERROR_CHECK(esp_ble_gap_stop_advertising());
+  int rc = ble_gap_adv_stop();
+  if (rc != 0) { jll_error("%u ble_gap_adv_stop failed: %d", currentTime, rc); }
+}
+}
+
+void Esp32BleNetwork::StartAdvertising(Milliseconds currentTime) {
+  ESP32_BLE_DEBUG("%u StartAdvertising", currentTime);
+  {
+    const std::lock_guard<std::mutex> lock(mutex_);
+    if (state_ != State::kIdle) {
+      jll_error("%u StartAdvertising called in non-idle state %s", currentTime, StateToString(state_).c_str());
+      return;
+    }
+  }
+  // Build raw advertising payload and set it synchronously (no callback).
+  uint8_t advPayload[kMaxInnerPayloadLength + 2];
+  uint8_t innerPayloadSize = GetNextInnerPayloadToSend(&advPayload[2], kMaxInnerPayloadLength, currentTime);
+  if (innerPayloadSize > kMaxInnerPayloadLength) {
+    jll_error("%u GetNextInnerPayloadToSend returned nonsense %u", currentTime, innerPayloadSize);
+    innerPayloadSize = kMaxInnerPayloadLength;
+    memset(advPayload, 0, sizeof(advPayload));
+  }
+  advPayload[0] = 1 + innerPayloadSize;
+  advPayload[1] = kAdvType;
+  if (ESP32_BLE_DEBUG_ENABLED()) {
+    char advRawData[(2 + innerPayloadSize) * 2 + 1] = {};
+    convertToHex(advRawData, sizeof(advRawData), advPayload, 2 + innerPayloadSize);
+    ESP32_BLE_DEBUG("%u Sending adv<%u:%s>", currentTime, 2 + innerPayloadSize, advRawData);
+  }
+  int rc = ble_gap_adv_set_data(advPayload, 2 + innerPayloadSize);
+  if (rc != 0) {
+    jll_error("%u ble_gap_adv_set_data failed: %d", currentTime, rc);
+    return;
+  }
+  struct ble_gap_adv_params adv_params = {};
+  adv_params.conn_mode = BLE_GAP_CONN_MODE_UND;
+  adv_params.disc_mode = BLE_GAP_DISC_MODE_GEN;
+  adv_params.itvl_min = 0x20;  // 20ms in 625µs units.
+  adv_params.itvl_max = 0x40;  // 40ms in 625µs units.
+  adv_params.channel_map = 0;  // All channels.
+  adv_params.filter_policy = BLE_HCI_SCAN_FILT_NO_WL;
+  rc = ble_gap_adv_start(s_ownAddrType, nullptr, BLE_HS_FOREVER, &adv_params, &Esp32BleNetwork::GapEventCallback,
+                         nullptr);
+  if (rc != 0) {
+    jll_error("%u ble_gap_adv_start failed: %d", currentTime, rc);
+    return;
+  }
+  {
+    const std::lock_guard<std::mutex> lock(mutex_);
+    state_ = State::kAdvertising;
+  }
+  StopAdvertisingIn(5);
 }
 
 constexpr size_t Esp32BleNetwork::kMaxInnerPayloadLength;
