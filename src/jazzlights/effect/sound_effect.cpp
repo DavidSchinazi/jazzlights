@@ -15,12 +15,14 @@ void SoundEffect::innerBegin(const Frame& frame, SoundState* state) const {
 
   OurColorPalette ocp = palette(frame);
   state->brightestColor = CRGB::Black;
-  uint32_t maxLuma = 0;
+  uint32_t maxSaturation = 0;
   for (int i = 0; i < 256; i += 8) {
     CRGB c = colorFromOurPalette(ocp, i);
-    uint32_t luma = c.r + c.g + c.b;
-    if (luma > maxLuma) {
-      maxLuma = luma;
+    uint8_t cMax = max(c.r, max(c.g, c.b));
+    uint8_t cMin = min(c.r, min(c.g, c.b));
+    uint32_t saturation = cMax - cMin;
+    if (saturation > maxSaturation) {
+      maxSaturation = saturation;
       state->brightestColor = c;
     }
   }
@@ -146,9 +148,16 @@ ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, So
 
   if (sparkleChance > 0 &&
       frame.predictableRandom->GetRandomNumberBetween(0, 5000) < static_cast<int32_t>(sparkleChance)) {
+    /*
+    Remove the pure white case — replace color = CRGB::White with a brightened version of the existing color, e.g.
+    color.maximizeBrightness() or just remove that branch entirely. Reduce the gray overlay — change CRGB(128, 128, 128)
+    to something smaller like CRGB(64, 64, 64) or remove it entirely and just boost barBrightness. Reduce sparkle
+    frequency — lower the multiplier 10000.0f on line 144 or raise the thresholds (0.5f volume, 0.05f transient, 0.2f
+    normalizedMag`).
+    */
     // Brighten or flash white
     if (frame.predictableRandom->GetRandomByte() > 128) {
-      color = CRGB::White;
+      color.maximizeBrightness();  // Was CRGB::White - now a brightened version of the existing color
     } else {
       color += CRGB(128, 128, 128);  // Was 64
     }
