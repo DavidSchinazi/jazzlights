@@ -116,7 +116,9 @@ void SetupPrimaryRunLoop() {
 #endif  // JL_ETHERNET
 #if JL_IS_CONFIG(ORRERY_PLANET)
   OrreryPlanet::Get()->Setup(player);
-#endif  // JL_IS_CONFIG(ORRERY_PLANET)
+#elif JL_IS_CONFIG(ORRERY_LEADER)
+  OrreryLeader::Get()->Setup(player);
+#endif  // ORRERY
   player.begin();
 
   GetUi()->FinalSetup();

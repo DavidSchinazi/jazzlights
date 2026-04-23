@@ -66,6 +66,37 @@ OrreryLeader* OrreryLeader::Get() {
   return &sOrreryLeader;
 }
 
+void OrreryLeader::Setup(Player& player) {
+  player_ = &player;
+  player_->SetOverriddenPatternWatcher(this);
+}
+
+void OrreryLeader::OnOverriddenPattern(std::optional<PatternBits> pattern) {
+  if (pattern == patternOverride_) { return; }
+  patternOverride_ = pattern;
+  if (patternOverride_.has_value()) {
+    jll_info("%u OrreryLeader overriding pattern with 0x%08x", timeMillis(), *patternOverride_);
+    for (int i = 0; i < kNumPlanets; i++) {
+      Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
+      patternBeforeOverride_[planet] = GetLedPattern(planet);
+    }
+    SetLedPattern(Planet::All, *patternOverride_);
+  } else {
+    jll_info("%u OrreryLeader disabling pattern override", timeMillis());
+    for (int i = 0; i < kNumPlanets; i++) {
+      std::optional<uint32_t> ledPattern;
+      Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
+      auto it = patternBeforeOverride_.find(planet);
+      if (it != patternBeforeOverride_.end()) { ledPattern = it->second; }
+      if (ledPattern.has_value()) {
+        SetLedPattern(planet, *ledPattern);
+      } else {
+        SetLedPattern(planet, kPlanetPattern);
+      }
+    }
+  }
+}
+
 OrreryLeader::OrreryLeader()
     : bootId_(UnpredictableRandom::Get32bits()),
       max485BusLeader_(UART_NUM_2, kMax485TxPin, kMax485RxPin),
@@ -301,6 +332,7 @@ uint8_t OrreryLeader::GetBrightness(Planet planet) const {
 }
 
 void OrreryLeader::SetLedPattern(Planet planet, uint32_t ledPattern) {
+  if (patternOverride_.has_value()) { ledPattern = *patternOverride_; }
   if (planet == Planet::All) {
     jll_info("%u OrreryLeader setting all planets LED pattern to 0x%08" PRIx32, timeMillis(), ledPattern);
     OrreryMessage msg;

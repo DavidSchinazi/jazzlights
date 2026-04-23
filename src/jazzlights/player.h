@@ -133,6 +133,15 @@ class Player {
 #elif JL_IS_CONFIG(ORRERY_PLANET)
   void SetPlanetPattern(PatternBits planetPattern) { planetPattern_ = planetPattern; }
   PatternBits GetPlanetPattern() const { return planetPattern_; }
+#elif JL_IS_CONFIG(ORRERY_LEADER)
+  class OverriddenPatternWatcher {
+   public:
+    virtual ~OverriddenPatternWatcher() = default;
+    virtual void OnOverriddenPattern(std::optional<PatternBits> pattern) = 0;
+  };
+  void SetOverriddenPatternWatcher(OverriddenPatternWatcher* overriddenPatternWatcher) {
+    overriddenPatternWatcher_ = overriddenPatternWatcher;
+  }
 #endif
 
   class NumLedWritesGetter {
@@ -144,6 +153,7 @@ class Player {
 
  private:
   void UpdateStatusWatcher();
+  void UpdateOverriddenPatternWatcher(Precedence precedence);
   void handleReceivedMessage(NetworkMessage message, Milliseconds currentTime);
 
   Precedence getLocalPrecedence(Milliseconds currentTime);
@@ -199,6 +209,8 @@ class Player {
   CRGB color_override_;
 #elif JL_IS_CONFIG(CREATURE) || JL_IS_CONFIG(ORRERY_PLANET)
   bool creatureIsFollowingNonCreature_ = false;
+#elif JL_IS_CONFIG(ORRERY_LEADER)
+  OverriddenPatternWatcher* overriddenPatternWatcher_ = nullptr;
 #endif
 
 #if JL_IS_CONFIG(ORRERY_PLANET)

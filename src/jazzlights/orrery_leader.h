@@ -10,6 +10,7 @@
 
 #include "jazzlights/network/max485_bus.h"
 #include "jazzlights/orrery_common.h"
+#include "jazzlights/player.h"
 #include "jazzlights/ui/gpio_button.h"
 #include "jazzlights/util/time.h"
 
@@ -34,9 +35,10 @@ enum class OrreryScene {
 
 const char* OrrerySceneToString(OrreryScene scene);
 
-class OrreryLeader : public GpioSwitchInterface {
+class OrreryLeader : public GpioSwitchInterface, public Player::OverriddenPatternWatcher {
  public:
   static OrreryLeader* Get();
+  void Setup(Player& player);
   void SetScene(OrreryScene scene);
   OrreryScene GetScene() const { return scene_; }
   void SetSpeed(Planet planet, int32_t speed);
@@ -57,6 +59,9 @@ class OrreryLeader : public GpioSwitchInterface {
 
   // From GpioSwitchInterface.
   void StateChanged(uint8_t pin, bool isClosed) override;
+
+  // From Player::OverriddenPatternWatcher.
+  void OnOverriddenPattern(std::optional<PatternBits> pattern) override;
 
   std::optional<Milliseconds> GetLastHeardTime(Planet planet) const;
   std::optional<Milliseconds> GetMaxRtt(Planet planet) const;
@@ -86,6 +91,9 @@ class OrreryLeader : public GpioSwitchInterface {
   GpioSwitchLow switch3_;
   GpioSwitchLow switch4_;
   bool waitingForAlignment_ = false;
+  Player* player_ = nullptr;
+  std::optional<PatternBits> patternOverride_;
+  std::unordered_map<Planet, PatternBits> patternBeforeOverride_;
 };
 
 }  // namespace jazzlights

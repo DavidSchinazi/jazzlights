@@ -603,6 +603,18 @@ void Player::UpdateStatusWatcher() {
 #endif  // CLOUDS
 }
 
+void Player::UpdateOverriddenPatternWatcher(Precedence precedence) {
+#if JL_IS_CONFIG(ORRERY_LEADER)
+  if (overriddenPatternWatcher_ != nullptr) {
+    if (precedence >= OverridePrecedence()) {
+      overriddenPatternWatcher_->OnOverriddenPattern(currentPattern_);
+    } else {
+      overriddenPatternWatcher_->OnOverriddenPattern(std::nullopt);
+    }
+  }
+#endif  // JL_IS_CONFIG(ORRERY_LEADER)
+}
+
 #if JL_IS_CONFIG(CLOUDS)
 void Player::CloudNext(Milliseconds currentTime) {
   set_enabled(true);
@@ -791,6 +803,7 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
     jll_player_info("%u Switching leader from " DEVICE_ID_FMT " to " DEVICE_ID_FMT, currentTime,
                     DEVICE_ID_HEX(currentLeader_), DEVICE_ID_HEX(originator));
     currentLeader_ = originator;
+    UpdateOverriddenPatternWatcher(precedence);
   }
 
   Milliseconds lastOriginationTime;
@@ -800,9 +813,9 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
     // Creatures only follow non-creatures if they have override enabled.
     const bool newCreatureIsFollowingNonCreature = precedence >= OverridePrecedence();
     if (creatureIsFollowingNonCreature_ != newCreatureIsFollowingNonCreature) {
-      jll_info("%u now %s because " DEVICE_ID_FMT " has low precedence %u", currentTime,
+      jll_info("%u now %s because " DEVICE_ID_FMT " has precedence %u %s override limit %u", currentTime,
                (creatureIsFollowingNonCreature_ ? "creatureFollowing" : "creatureIgnoring"), DEVICE_ID_HEX(originator),
-               precedence);
+               precedence, (creatureIsFollowingNonCreature_ ? "below" : "above"), OverridePrecedence());
     }
     creatureIsFollowingNonCreature_ = newCreatureIsFollowingNonCreature;
 #endif  // CREATURE
@@ -834,6 +847,7 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
       printInstrumentationInfo(currentTime);
       lastLEDWriteTime_ = -1;
       shouldBeginPattern_ = true;
+      UpdateOverriddenPatternWatcher(precedence);
     }
   } else {
     // We are currently leading.
@@ -1114,6 +1128,7 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
                         changesStr.c_str(), message.receiptDetails.c_str());
         if (followedUpdate) { printInstrumentationInfo(currentTime); }
       }
+      UpdateOverriddenPatternWatcher(entry->precedence);
     } else {
       jll_debug("%u Rejecting %s update from " DEVICE_ID_FMT ".p%u via " DEVICE_ID_FMT
                 ".%s because we are following " DEVICE_ID_FMT ".%s",
