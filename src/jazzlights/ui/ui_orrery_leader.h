@@ -46,6 +46,7 @@ class OrreryLeaderUi : public Esp32Ui {
   void UpdateMotorDirectionButton();
   void UpdateMotorPositionButton();
   void UpdateMotorCurrentPositionButton();
+  void UpdateMotorCurrentSpeedButton();
   void UpdateMotorCalibrationButton();
   void DrawSpeedDisplayButton(TouchButton* button, int outline, int fill, int textColor);
   void HideAll();
@@ -68,6 +69,7 @@ class OrreryLeaderUi : public Esp32Ui {
   TouchButton* motorDirectionButton_ = nullptr;
   TouchButton* motorPositionButton_ = nullptr;
   TouchButton* motorCurrentPositionButton_ = nullptr;
+  TouchButton* motorCurrentSpeedButton_ = nullptr;
   TouchButton* motorCalibrationButton_ = nullptr;
   TouchButton* motorSpeedButton_ = nullptr;
   TouchButton* planetHalfButton_ = nullptr;

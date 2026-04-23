@@ -41,6 +41,7 @@ class OrreryLeader : public GpioSwitchInterface {
   OrreryScene GetScene() const { return scene_; }
   void SetSpeed(Planet planet, int32_t speed);
   int32_t GetSpeed(Planet planet) const;
+  std::optional<int32_t> GetReportedSpeed(Planet planet) const;
   void SetPosition(Planet planet, std::optional<uint32_t> position);
   std::optional<uint32_t> GetPosition(Planet planet) const;
   std::optional<uint32_t> GetTargetPosition(Planet planet) const;

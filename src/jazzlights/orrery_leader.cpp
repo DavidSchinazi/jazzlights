@@ -209,6 +209,13 @@ int32_t OrreryLeader::GetSpeed(Planet planet) const {
   return 0;
 }
 
+std::optional<int32_t> OrreryLeader::GetReportedSpeed(Planet planet) const {
+  if (planet == Planet::All) { planet = Planet::Mercury; }
+  auto it = responses_.find(planet);
+  if (it != responses_.end()) { return it->second.speed; }
+  return std::nullopt;
+}
+
 void OrreryLeader::SetPosition(Planet planet, std::optional<uint32_t> position) {
   if (planet == Planet::All) {
     if (position.has_value()) {
