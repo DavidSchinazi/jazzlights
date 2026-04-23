@@ -9,7 +9,9 @@
 namespace jazzlights {
 namespace {
 
-#if JL_IS_CONFIG(GAUNTLET)
+#if JL_AUDIO_VISUALIZER
+Matrix pixels(/*w=*/50, /*h=*/1);
+#elif JL_IS_CONFIG(GAUNTLET)
 Matrix pixels(/*w=*/20, /*h=*/15);
 #endif  // GAUNTLET
 
