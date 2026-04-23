@@ -59,12 +59,14 @@ class OrreryLeader : public GpioSwitchInterface {
   void HandleSwitch1(bool isClosed);
   void HandleSwitch4(bool isClosed);
   OrreryScene scene_;
+  Milliseconds sceneStartTime_;
   const uint32_t bootId_;
   uint32_t nextSequenceNumber_ = 0;
   std::unordered_map<Planet, OrreryMessage> messages_;
   std::unordered_map<Planet, OrreryMessage> responses_;
   std::unordered_map<Planet, Milliseconds> lastHeardTime_;
   std::unordered_map<Planet, Milliseconds> maxRtt_;
+  std::unordered_map<Planet, bool> hasPassedHalfway_;
   Max485BusLeader max485BusLeader_;
   GpioSwitchLow switch1_;
   GpioSwitchLow switch3_;

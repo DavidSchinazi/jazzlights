@@ -61,7 +61,8 @@ OrreryLeader::OrreryLeader()
       switch1_(kSwitch1Pin, *this),
       switch3_(kSwitch3Pin, *this),
       switch4_(kSwitch4Pin, *this),
-      scene_(OrreryScene::Paused) {
+      scene_(OrreryScene::Paused),
+      sceneStartTime_(timeMillis()) {
   for (int i = 0; i < kNumPlanets; i++) {
     Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
     OrreryMessage& msg = messages_[planet];
@@ -81,6 +82,7 @@ OrreryLeader::OrreryLeader()
 
 void OrreryLeader::SetScene(OrreryScene scene) {
   scene_ = scene;
+  sceneStartTime_ = timeMillis();
   jll_info("OrreryLeader setting scene to %s", OrrerySceneToString(scene));
   if (scene == OrreryScene::Paused) {
     SetSpeed(Planet::All, 0);
@@ -108,6 +110,7 @@ void OrreryLeader::SetScene(OrreryScene scene) {
     }
   } else if (scene == OrreryScene::Align) {
     waitingForAlignment_ = true;
+    hasPassedHalfway_.clear();
     SetPosition(Planet::All, 0);
     for (int i = 0; i < kNumPlanetsWithoutSun; i++) {
       Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
@@ -334,36 +337,59 @@ void OrreryLeader::RunLoop(Milliseconds currentTime) {
     }
   }
 
-  if (scene_ == OrreryScene::Align && waitingForAlignment_) {
-    bool allArrived = true;
-    for (int i = 0; i < kNumPlanetsWithoutSun; i++) {
-      Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
-      auto itHeard = lastHeardTime_.find(planet);
-      if (itHeard == lastHeardTime_.end() || currentTime - itHeard->second > 10000) {
-        // Consider arrived if we haven't heard from it for 10s.
-        continue;
-      }
-      auto it = responses_.find(planet);
-      if (it == responses_.end()) {
-        // Consider arrived if we've never heard from it.
-        continue;
-      }
-      const OrreryMessage& resp = it->second;
-      bool atZero = false;
-      if (resp.position.has_value()) {
+  if (scene_ == OrreryScene::Silly && currentTime - sceneStartTime_ > 5 * 60 * 1000) {
+    jll_info("%u Silly scene ending after 5 minutes, starting Realistic scene", currentTime);
+    SetScene(OrreryScene::Realistic);
+  }
+
+  if (scene_ == OrreryScene::Align) {
+    if (waitingForAlignment_) {
+      bool allArrived = true;
+      for (int i = 0; i < kNumPlanetsWithoutSun; i++) {
+        Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
+        auto itHeard = lastHeardTime_.find(planet);
+        if (itHeard == lastHeardTime_.end() || currentTime - itHeard->second > 10000) { continue; }
+        auto itResp = responses_.find(planet);
+        if (itResp == responses_.end()) { continue; }
+        const OrreryMessage& resp = itResp->second;
+        if (!resp.position.has_value()) { continue; }
+        bool atZero = false;
         uint32_t pos = *resp.position;
         if (pos < 4000 || pos > 356000) { atZero = true; }
+        if (!atZero || !resp.speed.has_value() || *resp.speed > 10) {
+          allArrived = false;
+          break;
+        }
       }
-      if (!atZero || !resp.speed.has_value() || *resp.speed > 10) {
-        allArrived = false;
-        break;
+      if (allArrived) {
+        jll_info("%u Planets have aligned, starting one revolution", currentTime);
+        waitingForAlignment_ = false;
+        SetPosition(Planet::All, std::nullopt);
+        SetSpeed(Planet::All, 1000);
+        hasPassedHalfway_.clear();
       }
-    }
-    if (allArrived) {
-      jll_info("%u Planets have aligned", timeMillis());
-      waitingForAlignment_ = false;
-      SetPosition(Planet::All, std::nullopt);
-      SetSpeed(Planet::All, 1000);
+    } else {
+      bool allRevolutionCompleted = true;
+      for (int i = 0; i < kNumPlanetsWithoutSun; i++) {
+        Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
+        auto itHeard = lastHeardTime_.find(planet);
+        if (itHeard == lastHeardTime_.end() || currentTime - itHeard->second > 10000) { continue; }
+        auto itResp = responses_.find(planet);
+        if (itResp == responses_.end()) { continue; }
+        const OrreryMessage& resp = itResp->second;
+        if (!resp.position.has_value()) { continue; }
+        const uint32_t pos = *resp.position;
+        if (!hasPassedHalfway_[planet]) {
+          if (pos > 180000 && pos < 350000) { hasPassedHalfway_[planet] = true; }
+          allRevolutionCompleted = false;
+        } else {
+          if (pos > 10000) { allRevolutionCompleted = false; }
+        }
+      }
+      if (allRevolutionCompleted) {
+        jll_info("%u All planets have completed one revolution, starting Realistic scene", currentTime);
+        SetScene(OrreryScene::Realistic);
+      }
     }
   }
 }
