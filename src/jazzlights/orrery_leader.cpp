@@ -108,7 +108,7 @@ void OrreryLeader::SetScene(OrreryScene scene) {
   } else {
     nextRandomSceneDuration_ = 0;
   }
-  jll_info("OrreryLeader setting scene to %s", OrrerySceneToString(scene));
+  jll_info("%u OrreryLeader setting scene to %s", sceneStartTime_, OrrerySceneToString(scene));
   if (scene == OrreryScene::Paused) {
     SetSpeed(Planet::All, 0);
   } else if (scene == OrreryScene::Realistic || scene == OrreryScene::Silly || scene == OrreryScene::FocusMercury ||
@@ -182,7 +182,7 @@ void OrreryLeader::SetScene(OrreryScene scene) {
 
 void OrreryLeader::SetSpeed(Planet planet, int32_t speed) {
   if (planet == Planet::All) {
-    jll_info("OrreryLeader setting all planets milli-RPM to %" PRId32, speed);
+    jll_info("%u OrreryLeader setting all planets milli-RPM to %" PRId32, timeMillis(), speed);
     OrreryMessage msg;
     msg.speed = speed;
     SendBroadcastMessage(msg);
@@ -196,7 +196,7 @@ void OrreryLeader::SetSpeed(Planet planet, int32_t speed) {
     OrreryMessage& msg = it->second;
     if (!msg.speed.has_value() || *msg.speed != speed) {
       msg.speed = speed;
-      jll_info("OrreryLeader setting planet %s milli-RPM to %" PRId32, GetPlanetName(planet), speed);
+      jll_info("%u OrreryLeader setting planet %s milli-RPM to %" PRId32, timeMillis(), GetPlanetName(planet), speed);
       SendMessage(planet);
     }
   }
@@ -212,9 +212,9 @@ int32_t OrreryLeader::GetSpeed(Planet planet) const {
 void OrreryLeader::SetPosition(Planet planet, std::optional<uint32_t> position) {
   if (planet == Planet::All) {
     if (position.has_value()) {
-      jll_info("OrreryLeader setting all planets position to %" PRIu32, *position);
+      jll_info("%u OrreryLeader setting all planets position to %" PRIu32, timeMillis(), *position);
     } else {
-      jll_info("OrreryLeader unsetting all planets position");
+      jll_info("%u OrreryLeader unsetting all planets position", timeMillis());
     }
     OrreryMessage msg;
     msg.position = position.has_value() ? *position : kOrreryPositionNone;
@@ -231,9 +231,10 @@ void OrreryLeader::SetPosition(Planet planet, std::optional<uint32_t> position) 
     if (msg.position != wirePosition) {
       msg.position = wirePosition;
       if (position.has_value()) {
-        jll_info("OrreryLeader setting planet %s position to %" PRIu32, GetPlanetName(planet), *position);
+        jll_info("%u OrreryLeader setting planet %s position to %" PRIu32, timeMillis(), GetPlanetName(planet),
+                 *position);
       } else {
-        jll_info("OrreryLeader unsetting planet %s position", GetPlanetName(planet));
+        jll_info("%u OrreryLeader unsetting planet %s position", timeMillis(), GetPlanetName(planet));
       }
       SendMessage(planet);
     }
@@ -265,7 +266,7 @@ std::optional<uint32_t> OrreryLeader::GetCalibration(Planet planet) const {
 
 void OrreryLeader::SetBrightness(Planet planet, uint8_t brightness) {
   if (planet == Planet::All) {
-    jll_info("OrreryLeader setting all planets brightness to %u", brightness);
+    jll_info("%u OrreryLeader setting all planets brightness to %u", timeMillis(), brightness);
     OrreryMessage msg;
     msg.ledBrightness = brightness;
     SendBroadcastMessage(msg);
@@ -279,7 +280,7 @@ void OrreryLeader::SetBrightness(Planet planet, uint8_t brightness) {
     OrreryMessage& msg = it->second;
     if (!msg.ledBrightness.has_value() || *msg.ledBrightness != brightness) {
       msg.ledBrightness = brightness;
-      jll_info("OrreryLeader setting planet %s brightness to %u", GetPlanetName(planet), brightness);
+      jll_info("%u OrreryLeader setting planet %s brightness to %u", timeMillis(), GetPlanetName(planet), brightness);
       SendMessage(planet);
     }
   }
@@ -294,7 +295,7 @@ uint8_t OrreryLeader::GetBrightness(Planet planet) const {
 
 void OrreryLeader::SetLedPattern(Planet planet, uint32_t ledPattern) {
   if (planet == Planet::All) {
-    jll_info("OrreryLeader setting all planets LED pattern to 0x%08" PRIx32, ledPattern);
+    jll_info("%u OrreryLeader setting all planets LED pattern to 0x%08" PRIx32, timeMillis(), ledPattern);
     OrreryMessage msg;
     msg.ledPattern = ledPattern;
     SendBroadcastMessage(msg);
@@ -308,7 +309,8 @@ void OrreryLeader::SetLedPattern(Planet planet, uint32_t ledPattern) {
     OrreryMessage& msg = it->second;
     if (!msg.ledPattern.has_value() || *msg.ledPattern != ledPattern) {
       msg.ledPattern = ledPattern;
-      jll_info("OrreryLeader setting planet %s LED pattern to 0x%08" PRIx32, GetPlanetName(planet), ledPattern);
+      jll_info("%u OrreryLeader setting planet %s LED pattern to 0x%08" PRIx32, timeMillis(), GetPlanetName(planet),
+               ledPattern);
       SendMessage(planet);
     }
   }
