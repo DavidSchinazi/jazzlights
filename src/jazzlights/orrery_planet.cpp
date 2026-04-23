@@ -126,9 +126,20 @@ void OrreryPlanet::IncrementStepCount() {
 }
 
 void OrreryPlanet::HandleHallSensorChange(uint8_t pin, bool isClosed, Milliseconds timeOfChange) {
-  jll_info("%u Hall sensor at pin %d is now %s", timeOfChange, static_cast<int>(pin), (isClosed ? "closed" : "open"));
   PlanetEffect::Get()->SetHallSensorClosed(isClosed);
+  bool isBorder = false;
   if (isClosed) {
+    if (roundedSpeed_ > 10.0f) { isBorder = true; }
+    if (timeHallSensorLastOpened_.has_value()) { lastOpenDuration_ = timeOfChange - *timeHallSensorLastOpened_; }
+    timeHallSensorLastClosed_ = timeOfChange;
+  } else {
+    if (roundedSpeed_ < -10.0f) { isBorder = true; }
+    if (timeHallSensorLastClosed_.has_value()) { lastClosedDuration_ = timeOfChange - *timeHallSensorLastClosed_; }
+    timeHallSensorLastOpened_ = timeOfChange;
+  }
+  jll_info("%u Hall sensor at pin %d is now %s, %sborder", timeOfChange, static_cast<int>(pin),
+           (isClosed ? "closed" : "open"), (isBorder ? "" : "not "));
+  if (isBorder) {
     IncrementStepCount();
     if (ignoreNextCalibration_) {
       ignoreNextCalibration_ = false;
@@ -164,11 +175,6 @@ void OrreryPlanet::HandleHallSensorChange(uint8_t pin, bool isClosed, Millisecon
       }
       currentSteps_ = 0;
     }
-    if (timeHallSensorLastOpened_.has_value()) { lastOpenDuration_ = timeOfChange - *timeHallSensorLastOpened_; }
-    timeHallSensorLastClosed_ = timeOfChange;
-  } else {
-    if (timeHallSensorLastClosed_.has_value()) { lastClosedDuration_ = timeOfChange - *timeHallSensorLastClosed_; }
-    timeHallSensorLastOpened_ = timeOfChange;
   }
 }
 
@@ -195,24 +201,26 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
     } else if (targetPosition_.has_value()) {
       const float targetSteps = (*targetPosition_ / 360000.0f) * stepsPerRev_;
       float stepsToGo = targetSteps - positionalSteps_;
-      while (stepsToGo < (-stepsPerRev_ / 100.0f)) { stepsToGo += stepsPerRev_; }
+      if (actualSpeed_ < 0) { stepsToGo = -stepsToGo; }
+      while (stepsToGo < (-stepsPerRev_ / 72.0f)) { stepsToGo += stepsPerRev_; }
+      while (stepsToGo > (stepsPerRev_ - (stepsPerRev_ / 72.0f))) { stepsToGo -= stepsPerRev_; }
 
       static Milliseconds lastLogTime = -1;
       if (lastLogTime < 0 || currentTime - lastLogTime > 1000) {
         lastLogTime = currentTime;
-        jll_info("%u targetSteps %f currentSteps %f positionalSteps %f stepsToGo %f actualSpeed_ %f", currentTime,
-                 targetSteps, currentSteps_, positionalSteps_, stepsToGo, actualSpeed_);
+        jll_info("%u targetSteps %f currentSteps %f positionalSteps %f stepsToGo %f actualSpeed %f stepsPerRev %f",
+                 currentTime, targetSteps, currentSteps_, positionalSteps_, stepsToGo, actualSpeed_, stepsPerRev_);
       }
 
-      if (stepsToGo < (stepsPerRev_ / 100.0f) && std::abs(actualSpeed_) < 10.0f) {
+      if (stepsToGo < (stepsPerRev_ / 72.0f) && std::abs(actualSpeed_) < 10.0f) {
         effectiveRequestedSpeed = 0;
         actualSpeed_ = 0;
         arrivedAtTarget_ = true;
         jll_info(
             "%u Planet %s arrived at target position %lu targetSteps %f currentSteps %f positionalSteps %f "
-            "stepsToGo %f actualSpeed %f",
+            "stepsToGo %f actualSpeed %f stepsPerRev %f",
             currentTime, GetPlanetName(static_cast<Planet>(busId_)), *targetPosition_, targetSteps, currentSteps_,
-            positionalSteps_, stepsToGo, actualSpeed_);
+            positionalSteps_, stepsToGo, actualSpeed_, stepsPerRev_);
 
       } else {
         // Distance to stop at current deceleration (250 steps/s^2) is v^2 / 500.
@@ -221,8 +229,11 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
         static Milliseconds lastLogTime3 = -1;
         if (lastLogTime3 < 0 || currentTime - lastLogTime3 > 1000) {
           lastLogTime3 = currentTime;
-          jll_info("%u targetSteps %f currentSteps %f positionalSteps %f stepsToGo %f actualSpeed_ %f stop_distance %f",
-                   currentTime, targetSteps, currentSteps_, positionalSteps_, stepsToGo, actualSpeed_, stop_distance);
+          jll_info(
+              "%u targetSteps %f currentSteps %f positionalSteps %f stepsToGo %f actualSpeed_ %f stop_distance %f "
+              "stepsPerRev %f",
+              currentTime, targetSteps, currentSteps_, positionalSteps_, stepsToGo, actualSpeed_, stop_distance,
+              stepsPerRev_);
         }
         if (stepsToGo <= stop_distance) { effectiveRequestedSpeed = 0; }
       }
