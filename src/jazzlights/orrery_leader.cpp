@@ -5,6 +5,7 @@
 #include <cinttypes>
 #include <cstdio>
 #include <cstring>
+#include <vector>
 
 #include "jazzlights/motor.h"
 #include "jazzlights/network/max485_bus.h"
@@ -72,7 +73,9 @@ OrreryLeader::OrreryLeader()
       switch3_(kSwitch3Pin, *this),
       switch4_(kSwitch4Pin, *this),
       scene_(OrreryScene::Paused),
-      sceneStartTime_(timeMillis()) {
+      sceneStartTime_(timeMillis()),
+      lastRandomSceneTime_(0),
+      nextRandomSceneDuration_(0) {
   for (int i = 0; i < kNumPlanets; i++) {
     Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
     OrreryMessage& msg = messages_[planet];
@@ -93,6 +96,18 @@ OrreryLeader::OrreryLeader()
 void OrreryLeader::SetScene(OrreryScene scene) {
   scene_ = scene;
   sceneStartTime_ = timeMillis();
+  if (scene == OrreryScene::Realistic) {
+    if (!switch3_.IsClosed()) {
+      lastRandomSceneTime_ = sceneStartTime_;
+      nextRandomSceneDuration_ = (UnpredictableRandom::GetNumberBetween(2 * 60, 10 * 60)) * 1000;
+      jll_info("%u OrreryLeader scheduling random scene in %u seconds", sceneStartTime_,
+               nextRandomSceneDuration_ / 1000);
+    } else {
+      nextRandomSceneDuration_ = 0;
+    }
+  } else {
+    nextRandomSceneDuration_ = 0;
+  }
   jll_info("OrreryLeader setting scene to %s", OrrerySceneToString(scene));
   if (scene == OrreryScene::Paused) {
     SetSpeed(Planet::All, 0);
@@ -378,6 +393,15 @@ void OrreryLeader::RunLoop(Milliseconds currentTime) {
     }
   }
 
+  if (scene_ == OrreryScene::Realistic && nextRandomSceneDuration_ > 0 &&
+      currentTime - lastRandomSceneTime_ > nextRandomSceneDuration_) {
+    const std::vector<OrreryScene> repertoire = {OrreryScene::Silly, OrreryScene::MercuryRetrograde,
+                                                 OrreryScene::Align};
+    OrreryScene nextScene = repertoire[UnpredictableRandom::GetNumberBetween(0, repertoire.size() - 1)];
+    jll_info("%u Randomly selecting next scene %s", currentTime, OrrerySceneToString(nextScene));
+    SetScene(nextScene);
+  }
+
   if (scene_ == OrreryScene::Silly && currentTime - sceneStartTime_ > 5 * 60 * 1000) {
     jll_info("%u Silly scene ending after 5 minutes, starting Realistic scene", currentTime);
     SetScene(OrreryScene::Realistic);
@@ -453,12 +477,25 @@ void OrreryLeader::StateChanged(uint8_t pin, bool isClosed) {
   jll_info("%u switch on pin %u is now %s", timeMillis(), pin, (isClosed ? "closed" : "open"));
   if (pin == kSwitch1Pin) {
     HandleSwitch1(isClosed);
+  } else if (pin == kSwitch3Pin) {
+    HandleSwitch3(isClosed);
   } else if (pin == kSwitch4Pin) {
     HandleSwitch4(isClosed);
   }
 }
 
 void OrreryLeader::HandleSwitch1(bool isClosed) { SetScene(isClosed ? OrreryScene::Paused : OrreryScene::Realistic); }
+
+void OrreryLeader::HandleSwitch3(bool isClosed) {
+  if (!isClosed && scene_ == OrreryScene::Realistic) {
+    lastRandomSceneTime_ = timeMillis();
+    nextRandomSceneDuration_ = (UnpredictableRandom::GetNumberBetween(2 * 60, 10 * 60)) * 1000;
+    jll_info("%u OrreryLeader scheduling random scene in %u seconds", lastRandomSceneTime_,
+             nextRandomSceneDuration_ / 1000);
+  } else {
+    nextRandomSceneDuration_ = 0;
+  }
+}
 
 void OrreryLeader::HandleSwitch4(bool isClosed) {
   for (int i = 0; i < kNumPlanets; i++) {
