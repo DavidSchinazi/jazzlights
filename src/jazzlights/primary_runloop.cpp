@@ -82,7 +82,11 @@ void SetupPrimaryRunLoop() {
 
   AddLedsToRunner(&runner);
 
-#if JL_IS_CONFIG(CLOUDS)
+#if JL_AUDIO_VISUALIZER
+  // Ensures creatures follow the sound reactive dome.
+  player.setBasePrecedence(kCreatureOverridePrecedence);
+  player.setPrecedenceGain(0);
+#elif JL_IS_CONFIG(CLOUDS)
 #if !JL_DEV
   player.setBasePrecedence(6000);
   player.setPrecedenceGain(100);

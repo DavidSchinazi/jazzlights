@@ -606,7 +606,7 @@ void Player::UpdateStatusWatcher() {
 void Player::UpdateOverriddenPatternWatcher(Precedence precedence) {
 #if JL_IS_CONFIG(ORRERY_LEADER)
   if (overriddenPatternWatcher_ != nullptr) {
-    if (precedence >= OverridePrecedence()) {
+    if (precedence >= kDefaultOverridePrecedence) {
       overriddenPatternWatcher_->OnOverriddenPattern(currentPattern_);
     } else {
       overriddenPatternWatcher_->OnOverriddenPattern(std::nullopt);
