@@ -97,6 +97,7 @@ class OrreryLeaderUi : public Esp32Ui {
     Full,
     Half,
     Hall,
+    Green,
   };
   PlanetPatternMode planetPatternMode_ = PlanetPatternMode::Full;
   OrreryScene lastScene_ = static_cast<OrreryScene>(-1);
