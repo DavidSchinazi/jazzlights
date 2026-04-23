@@ -19,7 +19,7 @@ constexpr int kRssiMax = 20;
 static_assert(kRssiMax > kRssiCeiling, "unexpected RSSI");
 constexpr int kRssiNearbyThresholdUp = -69;
 constexpr int kRssiNearbyThresholdDown = -75;
-constexpr uint32_t kMinCreaturesForAParty = 3;  // Minimum number of creatures to trigger a party.
+constexpr uint32_t kMinCreaturesForAParty = 2;  // Minimum number of creatures to trigger a party.
 
 uint32_t ColorHash(uint32_t color) {
   // Allows sorting colors in a way that isn't trivially predictable by humans.
