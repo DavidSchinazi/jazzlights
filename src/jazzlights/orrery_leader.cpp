@@ -55,6 +55,7 @@ const char* OrrerySceneToString(OrreryScene scene) {
     case OrreryScene::FocusUranus: return "FocusUranus";
     case OrreryScene::FocusNeptune: return "FocusNeptune";
     case OrreryScene::FocusSun: return "FocusSun";
+    case OrreryScene::MercuryRetrograde: return "MercuryRetrograde";
   }
   return "Unknown";
 }
@@ -99,7 +100,7 @@ void OrreryLeader::SetScene(OrreryScene scene) {
              scene == OrreryScene::FocusVenus || scene == OrreryScene::FocusEarth || scene == OrreryScene::FocusMars ||
              scene == OrreryScene::FocusJupiter || scene == OrreryScene::FocusSaturn ||
              scene == OrreryScene::FocusUranus || scene == OrreryScene::FocusNeptune ||
-             scene == OrreryScene::FocusSun) {
+             scene == OrreryScene::FocusSun || scene == OrreryScene::MercuryRetrograde) {
     // These values are based on the real speeds of the planets with a log scale applied.
     // RPM = 670.163 * log10(realSpeed) + 5419.638
     struct PlanetSpeed {
@@ -119,9 +120,10 @@ void OrreryLeader::SetScene(OrreryScene scene) {
     for (size_t i = 0; i < sizeof(speeds) / sizeof(speeds[0]); i++) {
       int32_t speed = speeds[i].speed;
       if (scene == OrreryScene::Silly && (i % 2) == 1) { speed = -speed; }
+      if (scene == OrreryScene::MercuryRetrograde && speeds[i].planet == Planet::Mercury) { speed = -speed; }
       SetSpeed(speeds[i].planet, speed);
     }
-    if (scene != OrreryScene::Realistic && scene != OrreryScene::Silly) {
+    if (scene != OrreryScene::Realistic && scene != OrreryScene::Silly && scene != OrreryScene::MercuryRetrograde) {
       Planet focusedPlanet = Planet::All;
       if (scene == OrreryScene::FocusMercury) {
         focusedPlanet = Planet::Mercury;
@@ -387,6 +389,11 @@ void OrreryLeader::RunLoop(Milliseconds currentTime) {
       currentTime - sceneStartTime_ > 60 * 1000) {
     jll_info("%u Focus scene ending after 1 minute, starting Realistic scene", currentTime);
     SetBrightness(Planet::All, kDefaultPlanetBrightness);
+    SetScene(OrreryScene::Realistic);
+  }
+
+  if (scene_ == OrreryScene::MercuryRetrograde && currentTime - sceneStartTime_ > 60 * 1000) {
+    jll_info("%u MercuryRetrograde scene ending after 1 minute, starting Realistic scene", currentTime);
     SetScene(OrreryScene::Realistic);
   }
 

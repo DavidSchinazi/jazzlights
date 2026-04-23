@@ -105,12 +105,18 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
   // Scene menu buttons.
   const int sw = 320 / 3;
   const int sh = 240 / 5;
-  for (int i = 0; i < 13; i++) {
-    const char* label =
-        (i >= 4) ? GetPlanetName(static_cast<Planet>(i)) : OrrerySceneToString(static_cast<OrreryScene>(i));
+  for (int i = 0; i < 14; i++) {
+    const char* label;
+    if (i >= 4 && i < 13) {
+      label = GetPlanetName(static_cast<Planet>(i));
+    } else if (static_cast<OrreryScene>(i) == OrreryScene::MercuryRetrograde) {
+      label = "MercRetro";
+    } else {
+      label = OrrerySceneToString(static_cast<OrreryScene>(i));
+    }
     sceneSelectButtons_[i] = TouchButtonManager::Get()->AddButton((i % 3) * sw, (i / 3) * sh, sw, sh, label);
   }
-  sceneBackButton_ = TouchButtonManager::Get()->AddButton(w, 4 * sh, 320 - w, sh, "Back");
+  sceneBackButton_ = TouchButtonManager::Get()->AddButton(2 * sw, 4 * sh, sw, sh, "Back");
 
   // Initialize LED pattern mode.
   uint32_t ledPattern = OrreryLeader::Get()->GetLedPattern(currentPlanet_);
@@ -163,7 +169,7 @@ void OrreryLeaderUi::HideAll() {
   confirmButton_->Hide();
   for (int i = 0; i <= kNumPlanets; i++) { planetSelectButtons_[i]->Hide(); }
   planetBackButton_->Hide();
-  for (int i = 0; i < 13; i++) { sceneSelectButtons_[i]->Hide(); }
+  for (int i = 0; i < 14; i++) { sceneSelectButtons_[i]->Hide(); }
   sceneBackButton_->Hide();
 }
 
@@ -237,7 +243,7 @@ void OrreryLeaderUi::DrawPlanetMenu() {
 
 void OrreryLeaderUi::DrawSceneMenu() {
   HideAll();
-  for (int i = 0; i < 13; i++) { sceneSelectButtons_[i]->Draw(); }
+  for (int i = 0; i < 14; i++) { sceneSelectButtons_[i]->Draw(); }
   sceneBackButton_->Draw();
   TouchButtonManager::Get()->Redraw();
 }
@@ -378,7 +384,7 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       DrawMainMenu();
     }
   } else if (sceneSubmenuActive_) {
-    for (int i = 0; i < 13; i++) {
+    for (int i = 0; i < 14; i++) {
       if (sceneSelectButtons_[i]->JustReleased()) {
         OrreryLeader::Get()->SetScene(static_cast<OrreryScene>(i));
         UpdateSceneButton();

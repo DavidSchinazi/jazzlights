@@ -78,7 +78,7 @@ class OrreryLeaderUi : public Esp32Ui {
   TouchButton* clearButton_ = nullptr;
   TouchButton* confirmButton_ = nullptr;
   TouchButton* planetSelectButtons_[kNumPlanets + 1] = {};
-  TouchButton* sceneSelectButtons_[13] = {};
+  TouchButton* sceneSelectButtons_[14] = {};
   TouchButton* planetBackButton_ = nullptr;
   TouchButton* sceneBackButton_ = nullptr;
   TouchButton* ledBackButton_ = nullptr;

@@ -29,6 +29,7 @@ enum class OrreryScene {
   FocusUranus,
   FocusNeptune,
   FocusSun,
+  MercuryRetrograde,
 };
 
 const char* OrrerySceneToString(OrreryScene scene);
