@@ -38,7 +38,7 @@ Matrix pixels(/*w=*/20, /*h=*/20);
 #endif  // FAIRY_STRING
 
 #if JL_IS_CONFIG(CREATURE)
-Matrix pixels(/*w=*/32, /*h=*/1);
+Matrix pixels(/*w=*/160, /*h=*/1);
 #endif  // CREATURE
 
 #if JL_IS_CONFIG(ORRERY_PLANET)
