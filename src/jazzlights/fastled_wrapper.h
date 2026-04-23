@@ -162,6 +162,22 @@ struct CRGB {
 
   constexpr CRGB() : CRGB(0) {}
 
+  constexpr CRGB& maximizeBrightness(uint8_t limit = 255) {
+    uint8_t max = r;
+    if (g > max) max = g;
+    if (b > max) max = b;
+
+    // stop div/0 when color is black
+    if (max > 0) {
+      uint16_t factor = ((uint16_t)(limit) * 256) / max;
+      r = (r * factor) / 256;
+      g = (g * factor) / 256;
+      b = (b * factor) / 256;
+    }
+
+    return *this;
+  }
+
   constexpr CRGB& nscale8(uint8_t scaledown) {
     r = scale8(r, scaledown);
     g = scale8(g, scaledown);
