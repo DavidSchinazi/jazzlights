@@ -612,6 +612,8 @@ void Player::UpdateOverriddenPatternWatcher(Precedence precedence) {
       overriddenPatternWatcher_->OnOverriddenPattern(std::nullopt);
     }
   }
+#else   // JL_IS_CONFIG(ORRERY_LEADER)
+  (void)precedence;
 #endif  // JL_IS_CONFIG(ORRERY_LEADER)
 }
 
