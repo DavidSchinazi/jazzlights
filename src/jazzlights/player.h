@@ -258,7 +258,7 @@ class Player {
   uint32_t framesComputedThisEpoch_ = 0;
 };
 
-std::string patternName(PatternBits pattern);
+std::string patternName(PatternBits pattern, const Player& player);
 
 }  // namespace jazzlights
 #endif  // JL_PLAYER_H
