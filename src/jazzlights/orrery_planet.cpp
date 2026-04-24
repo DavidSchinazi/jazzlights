@@ -203,7 +203,7 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
     while (positionalSteps_ >= stepsPerRev_) { positionalSteps_ -= stepsPerRev_; }
     while (positionalSteps_ < 0) { positionalSteps_ += stepsPerRev_; }
 
-    int32_t effectiveRequestedSpeed = requestedSpeed_;
+    int32_t effectiveRequestedSpeed = (requestedSpeed_ == kOrrerySpeedDisable) ? 0 : requestedSpeed_;
     if (arrivedAtTarget_) {
       effectiveRequestedSpeed = 0;
       actualSpeed_ = 0;
@@ -285,8 +285,14 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
       }
       if (wasForward * isForward <= 0) { ignoreNextCalibration_ = true; }
       IncrementStepCount();
-      GetMainStepperMotor()->SetSpeed(static_cast<int32_t>(roundedSpeed_));
-      currentState_.speed = roundedSpeed_;
+      std::optional<int32_t> speedToSet;
+      if (requestedSpeed_ == kOrrerySpeedDisable && roundedSpeed_ == 0) {
+        speedToSet = std::nullopt;
+      } else {
+        speedToSet = static_cast<int32_t>(roundedSpeed_);
+      }
+      GetMainStepperMotor()->SetSpeed(speedToSet);
+      currentState_.speed = speedToSet;
     }
     currentState_.position = static_cast<uint32_t>((positionalSteps_ / stepsPerRev_) * 360000.0f);
   }
@@ -302,11 +308,18 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
       currentState_.leaderSequenceNumber = msg.leaderSequenceNumber;
 #if !JL_ORRERY_SUN
       if (msg.speed.has_value()) {
-        const int32_t targetFrequency = std::round((*msg.speed / 60000.0f) * stepsPerRev_);
-        if (targetFrequency != requestedSpeed_) {
-          jll_info("%u Planet %s requested milli-RPM %" PRId32 " (target frequency %" PRId32 "Hz)", currentTime,
-                   ourPlanetName, *msg.speed, targetFrequency);
-          requestedSpeed_ = targetFrequency;
+        if (*msg.speed == kOrrerySpeedDisable) {
+          if (requestedSpeed_ != kOrrerySpeedDisable) {
+            jll_info("%u Planet %s requested motor disable", currentTime, ourPlanetName);
+            requestedSpeed_ = kOrrerySpeedDisable;
+          }
+        } else {
+          const int32_t targetFrequency = std::round((*msg.speed / 60000.0f) * stepsPerRev_);
+          if (targetFrequency != requestedSpeed_) {
+            jll_info("%u Planet %s requested milli-RPM %" PRId32 " (target frequency %" PRId32 "Hz)", currentTime,
+                     ourPlanetName, *msg.speed, targetFrequency);
+            requestedSpeed_ = targetFrequency;
+          }
         }
       }
       if (msg.position.has_value()) {

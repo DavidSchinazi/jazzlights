@@ -11,6 +11,8 @@
 #include <driver/mcpwm_oper.h>
 #include <driver/mcpwm_timer.h>
 
+#include <optional>
+
 #include "jazzlights/util/time.h"
 
 namespace jazzlights {
@@ -24,11 +26,11 @@ class StepperMotor {
   StepperMotor& operator=(const StepperMotor&) = delete;
   StepperMotor& operator=(StepperMotor&&) = delete;
 
-  void SetSpeed(int32_t frequencyHz);
+  void SetSpeed(std::optional<int32_t> frequencyHz);
   void SetRunBackwards(bool runBackwards);
 
  private:
-  bool Setup(int32_t frequencyHz);
+  bool Setup(std::optional<int32_t> frequencyHz);
   void SetEnabled(bool enabled);
   void SetDirection(bool direction);
 

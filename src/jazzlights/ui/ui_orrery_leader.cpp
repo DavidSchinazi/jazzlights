@@ -44,10 +44,14 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
 
   // Motor submenu buttons.
   int32_t speed = OrreryLeader::Get()->GetSpeed(currentPlanet_);
-  motorForward_ = (speed >= 0);
-  motorMilliRpm_ = std::abs(speed);
+  if (speed == kOrrerySpeedDisable) {
+    motorEnabled_ = false;
+  } else {
+    motorEnabled_ = true;
+    motorForward_ = (speed >= 0);
+    motorMilliRpm_ = std::abs(speed);
+  }
   targetPosition_ = OrreryLeader::Get()->GetTargetPosition(currentPlanet_);
-  motorEnabled_ = (speed != 0);
   motorEnableButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/160, /*h=*/48,
                                                             motorEnabled_ ? "Enabled" : "Disabled");
   motorDirectionButton_ = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/0, /*w=*/160, /*h=*/48, "");
@@ -268,9 +272,13 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
     UpdateSceneButton();
     // Update local motor state for current planet.
     int32_t speed = OrreryLeader::Get()->GetSpeed(currentPlanet_);
-    motorForward_ = (speed >= 0);
-    motorMilliRpm_ = std::abs(speed);
-    motorEnabled_ = (speed != 0);
+    if (speed == kOrrerySpeedDisable) {
+      motorEnabled_ = false;
+    } else {
+      motorEnabled_ = true;
+      motorForward_ = (speed >= 0);
+      motorMilliRpm_ = std::abs(speed);
+    }
     motorEnableButton_->SetLabelText(motorEnabled_ ? "Enabled" : "Disabled");
     UpdateMotorDirectionButton();
     UpdateMotorSpeedButton();
@@ -369,10 +377,14 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
         UpdatePlanetButton();
         // Update UI with current speed of that planet
         int32_t speed = OrreryLeader::Get()->GetSpeed(currentPlanet_);
-        motorForward_ = (speed >= 0);
-        motorMilliRpm_ = std::abs(speed);
+        if (speed == kOrrerySpeedDisable) {
+          motorEnabled_ = false;
+        } else {
+          motorEnabled_ = true;
+          motorForward_ = (speed >= 0);
+          motorMilliRpm_ = std::abs(speed);
+        }
         targetPosition_ = OrreryLeader::Get()->GetTargetPosition(currentPlanet_);
-        motorEnabled_ = (speed != 0);
         motorEnableButton_->SetLabelText(motorEnabled_ ? "Enabled" : "Disabled");
         UpdateMotorDirectionButton();
         UpdateMotorPositionButton();
@@ -410,9 +422,13 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
         UpdateSceneButton();
         // Update local motor state for current planet.
         int32_t speed = OrreryLeader::Get()->GetSpeed(currentPlanet_);
-        motorForward_ = (speed >= 0);
-        motorMilliRpm_ = std::abs(speed);
-        motorEnabled_ = (speed != 0);
+        if (speed == kOrrerySpeedDisable) {
+          motorEnabled_ = false;
+        } else {
+          motorEnabled_ = true;
+          motorForward_ = (speed >= 0);
+          motorMilliRpm_ = std::abs(speed);
+        }
         motorEnableButton_->SetLabelText(motorEnabled_ ? "Enabled" : "Disabled");
         UpdateMotorDirectionButton();
         UpdateMotorSpeedButton();
@@ -531,12 +547,12 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
 }
 
 void OrreryLeaderUi::SetMotorSpeed() {
-  int32_t speed = motorMilliRpm_;
-  if (!motorForward_) { speed = -speed; }
   if (motorEnabled_) {
+    int32_t speed = motorMilliRpm_;
+    if (!motorForward_) { speed = -speed; }
     OrreryLeader::Get()->SetSpeed(currentPlanet_, speed);
   } else {
-    OrreryLeader::Get()->SetSpeed(currentPlanet_, 0);
+    OrreryLeader::Get()->SetSpeed(currentPlanet_, kOrrerySpeedDisable);
   }
 }
 

@@ -117,11 +117,32 @@ void test_orrery_message_sparse_serialization() {
   TEST_ASSERT(reader.Done());
 }
 
+void test_orrery_message_disable_serialization() {
+  OrreryMessage msg1;
+  msg1.type = OrreryMessageType::LeaderCommand;
+  msg1.leaderBootId = 0x12345678;
+  msg1.leaderSequenceNumber = 0x87654321;
+  msg1.speed = kOrrerySpeedDisable;
+
+  uint8_t buffer[64];
+  NetworkWriter writer(buffer, sizeof(buffer));
+  TEST_ASSERT(WriteOrreryMessage(msg1, writer));
+
+  NetworkReader reader(buffer, writer.LengthWritten());
+  OrreryMessage msg2;
+  TEST_ASSERT(ReadOrreryMessage(reader, &msg2));
+
+  TEST_ASSERT(msg2.speed.has_value());
+  TEST_ASSERT_EQUAL_INT32(kOrrerySpeedDisable, *msg2.speed);
+  TEST_ASSERT(reader.Done());
+}
+
 void run_unity_tests() {
   UNITY_BEGIN();
   RUN_TEST(test_orrery_message_serialization);
   RUN_TEST(test_orrery_message_hall_sensor_serialization);
   RUN_TEST(test_orrery_message_sparse_serialization);
+  RUN_TEST(test_orrery_message_disable_serialization);
   UNITY_END();
 }
 
