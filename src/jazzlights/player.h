@@ -115,6 +115,12 @@ class Player {
 
   bool enabled() const { return enabled_; }
   void set_enabled(bool enabled);
+
+#if JL_AUDIO_VISUALIZER
+  bool sound_reactive_enabled() const { return sound_reactive_enabled_; }
+  void set_sound_reactive_enabled(bool sound_reactive_enabled);
+#endif  // JL_AUDIO_VISUALIZER
+
 #if JL_IS_CONFIG(CLOUDS)
   class StatusWatcher {
    public:
@@ -182,6 +188,10 @@ class Player {
 #else   // JL_IS_CONFIG(CLOUDS) && !JL_DEV
   bool enabled_ = true;
 #endif  // JL_IS_CONFIG(CLOUDS) && !JL_DEV
+
+#if JL_AUDIO_VISUALIZER
+  bool sound_reactive_enabled_ = true;
+#endif  // JL_AUDIO_VISUALIZER
 
   bool ready_ = false;
   bool powerLimited_ = false;

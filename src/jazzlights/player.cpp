@@ -128,7 +128,7 @@ static constexpr CRGB warmColor() {
   return CRGB(255, 67, 5);
 }
 
-static const Effect* patternFromBits(PatternBits pattern) {
+static const Effect* patternFromBits(PatternBits pattern, const Player& player) {
   // Static definitions of all patterns.
   static const SpinPlasma spin_pattern;
   static const Hiphotic hiphotic_pattern;
@@ -245,7 +245,7 @@ static const Effect* patternFromBits(PatternBits pattern) {
     return &red_effect;
   } else {
 #if JL_AUDIO_VISUALIZER
-    return &sound_effect;
+    if (player.sound_reactive_enabled()) { return &sound_effect; }
 #endif  // JL_AUDIO_VISUALIZER
     if (patternbit(pattern, 1)) {
       if (patternbit(pattern, 2)) {  // 11x - spin
@@ -268,7 +268,9 @@ static const Effect* patternFromBits(PatternBits pattern) {
   jll_fatal("Failed to pick an effect %s", displayBitsAsBinary(pattern).c_str());
 }
 
-std::string patternName(PatternBits pattern) { return patternFromBits(pattern)->effectName(pattern); }
+std::string patternName(PatternBits pattern, const Player& player) {
+  return patternFromBits(pattern, player)->effectName(pattern);
+}
 
 Player::Player() {
   frame_.predictableRandom = &predictableRandom_;
@@ -456,7 +458,7 @@ bool Player::render(Milliseconds currentTime) {
   if (!creatureIsFollowingNonCreature_) { frame_.pattern = planetPattern_; }
 #endif  // ORRERY_PLANET
 
-  const Effect* effect = patternFromBits(frame_.pattern);
+  const Effect* effect = patternFromBits(frame_.pattern, *this);
 #if JL_IS_CONFIG(FAIRY_WAND)
   constexpr Milliseconds kOverridePatternDuration = 8000;
   static const FunctionalEffect fairy_wand_effect = fairy_wand();
@@ -465,9 +467,9 @@ bool Player::render(Milliseconds currentTime) {
     effect = &fairy_wand_effect;
   }
 #elif JL_IS_CONFIG(CREATURE)
-  if (!creatureIsFollowingNonCreature_) { effect = patternFromBits(kCreaturePattern); }
+  if (!creatureIsFollowingNonCreature_) { effect = patternFromBits(kCreaturePattern, *this); }
 #elif JL_IS_CONFIG(ORRERY_PLANET)
-  if (!creatureIsFollowingNonCreature_) { effect = patternFromBits(planetPattern_); }
+  if (!creatureIsFollowingNonCreature_) { effect = patternFromBits(planetPattern_, *this); }
 #endif  // FAIRY_WAND
 
   // Ensure effectContext_ is big enough for this effect.
@@ -575,7 +577,7 @@ void Player::GenerateFPSReport(uint16_t* fpsCompute, uint16_t* fpsWrites, uint8_
 }
 
 PatternBits Player::currentEffect() const { return lastBegunPattern_; }
-std::string Player::currentEffectName() const { return patternName(lastBegunPattern_); }
+std::string Player::currentEffectName() const { return patternName(lastBegunPattern_, *this); }
 
 void Player::set_enabled(bool enabled) {
   if (enabled_ == enabled) { return; }
@@ -590,6 +592,14 @@ void Player::set_enabled(bool enabled) {
   enabled_ = enabled;
   UpdateStatusWatcher();
 }
+
+#if JL_AUDIO_VISUALIZER
+void Player::set_sound_reactive_enabled(bool sound_reactive_enabled) {
+  if (sound_reactive_enabled_ == sound_reactive_enabled) { return; }
+  sound_reactive_enabled_ = sound_reactive_enabled;
+  shouldBeginPattern_ = true;
+}
+#endif  // JL_AUDIO_VISUALIZER
 
 void Player::set_brightness(uint8_t brightness) {
   if (brightness_ == brightness) { return; }
@@ -631,8 +641,8 @@ void Player::CloudNext(Milliseconds currentTime) {
   nextPattern_ = enforceForcedPalette(computeNextPattern(nextPattern_));
   checkLeaderAndPattern(currentTime);
   jll_info("%u next command processed: now current %s (%08x) next %s (%08x), currentLeader=" DEVICE_ID_FMT, currentTime,
-           patternName(currentPattern_).c_str(), currentPattern_, patternName(nextPattern_).c_str(), nextPattern_,
-           DEVICE_ID_HEX(currentLeader_));
+           patternName(currentPattern_, *this).c_str(), currentPattern_, patternName(nextPattern_, *this).c_str(),
+           nextPattern_, DEVICE_ID_HEX(currentLeader_));
 
   for (Network* network : networks_) { network->triggerSendAsap(currentTime); }
   if (status_watcher_ != nullptr) { status_watcher_->OnStatus(); }
@@ -644,8 +654,8 @@ void Player::next(Milliseconds currentTime) {
   set_enabled(!enabled());
 #endif  // CLOUDS
   jll_info("%u next command received: switching from %s (%08x) to %s (%08x), currentLeader=" DEVICE_ID_FMT, currentTime,
-           patternName(currentPattern_).c_str(), currentPattern_, patternName(nextPattern_).c_str(), nextPattern_,
-           DEVICE_ID_HEX(currentLeader_));
+           patternName(currentPattern_, *this).c_str(), currentPattern_, patternName(nextPattern_, *this).c_str(),
+           nextPattern_, DEVICE_ID_HEX(currentLeader_));
   lastUserInputTime_ = currentTime;
   currentPatternStartTime_ = currentTime;
   if (loop_ && currentPattern_ == nextPattern_) {
@@ -657,16 +667,16 @@ void Player::next(Milliseconds currentTime) {
   }
   checkLeaderAndPattern(currentTime);
   jll_info("%u next command processed: now current %s (%08x) next %s (%08x), currentLeader=" DEVICE_ID_FMT, currentTime,
-           patternName(currentPattern_).c_str(), currentPattern_, patternName(nextPattern_).c_str(), nextPattern_,
-           DEVICE_ID_HEX(currentLeader_));
+           patternName(currentPattern_, *this).c_str(), currentPattern_, patternName(nextPattern_, *this).c_str(),
+           nextPattern_, DEVICE_ID_HEX(currentLeader_));
 
   for (Network* network : networks_) { network->triggerSendAsap(currentTime); }
 }
 
 void Player::setPattern(PatternBits pattern, Milliseconds currentTime) {
   jll_info("%u set pattern command received: switching from %s (%08x) to %s (%08x), currentLeader=" DEVICE_ID_FMT,
-           currentTime, patternName(currentPattern_).c_str(), currentPattern_, patternName(pattern).c_str(), pattern,
-           DEVICE_ID_HEX(currentLeader_));
+           currentTime, patternName(currentPattern_, *this).c_str(), currentPattern_,
+           patternName(pattern, *this).c_str(), pattern, DEVICE_ID_HEX(currentLeader_));
   lastUserInputTime_ = currentTime;
   currentPatternStartTime_ = currentTime;
   currentPattern_ = pattern;
@@ -677,8 +687,8 @@ void Player::setPattern(PatternBits pattern, Milliseconds currentTime) {
   }
   checkLeaderAndPattern(currentTime);
   jll_info("%u set pattern command processed: now current %s (%08x) next %s (%08x), currentLeader=" DEVICE_ID_FMT,
-           currentTime, patternName(currentPattern_).c_str(), currentPattern_, patternName(nextPattern_).c_str(),
-           nextPattern_, DEVICE_ID_HEX(currentLeader_));
+           currentTime, patternName(currentPattern_, *this).c_str(), currentPattern_,
+           patternName(nextPattern_, *this).c_str(), nextPattern_, DEVICE_ID_HEX(currentLeader_));
 
   for (Network* network : networks_) { network->triggerSendAsap(currentTime); }
 }
@@ -838,7 +848,7 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
       jll_player_info("%u Following " DEVICE_ID_FMT
                       ".p%u nh=%u %s new currentPattern %s (%08x)%s computed %u FPS wrote %u FPS %u%% %u/%ums",
                       currentTime, DEVICE_ID_HEX(originator), precedence, currentNumHops_,
-                      NetworkTypeToString(followedNextHopNetworkType_), patternName(currentPattern_).c_str(),
+                      NetworkTypeToString(followedNextHopNetworkType_), patternName(currentPattern_, *this).c_str(),
                       currentPattern_,
 #if JL_IS_CONFIG(CREATURE) || JL_IS_CONFIG(ORRERY_PLANET)
                       (creatureIsFollowingNonCreature_ ? " creatureFollowing" : " creatureIgnoring"),
@@ -888,8 +898,9 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
       GenerateFPSReport(&fpsCompute, &fpsWrites, &utilization, &timeSpentComputingThisEpoch, &epochDuration);
       jll_player_info("%u We (" DEVICE_ID_FMT
                       ".p%u) are leading, new currentPattern %s (%08x) computed %u FPS wrote %u FPS %u%% %u/%ums",
-                      currentTime, DEVICE_ID_HEX(localDeviceId_), precedence, patternName(currentPattern_).c_str(),
-                      currentPattern_, fpsCompute, fpsWrites, utilization, timeSpentComputingThisEpoch, epochDuration);
+                      currentTime, DEVICE_ID_HEX(localDeviceId_), precedence,
+                      patternName(currentPattern_, *this).c_str(), currentPattern_, fpsCompute, fpsWrites, utilization,
+                      timeSpentComputingThisEpoch, epochDuration);
       printInstrumentationInfo(currentTime);
       lastLEDWriteTime_ = -1;
       shouldBeginPattern_ = true;
@@ -986,8 +997,8 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
                     " nh %u ot %u current %s (%08x) next %s (%08x) elapsed %u",
                     currentTime, DEVICE_ID_HEX(entry->originator), entry->precedence,
                     DEVICE_ID_HEX(entry->nextHopDevice), NetworkTypeToString(entry->nextHopNetworkType), entry->numHops,
-                    currentTime - entry->lastOriginationTime, patternName(entry->currentPattern).c_str(),
-                    entry->currentPattern, patternName(entry->nextPattern).c_str(), entry->nextPattern,
+                    currentTime - entry->lastOriginationTime, patternName(entry->currentPattern, *this).c_str(),
+                    entry->currentPattern, patternName(entry->nextPattern, *this).c_str(), entry->nextPattern,
                     currentTime - entry->currentPatternStartTime);
   } else {
     // The concept behind this is that we build a tree rooted at each originator
@@ -1039,12 +1050,13 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
       }
       if (entry->currentPattern != message.currentPattern) {
         shouldUpdateStartTime = true;
-        changes << ", currentPattern " << patternName(entry->currentPattern) << " to "
-                << patternName(message.currentPattern);
+        changes << ", currentPattern " << patternName(entry->currentPattern, *this) << " to "
+                << patternName(message.currentPattern, *this);
       }
       if (entry->nextPattern != message.nextPattern) {
         shouldUpdateStartTime = true;
-        changes << ", nextPattern " << patternName(entry->nextPattern) << " to " << patternName(message.nextPattern);
+        changes << ", nextPattern " << patternName(entry->nextPattern, *this) << " to "
+                << patternName(message.nextPattern, *this);
       }
       // Debounce incoming updates to currentPatternStartTime to avoid visual jitter in the presence
       // of network jitter.
@@ -1084,7 +1096,7 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
         if (shouldUpdateStartTime || timeDelta >= kPatternStartTimeDeltaMax) {
           changes << ", elapsedTime += " << timeDelta;
           if (entry->currentPattern == message.currentPattern && timeDelta >= kEffectDuration / 2) {
-            changes << " (keeping currentPattern " << patternName(entry->currentPattern) << ")";
+            changes << " (keeping currentPattern " << patternName(entry->currentPattern, *this) << ")";
           }
           shouldUpdateStartTime = true;
         } else if (timeDelta < kPatternStartTimeDeltaMin) {
@@ -1193,7 +1205,7 @@ const char* Player::command(const char* req) {
   }
   if (!responded) {
     // This is used by the WebUI to display the current pattern name.
-    snprintf(res, sizeof(res), "playing %s", patternName(lastBegunPattern_).c_str());
+    snprintf(res, sizeof(res), "playing %s", patternName(lastBegunPattern_, *this).c_str());
   }
   jll_debug("[%s] -> [%s]", req, res);
   return res;
