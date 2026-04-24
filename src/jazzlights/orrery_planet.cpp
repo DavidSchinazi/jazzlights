@@ -30,7 +30,7 @@ static constexpr uint8_t kHallSensorPin = 4;
 #endif
 
 // This value was measured empirically on the orrery.
-constexpr float kStartupStepsPerRev = 17000.0f;
+constexpr float kStartupStepsPerRev = 34000.0f;
 
 #endif  // !JL_ORRERY_SUN
 
