@@ -29,8 +29,17 @@ static constexpr uint8_t kHallSensorPin = 4;
 #error "Unexpected controller"
 #endif
 
+#ifndef JL_LOCAL_CALIBRATION_TEST
+#define JL_LOCAL_CALIBRATION_TEST 0
+#endif  // JL_LOCAL_CALIBRATION_TEST
+
+#if JL_LOCAL_CALIBRATION_TEST
+// This value was measured empirically at home.
+constexpr float kStartupStepsPerRev = 12700.0f;
+#else   // JL_LOCAL_CALIBRATION_TEST
 // This value was measured empirically on the orrery.
 constexpr float kStartupStepsPerRev = 34000.0f;
+#endif  // JL_LOCAL_CALIBRATION_TEST
 
 #endif  // !JL_ORRERY_SUN
 
