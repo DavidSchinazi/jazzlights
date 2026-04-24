@@ -246,6 +246,8 @@ static const Effect* patternFromBits(PatternBits pattern, const Player& player) 
   } else {
 #if JL_AUDIO_VISUALIZER
     if (player.sound_reactive_enabled()) { return &sound_effect; }
+#else   // JL_AUDIO_VISUALIZER
+    (void)player;
 #endif  // JL_AUDIO_VISUALIZER
     if (patternbit(pattern, 1)) {
       if (patternbit(pattern, 2)) {  // 11x - spin
