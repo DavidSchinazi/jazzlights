@@ -48,8 +48,20 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
         jll_info("%u Switched to waveform mode", currentTime);
         M5.Lcd.fillScreen(BLACK);
       } else if (detail.y >= 150 && detail.y <= 200 && detail.x >= 20 && detail.x <= 300) {
-        player_.set_sound_reactive_enabled(!player_.sound_reactive_enabled());
-        jll_info("%u Toggled sound reactive to %s", currentTime, player_.sound_reactive_enabled() ? "ON" : "OFF");
+        Player::SoundReactiveMode next_mode;
+        switch (player_.sound_reactive_mode()) {
+          case Player::SoundReactiveMode::kAuto: next_mode = Player::SoundReactiveMode::kOn; break;
+          case Player::SoundReactiveMode::kOn: next_mode = Player::SoundReactiveMode::kOff; break;
+          case Player::SoundReactiveMode::kOff: next_mode = Player::SoundReactiveMode::kAuto; break;
+        }
+        player_.set_sound_reactive_mode(next_mode);
+        const char* mode_str = "UNKNOWN";
+        switch (next_mode) {
+          case Player::SoundReactiveMode::kAuto: mode_str = "AUTO"; break;
+          case Player::SoundReactiveMode::kOn: mode_str = "ON"; break;
+          case Player::SoundReactiveMode::kOff: mode_str = "OFF"; break;
+        }
+        jll_info("%u Toggled sound reactive to %s", currentTime, mode_str);
         M5.Lcd.fillScreen(BLACK);
       }
     } else {
@@ -102,8 +114,14 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
     M5.Lcd.drawString("Beat Detection", kScreenWidth / 2, 110);
 
     M5.Lcd.drawRect(20, 150, 280, 50, WHITE);
+    const char* mode_label = "UNKNOWN";
+    switch (player_.sound_reactive_mode()) {
+      case Player::SoundReactiveMode::kAuto: mode_label = "Auto"; break;
+      case Player::SoundReactiveMode::kOn: mode_label = "On"; break;
+      case Player::SoundReactiveMode::kOff: mode_label = "Off"; break;
+    }
     char buf[32];
-    snprintf(buf, sizeof(buf), "Sound Reactive: %s", player_.sound_reactive_enabled() ? "On" : "Off");
+    snprintf(buf, sizeof(buf), "Sound Reactive: %s", mode_label);
     M5.Lcd.drawString(buf, kScreenWidth / 2, 175);
 
     if (showing_no_audio_data_) {

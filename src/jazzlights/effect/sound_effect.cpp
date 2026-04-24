@@ -149,7 +149,7 @@ void SoundEffect::innerRewind(const Frame& /*frame*/, SoundState* state) const {
   memcpy(state->prevBands, state->audioData.bands, sizeof(state->prevBands));
   Audio::Get().GetVisualizerData(&state->audioData);
   bool wasSquelched = state->isSquelched;
-  state->isSquelched = (state->audioData.volume < 0.4f);
+  state->isSquelched = state->audioData.squelch;
   if (state->isSquelched && !wasSquelched) {
     jll_info("Entering squelch mode (volume %f)", state->audioData.volume);
   } else if (!state->isSquelched && wasSquelched) {

@@ -417,6 +417,29 @@ void Player::triggerPatternOverride(Milliseconds currentTime) {
 bool Player::render(Milliseconds currentTime) {
   if (!ready_) { begin(); }
 
+#if JL_AUDIO_VISUALIZER
+  if (sound_reactive_mode_ == SoundReactiveMode::kAuto) {
+    Audio::VisualizerData data;
+    Audio::Get().GetVisualizerData(&data);
+    if (data.squelch) {
+      if (squelch_start_time_ < 0) {
+        squelch_start_time_ = currentTime;
+      } else if (!sound_reactive_suppressed_ && currentTime - squelch_start_time_ > 30000) {
+        sound_reactive_suppressed_ = true;
+        shouldBeginPattern_ = true;
+        jll_info("%u Auto sound reactive suppressed due to 30s squelch", currentTime);
+      }
+    } else {
+      if (sound_reactive_suppressed_) {
+        sound_reactive_suppressed_ = false;
+        shouldBeginPattern_ = true;
+        jll_info("%u Auto sound reactive resumed", currentTime);
+      }
+      squelch_start_time_ = -1;
+    }
+  }
+#endif  // JL_AUDIO_VISUALIZER
+
   // First listen on all networks.
   for (Network* network : networks_) {
     for (NetworkMessage receivedMessage : network->getReceivedMessages(currentTime)) {
@@ -594,9 +617,17 @@ void Player::set_enabled(bool enabled) {
 }
 
 #if JL_AUDIO_VISUALIZER
-void Player::set_sound_reactive_enabled(bool sound_reactive_enabled) {
-  if (sound_reactive_enabled_ == sound_reactive_enabled) { return; }
-  sound_reactive_enabled_ = sound_reactive_enabled;
+bool Player::sound_reactive_enabled() const {
+  if (sound_reactive_mode_ == SoundReactiveMode::kOff) { return false; }
+  if (sound_reactive_mode_ == SoundReactiveMode::kOn) { return true; }
+  return !sound_reactive_suppressed_;
+}
+
+void Player::set_sound_reactive_mode(SoundReactiveMode mode) {
+  if (sound_reactive_mode_ == mode) { return; }
+  sound_reactive_mode_ = mode;
+  sound_reactive_suppressed_ = false;
+  squelch_start_time_ = -1;
   shouldBeginPattern_ = true;
 }
 #endif  // JL_AUDIO_VISUALIZER

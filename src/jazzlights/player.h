@@ -117,8 +117,10 @@ class Player {
   void set_enabled(bool enabled);
 
 #if JL_AUDIO_VISUALIZER
-  bool sound_reactive_enabled() const { return sound_reactive_enabled_; }
-  void set_sound_reactive_enabled(bool sound_reactive_enabled);
+  enum class SoundReactiveMode { kOff, kOn, kAuto };
+  SoundReactiveMode sound_reactive_mode() const { return sound_reactive_mode_; }
+  void set_sound_reactive_mode(SoundReactiveMode mode);
+  bool sound_reactive_enabled() const;
 #endif  // JL_AUDIO_VISUALIZER
 
 #if JL_IS_CONFIG(CLOUDS)
@@ -190,7 +192,9 @@ class Player {
 #endif  // JL_IS_CONFIG(CLOUDS) && !JL_DEV
 
 #if JL_AUDIO_VISUALIZER
-  bool sound_reactive_enabled_ = true;
+  SoundReactiveMode sound_reactive_mode_ = SoundReactiveMode::kAuto;
+  bool sound_reactive_suppressed_ = false;
+  Milliseconds squelch_start_time_ = -1;
 #endif  // JL_AUDIO_VISUALIZER
 
   bool ready_ = false;
