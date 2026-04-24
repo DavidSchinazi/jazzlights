@@ -37,11 +37,22 @@ void AudioVisualizerUi::FinalSetup() {}
 void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
   M5.update();
   if (M5.Touch.getCount() > 0 && M5.Touch.getDetail(0).wasPressed()) {
-    visualization_mode_ = (visualization_mode_ == VisualizationMode::kSpectrum) ? VisualizationMode::kWaveform
-                                                                                : VisualizationMode::kSpectrum;
-    jll_info("%u Switched to %s mode", currentTime,
-             (visualization_mode_ == VisualizationMode::kSpectrum) ? "spectrum" : "waveform");
-    M5.Lcd.fillScreen(BLACK);
+    auto detail = M5.Touch.getDetail(0);
+    if (visualization_mode_ == VisualizationMode::kMenu) {
+      if (detail.y >= 40 && detail.y <= 100 && detail.x >= 20 && detail.x <= 300) {
+        visualization_mode_ = VisualizationMode::kSpectrum;
+        jll_info("%u Switched to spectrum mode", currentTime);
+        M5.Lcd.fillScreen(BLACK);
+      } else if (detail.y >= 120 && detail.y <= 180 && detail.x >= 20 && detail.x <= 300) {
+        visualization_mode_ = VisualizationMode::kWaveform;
+        jll_info("%u Switched to waveform mode", currentTime);
+        M5.Lcd.fillScreen(BLACK);
+      }
+    } else {
+      visualization_mode_ = VisualizationMode::kMenu;
+      jll_info("%u Switched to menu mode", currentTime);
+      M5.Lcd.fillScreen(BLACK);
+    }
   }
 
   Audio::VisualizerData data;
@@ -76,7 +87,26 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
     M5.Lcd.fillScreen(BLACK);
   }
 
-  if (showing_no_audio_data_) {
+  if (visualization_mode_ == VisualizationMode::kMenu) {
+    M5.Lcd.setTextSize(2);
+    M5.Lcd.setTextDatum(MC_DATUM);
+    M5.Lcd.setTextColor(WHITE, BLACK);
+    M5.Lcd.drawRect(20, 40, 280, 60, WHITE);
+    M5.Lcd.drawString("Spectrum Analyzer", kScreenWidth / 2, 70);
+
+    M5.Lcd.drawRect(20, 120, 280, 60, WHITE);
+    M5.Lcd.drawString("Beat Detection", kScreenWidth / 2, 150);
+
+    if (showing_no_audio_data_) {
+      M5.Lcd.setTextColor(RED, BLACK);
+      M5.Lcd.drawString("No Audio Data", kScreenWidth / 2, 210);
+    } else if (showing_squelch_) {
+      M5.Lcd.setTextColor(ORANGE, BLACK);
+      M5.Lcd.drawString("Squelch", kScreenWidth / 2, 210);
+    } else {
+      M5.Lcd.fillRect(0, 190, kScreenWidth, 50, BLACK);
+    }
+  } else if (showing_no_audio_data_) {
     M5.Lcd.setTextSize(2);
     M5.Lcd.setTextDatum(TC_DATUM);
     M5.Lcd.setTextColor(RED, BLACK);
