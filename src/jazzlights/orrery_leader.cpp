@@ -463,7 +463,10 @@ void OrreryLeader::RunLoop(Milliseconds currentTime) {
   }
 
   if (scene_ == OrreryScene::Align) {
-    if (waitingForAlignment_) {
+    if (currentTime - sceneStartTime_ > 2 * 60 * 1000) {
+      jll_info("%u Align scene timing out after 2 minutes, starting Realistic scene", currentTime);
+      SetScene(OrreryScene::Realistic);
+    } else if (waitingForAlignment_) {
       bool allArrived = true;
       for (int i = 0; i < kNumPlanetsWithoutSun; i++) {
         Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
