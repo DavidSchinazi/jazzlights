@@ -38,7 +38,7 @@ console = Console()
 
 
 def print_port_info_table(new_port_objects):
-    """Prints a rich table of newly connected USB/Serial devices."""
+    """Print a rich table of newly connected USB/Serial devices."""
     table = Table(
         title="New Espressif Devices Detected", header_style="bold cyan", expand=True
     )
@@ -143,7 +143,7 @@ def flash_device(port: str, build_dir: Path):
                                     f"[{port}] {decoded}", markup=False, highlight=False
                                 )
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 console.print(f"[bold red]\\[{port}] Monitor error: {e}[/bold red]")
 
             console.print(
@@ -155,7 +155,7 @@ def flash_device(port: str, build_dir: Path):
                 f"[bold red]\\[{port}] ❌ Flashing failed with return code {process.returncode}.[/bold red]"
             )
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         console.print(f"[bold red]\\[{port}\\] Error running esptool: {e}[/bold red]")
 
 
@@ -228,10 +228,10 @@ def main(
 
             time.sleep(POLL_INTERVAL)
 
-        except KeyboardInterrupt:
+        except KeyboardInterrupt:  # noqa: PERF203
             console.print("\n[bold blue]Exiting Auto-Flasher. Goodbye![/bold blue]")
             break
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             console.print(f"[bold red]Loop error: {e}[/bold red]")
             time.sleep(POLL_INTERVAL)
 
