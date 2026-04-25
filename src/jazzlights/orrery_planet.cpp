@@ -191,6 +191,7 @@ void OrreryPlanet::HandleHallSensorChange(uint8_t pin, bool isClosed, Millisecon
 
 void OrreryPlanet::RunLoop(Milliseconds currentTime) {
 #if !JL_ORRERY_SUN
+  constexpr float kMaxAccelerationRate = 1000.0f;  // In steps/s^2. Also applies to deceleration.
   hallSensor_.RunLoop();
   switch0_.RunLoop();
   switch1_.RunLoop();
@@ -232,8 +233,8 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
             positionalSteps_, stepsToGo, actualSpeed_, stepsPerRev_);
 
       } else {
-        // Distance to stop at current deceleration (250 steps/s^2) is v^2 / 500.
-        const float stop_distance = (actualSpeed_ * actualSpeed_) / 500.0f;
+        // Distance to stop depends on current speed and max deceleration rate.
+        const float stop_distance = (actualSpeed_ * actualSpeed_) / (2.0f * kMaxAccelerationRate);
 
         static Milliseconds lastLogTime3 = -1;
         if (lastLogTime3 < 0 || currentTime - lastLogTime3 > 1000) {
@@ -248,7 +249,7 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
       }
     }
 
-    const float maxChange = 250.0f * dt / 1000.0f;
+    const float maxChange = kMaxAccelerationRate * dt / static_cast<float>(ONE_SECOND);
     if (actualSpeed_ < static_cast<float>(effectiveRequestedSpeed)) {
       actualSpeed_ = std::min(static_cast<float>(effectiveRequestedSpeed), actualSpeed_ + maxChange);
     } else if (actualSpeed_ > static_cast<float>(effectiveRequestedSpeed)) {
