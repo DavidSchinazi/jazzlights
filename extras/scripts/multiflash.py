@@ -7,17 +7,22 @@
 #     "typer",
 # ]
 # ///
-#
-# You can run this script with `python multiflash.py .pio/build/creature_c6` (or whatever your build dir is).
-# To setup env, run uv init
+
+# To run this, first select an environment from platformio.ini (e.g., creature_c6), then:
+
+# cd jazzlights
+# uv run extras/scripts/multiflash.py creature_c6
+
+# If needed, dependencies can be installed by running:
+
+# uv init
 # uv sync --dev
+
+# Alternatively, you can run:
+
 # source .venv/bin/activate
-#
-# or run ephemeral with:
-# uv run --dev multiflash.py .pio/build/creature_c6
-#
-# To make `.pio/build/creature_c6`,
-# run `pio run -e creature_c6` from the root
+# python extras/scripts/multiflash.py creature_c6
+
 from pathlib import Path
 import subprocess
 import threading
@@ -160,15 +165,23 @@ def flash_device(port: str, build_dir: Path):
 
 
 def main(
-    build_dir: Path = typer.Argument(
+    build_env: str = typer.Argument(
         ...,
         help="Path to the PlatformIO build directory (e.g., .pio/build/creature_c6)",
+    ),
+    skip_build: bool = typer.Option(
+        False, "--skip-build", "-s", help="Whether to skip rebuilding the environment"
     ),
 ):
     """Auto-flasher for ESP32 devices. Continuously monitors for new devices and flashes them."""
     console.print("[bold blue]Starting ESP32 Auto-Flasher...[/bold blue]")
-    console.print(f"Target Build Directory: [bold white]{build_dir}[/bold white]")
+    console.print(f"Target Build Environment: [bold white]{build_env}[/bold white]")
 
+    if not skip_build:
+        subprocess.check_call(["pio", "run", "-e", build_env])
+
+    build_dir = Path(f".pio/build/{build_env}")
+    console.print(f"Target Build Directory: [bold white]{build_dir}[/bold white]")
     required_files = ["bootloader.bin", "partitions.bin", "firmware.bin"]
     missing_files = [f for f in required_files if not (build_dir / f).exists()]
     if missing_files:
