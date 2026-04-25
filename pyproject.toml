@@ -493,3 +493,11 @@ split-on-trailing-comma = false
 
 [tool.ruff.lint.mccabe]
 max-complexity = 25
+
+[dependency-groups]
+dev = [
+    "esptool>=5.2",
+    "pyserial>=3.5",
+    "rich>=15.0.0",
+    "typer>=0.24.1",
+]
