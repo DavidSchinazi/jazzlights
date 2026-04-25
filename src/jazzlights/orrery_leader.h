@@ -50,6 +50,8 @@ class OrreryLeader : public GpioSwitchInterface, public Player::OverriddenPatter
   std::optional<uint32_t> GetCalibration(Planet planet) const;
   void SetBrightness(Planet planet, uint8_t brightness);
   uint8_t GetBrightness(Planet planet) const;
+  void SetSpeedMultiplier(double speedMultiplier) { speedMultiplier_ = speedMultiplier; }
+  double GetSpeedMultiplier() const { return speedMultiplier_; }
   void SetLedPattern(Planet planet, uint32_t ledPattern);
   uint32_t GetLedPattern(Planet planet) const;
   std::optional<Milliseconds> GetTimeHallSensorLastOpened(Planet planet) const;
@@ -76,6 +78,7 @@ class OrreryLeader : public GpioSwitchInterface, public Player::OverriddenPatter
   void HandleSwitch3(bool isClosed);
   void HandleSwitch4(bool isClosed);
   OrreryScene scene_;
+  double speedMultiplier_ = 3.0;
   Milliseconds sceneStartTime_;
   Milliseconds lastRandomSceneTime_;
   Milliseconds nextRandomSceneDuration_;

@@ -24,13 +24,15 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
   M5.begin(cfg);
 
   // Main menu buttons.
-  planetButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/320, /*h=*/40, "");
-  sceneButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/40, /*w=*/320, /*h=*/40, "");
+  planetButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/320, /*h=*/60, "");
+  sceneButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/60, /*w=*/320, /*h=*/60, "");
   UpdateSceneButton();
-  ledMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/80, /*w=*/320, /*h=*/40, "LED");
-  motorMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/120, /*w=*/320, /*h=*/40, "Motor");
-  calibrationMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/160, /*w=*/320, /*h=*/40, "Calibration");
-  statusMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/200, /*w=*/320, /*h=*/40, "Status");
+  ledMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/120, /*w=*/160, /*h=*/60, "LED");
+  motorMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/120, /*w=*/160, /*h=*/60, "Motor");
+  calibrationMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/180, /*w=*/106, /*h=*/60, "HS");
+  statusMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/106, /*y=*/180, /*w=*/107, /*h=*/60, "Status");
+  speedMultiplierButton_ = TouchButtonManager::Get()->AddButton(/*x=*/213, /*y=*/180, /*w=*/107, /*h=*/60, "");
+  UpdateSpeedMultiplierButton();
 
   // LED submenu buttons.
   ledBrightnessButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/320, /*h=*/60, "");
@@ -60,10 +62,10 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
   UpdateMotorSpeedButton();
   motorCurrentSpeedButton_ = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/48, /*w=*/160, /*h=*/48, "");
   UpdateMotorCurrentSpeedButton();
-  motorCalibrationButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/96, /*w=*/160, /*h=*/48, "");
-  UpdateMotorCalibrationButton();
-  motorCurrentHzButton_ = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/96, /*w=*/160, /*h=*/48, "");
+  motorCurrentHzButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/96, /*w=*/160, /*h=*/48, "");
   UpdateMotorCurrentHzButton();
+  motorCalibrationButton_ = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/96, /*w=*/160, /*h=*/48, "");
+  UpdateMotorCalibrationButton();
   motorPositionButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/144, /*w=*/160, /*h=*/48, "");
   UpdateMotorPositionButton();
   motorCurrentPositionButton_ = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/144, /*w=*/160, /*h=*/48, "");
@@ -167,6 +169,7 @@ void OrreryLeaderUi::HideAll() {
   motorCurrentHzButton_->Hide();
   motorCalibrationButton_->Hide();
   motorSpeedButton_->Hide();
+  speedMultiplierButton_->Hide();
   motorBackButton_->Hide();
   for (int i = 0; i < 4; i++) { hallSensorInfoButtons_[i]->Hide(); }
   hallSensorBackButton_->Hide();
@@ -193,6 +196,7 @@ void OrreryLeaderUi::DrawMainMenu() {
   motorMenuButton_->Draw();
   calibrationMenuButton_->Draw();
   statusMenuButton_->Draw();
+  speedMultiplierButton_->Draw();
   TouchButtonManager::Get()->Redraw();
 }
 
@@ -228,6 +232,7 @@ void OrreryLeaderUi::DrawMotorMenu() {
   UpdateMotorCurrentSpeedButton();
   UpdateMotorCurrentHzButton();
   UpdateMotorCalibrationButton();
+  UpdateSpeedMultiplierButton();
   TouchButtonManager::Get()->Redraw();
 }
 
@@ -348,6 +353,10 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
         }
         OrreryLeader::Get()->SetPosition(currentPlanet_, targetPosition_);
         UpdateMotorPositionButton();
+      } else if (editingSpeedMultiplier_) {
+        OrreryLeader::Get()->SetSpeedMultiplier(keypadValue_ / 1000.0);
+        UpdateSpeedMultiplierButton();
+        OrreryLeader::Get()->SetScene(OrreryLeader::Get()->GetScene());
       } else {
         motorMilliRpm_ = keypadValue_;
         SetMotorSpeed();
@@ -358,6 +367,7 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       editingBrightness_ = false;
       editingOffset_ = false;
       editingPosition_ = false;
+      editingSpeedMultiplier_ = false;
       if (ledSubmenuActive_) {
         DrawLedMenu();
       } else if (motorSubmenuActive_) {
@@ -500,6 +510,7 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       editingBrightness_ = false;
       editingOffset_ = false;
       editingPosition_ = false;
+      editingSpeedMultiplier_ = false;
       keypadValue_ = 0;
       DrawKeypad();
     }
@@ -542,6 +553,16 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       statusSubmenuActive_ = true;
       DrawStatusMenu();
     }
+    if (speedMultiplierButton_->JustReleased()) {
+      keypadActive_ = true;
+      keypadHasValue_ = false;
+      editingBrightness_ = false;
+      editingOffset_ = false;
+      editingPosition_ = false;
+      editingSpeedMultiplier_ = true;
+      keypadValue_ = 0;
+      DrawKeypad();
+    }
   }
   TouchButtonManager::Get()->MaybePaint();
 }
@@ -564,6 +585,17 @@ void OrreryLeaderUi::UpdateMotorSpeedButton() {
   char label[32];
   snprintf(label, sizeof(label), "Set: %.1f RPM", motorMilliRpm_ / 1000.0f);
   motorSpeedButton_->SetLabelText(label);
+}
+
+void OrreryLeaderUi::UpdateSpeedMultiplierButton() {
+  char label[32];
+  snprintf(label, sizeof(label), "Mult: %.3f",
+           OrreryLeader::Get()->GetScene() == OrreryScene::Realistic ||
+                   OrreryLeader::Get()->GetScene() == OrreryScene::Silly ||
+                   OrreryLeader::Get()->GetScene() == OrreryScene::MercuryRetrograde
+               ? OrreryLeader::Get()->GetSpeedMultiplier()
+               : 1.0);
+  speedMultiplierButton_->SetLabelText(label);
 }
 
 void OrreryLeaderUi::UpdateMotorCurrentSpeedButton() {
@@ -719,9 +751,9 @@ void OrreryLeaderUi::UpdateCalibrationMenuButton() {
     } else if (lastClosed.has_value()) {
       isClosed = true;
     }
-    snprintf(label, sizeof(label), "Calibration - HS: %s", isClosed ? "Closed" : "Open");
+    snprintf(label, sizeof(label), "HS %s", isClosed ? "Closed" : "Open");
   } else {
-    snprintf(label, sizeof(label), "Calibration - HS: Unknown");
+    snprintf(label, sizeof(label), "HS");
   }
   calibrationMenuButton_->SetLabelText(label);
 }
@@ -765,10 +797,41 @@ void OrreryLeaderUi::UpdateHallSensorSubmenu() {
   hallSensorInfoButtons_[3]->SetLabelText(label);
 }
 
-void OrreryLeaderUi::DrawSpeedDisplayButton(TouchButton* button, int outline, int fill, int textColor) {
+void OrreryLeaderUi::DrawSpeedDisplayButton(TouchButton* button, int /*outline*/, int fill, int textColor) {
   button->PaintRectangle(fill, /*outline=*/fill);  // Skip outline.
-  char label[32] = "_";
-  if (keypadHasValue_) { snprintf(label, sizeof(label), "%lld", static_cast<int64_t>(keypadValue_)); }
+  char label[32];
+  const char* valueStr = keypadHasValue_ ? "" : "_";
+  if (editingBrightness_) {
+    if (keypadHasValue_) {
+      snprintf(label, sizeof(label), "Brightness: %" PRId32, keypadValue_);
+    } else {
+      snprintf(label, sizeof(label), "Brightness: _");
+    }
+  } else if (editingOffset_) {
+    if (keypadHasValue_) {
+      snprintf(label, sizeof(label), "Offset: %" PRId32, keypadValue_);
+    } else {
+      snprintf(label, sizeof(label), "Offset: _");
+    }
+  } else if (editingPosition_) {
+    if (keypadHasValue_) {
+      snprintf(label, sizeof(label), "Pos: %" PRId32, keypadValue_);
+    } else {
+      snprintf(label, sizeof(label), "Pos: _");
+    }
+  } else if (editingSpeedMultiplier_) {
+    if (keypadHasValue_) {
+      snprintf(label, sizeof(label), "Mult: %.3f", keypadValue_ / 1000.0);
+    } else {
+      snprintf(label, sizeof(label), "Mult: _");
+    }
+  } else {
+    if (keypadHasValue_) {
+      snprintf(label, sizeof(label), "Set: %.1f RPM", keypadValue_ / 1000.0);
+    } else {
+      snprintf(label, sizeof(label), "Set: _ RPM");
+    }
+  }
   button->PaintText(textColor, fill, label);
 }
 

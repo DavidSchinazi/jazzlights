@@ -164,7 +164,7 @@ void OrreryLeader::SetScene(OrreryScene scene) {
         {Planet::Neptune,  100},
     };
     for (size_t i = 0; i < sizeof(speeds) / sizeof(speeds[0]); i++) {
-      int32_t speed = speeds[i].speed;
+      int32_t speed = speeds[i].speed * speedMultiplier_;
       if (scene == OrreryScene::Silly && (i % 2) == 1) { speed = -speed; }
       if (scene == OrreryScene::MercuryRetrograde && speeds[i].planet == Planet::Mercury) { speed = -speed; }
       SetSpeed(speeds[i].planet, speed);
