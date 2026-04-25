@@ -30,12 +30,19 @@ enum class Planet : BusId {
   All = 255,
 };
 
+inline constexpr size_t kNumPlanetsWithoutSun = 8;
 inline constexpr size_t kNumPlanets = 9;
 inline constexpr int32_t kDefaultPlanetSpeed = 1000;
 inline constexpr uint8_t kDefaultPlanetBrightness = 64;
 inline constexpr PatternBits kPlanetPattern = 0x0000FE00;
+inline constexpr PatternBits kPlanetPatternHalfBit = 0x80000000;
+inline constexpr PatternBits kPlanetPatternHallSensorBit = 0x40000000;
+inline constexpr size_t kPlanetPatternOffsetShift = 16;
+inline constexpr PatternBits kPlanetPatternOffsetMask = 0xFF;
 inline constexpr Precedence kDefaultPlanetBasePrecedence = 100;
 inline constexpr Precedence kDefaultPlanetPrecedenceGain = 100;
+inline constexpr uint32_t kOrreryPositionNone = 0xFFFFFFFF;
+inline constexpr int32_t kOrrerySpeedDisable = INT32_MIN;
 
 enum class OrreryMessageType : uint8_t {
   LeaderCommand = 0x01,
@@ -57,6 +64,9 @@ struct OrreryMessage {
   std::optional<uint8_t> ledBrightness;
   std::optional<Precedence> ledBasePrecedence;
   std::optional<Precedence> ledPrecedenceGain;
+
+  // IMPORTANT: If additional data is added to OrreryMessage, kMaxMessageLength needs to be adjusted in
+  // Max485BusHandler.
 
   bool operator==(const OrreryMessage& other) const {
     return type == other.type && leaderBootId == other.leaderBootId &&

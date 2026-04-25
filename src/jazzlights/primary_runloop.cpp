@@ -82,7 +82,11 @@ void SetupPrimaryRunLoop() {
 
   AddLedsToRunner(&runner);
 
-#if JL_IS_CONFIG(CLOUDS)
+#if JL_AUDIO_VISUALIZER
+  // Ensures creatures follow the sound reactive dome.
+  player.setBasePrecedence(kCreatureOverridePrecedence);
+  player.setPrecedenceGain(0);
+#elif JL_IS_CONFIG(CLOUDS)
 #if !JL_DEV
   player.setBasePrecedence(6000);
   player.setPrecedenceGain(100);
@@ -116,7 +120,9 @@ void SetupPrimaryRunLoop() {
 #endif  // JL_ETHERNET
 #if JL_IS_CONFIG(ORRERY_PLANET)
   OrreryPlanet::Get()->Setup(player);
-#endif  // JL_IS_CONFIG(ORRERY_PLANET)
+#elif JL_IS_CONFIG(ORRERY_LEADER)
+  OrreryLeader::Get()->Setup(player);
+#endif  // ORRERY
   player.begin();
 
   GetUi()->FinalSetup();

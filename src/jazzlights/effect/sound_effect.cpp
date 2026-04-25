@@ -6,6 +6,94 @@
 #include <cstring>
 
 namespace jazzlights {
+namespace {
+const TProgmemRGBPalette16* SoundReactivePaletteFromOurColorPalette(OurColorPalette ocp) {
+  switch (ocp) {
+    case OCPcloud: {
+      static const TProgmemRGBPalette16 SRCloudColors_p FL_PROGMEM = {CRGB::Blue,      CRGB::DarkBlue,
+                                                                      CRGB::DarkBlue,  CRGB::DarkBlue,
+                                                                      CRGB::DarkBlue,  CRGB::DarkBlue,
+                                                                      CRGB::DarkBlue,  CRGB::DarkBlue,
+                                                                      CRGB::Blue,      CRGB::DarkBlue,
+                                                                      CRGB::SkyBlue,   CRGB::SkyBlue,
+                                                                      CRGB::LightBlue, /*CRGB::White*/ CRGB::Blue,
+                                                                      CRGB::LightBlue, CRGB::SkyBlue};
+      return &SRCloudColors_p;
+    }
+    case OCPlava: {
+      static const TProgmemRGBPalette16 SRLavaColors_p FL_PROGMEM = {CRGB::Black,
+                                                                     CRGB::Maroon,
+                                                                     CRGB::Black,
+                                                                     CRGB::Maroon,
+                                                                     CRGB::DarkRed,
+                                                                     CRGB::DarkRed,
+                                                                     CRGB::Maroon,
+                                                                     CRGB::DarkRed,
+                                                                     CRGB::DarkRed,
+                                                                     CRGB::DarkRed,
+                                                                     CRGB::Red,
+                                                                     CRGB::Orange,
+                                                                     /*CRGB::White*/ CRGB::Orange,
+                                                                     CRGB::Orange,
+                                                                     CRGB::Red,
+                                                                     CRGB::DarkRed};
+      return &SRLavaColors_p;
+    }
+    case OCPocean: {
+      static const TProgmemRGBPalette16 SROceanColors_p FL_PROGMEM = {
+          CRGB::MidnightBlue, CRGB::DarkBlue,   CRGB::MidnightBlue, CRGB::Navy,
+          CRGB::DarkBlue,     CRGB::MediumBlue, CRGB::SeaGreen,     CRGB::Teal,
+          CRGB::CadetBlue,    CRGB::Blue,       CRGB::DarkCyan,     CRGB::CornflowerBlue,
+          CRGB::Aquamarine,   CRGB::SeaGreen,   CRGB::Aqua,         CRGB::LightSkyBlue};
+      return &SROceanColors_p;
+    }
+    case OCPforest: {
+      static const TProgmemRGBPalette16 SRForestColors_p FL_PROGMEM = {CRGB::DarkGreen,
+                                                                       CRGB::DarkGreen,
+                                                                       CRGB::DarkOliveGreen,
+                                                                       CRGB::DarkGreen,
+                                                                       CRGB::Green,
+                                                                       CRGB::ForestGreen,
+                                                                       CRGB::OliveDrab,
+                                                                       CRGB::Green,
+                                                                       CRGB::SeaGreen,
+                                                                       /*CRGB::MediumAquamarine*/ CRGB::OliveDrab,
+                                                                       CRGB::LimeGreen,
+                                                                       CRGB::YellowGreen,
+                                                                       CRGB::LightGreen,
+                                                                       /*CRGB::LawnGreen*/ CRGB::ForestGreen,
+                                                                       /*CRGB::MediumAquamarine*/ CRGB::OliveDrab,
+                                                                       CRGB::ForestGreen};
+      return &SRForestColors_p;
+    }
+    case OCPrainbow: {
+      static const TProgmemRGBPalette16 SRRainbowColors_p FL_PROGMEM = {
+          0xFF0000, 0xD52A00, 0xAB5500, 0xAB7F00, 0xABAB00, 0x56D500, 0x00FF00, 0x00D52A,
+          0x00AB55, 0x0056AA, 0x0000FF, 0x2A00D5, 0x5500AB, 0x7F0081, 0xAB0055, 0xD5002B};
+      return &SRRainbowColors_p;
+    }
+    case OCPparty: {
+      static const TProgmemRGBPalette16 SRPartyColors_p FL_PROGMEM = {
+          0x5500AB, 0x84007C, 0xB5004B, 0xE5001B, 0xE81700, 0xB84700, 0xAB7700, 0xABAB00,
+          0xAB5500, 0xDD2200, 0xF2000E, 0xC2003E, 0x8F0071, 0x5F00A1, 0x2F00D0, 0x0007F9};
+      return &SRPartyColors_p;
+    }
+    case OCPheat: {
+      static const TProgmemRGBPalette16 SRHeatColors_p FL_PROGMEM = {
+          // 0x000000, 0x330000, 0x660000, 0x990000, 0xCC0000, 0xFF0000, 0xFF3300, 0xFF6600,
+          // 0xFF9900, 0xFFCC00, 0xFFFF00, 0xFFFF33, 0xFFFF66, 0xFFFF99, 0xFFFFCC, 0xFFFFFF
+          0x000000, 0x330000, 0x660000, 0x990000, 0x990000, 0xCC0000, 0xFF0000, 0xFF3300,
+          0xFF6600, 0xFF6600, 0xFF9900, 0xFFCC00, 0xFFFF00, 0xFFFF33, 0xFFFF33, 0xFFFF66};
+      return &SRHeatColors_p;
+    }
+  }
+  return FastLEDPaletteFromOurColorPalette(OCPrainbow);
+}
+
+CRGB ColorFromSoundReactivePalette(OurColorPalette ocp, uint8_t color) {
+  return ColorFromPalette(*SoundReactivePaletteFromOurColorPalette(ocp), color);
+}
+}  // namespace
 
 size_t SoundEffect::extraContextSize(const Frame& frame) const { return sizeof(CRGB) * frame.pixelCount; }
 
@@ -15,15 +103,43 @@ void SoundEffect::innerBegin(const Frame& frame, SoundState* state) const {
 
   OurColorPalette ocp = palette(frame);
   state->brightestColor = CRGB::Black;
+#if 1
+  CRGB brightestColor = CRGB::Black;
+  uint8_t maxLuma = 0;
+  constexpr uint8_t kLumaCeiling = 191;
+  for (uint8_t i = 0; i < 255; i++) {
+    CRGB color = ColorFromSoundReactivePalette(ocp, i);
+    uint8_t luma = color.getLuma();
+    if (luma > maxLuma && luma <= kLumaCeiling) {
+      maxLuma = luma;
+      state->brightestColor = color;
+    }
+  }
+  // Fallback if the entire palette is somehow above the ceiling (unlikely)
+  if (maxLuma == 0) { state->brightestColor = ColorFromSoundReactivePalette(ocp, 128); }
+#elif 1
   uint32_t maxLuma = 0;
   for (int i = 0; i < 256; i += 8) {
-    CRGB c = colorFromOurPalette(ocp, i);
+    CRGB c = ColorFromSoundReactivePalette(ocp, i);
     uint32_t luma = c.r + c.g + c.b;
     if (luma > maxLuma) {
       maxLuma = luma;
       state->brightestColor = c;
     }
   }
+#else
+  uint32_t maxSaturation = 0;
+  for (int i = 0; i < 256; i += 8) {
+    CRGB c = ColorFromSoundReactivePalette(ocp, i);
+    uint8_t cMax = max(c.r, max(c.g, c.b));
+    uint8_t cMin = min(c.r, min(c.g, c.b));
+    uint32_t saturation = cMax - cMin;
+    if (saturation > maxSaturation) {
+      maxSaturation = saturation;
+      state->brightestColor = c;
+    }
+  }
+#endif
 
   // Initialize per-pixel state
   memset(lastColors(state), 0, sizeof(CRGB) * frame.pixelCount);
@@ -33,7 +149,7 @@ void SoundEffect::innerRewind(const Frame& /*frame*/, SoundState* state) const {
   memcpy(state->prevBands, state->audioData.bands, sizeof(state->prevBands));
   Audio::Get().GetVisualizerData(&state->audioData);
   bool wasSquelched = state->isSquelched;
-  state->isSquelched = (state->audioData.volume < 0.4f);
+  state->isSquelched = state->audioData.squelch;
   if (state->isSquelched && !wasSquelched) {
     jll_info("Entering squelch mode (volume %f)", state->audioData.volume);
   } else if (!state->isSquelched && wasSquelched) {
@@ -87,7 +203,7 @@ ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, So
     prevMagnitude = state->prevBands[bandLow] * (1.0f - frac) + state->prevBands[bandHigh] * frac;
     // Vary the color index per strand
     uint8_t colorIdx = static_cast<uint8_t>(midsRel * 170.0) + (px.strand->index * 16);
-    color = colorFromOurPalette(ocp, colorIdx);
+    color = ColorFromSoundReactivePalette(ocp, colorIdx);
   } else {
     // Highs Region (70-100%): Bands 20-31
     double highsRel = (xRel - 0.7) / 0.3;
@@ -100,7 +216,7 @@ ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, So
     prevMagnitude = state->prevBands[bandLow] * (1.0f - frac) + state->prevBands[bandHigh] * frac;
     // Vary the color index per strand
     uint8_t colorIdx = 171 + static_cast<uint8_t>(highsRel * 84.0) + (px.strand->index * 16);
-    color = colorFromOurPalette(ocp, colorIdx);
+    color = ColorFromSoundReactivePalette(ocp, colorIdx);
   }
 
   // Get magnitude for this band (expected to be roughly between agc_min and agc_max)
@@ -146,12 +262,42 @@ ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, So
 
   if (sparkleChance > 0 &&
       frame.predictableRandom->GetRandomNumberBetween(0, 5000) < static_cast<int32_t>(sparkleChance)) {
-    // Brighten or flash white
+#if 1
     if (frame.predictableRandom->GetRandomByte() > 128) {
-      color = CRGB::White;
+      color.nscale8_video(192);        // Dim slightly to make room for...
+      color += state->brightestColor;  // ...a punch of the safe bass color
     } else {
-      color += CRGB(128, 128, 128);  // Was 64
+      color.maximizeBrightness(200);  // Push to a safe ceiling
     }
+#else
+    /*
+    Remove the pure white case — replace color = CRGB::White with a brightened version of the existing color, e.g.
+    color.maximizeBrightness() or just remove that branch entirely. Reduce the gray overlay — change CRGB(128, 128, 128)
+    to something smaller like CRGB(64, 64, 64) or remove it entirely and just boost barBrightness. Reduce sparkle
+    frequency — lower the multiplier 10000.0f on line 144 or raise the thresholds (0.5f volume, 0.05f transient, 0.2f
+    normalizedMag`).
+    */
+    // Brighten or flash white
+    uint16_t luma = color.red + color.green + color.blue;
+    // Brighten the color if it doesn't get too white.
+    uint8_t max = color.red;
+    if (color.green > max) { max = color.green; }
+    if (color.blue > max) { max = color.blue; }
+    uint8_t min = color.red;
+    if (color.green < min) { min = color.green; }
+    if (color.blue < min) { min = color.blue; }
+    if (luma >= 64 * 3) {
+      if (max > 0 && max - min > 64) {
+        uint16_t factor = 65535 / max;
+        color.red = (color.red * factor) / 256;
+        color.green = (color.green * factor) / 256;
+        color.blue = (color.blue * factor) / 256;
+      }
+    } else {
+      color += CRGB(64, 64, 64);
+      // color += CRGB(128, 128, 128);
+    }
+#endif
   }
 
   CRGB* prevColors = lastColors(state);

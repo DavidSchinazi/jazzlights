@@ -24,11 +24,15 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
   M5.begin(cfg);
 
   // Main menu buttons.
-  planetButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/320, /*h=*/48, "");
-  ledMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/48, /*w=*/320, /*h=*/48, "LED");
-  motorMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/96, /*w=*/320, /*h=*/48, "Motor");
-  calibrationMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/144, /*w=*/320, /*h=*/48, "Calibration");
-  statusMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/192, /*w=*/320, /*h=*/48, "Status");
+  planetButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/320, /*h=*/60, "");
+  sceneButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/60, /*w=*/320, /*h=*/60, "");
+  UpdateSceneButton();
+  ledMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/120, /*w=*/160, /*h=*/60, "LED");
+  motorMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/120, /*w=*/160, /*h=*/60, "Motor");
+  calibrationMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/180, /*w=*/106, /*h=*/60, "HS");
+  statusMenuButton_ = TouchButtonManager::Get()->AddButton(/*x=*/106, /*y=*/180, /*w=*/107, /*h=*/60, "Status");
+  speedMultiplierButton_ = TouchButtonManager::Get()->AddButton(/*x=*/213, /*y=*/180, /*w=*/107, /*h=*/60, "");
+  UpdateSpeedMultiplierButton();
 
   // LED submenu buttons.
   ledBrightnessButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/320, /*h=*/60, "");
@@ -42,23 +46,31 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
 
   // Motor submenu buttons.
   int32_t speed = OrreryLeader::Get()->GetSpeed(currentPlanet_);
-  motorForward_ = (speed >= 0);
-  motorMilliRpm_ = std::abs(speed);
-  targetPosition_ = OrreryLeader::Get()->GetPosition(currentPlanet_);
-  motorEnabled_ = (speed != 0);
-  motorEnableButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/320, /*h=*/34,
-                                                            motorEnabled_ ? "Motor Enabled" : "Motor Disabled");
-  motorDirectionButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/34, /*w=*/320, /*h=*/34, "");
+  if (speed == kOrrerySpeedDisable) {
+    motorEnabled_ = false;
+  } else {
+    motorEnabled_ = true;
+    motorForward_ = (speed >= 0);
+    motorMilliRpm_ = std::abs(speed);
+  }
+  targetPosition_ = OrreryLeader::Get()->GetTargetPosition(currentPlanet_);
+  motorEnableButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/160, /*h=*/48,
+                                                            motorEnabled_ ? "Enabled" : "Disabled");
+  motorDirectionButton_ = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/0, /*w=*/160, /*h=*/48, "");
   UpdateMotorDirectionButton();
-  motorPositionButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/68, /*w=*/320, /*h=*/34, "");
-  UpdateMotorPositionButton();
-  motorCurrentPositionButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/102, /*w=*/320, /*h=*/34, "");
-  UpdateMotorCurrentPositionButton();
-  motorCalibrationButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/136, /*w=*/320, /*h=*/34, "");
-  UpdateMotorCalibrationButton();
-  motorSpeedButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/170, /*w=*/320, /*h=*/34, "");
+  motorSpeedButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/48, /*w=*/160, /*h=*/48, "");
   UpdateMotorSpeedButton();
-  motorBackButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/204, /*w=*/320, /*h=*/34, "Back");
+  motorCurrentSpeedButton_ = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/48, /*w=*/160, /*h=*/48, "");
+  UpdateMotorCurrentSpeedButton();
+  motorCurrentHzButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/96, /*w=*/160, /*h=*/48, "");
+  UpdateMotorCurrentHzButton();
+  motorCalibrationButton_ = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/96, /*w=*/160, /*h=*/48, "");
+  UpdateMotorCalibrationButton();
+  motorPositionButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/144, /*w=*/160, /*h=*/48, "");
+  UpdateMotorPositionButton();
+  motorCurrentPositionButton_ = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/144, /*w=*/160, /*h=*/48, "");
+  UpdateMotorCurrentPositionButton();
+  motorBackButton_ = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/192, /*w=*/320, /*h=*/48, "Back");
 
   // Calibration submenu buttons.
   for (int i = 0; i < 4; i++) {
@@ -100,16 +112,34 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
   planetSelectButtons_[kNumPlanets] = TouchButtonManager::Get()->AddButton(0, 3 * ph, 160, ph, "Global");
   planetBackButton_ = TouchButtonManager::Get()->AddButton(160, 3 * ph, 160, ph, "Back");
 
+  // Scene menu buttons.
+  const int sw = 320 / 3;
+  const int sh = 240 / 5;
+  for (int i = 0; i < 14; i++) {
+    const char* label;
+    if (i >= 4 && i < 13) {
+      label = GetPlanetName(static_cast<Planet>(i));
+    } else if (static_cast<OrreryScene>(i) == OrreryScene::MercuryRetrograde) {
+      label = "MercRetro";
+    } else {
+      label = OrrerySceneToString(static_cast<OrreryScene>(i));
+    }
+    sceneSelectButtons_[i] = TouchButtonManager::Get()->AddButton((i % 3) * sw, (i / 3) * sh, sw, sh, label);
+  }
+  sceneBackButton_ = TouchButtonManager::Get()->AddButton(2 * sw, 4 * sh, sw, sh, "Back");
+
   // Initialize LED pattern mode.
   uint32_t ledPattern = OrreryLeader::Get()->GetLedPattern(currentPlanet_);
-  if (ledPattern & 0x80000000) {
-    planetPatternMode_ = PlanetPatternMode::Half;
-  } else if (ledPattern & 0x40000000) {
+  if (ledPattern & kPlanetPatternHallSensorBit) {
     planetPatternMode_ = PlanetPatternMode::Hall;
+  } else if (ledPattern & kPlanetPatternHalfBit) {
+    planetPatternMode_ = PlanetPatternMode::Half;
+  } else if (ledPattern == 0x00000200) {
+    planetPatternMode_ = PlanetPatternMode::Green;
   } else {
     planetPatternMode_ = PlanetPatternMode::Full;
   }
-  planetOffset_ = (ledPattern >> 16) & 0xFF;
+  planetOffset_ = (ledPattern >> kPlanetPatternOffsetShift) & kPlanetPatternOffsetMask;
   UpdatePlanetHalfButton();
   UpdatePlanetOffsetButton();
 
@@ -123,6 +153,7 @@ void OrreryLeaderUi::FinalSetup() { DrawMainMenu(); }
 
 void OrreryLeaderUi::HideAll() {
   planetButton_->Hide();
+  sceneButton_->Hide();
   ledMenuButton_->Hide();
   motorMenuButton_->Hide();
   calibrationMenuButton_->Hide();
@@ -134,8 +165,11 @@ void OrreryLeaderUi::HideAll() {
   motorDirectionButton_->Hide();
   motorPositionButton_->Hide();
   motorCurrentPositionButton_->Hide();
+  motorCurrentSpeedButton_->Hide();
+  motorCurrentHzButton_->Hide();
   motorCalibrationButton_->Hide();
   motorSpeedButton_->Hide();
+  speedMultiplierButton_->Hide();
   motorBackButton_->Hide();
   for (int i = 0; i < 4; i++) { hallSensorInfoButtons_[i]->Hide(); }
   hallSensorBackButton_->Hide();
@@ -150,15 +184,19 @@ void OrreryLeaderUi::HideAll() {
   confirmButton_->Hide();
   for (int i = 0; i <= kNumPlanets; i++) { planetSelectButtons_[i]->Hide(); }
   planetBackButton_->Hide();
+  for (int i = 0; i < 14; i++) { sceneSelectButtons_[i]->Hide(); }
+  sceneBackButton_->Hide();
 }
 
 void OrreryLeaderUi::DrawMainMenu() {
   HideAll();
   planetButton_->Draw();
+  sceneButton_->Draw();
   ledMenuButton_->Draw();
   motorMenuButton_->Draw();
   calibrationMenuButton_->Draw();
   statusMenuButton_->Draw();
+  speedMultiplierButton_->Draw();
   TouchButtonManager::Get()->Redraw();
 }
 
@@ -187,9 +225,14 @@ void OrreryLeaderUi::DrawMotorMenu() {
   motorCurrentPositionButton_->Draw();
   motorCalibrationButton_->Draw();
   motorSpeedButton_->Draw();
+  motorCurrentSpeedButton_->Draw();
+  motorCurrentHzButton_->Draw();
   motorBackButton_->Draw();
   UpdateMotorCurrentPositionButton();
+  UpdateMotorCurrentSpeedButton();
+  UpdateMotorCurrentHzButton();
   UpdateMotorCalibrationButton();
+  UpdateSpeedMultiplierButton();
   TouchButtonManager::Get()->Redraw();
 }
 
@@ -219,11 +262,39 @@ void OrreryLeaderUi::DrawPlanetMenu() {
   TouchButtonManager::Get()->Redraw();
 }
 
+void OrreryLeaderUi::DrawSceneMenu() {
+  HideAll();
+  for (int i = 0; i < 14; i++) { sceneSelectButtons_[i]->Draw(); }
+  sceneBackButton_->Draw();
+  TouchButtonManager::Get()->Redraw();
+}
+
 void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
   UpdateCalibrationMenuButton();
   UpdateStatusSubmenu();
+  OrreryScene currentScene = OrreryLeader::Get()->GetScene();
+  if (currentScene != lastScene_) {
+    UpdateSceneButton();
+    // Update local motor state for current planet.
+    int32_t speed = OrreryLeader::Get()->GetSpeed(currentPlanet_);
+    if (speed == kOrrerySpeedDisable) {
+      motorEnabled_ = false;
+    } else {
+      motorEnabled_ = true;
+      motorForward_ = (speed >= 0);
+      motorMilliRpm_ = std::abs(speed);
+    }
+    motorEnableButton_->SetLabelText(motorEnabled_ ? "Enabled" : "Disabled");
+    UpdateMotorDirectionButton();
+    UpdateMotorSpeedButton();
+    UpdateMotorCurrentSpeedButton();
+    UpdateMotorCurrentHzButton();
+    lastScene_ = currentScene;
+  }
   if (motorSubmenuActive_ && !keypadActive_) {
     UpdateMotorCurrentPositionButton();
+    UpdateMotorCurrentSpeedButton();
+    UpdateMotorCurrentHzButton();
     UpdateMotorCalibrationButton();
   }
   M5.update();
@@ -282,6 +353,10 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
         }
         OrreryLeader::Get()->SetPosition(currentPlanet_, targetPosition_);
         UpdateMotorPositionButton();
+      } else if (editingSpeedMultiplier_) {
+        OrreryLeader::Get()->SetSpeedMultiplier(keypadValue_ / 1000.0);
+        UpdateSpeedMultiplierButton();
+        OrreryLeader::Get()->SetScene(OrreryLeader::Get()->GetScene());
       } else {
         motorMilliRpm_ = keypadValue_;
         SetMotorSpeed();
@@ -292,6 +367,7 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       editingBrightness_ = false;
       editingOffset_ = false;
       editingPosition_ = false;
+      editingSpeedMultiplier_ = false;
       if (ledSubmenuActive_) {
         DrawLedMenu();
       } else if (motorSubmenuActive_) {
@@ -311,26 +387,34 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
         UpdatePlanetButton();
         // Update UI with current speed of that planet
         int32_t speed = OrreryLeader::Get()->GetSpeed(currentPlanet_);
-        motorForward_ = (speed >= 0);
-        motorMilliRpm_ = std::abs(speed);
-        targetPosition_ = OrreryLeader::Get()->GetPosition(currentPlanet_);
-        motorEnabled_ = (speed != 0);
-        motorEnableButton_->SetLabelText(motorEnabled_ ? "Motor Enabled" : "Motor Disabled");
+        if (speed == kOrrerySpeedDisable) {
+          motorEnabled_ = false;
+        } else {
+          motorEnabled_ = true;
+          motorForward_ = (speed >= 0);
+          motorMilliRpm_ = std::abs(speed);
+        }
+        targetPosition_ = OrreryLeader::Get()->GetTargetPosition(currentPlanet_);
+        motorEnableButton_->SetLabelText(motorEnabled_ ? "Enabled" : "Disabled");
         UpdateMotorDirectionButton();
         UpdateMotorPositionButton();
         UpdateMotorSpeedButton();
+        UpdateMotorCurrentSpeedButton();
+        UpdateMotorCurrentHzButton();
         UpdateMotorCalibrationButton();
         ledBrightness_ = OrreryLeader::Get()->GetBrightness(currentPlanet_);
         UpdateLedBrightnessButton();
         uint32_t ledPattern = OrreryLeader::Get()->GetLedPattern(currentPlanet_);
-        if (ledPattern & 0x80000000) {
-          planetPatternMode_ = PlanetPatternMode::Half;
-        } else if (ledPattern & 0x40000000) {
+        if (ledPattern & kPlanetPatternHallSensorBit) {
           planetPatternMode_ = PlanetPatternMode::Hall;
+        } else if (ledPattern & kPlanetPatternHalfBit) {
+          planetPatternMode_ = PlanetPatternMode::Half;
+        } else if (ledPattern == 0x00000200) {
+          planetPatternMode_ = PlanetPatternMode::Green;
         } else {
           planetPatternMode_ = PlanetPatternMode::Full;
         }
-        planetOffset_ = (ledPattern >> 16) & 0xFF;
+        planetOffset_ = (ledPattern >> kPlanetPatternOffsetShift) & kPlanetPatternOffsetMask;
         UpdatePlanetHalfButton();
         UpdatePlanetOffsetButton();
         planetSubmenuActive_ = false;
@@ -339,6 +423,31 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
     }
     if (planetBackButton_->JustReleased()) {
       planetSubmenuActive_ = false;
+      DrawMainMenu();
+    }
+  } else if (sceneSubmenuActive_) {
+    for (int i = 0; i < 14; i++) {
+      if (sceneSelectButtons_[i]->JustReleased()) {
+        OrreryLeader::Get()->SetScene(static_cast<OrreryScene>(i));
+        UpdateSceneButton();
+        // Update local motor state for current planet.
+        int32_t speed = OrreryLeader::Get()->GetSpeed(currentPlanet_);
+        if (speed == kOrrerySpeedDisable) {
+          motorEnabled_ = false;
+        } else {
+          motorEnabled_ = true;
+          motorForward_ = (speed >= 0);
+          motorMilliRpm_ = std::abs(speed);
+        }
+        motorEnableButton_->SetLabelText(motorEnabled_ ? "Enabled" : "Disabled");
+        UpdateMotorDirectionButton();
+        UpdateMotorSpeedButton();
+        sceneSubmenuActive_ = false;
+        DrawMainMenu();
+      }
+    }
+    if (sceneBackButton_->JustReleased()) {
+      sceneSubmenuActive_ = false;
       DrawMainMenu();
     }
   } else if (ledSubmenuActive_) {
@@ -355,6 +464,8 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
         planetPatternMode_ = PlanetPatternMode::Half;
       } else if (planetPatternMode_ == PlanetPatternMode::Half) {
         planetPatternMode_ = PlanetPatternMode::Hall;
+      } else if (planetPatternMode_ == PlanetPatternMode::Hall) {
+        planetPatternMode_ = PlanetPatternMode::Green;
       } else {
         planetPatternMode_ = PlanetPatternMode::Full;
       }
@@ -376,7 +487,7 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
   } else if (motorSubmenuActive_) {
     if (motorEnableButton_->JustReleased()) {
       motorEnabled_ = !motorEnabled_;
-      motorEnableButton_->SetLabelText(motorEnabled_ ? "Motor Enabled" : "Motor Disabled");
+      motorEnableButton_->SetLabelText(motorEnabled_ ? "Enabled" : "Disabled");
       SetMotorSpeed();
     }
     if (motorDirectionButton_->JustReleased()) {
@@ -399,6 +510,7 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       editingBrightness_ = false;
       editingOffset_ = false;
       editingPosition_ = false;
+      editingSpeedMultiplier_ = false;
       keypadValue_ = 0;
       DrawKeypad();
     }
@@ -421,6 +533,10 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       planetSubmenuActive_ = true;
       DrawPlanetMenu();
     }
+    if (sceneButton_->JustReleased()) {
+      sceneSubmenuActive_ = true;
+      DrawSceneMenu();
+    }
     if (ledMenuButton_->JustReleased()) {
       ledSubmenuActive_ = true;
       DrawLedMenu();
@@ -437,36 +553,91 @@ void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
       statusSubmenuActive_ = true;
       DrawStatusMenu();
     }
+    if (speedMultiplierButton_->JustReleased()) {
+      keypadActive_ = true;
+      keypadHasValue_ = false;
+      editingBrightness_ = false;
+      editingOffset_ = false;
+      editingPosition_ = false;
+      editingSpeedMultiplier_ = true;
+      keypadValue_ = 0;
+      DrawKeypad();
+    }
   }
   TouchButtonManager::Get()->MaybePaint();
 }
 
 void OrreryLeaderUi::SetMotorSpeed() {
-  int32_t speed = motorMilliRpm_;
-  if (!motorForward_) { speed = -speed; }
   if (motorEnabled_) {
+    int32_t speed = motorMilliRpm_;
+    if (!motorForward_) { speed = -speed; }
     OrreryLeader::Get()->SetSpeed(currentPlanet_, speed);
   } else {
-    OrreryLeader::Get()->SetSpeed(currentPlanet_, 0);
+    OrreryLeader::Get()->SetSpeed(currentPlanet_, kOrrerySpeedDisable);
   }
 }
 
 void OrreryLeaderUi::UpdateMotorDirectionButton() {
-  motorDirectionButton_->SetLabelText(motorForward_ ? "Motor Forward" : "Motor Reverse");
+  motorDirectionButton_->SetLabelText(motorForward_ ? "Forward" : "Reverse");
 }
 
 void OrreryLeaderUi::UpdateMotorSpeedButton() {
   char label[32];
-  snprintf(label, sizeof(label), "RPM: %.3f", motorMilliRpm_ / 1000.0f);
+  snprintf(label, sizeof(label), "Set: %.1f RPM", motorMilliRpm_ / 1000.0f);
   motorSpeedButton_->SetLabelText(label);
+}
+
+void OrreryLeaderUi::UpdateSpeedMultiplierButton() {
+  char label[32];
+  snprintf(label, sizeof(label), "Mult: %.3f",
+           OrreryLeader::Get()->GetScene() == OrreryScene::Realistic ||
+                   OrreryLeader::Get()->GetScene() == OrreryScene::Silly ||
+                   OrreryLeader::Get()->GetScene() == OrreryScene::MercuryRetrograde
+               ? OrreryLeader::Get()->GetSpeedMultiplier()
+               : 1.0);
+  speedMultiplierButton_->SetLabelText(label);
+}
+
+void OrreryLeaderUi::UpdateMotorCurrentSpeedButton() {
+  char label[32];
+  std::optional<int32_t> reportedSpeed = OrreryLeader::Get()->GetReportedSpeed(currentPlanet_);
+  if (reportedSpeed.has_value()) {
+    std::optional<uint32_t> calibration = OrreryLeader::Get()->GetCalibration(currentPlanet_);
+    if (calibration.has_value() && *calibration > 0) {
+      float rpm = (*reportedSpeed * 60.0f) / *calibration;
+      snprintf(label, sizeof(label), "Speed: %.1f RPM", rpm);
+    } else {
+      snprintf(label, sizeof(label), "Speed: Unknown");
+    }
+  } else {
+    snprintf(label, sizeof(label), "Speed: Unknown");
+  }
+  motorCurrentSpeedButton_->SetLabelText(label);
+}
+
+void OrreryLeaderUi::UpdateMotorCurrentHzButton() {
+  char label[32];
+  std::optional<int32_t> reportedSpeed = OrreryLeader::Get()->GetReportedSpeed(currentPlanet_);
+  if (reportedSpeed.has_value()) {
+    snprintf(label, sizeof(label), "Speed: %ld Hz", (long)*reportedSpeed);
+  } else {
+    snprintf(label, sizeof(label), "Speed: Unknown");
+  }
+  motorCurrentHzButton_->SetLabelText(label);
+}
+
+void OrreryLeaderUi::UpdateSceneButton() {
+  char label[32];
+  snprintf(label, sizeof(label), "Scene: %s", OrrerySceneToString(OrreryLeader::Get()->GetScene()));
+  sceneButton_->SetLabelText(label);
 }
 
 void OrreryLeaderUi::UpdateMotorPositionButton() {
   char label[32];
   if (targetPosition_.has_value()) {
-    snprintf(label, sizeof(label), "Set Pos: %lu deg", (unsigned long)(*targetPosition_ / 1000));
+    snprintf(label, sizeof(label), "Set: %lu deg", (unsigned long)(*targetPosition_ / 1000));
   } else {
-    snprintf(label, sizeof(label), "Set Pos: unset");
+    snprintf(label, sizeof(label), "Set: unset");
   }
   motorPositionButton_->SetLabelText(label);
 }
@@ -475,9 +646,9 @@ void OrreryLeaderUi::UpdateMotorCurrentPositionButton() {
   char label[32];
   std::optional<uint32_t> currentPos = OrreryLeader::Get()->GetPosition(currentPlanet_);
   if (currentPos.has_value()) {
-    snprintf(label, sizeof(label), "Current: %lu deg", (unsigned long)(*currentPos / 1000));
+    snprintf(label, sizeof(label), "Pos: %lu deg", (unsigned long)(*currentPos / 1000));
   } else {
-    snprintf(label, sizeof(label), "Current: Unknown");
+    snprintf(label, sizeof(label), "Pos: Unknown");
   }
   motorCurrentPositionButton_->SetLabelText(label);
 }
@@ -486,7 +657,7 @@ void OrreryLeaderUi::UpdateMotorCalibrationButton() {
   char label[32];
   std::optional<uint32_t> calibration = OrreryLeader::Get()->GetCalibration(currentPlanet_);
   if (calibration.has_value()) {
-    snprintf(label, sizeof(label), "Calib: %lu steps/rev", (unsigned long)*calibration);
+    snprintf(label, sizeof(label), "Calib: %lu", (unsigned long)*calibration);
   } else {
     snprintf(label, sizeof(label), "Calib: Unknown");
   }
@@ -507,12 +678,16 @@ void OrreryLeaderUi::UpdatePlanetButton() {
 }
 
 void OrreryLeaderUi::UpdatePlanetHalfButton() {
-  const char* label = "Full";
+  const char* modeName = "Full";
   if (planetPatternMode_ == PlanetPatternMode::Half) {
-    label = "Half";
+    modeName = "Half";
   } else if (planetPatternMode_ == PlanetPatternMode::Hall) {
-    label = "Hall Sensor";
+    modeName = "Hall Sensor";
+  } else if (planetPatternMode_ == PlanetPatternMode::Green) {
+    modeName = "Green";
   }
+  char label[32];
+  snprintf(label, sizeof(label), "Pattern: %s", modeName);
   planetHalfButton_->SetLabelText(label);
 }
 
@@ -523,11 +698,16 @@ void OrreryLeaderUi::UpdatePlanetOffsetButton() {
 }
 
 void OrreryLeaderUi::UpdatePlanetPattern() {
-  uint32_t ledPattern = 0x0000FE00 | (planetOffset_ << 16);
-  if (planetPatternMode_ == PlanetPatternMode::Half) {
-    ledPattern |= 0x80000000;
-  } else if (planetPatternMode_ == PlanetPatternMode::Hall) {
-    ledPattern |= 0x40000000;
+  uint32_t ledPattern;
+  if (planetPatternMode_ == PlanetPatternMode::Green) {
+    ledPattern = 0x00000200;
+  } else {
+    ledPattern = kPlanetPattern | (planetOffset_ << kPlanetPatternOffsetShift);
+    if (planetPatternMode_ == PlanetPatternMode::Hall) {
+      ledPattern |= kPlanetPatternHallSensorBit;
+    } else if (planetPatternMode_ == PlanetPatternMode::Half) {
+      ledPattern |= kPlanetPatternHalfBit;
+    }
   }
   OrreryLeader::Get()->SetLedPattern(currentPlanet_, ledPattern);
 }
@@ -543,10 +723,16 @@ void OrreryLeaderUi::UpdateStatusSubmenu() {
   for (int i = 0; i < kNumPlanets; i++) {
     Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
     std::optional<Milliseconds> lastHeard = OrreryLeader::Get()->GetLastHeardTime(planet);
+    std::optional<Milliseconds> maxRtt = OrreryLeader::Get()->GetMaxRtt(planet);
     char label[64];
     if (lastHeard.has_value()) {
-      snprintf(label, sizeof(label), "%s: %llds ago", GetPlanetName(planet),
-               static_cast<long long>((timeMillis() - *lastHeard) / 1000));
+      if (maxRtt.has_value()) {
+        snprintf(label, sizeof(label), "%s: %llds ago, max %lldms", GetPlanetName(planet),
+                 static_cast<long long>((timeMillis() - *lastHeard) / 1000), static_cast<long long>(*maxRtt));
+      } else {
+        snprintf(label, sizeof(label), "%s: %llds ago", GetPlanetName(planet),
+                 static_cast<long long>((timeMillis() - *lastHeard) / 1000));
+      }
     } else {
       snprintf(label, sizeof(label), "%s: Never heard", GetPlanetName(planet));
     }
@@ -565,9 +751,9 @@ void OrreryLeaderUi::UpdateCalibrationMenuButton() {
     } else if (lastClosed.has_value()) {
       isClosed = true;
     }
-    snprintf(label, sizeof(label), "Calibration - HS: %s", isClosed ? "Closed" : "Open");
+    snprintf(label, sizeof(label), "HS %s", isClosed ? "Closed" : "Open");
   } else {
-    snprintf(label, sizeof(label), "Calibration - HS: Unknown");
+    snprintf(label, sizeof(label), "HS");
   }
   calibrationMenuButton_->SetLabelText(label);
 }
@@ -611,10 +797,41 @@ void OrreryLeaderUi::UpdateHallSensorSubmenu() {
   hallSensorInfoButtons_[3]->SetLabelText(label);
 }
 
-void OrreryLeaderUi::DrawSpeedDisplayButton(TouchButton* button, int outline, int fill, int textColor) {
+void OrreryLeaderUi::DrawSpeedDisplayButton(TouchButton* button, int /*outline*/, int fill, int textColor) {
   button->PaintRectangle(fill, /*outline=*/fill);  // Skip outline.
-  char label[32] = "_";
-  if (keypadHasValue_) { snprintf(label, sizeof(label), "%lld", static_cast<int64_t>(keypadValue_)); }
+  char label[32];
+  const char* valueStr = keypadHasValue_ ? "" : "_";
+  if (editingBrightness_) {
+    if (keypadHasValue_) {
+      snprintf(label, sizeof(label), "Brightness: %" PRId32, keypadValue_);
+    } else {
+      snprintf(label, sizeof(label), "Brightness: _");
+    }
+  } else if (editingOffset_) {
+    if (keypadHasValue_) {
+      snprintf(label, sizeof(label), "Offset: %" PRId32, keypadValue_);
+    } else {
+      snprintf(label, sizeof(label), "Offset: _");
+    }
+  } else if (editingPosition_) {
+    if (keypadHasValue_) {
+      snprintf(label, sizeof(label), "Pos: %" PRId32, keypadValue_);
+    } else {
+      snprintf(label, sizeof(label), "Pos: _");
+    }
+  } else if (editingSpeedMultiplier_) {
+    if (keypadHasValue_) {
+      snprintf(label, sizeof(label), "Mult: %.3f", keypadValue_ / 1000.0);
+    } else {
+      snprintf(label, sizeof(label), "Mult: _");
+    }
+  } else {
+    if (keypadHasValue_) {
+      snprintf(label, sizeof(label), "Set: %.1f RPM", keypadValue_ / 1000.0);
+    } else {
+      snprintf(label, sizeof(label), "Set: _ RPM");
+    }
+  }
   button->PaintText(textColor, fill, label);
 }
 

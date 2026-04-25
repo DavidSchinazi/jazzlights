@@ -169,6 +169,10 @@
 #define JL_MOTOR 0
 #endif  // JL_MOTOR
 
+#ifndef JL_ORRERY_SUN
+#define JL_ORRERY_SUN 0
+#endif  // JL_ORRERY_SUN
+
 // For all of these GROVE ports, 1 is white and 2 is yellow.
 #if JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_LITE)
 inline constexpr int kPinA1 = 21;

@@ -115,6 +115,14 @@ class Player {
 
   bool enabled() const { return enabled_; }
   void set_enabled(bool enabled);
+
+#if JL_AUDIO_VISUALIZER
+  enum class SoundReactiveMode { kOff, kOn, kAuto };
+  SoundReactiveMode sound_reactive_mode() const { return sound_reactive_mode_; }
+  void set_sound_reactive_mode(SoundReactiveMode mode);
+  bool sound_reactive_enabled() const;
+#endif  // JL_AUDIO_VISUALIZER
+
 #if JL_IS_CONFIG(CLOUDS)
   class StatusWatcher {
    public:
@@ -133,6 +141,15 @@ class Player {
 #elif JL_IS_CONFIG(ORRERY_PLANET)
   void SetPlanetPattern(PatternBits planetPattern) { planetPattern_ = planetPattern; }
   PatternBits GetPlanetPattern() const { return planetPattern_; }
+#elif JL_IS_CONFIG(ORRERY_LEADER)
+  class OverriddenPatternWatcher {
+   public:
+    virtual ~OverriddenPatternWatcher() = default;
+    virtual void OnOverriddenPattern(std::optional<PatternBits> pattern) = 0;
+  };
+  void SetOverriddenPatternWatcher(OverriddenPatternWatcher* overriddenPatternWatcher) {
+    overriddenPatternWatcher_ = overriddenPatternWatcher;
+  }
 #endif
 
   class NumLedWritesGetter {
@@ -144,6 +161,7 @@ class Player {
 
  private:
   void UpdateStatusWatcher();
+  void UpdateOverriddenPatternWatcher(Precedence precedence);
   void handleReceivedMessage(NetworkMessage message, Milliseconds currentTime);
 
   Precedence getLocalPrecedence(Milliseconds currentTime);
@@ -173,6 +191,12 @@ class Player {
   bool enabled_ = true;
 #endif  // JL_IS_CONFIG(CLOUDS) && !JL_DEV
 
+#if JL_AUDIO_VISUALIZER
+  SoundReactiveMode sound_reactive_mode_ = SoundReactiveMode::kAuto;
+  bool sound_reactive_suppressed_ = false;
+  Milliseconds squelch_start_time_ = -1;
+#endif  // JL_AUDIO_VISUALIZER
+
   bool ready_ = false;
   bool powerLimited_ = false;
   uint8_t brightness_ = 255;
@@ -199,6 +223,8 @@ class Player {
   CRGB color_override_;
 #elif JL_IS_CONFIG(CREATURE) || JL_IS_CONFIG(ORRERY_PLANET)
   bool creatureIsFollowingNonCreature_ = false;
+#elif JL_IS_CONFIG(ORRERY_LEADER)
+  OverriddenPatternWatcher* overriddenPatternWatcher_ = nullptr;
 #endif
 
 #if JL_IS_CONFIG(ORRERY_PLANET)
@@ -232,7 +258,7 @@ class Player {
   uint32_t framesComputedThisEpoch_ = 0;
 };
 
-std::string patternName(PatternBits pattern);
+std::string patternName(PatternBits pattern, const Player& player);
 
 }  // namespace jazzlights
 #endif  // JL_PLAYER_H

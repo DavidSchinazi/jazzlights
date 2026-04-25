@@ -18,6 +18,7 @@
 
 namespace jazzlights {
 namespace {
+#if !JL_ORRERY_SUN
 #if JL_IS_CONTROLLER(M5STAMP_S3)
 static constexpr uint8_t kPlanetSwitchPin0 = 12;
 static constexpr uint8_t kPlanetSwitchPin1 = 11;
@@ -27,6 +28,20 @@ static constexpr uint8_t kHallSensorPin = 4;
 #else
 #error "Unexpected controller"
 #endif
+
+#ifndef JL_LOCAL_CALIBRATION_TEST
+#define JL_LOCAL_CALIBRATION_TEST 0
+#endif  // JL_LOCAL_CALIBRATION_TEST
+
+#if JL_LOCAL_CALIBRATION_TEST
+// This value was measured empirically at home.
+constexpr float kStartupStepsPerRev = 12700.0f;
+#else   // JL_LOCAL_CALIBRATION_TEST
+// This value was measured empirically on the orrery.
+constexpr float kStartupStepsPerRev = 34000.0f;
+#endif  // JL_LOCAL_CALIBRATION_TEST
+
+#endif  // !JL_ORRERY_SUN
 
 #if JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_LITE)
 constexpr int kMax485TxPin = 26;
@@ -46,8 +61,6 @@ constexpr int kMax485TxPin = 13;
 constexpr int kMax485RxPin = 1;
 #error "unsupported controller for Max485BusHandler"
 #endif
-
-constexpr float kStartupStepsPerRev = 13000.0f;
 
 }  // namespace
 
@@ -69,20 +82,27 @@ void OrreryPlanet::Setup(Player& player) {
 }
 
 OrreryPlanet::OrreryPlanet()
-    : hallSensor_(kHallSensorPin, *this),
+    :
+#if !JL_ORRERY_SUN
+      hallSensor_(kHallSensorPin, *this),
       switch0_(kPlanetSwitchPin0, *this),
       switch1_(kPlanetSwitchPin1, *this),
       switch2_(kPlanetSwitchPin2, *this),
       switch3_(kPlanetSwitchPin3, *this),
-      busId_(ComputeBusId()),
-      max485BusFollower_(UART_NUM_2, kMax485TxPin, kMax485RxPin, busId_),
       lastSpeedUpdateTime_(timeMillis()),
       lastStepCountIncrement_(timeMillis()),
-      stepsPerRev_(kStartupStepsPerRev) {
+      stepsPerRev_(kStartupStepsPerRev),
+      busId_(ComputeBusId()),
+#else   // !JL_ORRERY_SUN
+      busId_(static_cast<BusId>(Planet::Sun)),
+#endif  // !JL_ORRERY_SUN
+      max485BusFollower_(UART_NUM_2, kMax485TxPin, kMax485RxPin, busId_) {
   jll_info("%u OrreryPlanet created with busId %u", timeMillis(), busId_);
   PlanetEffect::Get()->SetPlanet(static_cast<Planet>(busId_));
   currentState_.type = OrreryMessageType::FollowerResponse;
 }
+
+#if !JL_ORRERY_SUN
 
 BusId OrreryPlanet::ComputeBusId() const {
   uint8_t switchesValue = (switch2_.IsClosed() ? 4 : 0) | (switch1_.IsClosed() ? 2 : 0) | (switch0_.IsClosed() ? 1 : 0);
@@ -115,34 +135,63 @@ void OrreryPlanet::IncrementStepCount() {
 }
 
 void OrreryPlanet::HandleHallSensorChange(uint8_t pin, bool isClosed, Milliseconds timeOfChange) {
-  jll_info("%u Hall sensor at pin %d is now %s", timeOfChange, static_cast<int>(pin), (isClosed ? "closed" : "open"));
   PlanetEffect::Get()->SetHallSensorClosed(isClosed);
+  bool isBorder = false;
   if (isClosed) {
-    IncrementStepCount();
-    if (ignoreNextCalibration_) {
-      ignoreNextCalibration_ = false;
-    } else if (currentSteps_ != 0) {
-      float previousStepsPerRev = stepsPerRev_;
-#if 1
-      stepsPerRev_ = std::abs(currentSteps_);
-      currentState_.calibration = static_cast<uint32_t>(std::round(stepsPerRev_));
-      jll_info("%u Calibrated stepsPerRev from %.2f to %.2f", timeOfChange, previousStepsPerRev, stepsPerRev_);
-#else
-      stepsPerRev_ = 0.8f * stepsPerRev_ + 0.2f * currentSteps_;
-      jll_info("%u Calibrated stepsPerRev: %.2f smoothed from %.2f to %.2f", timeOfChange, currentSteps_,
-               previousStepsPerRev, stepsPerRev_);
-#endif
-      currentSteps_ = 0;
-    }
+    if (roundedSpeed_ > 10.0f) { isBorder = true; }
     if (timeHallSensorLastOpened_.has_value()) { lastOpenDuration_ = timeOfChange - *timeHallSensorLastOpened_; }
     timeHallSensorLastClosed_ = timeOfChange;
   } else {
+    if (roundedSpeed_ < -10.0f) { isBorder = true; }
     if (timeHallSensorLastClosed_.has_value()) { lastClosedDuration_ = timeOfChange - *timeHallSensorLastClosed_; }
     timeHallSensorLastOpened_ = timeOfChange;
   }
+  jll_info("%u Hall sensor at pin %d is now %s, %sborder", timeOfChange, static_cast<int>(pin),
+           (isClosed ? "closed" : "open"), (isBorder ? "" : "not "));
+  if (isBorder) {
+    IncrementStepCount();
+    if (ignoreNextCalibration_) {
+      ignoreNextCalibration_ = false;
+      jll_info("%u Ignoring calibration stepsPerRev %.2f, staying with %.2f", timeOfChange, std::abs(currentSteps_),
+               stepsPerRev_);
+    } else if (currentSteps_ != 0) {
+      float currentStepsAbs = std::abs(currentSteps_);
+      if (currentStepsAbs < kStartupStepsPerRev * 0.6f || currentStepsAbs > kStartupStepsPerRev * 1.5f) {
+        jll_info("%u Fully ignoring out of bounds calibration value %.2f, keeping %.2f", timeOfChange, currentStepsAbs,
+                 stepsPerRev_);
+      } else {
+        const float lowBound = kStartupStepsPerRev * 0.75f;
+        const float highBound = kStartupStepsPerRev * 1.25f;
+        if (currentStepsAbs < lowBound) {
+          jll_info("%u Clamping low calibration value %.2f to %.2f", timeOfChange, currentStepsAbs, lowBound);
+          currentStepsAbs = lowBound;
+        } else if (currentStepsAbs > highBound) {
+          jll_info("%u Clamping high calibration value %.2f to %.2f", timeOfChange, currentStepsAbs, highBound);
+          currentStepsAbs = highBound;
+        }
+        float previousStepsPerRev = stepsPerRev_;
+        if (currentState_.calibration.has_value()) {
+          static constexpr float kCalibrationSmoothing = 0.5f;
+          stepsPerRev_ = kCalibrationSmoothing * stepsPerRev_ + (1.0f - kCalibrationSmoothing) * currentStepsAbs;
+          jll_info("%u Calibrated stepsPerRev: new measurement %.2f smoothed from %.2f to %.2f", timeOfChange,
+                   currentStepsAbs, previousStepsPerRev, stepsPerRev_);
+        } else {
+          stepsPerRev_ = currentStepsAbs;
+          jll_info("%u First calibration of stepsPerRev from %.2f to %.2f", timeOfChange, previousStepsPerRev,
+                   stepsPerRev_);
+        }
+        currentState_.calibration = static_cast<uint32_t>(std::round(stepsPerRev_));
+      }
+      currentSteps_ = 0;
+    }
+  }
 }
 
+#endif  // !JL_ORRERY_SUN
+
 void OrreryPlanet::RunLoop(Milliseconds currentTime) {
+#if !JL_ORRERY_SUN
+  constexpr float kMaxAccelerationRate = 1000.0f;  // In steps/s^2. Also applies to deceleration.
   hallSensor_.RunLoop();
   switch0_.RunLoop();
   switch1_.RunLoop();
@@ -155,47 +204,52 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
     while (positionalSteps_ >= stepsPerRev_) { positionalSteps_ -= stepsPerRev_; }
     while (positionalSteps_ < 0) { positionalSteps_ += stepsPerRev_; }
 
-    int32_t effectiveRequestedSpeed = requestedSpeed_;
+    int32_t effectiveRequestedSpeed = (requestedSpeed_ == kOrrerySpeedDisable) ? 0 : requestedSpeed_;
     if (arrivedAtTarget_) {
       effectiveRequestedSpeed = 0;
       actualSpeed_ = 0;
-    } else if (targetPosition_.has_value()) {
+    } else if (targetPosition_.has_value() && currentState_.calibration.has_value()) {
       const float targetSteps = (*targetPosition_ / 360000.0f) * stepsPerRev_;
       float stepsToGo = targetSteps - positionalSteps_;
-      while (stepsToGo < (-stepsPerRev_ / 100.0f)) { stepsToGo += stepsPerRev_; }
+      if (actualSpeed_ < 0) { stepsToGo = -stepsToGo; }
+      while (stepsToGo < (-stepsPerRev_ / 72.0f)) { stepsToGo += stepsPerRev_; }
+      while (stepsToGo > (stepsPerRev_ - (stepsPerRev_ / 72.0f))) { stepsToGo -= stepsPerRev_; }
 
       static Milliseconds lastLogTime = -1;
       if (lastLogTime < 0 || currentTime - lastLogTime > 1000) {
         lastLogTime = currentTime;
-        jll_info("%u targetSteps %f currentSteps %f positionalSteps %f stepsToGo %f actualSpeed_ %f", currentTime,
-                 targetSteps, currentSteps_, positionalSteps_, stepsToGo, actualSpeed_);
+        jll_info("%u targetSteps %f currentSteps %f positionalSteps %f stepsToGo %f actualSpeed %f stepsPerRev %f",
+                 currentTime, targetSteps, currentSteps_, positionalSteps_, stepsToGo, actualSpeed_, stepsPerRev_);
       }
 
-      if (stepsToGo < (stepsPerRev_ / 100.0f) && std::abs(actualSpeed_) < 10.0f) {
+      if (stepsToGo < (stepsPerRev_ / 72.0f) && std::abs(actualSpeed_) < 10.0f) {
         effectiveRequestedSpeed = 0;
         actualSpeed_ = 0;
         arrivedAtTarget_ = true;
         jll_info(
             "%u Planet %s arrived at target position %lu targetSteps %f currentSteps %f positionalSteps %f "
-            "stepsToGo %f actualSpeed %f",
+            "stepsToGo %f actualSpeed %f stepsPerRev %f",
             currentTime, GetPlanetName(static_cast<Planet>(busId_)), *targetPosition_, targetSteps, currentSteps_,
-            positionalSteps_, stepsToGo, actualSpeed_);
+            positionalSteps_, stepsToGo, actualSpeed_, stepsPerRev_);
 
       } else {
-        // Distance to stop at current deceleration (250 steps/s^2) is v^2 / 500.
-        const float stop_distance = (actualSpeed_ * actualSpeed_) / 500.0f;
+        // Distance to stop depends on current speed and max deceleration rate.
+        const float stop_distance = (actualSpeed_ * actualSpeed_) / (2.0f * kMaxAccelerationRate);
 
         static Milliseconds lastLogTime3 = -1;
         if (lastLogTime3 < 0 || currentTime - lastLogTime3 > 1000) {
           lastLogTime3 = currentTime;
-          jll_info("%u targetSteps %f currentSteps %f positionalSteps %f stepsToGo %f actualSpeed_ %f stop_distance %f",
-                   currentTime, targetSteps, currentSteps_, positionalSteps_, stepsToGo, actualSpeed_, stop_distance);
+          jll_info(
+              "%u targetSteps %f currentSteps %f positionalSteps %f stepsToGo %f actualSpeed_ %f stop_distance %f "
+              "stepsPerRev %f",
+              currentTime, targetSteps, currentSteps_, positionalSteps_, stepsToGo, actualSpeed_, stop_distance,
+              stepsPerRev_);
         }
         if (stepsToGo <= stop_distance) { effectiveRequestedSpeed = 0; }
       }
     }
 
-    const float maxChange = 250.0f * dt / 1000.0f;
+    const float maxChange = kMaxAccelerationRate * dt / static_cast<float>(ONE_SECOND);
     if (actualSpeed_ < static_cast<float>(effectiveRequestedSpeed)) {
       actualSpeed_ = std::min(static_cast<float>(effectiveRequestedSpeed), actualSpeed_ + maxChange);
     } else if (actualSpeed_ > static_cast<float>(effectiveRequestedSpeed)) {
@@ -215,17 +269,35 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
                currentTime, roundedSpeed_, currentSteps_, positionalSteps_, actualSpeed_, stepsPerRev_);
     }
     if (!currentState_.speed.has_value() || roundedSpeed_ != *currentState_.speed) {
-      bool wasForward = currentState_.speed.has_value() && *currentState_.speed >= 0;
-      bool isForward = roundedSpeed_ >= 0;
-      if (!currentState_.speed.has_value() || wasForward != isForward) { ignoreNextCalibration_ = true; }
+      // Ignore calibration if the motor stops or reverses direction.
+      int wasForward = 0;
+      if (currentState_.speed.has_value()) {
+        if (*currentState_.speed > 0) {
+          wasForward = 1;
+        } else if (*currentState_.speed < 0) {
+          wasForward = -1;
+        }
+      }
+      int isForward = 0;
+      if (roundedSpeed_ > 0) {
+        isForward = 1;
+      } else if (roundedSpeed_ < 0) {
+        isForward = -1;
+      }
+      if (wasForward * isForward <= 0) { ignoreNextCalibration_ = true; }
       IncrementStepCount();
-#if JL_MOTOR
-      GetMainStepperMotor()->SetSpeed(static_cast<int32_t>(roundedSpeed_));
-#endif  // JL_MOTOR
-      currentState_.speed = roundedSpeed_;
+      std::optional<int32_t> speedToSet;
+      if (requestedSpeed_ == kOrrerySpeedDisable && roundedSpeed_ == 0) {
+        speedToSet = std::nullopt;
+      } else {
+        speedToSet = static_cast<int32_t>(roundedSpeed_);
+      }
+      GetMainStepperMotor()->SetSpeed(speedToSet);
+      currentState_.speed = speedToSet;
     }
     currentState_.position = static_cast<uint32_t>((positionalSteps_ / stepsPerRev_) * 360000.0f);
   }
+#endif  // !JL_ORRERY_SUN
 
   BusId destBusId, srcBusId;
   OrreryMessage msg;
@@ -235,22 +307,49 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
     if (msg.type == OrreryMessageType::LeaderCommand) {
       currentState_.leaderBootId = msg.leaderBootId;
       currentState_.leaderSequenceNumber = msg.leaderSequenceNumber;
+#if !JL_ORRERY_SUN
       if (msg.speed.has_value()) {
-        const int32_t targetFrequency = std::round((*msg.speed / 60000.0f) * stepsPerRev_);
-        if (targetFrequency != requestedSpeed_) {
-          jll_info("%u Planet %s requested milli-RPM %" PRId32 " (target frequency %" PRId32 "Hz)", currentTime,
-                   ourPlanetName, *msg.speed, targetFrequency);
-          requestedSpeed_ = targetFrequency;
+        if (*msg.speed == kOrrerySpeedDisable) {
+          if (requestedSpeed_ != kOrrerySpeedDisable) {
+            jll_info("%u Planet %s requested motor disable", currentTime, ourPlanetName);
+            requestedSpeed_ = kOrrerySpeedDisable;
+          }
+        } else {
+          const int32_t targetFrequency = std::round((*msg.speed / 60000.0f) * stepsPerRev_);
+          if (targetFrequency != requestedSpeed_) {
+            jll_info("%u Planet %s requested milli-RPM %" PRId32 " (target frequency %" PRId32 "Hz)", currentTime,
+                     ourPlanetName, *msg.speed, targetFrequency);
+            requestedSpeed_ = targetFrequency;
+          }
         }
       }
-      if (!msg.position.has_value()) {
-        targetPosition_ = std::nullopt;
-        arrivedAtTarget_ = false;
-      } else if (msg.position.has_value() && (!targetPosition_.has_value() || *msg.position != *targetPosition_)) {
-        jll_info("%u Planet %s requested position %" PRIu32, currentTime, ourPlanetName, *msg.position);
-        targetPosition_ = msg.position;
-        arrivedAtTarget_ = false;
+      if (msg.position.has_value()) {
+        if (*msg.position == kOrreryPositionNone) {
+          if (targetPosition_.has_value()) {
+            jll_info("%u Planet %s clearing target position", currentTime, ourPlanetName);
+            targetPosition_ = std::nullopt;
+            arrivedAtTarget_ = false;
+          }
+        } else if (!targetPosition_.has_value() || *msg.position != *targetPosition_) {
+          jll_info("%u Planet %s requested position %" PRIu32, currentTime, ourPlanetName, *msg.position);
+          targetPosition_ = msg.position;
+          arrivedAtTarget_ = false;
+        }
       }
+      if (msg.calibration.has_value() && !currentState_.calibration.has_value()) {
+        if (static_cast<float>(*msg.calibration) != stepsPerRev_) {
+          jll_info("%u Planet %s applying calibration %" PRIu32 " from leader", currentTime, ourPlanetName,
+                   *msg.calibration);
+          stepsPerRev_ = *msg.calibration;
+        }
+      }
+
+      currentState_.timeHallSensorLastOpened = timeHallSensorLastOpened_;
+      currentState_.timeHallSensorLastClosed = timeHallSensorLastClosed_;
+      currentState_.lastOpenDuration = lastOpenDuration_;
+      currentState_.lastClosedDuration = lastClosedDuration_;
+#endif  // !JL_ORRERY_SUN
+
       if (msg.ledBrightness.has_value() && msg.ledBrightness != currentState_.ledBrightness) {
         jll_info("%u Planet %s applying brightness %u", currentTime, ourPlanetName, *msg.ledBrightness);
         if (player_ != nullptr) { player_->set_brightness(*msg.ledBrightness); }
@@ -273,18 +372,6 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
         if (player_ != nullptr) { player_->setPrecedenceGain(*msg.ledPrecedenceGain); }
         currentState_.ledPrecedenceGain = *msg.ledPrecedenceGain;
       }
-      if (msg.calibration.has_value() && !currentState_.calibration.has_value()) {
-        if (static_cast<float>(*msg.calibration) != stepsPerRev_) {
-          jll_info("%u Planet %s applying calibration %" PRIu32 " from leader", currentTime, ourPlanetName,
-                   *msg.calibration);
-          stepsPerRev_ = *msg.calibration;
-        }
-      }
-
-      currentState_.timeHallSensorLastOpened = timeHallSensorLastOpened_;
-      currentState_.timeHallSensorLastClosed = timeHallSensorLastClosed_;
-      currentState_.lastOpenDuration = lastOpenDuration_;
-      currentState_.lastClosedDuration = lastClosedDuration_;
       max485BusFollower_.SetMessageToSend(currentState_);
     }
   }

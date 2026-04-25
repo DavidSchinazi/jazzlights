@@ -13,6 +13,7 @@
 #include <string>
 
 #include "jazzlights/orrery_common.h"
+#include "jazzlights/orrery_leader.h"
 #include "jazzlights/ui/touch_button.h"
 #include "jazzlights/ui/ui.h"
 
@@ -29,6 +30,7 @@ class OrreryLeaderUi : public Esp32Ui {
  private:
   void SetMotorSpeed();
   void UpdateMotorSpeedButton();
+  void UpdateSceneButton();
   void UpdateLedBrightnessButton();
   void UpdatePlanetButton();
   void UpdatePlanetHalfButton();
@@ -44,7 +46,10 @@ class OrreryLeaderUi : public Esp32Ui {
   void UpdateMotorDirectionButton();
   void UpdateMotorPositionButton();
   void UpdateMotorCurrentPositionButton();
+  void UpdateMotorCurrentSpeedButton();
+  void UpdateMotorCurrentHzButton();
   void UpdateMotorCalibrationButton();
+  void UpdateSpeedMultiplierButton();
   void DrawSpeedDisplayButton(TouchButton* button, int outline, int fill, int textColor);
   void HideAll();
   void DrawMainMenu();
@@ -54,7 +59,9 @@ class OrreryLeaderUi : public Esp32Ui {
   void DrawStatusMenu();
   void DrawKeypad();
   void DrawPlanetMenu();
+  void DrawSceneMenu();
   TouchButton* planetButton_ = nullptr;
+  TouchButton* sceneButton_ = nullptr;
   TouchButton* ledMenuButton_ = nullptr;
   TouchButton* motorMenuButton_ = nullptr;
   TouchButton* calibrationMenuButton_ = nullptr;
@@ -64,8 +71,11 @@ class OrreryLeaderUi : public Esp32Ui {
   TouchButton* motorDirectionButton_ = nullptr;
   TouchButton* motorPositionButton_ = nullptr;
   TouchButton* motorCurrentPositionButton_ = nullptr;
+  TouchButton* motorCurrentSpeedButton_ = nullptr;
+  TouchButton* motorCurrentHzButton_ = nullptr;
   TouchButton* motorCalibrationButton_ = nullptr;
   TouchButton* motorSpeedButton_ = nullptr;
+  TouchButton* speedMultiplierButton_ = nullptr;
   TouchButton* planetHalfButton_ = nullptr;
   TouchButton* planetOffsetButton_ = nullptr;
   TouchButton* keypadBackButton_ = nullptr;
@@ -74,7 +84,9 @@ class OrreryLeaderUi : public Esp32Ui {
   TouchButton* clearButton_ = nullptr;
   TouchButton* confirmButton_ = nullptr;
   TouchButton* planetSelectButtons_[kNumPlanets + 1] = {};
+  TouchButton* sceneSelectButtons_[14] = {};
   TouchButton* planetBackButton_ = nullptr;
+  TouchButton* sceneBackButton_ = nullptr;
   TouchButton* ledBackButton_ = nullptr;
   TouchButton* motorBackButton_ = nullptr;
   TouchButton* hallSensorBackButton_ = nullptr;
@@ -87,8 +99,10 @@ class OrreryLeaderUi : public Esp32Ui {
     Full,
     Half,
     Hall,
+    Green,
   };
   PlanetPatternMode planetPatternMode_ = PlanetPatternMode::Full;
+  OrreryScene lastScene_ = static_cast<OrreryScene>(-1);
   uint8_t planetOffset_ = 0;
   bool motorEnabled_ = false;
   bool motorForward_ = true;
@@ -96,9 +110,11 @@ class OrreryLeaderUi : public Esp32Ui {
   bool editingBrightness_ = false;
   bool editingOffset_ = false;
   bool editingPosition_ = false;
+  bool editingSpeedMultiplier_ = false;
   bool ledSubmenuActive_ = false;
   bool motorSubmenuActive_ = false;
   bool planetSubmenuActive_ = false;
+  bool sceneSubmenuActive_ = false;
   bool hallSensorSubmenuActive_ = false;
   bool statusSubmenuActive_ = false;
   int32_t keypadValue_ = 0;

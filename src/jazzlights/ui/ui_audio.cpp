@@ -37,11 +37,38 @@ void AudioVisualizerUi::FinalSetup() {}
 void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
   M5.update();
   if (M5.Touch.getCount() > 0 && M5.Touch.getDetail(0).wasPressed()) {
-    visualization_mode_ = (visualization_mode_ == VisualizationMode::kSpectrum) ? VisualizationMode::kWaveform
-                                                                                : VisualizationMode::kSpectrum;
-    jll_info("%u Switched to %s mode", currentTime,
-             (visualization_mode_ == VisualizationMode::kSpectrum) ? "spectrum" : "waveform");
-    M5.Lcd.fillScreen(BLACK);
+    auto detail = M5.Touch.getDetail(0);
+    if (visualization_mode_ == VisualizationMode::kMenu) {
+      if (detail.y >= 20 && detail.y <= 70 && detail.x >= 20 && detail.x <= 300) {
+        visualization_mode_ = VisualizationMode::kSpectrum;
+        jll_info("%u Switched to spectrum mode", currentTime);
+        M5.Lcd.fillScreen(BLACK);
+      } else if (detail.y >= 85 && detail.y <= 135 && detail.x >= 20 && detail.x <= 300) {
+        visualization_mode_ = VisualizationMode::kWaveform;
+        jll_info("%u Switched to waveform mode", currentTime);
+        M5.Lcd.fillScreen(BLACK);
+      } else if (detail.y >= 150 && detail.y <= 200 && detail.x >= 20 && detail.x <= 300) {
+        Player::SoundReactiveMode next_mode;
+        switch (player_.sound_reactive_mode()) {
+          case Player::SoundReactiveMode::kAuto: next_mode = Player::SoundReactiveMode::kOn; break;
+          case Player::SoundReactiveMode::kOn: next_mode = Player::SoundReactiveMode::kOff; break;
+          case Player::SoundReactiveMode::kOff: next_mode = Player::SoundReactiveMode::kAuto; break;
+        }
+        player_.set_sound_reactive_mode(next_mode);
+        const char* mode_str = "UNKNOWN";
+        switch (next_mode) {
+          case Player::SoundReactiveMode::kAuto: mode_str = "AUTO"; break;
+          case Player::SoundReactiveMode::kOn: mode_str = "ON"; break;
+          case Player::SoundReactiveMode::kOff: mode_str = "OFF"; break;
+        }
+        jll_info("%u Toggled sound reactive to %s", currentTime, mode_str);
+        M5.Lcd.fillScreen(BLACK);
+      }
+    } else {
+      visualization_mode_ = VisualizationMode::kMenu;
+      jll_info("%u Switched to menu mode", currentTime);
+      M5.Lcd.fillScreen(BLACK);
+    }
   }
 
   Audio::VisualizerData data;
@@ -76,7 +103,37 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
     M5.Lcd.fillScreen(BLACK);
   }
 
-  if (showing_no_audio_data_) {
+  if (visualization_mode_ == VisualizationMode::kMenu) {
+    M5.Lcd.setTextSize(2);
+    M5.Lcd.setTextDatum(MC_DATUM);
+    M5.Lcd.setTextColor(WHITE, BLACK);
+    M5.Lcd.drawRect(20, 20, 280, 50, WHITE);
+    M5.Lcd.drawString("Spectrum Analyzer", kScreenWidth / 2, 45);
+
+    M5.Lcd.drawRect(20, 85, 280, 50, WHITE);
+    M5.Lcd.drawString("Beat Detection", kScreenWidth / 2, 110);
+
+    M5.Lcd.drawRect(20, 150, 280, 50, WHITE);
+    const char* mode_label = "UNKNOWN";
+    switch (player_.sound_reactive_mode()) {
+      case Player::SoundReactiveMode::kAuto: mode_label = "Auto"; break;
+      case Player::SoundReactiveMode::kOn: mode_label = "On"; break;
+      case Player::SoundReactiveMode::kOff: mode_label = "Off"; break;
+    }
+    char buf[32];
+    snprintf(buf, sizeof(buf), "Sound Reactive: %s", mode_label);
+    M5.Lcd.drawString(buf, kScreenWidth / 2, 175);
+
+    if (showing_no_audio_data_) {
+      M5.Lcd.setTextColor(RED, BLACK);
+      M5.Lcd.drawString("No Audio Data", kScreenWidth / 2, 220);
+    } else if (showing_squelch_) {
+      M5.Lcd.setTextColor(ORANGE, BLACK);
+      M5.Lcd.drawString("Squelch", kScreenWidth / 2, 220);
+    } else {
+      M5.Lcd.fillRect(0, 210, kScreenWidth, 30, BLACK);
+    }
+  } else if (showing_no_audio_data_) {
     M5.Lcd.setTextSize(2);
     M5.Lcd.setTextDatum(TC_DATUM);
     M5.Lcd.setTextColor(RED, BLACK);
