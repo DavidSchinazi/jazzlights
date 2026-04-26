@@ -960,6 +960,15 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
   messageToSend.isPartying = KnownCreatures::Get()->IsPartying();
   messageToSend.creatureColor = ThisCreatureColor();
 #endif  // CREATURE
+  if (orrerySceneIdToSend_.has_value()) {
+    static constexpr Milliseconds kOrrerySceneMaxSendDuration = 1000;
+    if (lastOrrerySceneIdSetTime_ < 0 || currentTime - lastOrrerySceneIdSetTime_ > kOrrerySceneMaxSendDuration) {
+      jll_info("%u No longer sending orrery scene ID %d", currentTime, static_cast<int>(*orrerySceneIdToSend_));
+      orrerySceneIdToSend_ = std::nullopt;
+    } else {
+      messageToSend.orrerySceneId = orrerySceneIdToSend_;
+    }
+  }
   for (Network* network : networks_) {
     if (!network->shouldEcho() && messageToSend.receiptNetworkId == network->id()) {
       jll_debug("%u Not echoing for %s to %s ", currentTime, NetworkTypeToString(network->type()),
@@ -980,6 +989,8 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
     KnownCreatures::Get()->AddCreature(message.creatureColor, message.receiptTime, message.receiptRssi,
                                        message.isPartying);
   }
+#elif JL_IS_CONFIG(ORRERY_LEADER)
+  if (orrerySceneIdWatcher_ != nullptr) { orrerySceneIdWatcher_->OnOrrerySceneId(message.orrerySceneId); }
 #endif  // CREATURE
   jll_debug("%u handleReceivedMessage %s", currentTime, networkMessageToString(message, currentTime).c_str());
   if (message.sender == localDeviceId_) {
@@ -1242,6 +1253,16 @@ const char* Player::command(const char* req) {
   }
   jll_debug("[%s] -> [%s]", req, res);
   return res;
+}
+
+void Player::SetOrrerySceneIdToSend(std::optional<OrrerySceneId> orrerySceneIdToSend) {
+  orrerySceneIdToSend_ = orrerySceneIdToSend;
+  if (orrerySceneIdToSend_.has_value()) {
+    lastOrrerySceneIdSetTime_ = timeMillis();
+    jll_info("%u Start sending orrery scene ID %d", lastOrrerySceneIdSetTime_, static_cast<int>(*orrerySceneIdToSend_));
+  } else {
+    lastOrrerySceneIdSetTime_ = -1;
+  }
 }
 
 }  // namespace jazzlights

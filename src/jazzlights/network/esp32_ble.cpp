@@ -175,13 +175,12 @@ void Esp32BleNetwork::disableSending(Milliseconds currentTime) {
 // nextPattern: 4
 // patternTime: 2
 // extensionByte: 1 (0x80 = isCreature, 0x40 = isPartying)
-// creatureRGB: 3
+// [creatureRGB: 3]
+// [orreryScene: 1]
 
 #if JL_IS_CONFIG(CREATURE)
 constexpr uint8_t kMinPayloadLength = 6 + 2 + 1 + 2 + 4 + 4 + 2;
 constexpr uint8_t kMaxPayloadLength = kMinPayloadLength + 1 + 3;
-constexpr uint8_t kExtensionByteFlagIsCreature = 0x80;
-constexpr uint8_t kExtensionByteFlagIsPartying = 0x40;
 #else   // CREATURE
 constexpr uint8_t kOriginatorOffset = 0;
 constexpr uint8_t kPrecedenceOffset = kOriginatorOffset + 6;
@@ -190,9 +189,15 @@ constexpr uint8_t kOriginationTimeOffset = kNumHopsOffset + 1;
 constexpr uint8_t kCurrentPatternOffset = kOriginationTimeOffset + 2;
 constexpr uint8_t kNextPatternOffset = kCurrentPatternOffset + 4;
 constexpr uint8_t kPatternTimeOffset = kNextPatternOffset + 4;
-constexpr uint8_t kMinPayloadLength = kPatternTimeOffset + 2;
-constexpr uint8_t kMaxPayloadLength = kMinPayloadLength;
+constexpr uint8_t kExtensionByteOffset = kPatternTimeOffset + 2;
+constexpr uint8_t kOrrerySceneOffset = kExtensionByteOffset + 1;
+constexpr uint8_t kMinPayloadLength = kExtensionByteOffset;
+constexpr uint8_t kMaxPayloadLength = kOrrerySceneOffset + 1;
 #endif  // CREATURE
+
+constexpr uint8_t kExtensionByteFlagIsCreature = 0x80;
+constexpr uint8_t kExtensionByteFlagIsPartying = 0x40;
+constexpr uint8_t kExtensionByteFlagHasOrreryScene = 0x20;
 
 void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifier, uint8_t innerPayloadLength,
                                            const uint8_t* innerPayload, int rssi, Milliseconds currentTime) {
@@ -277,6 +282,14 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
   message.currentPattern = readUint32(&innerPayload[kCurrentPatternOffset]);
   message.nextPattern = readUint32(&innerPayload[kNextPatternOffset]);
   Milliseconds patternTimeDelta = readUint16(&innerPayload[kPatternTimeOffset]);
+  uint8_t extensionByte = 0;
+  if (innerPayloadLength > kExtensionByteOffset) { extensionByte = innerPayload[kExtensionByteOffset]; }
+  size_t orrerySceneOffset = kExtensionByteOffset + 1;
+  if ((extensionByte & kExtensionByteFlagIsCreature) != 0) {
+    // Skip over creature RGB,
+    orrerySceneOffset += 3;
+  }
+  if (innerPayloadLength > orrerySceneOffset) { message.orrerySceneId = innerPayload[orrerySceneOffset]; }
 #endif  // CREATURE
 
   // Empirical measurements with the ATOM Matrix show a RTT of 50ms,
@@ -321,7 +334,7 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_
     jll_error("%u GetNextInnerPayloadToSend nonsense %u > %u", currentTime, kMaxPayloadLength, maxInnerPayloadLength);
     return 0;
   }
-  uint8_t innerPayloadLength = kMaxPayloadLength;
+  uint8_t innerPayloadLength;
 
   uint16_t originationTimeDelta;
   if (messageToSend_.lastOriginationTime <= currentTime && currentTime - messageToSend_.lastOriginationTime <= 0xFFFF) {
@@ -396,11 +409,18 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_
   writeUint32(&innerPayload[kCurrentPatternOffset], messageToSend_.currentPattern);
   writeUint32(&innerPayload[kNextPatternOffset], messageToSend_.nextPattern);
   writeUint16(&innerPayload[kPatternTimeOffset], patternTimeDelta);
+  if (messageToSend_.orrerySceneId.has_value()) {
+    innerPayload[kExtensionByteOffset] = kExtensionByteFlagHasOrreryScene;
+    innerPayload[kOrrerySceneOffset] = *messageToSend_.orrerySceneId;
+    innerPayloadLength = kOrrerySceneOffset + 1;
+  } else {
+    innerPayloadLength = kExtensionByteOffset;
+  }
 #endif  // CREATURE
   if (ESP32_BLE_DEBUG_ENABLED()) {
     char advRawData[kMaxPayloadLength * 2 + 1] = {};
-    convertToHex(advRawData, sizeof(advRawData), innerPayload, kMaxPayloadLength);
-    ESP32_BLE_DEBUG("%u Setting inner payload to <%u:%s>", currentTime, kMaxPayloadLength, advRawData);
+    convertToHex(advRawData, sizeof(advRawData), innerPayload, innerPayloadLength);
+    ESP32_BLE_DEBUG("%u Setting inner payload to <%u:%s>", currentTime, innerPayloadLength, advRawData);
   }
   return innerPayloadLength;
 }

@@ -16,26 +16,32 @@
 
 namespace jazzlights {
 
-enum class OrreryScene {
-  Paused,
-  Realistic,
-  Align,
-  Silly,
-  FocusMercury,
-  FocusVenus,
-  FocusEarth,
-  FocusMars,
-  FocusJupiter,
-  FocusSaturn,
-  FocusUranus,
-  FocusNeptune,
-  FocusSun,
-  MercuryRetrograde,
+enum class OrreryScene : uint8_t {
+  Paused = 1,
+  Realistic = 2,
+  Align = 3,
+  Silly = 4,
+  FocusMercury = 5,
+  FocusVenus = 6,
+  FocusEarth = 7,
+  FocusMars = 8,
+  FocusJupiter = 9,
+  FocusSaturn = 10,
+  FocusUranus = 11,
+  FocusNeptune = 12,
+  FocusSun = 13,
+  MercuryRetrograde = 14,
+
+  kInvalidScene = 0,
+  kMinScene = Paused,
+  kMaxScene = MercuryRetrograde,
 };
 
 const char* OrrerySceneToString(OrreryScene scene);
 
-class OrreryLeader : public GpioSwitchInterface, public Player::OverriddenPatternWatcher {
+class OrreryLeader : public GpioSwitchInterface,
+                     public Player::OverriddenPatternWatcher,
+                     public Player::OrrerySceneIdWatcher {
  public:
   static OrreryLeader* Get();
   void Setup(Player& player);
@@ -64,6 +70,8 @@ class OrreryLeader : public GpioSwitchInterface, public Player::OverriddenPatter
 
   // From Player::OverriddenPatternWatcher.
   void OnOverriddenPattern(std::optional<PatternBits> pattern) override;
+  // From Player::OrrerySceneIdWatcher.
+  void OnOrrerySceneId(std::optional<OrrerySceneId> orrerySceneId) override;
 
   std::optional<Milliseconds> GetLastHeardTime(Planet planet) const;
   std::optional<Milliseconds> GetMaxRtt(Planet planet) const;
@@ -97,6 +105,8 @@ class OrreryLeader : public GpioSwitchInterface, public Player::OverriddenPatter
   Player* player_ = nullptr;
   std::optional<PatternBits> patternOverride_;
   std::unordered_map<Planet, PatternBits> patternBeforeOverride_;
+  Milliseconds receivedSceneActionTime_ = -1;
+  OrrerySceneId receivedOrrerySceneId_ = static_cast<OrrerySceneId>(OrreryScene::kInvalidScene);
 };
 
 }  // namespace jazzlights

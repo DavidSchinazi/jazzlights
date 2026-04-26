@@ -150,6 +150,14 @@ class Player {
   void SetOverriddenPatternWatcher(OverriddenPatternWatcher* overriddenPatternWatcher) {
     overriddenPatternWatcher_ = overriddenPatternWatcher;
   }
+  class OrrerySceneIdWatcher {
+   public:
+    virtual ~OrrerySceneIdWatcher() = default;
+    virtual void OnOrrerySceneId(std::optional<OrrerySceneId> orrerySceneId) = 0;
+  };
+  void SetOrrerySceneIdWatcher(OrrerySceneIdWatcher* orrerySceneIdWatcher) {
+    orrerySceneIdWatcher_ = orrerySceneIdWatcher;
+  }
 #endif
 
   class NumLedWritesGetter {
@@ -158,6 +166,8 @@ class Player {
     virtual uint32_t GetAndClearNumWrites() = 0;
   };
   void SetNumLedWritesGetter(NumLedWritesGetter* numLedWritesGetter) { numLedWritesGetter_ = numLedWritesGetter; }
+
+  void SetOrrerySceneIdToSend(std::optional<OrrerySceneId> orrerySceneIdToSend);
 
  private:
   void UpdateStatusWatcher();
@@ -225,6 +235,7 @@ class Player {
   bool creatureIsFollowingNonCreature_ = false;
 #elif JL_IS_CONFIG(ORRERY_LEADER)
   OverriddenPatternWatcher* overriddenPatternWatcher_ = nullptr;
+  OrrerySceneIdWatcher* orrerySceneIdWatcher_ = nullptr;
 #endif
 
 #if JL_IS_CONFIG(ORRERY_PLANET)
@@ -256,6 +267,9 @@ class Player {
   Milliseconds fpsEpochStart_ = 0;
   Milliseconds timeSpentComputingEffectsThisEpoch_ = 0;
   uint32_t framesComputedThisEpoch_ = 0;
+
+  std::optional<OrrerySceneId> orrerySceneIdToSend_;
+  Milliseconds lastOrrerySceneIdSetTime_ = -1;
 };
 
 std::string patternName(PatternBits pattern, const Player& player);

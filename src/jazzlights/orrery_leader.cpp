@@ -554,6 +554,26 @@ void OrreryLeader::HandleSwitch4(bool isClosed) {
   }
 }
 
+void OrreryLeader::OnOrrerySceneId(std::optional<OrrerySceneId> orrerySceneId) {
+  if (!orrerySceneId.has_value()) { return; }
+  if (*orrerySceneId < static_cast<OrrerySceneId>(OrreryScene::kMinScene) ||
+      *orrerySceneId > static_cast<OrrerySceneId>(OrreryScene::kMaxScene)) {
+    // Ignoring unexpected scene.
+    return;
+  }
+  Milliseconds currentTime = timeMillis();
+  if (receivedSceneActionTime_ >= 0 && currentTime - receivedSceneActionTime_ < 2000 &&
+      *orrerySceneId == receivedOrrerySceneId_) {
+    // We already acted on this scene recently, ignore this command.
+    return;
+  }
+  jll_info("%u Acting on received scene %s", currentTime,
+           OrrerySceneToString(static_cast<OrreryScene>(*orrerySceneId)));
+  receivedSceneActionTime_ = currentTime;
+  receivedOrrerySceneId_ = *orrerySceneId;
+  SetScene(static_cast<OrreryScene>(*orrerySceneId));
+}
+
 }  // namespace jazzlights
 
 #endif  // JL_IS_CONFIG(ORRERY_LEADER)
