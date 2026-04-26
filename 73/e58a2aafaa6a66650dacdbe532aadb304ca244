@@ -1,0 +1,24 @@
+src/jazzlights/config.h
+  h_669488c0e21d79 212-214
+src/jazzlights/layout/layout_data.h
+  h_669488c0e21d79 17-18
+src/jazzlights/audio.cpp
+  h_669488c0e21d79 5,7-8,43,60-65,335
+src/jazzlights/layout/layout_data.cpp
+  h_669488c0e21d79 54,57,61
+platformio.ini
+  h_669488c0e21d79 700-728
+src/jazzlights/ui/ui_audio.h
+  h_669488c0e21d79 13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "73e58a2aafaa6a66650dacdbe532aadb304ca244",
+  "prompts": {},
+  "humans": {
+    "h_669488c0e21d79": {
+      "author": "Claudio Spiess"
+    }
+  }
+}
