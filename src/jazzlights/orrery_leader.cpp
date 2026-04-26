@@ -69,6 +69,7 @@ OrreryLeader* OrreryLeader::Get() {
 void OrreryLeader::Setup(Player& player) {
   player_ = &player;
   player_->SetOverriddenPatternWatcher(this);
+  player_->SetOrrerySceneIdWatcher(this);
 }
 
 void OrreryLeader::OnOverriddenPattern(std::optional<PatternBits> pattern) {
@@ -127,6 +128,7 @@ OrreryLeader::OrreryLeader()
 void OrreryLeader::SetScene(OrreryScene scene) {
   scene_ = scene;
   sceneStartTime_ = timeMillis();
+  player_->SetOrrerySceneIdToSend(static_cast<OrrerySceneId>(scene));
   if (scene == OrreryScene::Realistic) {
     if (!switch3_.IsClosed()) {
       lastRandomSceneTime_ = sceneStartTime_;

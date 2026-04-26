@@ -150,6 +150,7 @@ class Player {
   void SetOverriddenPatternWatcher(OverriddenPatternWatcher* overriddenPatternWatcher) {
     overriddenPatternWatcher_ = overriddenPatternWatcher;
   }
+#endif
   class OrrerySceneIdWatcher {
    public:
     virtual ~OrrerySceneIdWatcher() = default;
@@ -158,7 +159,6 @@ class Player {
   void SetOrrerySceneIdWatcher(OrrerySceneIdWatcher* orrerySceneIdWatcher) {
     orrerySceneIdWatcher_ = orrerySceneIdWatcher;
   }
-#endif
 
   class NumLedWritesGetter {
    public:
@@ -235,8 +235,8 @@ class Player {
   bool creatureIsFollowingNonCreature_ = false;
 #elif JL_IS_CONFIG(ORRERY_LEADER)
   OverriddenPatternWatcher* overriddenPatternWatcher_ = nullptr;
-  OrrerySceneIdWatcher* orrerySceneIdWatcher_ = nullptr;
 #endif
+  OrrerySceneIdWatcher* orrerySceneIdWatcher_ = nullptr;
 
 #if JL_IS_CONFIG(ORRERY_PLANET)
   PatternBits planetPattern_ = 0;

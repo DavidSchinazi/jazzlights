@@ -562,6 +562,7 @@ Core2AwsUi::Core2AwsUi(Player& player)
 
 void Core2AwsUi::InitialSetup() {
   player_.set_brightness(ledBrightness_);
+  player_.SetOrrerySceneIdWatcher(this);
   auto cfg = M5.config();
   cfg.serial_baudrate = 0;
   M5.begin(cfg);
@@ -885,6 +886,10 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
     }
   }
 #endif  // JL_BUTTON_LOCK
+}
+
+void Core2AwsUi::OnOrrerySceneId(std::optional<OrrerySceneId> orrerySceneId) {
+  // TODO update the UI.
 }
 
 #endif  // CORE2AWS_LCD_ENABLED

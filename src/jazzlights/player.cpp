@@ -961,6 +961,9 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
   messageToSend.creatureColor = ThisCreatureColor();
 #endif  // CREATURE
   if (orrerySceneIdToSend_.has_value()) {
+#if JL_IS_CONFIG(ORRERY_LEADER)
+    messageToSend.orrerySceneId = orrerySceneIdToSend_;
+#else   // ORRERY_LEADER
     static constexpr Milliseconds kOrrerySceneMaxSendDuration = 1000;
     if (lastOrrerySceneIdSetTime_ < 0 || currentTime - lastOrrerySceneIdSetTime_ > kOrrerySceneMaxSendDuration) {
       jll_info("%u No longer sending orrery scene ID %d", currentTime, static_cast<int>(*orrerySceneIdToSend_));
@@ -968,6 +971,7 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
     } else {
       messageToSend.orrerySceneId = orrerySceneIdToSend_;
     }
+#endif  // ORRERY_LEADER
   }
   for (Network* network : networks_) {
     if (!network->shouldEcho() && messageToSend.receiptNetworkId == network->id()) {
@@ -989,8 +993,6 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
     KnownCreatures::Get()->AddCreature(message.creatureColor, message.receiptTime, message.receiptRssi,
                                        message.isPartying);
   }
-#elif JL_IS_CONFIG(ORRERY_LEADER)
-  if (orrerySceneIdWatcher_ != nullptr) { orrerySceneIdWatcher_->OnOrrerySceneId(message.orrerySceneId); }
 #endif  // CREATURE
   jll_debug("%u handleReceivedMessage %s", currentTime, networkMessageToString(message, currentTime).c_str());
   if (message.sender == localDeviceId_) {
@@ -1003,6 +1005,7 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
               networkMessageToString(message, currentTime).c_str());
     return;
   }
+  if (orrerySceneIdWatcher_ != nullptr) { orrerySceneIdWatcher_->OnOrrerySceneId(message.orrerySceneId); }
   if (message.numHops == std::numeric_limits<NumHops>::max()) {
     // This avoids overflow when incrementing below.
     jll_player_info("%u Ignoring received message with high numHops %s", currentTime,
