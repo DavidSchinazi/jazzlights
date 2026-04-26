@@ -3,7 +3,8 @@
 
 #include "jazzlights/config.h"
 
-#if JL_IS_CONFIG(ORRERY_PLANET) || JL_IS_CONFIG(ORRERY_LEADER) || PIO_UNIT_TESTING
+#if JL_IS_CONFIG(ORRERY_PLANET) || JL_IS_CONFIG(ORRERY_LEADER) || JL_IS_CONTROLLER(CORE2AWS) || \
+    JL_IS_CONTROLLER(CORES3) || PIO_UNIT_TESTING
 
 #include <cstdint>
 #include <optional>
@@ -13,6 +14,29 @@
 #include "jazzlights/util/time.h"
 
 namespace jazzlights {
+
+enum class OrreryScene : uint8_t {
+  Paused = 0,
+  Realistic = 1,
+  Align = 2,
+  Silly = 3,
+  FocusMercury = 4,
+  FocusVenus = 5,
+  FocusEarth = 6,
+  FocusMars = 7,
+  FocusJupiter = 8,
+  FocusSaturn = 9,
+  FocusUranus = 10,
+  FocusNeptune = 11,
+  FocusSun = 12,
+  MercuryRetrograde = 13,
+
+  kInvalidScene = 100,
+  kMinScene = Paused,
+  kMaxScene = MercuryRetrograde,
+};
+
+const char* OrrerySceneToString(OrreryScene scene);
 
 class NetworkReader;
 class NetworkWriter;

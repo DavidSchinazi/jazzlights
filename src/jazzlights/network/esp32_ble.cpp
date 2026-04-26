@@ -25,7 +25,7 @@
 #endif
 
 #ifndef ESP32_BLE_DEBUG_OVERRIDE
-#define ESP32_BLE_DEBUG_OVERRIDE 0
+#define ESP32_BLE_DEBUG_OVERRIDE 01
 #endif  // ESP32_BLE_DEBUG_OVERRIDE
 
 #if ESP32_BLE_DEBUG_OVERRIDE
@@ -289,7 +289,9 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
     // Skip over creature RGB,
     orrerySceneOffset += 3;
   }
-  if (innerPayloadLength > orrerySceneOffset) { message.orrerySceneId = innerPayload[orrerySceneOffset]; }
+  if (innerPayloadLength > orrerySceneOffset && (extensionByte & kExtensionByteFlagHasOrreryScene) != 0) {
+    message.orrerySceneId = innerPayload[orrerySceneOffset];
+  }
 #endif  // CREATURE
 
   // Empirical measurements with the ATOM Matrix show a RTT of 50ms,

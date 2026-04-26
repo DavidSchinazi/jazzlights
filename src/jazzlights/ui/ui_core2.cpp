@@ -9,6 +9,7 @@
 #include "jazzlights/layout/matrix.h"
 #include "jazzlights/network/esp32_ble.h"
 #include "jazzlights/network/wifi.h"
+#include "jazzlights/orrery_common.h"
 #include "jazzlights/ui/touch_button.h"
 
 namespace jazzlights {
@@ -35,6 +36,7 @@ enum class ScreenMode {
   kFullScreenPattern,
   kPatternControlMenu,
   kSystemMenu,
+  kOrreryMenu,
 };
 #if JL_BUTTON_LOCK
 static constexpr ScreenMode kInitialScreenMode = ScreenMode::kOff;
@@ -125,6 +127,7 @@ Core2ScreenRenderer core2ScreenRenderer;
 TouchButton* nextButton = nullptr;
 TouchButton* loopButton = nullptr;
 TouchButton* patternControlButton = nullptr;
+TouchButton* orreryButton = nullptr;
 TouchButton* systemButton = nullptr;
 TouchButton* backButton = nullptr;
 TouchButton* downButton = nullptr;
@@ -147,8 +150,8 @@ void SetupButtons() {
   patternControlButton =
       TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/120, /*w=*/160, /*h=*/120, "Pattern Control");
   patternControlButton->SetLabelDatum(/*x_delta=*/0, /*y_delta=*/-25);
-  systemButton = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/120, /*w=*/160, /*h=*/120, "System");
-  systemButton->SetLabelDatum(/*x_delta=*/0, /*y_delta=*/-25);
+  orreryButton = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/120, /*w=*/160, /*h=*/60, "Orrery");
+  systemButton = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/180, /*w=*/160, /*h=*/60, "System");
 
   backButton = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/160, /*h=*/60, "Back");
   // TODO split the player in half so we can render the selected pattern in the right half of the Back button.
@@ -437,6 +440,95 @@ class PatternControlMenu {
 
 PatternControlMenu gPatternControlMenu;
 
+class OrreryMenu {
+ public:
+  void draw() {
+    // Reset text datum and color in case we need to draw any.
+    M5.Lcd.setTextDatum(TL_DATUM);  // Top Left.
+    M5.Lcd.setTextColor(WHITE, BLACK);
+    TouchButtonManager::Get()->RedrawRightHalf();
+    if (selectedSceneIndex_ < kNumScenesFirstPage) {
+      for (uint8_t i = 0; i < kNumScenesFirstPage && i < kNumScenes; i++) {
+        OrreryScene scene = static_cast<OrreryScene>(i + static_cast<int>(OrreryScene::kMinScene));
+        drawSceneTextLine(i, OrrerySceneToString(scene), i == selectedSceneIndex_);
+      }
+      if (kNumScenes > kNumScenesFirstPage) {
+        M5.Lcd.setTextColor(WHITE, BLACK);
+        M5.Lcd.drawString("More...", x_, kNumScenesFirstPage * dy());
+      }
+    } else {
+      M5.Lcd.setTextColor(WHITE, BLACK);
+      M5.Lcd.drawString("Back...", x_, 0);
+      for (uint8_t i = 0; i < kNumScenes - kNumScenesFirstPage; i++) {
+        uint8_t idx = i + kNumScenesFirstPage;
+        OrreryScene scene = static_cast<OrreryScene>(idx + static_cast<int>(OrreryScene::kMinScene));
+        drawSceneTextLine(i + 1, OrrerySceneToString(scene), idx == selectedSceneIndex_);
+      }
+    }
+    confirmButton->Draw(/*force=*/true);
+  }
+  void downPressed() {
+    if (selectedSceneIndex_ < kNumScenes - 1) {
+      if (selectedSceneIndex_ == kNumScenesFirstPage - 1) {
+        selectedSceneIndex_++;
+        draw();
+      } else {
+        uint8_t lineIdx = selectedSceneIndex_ < kNumScenesFirstPage ? selectedSceneIndex_
+                                                                    : (selectedSceneIndex_ - kNumScenesFirstPage + 1);
+        OrreryScene oldScene = static_cast<OrreryScene>(selectedSceneIndex_ + static_cast<int>(OrreryScene::kMinScene));
+        drawSceneTextLine(lineIdx, OrrerySceneToString(oldScene), /*selected=*/false);
+        selectedSceneIndex_++;
+        OrreryScene newScene = static_cast<OrreryScene>(selectedSceneIndex_ + static_cast<int>(OrreryScene::kMinScene));
+        drawSceneTextLine(lineIdx + 1, OrrerySceneToString(newScene), /*selected=*/true);
+      }
+    }
+  }
+  void upPressed() {
+    if (selectedSceneIndex_ > 0) {
+      if (selectedSceneIndex_ == kNumScenesFirstPage) {
+        selectedSceneIndex_--;
+        draw();
+      } else {
+        uint8_t lineIdx = selectedSceneIndex_ < kNumScenesFirstPage ? selectedSceneIndex_
+                                                                    : (selectedSceneIndex_ - kNumScenesFirstPage + 1);
+        OrreryScene oldScene = static_cast<OrreryScene>(selectedSceneIndex_ + static_cast<int>(OrreryScene::kMinScene));
+        drawSceneTextLine(lineIdx, OrrerySceneToString(oldScene), /*selected=*/false);
+        selectedSceneIndex_--;
+        OrreryScene newScene = static_cast<OrreryScene>(selectedSceneIndex_ + static_cast<int>(OrreryScene::kMinScene));
+        drawSceneTextLine(lineIdx - 1, OrrerySceneToString(newScene), /*selected=*/true);
+      }
+    }
+  }
+  bool confirmPressed(Player& player, Milliseconds currentTime) {
+    OrreryScene scene = static_cast<OrreryScene>(selectedSceneIndex_ + static_cast<int>(OrreryScene::kMinScene));
+    player.SetOrrerySceneIdToSend(static_cast<OrrerySceneId>(scene));
+    return true;
+  }
+
+ private:
+  uint8_t dy() {
+    if (dy_ == 0) { dy_ = M5.Lcd.fontHeight(); }
+    return dy_;
+  }
+  void drawSceneTextLine(uint8_t i, const char* text, bool selected) {
+    M5.Lcd.setTextDatum(TL_DATUM);  // Top Left.
+    const uint16_t y = i * dy();
+    const uint16_t textColor = selected ? BLACK : WHITE;
+    const uint16_t backgroundColor = selected ? WHITE : BLACK;
+    M5.Lcd.setTextColor(textColor, backgroundColor);
+    M5.Lcd.fillRect(x_, y, /*w=*/155, /*h=*/dy(), backgroundColor);
+    M5.Lcd.drawString(text, x_, y);
+  }
+  static constexpr uint8_t kNumScenes =
+      static_cast<int>(OrreryScene::kMaxScene) - static_cast<int>(OrreryScene::kMinScene) + 1;
+  static constexpr uint8_t kNumScenesFirstPage = 10;
+  uint8_t selectedSceneIndex_ = 0;
+  const int16_t x_ = 165;
+  uint8_t dy_ = 0;
+};
+
+OrreryMenu gOrreryMenu;
+
 void drawPatternControlButton(TouchButton* button, int outline, int fill, int textColor) {
   button->PaintRectangle(fill, outline);
   button->PaintText(textColor, fill);
@@ -444,21 +536,33 @@ void drawPatternControlButton(TouchButton* button, int outline, int fill, int te
   M5.Lcd.drawString(gCurrentPatternName.c_str(), /*x=*/80, /*y=*/210);
 }
 
+OrreryScene gOrreryScene = OrreryScene::kInvalidScene;
+void drawOrreryButton(TouchButton* button, int outline, int fill, int textColor) {
+  button->PaintRectangle(fill, outline);
+  button->PaintText(textColor, fill);
+  M5.Lcd.setTextDatum(BC_DATUM);  // Bottom Center.
+  M5.Lcd.drawString(OrrerySceneToString(gOrreryScene), /*x=*/240, /*y=*/170);
+}
+
 void drawSystemButton(TouchButton* button, int outline, int fill, int textColor) {
   button->PaintRectangle(fill, outline);
   button->PaintText(textColor, fill);
   M5.Lcd.setTextDatum(BC_DATUM);  // Bottom Center.
-  M5.Lcd.drawString(BOOT_MESSAGE, /*x=*/240, /*y=*/210);
+  M5.Lcd.drawString(BOOT_MESSAGE, /*x=*/240, /*y=*/230);
 }
 
 void drawConfirmButton(TouchButton* button, int outline, int fill, int textColor) {
   const char* confirmLabel = "Error ?";
-  switch (gPatternControlMenu.ConfirmButtonState()) {
-    case PatternControlMenu::State::kOff: confirmLabel = "Error Off"; break;
-    case PatternControlMenu::State::kPattern: confirmLabel = "Error Pattern"; break;
-    case PatternControlMenu::State::kPalette: confirmLabel = "Select Palette"; break;
-    case PatternControlMenu::State::kColor: confirmLabel = "Select CRGB"; break;
-    case PatternControlMenu::State::kConfirmed: confirmLabel = "Confirm"; break;
+  if (gScreenMode == ScreenMode::kOrreryMenu) {
+    confirmLabel = "Confirm";
+  } else {
+    switch (gPatternControlMenu.ConfirmButtonState()) {
+      case PatternControlMenu::State::kOff: confirmLabel = "Error Off"; break;
+      case PatternControlMenu::State::kPattern: confirmLabel = "Error Pattern"; break;
+      case PatternControlMenu::State::kPalette: confirmLabel = "Select Palette"; break;
+      case PatternControlMenu::State::kColor: confirmLabel = "Select CRGB"; break;
+      case PatternControlMenu::State::kConfirmed: confirmLabel = "Confirm"; break;
+    }
   }
   button->PaintRectangle(fill, outline);
   button->PaintText(textColor, fill, confirmLabel);
@@ -470,6 +574,7 @@ void DrawMainMenuButtons() {
   nextButton->Draw();
   loopButton->Draw();
   patternControlButton->Draw();
+  orreryButton->Draw();
   systemButton->Draw();
 }
 
@@ -477,6 +582,7 @@ void HideMainMenuButtons() {
   nextButton->Hide();
   loopButton->Hide();
   patternControlButton->Hide();
+  orreryButton->Hide();
   systemButton->Hide();
 }
 
@@ -494,6 +600,21 @@ void HidePatternControlMenuButtons() {
   downButton->Hide();
   upButton->Hide();
   overrideButton->Hide();
+  confirmButton->Hide();
+}
+
+void DrawOrreryMenuButtons() {
+  unlock1Button->Hide();
+  unlock2Button->Hide();
+  backButton->Draw();
+  downButton->Draw();
+  upButton->Draw();
+}
+
+void HideOrreryMenuButtons() {
+  backButton->Hide();
+  downButton->Hide();
+  upButton->Hide();
   confirmButton->Hide();
 }
 
@@ -534,6 +655,7 @@ void lockScreen(Milliseconds currentTime) {
   HideSystemMenuButtons();
   HideMainMenuButtons();
   HidePatternControlMenuButtons();
+  HideOrreryMenuButtons();
   core2ScreenRenderer.setEnabled(false);
   SetCore2ScreenBrightness(0);
   TouchButtonManager::Get()->Redraw();
@@ -549,11 +671,28 @@ void patternControlButtonPressed(Player& player, Milliseconds currentTime) {
   gPatternControlMenu.draw();
 }
 
+void orreryButtonPressed(Player& player, Milliseconds currentTime) {
+  gScreenMode = ScreenMode::kOrreryMenu;
+  gLastScreenInteractionTime = currentTime;
+  HideMainMenuButtons();
+  core2ScreenRenderer.setEnabled(false);
+  TouchButtonManager::Get()->Redraw();
+  DrawOrreryMenuButtons();
+  gOrreryMenu.draw();
+}
+
 void confirmButtonPressed(Player& player, Milliseconds currentTime) {
   gLastScreenInteractionTime = currentTime;
-  if (gPatternControlMenu.confirmPressed(player, currentTime)) {
-    HidePatternControlMenuButtons();
-    startMainMenu(player, currentTime);
+  if (gScreenMode == ScreenMode::kPatternControlMenu) {
+    if (gPatternControlMenu.confirmPressed(player, currentTime)) {
+      HidePatternControlMenuButtons();
+      startMainMenu(player, currentTime);
+    }
+  } else if (gScreenMode == ScreenMode::kOrreryMenu) {
+    if (gOrreryMenu.confirmPressed(player, currentTime)) {
+      HideOrreryMenuButtons();
+      startMainMenu(player, currentTime);
+    }
   }
 }
 
@@ -574,10 +713,12 @@ void Core2AwsUi::InitialSetup() {
   TouchButtonManager::Get()->Redraw();
   SetupButtons();
   HidePatternControlMenuButtons();
+  HideOrreryMenuButtons();
   HideSystemMenuButtons();
   unlock1Button->Hide();
   unlock2Button->Hide();
   patternControlButton->SetCustomPaintFunction(drawPatternControlButton);
+  orreryButton->SetCustomPaintFunction(drawOrreryButton);
   systemButton->SetCustomPaintFunction(drawSystemButton);
   confirmButton->SetCustomPaintFunction(drawConfirmButton);
   player_.addStrand(kCore2ScreenPixels, core2ScreenRenderer);
@@ -674,6 +815,8 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
         } break;
         case ScreenMode::kPatternControlMenu: {
         } break;
+        case ScreenMode::kOrreryMenu: {
+        } break;
         case ScreenMode::kSystemMenu: {
         } break;
         case ScreenMode::kLocked1: {
@@ -721,6 +864,14 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
       jll_info("%u ignoring pattern control button pressed", currentTime);
     }
   }
+  if (orreryButton->JustReleased()) {
+    if (gScreenMode == ScreenMode::kMainMenu) {
+      jll_info("%u orrery button pressed", currentTime);
+      orreryButtonPressed(player_, currentTime);
+    } else {
+      jll_info("%u ignoring orrery button pressed", currentTime);
+    }
+  }
   if (systemButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kMainMenu) {
       jll_info("%u system button pressed", currentTime);
@@ -737,10 +888,12 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
   }
   if (backButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kSystemMenu ||
-        (gScreenMode == ScreenMode::kPatternControlMenu && gPatternControlMenu.backPressed())) {
+        (gScreenMode == ScreenMode::kPatternControlMenu && gPatternControlMenu.backPressed()) ||
+        gScreenMode == ScreenMode::kOrreryMenu) {
       jll_info("%u back button pressed", currentTime);
       gLastScreenInteractionTime = currentTime;
       HidePatternControlMenuButtons();
+      HideOrreryMenuButtons();
       HideSystemMenuButtons();
       startMainMenu(player_, currentTime);
     } else {
@@ -752,6 +905,10 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
       jll_info("%u down button pressed", currentTime);
       gLastScreenInteractionTime = currentTime;
       gPatternControlMenu.downPressed();
+    } else if (gScreenMode == ScreenMode::kOrreryMenu) {
+      jll_info("%u orrery down button pressed", currentTime);
+      gLastScreenInteractionTime = currentTime;
+      gOrreryMenu.downPressed();
     } else {
       jll_info("%u ignoring down button pressed", currentTime);
     }
@@ -761,6 +918,10 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
       jll_info("%u up button pressed", currentTime);
       gLastScreenInteractionTime = currentTime;
       gPatternControlMenu.upPressed();
+    } else if (gScreenMode == ScreenMode::kOrreryMenu) {
+      jll_info("%u orrery up button pressed", currentTime);
+      gLastScreenInteractionTime = currentTime;
+      gOrreryMenu.upPressed();
     } else {
       jll_info("%u ignoring up button pressed", currentTime);
     }
@@ -775,7 +936,7 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
     }
   }
   if (confirmButton->JustReleased()) {
-    if (gScreenMode == ScreenMode::kPatternControlMenu) {
+    if (gScreenMode == ScreenMode::kPatternControlMenu || gScreenMode == ScreenMode::kOrreryMenu) {
       jll_info("%u confirm button pressed", currentTime);
       confirmButtonPressed(player_, currentTime);
     } else {
@@ -889,7 +1050,12 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
 }
 
 void Core2AwsUi::OnOrrerySceneId(std::optional<OrrerySceneId> orrerySceneId) {
-  // TODO update the UI.
+  if (!orrerySceneId.has_value()) { return; }
+  OrreryScene scene = static_cast<OrreryScene>(*orrerySceneId);
+  if (scene == gOrreryScene) { return; }
+  jll_info("%u Received new orrery scene %d", timeMillis(), static_cast<int>(scene));
+  gOrreryScene = scene;
+  if (gScreenMode == ScreenMode::kMainMenu) { orreryButton->Draw(/*force=*/true); }
 }
 
 #endif  // CORE2AWS_LCD_ENABLED

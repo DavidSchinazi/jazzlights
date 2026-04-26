@@ -41,26 +41,6 @@ constexpr int kSwitch4Pin = kPinC1;
 
 }  // namespace
 
-const char* OrrerySceneToString(OrreryScene scene) {
-  switch (scene) {
-    case OrreryScene::Paused: return "Paused";
-    case OrreryScene::Realistic: return "Realistic";
-    case OrreryScene::Align: return "Align";
-    case OrreryScene::Silly: return "Silly";
-    case OrreryScene::FocusMercury: return "FocusMercury";
-    case OrreryScene::FocusVenus: return "FocusVenus";
-    case OrreryScene::FocusEarth: return "FocusEarth";
-    case OrreryScene::FocusMars: return "FocusMars";
-    case OrreryScene::FocusJupiter: return "FocusJupiter";
-    case OrreryScene::FocusSaturn: return "FocusSaturn";
-    case OrreryScene::FocusUranus: return "FocusUranus";
-    case OrreryScene::FocusNeptune: return "FocusNeptune";
-    case OrreryScene::FocusSun: return "FocusSun";
-    case OrreryScene::MercuryRetrograde: return "MercuryRetrograde";
-  }
-  return "Unknown";
-}
-
 OrreryLeader* OrreryLeader::Get() {
   static OrreryLeader sOrreryLeader;
   return &sOrreryLeader;
@@ -70,6 +50,7 @@ void OrreryLeader::Setup(Player& player) {
   player_ = &player;
   player_->SetOverriddenPatternWatcher(this);
   player_->SetOrrerySceneIdWatcher(this);
+  player_->SetOrrerySceneIdToSend(static_cast<OrrerySceneId>(scene_));
 }
 
 void OrreryLeader::OnOverriddenPattern(std::optional<PatternBits> pattern) {
@@ -128,7 +109,7 @@ OrreryLeader::OrreryLeader()
 void OrreryLeader::SetScene(OrreryScene scene) {
   scene_ = scene;
   sceneStartTime_ = timeMillis();
-  player_->SetOrrerySceneIdToSend(static_cast<OrrerySceneId>(scene));
+  if (player_ != nullptr) { player_->SetOrrerySceneIdToSend(static_cast<OrrerySceneId>(scene_)); }
   if (scene == OrreryScene::Realistic) {
     if (!switch3_.IsClosed()) {
       lastRandomSceneTime_ = sceneStartTime_;
@@ -567,6 +548,8 @@ void OrreryLeader::OnOrrerySceneId(std::optional<OrrerySceneId> orrerySceneId) {
   if (receivedSceneActionTime_ >= 0 && currentTime - receivedSceneActionTime_ < 2000 &&
       *orrerySceneId == receivedOrrerySceneId_) {
     // We already acted on this scene recently, ignore this command.
+    jll_info("%u Ignoring received scene %s", currentTime,
+             OrrerySceneToString(static_cast<OrreryScene>(*orrerySceneId)));
     return;
   }
   jll_info("%u Acting on received scene %s", currentTime,

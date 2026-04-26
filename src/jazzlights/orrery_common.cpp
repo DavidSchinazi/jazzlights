@@ -2,11 +2,32 @@
 
 #include <cinttypes>
 
-#if JL_IS_CONFIG(ORRERY_PLANET) || JL_IS_CONFIG(ORRERY_LEADER) || PIO_UNIT_TESTING
+#if JL_IS_CONFIG(ORRERY_PLANET) || JL_IS_CONFIG(ORRERY_LEADER) || JL_IS_CONTROLLER(CORE2AWS) || \
+    JL_IS_CONTROLLER(CORES3) || PIO_UNIT_TESTING
 
 #include "jazzlights/network/network.h"
 
 namespace jazzlights {
+
+const char* OrrerySceneToString(OrreryScene scene) {
+  switch (scene) {
+    case OrreryScene::Paused: return "Paused";
+    case OrreryScene::Realistic: return "Realistic";
+    case OrreryScene::Align: return "Align";
+    case OrreryScene::Silly: return "Silly";
+    case OrreryScene::FocusMercury: return "FocusMercury";
+    case OrreryScene::FocusVenus: return "FocusVenus";
+    case OrreryScene::FocusEarth: return "FocusEarth";
+    case OrreryScene::FocusMars: return "FocusMars";
+    case OrreryScene::FocusJupiter: return "FocusJupiter";
+    case OrreryScene::FocusSaturn: return "FocusSaturn";
+    case OrreryScene::FocusUranus: return "FocusUranus";
+    case OrreryScene::FocusNeptune: return "FocusNeptune";
+    case OrreryScene::FocusSun: return "FocusSun";
+    case OrreryScene::MercuryRetrograde: return "MercuryRetrograde";
+  }
+  return "Unknown";
+}
 
 namespace {
 constexpr uint8_t kOrreryFlagSpeed = 0x01;
@@ -214,4 +235,5 @@ const char* GetPlanetName(Planet planet) {
 
 }  // namespace jazzlights
 
-#endif  // JL_IS_CONFIG(ORRERY_PLANET) || JL_IS_CONFIG(ORRERY_LEADER)
+#endif  // JL_IS_CONFIG(ORRERY_PLANET) || JL_IS_CONFIG(ORRERY_LEADER) || JL_IS_CONTROLLER(CORE2AWS) ||
+        // JL_IS_CONTROLLER(CORES3) || PIO_UNIT_TESTING

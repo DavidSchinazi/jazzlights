@@ -969,6 +969,7 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
       jll_info("%u No longer sending orrery scene ID %d", currentTime, static_cast<int>(*orrerySceneIdToSend_));
       orrerySceneIdToSend_ = std::nullopt;
     } else {
+      jll_info("%u Sending orrery scene ID %d", currentTime, static_cast<int>(*orrerySceneIdToSend_));
       messageToSend.orrerySceneId = orrerySceneIdToSend_;
     }
 #endif  // ORRERY_LEADER

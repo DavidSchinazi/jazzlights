@@ -16,29 +16,6 @@
 
 namespace jazzlights {
 
-enum class OrreryScene : uint8_t {
-  Paused = 1,
-  Realistic = 2,
-  Align = 3,
-  Silly = 4,
-  FocusMercury = 5,
-  FocusVenus = 6,
-  FocusEarth = 7,
-  FocusMars = 8,
-  FocusJupiter = 9,
-  FocusSaturn = 10,
-  FocusUranus = 11,
-  FocusNeptune = 12,
-  FocusSun = 13,
-  MercuryRetrograde = 14,
-
-  kInvalidScene = 0,
-  kMinScene = Paused,
-  kMaxScene = MercuryRetrograde,
-};
-
-const char* OrrerySceneToString(OrreryScene scene);
-
 class OrreryLeader : public GpioSwitchInterface,
                      public Player::OverriddenPatternWatcher,
                      public Player::OrrerySceneIdWatcher {
