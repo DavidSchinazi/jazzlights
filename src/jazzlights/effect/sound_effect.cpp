@@ -10,14 +10,14 @@ namespace {
 const TProgmemRGBPalette16* SoundReactivePaletteFromOurColorPalette(OurColorPalette ocp) {
   switch (ocp) {
     case OCPcloud: {
-      static const TProgmemRGBPalette16 SRCloudColors_p FL_PROGMEM = {CRGB::Blue,      CRGB::DarkBlue,
-                                                                      CRGB::DarkBlue,  CRGB::DarkBlue,
-                                                                      CRGB::DarkBlue,  CRGB::DarkBlue,
-                                                                      CRGB::DarkBlue,  CRGB::DarkBlue,
-                                                                      CRGB::Blue,      CRGB::DarkBlue,
-                                                                      CRGB::SkyBlue,   CRGB::SkyBlue,
-                                                                      CRGB::LightBlue, /*CRGB::White*/ CRGB::Blue,
-                                                                      CRGB::LightBlue, CRGB::SkyBlue};
+      static const TProgmemRGBPalette16 SRCloudColors_p FL_PROGMEM = {CRGB::Blue,        CRGB::DarkBlue,
+                                                                      CRGB::DarkBlue,    CRGB::DarkBlue,
+                                                                      CRGB::DarkBlue,    CRGB::DarkBlue,
+                                                                      CRGB::DarkBlue,    CRGB::DarkBlue,
+                                                                      CRGB::Blue,        CRGB::DarkBlue,
+                                                                      CRGB::SkyBlue,     CRGB::SkyBlue,
+                                                                      CRGB::MediumBlue,  /*CRGB::White*/ CRGB::Blue,
+                                                                      CRGB::MediumBlue,  CRGB::SkyBlue};
       return &SRCloudColors_p;
     }
     case OCPlava: {
@@ -263,11 +263,19 @@ ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, So
   if (sparkleChance > 0 &&
       frame.predictableRandom->GetRandomNumberBetween(0, 5000) < static_cast<int32_t>(sparkleChance)) {
 #if 1
-    if (frame.predictableRandom->GetRandomByte() > 128) {
-      color.nscale8_video(192);        // Dim slightly to make room for...
-      color += state->brightestColor;  // ...a punch of the safe bass color
-    } else {
-      color.maximizeBrightness(200);  // Push to a safe ceiling
+    // Anti-white sparkle: multiplicative blend toward a brightened version
+    // of the current color, then cap the channel-sum so no pixel can read white.
+    {
+      CRGB sparkle = color;
+      sparkle.maximizeBrightness(220);
+      color = nblend(color, sparkle, 192);
+      uint16_t total = color.r + color.g + color.b;
+      if (total > 480) {
+        uint16_t scale = (480u * 256u) / total;
+        color.r = (color.r * scale) >> 8;
+        color.g = (color.g * scale) >> 8;
+        color.b = (color.b * scale) >> 8;
+      }
     }
 #else
     /*
