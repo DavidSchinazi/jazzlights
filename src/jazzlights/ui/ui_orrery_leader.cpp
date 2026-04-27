@@ -13,7 +13,7 @@
 
 namespace jazzlights {
 namespace {
-constexpr uint8_t kDefaultOnBrightness = 32;
+constexpr uint8_t kDefaultOnBrightness = 128;
 }  // namespace
 
 OrreryLeaderUi::OrreryLeaderUi(Player& player) : Esp32Ui(player) {}
