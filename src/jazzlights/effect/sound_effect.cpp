@@ -20,12 +20,12 @@ const TProgmemRGBPalette16* SoundReactivePaletteFromOurColorPalette(OurColorPale
                                                                       CRGB::DarkBlue,
                                                                       CRGB::Blue,
                                                                       CRGB::DarkBlue,
-                                                                      CRGB::SkyBlue,
-                                                                      CRGB::SkyBlue,
+                                                                      /*CRGB::SkyBlue*/ CRGB::Blue,
+                                                                      /*CRGB::SkyBlue*/ CRGB::Blue,
                                                                       /*CRGB::LightBlue*/ CRGB::MediumBlue,
                                                                       /*CRGB::White*/ CRGB::Blue,
                                                                       /*CRGB::LightBlue*/ CRGB::MediumBlue,
-                                                                      CRGB::SkyBlue};
+                                                                      /*CRGB::SkyBlue*/ CRGB::Blue};
       return &SRCloudColors_p;
     }
     case OCPlava: {
@@ -48,11 +48,22 @@ const TProgmemRGBPalette16* SoundReactivePaletteFromOurColorPalette(OurColorPale
       return &SRLavaColors_p;
     }
     case OCPocean: {
-      static const TProgmemRGBPalette16 SROceanColors_p FL_PROGMEM = {
-          CRGB::MidnightBlue, CRGB::DarkBlue,   CRGB::MidnightBlue, CRGB::Navy,
-          CRGB::DarkBlue,     CRGB::MediumBlue, CRGB::SeaGreen,     CRGB::Teal,
-          CRGB::CadetBlue,    CRGB::Blue,       CRGB::DarkCyan,     CRGB::CornflowerBlue,
-          CRGB::Aquamarine,   CRGB::SeaGreen,   CRGB::Aqua,         CRGB::LightSkyBlue};
+      static const TProgmemRGBPalette16 SROceanColors_p FL_PROGMEM = {CRGB::MidnightBlue,
+                                                                      CRGB::DarkBlue,
+                                                                      CRGB::MidnightBlue,
+                                                                      CRGB::Navy,
+                                                                      CRGB::DarkBlue,
+                                                                      CRGB::MediumBlue,
+                                                                      CRGB::SeaGreen,
+                                                                      /*CRGB::Teal*/ CRGB::Blue,
+                                                                      CRGB::CadetBlue,
+                                                                      CRGB::Blue,
+                                                                      CRGB::DarkCyan,
+                                                                      CRGB::CornflowerBlue,
+                                                                      /*CRGB::Aquamarine*/ CRGB::Navy,
+                                                                      CRGB::SeaGreen,
+                                                                      /*CRGB::Aqua*/ CRGB::Navy,
+                                                                      /*CRGB::LightSkyBlue*/ CRGB::Blue};
       return &SROceanColors_p;
     }
     case OCPforest: {
