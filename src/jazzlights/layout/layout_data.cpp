@@ -155,7 +155,7 @@ PixelMap pixels(JL_LENGTH(pixelMap), pixelMap);
 #endif  // NEW_HAT
 
 #if JL_IS_CONFIG(BOW)
-Matrix pixels(/*w=*/100, /*h=*/1);
+Matrix pixels(/*w=*/40, /*h=*/1);
 #endif  // BOW
 
 }  // namespace
