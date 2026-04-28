@@ -179,6 +179,8 @@ class Player {
 
   void SetOrrerySceneIdToSend(std::optional<OrrerySceneId> orrerySceneIdToSend);
 
+  bool isAllLinear() const { return isAllLinear_; }
+
  private:
   void UpdateStatusWatcher();
   void UpdateOverriddenPatternWatcher(Precedence precedence);
@@ -280,6 +282,7 @@ class Player {
 
   std::optional<OrrerySceneId> orrerySceneIdToSend_;
   Milliseconds lastOrrerySceneIdSetTime_ = -1;
+  bool isAllLinear_ = false;
 };
 
 std::string patternName(PatternBits pattern, const Player& player);

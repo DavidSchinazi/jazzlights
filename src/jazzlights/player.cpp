@@ -250,7 +250,7 @@ static const Effect* patternFromBits(PatternBits pattern, const Player& player) 
     (void)player;
 #endif  // JL_AUDIO_VISUALIZER
     if (patternbit(pattern, 1)) {
-      if (patternbit(pattern, 2)) {  // 11x - spin
+      if (patternbit(pattern, 2) && !player.isAllLinear()) {  // 11x - spin
         return &spin_pattern;
       } else {  // 10x - hiphotic
         return &hiphotic_pattern;
@@ -259,7 +259,7 @@ static const Effect* patternFromBits(PatternBits pattern, const Player& player) 
 #if JL_PLAYER_SKIP_FLAME
       return &rings_pattern;
 #else   // JL_PLAYER_SKIP_FLAME
-      if (patternbit(pattern, 2)) {  // 01x - flame
+      if (patternbit(pattern, 2) && !player.isAllLinear()) {  // 01x - flame
         return &flame_pattern;
       } else {  // 00x - rings
         return &rings_pattern;
@@ -314,6 +314,7 @@ void Player::begin() {
     frame_.pixelCount += s.layout.pixelCount();
     xyIndexStore_.IngestLayout(&s.layout);
   }
+  if (frame_.viewport.size.width == 0 || frame_.viewport.size.height == 0) { isAllLinear_ = true; }
   xyIndexStore_.Finalize(frame_.viewport);
   frame_.xyIndexStore = &xyIndexStore_;
 
