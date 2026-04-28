@@ -235,6 +235,7 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
     M5.Lcd.drawString("Back", w / 2, h / 2);
 
     M5.Lcd.drawRect(w, 0, kScreenWidth - w, h, WHITE);
+    M5.Lcd.fillRect(w + 2, 2, kScreenWidth - w - 4, h - 4, BLACK);
     char buf[64];
     if (keypad_has_value_) {
       snprintf(buf, sizeof(buf), "%" PRId32, keypad_value_);
@@ -265,8 +266,8 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
 
     auto drawCell = [&](int row, int col, const char* label, bool selected) {
       M5.Lcd.drawRect(col * w, row * h, w, h, WHITE);
+      M5.Lcd.fillRect(col * w + 2, row * h + 2, w - 4, h - 4, selected ? WHITE : BLACK);
       if (selected) {
-        M5.Lcd.fillRect(col * w + 2, row * h + 2, w - 4, h - 4, WHITE);
         M5.Lcd.setTextColor(BLACK, WHITE);
       } else {
         M5.Lcd.setTextColor(WHITE, BLACK);
