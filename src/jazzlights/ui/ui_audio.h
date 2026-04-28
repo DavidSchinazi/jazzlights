@@ -26,7 +26,7 @@ class AudioVisualizerUi : public Esp32Ui {
  private:
   static constexpr int kScreenWidth = 320;
   static constexpr int kScreenHeight = 240;
-  enum class VisualizationMode { kMenu, kSpectrum, kWaveform, kBrightnessKeypad };
+  enum class VisualizationMode { kMenu, kSpectrum, kWaveform, kBrightnessKeypad, kPaletteMenu };
   VisualizationMode visualization_mode_ = VisualizationMode::kSpectrum;
   int32_t keypad_value_ = 0;
   bool keypad_has_value_ = false;

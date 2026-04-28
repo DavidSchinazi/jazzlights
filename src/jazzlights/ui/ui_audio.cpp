@@ -10,6 +10,7 @@
 #include <cstring>
 
 #include "jazzlights/audio.h"
+#include "jazzlights/palette.h"
 #include "jazzlights/player.h"
 #include "jazzlights/util/log.h"
 
@@ -40,15 +41,15 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
   if (M5.Touch.getCount() > 0 && M5.Touch.getDetail(0).wasPressed()) {
     auto detail = M5.Touch.getDetail(0);
     if (visualization_mode_ == VisualizationMode::kMenu) {
-      if (detail.y >= 10 && detail.y <= 55 && detail.x >= 20 && detail.x <= 300) {
+      if (detail.y >= 10 && detail.y <= 48 && detail.x >= 20 && detail.x <= 300) {
         visualization_mode_ = VisualizationMode::kSpectrum;
         jll_info("%u Switched to spectrum mode", currentTime);
         M5.Lcd.fillScreen(BLACK);
-      } else if (detail.y >= 65 && detail.y <= 110 && detail.x >= 20 && detail.x <= 300) {
+      } else if (detail.y >= 53 && detail.y <= 91 && detail.x >= 20 && detail.x <= 300) {
         visualization_mode_ = VisualizationMode::kWaveform;
         jll_info("%u Switched to waveform mode", currentTime);
         M5.Lcd.fillScreen(BLACK);
-      } else if (detail.y >= 120 && detail.y <= 165 && detail.x >= 20 && detail.x <= 300) {
+      } else if (detail.y >= 96 && detail.y <= 134 && detail.x >= 20 && detail.x <= 300) {
         Player::SoundReactiveMode next_mode;
         switch (player_.sound_reactive_mode()) {
           case Player::SoundReactiveMode::kAuto: next_mode = Player::SoundReactiveMode::kOn; break;
@@ -64,11 +65,15 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
         }
         jll_info("%u Toggled sound reactive to %s", currentTime, mode_str);
         M5.Lcd.fillScreen(BLACK);
-      } else if (detail.y >= 175 && detail.y <= 220 && detail.x >= 20 && detail.x <= 300) {
+      } else if (detail.y >= 139 && detail.y <= 177 && detail.x >= 20 && detail.x <= 300) {
         visualization_mode_ = VisualizationMode::kBrightnessKeypad;
         keypad_value_ = 0;
         keypad_has_value_ = false;
         jll_info("%u Switched to brightness keypad", currentTime);
+        M5.Lcd.fillScreen(BLACK);
+      } else if (detail.y >= 182 && detail.y <= 220 && detail.x >= 20 && detail.x <= 300) {
+        visualization_mode_ = VisualizationMode::kPaletteMenu;
+        jll_info("%u Switched to palette menu", currentTime);
         M5.Lcd.fillScreen(BLACK);
       }
     } else if (visualization_mode_ == VisualizationMode::kBrightnessKeypad) {
@@ -100,6 +105,41 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
             player_.set_brightness(keypad_value_);
             jll_info("%u Set brightness to %" PRId32, currentTime, keypad_value_);
           }
+          visualization_mode_ = VisualizationMode::kMenu;
+          M5.Lcd.fillScreen(BLACK);
+        }
+      }
+    } else if (visualization_mode_ == VisualizationMode::kPaletteMenu) {
+      const int w = kScreenWidth / 3;
+      const int h = kScreenHeight / 3;
+      int col = detail.x / w;
+      int row = detail.y / h;
+      if (row == 0 && col == 0) {
+        visualization_mode_ = VisualizationMode::kMenu;
+        M5.Lcd.fillScreen(BLACK);
+      } else if (row == 0 && col == 1) {
+        player_.stopForcePalette(currentTime);
+        visualization_mode_ = VisualizationMode::kMenu;
+        M5.Lcd.fillScreen(BLACK);
+      } else {
+        int palette_idx = -1;
+        if (row == 0 && col == 2)
+          palette_idx = 3;  // Cloud
+        else if (row == 1 && col == 0)
+          palette_idx = 1;  // Lava
+        else if (row == 1 && col == 1)
+          palette_idx = 2;  // Ocean
+        else if (row == 1 && col == 2)
+          palette_idx = 5;  // Forest
+        else if (row == 2 && col == 0)
+          palette_idx = 6;  // Rainbow
+        else if (row == 2 && col == 1)
+          palette_idx = 4;  // Party
+        else if (row == 2 && col == 2)
+          palette_idx = 0;  // Heat
+
+        if (palette_idx >= 0) {
+          player_.forcePalette(static_cast<uint8_t>(palette_idx), currentTime);
           visualization_mode_ = VisualizationMode::kMenu;
           M5.Lcd.fillScreen(BLACK);
         }
@@ -147,26 +187,34 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
     M5.Lcd.setTextSize(2);
     M5.Lcd.setTextDatum(MC_DATUM);
     M5.Lcd.setTextColor(WHITE, BLACK);
-    M5.Lcd.drawRect(20, 10, 280, 45, WHITE);
-    M5.Lcd.drawString("Spectrum Analyzer", kScreenWidth / 2, 32);
+    M5.Lcd.drawRect(20, 10, 280, 38, WHITE);
+    M5.Lcd.drawString("Spectrum Analyzer", kScreenWidth / 2, 29);
 
-    M5.Lcd.drawRect(20, 65, 280, 45, WHITE);
-    M5.Lcd.drawString("Beat Detection", kScreenWidth / 2, 87);
+    M5.Lcd.drawRect(20, 53, 280, 38, WHITE);
+    M5.Lcd.drawString("Beat Detection", kScreenWidth / 2, 72);
 
-    M5.Lcd.drawRect(20, 120, 280, 45, WHITE);
+    M5.Lcd.drawRect(20, 96, 280, 38, WHITE);
     const char* mode_label = "UNKNOWN";
     switch (player_.sound_reactive_mode()) {
       case Player::SoundReactiveMode::kAuto: mode_label = "Auto"; break;
       case Player::SoundReactiveMode::kOn: mode_label = "On"; break;
       case Player::SoundReactiveMode::kOff: mode_label = "Off"; break;
     }
-    char buf[32];
+    char buf[64];
     snprintf(buf, sizeof(buf), "Sound Reactive: %s", mode_label);
-    M5.Lcd.drawString(buf, kScreenWidth / 2, 142);
+    M5.Lcd.drawString(buf, kScreenWidth / 2, 115);
 
-    M5.Lcd.drawRect(20, 175, 280, 45, WHITE);
+    M5.Lcd.drawRect(20, 139, 280, 38, WHITE);
     snprintf(buf, sizeof(buf), "Brightness: %u", player_.brightness());
-    M5.Lcd.drawString(buf, kScreenWidth / 2, 197);
+    M5.Lcd.drawString(buf, kScreenWidth / 2, 158);
+
+    M5.Lcd.drawRect(20, 182, 280, 38, WHITE);
+    if (player_.paletteIsForced()) {
+      snprintf(buf, sizeof(buf), "Palette: %s", OurColorPaletteName(player_.forcedPalette()).c_str());
+    } else {
+      snprintf(buf, sizeof(buf), "Palette: Default");
+    }
+    M5.Lcd.drawString(buf, kScreenWidth / 2, 201);
 
     if (showing_no_audio_data_) {
       M5.Lcd.setTextColor(RED, BLACK);
@@ -208,6 +256,34 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
     M5.Lcd.drawString("0", w + w / 2, 4 * h + h / 2);
     M5.Lcd.drawRect(2 * w, 4 * h, w, h, WHITE);
     M5.Lcd.drawString("Confirm", 2 * w + w / 2, 4 * h + h / 2);
+  } else if (visualization_mode_ == VisualizationMode::kPaletteMenu) {
+    const int w = kScreenWidth / 3;
+    const int h = kScreenHeight / 3;
+    M5.Lcd.setTextSize(2);
+    M5.Lcd.setTextColor(WHITE, BLACK);
+    M5.Lcd.setTextDatum(MC_DATUM);
+
+    auto drawCell = [&](int row, int col, const char* label, bool selected) {
+      M5.Lcd.drawRect(col * w, row * h, w, h, WHITE);
+      if (selected) {
+        M5.Lcd.fillRect(col * w + 2, row * h + 2, w - 4, h - 4, WHITE);
+        M5.Lcd.setTextColor(BLACK, WHITE);
+      } else {
+        M5.Lcd.setTextColor(WHITE, BLACK);
+      }
+      M5.Lcd.drawString(label, col * w + w / 2, row * h + h / 2);
+    };
+
+    drawCell(0, 0, "Back", false);
+    drawCell(0, 1, "Default", !player_.paletteIsForced());
+    drawCell(0, 2, "Cloud", player_.paletteIsForced() && player_.forcedPalette() == 3);
+    drawCell(1, 0, "Lava", player_.paletteIsForced() && player_.forcedPalette() == 1);
+    drawCell(1, 1, "Ocean", player_.paletteIsForced() && player_.forcedPalette() == 2);
+    drawCell(1, 2, "Forest", player_.paletteIsForced() && player_.forcedPalette() == 5);
+    drawCell(2, 0, "Rainbow",
+             player_.paletteIsForced() && (player_.forcedPalette() == 6 || player_.forcedPalette() == 7));
+    drawCell(2, 1, "Party", player_.paletteIsForced() && player_.forcedPalette() == 4);
+    drawCell(2, 2, "Heat", player_.paletteIsForced() && player_.forcedPalette() == 0);
   } else if (showing_no_audio_data_) {
     M5.Lcd.setTextSize(2);
     M5.Lcd.setTextDatum(TC_DATUM);

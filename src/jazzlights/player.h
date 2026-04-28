@@ -75,6 +75,16 @@ class Player {
   void stopForcePalette(Milliseconds currentTime);
 
   /**
+   * Returns whether the palette is currently forced.
+   */
+  bool paletteIsForced() const { return paletteIsForced_; }
+
+  /**
+   * Returns the currently forced palette.
+   */
+  uint8_t forcedPalette() const { return forcedPalette_; }
+
+  /**
    * Run text command
    */
   const char* command(const char* cmd);

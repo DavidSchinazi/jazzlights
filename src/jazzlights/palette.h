@@ -96,6 +96,14 @@ class ColorWithPalette {
   CRGB overrideColor_;
 };
 
+inline std::string OurColorPaletteName(uint8_t forcedPalette) {
+  static const char* kPaletteNames[] = {
+      "heat", "lava", "ocean", "cloud", "party", "forest", "rainbow", "rainbow",
+  };
+  if (forcedPalette < 8) { return kPaletteNames[forcedPalette]; }
+  return "unknown";
+}
+
 inline std::string PaletteNameFromPattern(PatternBits pattern) {
   switch (PaletteFromPattern(pattern)) {
 #define X(c) \
