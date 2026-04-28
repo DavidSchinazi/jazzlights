@@ -15,6 +15,7 @@
 #include "jazzlights/network/ethernet.h"
 #include "jazzlights/network/max485_bus.h"
 #include "jazzlights/network/wifi.h"
+#include "jazzlights/orrery_common.h"
 #include "jazzlights/orrery_leader.h"
 #include "jazzlights/orrery_planet.h"
 #include "jazzlights/player.h"
@@ -119,7 +120,12 @@ void SetupPrimaryRunLoop() {
 #if JL_ETHERNET
   player.connect(EthernetNetwork::get());
 #endif  // JL_ETHERNET
-#if JL_IS_CONFIG(ORRERY_PLANET) && !JL_ORRERY_PLUTO
+#if JL_ORRERY_PLUTO
+  player.set_brightness(kDefaultPlanetBrightness);
+  player.SetPlanetPattern(kPlanetPattern);
+  player.setBasePrecedence(kDefaultPlanetBasePrecedence);
+  player.setPrecedenceGain(kDefaultPlanetPrecedenceGain);
+#elif JL_IS_CONFIG(ORRERY_PLANET)
   OrreryPlanet::Get()->Setup(player);
 #elif JL_IS_CONFIG(ORRERY_LEADER)
   OrreryLeader::Get()->Setup(player);

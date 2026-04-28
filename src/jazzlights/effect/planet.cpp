@@ -73,13 +73,21 @@ const TProgmemRGBPalette16* GetPlanetPalette(Planet planet) {
           CRGB::Yellow, CRGB::Orange, CRGB::Red, CRGB::Gold, CRGB::Yellow, CRGB::Orange, CRGB::Red, CRGB::Orange};
       return &SunPalette_p;
     }
+    case Planet::Pluto: {
+      static const TProgmemRGBPalette16 PlutoPalette_p FL_PROGMEM = {
+          CRGB::White,     CRGB::Beige,       CRGB::BurlyWood, CRGB::SaddleBrown, CRGB::White,     CRGB::Beige,
+          CRGB::BurlyWood, CRGB::SaddleBrown, CRGB::White,     CRGB::Beige,       CRGB::BurlyWood, CRGB::SaddleBrown,
+          CRGB::White,     CRGB::Beige,       CRGB::BurlyWood, CRGB::SaddleBrown};
+      return &PlutoPalette_p;
+    }
   }
   return &CloudColors_p;
 }
 
 uint8_t GetNumPixels(Planet planet) {
   switch (planet) {
-    case Planet::Mercury: return 12;
+    case Planet::Mercury:
+    case Planet::Pluto: return 12;
     case Planet::Venus:
     case Planet::Mars: return 16;
     case Planet::Earth: return 24;
@@ -99,7 +107,15 @@ PlanetEffect* PlanetEffect::Get() {
   return &sPlanetEffect;
 }
 
-PlanetEffect::PlanetEffect() { SetPlanet(Planet::Mercury); }
+PlanetEffect::PlanetEffect() {
+#if JL_ORRERY_PLUTO
+  SetPlanet(Planet::Pluto);
+#elif JL_ORRERY_SUN
+  SetPlanet(Planet::Sun)
+#else
+  SetPlanet(Planet::Mercury);
+#endif
+}
 
 void PlanetEffect::SetPlanet(Planet planet) {
   currentPlanet_ = planet;
