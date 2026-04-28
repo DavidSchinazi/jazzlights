@@ -1,15 +1,11 @@
 #ifndef JL_ORRERY_COMMON_H
 #define JL_ORRERY_COMMON_H
 
-#include "jazzlights/config.h"
-
-#if JL_IS_CONFIG(ORRERY_PLANET) || JL_IS_CONFIG(ORRERY_LEADER) || JL_IS_CONTROLLER(CORE2AWS) || \
-    JL_IS_CONTROLLER(CORES3) || PIO_UNIT_TESTING
-
 #include <cstdint>
 #include <optional>
 #include <string>
 
+#include "jazzlights/config.h"
 #include "jazzlights/types.h"
 #include "jazzlights/util/time.h"
 
@@ -73,6 +69,9 @@ enum class OrreryMessageType : uint8_t {
   FollowerResponse = 0x02,
 };
 
+#if JL_IS_CONFIG(ORRERY_PLANET) || JL_IS_CONFIG(ORRERY_LEADER) || JL_IS_CONTROLLER(CORE2AWS) || \
+    JL_IS_CONTROLLER(CORES3) || PIO_UNIT_TESTING
+
 struct OrreryMessage {
   OrreryMessageType type;
   uint32_t leaderBootId;
@@ -109,8 +108,8 @@ bool ReadOrreryMessage(NetworkReader& reader, OrreryMessage* msg);
 std::string OrreryMessageToString(const OrreryMessage& msg);
 const char* GetPlanetName(Planet planet);
 
-}  // namespace jazzlights
-
 #endif  // ORRERY
+
+}  // namespace jazzlights
 
 #endif  // JL_ORRERY_COMMON_H

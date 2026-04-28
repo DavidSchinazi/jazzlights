@@ -2,9 +2,6 @@
 
 #include <cinttypes>
 
-#if JL_IS_CONFIG(ORRERY_PLANET) || JL_IS_CONFIG(ORRERY_LEADER) || JL_IS_CONTROLLER(CORE2AWS) || \
-    JL_IS_CONTROLLER(CORES3) || PIO_UNIT_TESTING
-
 #include "jazzlights/network/network.h"
 
 namespace jazzlights {
@@ -25,9 +22,13 @@ const char* OrrerySceneToString(OrreryScene scene) {
     case OrreryScene::FocusNeptune: return "FocusNeptune";
     case OrreryScene::FocusSun: return "FocusSun";
     case OrreryScene::MercuryRetrograde: return "MercuryRetrograde";
+    case OrreryScene::kInvalidScene: return "Invalid";
   }
   return "Unknown";
 }
+
+#if JL_IS_CONFIG(ORRERY_PLANET) || JL_IS_CONFIG(ORRERY_LEADER) || JL_IS_CONTROLLER(CORE2AWS) || \
+    JL_IS_CONTROLLER(CORES3) || PIO_UNIT_TESTING
 
 namespace {
 constexpr uint8_t kOrreryFlagSpeed = 0x01;
@@ -233,7 +234,7 @@ const char* GetPlanetName(Planet planet) {
   return "Unknown";
 }
 
-}  // namespace jazzlights
-
 #endif  // JL_IS_CONFIG(ORRERY_PLANET) || JL_IS_CONFIG(ORRERY_LEADER) || JL_IS_CONTROLLER(CORE2AWS) ||
         // JL_IS_CONTROLLER(CORES3) || PIO_UNIT_TESTING
+
+}  // namespace jazzlights
