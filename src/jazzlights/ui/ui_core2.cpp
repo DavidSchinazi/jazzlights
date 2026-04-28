@@ -539,15 +539,17 @@ void drawPatternControlButton(TouchButton* button, int outline, int fill, int te
 OrreryScene gOrreryScene = OrreryScene::kInvalidScene;
 void drawOrreryButton(TouchButton* button, int outline, int fill, int textColor) {
   button->PaintRectangle(fill, outline);
-  button->PaintText(textColor, fill);
   M5.Lcd.setTextDatum(BC_DATUM);  // Bottom Center.
+  M5.Lcd.setTextColor(textColor, fill);
+  M5.Lcd.drawString("Orrery", /*x=*/240, /*y=*/145);
   M5.Lcd.drawString(OrrerySceneToString(gOrreryScene), /*x=*/240, /*y=*/170);
 }
 
 void drawSystemButton(TouchButton* button, int outline, int fill, int textColor) {
   button->PaintRectangle(fill, outline);
-  button->PaintText(textColor, fill);
   M5.Lcd.setTextDatum(BC_DATUM);  // Bottom Center.
+  M5.Lcd.setTextColor(textColor, fill);
+  M5.Lcd.drawString("System", /*x=*/240, /*y=*/205);
   M5.Lcd.drawString(BOOT_MESSAGE, /*x=*/240, /*y=*/230);
 }
 
