@@ -223,10 +223,21 @@ void Creatures::rewind(const Frame& frame) const {
 // Called for each pixel to compute its color.
 CRGB Creatures::color(const Frame& frame, const Pixel& px) const {
   if (state(frame)->orrery) {
-    // TODO make starry night pattern.
-    const double d = distance(px.coord, state(frame)->origin);
-    return ColorFromPalette(OceanColors_p,
-                            state(frame)->initialHue + int32_t(255 * d / state(frame)->maxDistance) % 255);
+    // Background: dark blue.
+    CRGB color = CRGB(0x000020);
+    // Use a time-adjusted index to make stars move down the strip.
+    uint32_t movingIndex = static_cast<uint32_t>(px.strandIndex - state(frame)->offset);
+    uint32_t hash = ColorHash(movingIndex);
+    // Stars: ~3% of pixels are stars (1/32).
+    if ((hash & 0x1F) == 0) {
+      uint8_t twinkle = quadwave8((256 * frame.time / 1667) + (hash >> 8));
+      if (twinkle > 32) {
+        // Yellow stars.
+        CRGB starColor = CRGB::Yellow;
+        color += starColor.nscale8_video(twinkle);
+      }
+    }
+    return color;
   }
   if (state(frame)->rainbow) {
     // The rainbow effect determines the hue based on the distance from the rainbow origin point.
