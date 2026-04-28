@@ -111,7 +111,7 @@ PlanetEffect::PlanetEffect() {
 #if JL_ORRERY_PLUTO
   SetPlanet(Planet::Pluto);
 #elif JL_ORRERY_SUN
-  SetPlanet(Planet::Sun)
+  SetPlanet(Planet::Sun);
 #else
   SetPlanet(Planet::Mercury);
 #endif
