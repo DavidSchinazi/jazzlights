@@ -8,6 +8,7 @@
 
 #if JL_AUDIO_VISUALIZER && (JL_IS_CONTROLLER(CORES3) || JL_IS_CONTROLLER(CORE2AWS))
 
+#include <cstdint>
 #include <mutex>
 
 #include "jazzlights/audio.h"
@@ -25,8 +26,10 @@ class AudioVisualizerUi : public Esp32Ui {
  private:
   static constexpr int kScreenWidth = 320;
   static constexpr int kScreenHeight = 240;
-  enum class VisualizationMode { kMenu, kSpectrum, kWaveform };
+  enum class VisualizationMode { kMenu, kSpectrum, kWaveform, kBrightnessKeypad };
   VisualizationMode visualization_mode_ = VisualizationMode::kSpectrum;
+  int32_t keypad_value_ = 0;
+  bool keypad_has_value_ = false;
   float waveform_buffer_[kScreenWidth] = {0};
   bool beat_buffer_[kScreenWidth] = {false};
   int waveform_index_ = 0;

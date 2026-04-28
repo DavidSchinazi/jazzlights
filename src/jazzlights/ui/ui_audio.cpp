@@ -6,6 +6,7 @@
 #include <Arduino.h>
 #include <M5Unified.h>
 
+#include <cinttypes>
 #include <cstring>
 
 #include "jazzlights/audio.h"
@@ -39,15 +40,15 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
   if (M5.Touch.getCount() > 0 && M5.Touch.getDetail(0).wasPressed()) {
     auto detail = M5.Touch.getDetail(0);
     if (visualization_mode_ == VisualizationMode::kMenu) {
-      if (detail.y >= 20 && detail.y <= 70 && detail.x >= 20 && detail.x <= 300) {
+      if (detail.y >= 10 && detail.y <= 55 && detail.x >= 20 && detail.x <= 300) {
         visualization_mode_ = VisualizationMode::kSpectrum;
         jll_info("%u Switched to spectrum mode", currentTime);
         M5.Lcd.fillScreen(BLACK);
-      } else if (detail.y >= 85 && detail.y <= 135 && detail.x >= 20 && detail.x <= 300) {
+      } else if (detail.y >= 65 && detail.y <= 110 && detail.x >= 20 && detail.x <= 300) {
         visualization_mode_ = VisualizationMode::kWaveform;
         jll_info("%u Switched to waveform mode", currentTime);
         M5.Lcd.fillScreen(BLACK);
-      } else if (detail.y >= 150 && detail.y <= 200 && detail.x >= 20 && detail.x <= 300) {
+      } else if (detail.y >= 120 && detail.y <= 165 && detail.x >= 20 && detail.x <= 300) {
         Player::SoundReactiveMode next_mode;
         switch (player_.sound_reactive_mode()) {
           case Player::SoundReactiveMode::kAuto: next_mode = Player::SoundReactiveMode::kOn; break;
@@ -63,6 +64,45 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
         }
         jll_info("%u Toggled sound reactive to %s", currentTime, mode_str);
         M5.Lcd.fillScreen(BLACK);
+      } else if (detail.y >= 175 && detail.y <= 220 && detail.x >= 20 && detail.x <= 300) {
+        visualization_mode_ = VisualizationMode::kBrightnessKeypad;
+        keypad_value_ = 0;
+        keypad_has_value_ = false;
+        jll_info("%u Switched to brightness keypad", currentTime);
+        M5.Lcd.fillScreen(BLACK);
+      }
+    } else if (visualization_mode_ == VisualizationMode::kBrightnessKeypad) {
+      const int w = kScreenWidth / 3;
+      const int h = kScreenHeight / 5;
+      int col = detail.x / w;
+      int row = detail.y / h;
+      if (row == 0 && col == 0) {
+        visualization_mode_ = VisualizationMode::kMenu;
+        M5.Lcd.fillScreen(BLACK);
+      } else if (row >= 1 && row <= 3) {
+        int val = (row - 1) * 3 + col + 1;
+        if (keypad_value_ < 100) {
+          keypad_value_ = keypad_value_ * 10 + val;
+          keypad_has_value_ = true;
+        }
+      } else if (row == 4) {
+        if (col == 0) {
+          keypad_value_ = 0;
+          keypad_has_value_ = false;
+        } else if (col == 1) {
+          if (keypad_value_ < 100) {
+            keypad_value_ = keypad_value_ * 10;
+            keypad_has_value_ = true;
+          }
+        } else if (col == 2) {
+          if (keypad_has_value_) {
+            if (keypad_value_ > 255) keypad_value_ = 255;
+            player_.set_brightness(keypad_value_);
+            jll_info("%u Set brightness to %" PRId32, currentTime, keypad_value_);
+          }
+          visualization_mode_ = VisualizationMode::kMenu;
+          M5.Lcd.fillScreen(BLACK);
+        }
       }
     } else {
       visualization_mode_ = VisualizationMode::kMenu;
@@ -107,13 +147,13 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
     M5.Lcd.setTextSize(2);
     M5.Lcd.setTextDatum(MC_DATUM);
     M5.Lcd.setTextColor(WHITE, BLACK);
-    M5.Lcd.drawRect(20, 20, 280, 50, WHITE);
-    M5.Lcd.drawString("Spectrum Analyzer", kScreenWidth / 2, 45);
+    M5.Lcd.drawRect(20, 10, 280, 45, WHITE);
+    M5.Lcd.drawString("Spectrum Analyzer", kScreenWidth / 2, 32);
 
-    M5.Lcd.drawRect(20, 85, 280, 50, WHITE);
-    M5.Lcd.drawString("Beat Detection", kScreenWidth / 2, 110);
+    M5.Lcd.drawRect(20, 65, 280, 45, WHITE);
+    M5.Lcd.drawString("Beat Detection", kScreenWidth / 2, 87);
 
-    M5.Lcd.drawRect(20, 150, 280, 50, WHITE);
+    M5.Lcd.drawRect(20, 120, 280, 45, WHITE);
     const char* mode_label = "UNKNOWN";
     switch (player_.sound_reactive_mode()) {
       case Player::SoundReactiveMode::kAuto: mode_label = "Auto"; break;
@@ -122,17 +162,52 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
     }
     char buf[32];
     snprintf(buf, sizeof(buf), "Sound Reactive: %s", mode_label);
-    M5.Lcd.drawString(buf, kScreenWidth / 2, 175);
+    M5.Lcd.drawString(buf, kScreenWidth / 2, 142);
+
+    M5.Lcd.drawRect(20, 175, 280, 45, WHITE);
+    snprintf(buf, sizeof(buf), "Brightness: %u", player_.brightness());
+    M5.Lcd.drawString(buf, kScreenWidth / 2, 197);
 
     if (showing_no_audio_data_) {
       M5.Lcd.setTextColor(RED, BLACK);
-      M5.Lcd.drawString("No Audio Data", kScreenWidth / 2, 220);
+      M5.Lcd.drawString("No Audio Data", kScreenWidth / 2, 230);
     } else if (showing_squelch_) {
       M5.Lcd.setTextColor(ORANGE, BLACK);
-      M5.Lcd.drawString("Squelch", kScreenWidth / 2, 220);
+      M5.Lcd.drawString("Squelch", kScreenWidth / 2, 230);
     } else {
-      M5.Lcd.fillRect(0, 210, kScreenWidth, 30, BLACK);
+      M5.Lcd.fillRect(0, 225, kScreenWidth, 15, BLACK);
     }
+  } else if (visualization_mode_ == VisualizationMode::kBrightnessKeypad) {
+    const int w = kScreenWidth / 3;
+    const int h = kScreenHeight / 5;
+    M5.Lcd.setTextSize(2);
+    M5.Lcd.setTextColor(WHITE, BLACK);
+    M5.Lcd.drawRect(0, 0, w, h, WHITE);
+    M5.Lcd.setTextDatum(MC_DATUM);
+    M5.Lcd.drawString("Back", w / 2, h / 2);
+
+    M5.Lcd.drawRect(w, 0, kScreenWidth - w, h, WHITE);
+    char buf[64];
+    if (keypad_has_value_) {
+      snprintf(buf, sizeof(buf), "%" PRId32, keypad_value_);
+    } else {
+      snprintf(buf, sizeof(buf), "_ (curr %u)", player_.brightness());
+    }
+    M5.Lcd.drawString(buf, w + (kScreenWidth - w) / 2, h / 2);
+
+    for (int i = 1; i <= 9; i++) {
+      int row = (i - 1) / 3 + 1;
+      int col = (i - 1) % 3;
+      M5.Lcd.drawRect(col * w, row * h, w, h, WHITE);
+      snprintf(buf, sizeof(buf), "%d", i);
+      M5.Lcd.drawString(buf, col * w + w / 2, row * h + h / 2);
+    }
+    M5.Lcd.drawRect(0, 4 * h, w, h, WHITE);
+    M5.Lcd.drawString("Clear", w / 2, 4 * h + h / 2);
+    M5.Lcd.drawRect(w, 4 * h, w, h, WHITE);
+    M5.Lcd.drawString("0", w + w / 2, 4 * h + h / 2);
+    M5.Lcd.drawRect(2 * w, 4 * h, w, h, WHITE);
+    M5.Lcd.drawString("Confirm", 2 * w + w / 2, 4 * h + h / 2);
   } else if (showing_no_audio_data_) {
     M5.Lcd.setTextSize(2);
     M5.Lcd.setTextDatum(TC_DATUM);
