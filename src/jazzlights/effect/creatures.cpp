@@ -41,6 +41,25 @@ uint8_t CreatureIntensity(const Creature& creature) {
                               static_cast<double>(kRssiCeiling - kRssiFloor));
 }
 
+#ifndef JL_CREATURE_CYBERPUNK
+#define JL_CREATURE_CYBERPUNK 0
+#endif  // JL_CREATURE_CYBERPUNK
+
+#if JL_CREATURE_CYBERPUNK
+const CRGBPalette16* GetCyberPunkPalette() {
+  static CRGBPalette16 sCyberPunkPalette;
+  static bool sInitialized = false;
+  if (!sInitialized) {
+    sInitialized = true;
+    static constexpr TProgmemRGBGradientPalette_byte kCyberPunkGradientPalette[] FL_PROGMEM = {
+        0, 30, 0, 90, 64, 255, 0, 200, 128, 100, 0, 255, 192, 0, 200, 255, 255, 0, 255, 200,
+    };
+    sCyberPunkPalette.loadDynamicGradientPalette(kCyberPunkGradientPalette);
+  }
+  return &sCyberPunkPalette;
+}
+#endif  // JL_CREATURE_CYBERPUNK
+
 }  // namespace
 
 uint32_t ThisCreatureColor() {
@@ -245,10 +264,16 @@ CRGB Creatures::color(const Frame& frame, const Pixel& px) const {
     return ColorFromPalette(RainbowColors_p,
                             state(frame)->initialHue + int32_t(255 * d / state(frame)->maxDistance) % 255);
   }
+#if JL_CREATURE_CYBERPUNK
+  static const CRGBPalette16* kCyberPunkPalette = GetCyberPunkPalette();
+  uint8_t paletteIndex = static_cast<uint8_t>(px.strandIndex * 8 + 256 * frame.time / 10000);
+  return ColorFromPalette(*kCyberPunkPalette, paletteIndex);
+#else   // JL_CREATURE_CYBERPUNK
   size_t num_colors = state(frame)->num_colors;
   // Display the colors in order based on the current offset.
   const size_t reverseIndex = (-px.strandIndex % num_colors) + num_colors - 1;
   return state(frame)->colors[(state(frame)->offset + reverseIndex) % num_colors];
+#endif  // JL_CREATURE_CYBERPUNK
 }
 
 // Called once for each point in time after all pixels have been computed.
