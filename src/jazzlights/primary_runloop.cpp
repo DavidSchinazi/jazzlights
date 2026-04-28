@@ -105,9 +105,14 @@ void SetupPrimaryRunLoop() {
 #elif JL_IS_CONFIG(CREATURE)
   player.setBasePrecedence(1);
   player.setPrecedenceGain(0);
+#elif JL_IS_CONFIG(ORRERY_LEADER)
+  player.setBasePrecedence(kOrreryLeaderBasePrecedence);
+  player.setPrecedenceGain(0);
 #elif JL_IS_CONFIG(ORRERY_PLANET)
-  player.setBasePrecedence(100);
-  player.setPrecedenceGain(100);
+  player.setBasePrecedence(kDefaultPlanetBasePrecedence);
+  player.setPrecedenceGain(kDefaultPlanetPrecedenceGain);
+  player.set_brightness(kDefaultPlanetBrightness);
+  player.SetPlanetPattern(kPlanetPattern);
 #else
   player.setBasePrecedence(1000);
   player.setPrecedenceGain(1000);
@@ -120,12 +125,7 @@ void SetupPrimaryRunLoop() {
 #if JL_ETHERNET
   player.connect(EthernetNetwork::get());
 #endif  // JL_ETHERNET
-#if JL_ORRERY_PLUTO
-  player.set_brightness(kDefaultPlanetBrightness);
-  player.SetPlanetPattern(kPlanetPattern);
-  player.setBasePrecedence(kDefaultPlanetBasePrecedence);
-  player.setPrecedenceGain(kDefaultPlanetPrecedenceGain);
-#elif JL_IS_CONFIG(ORRERY_PLANET)
+#if JL_IS_CONFIG(ORRERY_PLANET)
   OrreryPlanet::Get()->Setup(player);
 #elif JL_IS_CONFIG(ORRERY_LEADER)
   OrreryLeader::Get()->Setup(player);

@@ -161,6 +161,16 @@ KnownCreatures::KnownCreatures() {
   creatures_.push_back(ourselves);
 }
 
+void KnownCreatures::HandleHeardOrrery(Milliseconds currentTime) {
+  lastHeardOrreryTime_ = currentTime;
+  jll_info("%u Heard the orrery", currentTime);
+}
+
+bool KnownCreatures::HasRecentlyHeardOrrery(Milliseconds currentTime) {
+  static constexpr Milliseconds kOrreryDuration = 60000;  // 1 minute.
+  return lastHeardOrreryTime_ >= 0 && currentTime - lastHeardOrreryTime_ <= kOrreryDuration;
+}
+
 // Called once to initialize the state.
 void Creatures::begin(const Frame& frame) const {
   new (state(frame)) CreaturesState;  // Default-initialize the state.
@@ -207,10 +217,17 @@ void Creatures::rewind(const Frame& frame) const {
   KnownCreatures::Get()->SetIsPartying(num_close_creatures >= kMinCreaturesForAParty);
   state(frame)->rainbow = iShouldParty || KnownCreatures::Get()->IsPartying();
   state(frame)->initialHue = 256 * frame.time / 1667;
+  state(frame)->orrery = KnownCreatures::Get()->HasRecentlyHeardOrrery(currentTime);
 }
 
 // Called for each pixel to compute its color.
 CRGB Creatures::color(const Frame& frame, const Pixel& px) const {
+  if (state(frame)->orrery) {
+    // TODO make starry night pattern.
+    const double d = distance(px.coord, state(frame)->origin);
+    return ColorFromPalette(OceanColors_p,
+                            state(frame)->initialHue + int32_t(255 * d / state(frame)->maxDistance) % 255);
+  }
   if (state(frame)->rainbow) {
     // The rainbow effect determines the hue based on the distance from the rainbow origin point.
     const double d = distance(px.coord, state(frame)->origin);

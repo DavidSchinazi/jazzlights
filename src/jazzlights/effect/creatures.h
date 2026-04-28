@@ -40,11 +40,14 @@ class KnownCreatures {
   void update();
   bool IsPartying() const { return isPartying_; }
   void SetIsPartying(bool isPartying) { isPartying_ = isPartying; }
+  void HandleHeardOrrery(Milliseconds currentTime);
+  bool HasRecentlyHeardOrrery(Milliseconds currentTime);
 
  private:
   KnownCreatures();
   std::vector<Creature> creatures_;
   bool isPartying_ = false;
+  Milliseconds lastHeardOrreryTime_ = -1;
 };
 
 class Creatures : public Effect {
@@ -68,6 +71,7 @@ class Creatures : public Effect {
     size_t offset;
     bool rainbow;
     uint8_t initialHue;
+    bool orrery;
     CRGB colors[kMaxNumCreatureColours];
   };
   CreaturesState* state(const Frame& frame) const {

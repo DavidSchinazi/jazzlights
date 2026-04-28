@@ -265,6 +265,14 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
     message.creatureColor = 0;
     message.isPartying = false;
   }
+  if ((extensionByte & kExtensionByteFlagHasOrreryScene) != 0) {
+    uint8_t orrerySceneId;
+    if (!reader.ReadUint8(&orrerySceneId)) {
+      jll_error("%u Failed to parse creature orrerySceneId", currentTime);
+      return;
+    }
+    message.orrerySceneId = orrerySceneId;
+  }
   message.receiptRssi = rssi;
   message.receiptTime = currentTime;
 #else   // CREATURE

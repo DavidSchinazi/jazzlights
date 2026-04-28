@@ -59,6 +59,16 @@
 #define jll_player_info(...) jll_info(__VA_ARGS__)
 #endif  // JL_SILENCE_PLAYER_LOGS
 
+#ifndef JL_PLAYER_LOG_MESSAGES
+#define JL_PLAYER_LOG_MESSAGES 0
+#endif  // JL_PLAYER_LOG_MESSAGES
+
+#if JL_PLAYER_LOG_MESSAGES
+#define jll_player_message(...) jll_info(__VA_ARGS__)
+#else  // JL_PLAYER_LOG_MESSAGES
+#define jll_player_message(...) jll_debug(__VA_ARGS__)
+#endif  // JL_PLAYER_LOG_MESSAGES
+
 namespace jazzlights {
 namespace {
 // This value was intentionally selected by brute-forcing all possible values that start with rings-rainbow followed by
@@ -982,8 +992,8 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
       network->disableSending(currentTime);
       continue;
     }
-    jll_debug("%u Setting messageToSend for %s to %s ", currentTime, NetworkTypeToString(network->type()),
-              networkMessageToString(messageToSend, currentTime).c_str());
+    jll_player_message("%u Setting messageToSend for %s to %s ", currentTime, NetworkTypeToString(network->type()),
+                       networkMessageToString(messageToSend, currentTime).c_str());
     network->setMessageToSend(messageToSend, currentTime);
   }
 }
@@ -995,8 +1005,9 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
     KnownCreatures::Get()->AddCreature(message.creatureColor, message.receiptTime, message.receiptRssi,
                                        message.isPartying);
   }
+  if (message.orrerySceneId.has_value()) { KnownCreatures::Get()->HandleHeardOrrery(currentTime); }
 #endif  // CREATURE
-  jll_debug("%u handleReceivedMessage %s", currentTime, networkMessageToString(message, currentTime).c_str());
+  jll_player_message("%u handleReceivedMessage %s", currentTime, networkMessageToString(message, currentTime).c_str());
   if (message.sender == localDeviceId_) {
     jll_debug("%u Ignoring received message that we sent %s", currentTime,
               networkMessageToString(message, currentTime).c_str());
