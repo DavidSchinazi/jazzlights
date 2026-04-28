@@ -46,7 +46,8 @@ enum class Planet : BusId {
   Saturn = 9,
   Uranus = 10,
   Neptune = 11,
-  Sun = 12,  // Yes, the sun is a planet. Deal with it.
+  Sun = 12,     // Yes, the sun is a planet. Deal with it.
+  Pluto = 254,  // And pluto is... complicated.
   All = 255,
 };
 

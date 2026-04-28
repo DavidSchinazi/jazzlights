@@ -155,8 +155,16 @@
 #define JL_ESP32_ETHERNET 0
 #endif  // JL_ESP32_ETHERNET
 
+#ifndef JL_ORRERY_SUN
+#define JL_ORRERY_SUN 0
+#endif  // JL_ORRERY_SUN
+
+#ifndef JL_ORRERY_PLUTO
+#define JL_ORRERY_PLUTO 0
+#endif  // JL_ORRERY_PLUTO
+
 #ifndef JL_MAX485_BUS
-#if defined(ESP32) && (JL_IS_CONFIG(ORRERY_LEADER) || JL_IS_CONFIG(ORRERY_PLANET))
+#if defined(ESP32) && (JL_IS_CONFIG(ORRERY_LEADER) || JL_IS_CONFIG(ORRERY_PLANET)) && !JL_ORRERY_PLUTO
 #define JL_MAX485_BUS 1
 #else  // ESP32 && ORRERY
 #define JL_MAX485_BUS 0
@@ -170,10 +178,6 @@
 #ifndef JL_MOTOR
 #define JL_MOTOR 0
 #endif  // JL_MOTOR
-
-#ifndef JL_ORRERY_SUN
-#define JL_ORRERY_SUN 0
-#endif  // JL_ORRERY_SUN
 
 // For all of these GROVE ports, 1 is white and 2 is yellow.
 #if JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_LITE)

@@ -1,6 +1,6 @@
 #include "jazzlights/orrery_planet.h"
 
-#if JL_IS_CONFIG(ORRERY_PLANET)
+#if JL_IS_CONFIG(ORRERY_PLANET) && !JL_ORRERY_PLUTO
 
 #include <cinttypes>
 #include <cmath>
@@ -379,4 +379,4 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
 
 }  // namespace jazzlights
 
-#endif  // JL_IS_CONFIG(ORRERY_PLANET)
+#endif  // JL_IS_CONFIG(ORRERY_PLANET) && !JL_ORRERY_PLUTO

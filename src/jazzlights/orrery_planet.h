@@ -3,7 +3,7 @@
 
 #include "jazzlights/config.h"
 
-#if JL_IS_CONFIG(ORRERY_PLANET)
+#if JL_IS_CONFIG(ORRERY_PLANET) && !JL_ORRERY_PLUTO
 
 #include "jazzlights/network/max485_bus.h"
 #include "jazzlights/orrery_common.h"
@@ -70,6 +70,6 @@ class OrreryPlanet
 
 }  // namespace jazzlights
 
-#endif  // JL_IS_CONFIG(ORRERY_PLANET)
+#endif  // JL_IS_CONFIG(ORRERY_PLANET) && !JL_ORRERY_PLUTO
 
 #endif  // JL_ORRERY_PLANET_H

@@ -119,7 +119,7 @@ void SetupPrimaryRunLoop() {
 #if JL_ETHERNET
   player.connect(EthernetNetwork::get());
 #endif  // JL_ETHERNET
-#if JL_IS_CONFIG(ORRERY_PLANET)
+#if JL_IS_CONFIG(ORRERY_PLANET) && !JL_ORRERY_PLUTO
   OrreryPlanet::Get()->Setup(player);
 #elif JL_IS_CONFIG(ORRERY_LEADER)
   OrreryLeader::Get()->Setup(player);
@@ -140,7 +140,7 @@ void RunPrimaryRunLoop() {
   GetUi()->RunLoop(currentTime);
 #if JL_IS_CONFIG(ORRERY_LEADER)
   OrreryLeader::Get()->RunLoop(currentTime);
-#elif JL_IS_CONFIG(ORRERY_PLANET)
+#elif JL_IS_CONFIG(ORRERY_PLANET) && !JL_ORRERY_PLUTO
   OrreryPlanet::Get()->RunLoop(currentTime);
 #endif  // ORRERY
   SAVE_TIME_POINT(PrimaryRunLoop, UserInterface);
