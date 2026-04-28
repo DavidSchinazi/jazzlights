@@ -24,7 +24,8 @@ def printLayout(points, num=""):
 ox = 0
 xDiff = 1
 yHat = 0
-numled = 48
+# numled is 48 for old hat, 98 for new hat
+numled = 98
 
 x = ox
 y = yHat
