@@ -964,7 +964,7 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
 #if JL_IS_CONFIG(ORRERY_LEADER)
     messageToSend.orrerySceneId = orrerySceneIdToSend_;
 #else   // ORRERY_LEADER
-    static constexpr Milliseconds kOrrerySceneMaxSendDuration = 1000;
+    static constexpr Milliseconds kOrrerySceneMaxSendDuration = 10000;
     if (lastOrrerySceneIdSetTime_ < 0 || currentTime - lastOrrerySceneIdSetTime_ > kOrrerySceneMaxSendDuration) {
       jll_info("%u No longer sending orrery scene ID %d", currentTime, static_cast<int>(*orrerySceneIdToSend_));
       orrerySceneIdToSend_ = std::nullopt;
