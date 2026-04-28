@@ -2,7 +2,7 @@
 
 #if JL_IS_CONFIG(GAUNTLET) || JL_IS_CONFIG(HAMMER) || JL_IS_CONFIG(FAIRY_WAND) || JL_IS_CONFIG(ROPELIGHT) || \
     JL_IS_CONFIG(SHOE) || JL_IS_CONFIG(XMAS_TREE) || JL_IS_CONFIG(CREATURE) || JL_IS_CONFIG(FAIRY_STRING) || \
-    JL_IS_CONFIG(ORRERY_PLANET) || JL_IS_CONFIG(NEW_HAT)
+    JL_IS_CONFIG(ORRERY_PLANET) || JL_IS_CONFIG(NEW_HAT) || JL_IS_CONFIG(BOW)
 
 #include "jazzlights/layout/matrix.h"
 #include "jazzlights/layout/pixelmap.h"
@@ -154,6 +154,10 @@ static_assert(JL_LENGTH(pixelMap) == 98, "bad size");
 PixelMap pixels(JL_LENGTH(pixelMap), pixelMap);
 #endif  // NEW_HAT
 
+#if JL_IS_CONFIG(BOW)
+Matrix pixels(/*w=*/100, /*h=*/1);
+#endif  // BOW
+
 }  // namespace
 
 void AddLedsToRunner(FastLedRunner* runner) {
@@ -164,7 +168,9 @@ void AddLedsToRunner(FastLedRunner* runner) {
 #elif JL_IS_CONFIG(ROPELIGHT)
   runner->AddLeds<WS2812, LED_PIN, BRG>(pixels);
 #elif JL_IS_CONFIG(NEW_HAT)
-  runner->AddLeds<WS2812, 2, BRG>(pixels);
+  runner->AddLeds<WS2812, 2, GRB>(pixels);
+#elif JL_IS_CONFIG(BOW)
+  runner->AddLeds<WS2812, 2, RGB>(pixels);
 #elif JL_IS_CONFIG(XMAS_TREE) || JL_IS_CONFIG(FAIRY_STRING)
   runner->AddLeds<WS2812B, LED_PIN, RGB>(pixels);
 #else
