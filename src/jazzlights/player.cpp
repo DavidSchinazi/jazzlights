@@ -357,6 +357,11 @@ void Player::begin() {
 
   ready_ = true;
 
+#if JL_IS_CONFIG(RHINO_HAT) || JL_IS_CONFIG(RHINO_STAFF)
+  static constexpr uint8_t kForestPalette = 5;
+  forcePalette(kForestPalette, currentTime);
+#endif  // RHINO_HAT || RHINO_STAFF
+
   currentPatternStartTime_ = currentTime;
   currentPattern_ = enforceForcedPalette(kStartingPattern);
   nextPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));

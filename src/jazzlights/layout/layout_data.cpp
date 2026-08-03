@@ -2,7 +2,8 @@
 
 #if JL_IS_CONFIG(GAUNTLET) || JL_IS_CONFIG(HAMMER) || JL_IS_CONFIG(FAIRY_WAND) || JL_IS_CONFIG(ROPELIGHT) || \
     JL_IS_CONFIG(SHOE) || JL_IS_CONFIG(XMAS_TREE) || JL_IS_CONFIG(CREATURE) || JL_IS_CONFIG(FAIRY_STRING) || \
-    JL_IS_CONFIG(ORRERY_PLANET) || JL_IS_CONFIG(NEW_HAT) || JL_IS_CONFIG(BOW)
+    JL_IS_CONFIG(ORRERY_PLANET) || JL_IS_CONFIG(NEW_HAT) || JL_IS_CONFIG(BOW) || JL_IS_CONFIG(RHINO_HAT) ||  \
+    JL_IS_CONFIG(RHINO_STAFF)
 
 #include "jazzlights/layout/matrix.h"
 #include "jazzlights/layout/pixelmap.h"
@@ -153,6 +154,14 @@ constexpr Point pixelMap[] = {
 static_assert(JL_LENGTH(pixelMap) == 98, "bad size");
 PixelMap pixels(JL_LENGTH(pixelMap), pixelMap);
 #endif  // NEW_HAT
+
+#if JL_IS_CONFIG(RHINO_HAT)
+Matrix pixels(/*w=*/50, /*h=*/1);
+#endif  // RHINO_HAT
+
+#if JL_IS_CONFIG(RHINO_STAFF)
+Matrix pixels(/*w=*/480, /*h=*/1);
+#endif  // RHINO_STAFF
 
 #if JL_IS_CONFIG(BOW)
 Matrix pixels(/*w=*/40, /*h=*/1);
