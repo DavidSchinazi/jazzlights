@@ -1,6 +1,17 @@
 # This file is based on the one from HomeAssistant to ensure consistent formatting.
 # https://github.com/home-assistant/core/blob/dev/pyproject.toml
 
+[project]
+name = "jazzlights"
+version = "0.0.1"
+requires-python = ">=3.10"
+dependencies = [
+    "esptool",
+    "pyserial",
+    "rich",
+    "typer",
+]
+
 [tool.pylint.MAIN]
 py-version = "3.12"
 ignore = [
