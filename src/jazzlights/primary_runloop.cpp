@@ -15,6 +15,7 @@
 #include "jazzlights/network/ethernet.h"
 #include "jazzlights/network/max485_bus.h"
 #include "jazzlights/network/wifi.h"
+#include "jazzlights/orrery_common.h"
 #include "jazzlights/orrery_leader.h"
 #include "jazzlights/orrery_planet.h"
 #include "jazzlights/player.h"
@@ -89,7 +90,11 @@ void SetupPrimaryRunLoop() {
 
   AddLedsToRunner(&runner);
 
-#if JL_IS_CONFIG(CLOUDS)
+#if JL_AUDIO_VISUALIZER
+  // Ensures creatures follow the sound reactive dome.
+  player.setBasePrecedence(kCreatureOverridePrecedence);
+  player.setPrecedenceGain(0);
+#elif JL_IS_CONFIG(CLOUDS)
 #if !JL_DEV
   player.setBasePrecedence(6000);
   player.setPrecedenceGain(100);
@@ -97,7 +102,9 @@ void SetupPrimaryRunLoop() {
   player.setBasePrecedence(5800);
   player.setPrecedenceGain(100);
 #endif  // JL_DEV
-#elif JL_IS_CONFIG(WAND) || JL_IS_CONFIG(STAFF) || JL_IS_CONFIG(HAT) || JL_IS_CONFIG(SHOE) || JL_IS_CONFIG(FAIRY_STRING)
+#elif JL_IS_CONFIG(WAND) || JL_IS_CONFIG(STAFF) || JL_IS_CONFIG(HAT) || JL_IS_CONFIG(SHOE) ||              \
+    JL_IS_CONFIG(FAIRY_STRING) || JL_IS_CONFIG(NEW_HAT) || JL_IS_CONFIG(BOW) || JL_IS_CONFIG(RHINO_HAT) || \
+    JL_IS_CONFIG(RHINO_STAFF)
   player.setBasePrecedence(500);
   player.setPrecedenceGain(100);
 #elif JL_IS_CONFIG(XMAS_TREE)
@@ -106,9 +113,14 @@ void SetupPrimaryRunLoop() {
 #elif JL_IS_CONFIG(CREATURE)
   player.setBasePrecedence(1);
   player.setPrecedenceGain(0);
+#elif JL_IS_CONFIG(ORRERY_LEADER)
+  player.setBasePrecedence(kOrreryLeaderBasePrecedence);
+  player.setPrecedenceGain(0);
 #elif JL_IS_CONFIG(ORRERY_PLANET)
-  player.setBasePrecedence(100);
-  player.setPrecedenceGain(100);
+  player.setBasePrecedence(kDefaultPlanetBasePrecedence);
+  player.setPrecedenceGain(kDefaultPlanetPrecedenceGain);
+  player.set_brightness(kDefaultPlanetBrightness);
+  player.SetPlanetPattern(kPlanetPattern);
 #else
   player.setBasePrecedence(1000);
   player.setPrecedenceGain(1000);
@@ -121,9 +133,11 @@ void SetupPrimaryRunLoop() {
 #if JL_ETHERNET
   player.connect(EthernetNetwork::get());
 #endif  // JL_ETHERNET
-#if JL_IS_CONFIG(ORRERY_PLANET)
+#if JL_IS_CONFIG(ORRERY_PLANET) && !JL_ORRERY_PLUTO
   OrreryPlanet::Get()->Setup(player);
-#endif  // JL_IS_CONFIG(ORRERY_PLANET)
+#elif JL_IS_CONFIG(ORRERY_LEADER)
+  OrreryLeader::Get()->Setup(player);
+#endif  // ORRERY
   player.begin();
 
   GetUi()->FinalSetup();
@@ -140,7 +154,7 @@ void RunPrimaryRunLoop() {
   GetUi()->RunLoop(currentTime);
 #if JL_IS_CONFIG(ORRERY_LEADER)
   OrreryLeader::Get()->RunLoop(currentTime);
-#elif JL_IS_CONFIG(ORRERY_PLANET)
+#elif JL_IS_CONFIG(ORRERY_PLANET) && !JL_ORRERY_PLUTO
   OrreryPlanet::Get()->RunLoop(currentTime);
 #endif  // ORRERY
   SAVE_TIME_POINT(PrimaryRunLoop, UserInterface);

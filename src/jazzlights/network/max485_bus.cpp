@@ -41,6 +41,16 @@ namespace jazzlights {
 #define JL_TEST_MAX485 0
 #endif  // JL_TEST_MAX485
 
+#ifndef JL_LOG_TIMEOUTS
+#define JL_LOG_TIMEOUTS 0
+#endif  // JL_LOG_TIMEOUTS
+
+#if JL_LOG_TIMEOUTS
+#define jll_timeout(...) jll_info(__VA_ARGS__)
+#else  // JL_LOG_TIMEOUTS
+#define jll_timeout(...) jll_debug(__VA_ARGS__)
+#endif  // JL_LOG_TIMEOUTS
+
 namespace {
 
 constexpr size_t kMaxMessageLength = 100;
@@ -247,10 +257,10 @@ void Max485BusHandler::CopyEncodeAndSendMessage(BusId destBusId) {
   {
     const std::lock_guard<std::mutex> lock(sendMutex_);
     auto it = sharedSendMessages_.find(destBusId);
-    if (it == sharedSendMessages_.end()) { it = sharedSendMessages_.find(kBusIdBroadcast); }
     if (it != sharedSendMessages_.end()) {
       msg = it->second;
       found = true;
+      if (destBusId == kBusIdBroadcast) { sharedSendMessages_.erase(it); }
     }
   }
   if (!found) { return; }
@@ -474,8 +484,8 @@ void Max485BusLeader::HandleApplicationDataAvailableToSend(bool firstSend) {
   } else if (lastSentBusId_ != kSeparator &&
              timeMillis() - taskLastSendTimeExpectingResponse_ > kUartResponseTimeoutMs) {
     followerStates_[lastSentBusId_].timeoutCount++;
-    jll_info("%u Timed out waiting for response from %d, count is now %d", timeMillis(),
-             static_cast<int>(lastSentBusId_), followerStates_[lastSentBusId_].timeoutCount);
+    jll_timeout("%u Timed out waiting for response from %d, count is now %d", timeMillis(),
+                static_cast<int>(lastSentBusId_), followerStates_[lastSentBusId_].timeoutCount);
     shouldSend = true;
   } else {
     jll_max485_data("%u Ignoring %sfirstSend kApplicationDataAvailable", timeMillis(), (firstSend ? "" : "!"));
@@ -498,6 +508,7 @@ void Max485BusLeader::SendMessageToNextFollower() {
         auto it = sharedSendMessages_.upper_bound(candidate);
         if (it == sharedSendMessages_.end()) { it = sharedSendMessages_.begin(); }
         candidate = it->first;
+        if (candidate == kBusIdBroadcast) { continue; }
         if (firstCandidate == kSeparator) { firstCandidate = candidate; }
         FollowerState& state = followerStates_[candidate];
         if (state.timeoutCount >= 3) {

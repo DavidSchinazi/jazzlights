@@ -141,8 +141,11 @@ void CoreMotorUi::RunLoop(Milliseconds currentTime) {
 }
 
 void CoreMotorUi::SetMotorSpeed() {
+  if (!motorEnabled_) {
+    GetMainStepperMotor()->SetSpeed(std::nullopt);
+    return;
+  }
   int32_t motorFrequencyHz = motorFrequencyHz_;
-  if (!motorEnabled_) { motorFrequencyHz = 0; }
   if (!motorDirectionForward_) { motorFrequencyHz = -motorFrequencyHz; }
   GetMainStepperMotor()->SetSpeed(motorFrequencyHz);
 }

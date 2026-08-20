@@ -10,19 +10,22 @@
 #define CORE2AWS_LCD_ENABLED 1
 #endif  // CORE2AWS_LCD_ENABLED
 
+#include "jazzlights/player.h"
 #include "jazzlights/ui/ui_disabled.h"
 
 namespace jazzlights {
 
 #if CORE2AWS_LCD_ENABLED
 
-class Core2AwsUi : public Esp32Ui {
+class Core2AwsUi : public Esp32Ui, public Player::OrrerySceneIdWatcher {
  public:
   explicit Core2AwsUi(Player& player);
   // From Esp32Ui.
   void InitialSetup() override;
   void FinalSetup() override;
   void RunLoop(Milliseconds currentTime) override;
+  // From Player::OrrerySceneIdWatcher.
+  void OnOrrerySceneId(std::optional<OrrerySceneId> orrerySceneId) override;
 
  private:
   void DrawSystemTextLines(Milliseconds currentTime);

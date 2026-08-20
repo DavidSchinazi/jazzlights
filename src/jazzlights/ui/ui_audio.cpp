@@ -6,9 +6,11 @@
 #include <Arduino.h>
 #include <M5Unified.h>
 
+#include <cinttypes>
 #include <cstring>
 
 #include "jazzlights/audio.h"
+#include "jazzlights/palette.h"
 #include "jazzlights/player.h"
 #include "jazzlights/util/log.h"
 
@@ -27,7 +29,7 @@ void AudioVisualizerUi::InitialSetup() {
   jll_info("M5 device initialized");
 
   M5.Display.setBrightness(128);
-  M5.Lcd.fillScreen(BLACK);
+  M5.Display.fillScreen(BLACK);
 
   jll_info("Audio visualizer UI setup complete");
 }
@@ -37,11 +39,116 @@ void AudioVisualizerUi::FinalSetup() {}
 void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
   M5.update();
   if (M5.Touch.getCount() > 0 && M5.Touch.getDetail(0).wasPressed()) {
-    visualization_mode_ = (visualization_mode_ == VisualizationMode::kSpectrum) ? VisualizationMode::kWaveform
-                                                                                : VisualizationMode::kSpectrum;
-    jll_info("%u Switched to %s mode", currentTime,
-             (visualization_mode_ == VisualizationMode::kSpectrum) ? "spectrum" : "waveform");
-    M5.Lcd.fillScreen(BLACK);
+    auto detail = M5.Touch.getDetail(0);
+    if (visualization_mode_ == VisualizationMode::kMenu) {
+      if (detail.y >= 10 && detail.y <= 48 && detail.x >= 20 && detail.x <= 300) {
+        visualization_mode_ = VisualizationMode::kSpectrum;
+        jll_info("%u Switched to spectrum mode", currentTime);
+        M5.Display.fillScreen(BLACK);
+      } else if (detail.y >= 53 && detail.y <= 91 && detail.x >= 20 && detail.x <= 300) {
+        visualization_mode_ = VisualizationMode::kWaveform;
+        jll_info("%u Switched to waveform mode", currentTime);
+        M5.Display.fillScreen(BLACK);
+      } else if (detail.y >= 96 && detail.y <= 134 && detail.x >= 20 && detail.x <= 300) {
+        Player::SoundReactiveMode next_mode;
+        switch (player_.sound_reactive_mode()) {
+          case Player::SoundReactiveMode::kAuto: next_mode = Player::SoundReactiveMode::kOn; break;
+          case Player::SoundReactiveMode::kOn: next_mode = Player::SoundReactiveMode::kOff; break;
+          case Player::SoundReactiveMode::kOff: next_mode = Player::SoundReactiveMode::kAuto; break;
+        }
+        player_.set_sound_reactive_mode(next_mode);
+        const char* mode_str = "UNKNOWN";
+        switch (next_mode) {
+          case Player::SoundReactiveMode::kAuto: mode_str = "AUTO"; break;
+          case Player::SoundReactiveMode::kOn: mode_str = "ON"; break;
+          case Player::SoundReactiveMode::kOff: mode_str = "OFF"; break;
+        }
+        jll_info("%u Toggled sound reactive to %s", currentTime, mode_str);
+        M5.Display.fillScreen(BLACK);
+      } else if (detail.y >= 139 && detail.y <= 177 && detail.x >= 20 && detail.x <= 300) {
+        visualization_mode_ = VisualizationMode::kBrightnessKeypad;
+        keypad_value_ = 0;
+        keypad_has_value_ = false;
+        jll_info("%u Switched to brightness keypad", currentTime);
+        M5.Display.fillScreen(BLACK);
+      } else if (detail.y >= 182 && detail.y <= 220 && detail.x >= 20 && detail.x <= 300) {
+        visualization_mode_ = VisualizationMode::kPaletteMenu;
+        jll_info("%u Switched to palette menu", currentTime);
+        M5.Display.fillScreen(BLACK);
+      }
+    } else if (visualization_mode_ == VisualizationMode::kBrightnessKeypad) {
+      const int w = kScreenWidth / 3;
+      const int h = kScreenHeight / 5;
+      int col = detail.x / w;
+      int row = detail.y / h;
+      if (row == 0 && col == 0) {
+        visualization_mode_ = VisualizationMode::kMenu;
+        M5.Display.fillScreen(BLACK);
+      } else if (row >= 1 && row <= 3) {
+        int val = (row - 1) * 3 + col + 1;
+        if (keypad_value_ < 100) {
+          keypad_value_ = keypad_value_ * 10 + val;
+          keypad_has_value_ = true;
+        }
+      } else if (row == 4) {
+        if (col == 0) {
+          keypad_value_ = 0;
+          keypad_has_value_ = false;
+        } else if (col == 1) {
+          if (keypad_value_ < 100) {
+            keypad_value_ = keypad_value_ * 10;
+            keypad_has_value_ = true;
+          }
+        } else if (col == 2) {
+          if (keypad_has_value_) {
+            if (keypad_value_ > 255) keypad_value_ = 255;
+            player_.set_brightness(keypad_value_);
+            jll_info("%u Set brightness to %" PRId32, currentTime, keypad_value_);
+          }
+          visualization_mode_ = VisualizationMode::kMenu;
+          M5.Display.fillScreen(BLACK);
+        }
+      }
+    } else if (visualization_mode_ == VisualizationMode::kPaletteMenu) {
+      const int w = kScreenWidth / 3;
+      const int h = kScreenHeight / 3;
+      int col = detail.x / w;
+      int row = detail.y / h;
+      if (row == 0 && col == 0) {
+        visualization_mode_ = VisualizationMode::kMenu;
+        M5.Display.fillScreen(BLACK);
+      } else if (row == 0 && col == 1) {
+        player_.stopForcePalette(currentTime);
+        visualization_mode_ = VisualizationMode::kMenu;
+        M5.Display.fillScreen(BLACK);
+      } else {
+        int palette_idx = -1;
+        if (row == 0 && col == 2)
+          palette_idx = 3;  // Cloud
+        else if (row == 1 && col == 0)
+          palette_idx = 1;  // Lava
+        else if (row == 1 && col == 1)
+          palette_idx = 2;  // Ocean
+        else if (row == 1 && col == 2)
+          palette_idx = 5;  // Forest
+        else if (row == 2 && col == 0)
+          palette_idx = 6;  // Rainbow
+        else if (row == 2 && col == 1)
+          palette_idx = 4;  // Party
+        else if (row == 2 && col == 2)
+          palette_idx = 0;  // Heat
+
+        if (palette_idx >= 0) {
+          player_.forcePalette(static_cast<uint8_t>(palette_idx), currentTime);
+          visualization_mode_ = VisualizationMode::kMenu;
+          M5.Display.fillScreen(BLACK);
+        }
+      }
+    } else {
+      visualization_mode_ = VisualizationMode::kMenu;
+      jll_info("%u Switched to menu mode", currentTime);
+      M5.Display.fillScreen(BLACK);
+    }
   }
 
   Audio::VisualizerData data;
@@ -61,33 +168,135 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
   }
 
   // Drawing
-  M5.Lcd.startWrite();
+  M5.Display.startWrite();
 
   const bool no_audio_data = data.last_read_time < 0 || currentTime - data.last_read_time > 1000;
   if (no_audio_data != showing_no_audio_data_) {
     showing_no_audio_data_ = no_audio_data;
     jll_info("%u %s 'No Audio Data' mode", currentTime, showing_no_audio_data_ ? "Entered" : "Exited");
-    M5.Lcd.fillScreen(BLACK);
+    M5.Display.fillScreen(BLACK);
   }
 
   if (data.squelch != showing_squelch_) {
     showing_squelch_ = data.squelch;
     jll_info("%u %s 'Squelch' mode", currentTime, showing_squelch_ ? "Entered" : "Exited");
-    M5.Lcd.fillScreen(BLACK);
+    M5.Display.fillScreen(BLACK);
   }
 
-  if (showing_no_audio_data_) {
-    M5.Lcd.setTextSize(2);
-    M5.Lcd.setTextDatum(TC_DATUM);
-    M5.Lcd.setTextColor(RED, BLACK);
-    M5.Lcd.drawString("No Audio Data", kScreenWidth / 2, 20);
-    M5.Lcd.setTextSize(1);
+  if (visualization_mode_ == VisualizationMode::kMenu) {
+    M5.Display.setTextSize(2);
+    M5.Display.setTextDatum(MC_DATUM);
+    M5.Display.setTextColor(WHITE, BLACK);
+    M5.Display.drawRect(20, 10, 280, 38, WHITE);
+    M5.Display.drawString("Spectrum Analyzer", kScreenWidth / 2, 29);
+
+    M5.Display.drawRect(20, 53, 280, 38, WHITE);
+    M5.Display.drawString("Beat Detection", kScreenWidth / 2, 72);
+
+    M5.Display.drawRect(20, 96, 280, 38, WHITE);
+    const char* mode_label = "UNKNOWN";
+    switch (player_.sound_reactive_mode()) {
+      case Player::SoundReactiveMode::kAuto: mode_label = "Auto"; break;
+      case Player::SoundReactiveMode::kOn: mode_label = "On"; break;
+      case Player::SoundReactiveMode::kOff: mode_label = "Off"; break;
+    }
+    char buf[64];
+    snprintf(buf, sizeof(buf), "Sound Reactive: %s", mode_label);
+    M5.Display.drawString(buf, kScreenWidth / 2, 115);
+
+    M5.Display.drawRect(20, 139, 280, 38, WHITE);
+    snprintf(buf, sizeof(buf), "Brightness: %u", player_.brightness());
+    M5.Display.drawString(buf, kScreenWidth / 2, 158);
+
+    M5.Display.drawRect(20, 182, 280, 38, WHITE);
+    if (player_.paletteIsForced()) {
+      snprintf(buf, sizeof(buf), "Palette: %s", OurColorPaletteName(player_.forcedPalette()).c_str());
+    } else {
+      snprintf(buf, sizeof(buf), "Palette: Default");
+    }
+    M5.Display.drawString(buf, kScreenWidth / 2, 201);
+
+    if (showing_no_audio_data_) {
+      M5.Display.setTextColor(RED, BLACK);
+      M5.Display.drawString("No Audio Data", kScreenWidth / 2, 230);
+    } else if (showing_squelch_) {
+      M5.Display.setTextColor(ORANGE, BLACK);
+      M5.Display.drawString("Squelch", kScreenWidth / 2, 230);
+    } else {
+      M5.Display.fillRect(0, 225, kScreenWidth, 15, BLACK);
+    }
+  } else if (visualization_mode_ == VisualizationMode::kBrightnessKeypad) {
+    const int w = kScreenWidth / 3;
+    const int h = kScreenHeight / 5;
+    M5.Display.setTextSize(2);
+    M5.Display.setTextColor(WHITE, BLACK);
+    M5.Display.drawRect(0, 0, w, h, WHITE);
+    M5.Display.setTextDatum(MC_DATUM);
+    M5.Display.drawString("Back", w / 2, h / 2);
+
+    M5.Display.drawRect(w, 0, kScreenWidth - w, h, WHITE);
+    M5.Display.fillRect(w + 2, 2, kScreenWidth - w - 4, h - 4, BLACK);
+    char buf[64];
+    if (keypad_has_value_) {
+      snprintf(buf, sizeof(buf), "%" PRId32, keypad_value_);
+    } else {
+      snprintf(buf, sizeof(buf), "_ (curr %u)", player_.brightness());
+    }
+    M5.Display.drawString(buf, w + (kScreenWidth - w) / 2, h / 2);
+
+    for (int i = 1; i <= 9; i++) {
+      int row = (i - 1) / 3 + 1;
+      int col = (i - 1) % 3;
+      M5.Display.drawRect(col * w, row * h, w, h, WHITE);
+      snprintf(buf, sizeof(buf), "%d", i);
+      M5.Display.drawString(buf, col * w + w / 2, row * h + h / 2);
+    }
+    M5.Display.drawRect(0, 4 * h, w, h, WHITE);
+    M5.Display.drawString("Clear", w / 2, 4 * h + h / 2);
+    M5.Display.drawRect(w, 4 * h, w, h, WHITE);
+    M5.Display.drawString("0", w + w / 2, 4 * h + h / 2);
+    M5.Display.drawRect(2 * w, 4 * h, w, h, WHITE);
+    M5.Display.drawString("Confirm", 2 * w + w / 2, 4 * h + h / 2);
+  } else if (visualization_mode_ == VisualizationMode::kPaletteMenu) {
+    const int w = kScreenWidth / 3;
+    const int h = kScreenHeight / 3;
+    M5.Display.setTextSize(2);
+    M5.Display.setTextColor(WHITE, BLACK);
+    M5.Display.setTextDatum(MC_DATUM);
+
+    auto drawCell = [&](int row, int col, const char* label, bool selected) {
+      M5.Display.drawRect(col * w, row * h, w, h, WHITE);
+      M5.Display.fillRect(col * w + 2, row * h + 2, w - 4, h - 4, selected ? WHITE : BLACK);
+      if (selected) {
+        M5.Display.setTextColor(BLACK, WHITE);
+      } else {
+        M5.Display.setTextColor(WHITE, BLACK);
+      }
+      M5.Display.drawString(label, col * w + w / 2, row * h + h / 2);
+    };
+
+    drawCell(0, 0, "Back", false);
+    drawCell(0, 1, "Default", !player_.paletteIsForced());
+    drawCell(0, 2, "Cloud", player_.paletteIsForced() && player_.forcedPalette() == 3);
+    drawCell(1, 0, "Lava", player_.paletteIsForced() && player_.forcedPalette() == 1);
+    drawCell(1, 1, "Ocean", player_.paletteIsForced() && player_.forcedPalette() == 2);
+    drawCell(1, 2, "Forest", player_.paletteIsForced() && player_.forcedPalette() == 5);
+    drawCell(2, 0, "Rainbow",
+             player_.paletteIsForced() && (player_.forcedPalette() == 6 || player_.forcedPalette() == 7));
+    drawCell(2, 1, "Party", player_.paletteIsForced() && player_.forcedPalette() == 4);
+    drawCell(2, 2, "Heat", player_.paletteIsForced() && player_.forcedPalette() == 0);
+  } else if (showing_no_audio_data_) {
+    M5.Display.setTextSize(2);
+    M5.Display.setTextDatum(TC_DATUM);
+    M5.Display.setTextColor(RED, BLACK);
+    M5.Display.drawString("No Audio Data", kScreenWidth / 2, 20);
+    M5.Display.setTextSize(1);
   } else if (showing_squelch_) {
-    M5.Lcd.setTextSize(2);
-    M5.Lcd.setTextDatum(TC_DATUM);
-    M5.Lcd.setTextColor(ORANGE, BLACK);
-    M5.Lcd.drawString("Squelch", kScreenWidth / 2, 20);
-    M5.Lcd.setTextSize(1);
+    M5.Display.setTextSize(2);
+    M5.Display.setTextDatum(TC_DATUM);
+    M5.Display.setTextColor(ORANGE, BLACK);
+    M5.Display.drawString("Squelch", kScreenWidth / 2, 20);
+    M5.Display.setTextSize(1);
   } else {
     int bar_width = kScreenWidth / Audio::kNumBands;
     if (visualization_mode_ == VisualizationMode::kSpectrum) {
@@ -149,15 +358,15 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
             b = q;
             break;
         }
-        uint16_t color = M5.Lcd.color565(r, g, b);
+        uint16_t color = M5.Display.color565(r, g, b);
 
         // Draw bar - clear background above bar
-        if (h < kScreenHeight) { M5.Lcd.fillRect(x, 0, bar_width - 1, kScreenHeight - h, BLACK); }
+        if (h < kScreenHeight) { M5.Display.fillRect(x, 0, bar_width - 1, kScreenHeight - h, BLACK); }
         // Draw the main bar
-        M5.Lcd.fillRect(x, kScreenHeight - h, bar_width - 1, h, color);
+        M5.Display.fillRect(x, kScreenHeight - h, bar_width - 1, h, color);
 
         // Draw peak indicator (single line or small rect)
-        if (ph > 0) { M5.Lcd.drawFastHLine(x, kScreenHeight - ph, bar_width - 1, WHITE); }
+        if (ph > 0) { M5.Display.drawFastHLine(x, kScreenHeight - ph, bar_width - 1, WHITE); }
       }
     } else {
       float max_db = data.agc_max;
@@ -173,16 +382,16 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
 
         // Clear top, draw line
         if (is_beat) {
-          M5.Lcd.drawFastVLine(i, 0, kScreenHeight, RED);
+          M5.Display.drawFastVLine(i, 0, kScreenHeight, RED);
         } else {
-          if (h < kScreenHeight) { M5.Lcd.drawFastVLine(i, 0, kScreenHeight - h, BLACK); }
-          if (h > 0) { M5.Lcd.drawFastVLine(i, kScreenHeight - h, h, CYAN); }
+          if (h < kScreenHeight) { M5.Display.drawFastVLine(i, 0, kScreenHeight - h, BLACK); }
+          if (h > 0) { M5.Display.drawFastVLine(i, kScreenHeight - h, h, CYAN); }
         }
       }
     }
   }
 
-  M5.Lcd.endWrite();
+  M5.Display.endWrite();
 }
 
 }  // namespace jazzlights
