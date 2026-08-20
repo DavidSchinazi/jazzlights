@@ -5,6 +5,7 @@
 
 #include <atomic>
 
+#include "jazzlights/orrery_common.h"
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/time.h"
 #ifndef ESP32
@@ -101,6 +102,9 @@ std::string networkMessageToString(const NetworkMessage& message, Milliseconds c
   snprintf(str2, sizeof(str2), ", rssi=%d, rgb=%06x", message.receiptRssi, static_cast<int>(message.creatureColor));
   rv += str2;
 #endif  // CREATURE
+  if (message.orrerySceneId.has_value()) {
+    rv += ", os=" + std::string(OrrerySceneToString(static_cast<OrreryScene>(*message.orrerySceneId)));
+  }
   rv += str;
   return rv;
 }

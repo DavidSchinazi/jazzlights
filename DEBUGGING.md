@@ -24,6 +24,12 @@ This is useful to load all dependencies locally so you can build them later with
 Run from `jazzlights`:
 
 ```
+FAILURES_FILE="$(mktemp)" ; for e in $(pio project config | grep 'env:' | grep -v extends | sed 's/env://g') ; do if [ "${e:0:1}" != "_" ] ; then pio run -e "$e" || echo "$e" >> "${FAILURES_FILE}" ; fi ; done ; [ -s "${FAILURES_FILE}" ] && echo "THERE WERE FAILURES:" && cat "${FAILURES_FILE}"
+```
+
+If you want the first failure to abort, run this instead:
+
+```
 for e in $(pio project config | grep 'env:' | grep -v extends | sed 's/env://g') ; do if [ "${e:0:1}" != "_" ] ; then pio run -e "$e" || break ; fi ; done
 ```
 

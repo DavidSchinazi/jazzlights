@@ -36,6 +36,10 @@
 #define JL_CONFIG_FAIRY_STRING 13
 #define JL_CONFIG_ORRERY_LEADER 14
 #define JL_CONFIG_ORRERY_PLANET 15
+#define JL_CONFIG_NEW_HAT 16
+#define JL_CONFIG_BOW 17
+#define JL_CONFIG_RHINO_HAT 18
+#define JL_CONFIG_RHINO_STAFF 19
 
 #define JL_IS_CONFIG(config_) (JL_MERGE_TOKENS(JL_CONFIG_, JL_CONFIG) == JL_MERGE_TOKENS(JL_CONFIG_, config_))
 
@@ -91,7 +95,7 @@
 #endif  // BOOT_NAME
 
 #ifndef REVISION
-#define REVISION 14
+#define REVISION 15
 #endif  // REVISION
 
 // Extra indirection ensures preprocessor expands macros in correct order.
@@ -154,8 +158,16 @@
 #define JL_ESP32_ETHERNET 0
 #endif  // JL_ESP32_ETHERNET
 
+#ifndef JL_ORRERY_SUN
+#define JL_ORRERY_SUN 0
+#endif  // JL_ORRERY_SUN
+
+#ifndef JL_ORRERY_PLUTO
+#define JL_ORRERY_PLUTO 0
+#endif  // JL_ORRERY_PLUTO
+
 #ifndef JL_MAX485_BUS
-#if defined(ESP32) && (JL_IS_CONFIG(ORRERY_LEADER) || JL_IS_CONFIG(ORRERY_PLANET))
+#if defined(ESP32) && (JL_IS_CONFIG(ORRERY_LEADER) || JL_IS_CONFIG(ORRERY_PLANET)) && !JL_ORRERY_PLUTO
 #define JL_MAX485_BUS 1
 #else  // ESP32 && ORRERY
 #define JL_MAX485_BUS 0
@@ -169,6 +181,20 @@
 #ifndef JL_MOTOR
 #define JL_MOTOR 0
 #endif  // JL_MOTOR
+
+#ifndef JL_IS_M5_DEVICE
+#if defined(__has_include) && __has_include(<M5Unified.h>)
+#define JL_IS_M5_DEVICE 1
+#else  // __has_include(<M5Unified.h>)
+#define JL_IS_M5_DEVICE 0
+#endif  // __has_include(<M5Unified.h>)
+#endif  // JL_IS_M5_DEVICE
+
+#ifndef JL_M5_LOGGING
+// TODO: switch to JL_IS_M5_DEVICE when ready.
+// #define JL_M5_LOGGING JL_IS_M5_DEVICE
+#define JL_M5_LOGGING 0
+#endif  // JL_M5_LOGGING
 
 // See https://docs.m5stack.com/en/core/StickS3#ext_5v_en
 #ifndef JL_M5_EXT_POWER

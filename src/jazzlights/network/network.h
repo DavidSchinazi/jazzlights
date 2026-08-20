@@ -5,6 +5,7 @@
 #include <string.h>  // memcpy, size_t
 
 #include <list>
+#include <optional>
 #include <string>
 
 #include "jazzlights/config.h"
@@ -108,6 +109,8 @@ struct NetworkMessage {
   bool isCreature = false;
   bool isPartying = false;
 #endif  // CREATURE
+
+  std::optional<OrrerySceneId> orrerySceneId;
 
   bool isEqualExceptOriginationTime(const NetworkMessage& other) const {
     return sender == other.sender && originator == other.originator && precedence == other.precedence &&

@@ -91,6 +91,10 @@ jobs:
           - hat
           - creature
           - creature_c6
+          - audio_cores3
+          - orrery_leader
+          - orrery_planet
+          - orrery_sun
           - orrery_motor_test_m5stamp_s3
     runs-on: ubuntu-latest
     steps:
@@ -175,6 +179,10 @@ jobs:
           extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-shoe.json" --name "JazzLights Shoe" --version $(git rev-parse --short "$GITHUB_SHA") --firmware shoe.bin
           extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-hat.json" --name "JazzLights Hat" --version $(git rev-parse --short "$GITHUB_SHA") --firmware hat.bin
           extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-creature.json" --name "MISTical Creature" --version $(git rev-parse --short "$GITHUB_SHA") --firmware creature.bin --firmware-c6 creature_c6.bin
+          extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-audio.json" --name "Sound Reactive" --version $(git rev-parse --short "$GITHUB_SHA") --firmware-s3 audio_cores3.bin
+          extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-orrery-leader.json" --name "Orrery Leader" --version $(git rev-parse --short "$GITHUB_SHA") --firmware orrery_leader.bin
+          extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-orrery-planet.json" --name "Orrery Planet" --version $(git rev-parse --short "$GITHUB_SHA") --firmware-s3 orrery_planet.bin
+          extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-orrery-sun.json" --name "Orrery Sun" --version $(git rev-parse --short "$GITHUB_SHA") --firmware orrery_sun.bin
           extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-motor-test.json" --name "Orrery Motor Test" --version $(git rev-parse --short "$GITHUB_SHA") --firmware-s3 orrery_motor_test_m5stamp_s3.bin
       - name: Download Binaries to Site Directory
         uses: actions/download-artifact@v4

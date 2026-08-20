@@ -60,7 +60,7 @@ void AtomS3Ui::Display(const DisplayContents& contents, Milliseconds currentTime
     } break;
     case DisplayContents::Mode::kNext: {
       DisplayCenteredText("Next", ::WHITE, ::BLUE);
-      M5.Display.drawCenterString(patternName(contents.c.next.currentEffect).c_str(), /*x=*/64, /*y=*/80,
+      M5.Display.drawCenterString(patternName(contents.c.next.currentEffect, player_).c_str(), /*x=*/64, /*y=*/80,
                                   &fonts::Font2);
     } break;
     case DisplayContents::Mode::kLoop: {

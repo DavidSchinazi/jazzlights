@@ -19,7 +19,7 @@ constexpr int kRssiMax = 20;
 static_assert(kRssiMax > kRssiCeiling, "unexpected RSSI");
 constexpr int kRssiNearbyThresholdUp = -69;
 constexpr int kRssiNearbyThresholdDown = -75;
-constexpr uint32_t kMinCreaturesForAParty = 3;  // Minimum number of creatures to trigger a party.
+constexpr uint32_t kMinCreaturesForAParty = 2;  // Minimum number of creatures to trigger a party.
 
 uint32_t ColorHash(uint32_t color) {
   // Allows sorting colors in a way that isn't trivially predictable by humans.
@@ -40,6 +40,25 @@ uint8_t CreatureIntensity(const Creature& creature) {
   return static_cast<uint8_t>((static_cast<double>(rssi - kRssiFloor) * 255.0) /
                               static_cast<double>(kRssiCeiling - kRssiFloor));
 }
+
+#ifndef JL_CREATURE_CYBERPUNK
+#define JL_CREATURE_CYBERPUNK 0
+#endif  // JL_CREATURE_CYBERPUNK
+
+#if JL_CREATURE_CYBERPUNK
+const CRGBPalette16* GetCyberPunkPalette() {
+  static CRGBPalette16 sCyberPunkPalette;
+  static bool sInitialized = false;
+  if (!sInitialized) {
+    sInitialized = true;
+    static constexpr TProgmemRGBGradientPalette_byte kCyberPunkGradientPalette[] FL_PROGMEM = {
+        0, 30, 0, 90, 64, 255, 0, 200, 128, 100, 0, 255, 192, 0, 200, 255, 255, 0, 255, 200,
+    };
+    sCyberPunkPalette.loadDynamicGradientPalette(kCyberPunkGradientPalette);
+  }
+  return &sCyberPunkPalette;
+}
+#endif  // JL_CREATURE_CYBERPUNK
 
 }  // namespace
 
@@ -161,6 +180,16 @@ KnownCreatures::KnownCreatures() {
   creatures_.push_back(ourselves);
 }
 
+void KnownCreatures::HandleHeardOrrery(Milliseconds currentTime) {
+  lastHeardOrreryTime_ = currentTime;
+  jll_info("%u Heard the orrery", currentTime);
+}
+
+bool KnownCreatures::HasRecentlyHeardOrrery(Milliseconds currentTime) {
+  static constexpr Milliseconds kOrreryDuration = 60000;  // 1 minute.
+  return lastHeardOrreryTime_ >= 0 && currentTime - lastHeardOrreryTime_ <= kOrreryDuration;
+}
+
 // Called once to initialize the state.
 void Creatures::begin(const Frame& frame) const {
   new (state(frame)) CreaturesState;  // Default-initialize the state.
@@ -207,20 +236,44 @@ void Creatures::rewind(const Frame& frame) const {
   KnownCreatures::Get()->SetIsPartying(num_close_creatures >= kMinCreaturesForAParty);
   state(frame)->rainbow = iShouldParty || KnownCreatures::Get()->IsPartying();
   state(frame)->initialHue = 256 * frame.time / 1667;
+  state(frame)->orrery = KnownCreatures::Get()->HasRecentlyHeardOrrery(currentTime);
 }
 
 // Called for each pixel to compute its color.
 CRGB Creatures::color(const Frame& frame, const Pixel& px) const {
+  if (state(frame)->orrery) {
+    // Background: dark blue.
+    CRGB color = CRGB(0x000020);
+    // Use a time-adjusted index to make stars move down the strip.
+    uint32_t movingIndex = static_cast<uint32_t>(px.strandIndex - state(frame)->offset);
+    uint32_t hash = ColorHash(movingIndex);
+    // Stars: ~3% of pixels are stars (1/32).
+    if ((hash & 0x1F) == 0) {
+      uint8_t twinkle = quadwave8((256 * frame.time / 1667) + (hash >> 8));
+      if (twinkle > 32) {
+        // Yellow stars.
+        CRGB starColor = CRGB::Yellow;
+        color += starColor.nscale8_video(twinkle);
+      }
+    }
+    return color;
+  }
   if (state(frame)->rainbow) {
     // The rainbow effect determines the hue based on the distance from the rainbow origin point.
     const double d = distance(px.coord, state(frame)->origin);
     return ColorFromPalette(RainbowColors_p,
                             state(frame)->initialHue + int32_t(255 * d / state(frame)->maxDistance) % 255);
   }
+#if JL_CREATURE_CYBERPUNK
+  static const CRGBPalette16* kCyberPunkPalette = GetCyberPunkPalette();
+  uint8_t paletteIndex = static_cast<uint8_t>(px.strandIndex * 8 + 256 * frame.time / 10000);
+  return ColorFromPalette(*kCyberPunkPalette, paletteIndex);
+#else   // JL_CREATURE_CYBERPUNK
   size_t num_colors = state(frame)->num_colors;
   // Display the colors in order based on the current offset.
   const size_t reverseIndex = (-px.strandIndex % num_colors) + num_colors - 1;
   return state(frame)->colors[(state(frame)->offset + reverseIndex) % num_colors];
+#endif  // JL_CREATURE_CYBERPUNK
 }
 
 // Called once for each point in time after all pixels have been computed.

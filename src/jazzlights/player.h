@@ -75,6 +75,16 @@ class Player {
   void stopForcePalette(Milliseconds currentTime);
 
   /**
+   * Returns whether the palette is currently forced.
+   */
+  bool paletteIsForced() const { return paletteIsForced_; }
+
+  /**
+   * Returns the currently forced palette.
+   */
+  uint8_t forcedPalette() const { return forcedPalette_; }
+
+  /**
    * Run text command
    */
   const char* command(const char* cmd);
@@ -115,6 +125,14 @@ class Player {
 
   bool enabled() const { return enabled_; }
   void set_enabled(bool enabled);
+
+#if JL_AUDIO_VISUALIZER
+  enum class SoundReactiveMode { kOff, kOn, kAuto };
+  SoundReactiveMode sound_reactive_mode() const { return sound_reactive_mode_; }
+  void set_sound_reactive_mode(SoundReactiveMode mode);
+  bool sound_reactive_enabled() const;
+#endif  // JL_AUDIO_VISUALIZER
+
 #if JL_IS_CONFIG(CLOUDS)
   class StatusWatcher {
    public:
@@ -133,7 +151,24 @@ class Player {
 #elif JL_IS_CONFIG(ORRERY_PLANET)
   void SetPlanetPattern(PatternBits planetPattern) { planetPattern_ = planetPattern; }
   PatternBits GetPlanetPattern() const { return planetPattern_; }
+#elif JL_IS_CONFIG(ORRERY_LEADER)
+  class OverriddenPatternWatcher {
+   public:
+    virtual ~OverriddenPatternWatcher() = default;
+    virtual void OnOverriddenPattern(std::optional<PatternBits> pattern) = 0;
+  };
+  void SetOverriddenPatternWatcher(OverriddenPatternWatcher* overriddenPatternWatcher) {
+    overriddenPatternWatcher_ = overriddenPatternWatcher;
+  }
 #endif
+  class OrrerySceneIdWatcher {
+   public:
+    virtual ~OrrerySceneIdWatcher() = default;
+    virtual void OnOrrerySceneId(std::optional<OrrerySceneId> orrerySceneId) = 0;
+  };
+  void SetOrrerySceneIdWatcher(OrrerySceneIdWatcher* orrerySceneIdWatcher) {
+    orrerySceneIdWatcher_ = orrerySceneIdWatcher;
+  }
 
   class NumLedWritesGetter {
    public:
@@ -142,8 +177,13 @@ class Player {
   };
   void SetNumLedWritesGetter(NumLedWritesGetter* numLedWritesGetter) { numLedWritesGetter_ = numLedWritesGetter; }
 
+  void SetOrrerySceneIdToSend(std::optional<OrrerySceneId> orrerySceneIdToSend);
+
+  bool isAllLinear() const { return isAllLinear_; }
+
  private:
   void UpdateStatusWatcher();
+  void UpdateOverriddenPatternWatcher(Precedence precedence);
   void handleReceivedMessage(NetworkMessage message, Milliseconds currentTime);
 
   Precedence getLocalPrecedence(Milliseconds currentTime);
@@ -173,6 +213,12 @@ class Player {
   bool enabled_ = true;
 #endif  // JL_IS_CONFIG(CLOUDS) && !JL_DEV
 
+#if JL_AUDIO_VISUALIZER
+  SoundReactiveMode sound_reactive_mode_ = SoundReactiveMode::kAuto;
+  bool sound_reactive_suppressed_ = false;
+  Milliseconds squelch_start_time_ = -1;
+#endif  // JL_AUDIO_VISUALIZER
+
   bool ready_ = false;
   bool powerLimited_ = false;
   uint8_t brightness_ = 255;
@@ -199,7 +245,10 @@ class Player {
   CRGB color_override_;
 #elif JL_IS_CONFIG(CREATURE) || JL_IS_CONFIG(ORRERY_PLANET)
   bool creatureIsFollowingNonCreature_ = false;
+#elif JL_IS_CONFIG(ORRERY_LEADER)
+  OverriddenPatternWatcher* overriddenPatternWatcher_ = nullptr;
 #endif
+  OrrerySceneIdWatcher* orrerySceneIdWatcher_ = nullptr;
 
 #if JL_IS_CONFIG(ORRERY_PLANET)
   PatternBits planetPattern_ = 0;
@@ -230,9 +279,13 @@ class Player {
   Milliseconds fpsEpochStart_ = 0;
   Milliseconds timeSpentComputingEffectsThisEpoch_ = 0;
   uint32_t framesComputedThisEpoch_ = 0;
+
+  std::optional<OrrerySceneId> orrerySceneIdToSend_;
+  Milliseconds lastOrrerySceneIdSetTime_ = -1;
+  bool isAllLinear_ = false;
 };
 
-std::string patternName(PatternBits pattern);
+std::string patternName(PatternBits pattern, const Player& player);
 
 }  // namespace jazzlights
 #endif  // JL_PLAYER_H
