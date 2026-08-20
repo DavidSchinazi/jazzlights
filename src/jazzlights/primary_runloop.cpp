@@ -78,6 +78,9 @@ void SetupPrimaryRunLoop() {
     vTaskDelay(100 / portTICK_PERIOD_MS);
   }
 #endif  // JL_DEBUG
+
+  SetupLogging();
+
   GetUi()->set_fastled_runner(&runner);
   GetUi()->InitialSetup();
 

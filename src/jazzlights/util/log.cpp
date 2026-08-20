@@ -47,4 +47,12 @@ BufferViewU8 EscapeIntoStaticBuffer(const BufferViewU8 input) {
   return output;
 }
 
+void SetupLogging() {
+#if JL_M5_LOGGING
+  M5.Log.setLogLevel(m5::log_target_serial, is_debug_logging_enabled() ? ESP_LOG_DEBUG : ESP_LOG_INFO);
+  M5.Log.setLogLevel(m5::log_target_display, ESP_LOG_NONE);
+  M5.Log.setEnableColor(m5::log_target_serial, true);
+#endif  // JL_M5_LOGGING
+}
+
 }  // namespace jazzlights
