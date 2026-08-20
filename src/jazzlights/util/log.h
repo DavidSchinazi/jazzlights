@@ -7,9 +7,19 @@
 #include <mutex>
 
 #include "jazzlights/config.h"
-#if JL_IS_M5_DEVICE && JL_M5_LOGGING
+
+#if JL_M5_LOGGING
+
+#if defined(INADDR_NONE) && ARDUINO
+// When M5Unified is built with the Arduino core, it includes <Arduino.h> deep inside M5GFX. Unfortunately, that
+// includes Arduino's <IPAddress.h> which uses INADDR_NONE as a global variable name. If we've previously included
+// <lwip/inet.h>, that defined INADDR_NONE as a preprocessor macro so the two conflict. One potential solution is to
+// include <Arduino.h> before <lwip/inet.h>, but it's simpler to just undefine it before including <M5Unified.h>.
+#undef INADDR_NONE
+#endif  // INADDR_NONE
+
 #include <M5Unified.h>
-#endif  // JL_IS_M5_DEVICE && JL_M5_LOGGING
+#endif  // JL_M5_LOGGING
 
 #include "jazzlights/util/buffer.h"
 
@@ -21,6 +31,8 @@ inline bool is_debug_logging_enabled() { return false; }
 // default. Callers need to take a mutex using `GetEscapeBufferLock()`. Use the `jll_buffer*` macros below.
 BufferViewU8 EscapeIntoStaticBuffer(const BufferViewU8 input);
 std::unique_lock<std::mutex> GetEscapeBufferLock();
+
+void SetupLogging();
 
 }  // namespace jazzlights
 
@@ -43,7 +55,7 @@ std::unique_lock<std::mutex> GetEscapeBufferLock();
                   &EscapeIntoStaticBuffer(buffer)[0]);                                 \
   } while (0)
 
-#if JL_IS_M5_DEVICE && JL_M5_LOGGING
+#if JL_M5_LOGGING
 
 #define jll_debug(format, ...) M5_LOGD(format, ##__VA_ARGS__)
 #define jll_info(format, ...) M5_LOGI(format, ##__VA_ARGS__)
@@ -55,7 +67,7 @@ std::unique_lock<std::mutex> GetEscapeBufferLock();
     abort();                        \
   } while (0)
 
-#else  // JL_IS_M5_DEVICE && JL_M5_LOGGING
+#else  // JL_M5_LOGGING
 
 #define jll_debug(format, ...)                                                                            \
   do {                                                                                                    \
@@ -71,7 +83,7 @@ std::unique_lock<std::mutex> GetEscapeBufferLock();
     abort();                                                          \
   } while (0)
 
-#endif  // JL_IS_M5_DEVICE && JL_M5_LOGGING
+#endif  // JL_M5_LOGGING
 
 // Note that the jll_buffer_* variants use a static buffer and are therefore not thread safe.
 #define jll_buffer_debug(buffer, format, ...)                                         \
