@@ -722,16 +722,17 @@ void OrreryLeaderUi::UpdateStatusSubmenu() {
   if (!statusSubmenuActive_) { return; }
   for (int i = 0; i < kNumPlanets; i++) {
     Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
-    std::optional<Milliseconds> lastHeard = OrreryLeader::Get()->GetLastHeardTime(planet);
-    std::optional<Milliseconds> maxRtt = OrreryLeader::Get()->GetMaxRtt(planet);
+    std::optional<Microseconds> lastHeard = OrreryLeader::Get()->GetLastHeardTime(planet);
+    std::optional<Microseconds> maxRtt = OrreryLeader::Get()->GetMaxRtt(planet);
     char label[64];
     if (lastHeard) {
       if (maxRtt) {
         snprintf(label, sizeof(label), "%s: %llds ago, max %lldms", GetPlanetName(planet),
-                 static_cast<long long>((timeMillis() - *lastHeard) / 1000), static_cast<long long>(*maxRtt));
+                 static_cast<long long>((timeMicros() - *lastHeard) / kMicrosecondsPerSecond),
+                 static_cast<long long>(*maxRtt / kMicrosecondsPerMillisecond));
       } else {
         snprintf(label, sizeof(label), "%s: %llds ago", GetPlanetName(planet),
-                 static_cast<long long>((timeMillis() - *lastHeard) / 1000));
+                 static_cast<long long>((timeMicros() - *lastHeard) / kMicrosecondsPerSecond));
       }
     } else {
       snprintf(label, sizeof(label), "%s: Never heard", GetPlanetName(planet));
@@ -741,8 +742,8 @@ void OrreryLeaderUi::UpdateStatusSubmenu() {
 }
 
 void OrreryLeaderUi::UpdateCalibrationMenuButton() {
-  std::optional<Milliseconds> lastOpened = OrreryLeader::Get()->GetTimeHallSensorLastOpened(currentPlanet_);
-  std::optional<Milliseconds> lastClosed = OrreryLeader::Get()->GetTimeHallSensorLastClosed(currentPlanet_);
+  std::optional<Microseconds> lastOpened = OrreryLeader::Get()->GetTimeHallSensorLastOpened(currentPlanet_);
+  std::optional<Microseconds> lastClosed = OrreryLeader::Get()->GetTimeHallSensorLastClosed(currentPlanet_);
   char label[32];
   if (lastOpened || lastClosed) {
     bool isClosed = false;
@@ -760,15 +761,15 @@ void OrreryLeaderUi::UpdateCalibrationMenuButton() {
 
 void OrreryLeaderUi::UpdateHallSensorSubmenu() {
   if (!hallSensorSubmenuActive_) { return; }
-  std::optional<Milliseconds> lastOpened = OrreryLeader::Get()->GetTimeHallSensorLastOpened(currentPlanet_);
-  std::optional<Milliseconds> lastClosed = OrreryLeader::Get()->GetTimeHallSensorLastClosed(currentPlanet_);
-  std::optional<Milliseconds> lastOpenDuration = OrreryLeader::Get()->GetLastOpenDuration(currentPlanet_);
-  std::optional<Milliseconds> lastClosedDuration = OrreryLeader::Get()->GetLastClosedDuration(currentPlanet_);
+  std::optional<Microseconds> lastOpened = OrreryLeader::Get()->GetTimeHallSensorLastOpened(currentPlanet_);
+  std::optional<Microseconds> lastClosed = OrreryLeader::Get()->GetTimeHallSensorLastClosed(currentPlanet_);
+  std::optional<Microseconds> lastOpenDuration = OrreryLeader::Get()->GetLastOpenDuration(currentPlanet_);
+  std::optional<Microseconds> lastClosedDuration = OrreryLeader::Get()->GetLastClosedDuration(currentPlanet_);
 
   char label[64];
   if (lastOpened) {
     snprintf(label, sizeof(label), "Last Opened: %llds ago",
-             static_cast<long long>((timeMillis() - *lastOpened) / 1000));
+             static_cast<long long>((timeMicros() - *lastOpened) / kMicrosecondsPerSecond));
   } else {
     snprintf(label, sizeof(label), "Last Opened: Unknown");
   }
@@ -776,21 +777,23 @@ void OrreryLeaderUi::UpdateHallSensorSubmenu() {
 
   if (lastClosed) {
     snprintf(label, sizeof(label), "Last Closed: %llds ago",
-             static_cast<long long>((timeMillis() - *lastClosed) / 1000));
+             static_cast<long long>((timeMicros() - *lastClosed) / kMicrosecondsPerSecond));
   } else {
     snprintf(label, sizeof(label), "Last Closed: Unknown");
   }
   hallSensorInfoButtons_[1]->SetLabelText(label);
 
   if (lastOpenDuration) {
-    snprintf(label, sizeof(label), "Last Open Dur: %lldms", static_cast<long long>(*lastOpenDuration));
+    snprintf(label, sizeof(label), "Last Open Dur: %lldms",
+             static_cast<long long>(*lastOpenDuration / kMicrosecondsPerMillisecond));
   } else {
     snprintf(label, sizeof(label), "Last Open Dur: Unknown");
   }
   hallSensorInfoButtons_[2]->SetLabelText(label);
 
   if (lastClosedDuration) {
-    snprintf(label, sizeof(label), "Last Closed Dur: %lldms", static_cast<long long>(*lastClosedDuration));
+    snprintf(label, sizeof(label), "Last Closed Dur: %lldms",
+             static_cast<long long>(*lastClosedDuration / kMicrosecondsPerMillisecond));
   } else {
     snprintf(label, sizeof(label), "Last Closed Dur: Unknown");
   }

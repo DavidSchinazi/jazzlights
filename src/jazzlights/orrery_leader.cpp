@@ -86,7 +86,7 @@ OrreryLeader::OrreryLeader()
       switch3_(kSwitch3Pin, *this),
       switch4_(kSwitch4Pin, *this),
       scene_(OrreryScene::Paused),
-      sceneStartTime_(timeMillis()),
+      sceneStartTime_(timeMicros()),
       lastRandomSceneTime_(0),
       nextRandomSceneDuration_(0) {
   for (int i = 0; i < kNumPlanets; i++) {
@@ -108,21 +108,23 @@ OrreryLeader::OrreryLeader()
 
 void OrreryLeader::SetScene(OrreryScene scene) {
   scene_ = scene;
-  sceneStartTime_ = timeMillis();
+  sceneStartTime_ = timeMicros();
   if (player_ != nullptr) { player_->SetOrrerySceneIdToSend(static_cast<OrrerySceneId>(scene_)); }
   if (scene == OrreryScene::Realistic) {
     if (!switch3_.IsClosed()) {
       lastRandomSceneTime_ = sceneStartTime_;
-      nextRandomSceneDuration_ = (UnpredictableRandom::GetNumberBetween(2 * 60, 10 * 60)) * 1000;
-      jll_info("%u OrreryLeader scheduling random scene in %u seconds", sceneStartTime_,
-               nextRandomSceneDuration_ / 1000);
+      nextRandomSceneDuration_ = (UnpredictableRandom::GetNumberBetween(2 * 60, 10 * 60)) * kMicrosecondsPerSecond;
+      jll_info("%" PRId64 " OrreryLeader scheduling random scene in %" PRId64 " seconds",
+               static_cast<int64_t>(sceneStartTime_),
+               static_cast<int64_t>(nextRandomSceneDuration_ / kMicrosecondsPerSecond));
     } else {
       nextRandomSceneDuration_ = 0;
     }
   } else {
     nextRandomSceneDuration_ = 0;
   }
-  jll_info("%u OrreryLeader setting scene to %s", sceneStartTime_, OrrerySceneToString(scene));
+  jll_info("%" PRId64 " OrreryLeader setting scene to %s", static_cast<int64_t>(sceneStartTime_),
+           OrrerySceneToString(scene));
   if (scene == OrreryScene::Paused) {
     SetSpeed(Planet::All, 0);
   } else if (scene == OrreryScene::Realistic || scene == OrreryScene::Silly || scene == OrreryScene::FocusMercury ||
@@ -343,37 +345,45 @@ uint32_t OrreryLeader::GetLedPattern(Planet planet) const {
   return kPlanetPattern;
 }
 
-std::optional<Milliseconds> OrreryLeader::GetTimeHallSensorLastOpened(Planet planet) const {
+std::optional<Microseconds> OrreryLeader::GetTimeHallSensorLastOpened(Planet planet) const {
   auto it = responses_.find(planet);
-  if (it != responses_.end()) { return it->second.timeHallSensorLastOpened; }
+  if (it != responses_.end() && it->second.timeHallSensorLastOpened) {
+    return MillisecondsToMicroseconds(*it->second.timeHallSensorLastOpened);
+  }
   return std::nullopt;
 }
 
-std::optional<Milliseconds> OrreryLeader::GetTimeHallSensorLastClosed(Planet planet) const {
+std::optional<Microseconds> OrreryLeader::GetTimeHallSensorLastClosed(Planet planet) const {
   auto it = responses_.find(planet);
-  if (it != responses_.end()) { return it->second.timeHallSensorLastClosed; }
+  if (it != responses_.end() && it->second.timeHallSensorLastClosed) {
+    return MillisecondsToMicroseconds(*it->second.timeHallSensorLastClosed);
+  }
   return std::nullopt;
 }
 
-std::optional<Milliseconds> OrreryLeader::GetLastOpenDuration(Planet planet) const {
+std::optional<Microseconds> OrreryLeader::GetLastOpenDuration(Planet planet) const {
   auto it = responses_.find(planet);
-  if (it != responses_.end()) { return it->second.lastOpenDuration; }
+  if (it != responses_.end() && it->second.lastOpenDuration) {
+    return MillisecondsToMicroseconds(*it->second.lastOpenDuration);
+  }
   return std::nullopt;
 }
 
-std::optional<Milliseconds> OrreryLeader::GetLastClosedDuration(Planet planet) const {
+std::optional<Microseconds> OrreryLeader::GetLastClosedDuration(Planet planet) const {
   auto it = responses_.find(planet);
-  if (it != responses_.end()) { return it->second.lastClosedDuration; }
+  if (it != responses_.end() && it->second.lastClosedDuration) {
+    return MillisecondsToMicroseconds(*it->second.lastClosedDuration);
+  }
   return std::nullopt;
 }
 
-std::optional<Milliseconds> OrreryLeader::GetLastHeardTime(Planet planet) const {
+std::optional<Microseconds> OrreryLeader::GetLastHeardTime(Planet planet) const {
   auto it = lastHeardTime_.find(planet);
   if (it != lastHeardTime_.end()) { return it->second; }
   return std::nullopt;
 }
 
-std::optional<Milliseconds> OrreryLeader::GetMaxRtt(Planet planet) const {
+std::optional<Microseconds> OrreryLeader::GetMaxRtt(Planet planet) const {
   auto it = maxRtt_.find(planet);
   if (it != maxRtt_.end()) { return it->second; }
   return std::nullopt;
@@ -397,20 +407,20 @@ void OrreryLeader::SendBroadcastMessage(const OrreryMessage& msg) {
 }
 
 void OrreryLeader::RunLoop() {
-  Milliseconds currentTime = timeMillis();
+  Microseconds currentTime = timeMicros();
   switch1_.RunLoop();
   switch3_.RunLoop();
   switch4_.RunLoop();
   BusId destBusId, srcBusId;
   OrreryMessage msg;
-  Milliseconds rtt;
+  std::optional<Microseconds> rtt;
   while (max485BusLeader_.ReadMessage(&msg, &destBusId, &srcBusId, &rtt)) {
     if (msg.type == OrreryMessageType::FollowerResponse) {
       Planet planet = static_cast<Planet>(srcBusId);
       responses_[planet] = msg;
       lastHeardTime_[planet] = currentTime;
-      if (rtt >= 0) {
-        if (maxRtt_.find(planet) == maxRtt_.end() || rtt > maxRtt_[planet]) { maxRtt_[planet] = rtt; }
+      if (rtt) {
+        if (maxRtt_.find(planet) == maxRtt_.end() || *rtt > maxRtt_[planet]) { maxRtt_[planet] = *rtt; }
       }
       if (msg.calibration) { messages_[planet].calibration = msg.calibration; }
     }
@@ -425,7 +435,7 @@ void OrreryLeader::RunLoop() {
     SetScene(nextScene);
   }
 
-  if (scene_ == OrreryScene::Silly && currentTime - sceneStartTime_ > 5 * 60 * 1000) {
+  if (scene_ == OrreryScene::Silly && currentTime - sceneStartTime_ > 5 * 60 * kMicrosecondsPerSecond) {
     jll_info("Silly scene ending after 5 minutes, starting Realistic scene");
     SetScene(OrreryScene::Realistic);
   }
@@ -433,19 +443,19 @@ void OrreryLeader::RunLoop() {
   if ((scene_ == OrreryScene::FocusMercury || scene_ == OrreryScene::FocusVenus || scene_ == OrreryScene::FocusEarth ||
        scene_ == OrreryScene::FocusMars || scene_ == OrreryScene::FocusJupiter || scene_ == OrreryScene::FocusSaturn ||
        scene_ == OrreryScene::FocusUranus || scene_ == OrreryScene::FocusNeptune || scene_ == OrreryScene::FocusSun) &&
-      currentTime - sceneStartTime_ > 60 * 1000) {
+      currentTime - sceneStartTime_ > 60 * kMicrosecondsPerSecond) {
     jll_info("Focus scene ending after 1 minute, starting Realistic scene");
     SetBrightness(Planet::All, kDefaultPlanetBrightness);
     SetScene(OrreryScene::Realistic);
   }
 
-  if (scene_ == OrreryScene::MercuryRetrograde && currentTime - sceneStartTime_ > 60 * 1000) {
+  if (scene_ == OrreryScene::MercuryRetrograde && currentTime - sceneStartTime_ > 60 * kMicrosecondsPerSecond) {
     jll_info("MercuryRetrograde scene ending after 1 minute, starting Realistic scene");
     SetScene(OrreryScene::Realistic);
   }
 
   if (scene_ == OrreryScene::Align) {
-    if (currentTime - sceneStartTime_ > 2 * 60 * 1000) {
+    if (currentTime - sceneStartTime_ > 2 * 60 * kMicrosecondsPerSecond) {
       jll_info("Align scene timing out after 2 minutes, starting Realistic scene");
       SetScene(OrreryScene::Realistic);
     } else if (waitingForAlignment_) {
@@ -453,7 +463,9 @@ void OrreryLeader::RunLoop() {
       for (int i = 0; i < kNumPlanetsWithoutSun; i++) {
         Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
         auto itHeard = lastHeardTime_.find(planet);
-        if (itHeard == lastHeardTime_.end() || currentTime - itHeard->second > 10000) { continue; }
+        if (itHeard == lastHeardTime_.end() || currentTime - itHeard->second > 10 * kMicrosecondsPerSecond) {
+          continue;
+        }
         auto itResp = responses_.find(planet);
         if (itResp == responses_.end()) { continue; }
         const OrreryMessage& resp = itResp->second;
@@ -478,7 +490,9 @@ void OrreryLeader::RunLoop() {
       for (int i = 0; i < kNumPlanetsWithoutSun; i++) {
         Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
         auto itHeard = lastHeardTime_.find(planet);
-        if (itHeard == lastHeardTime_.end() || currentTime - itHeard->second > 10000) { continue; }
+        if (itHeard == lastHeardTime_.end() || currentTime - itHeard->second > 10 * kMicrosecondsPerSecond) {
+          continue;
+        }
         auto itResp = responses_.find(planet);
         if (itResp == responses_.end()) { continue; }
         const OrreryMessage& resp = itResp->second;
@@ -514,10 +528,11 @@ void OrreryLeader::HandleSwitch1(bool isClosed) { SetScene(isClosed ? OrreryScen
 
 void OrreryLeader::HandleSwitch3(bool isClosed) {
   if (!isClosed && scene_ == OrreryScene::Realistic) {
-    lastRandomSceneTime_ = timeMillis();
-    nextRandomSceneDuration_ = (UnpredictableRandom::GetNumberBetween(2 * 60, 10 * 60)) * 1000;
-    jll_info("%u OrreryLeader scheduling random scene in %u seconds", lastRandomSceneTime_,
-             nextRandomSceneDuration_ / 1000);
+    lastRandomSceneTime_ = timeMicros();
+    nextRandomSceneDuration_ = (UnpredictableRandom::GetNumberBetween(2 * 60, 10 * 60)) * kMicrosecondsPerSecond;
+    jll_info("%" PRId64 " OrreryLeader scheduling random scene in %" PRId64 " seconds",
+             static_cast<int64_t>(lastRandomSceneTime_),
+             static_cast<int64_t>(nextRandomSceneDuration_ / kMicrosecondsPerSecond));
   } else {
     nextRandomSceneDuration_ = 0;
   }
@@ -543,8 +558,8 @@ void OrreryLeader::OnOrrerySceneId(std::optional<OrrerySceneId> orrerySceneId) {
     // Ignoring unexpected scene.
     return;
   }
-  Milliseconds currentTime = timeMillis();
-  if (receivedSceneActionTime_ >= 0 && currentTime - receivedSceneActionTime_ < 2000 &&
+  Microseconds currentTime = timeMicros();
+  if (receivedSceneActionTime_ && currentTime - *receivedSceneActionTime_ < 2 * kMicrosecondsPerSecond &&
       *orrerySceneId == receivedOrrerySceneId_) {
     // We already acted on this scene recently, ignore this command.
     jll_info("Ignoring received scene %s", OrrerySceneToString(static_cast<OrreryScene>(*orrerySceneId)));

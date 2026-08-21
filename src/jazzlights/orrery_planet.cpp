@@ -41,6 +41,12 @@ constexpr float kStartupStepsPerRev = 12700.0f;
 constexpr float kStartupStepsPerRev = 34000.0f;
 #endif  // JL_LOCAL_CALIBRATION_TEST
 
+// Converts internal microsecond timestamps to the milliseconds used by the wire protocol.
+std::optional<Milliseconds> ToWireMilliseconds(std::optional<Microseconds> t) {
+  if (!t) { return std::nullopt; }
+  return MicrosecondsToMilliseconds(*t);
+}
+
 #endif  // !JL_ORRERY_SUN
 
 #if JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_LITE)
@@ -89,8 +95,8 @@ OrreryPlanet::OrreryPlanet()
       switch1_(kPlanetSwitchPin1, *this),
       switch2_(kPlanetSwitchPin2, *this),
       switch3_(kPlanetSwitchPin3, *this),
-      lastSpeedUpdateTime_(timeMillis()),
-      lastStepCountIncrement_(timeMillis()),
+      lastSpeedUpdateTime_(timeMicros()),
+      lastStepCountIncrement_(timeMicros()),
       stepsPerRev_(kStartupStepsPerRev),
       busId_(ComputeBusId()),
 #else   // !JL_ORRERY_SUN
@@ -126,25 +132,24 @@ void OrreryPlanet::StateChanged(uint8_t pin, bool isClosed) {
 }
 
 void OrreryPlanet::IncrementStepCount() {
-  Milliseconds currentTime = timeMillis();
-  Milliseconds timeSinceLastStepCountIncrement = currentTime - lastStepCountIncrement_;
+  Microseconds currentTime = timeMicros();
+  Microseconds timeSinceLastStepCountIncrement = currentTime - lastStepCountIncrement_;
   if (timeSinceLastStepCountIncrement <= 0) { return; }
-  currentSteps_ += (roundedSpeed_ * timeSinceLastStepCountIncrement) / 1000.0f;
+  currentSteps_ += (roundedSpeed_ * timeSinceLastStepCountIncrement) / static_cast<float>(kMicrosecondsPerSecond);
   lastStepCountIncrement_ = currentTime;
 }
 
 void OrreryPlanet::HandleHallSensorChange(uint8_t pin, bool isClosed, Microseconds timeOfChange) {
   PlanetEffect::Get()->SetHallSensorClosed(isClosed);
   bool isBorder = false;
-  Milliseconds timeOfChangeMs = MicrosecondsToMilliseconds(timeOfChange);
   if (isClosed) {
     if (roundedSpeed_ > 10.0f) { isBorder = true; }
-    if (timeHallSensorLastOpened_) { lastOpenDuration_ = timeOfChangeMs - *timeHallSensorLastOpened_; }
-    timeHallSensorLastClosed_ = timeOfChangeMs;
+    if (timeHallSensorLastOpened_) { lastOpenDuration_ = timeOfChange - *timeHallSensorLastOpened_; }
+    timeHallSensorLastClosed_ = timeOfChange;
   } else {
     if (roundedSpeed_ < -10.0f) { isBorder = true; }
-    if (timeHallSensorLastClosed_) { lastClosedDuration_ = timeOfChangeMs - *timeHallSensorLastClosed_; }
-    timeHallSensorLastOpened_ = timeOfChangeMs;
+    if (timeHallSensorLastClosed_) { lastClosedDuration_ = timeOfChange - *timeHallSensorLastClosed_; }
+    timeHallSensorLastOpened_ = timeOfChange;
   }
   jll_info("Hall sensor at pin %d is now %s, %sborder", static_cast<int>(pin), (isClosed ? "closed" : "open"),
            (isBorder ? "" : "not "));
@@ -188,7 +193,7 @@ void OrreryPlanet::HandleHallSensorChange(uint8_t pin, bool isClosed, Microsecon
 
 void OrreryPlanet::RunLoop() {
 #if !JL_ORRERY_SUN
-  Milliseconds currentTime = timeMillis();
+  Microseconds currentTime = timeMicros();
   constexpr float kMaxAccelerationRate = 1000.0f;  // In steps/s^2. Also applies to deceleration.
   hallSensor_.RunLoop();
   switch0_.RunLoop();
@@ -196,9 +201,10 @@ void OrreryPlanet::RunLoop() {
   switch2_.RunLoop();
   switch3_.RunLoop();
 
-  const Milliseconds dt = currentTime - lastSpeedUpdateTime_;
+  const Microseconds dt = currentTime - lastSpeedUpdateTime_;
   if (dt > 0) {
-    positionalSteps_ = currentSteps_ + ((roundedSpeed_ * (currentTime - lastStepCountIncrement_)) / 1000.0f);
+    positionalSteps_ = currentSteps_ + ((roundedSpeed_ * (currentTime - lastStepCountIncrement_)) /
+                                        static_cast<float>(kMicrosecondsPerSecond));
     while (positionalSteps_ >= stepsPerRev_) { positionalSteps_ -= stepsPerRev_; }
     while (positionalSteps_ < 0) { positionalSteps_ += stepsPerRev_; }
 
@@ -213,8 +219,8 @@ void OrreryPlanet::RunLoop() {
       while (stepsToGo < (-stepsPerRev_ / 72.0f)) { stepsToGo += stepsPerRev_; }
       while (stepsToGo > (stepsPerRev_ - (stepsPerRev_ / 72.0f))) { stepsToGo -= stepsPerRev_; }
 
-      static Milliseconds lastLogTime = -1;
-      if (lastLogTime < 0 || currentTime - lastLogTime > 1000) {
+      static std::optional<Microseconds> lastLogTime;
+      if (!lastLogTime || currentTime - *lastLogTime > kMicrosecondsPerSecond) {
         lastLogTime = currentTime;
         jll_info("targetSteps %f currentSteps %f positionalSteps %f stepsToGo %f actualSpeed %f stepsPerRev %f",
                  targetSteps, currentSteps_, positionalSteps_, stepsToGo, actualSpeed_, stepsPerRev_);
@@ -234,8 +240,8 @@ void OrreryPlanet::RunLoop() {
         // Distance to stop depends on current speed and max deceleration rate.
         const float stop_distance = (actualSpeed_ * actualSpeed_) / (2.0f * kMaxAccelerationRate);
 
-        static Milliseconds lastLogTime3 = -1;
-        if (lastLogTime3 < 0 || currentTime - lastLogTime3 > 1000) {
+        static std::optional<Microseconds> lastLogTime3;
+        if (!lastLogTime3 || currentTime - *lastLogTime3 > kMicrosecondsPerSecond) {
           lastLogTime3 = currentTime;
           jll_info(
               "targetSteps %f currentSteps %f positionalSteps %f stepsToGo %f actualSpeed_ %f stop_distance %f "
@@ -246,8 +252,9 @@ void OrreryPlanet::RunLoop() {
       }
     }
 
-    // Divide by 1000 because kMaxAccelerationRate operates in seconds (steps/s^2) and dt is in milliseconds.
-    const float maxChange = kMaxAccelerationRate * dt / 1000.0f;
+    // Divide by kMicrosecondsPerSecond because kMaxAccelerationRate operates in seconds (steps/s^2) and dt is in
+    // microseconds.
+    const float maxChange = kMaxAccelerationRate * dt / static_cast<float>(kMicrosecondsPerSecond);
     if (actualSpeed_ < static_cast<float>(effectiveRequestedSpeed)) {
       actualSpeed_ = std::min(static_cast<float>(effectiveRequestedSpeed), actualSpeed_ + maxChange);
     } else if (actualSpeed_ > static_cast<float>(effectiveRequestedSpeed)) {
@@ -260,8 +267,8 @@ void OrreryPlanet::RunLoop() {
     if (roundedSpeed_ > kMaxMotorSpeedHz) { roundedSpeed_ = kMaxMotorSpeedHz; }
     if (roundedSpeed_ < -kMaxMotorSpeedHz) { roundedSpeed_ = -kMaxMotorSpeedHz; }
 
-    static Milliseconds lastLogTime2 = -1;
-    if (lastLogTime2 < 0 || currentTime - lastLogTime2 > 1000) {
+    static std::optional<Microseconds> lastLogTime2;
+    if (!lastLogTime2 || currentTime - *lastLogTime2 > kMicrosecondsPerSecond) {
       lastLogTime2 = currentTime;
       jll_info("Setting roundedSpeed to %f; currentSteps %f positionalSteps %f actualSpeed %f stepsPerRev %f",
                roundedSpeed_, currentSteps_, positionalSteps_, actualSpeed_, stepsPerRev_);
@@ -341,10 +348,10 @@ void OrreryPlanet::RunLoop() {
         }
       }
 
-      currentState_.timeHallSensorLastOpened = timeHallSensorLastOpened_;
-      currentState_.timeHallSensorLastClosed = timeHallSensorLastClosed_;
-      currentState_.lastOpenDuration = lastOpenDuration_;
-      currentState_.lastClosedDuration = lastClosedDuration_;
+      currentState_.timeHallSensorLastOpened = ToWireMilliseconds(timeHallSensorLastOpened_);
+      currentState_.timeHallSensorLastClosed = ToWireMilliseconds(timeHallSensorLastClosed_);
+      currentState_.lastOpenDuration = ToWireMilliseconds(lastOpenDuration_);
+      currentState_.lastClosedDuration = ToWireMilliseconds(lastClosedDuration_);
 #endif  // !JL_ORRERY_SUN
 
       if (msg.ledBrightness && msg.ledBrightness != currentState_.ledBrightness) {

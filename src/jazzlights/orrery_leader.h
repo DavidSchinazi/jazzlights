@@ -37,10 +37,10 @@ class OrreryLeader : public GpioSwitchInterface,
   double GetSpeedMultiplier() const { return speedMultiplier_; }
   void SetLedPattern(Planet planet, uint32_t ledPattern);
   uint32_t GetLedPattern(Planet planet) const;
-  std::optional<Milliseconds> GetTimeHallSensorLastOpened(Planet planet) const;
-  std::optional<Milliseconds> GetTimeHallSensorLastClosed(Planet planet) const;
-  std::optional<Milliseconds> GetLastOpenDuration(Planet planet) const;
-  std::optional<Milliseconds> GetLastClosedDuration(Planet planet) const;
+  std::optional<Microseconds> GetTimeHallSensorLastOpened(Planet planet) const;
+  std::optional<Microseconds> GetTimeHallSensorLastClosed(Planet planet) const;
+  std::optional<Microseconds> GetLastOpenDuration(Planet planet) const;
+  std::optional<Microseconds> GetLastClosedDuration(Planet planet) const;
 
   // From GpioSwitchInterface.
   void StateChanged(uint8_t pin, bool isClosed) override;
@@ -50,8 +50,8 @@ class OrreryLeader : public GpioSwitchInterface,
   // From Player::OrrerySceneIdWatcher.
   void OnOrrerySceneId(std::optional<OrrerySceneId> orrerySceneId) override;
 
-  std::optional<Milliseconds> GetLastHeardTime(Planet planet) const;
-  std::optional<Milliseconds> GetMaxRtt(Planet planet) const;
+  std::optional<Microseconds> GetLastHeardTime(Planet planet) const;
+  std::optional<Microseconds> GetMaxRtt(Planet planet) const;
 
   void RunLoop();
 
@@ -64,15 +64,15 @@ class OrreryLeader : public GpioSwitchInterface,
   void HandleSwitch4(bool isClosed);
   OrreryScene scene_;
   double speedMultiplier_ = 3.0;
-  Milliseconds sceneStartTime_;
-  Milliseconds lastRandomSceneTime_;
-  Milliseconds nextRandomSceneDuration_;
+  Microseconds sceneStartTime_;
+  Microseconds lastRandomSceneTime_;
+  Microseconds nextRandomSceneDuration_;
   const uint32_t bootId_;
   uint32_t nextSequenceNumber_ = 0;
   std::unordered_map<Planet, OrreryMessage> messages_;
   std::unordered_map<Planet, OrreryMessage> responses_;
-  std::unordered_map<Planet, Milliseconds> lastHeardTime_;
-  std::unordered_map<Planet, Milliseconds> maxRtt_;
+  std::unordered_map<Planet, Microseconds> lastHeardTime_;
+  std::unordered_map<Planet, Microseconds> maxRtt_;
   std::unordered_map<Planet, bool> hasPassedHalfway_;
   Max485BusLeader max485BusLeader_;
   GpioSwitchLow switch1_;
@@ -82,7 +82,7 @@ class OrreryLeader : public GpioSwitchInterface,
   Player* player_ = nullptr;
   std::optional<PatternBits> patternOverride_;
   std::unordered_map<Planet, PatternBits> patternBeforeOverride_;
-  Milliseconds receivedSceneActionTime_ = -1;
+  std::optional<Microseconds> receivedSceneActionTime_;
   OrrerySceneId receivedOrrerySceneId_ = static_cast<OrrerySceneId>(OrreryScene::kInvalidScene);
 };
 

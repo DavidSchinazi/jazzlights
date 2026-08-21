@@ -67,6 +67,7 @@ static_assert(kUartDriverBufferSize >= kMaxEncodedMessageLength, "bad size");
 // This timeout formula was established based on the following empirical measurements using a 10m shiedled cable.
 // In (message size in bytes, maximum observed RTT in ms) pairs: (50, 14), (100, 23), (500, 92), (1000, 180).
 constexpr Milliseconds kUartResponseTimeoutMs = ((kMaxMessageLength * 2) / 5) + 10;
+constexpr Microseconds kUartResponseTimeout = kUartResponseTimeoutMs * kMicrosecondsPerMillisecond;
 constexpr TickType_t kLeaderReceiveDelay = kUartResponseTimeoutMs / portTICK_PERIOD_MS;
 
 }  // namespace
@@ -159,10 +160,10 @@ void Max485BusHandler::RunTask() {
                     jll_error("Max485 receive queue full, dropping some messages");
                     for (size_t i = 0; i < kMaxRecvQueueSize / 2; i++) { sharedReceivedMessages_.pop_front(); }
                   }
-                  Milliseconds rtt = -1;
-                  if (destBusId == GetBusIdSelf() && taskLastSendTimeExpectingResponse_ >= 0) {
-                    rtt = timeMillis() - taskLastSendTimeExpectingResponse_;
-                    taskLastSendTimeExpectingResponse_ = -1;
+                  std::optional<Microseconds> rtt;
+                  if (destBusId == GetBusIdSelf() && taskLastSendTimeExpectingResponse_) {
+                    rtt = timeMicros() - *taskLastSendTimeExpectingResponse_;
+                    taskLastSendTimeExpectingResponse_.reset();
                   }
                   sharedReceivedMessages_.push_back(
                       {.srcBusId = srcBusId, .destBusId = destBusId, .message = orreryMessage, .rtt = rtt});
@@ -295,7 +296,7 @@ void Max485BusHandler::CopyEncodeAndSendMessage(BusId destBusId) {
   if (!taskEncodedSendMessage.empty()) {
     SendToUart(taskEncodedSendMessage);
     if (busIdSelf == kBusIdLeader && destBusId != kBusIdBroadcast) {
-      taskLastSendTimeExpectingResponse_ = timeMillis();
+      taskLastSendTimeExpectingResponse_ = timeMicros();
     }
   }
 }
@@ -380,7 +381,8 @@ void Max485BusHandler::ShiftTaskRecvBuffer(size_t messageStartIndex) {
                          "Max485BusHandler shifted taskRecvBuffer by %zu, result is:", messageStartIndex);
 }
 
-bool Max485BusHandler::ReadMessage(OrreryMessage* message, BusId* destBusId, BusId* srcBusId, Milliseconds* rtt) {
+bool Max485BusHandler::ReadMessage(OrreryMessage* message, BusId* destBusId, BusId* srcBusId,
+                                   std::optional<Microseconds>* rtt) {
   if (!IsReady()) { return false; }
   const std::lock_guard<std::mutex> lock(recvMutex_);
   if (sharedReceivedMessages_.empty()) { return false; }
@@ -471,11 +473,11 @@ void Max485BusLeader::HandleReceivedMessage(BusId srcBusId, const OrreryMessage&
 
 void Max485BusLeader::HandleApplicationDataAvailableToSend(bool firstSend) {
   bool shouldSend = false;
-  if (firstSend && taskLastSendTimeExpectingResponse_ < 0) {
+  if (firstSend && !taskLastSendTimeExpectingResponse_) {
     jll_info("Initiating first send");
     shouldSend = true;
-  } else if (lastSentBusId_ != kSeparator &&
-             timeMillis() - taskLastSendTimeExpectingResponse_ > kUartResponseTimeoutMs) {
+  } else if (lastSentBusId_ != kSeparator && taskLastSendTimeExpectingResponse_ &&
+             timeMicros() - *taskLastSendTimeExpectingResponse_ > kUartResponseTimeout) {
     followerStates_[lastSentBusId_].timeoutCount++;
     jll_timeout("Timed out waiting for response from %d, count is now %d", static_cast<int>(lastSentBusId_),
                 followerStates_[lastSentBusId_].timeoutCount);

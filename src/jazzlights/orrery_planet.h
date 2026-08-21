@@ -44,10 +44,10 @@ class OrreryPlanet
   OrreryMessage currentState_ = {};
 #if !JL_ORRERY_SUN
   HallSensor hallSensor_;
-  std::optional<Milliseconds> timeHallSensorLastOpened_;
-  std::optional<Milliseconds> timeHallSensorLastClosed_;
-  std::optional<Milliseconds> lastOpenDuration_;
-  std::optional<Milliseconds> lastClosedDuration_;
+  std::optional<Microseconds> timeHallSensorLastOpened_;
+  std::optional<Microseconds> timeHallSensorLastClosed_;
+  std::optional<Microseconds> lastOpenDuration_;
+  std::optional<Microseconds> lastClosedDuration_;
   GpioSwitchHigh switch0_;
   GpioSwitchHigh switch1_;
   GpioSwitchHigh switch2_;
@@ -55,8 +55,8 @@ class OrreryPlanet
   int32_t requestedSpeed_ = 0;
   float actualSpeed_ = 0.0f;
   float roundedSpeed_ = 0.0f;
-  Milliseconds lastSpeedUpdateTime_;
-  Milliseconds lastStepCountIncrement_;
+  Microseconds lastSpeedUpdateTime_;
+  Microseconds lastStepCountIncrement_;
   float currentSteps_ = 0.0f;
   float positionalSteps_ = 0.0f;
   float stepsPerRev_;

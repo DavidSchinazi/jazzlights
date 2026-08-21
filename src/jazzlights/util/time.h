@@ -18,6 +18,9 @@ Microseconds timeMicros();
 // Convert time from microseconds to milliseconds.
 Milliseconds MicrosecondsToMilliseconds(Microseconds timeMicros);
 
+// Convert time from milliseconds to microseconds.
+Microseconds MillisecondsToMicroseconds(Milliseconds timeMillis);
+
 // Intentionally returns an `int64_t` instead of `Milliseconds` to avoid integer overflows.
 int64_t MillisecondsSinceBootForLoggingOnly();
 
