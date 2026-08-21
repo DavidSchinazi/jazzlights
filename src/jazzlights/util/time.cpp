@@ -14,7 +14,6 @@ namespace jazzlights {
 
 namespace {
 
-static constexpr Microseconds kMillisecondsPerMicroseconds = 1000;
 static constexpr Microseconds kTimeStartOffset = 100000000;  // 100s.
 
 Microseconds MicrosecondsSinceBoot() {
@@ -43,9 +42,9 @@ Milliseconds MicrosecondsToMilliseconds(Microseconds timeMicros) {
     // This happens after 24 days and 19 hours and will cause the program to restart.
     abort();
   }
-  return timeMicros / kMillisecondsPerMicroseconds;
+  return timeMicros / kMicrosecondsPerMillisecond;
 }
 
-int64_t MillisecondsSinceBootForLoggingOnly() { return MicrosecondsSinceBoot() / kMillisecondsPerMicroseconds; }
+int64_t MillisecondsSinceBootForLoggingOnly() { return MicrosecondsSinceBoot() / kMicrosecondsPerMillisecond; }
 
 }  // namespace jazzlights

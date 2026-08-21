@@ -100,10 +100,10 @@ const char* TaskStateToString(eTaskState taskState) {
 #if JL_INSTRUMENTATION || JL_TIMING
 
 void printInstrumentationInfo() {
-  Milliseconds currentTime = timeMillis();
-  static Milliseconds lastInstrumentationLog = -1;
-  static constexpr Milliseconds kInstrumentationPeriod = 5000;
-  if (lastInstrumentationLog >= 0 && currentTime - lastInstrumentationLog < kInstrumentationPeriod) {
+  Microseconds currentTime = timeMicros();
+  static std::optional<Microseconds> lastInstrumentationLog;
+  static constexpr Microseconds kInstrumentationPeriod = 5000000;  // 5s.
+  if (lastInstrumentationLog && currentTime - *lastInstrumentationLog < kInstrumentationPeriod) {
     // Ignore any request to print more than once every 5s.
     return;
   }
@@ -157,8 +157,10 @@ void printInstrumentationInfo() {
 #undef Y
 
   printAndClearCountPoints();
-  jll_info("Wrote to LEDs %f times per second",
-           static_cast<double>(gNumLedWrites) * 1000 / (currentTime - lastInstrumentationLog));
+  if (lastInstrumentationLog) {
+    jll_info("Wrote to LEDs %f times per second",
+             static_cast<double>(gNumLedWrites) * kMicrosecondsPerSecond / (currentTime - *lastInstrumentationLog));
+  }
   gNumLedWrites = 0;
   lastInstrumentationLog = currentTime;
   if (gLedTimeCount > 0) {

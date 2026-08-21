@@ -23,6 +23,9 @@ int64_t MillisecondsSinceBootForLoggingOnly();
 
 using FramesPerSecond = int32_t;
 
+inline constexpr Microseconds kMicrosecondsPerMillisecond = 1000;
+inline constexpr Microseconds kMicrosecondsPerSecond = 1000000;
+
 }  // namespace jazzlights
 
 #endif  // JL_UTIL_TIME_H
