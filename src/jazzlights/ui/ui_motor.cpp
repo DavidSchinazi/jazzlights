@@ -61,7 +61,7 @@ void CoreMotorUi::FinalSetup() {
   TouchButtonManager::Get()->MaybePaint();
 }
 
-void CoreMotorUi::RunLoop(Milliseconds /*currentTime*/) {
+void CoreMotorUi::RunLoop() {
   M5.update();
   auto touchDetail = M5.Touch.getDetail();
   if (touchDetail.isPressed()) {

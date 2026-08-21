@@ -138,7 +138,8 @@ void M5StickCUi::InitialSetup() {
 
 void M5StickCUi::FinalSetup() {}
 
-void M5StickCUi::RunLoop(Milliseconds currentTime) {
+void M5StickCUi::RunLoop() {
+  Milliseconds currentTime = timeMillis();
   button_.RunLoop();
   M5.update();
 

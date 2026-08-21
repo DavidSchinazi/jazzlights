@@ -332,7 +332,8 @@ bool AtomMatrixUi::ScreenMessage() {
   return displayingBootMessage_;
 }
 
-void AtomMatrixUi::RunLoop(Milliseconds currentTime) {
+void AtomMatrixUi::RunLoop() {
+  Milliseconds currentTime = timeMillis();
   button_.RunLoop();
 
   if (ScreenMessage()) { return; }

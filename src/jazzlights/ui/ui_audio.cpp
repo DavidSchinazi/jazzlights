@@ -43,7 +43,8 @@ void AudioVisualizerUi::InitialSetup() {
 
 void AudioVisualizerUi::FinalSetup() {}
 
-void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
+void AudioVisualizerUi::RunLoop() {
+  Milliseconds currentTime = timeMillis();
   M5.update();
   if ((M5.Touch.getCount() > 0 && M5.Touch.getDetail(0).wasPressed()) || M5.BtnB.wasPressed()) {
     auto detail = M5.Touch.getDetail(0);

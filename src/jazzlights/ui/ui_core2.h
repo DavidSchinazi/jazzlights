@@ -23,7 +23,7 @@ class Core2AwsUi : public Esp32Ui, public Player::OrrerySceneIdWatcher {
   // From Esp32Ui.
   void InitialSetup() override;
   void FinalSetup() override;
-  void RunLoop(Milliseconds currentTime) override;
+  void RunLoop() override;
   // From Player::OrrerySceneIdWatcher.
   void OnOrrerySceneId(std::optional<OrrerySceneId> orrerySceneId) override;
 

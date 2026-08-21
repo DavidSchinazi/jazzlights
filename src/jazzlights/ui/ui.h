@@ -23,7 +23,7 @@ class Esp32Ui {
 
   virtual void InitialSetup() = 0;
   virtual void FinalSetup() = 0;
-  virtual void RunLoop(Milliseconds currentTime) = 0;
+  virtual void RunLoop() = 0;
 
  protected:
   Player& player_;

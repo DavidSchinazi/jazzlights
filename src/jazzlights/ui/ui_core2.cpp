@@ -65,13 +65,9 @@ static void SetCore2ScreenBrightness(uint8_t brightness) {
   M5.Display.wakeup();
 }
 
-void SetDefaultPrecedence(Player& player, Milliseconds currentTime) {
-  player.updatePrecedence(4000, 1000, currentTime);
-}
+void SetDefaultPrecedence(Player& player) { player.updatePrecedence(4000, 1000); }
 
-void SetOverridePrecedence(Player& player, Milliseconds currentTime) {
-  player.updatePrecedence(kDefaultOverridePrecedence, 5000, currentTime);
-}
+void SetOverridePrecedence(Player& player) { player.updatePrecedence(kDefaultOverridePrecedence, 5000); }
 
 void DrawSystemTextLine(uint8_t i, const char* text) {
   constexpr uint8_t kSytemLineHeight = 22;
@@ -306,14 +302,14 @@ class PatternControlMenu {
     draw();
     return false;
   }
-  void overridePressed(Player& player, Milliseconds currentTime) {
+  void overridePressed(Player& player) {
     overrideEnabled_ = !overrideEnabled_;
     overrideButton->SetHighlight(overrideEnabled_);
     overrideButton->SetLabelText(overrideEnabled_ ? "Override ON" : "Override");
     if (overrideEnabled_) {
-      SetOverridePrecedence(player, currentTime);
+      SetOverridePrecedence(player);
     } else {
-      SetDefaultPrecedence(player, currentTime);
+      SetDefaultPrecedence(player);
     }
     overrideButton->Draw(/*force=*/true);
   }
@@ -724,7 +720,7 @@ void Core2AwsUi::InitialSetup() {
   systemButton->SetCustomPaintFunction(drawSystemButton);
   confirmButton->SetCustomPaintFunction(drawConfirmButton);
   player_.addStrand(kCore2ScreenPixels, core2ScreenRenderer);
-  SetDefaultPrecedence(player_, timeMillis());
+  SetDefaultPrecedence(player_);
 }
 
 void Core2AwsUi::FinalSetup() {
@@ -766,7 +762,8 @@ void Core2AwsUi::DrawSystemTextLines() {
   DrawSystemTextLine(i++, line);
 }
 
-void Core2AwsUi::RunLoop(Milliseconds currentTime) {
+void Core2AwsUi::RunLoop() {
+  Milliseconds currentTime = timeMillis();
   M5.update();
   auto touchDetail = M5.Touch.getDetail();
   if (touchDetail.isPressed()) {
@@ -932,7 +929,7 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
     if (gScreenMode == ScreenMode::kPatternControlMenu) {
       jll_info("override button pressed");
       gLastScreenInteractionTime = currentTime;
-      gPatternControlMenu.overridePressed(player_, currentTime);
+      gPatternControlMenu.overridePressed(player_);
     } else {
       jll_info("ignoring override button pressed");
     }

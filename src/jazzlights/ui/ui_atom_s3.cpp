@@ -132,7 +132,8 @@ void AtomS3Ui::InitialSetup() {
 
 void AtomS3Ui::FinalSetup() {}
 
-void AtomS3Ui::RunLoop(Milliseconds currentTime) {
+void AtomS3Ui::RunLoop() {
+  Milliseconds currentTime = timeMillis();
   button_.RunLoop();
   M5.update();
 

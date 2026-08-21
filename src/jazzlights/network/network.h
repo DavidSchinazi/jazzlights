@@ -144,7 +144,7 @@ class Network {
   virtual void disableSending() = 0;
 
   // Gets list of received messages since last call.
-  std::list<NetworkMessage> getReceivedMessages(Milliseconds currentTime);
+  std::list<NetworkMessage> getReceivedMessages();
 
   // Called once per primary runloop.
   void runLoop();

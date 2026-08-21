@@ -25,7 +25,7 @@ class OrreryLeaderUi : public Esp32Ui {
   // From Esp32Ui.
   void InitialSetup() override;
   void FinalSetup() override;
-  void RunLoop(Milliseconds currentTime) override;
+  void RunLoop() override;
 
  private:
   void SetMotorSpeed();

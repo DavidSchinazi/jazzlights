@@ -40,7 +40,6 @@ enum WSStatusFlag : uint8_t {
 // static
 void WebSocketServer::WebSocket::EventHandler(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType type,
                                               void* arg, uint8_t* data, size_t len) {
-  Milliseconds currentTime = timeMillis();
   WebSocket* web_socket = static_cast<WebSocket*>(server);
   switch (type) {
     case WS_EVT_CONNECT:
@@ -53,7 +52,7 @@ void WebSocketServer::WebSocket::EventHandler(AsyncWebSocket* server, AsyncWebSo
       if (info->final && info->index == 0 && info->len == len) {
         jll_info("WebSocket received unfragmented %s message of length %llu from client #%u ",
                  ((info->opcode == WS_TEXT) ? "text" : "binary"), info->len, id(client));
-        web_socket->websocket_server_->HandleMessage(client, data, len, currentTime);
+        web_socket->websocket_server_->HandleMessage(client, data, len);
       } else {
         jll_info("WebSocket received fragmented %s message at index %llu of length %llu with%s FIN from client #%u",
                  ((info->opcode == WS_TEXT) ? "text" : "binary"), info->index, info->len, (info->final ? "" : "out"),
@@ -72,7 +71,8 @@ void WebSocketServer::WebSocket::EventHandler(AsyncWebSocket* server, AsyncWebSo
   }
 }
 
-void WebSocketServer::HandleMessage(AsyncWebSocketClient* client, uint8_t* data, size_t len, Milliseconds currentTime) {
+void WebSocketServer::HandleMessage(AsyncWebSocketClient* client, uint8_t* data, size_t len) {
+  Milliseconds currentTime = timeMillis();
   jll_info("Handling WebSocket message of length %zu first byte %u from client #%u", len, (len > 0 ? data[0] : 0),
            id(client));
   ScopedUpdatePauser pauser(this);

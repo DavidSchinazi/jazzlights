@@ -19,7 +19,7 @@ class AtomMatrixUi : public Esp32Ui, public GpioButton::ButtonInterface {
   // From Esp32Ui.
   void InitialSetup() override;
   void FinalSetup() override;
-  void RunLoop(Milliseconds currentTime) override;
+  void RunLoop() override;
   void set_fastled_runner(FastLedRunner* runner) override { runner_ = runner; }
   // From GpioButton::ButtonInterface.
   void ShortPress(uint8_t pin) override;

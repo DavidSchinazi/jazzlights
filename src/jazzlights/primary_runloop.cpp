@@ -154,7 +154,7 @@ void SetupPrimaryRunLoop() {
 void RunPrimaryRunLoop() {
   SAVE_TIME_POINT(PrimaryRunLoop, LoopStart);
   Milliseconds currentTime = timeMillis();
-  GetUi()->RunLoop(currentTime);
+  GetUi()->RunLoop();
 #if JL_IS_CONFIG(ORRERY_LEADER)
   OrreryLeader::Get()->RunLoop();
 #elif JL_IS_CONFIG(ORRERY_PLANET) && !JL_ORRERY_PLUTO

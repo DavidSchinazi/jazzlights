@@ -16,7 +16,7 @@ class AtomS3Ui : public Esp32Ui, public GpioButton::ButtonInterface {
   // From Esp32Ui.
   void InitialSetup() override;
   void FinalSetup() override;
-  void RunLoop(Milliseconds currentTime) override;
+  void RunLoop() override;
   // From GpioButton::ButtonInterface.
   void ShortPress(uint8_t pin) override;
   void LongPress(uint8_t pin) override;

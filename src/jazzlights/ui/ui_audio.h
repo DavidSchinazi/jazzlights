@@ -22,7 +22,7 @@ class AudioVisualizerUi : public Esp32Ui {
   ~AudioVisualizerUi() override = default;
   void InitialSetup() override;
   void FinalSetup() override;
-  void RunLoop(Milliseconds currentTime) override;
+  void RunLoop() override;
 
  private:
   int screen_width_;
@@ -50,7 +50,7 @@ class AudioVisualizerUi : public Esp32Ui {
   explicit AudioVisualizerUi(Player& player) : Esp32Ui(player) {}
   void InitialSetup() override {}
   void FinalSetup() override {}
-  void RunLoop(Milliseconds /*currentTime*/) override {}
+  void RunLoop() override {}
 };
 
 }  // namespace jazzlights

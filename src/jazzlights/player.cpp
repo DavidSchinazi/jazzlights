@@ -390,13 +390,13 @@ void Player::begin() {
 #endif  // JL_START_LOOP
 }
 
-void Player::updatePrecedence(Precedence basePrecedence, Precedence precedenceGain, Milliseconds currentTime) {
+void Player::updatePrecedence(Precedence basePrecedence, Precedence precedenceGain) {
   if (basePrecedence == basePrecedence_ && precedenceGain == precedenceGain_) { return; }
   basePrecedence_ = basePrecedence;
   precedenceGain_ = precedenceGain;
   jll_info("updating precedence to base %u gain %u", basePrecedence, precedenceGain);
   if (!ready_) { return; }
-  checkLeaderAndPattern(currentTime);
+  checkLeaderAndPattern();
   for (Network* network : networks_) { network->triggerSendAsap(); }
 }
 
@@ -460,13 +460,11 @@ bool Player::render(Milliseconds currentTime) {
 
   // First listen on all networks.
   for (Network* network : networks_) {
-    for (NetworkMessage receivedMessage : network->getReceivedMessages(currentTime)) {
-      handleReceivedMessage(receivedMessage, currentTime);
-    }
+    for (NetworkMessage receivedMessage : network->getReceivedMessages()) { handleReceivedMessage(receivedMessage); }
   }
 
   // Then react to any received packets.
-  checkLeaderAndPattern(currentTime);
+  checkLeaderAndPattern();
 
   // Then give all networks the opportunity to send.
   for (Network* network : networks_) { network->runLoop(); }
@@ -688,7 +686,7 @@ void Player::CloudNext(Milliseconds currentTime) {
   }
   currentPattern_ = nextPattern_;
   nextPattern_ = enforceForcedPalette(computeNextPattern(nextPattern_));
-  checkLeaderAndPattern(currentTime);
+  checkLeaderAndPattern();
   jll_info("next command processed: now current %s (%08x) next %s (%08x), currentLeader=" DEVICE_ID_FMT,
            patternName(currentPattern_, *this).c_str(), currentPattern_, patternName(nextPattern_, *this).c_str(),
            nextPattern_, DEVICE_ID_HEX(currentLeader_));
@@ -714,7 +712,7 @@ void Player::next(Milliseconds currentTime) {
     currentPattern_ = nextPattern_;
     nextPattern_ = enforceForcedPalette(computeNextPattern(nextPattern_));
   }
-  checkLeaderAndPattern(currentTime);
+  checkLeaderAndPattern();
   jll_info("next command processed: now current %s (%08x) next %s (%08x), currentLeader=" DEVICE_ID_FMT,
            patternName(currentPattern_, *this).c_str(), currentPattern_, patternName(nextPattern_, *this).c_str(),
            nextPattern_, DEVICE_ID_HEX(currentLeader_));
@@ -734,7 +732,7 @@ void Player::setPattern(PatternBits pattern, Milliseconds currentTime) {
   } else {
     nextPattern_ = enforceForcedPalette(computeNextPattern(pattern));
   }
-  checkLeaderAndPattern(currentTime);
+  checkLeaderAndPattern();
   jll_info("set pattern command processed: now current %s (%08x) next %s (%08x), currentLeader=" DEVICE_ID_FMT,
            patternName(currentPattern_, *this).c_str(), currentPattern_, patternName(nextPattern_, *this).c_str(),
            nextPattern_, DEVICE_ID_HEX(currentLeader_));
@@ -794,7 +792,7 @@ Precedence Player::getLocalPrecedence(Milliseconds currentTime) {
                            getPrecedenceGain(lastUserInputTime_, currentTime, kInputDuration, precedenceGain_));
 }
 
-Player::OriginatorEntry* Player::getOriginatorEntry(NetworkDeviceId originator, Milliseconds /*currentTime*/) {
+Player::OriginatorEntry* Player::getOriginatorEntry(NetworkDeviceId originator) {
   OriginatorEntry* entry = nullptr;
   for (OriginatorEntry& e : originatorEntries_) {
     if (e.originator == originator) { return &e; }
@@ -812,7 +810,8 @@ static_assert(kOriginationTimeDiscard < kEffectDuration,
               "Inverting these can lead to keeping an originator "
               "past the end of its intended next pattern.");
 
-void Player::checkLeaderAndPattern(Milliseconds currentTime) {
+void Player::checkLeaderAndPattern() {
+  Milliseconds currentTime = timeMillis();
   // Remove elements that have aged out.
   originatorEntries_.remove_if([currentTime](const OriginatorEntry& e) {
     if (currentTime > e.lastOriginationTime + kOriginationTimeDiscard) {
@@ -1002,7 +1001,8 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
   }
 }
 
-void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentTime) {
+void Player::handleReceivedMessage(NetworkMessage message) {
+  Milliseconds currentTime = timeMillis();
 #if JL_IS_CONFIG(CREATURE)
   if (message.isCreature) {
     jll_info("creature recv %s", networkMessageToString(message).c_str());
@@ -1035,7 +1035,7 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
     jll_player_info("Ignoring received message due to effect duration %s", networkMessageToString(message).c_str());
     return;
   }
-  OriginatorEntry* entry = getOriginatorEntry(message.originator, currentTime);
+  OriginatorEntry* entry = getOriginatorEntry(message.originator);
   if (entry == nullptr) {
     originatorEntries_.push_back(OriginatorEntry());
     entry = &originatorEntries_.back();

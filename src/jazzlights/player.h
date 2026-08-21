@@ -114,7 +114,7 @@ class Player {
 
   void setBasePrecedence(Precedence basePrecedence) { basePrecedence_ = basePrecedence; }
   void setPrecedenceGain(Precedence precedenceGain) { precedenceGain_ = precedenceGain; }
-  void updatePrecedence(Precedence basePrecedence, Precedence precedenceGain, Milliseconds currentTime);
+  void updatePrecedence(Precedence basePrecedence, Precedence precedenceGain);
   void setRandomizeLocalDeviceId(bool val) { randomizeLocalDeviceId_ = val; }
 
   PredictableRandom* predictableRandom() { return &predictableRandom_; }
@@ -184,7 +184,7 @@ class Player {
  private:
   void UpdateStatusWatcher();
   void UpdateOverriddenPatternWatcher(Precedence precedence);
-  void handleReceivedMessage(NetworkMessage message, Milliseconds currentTime);
+  void handleReceivedMessage(NetworkMessage message);
 
   Precedence getLocalPrecedence(Milliseconds currentTime);
 
@@ -203,8 +203,8 @@ class Player {
     int8_t patternStartTimeMovementCounter = 0;
   };
 
-  OriginatorEntry* getOriginatorEntry(NetworkDeviceId originator, Milliseconds currentTime);
-  void checkLeaderAndPattern(Milliseconds currentTime);
+  OriginatorEntry* getOriginatorEntry(NetworkDeviceId originator);
+  void checkLeaderAndPattern();
   PatternBits enforceForcedPalette(PatternBits pattern);
 
 #if JL_IS_CONFIG(CLOUDS) && !JL_DEV

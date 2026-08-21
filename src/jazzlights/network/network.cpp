@@ -158,8 +158,9 @@ void UdpNetwork::setMessageToSend(const NetworkMessage& messageToSend) {
 
 void UdpNetwork::disableSending() { hasDataToSend_ = false; }
 
-std::list<NetworkMessage> Network::getReceivedMessages(Milliseconds currentTime) {
+std::list<NetworkMessage> Network::getReceivedMessages() {
   checkStatus();
+  Milliseconds currentTime = timeMillis();
   std::list<NetworkMessage> receivedMessages = getReceivedMessagesImpl(currentTime);
   for (NetworkMessage& message : receivedMessages) {
     message.receiptNetworkId = id();
