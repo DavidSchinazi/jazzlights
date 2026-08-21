@@ -8,8 +8,9 @@ namespace jazzlights {
 
 namespace {
 
-constexpr Milliseconds kRssiDecayDelayMs = 3000;  // Decay after 3s of inactivity.
-constexpr int kRssiDecayFactor = 5;               // Decay RSSI by 5dBm/s after delay.
+constexpr Milliseconds kRssiDecayDelayMs = 3000;   // Start decay after 3s of inactivity.
+constexpr Milliseconds kRssiDecayPeriodMs = 1000;  // Then decay every 1s of inactivity.
+constexpr int kRssiDecayFactor = 5;                // Decay RSSI by 5dBm every kRssiDecayPeriodMs.
 // Consider creatures far away if no nearby RSSI within 3 second.
 constexpr Milliseconds kNearbyCreatureTimeoutMs = 3000;
 
@@ -154,9 +155,9 @@ void KnownCreatures::update() {
     int decayedRssi = creature.smoothedRssi;
     if (creature.lastHeard >= 0 && currentTime - creature.lastHeard > kRssiDecayDelayMs) {
       // If we haven't heard from this creature in kRssiDecayDelayMs, decay the RSSI by kRssiDecayFactor dBm every
-      // second.
+      // kRssiDecayPeriodMs.
       decayedRssi = creature.smoothedRssi -
-                    (kRssiDecayFactor * (currentTime - creature.lastHeard - kRssiDecayDelayMs)) / ONE_SECOND;
+                    (kRssiDecayFactor * (currentTime - creature.lastHeard - kRssiDecayDelayMs)) / kRssiDecayPeriodMs;
     }
     if (decayedRssi >= kRssiNearbyThresholdUp && !creature.isNearby) {
       jll_info("Adding nearby to creature rgb=%06x rssi=%d", static_cast<int>(creature.color), decayedRssi);
