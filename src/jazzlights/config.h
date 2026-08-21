@@ -196,9 +196,12 @@
 #define JL_M5_LOGGING 0
 #endif  // JL_M5_LOGGING
 
-// See https://docs.m5stack.com/en/core/StickS3#ext_5v_en
 #ifndef JL_M5_EXT_POWER
-#define JL_M5_EXT_POWER (JL_IS_CONTROLLER(M5STICK_C) || JL_IS_CONTROLLER(M5STICK_S3))
+#if JL_IS_CONTROLLER(M5STICK_C)
+#define JL_M5_EXT_POWER 1
+#else  // M5STICK_C
+#define JL_M5_EXT_POWER 0
+#endif  // M5STICK_C
 #endif  // JL_M5_EXT_POWER
 
 // For all of these GROVE ports, 1 is white and 2 is yellow.
@@ -217,9 +220,6 @@ inline constexpr int kPinB2 = 7;
 inline constexpr int kPinC1 = 6;
 inline constexpr int kPinC2 = 5;
 #elif JL_IS_CONTROLLER(M5STICK_C)
-// https://static-cdn.m5stack.com/resource/docs/products/core/m5stickc_plus/m5stickc_plus_sch_01.webp
-// Hat pins are 26, 36/25, and 0
-// Grove is 32 (yellow), 33 (white)
 inline constexpr int kPinA1 = 26;
 inline constexpr int kPinA2 = 25;
 inline constexpr int kPinB1 = 0;

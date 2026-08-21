@@ -89,16 +89,6 @@ void SetupPrimaryRunLoop() {
 
   SetupLogging();
 
-#if JL_M5_EXT_POWER
-  // See https://docs.m5stack.com/en/core/StickS3#ext_5v_en
-  // Call begin() before enabling external Grove power.
-  // Omitting it can cause affected M5 targets using JL_M5_EXT_POWER
-  // to freeze shortly after boot.
-  M5.begin();
-  M5.Power.setExtOutput(true);
-  jll_info("Enabled external power");
-#endif  // JL_M5_EXT_POWER
-
   GetUi()->set_fastled_runner(&runner);
   GetUi()->InitialSetup();
 

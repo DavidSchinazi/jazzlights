@@ -60,7 +60,7 @@ void M5StickCUi::Display(const DisplayContents& contents, Milliseconds currentTi
     } break;
     case DisplayContents::Mode::kNext: {
       DisplayCenteredText("Next", ::WHITE, ::BLUE);
-      M5.Display.drawCenterString(patternName(contents.c.next.currentEffect).c_str(), /*x=*/64, /*y=*/80,
+      M5.Display.drawCenterString(patternName(contents.c.next.currentEffect, player_).c_str(), /*x=*/64, /*y=*/80,
                                   &fonts::Font2);
     } break;
     case DisplayContents::Mode::kLoop: {
@@ -126,6 +126,12 @@ void M5StickCUi::HandleUnlockSequence(bool wasLongPress, Milliseconds currentTim
 void M5StickCUi::InitialSetup() {
   auto cfg = M5.config();
   M5.begin(cfg);
+
+#if JL_M5_EXT_POWER
+  M5.Power.setExtOutput(true);
+  jll_info("Enabled external power");
+#endif  // JL_M5_EXT_POWER
+
   M5.Display.init();
   Display(DisplayContents(DisplayContents::Mode::kOff), timeMillis());
 }
