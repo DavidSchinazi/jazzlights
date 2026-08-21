@@ -20,7 +20,7 @@ class UnixUdpNetwork : public UdpNetwork {
   int recv(void* buf, size_t bufsize, std::string* details) override;
   void send(void* buf, size_t bufsize) override;
   NetworkType type() const override { return NetworkType::kOther; }
-  std::string getStatusStr(Milliseconds /*currentTime*/) override { return "UnixUDP"; }
+  std::string getStatusStr() override { return "UnixUDP"; }
 
  private:
   explicit UnixUdpNetwork();

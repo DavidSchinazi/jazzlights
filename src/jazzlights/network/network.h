@@ -171,7 +171,7 @@ class Network {
   virtual Milliseconds getLastReceiveTime() const = 0;
 
   // Get a human-readable status string that can be displayed to the user. Not const to allow taking locks.
-  virtual std::string getStatusStr(Milliseconds currentTime) = 0;
+  virtual std::string getStatusStr() = 0;
 
  protected:
   Network() = default;

@@ -110,7 +110,7 @@ bool AtomS3Ui::IsLocked() {
 #endif  // JL_BUTTON_LOCK
 }
 
-void AtomS3Ui::HandleUnlockSequence(bool wasLongPress, Milliseconds currentTime) {
+void AtomS3Ui::HandleUnlockSequence(bool wasLongPress) {
   if (!IsLocked()) { return; }
   // If we don’t receive the correct button event for the state we’re currently in, return immediately to state 0.
   // In odd states (1,3) we want a long press; in even states (0,2) we want a short press.
@@ -119,7 +119,7 @@ void AtomS3Ui::HandleUnlockSequence(bool wasLongPress, Milliseconds currentTime)
   } else {
     buttonLockState_++;
     // To reject accidental presses, exit unlock sequence if four seconds without progress
-    lockButtonTime_ = currentTime + kButtonLockTimeoutDuringUnlockSequence;
+    lockButtonTime_ = timeMillis() + kButtonLockTimeoutDuringUnlockSequence;
   }
 }
 
@@ -174,7 +174,7 @@ void AtomS3Ui::ShortPress(uint8_t pin) {
   if (pin != kButtonPin) { return; }
   const Milliseconds currentTime = timeMillis();
   jll_info("AtomS3Ui ShortPress");
-  HandleUnlockSequence(/*wasLongPress=*/false, currentTime);
+  HandleUnlockSequence(/*wasLongPress=*/false);
   if (IsLocked()) { return; }
 
   // Act on current menu mode.
@@ -205,9 +205,8 @@ void AtomS3Ui::ShortPress(uint8_t pin) {
 
 void AtomS3Ui::LongPress(uint8_t pin) {
   if (pin != kButtonPin) { return; }
-  const Milliseconds currentTime = timeMillis();
   jll_info("AtomS3Ui LongPress");
-  HandleUnlockSequence(/*wasLongPress=*/true, currentTime);
+  HandleUnlockSequence(/*wasLongPress=*/true);
   if (IsLocked()) { return; }
 
   // Move to next menu mode.

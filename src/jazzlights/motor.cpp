@@ -187,7 +187,8 @@ StepperMotor* GetMainStepperMotor() {
   return &sStepper;
 }
 
-void StepperMotorTestRunLoop(Milliseconds currentTime) {
+void StepperMotorTestRunLoop() {
+  Milliseconds currentTime = timeMillis();
   static uint8_t sEpoch = 0;
   static constexpr int32_t kSpeeds[] = {3000, 0, -3000, 0};
   static constexpr Milliseconds kDurations[] = {1000, 5000, 1000, 5000};

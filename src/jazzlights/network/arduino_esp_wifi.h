@@ -27,7 +27,7 @@ class ArduinoEspWiFiNetwork : public UdpNetwork {
   void send(void* buf, size_t bufsize) override;
   NetworkDeviceId getLocalDeviceId() const override { return localDeviceId_; }
   NetworkType type() const override { return NetworkType::kWiFi; }
-  std::string getStatusStr(Milliseconds currentTime) override;
+  std::string getStatusStr() override;
 
   struct StaticConf {
     const char* ip;

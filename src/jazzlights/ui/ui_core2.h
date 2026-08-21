@@ -28,7 +28,7 @@ class Core2AwsUi : public Esp32Ui, public Player::OrrerySceneIdWatcher {
   void OnOrrerySceneId(std::optional<OrrerySceneId> orrerySceneId) override;
 
  private:
-  void DrawSystemTextLines(Milliseconds currentTime);
+  void DrawSystemTextLines();
 
   uint8_t ledBrightness_;
   uint8_t onBrightness_;

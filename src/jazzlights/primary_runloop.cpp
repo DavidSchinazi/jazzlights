@@ -156,9 +156,9 @@ void RunPrimaryRunLoop() {
   Milliseconds currentTime = timeMillis();
   GetUi()->RunLoop(currentTime);
 #if JL_IS_CONFIG(ORRERY_LEADER)
-  OrreryLeader::Get()->RunLoop(currentTime);
+  OrreryLeader::Get()->RunLoop();
 #elif JL_IS_CONFIG(ORRERY_PLANET) && !JL_ORRERY_PLUTO
-  OrreryPlanet::Get()->RunLoop(currentTime);
+  OrreryPlanet::Get()->RunLoop();
 #endif  // ORRERY
   SAVE_TIME_POINT(PrimaryRunLoop, UserInterface);
   Esp32BleNetwork::get()->runLoop(currentTime);
@@ -180,7 +180,7 @@ void RunPrimaryRunLoop() {
 #endif  // JL_WEBSOCKET_SERVER
   SAVE_TIME_POINT(PrimaryRunLoop, LoopEnd);
 #if JL_TEST_MOTOR
-  StepperMotorTestRunLoop(currentTime);
+  StepperMotorTestRunLoop();
 #endif  // JL_TEST_MOTOR
 }
 

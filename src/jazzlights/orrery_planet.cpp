@@ -188,8 +188,9 @@ void OrreryPlanet::HandleHallSensorChange(uint8_t pin, bool isClosed, Millisecon
 
 #endif  // !JL_ORRERY_SUN
 
-void OrreryPlanet::RunLoop(Milliseconds currentTime) {
+void OrreryPlanet::RunLoop() {
 #if !JL_ORRERY_SUN
+  Milliseconds currentTime = timeMillis();
   constexpr float kMaxAccelerationRate = 1000.0f;  // In steps/s^2. Also applies to deceleration.
   hallSensor_.RunLoop();
   switch0_.RunLoop();

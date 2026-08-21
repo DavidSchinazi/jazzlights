@@ -57,7 +57,7 @@ class AtomS3Ui : public Esp32Ui, public GpioButton::ButtonInterface {
   void Display(const DisplayContents& contents);
   void UpdateScreen();
   bool IsLocked();
-  void HandleUnlockSequence(bool wasLongPress, Milliseconds currentTime);
+  void HandleUnlockSequence(bool wasLongPress);
 
   enum class MenuMode {
     kNext,

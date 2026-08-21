@@ -24,7 +24,7 @@ class OrreryPlanet
  public:
   static OrreryPlanet* Get();
   void Setup(Player& player);
-  void RunLoop(Milliseconds currentTime);
+  void RunLoop();
 #if !JL_ORRERY_SUN
   // From GpioSwitchInterface.
   void StateChanged(uint8_t pin, bool isClosed) override;

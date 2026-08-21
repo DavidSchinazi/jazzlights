@@ -738,7 +738,7 @@ void Core2AwsUi::FinalSetup() {
   }
 }
 
-void Core2AwsUi::DrawSystemTextLines(Milliseconds currentTime) {
+void Core2AwsUi::DrawSystemTextLines() {
   TouchButtonManager::Get()->MaybePaint();
   size_t i = 0;
   char line[100] = {};
@@ -749,11 +749,11 @@ void Core2AwsUi::DrawSystemTextLines(Milliseconds currentTime) {
   snprintf(line, sizeof(line) - 1, "Scrn Brgt %u/%u", onBrightness_, kMaxOnBrightness);
   DrawSystemTextLine(i++, line);
   // BLE.
-  snprintf(line, sizeof(line) - 1, "BLE: %s", Esp32BleNetwork::get()->getStatusStr(currentTime).c_str());
+  snprintf(line, sizeof(line) - 1, "BLE: %s", Esp32BleNetwork::get()->getStatusStr().c_str());
   DrawSystemTextLine(i++, line);
 #if JL_WIFI
   // Wi-Fi.
-  snprintf(line, sizeof(line) - 1, "Wi-Fi: %s", WiFiNetwork::get()->getStatusStr(currentTime).c_str());
+  snprintf(line, sizeof(line) - 1, "Wi-Fi: %s", WiFiNetwork::get()->getStatusStr().c_str());
   DrawSystemTextLine(i++, line);
 #endif  // JL_WIFI
   // Other.
@@ -883,7 +883,7 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
       core2ScreenRenderer.setEnabled(false);
       TouchButtonManager::Get()->Redraw();
       DrawSystemMenuButtons();
-      DrawSystemTextLines(currentTime);
+      DrawSystemTextLines();
     } else {
       jll_info("ignoring system button pressed");
     }
@@ -1001,7 +1001,7 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
       ledBrightness_++;
       jll_info("setting LED brightness to %u", ledBrightness_);
       player_.set_brightness(ledBrightness_);
-      DrawSystemTextLines(currentTime);
+      DrawSystemTextLines();
     }
   }
   if (ledMinusButton->JustReleased()) {
@@ -1010,7 +1010,7 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
       ledBrightness_--;
       jll_info("setting LED brightness to %u", ledBrightness_);
       player_.set_brightness(ledBrightness_);
-      DrawSystemTextLines(currentTime);
+      DrawSystemTextLines();
     }
   }
   if (screenPlusButton->JustReleased()) {
@@ -1018,7 +1018,7 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
     if (onBrightness_ < kMaxOnBrightness && gScreenMode == ScreenMode::kSystemMenu) {
       onBrightness_++;
       SetCore2ScreenBrightness(onBrightness_);
-      DrawSystemTextLines(currentTime);
+      DrawSystemTextLines();
     }
   }
   if (screenMinusButton->JustReleased()) {
@@ -1026,7 +1026,7 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
     if (onBrightness_ > kMinOnBrightness && gScreenMode == ScreenMode::kSystemMenu) {
       onBrightness_--;
       SetCore2ScreenBrightness(onBrightness_);
-      DrawSystemTextLines(currentTime);
+      DrawSystemTextLines();
     }
   }
 

@@ -101,7 +101,8 @@ KnownCreatures* KnownCreatures::Get() {
   return &sKnownCreatures;
 }
 
-void KnownCreatures::ExpireOldEntries(Milliseconds currentTime) {
+void KnownCreatures::ExpireOldEntries() {
+  Milliseconds currentTime = timeMillis();
   creatures_.erase(std::remove_if(creatures_.begin(), creatures_.end(),
                                   [currentTime](const Creature& creature) {
                                     static constexpr Milliseconds kCreatureExpirationTime = 10000;  // 10s.
@@ -178,14 +179,14 @@ KnownCreatures::KnownCreatures() {
   creatures_.push_back(ourselves);
 }
 
-void KnownCreatures::HandleHeardOrrery(Milliseconds currentTime) {
-  lastHeardOrreryTime_ = currentTime;
+void KnownCreatures::HandleHeardOrrery() {
+  lastHeardOrreryTime_ = timeMillis();
   jll_info("Heard the orrery");
 }
 
-bool KnownCreatures::HasRecentlyHeardOrrery(Milliseconds currentTime) {
+bool KnownCreatures::HasRecentlyHeardOrrery() {
   static constexpr Milliseconds kOrreryDuration = 60000;  // 1 minute.
-  return lastHeardOrreryTime_ >= 0 && currentTime - lastHeardOrreryTime_ <= kOrreryDuration;
+  return lastHeardOrreryTime_ >= 0 && timeMillis() - lastHeardOrreryTime_ <= kOrreryDuration;
 }
 
 // Called once to initialize the state.
@@ -234,7 +235,7 @@ void Creatures::rewind(const Frame& frame) const {
   KnownCreatures::Get()->SetIsPartying(num_close_creatures >= kMinCreaturesForAParty);
   state(frame)->rainbow = iShouldParty || KnownCreatures::Get()->IsPartying();
   state(frame)->initialHue = 256 * frame.time / 1667;
-  state(frame)->orrery = KnownCreatures::Get()->HasRecentlyHeardOrrery(currentTime);
+  state(frame)->orrery = KnownCreatures::Get()->HasRecentlyHeardOrrery();
 }
 
 // Called for each pixel to compute its color.

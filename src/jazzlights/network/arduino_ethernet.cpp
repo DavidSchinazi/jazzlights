@@ -130,7 +130,8 @@ NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status, Milliseconds 
   return status;
 }
 
-std::string ArduinoEthernetNetwork::getStatusStr(Milliseconds currentTime) {
+std::string ArduinoEthernetNetwork::getStatusStr() {
+  const Milliseconds currentTime = timeMillis();
   switch (getStatus()) {
     case INITIALIZING: return "init";
     case CONNECTING: return "connecting";

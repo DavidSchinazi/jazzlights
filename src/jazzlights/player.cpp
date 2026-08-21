@@ -560,7 +560,7 @@ bool Player::render(Milliseconds currentTime) {
   lastLEDWriteTime_ = currentTime;
 
 #if JL_IS_CONFIG(CREATURE)
-  KnownCreatures::Get()->ExpireOldEntries(currentTime);
+  KnownCreatures::Get()->ExpireOldEntries();
 #endif  // CREATURE
 
   const Milliseconds patternComputeStartTime = timeMillis();
@@ -905,7 +905,7 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
                       "",
 #endif  // CREATURE
                       fpsCompute, fpsWrites, utilization, timeSpentComputingThisEpoch, epochDuration);
-      printInstrumentationInfo(currentTime);
+      printInstrumentationInfo();
       lastLEDWriteTime_ = -1;
       shouldBeginPattern_ = true;
       UpdateOverriddenPatternWatcher(precedence);
@@ -949,7 +949,7 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
                       ".p%u) are leading, new currentPattern %s (%08x) computed %u FPS wrote %u FPS %u%% %u/%ums",
                       DEVICE_ID_HEX(localDeviceId_), precedence, patternName(currentPattern_, *this).c_str(),
                       currentPattern_, fpsCompute, fpsWrites, utilization, timeSpentComputingThisEpoch, epochDuration);
-      printInstrumentationInfo(currentTime);
+      printInstrumentationInfo();
       lastLEDWriteTime_ = -1;
       shouldBeginPattern_ = true;
     }
@@ -1009,7 +1009,7 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
     KnownCreatures::Get()->AddCreature(message.creatureColor, message.receiptTime, message.receiptRssi,
                                        message.isPartying);
   }
-  if (message.orrerySceneId.has_value()) { KnownCreatures::Get()->HandleHeardOrrery(currentTime); }
+  if (message.orrerySceneId.has_value()) { KnownCreatures::Get()->HandleHeardOrrery(); }
 #endif  // CREATURE
   jll_player_message("handleReceivedMessage %s", networkMessageToString(message, currentTime).c_str());
   if (message.sender == localDeviceId_) {
@@ -1202,7 +1202,7 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
                         (followedUpdate ? "followed" : "ignored"), DEVICE_ID_HEX(entry->originator), entry->precedence,
                         DEVICE_ID_HEX(entry->nextHopDevice), NetworkTypeToString(entry->nextHopNetworkType),
                         changesStr.c_str(), message.receiptDetails.c_str());
-        if (followedUpdate) { printInstrumentationInfo(currentTime); }
+        if (followedUpdate) { printInstrumentationInfo(); }
       }
       UpdateOverriddenPatternWatcher(entry->precedence);
     } else {

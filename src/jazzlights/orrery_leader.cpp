@@ -396,7 +396,8 @@ void OrreryLeader::SendBroadcastMessage(const OrreryMessage& msg) {
   max485BusLeader_.SetMessageToSend(Max485BusHandler::kBusIdBroadcast, broadcastMsg);
 }
 
-void OrreryLeader::RunLoop(Milliseconds currentTime) {
+void OrreryLeader::RunLoop() {
+  Milliseconds currentTime = timeMillis();
   switch1_.RunLoop();
   switch3_.RunLoop();
   switch4_.RunLoop();

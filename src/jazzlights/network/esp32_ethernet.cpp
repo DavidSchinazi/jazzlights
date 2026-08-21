@@ -62,7 +62,8 @@ constexpr int kEthernetPinInterrupt = 21;  // Fake because -1 isn't supported in
 #endif
 }  // namespace
 
-std::string Esp32EthernetNetwork::getStatusStr(Milliseconds currentTime) {
+std::string Esp32EthernetNetwork::getStatusStr() {
+  const Milliseconds currentTime = timeMillis();
   struct in_addr localAddress = {};
   {
     const std::lock_guard<std::mutex> lock(mutex_);

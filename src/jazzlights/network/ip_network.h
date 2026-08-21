@@ -31,7 +31,7 @@ class IpInterfaceManager : public Network {
   NetworkStatus update(NetworkStatus /*status*/, Milliseconds /*currentTime*/) override { return CONNECTED; }
   NetworkDeviceId getLocalDeviceId() const override { return localDeviceId_; }
   NetworkType type() const override { return NetworkType::kOther; }
-  std::string getStatusStr(Milliseconds currentTime) override;
+  std::string getStatusStr() override;
   void setMessageToSend(const NetworkMessage& messageToSend, Milliseconds currentTime) override;
   void disableSending() override;
   void triggerSendAsap(Milliseconds currentTime) override;

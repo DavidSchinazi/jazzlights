@@ -28,14 +28,14 @@ class AtomMatrixUi : public Esp32Ui, public GpioButton::ButtonInterface {
 
  private:
   bool IsLocked();
-  void HandleUnlockSequence(bool wasLongPress, Milliseconds currentTime);
-  bool ScreenMessage(Milliseconds currentTime);
-  void ScreenUnlocked(Milliseconds currentTime);
-  void ScreenNetwork(Milliseconds currentTime);
-  void ScreenDisplay(Milliseconds currentTime);
-  void ScreenShort(Milliseconds currentTime);
-  void ScreenLong(Milliseconds currentTime);
-  void ScreenClear(Milliseconds currentTime);
+  void HandleUnlockSequence(bool wasLongPress);
+  bool ScreenMessage();
+  void ScreenUnlocked();
+  void ScreenNetwork();
+  void ScreenDisplay();
+  void ScreenShort();
+  void ScreenLong();
+  void ScreenClear();
 
   GpioButton button_;
   bool displayingBootMessage_ = true;

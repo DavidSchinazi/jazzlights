@@ -91,7 +91,8 @@ std::string WiFiReasonToString(uint8_t reason) {
 }
 }  // namespace
 
-std::string Esp32WiFiNetwork::getStatusStr(Milliseconds currentTime) {
+std::string Esp32WiFiNetwork::getStatusStr() {
+  const Milliseconds currentTime = timeMillis();
   struct in_addr localAddress = {};
   {
     const std::lock_guard<std::mutex> lock(mutex_);

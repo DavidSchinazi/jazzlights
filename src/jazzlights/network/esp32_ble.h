@@ -35,7 +35,7 @@ class Esp32BleNetwork : public Network {
   NetworkType type() const override { return NetworkType::kBLE; }
   bool shouldEcho() const override { return true; }
   Milliseconds getLastReceiveTime() const override { return lastReceiveTime_; }
-  std::string getStatusStr(Milliseconds currentTime) override;
+  std::string getStatusStr() override;
 
  protected:
   void runLoopImpl(Milliseconds currentTime) override;
@@ -111,7 +111,7 @@ class Esp32BleNetwork : public Network {
   NetworkType type() const override { return NetworkType::kBLE; }
   bool shouldEcho() const override { return false; }
   Milliseconds getLastReceiveTime() const override { return -1; }
-  std::string getStatusStr(Milliseconds currentTime) override { return "Compiled Out"; }
+  std::string getStatusStr() override { return "Compiled Out"; }
 
  protected:
   void runLoopImpl(Milliseconds /*currentTime*/) override {}

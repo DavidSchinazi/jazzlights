@@ -97,7 +97,8 @@ const char* TaskStateToString(eTaskState taskState) {
 
 #if JL_INSTRUMENTATION || JL_TIMING
 
-void printInstrumentationInfo(Milliseconds currentTime) {
+void printInstrumentationInfo() {
+  Milliseconds currentTime = timeMillis();
   static Milliseconds lastInstrumentationLog = -1;
   static constexpr Milliseconds kInstrumentationPeriod = 5000;
   if (lastInstrumentationLog >= 0 && currentTime - lastInstrumentationLog < kInstrumentationPeriod) {

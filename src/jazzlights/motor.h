@@ -49,7 +49,7 @@ class StepperMotor {
 };
 
 StepperMotor* GetMainStepperMotor();
-void StepperMotorTestRunLoop(Milliseconds currentTime);
+void StepperMotorTestRunLoop();
 
 }  // namespace jazzlights
 

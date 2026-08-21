@@ -34,14 +34,14 @@ class KnownCreatures {
   // Singleton. Can only be accessed from main runloop (so from Player or from Creatures effect).
   static KnownCreatures* Get();
   const std::vector<Creature>& creatures() const { return creatures_; }
-  void ExpireOldEntries(Milliseconds currentTime);
+  void ExpireOldEntries();
   void AddCreature(uint32_t color, Milliseconds lastHeard, int rssi, bool isPartying);
   // Update all known creature states (decay RSSI, increment counters, etc).
   void update();
   bool IsPartying() const { return isPartying_; }
   void SetIsPartying(bool isPartying) { isPartying_ = isPartying; }
-  void HandleHeardOrrery(Milliseconds currentTime);
-  bool HasRecentlyHeardOrrery(Milliseconds currentTime);
+  void HandleHeardOrrery();
+  bool HasRecentlyHeardOrrery();
 
  private:
   KnownCreatures();

@@ -258,7 +258,8 @@ void ArduinoEspWiFiNetwork::send(void* buf, size_t bufsize) {
 #endif  // ENABLE_ESP_WIFI_SENDING
 }
 
-std::string ArduinoEspWiFiNetwork::getStatusStr(Milliseconds currentTime) {
+std::string ArduinoEspWiFiNetwork::getStatusStr() {
+  const Milliseconds currentTime = timeMillis();
   switch (getStatus()) {
     case INITIALIZING: return "init";
     case CONNECTING: return "connecting";

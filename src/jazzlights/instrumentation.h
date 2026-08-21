@@ -15,9 +15,9 @@
 namespace jazzlights {
 
 #if JL_INSTRUMENTATION || JL_TIMING
-void printInstrumentationInfo(Milliseconds currentTime);
+void printInstrumentationInfo();
 #else   // JL_INSTRUMENTATION || JL_TIMING
-inline void printInstrumentationInfo(Milliseconds /*currentTime*/) {}
+inline void printInstrumentationInfo() {}
 #endif  // JL_INSTRUMENTATION || JL_TIMING
 
 #if JL_TIMING

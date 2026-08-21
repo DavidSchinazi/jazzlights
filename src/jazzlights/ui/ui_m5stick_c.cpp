@@ -110,7 +110,7 @@ bool M5StickCUi::IsLocked() {
 #endif  // JL_BUTTON_LOCK
 }
 
-void M5StickCUi::HandleUnlockSequence(bool wasLongPress, Milliseconds currentTime) {
+void M5StickCUi::HandleUnlockSequence(bool wasLongPress) {
   if (!IsLocked()) { return; }
   // If we don’t receive the correct button event for the state we’re currently in, return immediately to state 0.
   // In odd states (1,3) we want a long press; in even states (0,2) we want a short press.
@@ -119,7 +119,7 @@ void M5StickCUi::HandleUnlockSequence(bool wasLongPress, Milliseconds currentTim
   } else {
     buttonLockState_++;
     // To reject accidental presses, exit unlock sequence if four seconds without progress
-    lockButtonTime_ = currentTime + kButtonLockTimeoutDuringUnlockSequence;
+    lockButtonTime_ = timeMillis() + kButtonLockTimeoutDuringUnlockSequence;
   }
 }
 
@@ -180,7 +180,7 @@ void M5StickCUi::ShortPress(uint8_t pin) {
   if (pin != kButtonPin) { return; }
   const Milliseconds currentTime = timeMillis();
   jll_info("M5StickCUi ShortPress");
-  HandleUnlockSequence(/*wasLongPress=*/false, currentTime);
+  HandleUnlockSequence(/*wasLongPress=*/false);
   if (IsLocked()) { return; }
 
   // Act on current menu mode.
@@ -211,9 +211,8 @@ void M5StickCUi::ShortPress(uint8_t pin) {
 
 void M5StickCUi::LongPress(uint8_t pin) {
   if (pin != kButtonPin) { return; }
-  const Milliseconds currentTime = timeMillis();
   jll_info("M5StickCUi LongPress");
-  HandleUnlockSequence(/*wasLongPress=*/true, currentTime);
+  HandleUnlockSequence(/*wasLongPress=*/true);
   if (IsLocked()) { return; }
 
   // Move to next menu mode.

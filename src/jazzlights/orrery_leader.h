@@ -53,7 +53,7 @@ class OrreryLeader : public GpioSwitchInterface,
   std::optional<Milliseconds> GetLastHeardTime(Planet planet) const;
   std::optional<Milliseconds> GetMaxRtt(Planet planet) const;
 
-  void RunLoop(Milliseconds currentTime);
+  void RunLoop();
 
  private:
   OrreryLeader();
