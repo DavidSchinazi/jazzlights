@@ -8,6 +8,10 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 
+#include <optional>
+
+#include "jazzlights/util/time.h"
+
 namespace jazzlights {
 
 // Allows tracking ESP32 GPIO pins.
@@ -18,11 +22,11 @@ class GpioPin {
    public:
     virtual ~PinInterface() = default;
     // Called when the pin state changes, after handling debouncing.
-    virtual void HandleChange(uint8_t changedPin, bool isClosed, int64_t timeOfChange) = 0;
+    virtual void HandleChange(uint8_t changedPin, bool isClosed, Microseconds timeOfChange) = 0;
   };
 
-  // Starts tracking a GPIO pin. `debounceDuration` is in microseconds.
-  explicit GpioPin(uint8_t pin, PinInterface& pinInterface, int64_t debounceDuration, bool closedIsHigh = false);
+  // Starts tracking a GPIO pin.
+  explicit GpioPin(uint8_t pin, PinInterface& pinInterface, Microseconds debounceDuration, bool closedIsHigh = false);
   ~GpioPin();
 
   // Called once per primary runloop.
@@ -41,13 +45,13 @@ class GpioPin {
 
   PinInterface& pinInterface_;
   QueueHandle_t queue_;
-  int64_t lastRunloopQueueEventTime_;
-  int64_t lastChangeAwayFromDebounced_;
-  bool lastIsClosedInISR_;
-  bool isClosedRawRunloop_;
-  bool isClosedDebouncedRunloop_;
+  std::optional<Microseconds> lastRunloopQueueEventTime_;
+  std::optional<Microseconds> lastChangeAwayFromDebounced_;
+  bool lastIsClosedInISR_ = false;
+  bool isClosedRawRunloop_ = false;
+  bool isClosedDebouncedRunloop_ = false;
   const uint8_t pin_;
-  const int64_t debounceDuration_;
+  const Microseconds debounceDuration_;
   const bool closedIsHigh_;
 };
 
@@ -83,13 +87,13 @@ class GpioButton : public GpioPin::PinInterface {
   bool HasBeenPressedLongEnoughForLongPress();
 
   // From GpioPin::PinInterface.
-  void HandleChange(uint8_t pin, bool isClosed, int64_t timeOfChange) override;
+  void HandleChange(uint8_t pin, bool isClosed, Microseconds timeOfChange) override;
 
  private:
   GpioPin gpioPin_;
   ButtonInterface& buttonInterface_;
-  int64_t lastEvent_;
-  bool isHeld_;
+  std::optional<Microseconds> lastEvent_;
+  bool isHeld_ = false;
 };
 
 // Virtual interface class that will receive switch callbacks.
@@ -120,7 +124,7 @@ class GpioSwitch : public GpioPin::PinInterface {
   bool IsClosed() const { return gpioPin_.IsClosed(); }
 
   // From GpioPin::PinInterface.
-  void HandleChange(uint8_t pin, bool isClosed, int64_t timeOfChange) override;
+  void HandleChange(uint8_t pin, bool isClosed, Microseconds timeOfChange) override;
 
  private:
   GpioPin gpioPin_;

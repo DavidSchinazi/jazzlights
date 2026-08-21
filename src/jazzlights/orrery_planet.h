@@ -30,7 +30,7 @@ class OrreryPlanet
   void StateChanged(uint8_t pin, bool isClosed) override;
 
   // From HallSensor::HallSensorInterface.
-  void HandleHallSensorChange(uint8_t pin, bool isClosed, Milliseconds timeOfChange) override;
+  void HandleHallSensorChange(uint8_t pin, bool isClosed, Microseconds timeOfChange) override;
 #endif  // !JL_ORRERY_SUN
  private:
   OrreryPlanet();

@@ -5,16 +5,20 @@
 
 namespace jazzlights {
 
+using Microseconds = int64_t;
+
 JL_DEFINE_INT_TYPE(Milliseconds, int, int32_t);
 
 // Get monotonically increasing time in milliseconds.
 Milliseconds timeMillis();
 
-typedef int32_t FramesPerSecond;
+// Get monotonically increasing time in microseconds.
+Microseconds timeMicros();
 
-#ifdef ESP32
-Milliseconds timeMillisFromEspTime(int64_t espTime);
-#endif  // ESP32
+// Convert time from microseconds to milliseconds.
+Milliseconds MicrosecondsToMilliseconds(Microseconds timeMicros);
+
+using FramesPerSecond = int32_t;
 
 }  // namespace jazzlights
 

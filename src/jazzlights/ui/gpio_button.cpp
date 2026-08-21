@@ -30,8 +30,12 @@
 
 namespace jazzlights {
 namespace {
-static constexpr int64_t kButtonDebounceDuration = 20000;  // 20ms.
-static constexpr int64_t kLongPressTime = 1000000;         // 1s.
+static constexpr Microseconds kButtonDebounceDuration = 20000;  // 20ms.
+static constexpr Microseconds kLongPressTime = 1000000;         // 1s.
+static constexpr uint64_t kBitMaskTime = 0x7FFFFFFFFFFFFFFFULL;
+static constexpr uint64_t kBitMaskClosed = 0x8000000000000000ULL;
+static_assert((kBitMaskTime & kBitMaskClosed) == 0ULL, "bad bitmasks");
+static_assert((kBitMaskTime | kBitMaskClosed) == ~0ULL, "bad bitmasks");
 }  // namespace
 
 // GPIO reads can return spurious results sometimes. In particular when
@@ -40,14 +44,9 @@ static constexpr int64_t kLongPressTime = 1000000;         // 1s.
 // reacting to these, we debounce the digital reads and only react after the
 // value has settled for kDebounceTime.
 
-GpioPin::GpioPin(uint8_t pin, PinInterface& pinInterface, int64_t debounceDuration, bool closedIsHigh)
+GpioPin::GpioPin(uint8_t pin, PinInterface& pinInterface, Microseconds debounceDuration, bool closedIsHigh)
     : pinInterface_(pinInterface),
       queue_(xQueueCreate(/*num_queue_items=*/16, /*queue_item_size=*/sizeof(uint64_t))),
-      lastRunloopQueueEventTime_(-1),
-      lastChangeAwayFromDebounced_(-1),
-      lastIsClosedInISR_(false),
-      isClosedRawRunloop_(false),
-      isClosedDebouncedRunloop_(false),
       pin_(pin),
       debounceDuration_(debounceDuration),
       closedIsHigh_(closedIsHigh) {
@@ -63,10 +62,7 @@ GpioPin::GpioPin(uint8_t pin, PinInterface& pinInterface, int64_t debounceDurati
 }
 
 GpioButton::GpioButton(uint8_t pin, ButtonInterface& buttonInterface)
-    : gpioPin_(pin, *this, kButtonDebounceDuration, /*closedIsHigh=*/false),
-      buttonInterface_(buttonInterface),
-      lastEvent_(-1),
-      isHeld_(false) {}
+    : gpioPin_(pin, *this, kButtonDebounceDuration, /*closedIsHigh=*/false), buttonInterface_(buttonInterface) {}
 
 template <bool closedIsHigh>
 GpioSwitch<closedIsHigh>::GpioSwitch(uint8_t pin, SwitchInterface& switchInterface)
@@ -98,7 +94,7 @@ GpioButton::~GpioButton() {}
 template <bool closedIsHigh>
 GpioSwitch<closedIsHigh>::~GpioSwitch() {}
 
-void GpioButton::HandleChange(uint8_t changedPin, bool isClosed, int64_t timeOfChange) {
+void GpioButton::HandleChange(uint8_t changedPin, bool isClosed, Microseconds timeOfChange) {
   if (changedPin != pin()) { jll_fatal("Unexpected pin %u != %u", changedPin, pin()); }
   JL_GPIO_DEBUG("Pin %u at " JL_GPIO_TIME_FMT " the btn was %s", pin(), JL_GPIO_TIME_VAL(timeOfChange),
                 (isClosed ? "closed" : "open"));
@@ -107,7 +103,7 @@ void GpioButton::HandleChange(uint8_t changedPin, bool isClosed, int64_t timeOfC
     lastEvent_ = timeOfChange;
   } else {
     // GpioButton was just released.
-    if (!isHeld_ && timeOfChange - lastEvent_ < kLongPressTime) {
+    if (lastEvent_ && !isHeld_ && timeOfChange - *lastEvent_ < kLongPressTime) {
       // GpioButton was released after a short duration.
       lastEvent_ = timeOfChange;
       buttonInterface_.ShortPress(pin());
@@ -117,7 +113,7 @@ void GpioButton::HandleChange(uint8_t changedPin, bool isClosed, int64_t timeOfC
 }
 
 template <bool closedIsHigh>
-void GpioSwitch<closedIsHigh>::HandleChange(uint8_t changedPin, bool isClosed, int64_t /*timeOfChange*/) {
+void GpioSwitch<closedIsHigh>::HandleChange(uint8_t changedPin, bool isClosed, Microseconds /*timeOfChange*/) {
   if (changedPin != pin()) { jll_fatal("Unexpected pin %u != %u", changedPin, pin()); }
   switchInterface_.StateChanged(pin(), isClosed);
 }
@@ -125,22 +121,24 @@ void GpioSwitch<closedIsHigh>::HandleChange(uint8_t changedPin, bool isClosed, i
 void GpioPin::RunLoop() {
   uint64_t state;
   while (xQueueReceive(queue_, &state, /*xTicksToWait=*/0)) {
-    const bool isClosed = (state & 0x8000000000000000ULL) != 0;
-    const int64_t eventTime = static_cast<int64_t>(state & 0x7FFFFFFFFFFFFFFFULL);
-    if (isClosedRawRunloop_ == isClosed || eventTime <= lastRunloopQueueEventTime_) { continue; }
+    const bool isClosed = (state & kBitMaskClosed) != 0;
+    const Microseconds eventTime = static_cast<Microseconds>(state & kBitMaskTime);
+    if (isClosedRawRunloop_ == isClosed || (lastRunloopQueueEventTime_ && eventTime <= *lastRunloopQueueEventTime_)) {
+      continue;
+    }
     lastRunloopQueueEventTime_ = eventTime;
     isClosedRawRunloop_ = isClosed;
     if (isClosedRawRunloop_ != isClosedDebouncedRunloop_) {  // Moving away from debounced state.
       lastChangeAwayFromDebounced_ = eventTime;
     } else {  // Going back to the debounced state.
-      if ((eventTime - lastChangeAwayFromDebounced_) > debounceDuration_) {
+      if (lastChangeAwayFromDebounced_ && (eventTime - *lastChangeAwayFromDebounced_) > debounceDuration_) {
         // We spent more than kDebounceTime away from the debounce time and then went back.
         JL_GPIO_DEBUG(
             JL_GPIO_TIME_FMT
             " Informing client that pin %u is %s while parsing events, lastChangeAwayFromDebounced = " JL_GPIO_TIME_FMT,
             JL_GPIO_TIME_VAL(eventTime), pin_, (!isClosedRawRunloop_ ? "closed" : "open"),
-            JL_GPIO_TIME_VAL(lastChangeAwayFromDebounced_));
-        pinInterface_.HandleChange(pin_, !isClosedRawRunloop_, lastChangeAwayFromDebounced_);
+            JL_GPIO_TIME_VAL(*lastChangeAwayFromDebounced_));
+        pinInterface_.HandleChange(pin_, !isClosedRawRunloop_, *lastChangeAwayFromDebounced_);
         isClosedDebouncedRunloop_ = !isClosedRawRunloop_;
         lastChangeAwayFromDebounced_ = eventTime;
       }
@@ -153,34 +151,36 @@ void GpioPin::RunLoop() {
   const int closedValue = closedIsHigh_ ? 1 : 0;
   const bool liveIsClosed = gpio_get_level(static_cast<gpio_num_t>(pin_)) == closedValue;
   if (liveIsClosed != isClosedRawRunloop_) {
-    const int64_t currentTime64 = esp_timer_get_time();
+    const Microseconds currentTime64 = timeMicros();
     JL_GPIO_DEBUG(JL_GPIO_TIME_FMT " Pin %u is unexpectedly %s from runloop, adding event to queue",
                   JL_GPIO_TIME_VAL(currentTime64), pin_, (liveIsClosed ? "closed" : "open"));
     uint64_t state = static_cast<uint64_t>(currentTime64);
-    state &= 0x7FFFFFFFFFFFFFFFULL;
-    if (liveIsClosed) { state |= 0x8000000000000000ULL; }
+    state &= kBitMaskTime;
+    if (liveIsClosed) { state |= kBitMaskClosed; }
     xQueueSendToBack(queue_, &state, /*wait_time=*/0);
     RunLoop();
     return;
   }
-  const int64_t currentTime64 = esp_timer_get_time();
-  const int64_t timeSinceLastChange = currentTime64 - lastChangeAwayFromDebounced_;
-  if (isClosedDebouncedRunloop_ != isClosedRawRunloop_ && timeSinceLastChange > debounceDuration_) {
-    // The debounce time has elapsed since the last change away from the previous debounced value.
-    JL_GPIO_DEBUG(JL_GPIO_TIME_FMT
-                  " Informing client that pin %u is %s after debouncing from runloop, telling client event time was "
-                  "lastChangeAwayFromDebounced = " JL_GPIO_TIME_FMT,
-                  JL_GPIO_TIME_VAL(currentTime64), pin_, (isClosedRawRunloop_ ? "closed" : "open"),
-                  JL_GPIO_TIME_VAL(lastChangeAwayFromDebounced_));
-    isClosedDebouncedRunloop_ = isClosedRawRunloop_;
-    pinInterface_.HandleChange(pin_, isClosedDebouncedRunloop_, lastChangeAwayFromDebounced_);
+  if (lastChangeAwayFromDebounced_) {
+    const Microseconds currentTime64 = timeMicros();
+    const Microseconds timeSinceLastChange = currentTime64 - *lastChangeAwayFromDebounced_;
+    if (isClosedDebouncedRunloop_ != isClosedRawRunloop_ && timeSinceLastChange > debounceDuration_) {
+      // The debounce time has elapsed since the last change away from the previous debounced value.
+      JL_GPIO_DEBUG(JL_GPIO_TIME_FMT
+                    " Informing client that pin %u is %s after debouncing from runloop, telling client event time was "
+                    "lastChangeAwayFromDebounced = " JL_GPIO_TIME_FMT,
+                    JL_GPIO_TIME_VAL(currentTime64), pin_, (isClosedRawRunloop_ ? "closed" : "open"),
+                    JL_GPIO_TIME_VAL(*lastChangeAwayFromDebounced_));
+      isClosedDebouncedRunloop_ = isClosedRawRunloop_;
+      pinInterface_.HandleChange(pin_, isClosedDebouncedRunloop_, *lastChangeAwayFromDebounced_);
+    }
   }
 }
 
 void GpioButton::RunLoop() {
   gpioPin_.RunLoop();
-  const int64_t currentTime64 = esp_timer_get_time();
-  if (IsPressed() && currentTime64 - lastEvent_ >= kLongPressTime) {
+  const Microseconds currentTime64 = timeMicros();
+  if (IsPressed() && lastEvent_ && currentTime64 - *lastEvent_ >= kLongPressTime) {
     // GpioButton has been held down for kLongPressTime since last event.
     lastEvent_ = currentTime64;
     if (!isHeld_) {
@@ -203,7 +203,7 @@ template class GpioSwitch<true>;
 template class GpioSwitch<false>;
 
 bool GpioButton::HasBeenPressedLongEnoughForLongPress() {
-  return IsPressed() && (isHeld_ || esp_timer_get_time() - lastEvent_ >= kLongPressTime);
+  return IsPressed() && (isHeld_ || (lastEvent_ && timeMicros() - *lastEvent_ >= kLongPressTime));
 }
 
 // static
@@ -217,12 +217,12 @@ void GpioPin::HandleInterrupt() {
   const bool newIsClosed = gpio_get_level(static_cast<gpio_num_t>(pin_)) == closedValue;
   if (newIsClosed != lastIsClosedInISR_) {
     lastIsClosedInISR_ = newIsClosed;
-    const int64_t currentTime64 = esp_timer_get_time();
+    const Microseconds currentTime64 = timeMicros();
     JL_GPIO_DEBUG_ISR(JL_GPIO_TIME_FMT " Pin %u switching raw to %s", JL_GPIO_TIME_VAL(currentTime64), pin_,
                       (newIsClosed ? "closed" : "open"));
     uint64_t state = static_cast<uint64_t>(currentTime64);
-    state &= 0x7FFFFFFFFFFFFFFFULL;
-    if (newIsClosed) { state |= 0x8000000000000000ULL; }
+    state &= kBitMaskTime;
+    if (newIsClosed) { state |= kBitMaskClosed; }
     BaseType_t higherPriorityTaskWoken = pdFALSE;
     xQueueSendToBackFromISR(queue_, &state, &higherPriorityTaskWoken);
   }

@@ -6,6 +6,7 @@
 #include <cstddef>
 
 #include "jazzlights/util/log.h"
+#include "jazzlights/util/time.h"
 #endif  // JL_INSTRUMENTATION || JL_TIMING
 
 #if JL_INSTRUMENTATION

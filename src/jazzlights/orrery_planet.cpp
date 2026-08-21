@@ -133,17 +133,18 @@ void OrreryPlanet::IncrementStepCount() {
   lastStepCountIncrement_ = currentTime;
 }
 
-void OrreryPlanet::HandleHallSensorChange(uint8_t pin, bool isClosed, Milliseconds timeOfChange) {
+void OrreryPlanet::HandleHallSensorChange(uint8_t pin, bool isClosed, Microseconds timeOfChange) {
   PlanetEffect::Get()->SetHallSensorClosed(isClosed);
   bool isBorder = false;
+  Milliseconds timeOfChangeMs = MicrosecondsToMilliseconds(timeOfChange);
   if (isClosed) {
     if (roundedSpeed_ > 10.0f) { isBorder = true; }
-    if (timeHallSensorLastOpened_.has_value()) { lastOpenDuration_ = timeOfChange - *timeHallSensorLastOpened_; }
-    timeHallSensorLastClosed_ = timeOfChange;
+    if (timeHallSensorLastOpened_.has_value()) { lastOpenDuration_ = timeOfChangeMs - *timeHallSensorLastOpened_; }
+    timeHallSensorLastClosed_ = timeOfChangeMs;
   } else {
     if (roundedSpeed_ < -10.0f) { isBorder = true; }
-    if (timeHallSensorLastClosed_.has_value()) { lastClosedDuration_ = timeOfChange - *timeHallSensorLastClosed_; }
-    timeHallSensorLastOpened_ = timeOfChange;
+    if (timeHallSensorLastClosed_.has_value()) { lastClosedDuration_ = timeOfChangeMs - *timeHallSensorLastClosed_; }
+    timeHallSensorLastOpened_ = timeOfChangeMs;
   }
   jll_info("Hall sensor at pin %d is now %s, %sborder", static_cast<int>(pin), (isClosed ? "closed" : "open"),
            (isBorder ? "" : "not "));

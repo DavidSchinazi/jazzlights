@@ -17,7 +17,7 @@ class HallSensor : public GpioPin::PinInterface {
    public:
     virtual ~HallSensorInterface() = default;
     // Called when the state changes.
-    virtual void HandleHallSensorChange(uint8_t pin, bool isClosed, Milliseconds timeOfChange) = 0;
+    virtual void HandleHallSensorChange(uint8_t pin, bool isClosed, Microseconds timeOfChange) = 0;
   };
   explicit HallSensor(uint8_t pin, HallSensorInterface& interface);
   ~HallSensor() = default;
@@ -27,7 +27,7 @@ class HallSensor : public GpioPin::PinInterface {
   void RunLoop() { pin_.RunLoop(); }
 
   // From GpioPin::PinInterface.
-  void HandleChange(uint8_t pin, bool isClosed, int64_t timeOfChange) override;
+  void HandleChange(uint8_t pin, bool isClosed, Microseconds timeOfChange) override;
 
  private:
   GpioPin pin_;

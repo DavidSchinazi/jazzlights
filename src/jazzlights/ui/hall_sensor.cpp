@@ -19,8 +19,8 @@ constexpr int64_t kHallSensorDebounceDuration = 20000;  // 20ms.
 HallSensor::HallSensor(uint8_t pin, HallSensorInterface& interface)
     : pin_(pin, *this, kHallSensorDebounceDuration), interface_(interface) {}
 
-void HallSensor::HandleChange(uint8_t pin, bool isClosed, int64_t timeOfChange) {
-  interface_.HandleHallSensorChange(pin, isClosed, timeMillisFromEspTime(timeOfChange));
+void HallSensor::HandleChange(uint8_t pin, bool isClosed, Microseconds timeOfChange) {
+  interface_.HandleHallSensorChange(pin, isClosed, timeOfChange);
 }
 
 }  // namespace jazzlights
