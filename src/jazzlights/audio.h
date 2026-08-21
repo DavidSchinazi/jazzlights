@@ -11,6 +11,7 @@
 
 #include <cstdint>
 #include <mutex>
+#include <optional>
 
 #include "jazzlights/util/time.h"
 
@@ -31,7 +32,7 @@ class Audio {
     float volume;
     bool beat;
     bool squelch;
-    Milliseconds last_read_time;
+    std::optional<Microseconds> last_read_time;
   };
 
   void GetVisualizerData(VisualizerData* data);
@@ -58,10 +59,10 @@ class Audio {
   float volume_ = 0;
   bool beat_ = false;
   bool is_squelched_ = false;
-  uint32_t last_beat_time_ = 0;
+  Microseconds last_beat_time_ = 0;
   float prev_bands_[8] = {0};
   float prev_sample_ = 0;
-  Milliseconds last_read_time_ = -1;
+  std::optional<Microseconds> last_read_time_;
 
   int16_t* audio_buffer_ = nullptr;
   float* fft_input_ = nullptr;

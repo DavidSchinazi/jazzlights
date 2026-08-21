@@ -44,7 +44,7 @@ void AudioVisualizerUi::InitialSetup() {
 void AudioVisualizerUi::FinalSetup() {}
 
 void AudioVisualizerUi::RunLoop() {
-  Milliseconds currentTime = timeMillis();
+  Microseconds currentTime = timeMicros();
   M5.update();
   if ((M5.Touch.getCount() > 0 && M5.Touch.getDetail(0).wasPressed()) || M5.BtnB.wasPressed()) {
     auto detail = M5.Touch.getDetail(0);
@@ -167,18 +167,21 @@ void AudioVisualizerUi::RunLoop() {
     if (data.bands[i] > max_mag) max_mag = data.bands[i];
   }
 
-  if (last_waveform_update_ == 0 || currentTime - last_waveform_update_ > 5000) { last_waveform_update_ = currentTime; }
-  while (last_waveform_update_ + 12.5 <= (double)currentTime) {
+  if (!last_waveform_update_ || currentTime - *last_waveform_update_ > 5 * kMicrosecondsPerSecond) {
+    last_waveform_update_ = currentTime;
+  }
+  static constexpr Microseconds kWaveformUpdatePeriod = 12500;  // 12.5ms.
+  while (*last_waveform_update_ + kWaveformUpdatePeriod <= currentTime) {
     waveform_buffer_[waveform_index_] = max_mag;
     beat_buffer_[waveform_index_] = data.beat;
     waveform_index_ = (waveform_index_ + 1) % screen_width_;
-    last_waveform_update_ += 12.5;
+    *last_waveform_update_ += kWaveformUpdatePeriod;
   }
 
   // Drawing
   M5.Display.startWrite();
 
-  const bool no_audio_data = data.last_read_time < 0 || currentTime - data.last_read_time > 1000;
+  const bool no_audio_data = !data.last_read_time || currentTime - *data.last_read_time > kMicrosecondsPerSecond;
   if (no_audio_data != showing_no_audio_data_) {
     showing_no_audio_data_ = no_audio_data;
     jll_info("%s 'No Audio Data' mode", showing_no_audio_data_ ? "Entered" : "Exited");

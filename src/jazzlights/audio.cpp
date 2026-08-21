@@ -226,7 +226,7 @@ void Audio::ReadAndProcessAudio() {
 
     if (max_new_band_mag < squelch_threshold_) {
       std::lock_guard<std::mutex> lock(audio_data_mutex_);
-      if (!all_zero) { last_read_time_ = timeMillis(); }
+      if (!all_zero) { last_read_time_ = timeMicros(); }
       memset(band_magnitudes_, 0, sizeof(band_magnitudes_));
       memset(peak_magnitudes_, 0, sizeof(peak_magnitudes_));
       memset(prev_bands_, 0, sizeof(prev_bands_));
@@ -243,7 +243,7 @@ void Audio::ReadAndProcessAudio() {
 
       {
         std::lock_guard<std::mutex> lock(audio_data_mutex_);
-        if (!all_zero) { last_read_time_ = timeMillis(); }
+        if (!all_zero) { last_read_time_ = timeMicros(); }
         is_squelched_ = false;
         for (int i = 0; i < kNumBands; i++) {
           band_magnitudes_[i] = band_magnitudes_[i] * smoothing + new_bands[i] * (1.0f - smoothing);
@@ -327,10 +327,10 @@ void Audio::ReadAndProcessAudio() {
         avg_flux = (count > 0) ? (avg_flux / count) : 0;
 
         beat_ = false;
-        uint32_t now = millis();
+        Microseconds now = timeMicros();
         // Trigger if flux is significantly above average OR we have a very sharp spike
         if ((flux > avg_flux * 1.3f || flux > avg_flux + 1.5f) && flux > 0.15f && beat_energy > agc_min_ - 25.0f &&
-            now - last_beat_time_ > 140) {
+            now - last_beat_time_ > 140 * kMicrosecondsPerMillisecond) {
           beat_ = true;
           last_beat_time_ = now;
         }

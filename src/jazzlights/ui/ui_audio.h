@@ -10,6 +10,7 @@
 
 #include <cstdint>
 #include <mutex>
+#include <optional>
 #include <vector>
 
 #include "jazzlights/audio.h"
@@ -34,7 +35,7 @@ class AudioVisualizerUi : public Esp32Ui {
   std::vector<float> waveform_buffer_;
   std::vector<bool> beat_buffer_;
   int waveform_index_ = 0;
-  double last_waveform_update_ = 0;
+  std::optional<Microseconds> last_waveform_update_;
   bool showing_no_audio_data_ = false;
   bool showing_squelch_ = false;
 };
