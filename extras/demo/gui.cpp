@@ -36,12 +36,11 @@ void onResize(GLFWwindow*, int winWidth, int winHeight) {
 }
 
 void onKey(GLFWwindow* window, int key, int /*scncode*/, int action, int mods) {
-  const Milliseconds currentTime = timeMillis();
   if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
     player->loopOne();
   } else if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
     player->stopLooping();
-    player->next(currentTime);
+    player->next();
   } else if (key == GLFW_KEY_0 && action == GLFW_PRESS && (mods & GLFW_MOD_SHIFT)) {
   } else if (key == GLFW_KEY_ESCAPE || (key == GLFW_KEY_C && (mods & GLFW_MOD_CONTROL))) {
     glfwSetWindowShouldClose(window, GL_TRUE);

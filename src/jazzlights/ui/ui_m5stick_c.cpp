@@ -179,7 +179,6 @@ void M5StickCUi::RunLoop() {
 
 void M5StickCUi::ShortPress(uint8_t pin) {
   if (pin != kButtonPin) { return; }
-  const Milliseconds currentTime = timeMillis();
   jll_info("M5StickCUi ShortPress");
   HandleUnlockSequence(/*wasLongPress=*/false);
   if (IsLocked()) { return; }
@@ -190,7 +189,7 @@ void M5StickCUi::ShortPress(uint8_t pin) {
       jll_info("Next button has been hit");
       player_.stopSpecial();
       player_.stopLooping();
-      player_.next(currentTime);
+      player_.next();
       break;
     case MenuMode::kLoop:
       jll_info("Loop button has been hit");

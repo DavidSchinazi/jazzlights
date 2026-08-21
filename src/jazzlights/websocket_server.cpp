@@ -72,7 +72,6 @@ void WebSocketServer::WebSocket::EventHandler(AsyncWebSocket* server, AsyncWebSo
 }
 
 void WebSocketServer::HandleMessage(AsyncWebSocketClient* client, uint8_t* data, size_t len) {
-  Milliseconds currentTime = timeMillis();
   jll_info("Handling WebSocket message of length %zu first byte %u from client #%u", len, (len > 0 ? data[0] : 0),
            id(client));
   ScopedUpdatePauser pauser(this);
@@ -129,7 +128,7 @@ void WebSocketServer::HandleMessage(AsyncWebSocketClient* client, uint8_t* data,
     } break;
     case WSType::kStatusNextPattern: {
       jll_info("Got WebSocket CloudNextPatern request from client #%u", id(client));
-      player_.CloudNext(currentTime);
+      player_.CloudNext();
       ShareStatus(client);
     } break;
   }

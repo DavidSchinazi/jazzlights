@@ -173,7 +173,6 @@ void AtomS3Ui::RunLoop() {
 
 void AtomS3Ui::ShortPress(uint8_t pin) {
   if (pin != kButtonPin) { return; }
-  const Milliseconds currentTime = timeMillis();
   jll_info("AtomS3Ui ShortPress");
   HandleUnlockSequence(/*wasLongPress=*/false);
   if (IsLocked()) { return; }
@@ -184,7 +183,7 @@ void AtomS3Ui::ShortPress(uint8_t pin) {
       jll_info("Next button has been hit");
       player_.stopSpecial();
       player_.stopLooping();
-      player_.next(currentTime);
+      player_.next();
       break;
     case MenuMode::kLoop:
       jll_info("Loop button has been hit");

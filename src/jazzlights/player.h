@@ -42,7 +42,7 @@ class Player {
   /**
    *  Play next effect in the playlist
    */
-  void next(Milliseconds currentTime);
+  void next();
 
   /**
    *  Loop current effect forever.
@@ -62,12 +62,12 @@ class Player {
   /**
    *  Sets the current pattern and correspondingly resets the next pattern.
    */
-  void setPattern(PatternBits pattern, Milliseconds currentTime);
+  void setPattern(PatternBits pattern);
 
   /**
    *  Forces the rotation to always use this palette.
    */
-  void forcePalette(uint8_t palette, Milliseconds currentTime);
+  void forcePalette(uint8_t palette);
 
   /**
    *  Cancels previous call to forcePalette.
@@ -147,7 +147,7 @@ class Player {
   void disable_color_override() { color_overridden_ = false; }
   bool color_overridden() const { return color_overridden_; }
   CRGB color_override() const { return color_override_; }
-  void CloudNext(Milliseconds currentTime);
+  void CloudNext();
 #elif JL_IS_CONFIG(ORRERY_PLANET)
   void SetPlanetPattern(PatternBits planetPattern) { planetPattern_ = planetPattern; }
   PatternBits GetPlanetPattern() const { return planetPattern_; }

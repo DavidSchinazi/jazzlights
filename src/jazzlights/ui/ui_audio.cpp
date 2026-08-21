@@ -147,7 +147,7 @@ void AudioVisualizerUi::RunLoop() {
           palette_idx = 0;  // Heat
 
         if (palette_idx >= 0) {
-          player_.forcePalette(static_cast<uint8_t>(palette_idx), currentTime);
+          player_.forcePalette(static_cast<uint8_t>(palette_idx));
           visualization_mode_ = VisualizationMode::kMenu;
           M5.Display.fillScreen(BLACK);
         }

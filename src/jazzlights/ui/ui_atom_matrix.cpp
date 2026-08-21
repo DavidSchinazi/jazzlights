@@ -243,7 +243,6 @@ void AtomMatrixUi::HandleUnlockSequence(bool wasLongPress) {
 
 void AtomMatrixUi::ShortPress(uint8_t pin) {
   if (pin != kButtonPin) { return; }
-  const Milliseconds currentTime = timeMillis();
   jll_info("AtomMatrixUi ShortPress");
   HandleUnlockSequence(/*wasLongPress=*/false);
   if (IsLocked()) { return; }
@@ -254,7 +253,7 @@ void AtomMatrixUi::ShortPress(uint8_t pin) {
       jll_info("Next button has been hit");
       player_.stopSpecial();
       player_.stopLooping();
-      player_.next(currentTime);
+      player_.next();
       break;
     case MenuMode::kPrevious:
       jll_info("Back button has been hit");

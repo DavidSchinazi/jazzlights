@@ -313,7 +313,7 @@ class PatternControlMenu {
     }
     overrideButton->Draw(/*force=*/true);
   }
-  bool confirmPressed(Player& player, Milliseconds currentTime) {
+  bool confirmPressed(Player& player) {
     if (state_ == State::kPattern) {
       State nextState = kSelectablePatterns[selectedPatternIndex_].nextState;
       if (nextState == State::kPalette || nextState == State::kColor) {
@@ -324,18 +324,16 @@ class PatternControlMenu {
       } else {
         jll_info("Pattern %s confirmed now playing", kSelectablePatterns[selectedPatternIndex_].name);
         player.stopForcePalette();
-        return setPattern(player, kSelectablePatterns[selectedPatternIndex_].bits, currentTime);
+        return setPattern(player, kSelectablePatterns[selectedPatternIndex_].bits);
       }
     } else if (state_ == State::kPalette) {
       jll_info("Pattern %s and palette %s confirmed now playing", kSelectablePatterns[selectedPatternIndex_].name,
                kPaletteNames[selectedPaletteIndex_]);
-      return setPatternWithPalette(player, kSelectablePatterns[selectedPatternIndex_].bits, selectedPaletteIndex_,
-                                   currentTime);
+      return setPatternWithPalette(player, kSelectablePatterns[selectedPatternIndex_].bits, selectedPaletteIndex_);
     } else if (state_ == State::kColor) {
       jll_info("Pattern %s and color %s confirmed now playing", kSelectablePatterns[selectedPatternIndex_].name,
                kColorNames[selectedColorIndex_]);
-      return setPatternWithColor(player, kSelectablePatterns[selectedPatternIndex_].bits, selectedColorIndex_,
-                                 currentTime);
+      return setPatternWithColor(player, kSelectablePatterns[selectedPatternIndex_].bits, selectedColorIndex_);
     }
     return false;
   }
@@ -345,29 +343,29 @@ class PatternControlMenu {
   }
 
  private:
-  bool setPattern(Player& player, PatternBits patternBits, Milliseconds currentTime) {
+  bool setPattern(Player& player, PatternBits patternBits) {
     patternBits = randomizePatternBits(patternBits);
-    player.setPattern(patternBits, currentTime);
+    player.setPattern(patternBits);
     state_ = State::kOff;
     return true;
   }
-  bool setPatternWithPalette(Player& player, PatternBits patternBits, uint8_t palette, Milliseconds currentTime) {
+  bool setPatternWithPalette(Player& player, PatternBits patternBits, uint8_t palette) {
     jll_info("setPatternWithPalette patternBits=%08x palette=%u combined=%08x", patternBits, palette,
              patternBits | (palette << 13));
     if (patternBits == kAllPalettePattern) {  // forced palette.
-      player.forcePalette(palette, currentTime);
+      player.forcePalette(palette);
       state_ = State::kOff;
       return true;
     }
     player.stopForcePalette();
-    return setPattern(player, patternBits | (palette << 13), currentTime);
+    return setPattern(player, patternBits | (palette << 13));
   }
-  bool setPatternWithColor(Player& player, PatternBits patternBits, uint8_t color, Milliseconds currentTime) {
+  bool setPatternWithColor(Player& player, PatternBits patternBits, uint8_t color) {
     player.stopForcePalette();
     if (patternBits == 0x0700 && color == 0) {  // glow-black is just solid-black.
-      return setPattern(player, 0, currentTime);
+      return setPattern(player, 0);
     }
-    return setPattern(player, patternBits + color * 0x100, currentTime);
+    return setPattern(player, patternBits + color * 0x100);
   }
   uint8_t dy() {
     if (dy_ == 0) { dy_ = M5.Display.fontHeight(); }  // By default this is 22.
@@ -682,7 +680,7 @@ void orreryButtonPressed(Player& player, Milliseconds currentTime) {
 void confirmButtonPressed(Player& player, Milliseconds currentTime) {
   gLastScreenInteractionTime = currentTime;
   if (gScreenMode == ScreenMode::kPatternControlMenu) {
-    if (gPatternControlMenu.confirmPressed(player, currentTime)) {
+    if (gPatternControlMenu.confirmPressed(player)) {
       HidePatternControlMenuButtons();
       startMainMenu(player);
     }
@@ -834,7 +832,7 @@ void Core2AwsUi::RunLoop() {
     jll_info("next pressed");
     if (gScreenMode == ScreenMode::kMainMenu) {
       gLastScreenInteractionTime = currentTime;
-      player_.next(currentTime);
+      player_.next();
     }
   }
   if (loopButton->JustReleased()) {
@@ -987,7 +985,7 @@ void Core2AwsUi::RunLoop() {
       unlock2Button->Draw();
     } else if (gScreenMode == ScreenMode::kMainMenu) {
       jll_info("unlock1 button unexpectedly pressed in main menu, treating as next button");
-      player_.next(currentTime);
+      player_.next();
     } else {
       jll_info("ignoring unlock1 button pressed");
     }

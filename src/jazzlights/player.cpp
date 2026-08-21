@@ -345,7 +345,6 @@ void Player::begin() {
     localDeviceId_ = NetworkDeviceId(deviceIdBytes);
   }
   currentLeader_ = localDeviceId_;
-  Milliseconds currentTime = timeMillis();
   jll_info(
       "Starting JazzLights player %s; "
       "basePrecedence %u precedenceGain %u strands: %zu%s, "
@@ -359,10 +358,10 @@ void Player::begin() {
 
 #if JL_IS_CONFIG(RHINO_HAT) || JL_IS_CONFIG(RHINO_STAFF)
   static constexpr uint8_t kForestPalette = 5;
-  forcePalette(kForestPalette, currentTime);
+  forcePalette(kForestPalette);
 #endif  // RHINO_HAT || RHINO_STAFF
 
-  currentPatternStartTime_ = currentTime;
+  currentPatternStartTime_ = timeMillis();
   currentPattern_ = enforceForcedPalette(kStartingPattern);
   nextPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
 #if defined(JL_START_SPECIAL) && JL_START_SPECIAL
@@ -675,9 +674,9 @@ void Player::UpdateOverriddenPatternWatcher(Precedence precedence) {
 }
 
 #if JL_IS_CONFIG(CLOUDS)
-void Player::CloudNext(Milliseconds currentTime) {
+void Player::CloudNext() {
   set_enabled(true);
-  lastUserInputTime_ = currentTime;
+  lastUserInputTime_ = timeMillis();
   disable_color_override();
   if (force_clouds_) {
     force_clouds_ = false;
@@ -696,13 +695,14 @@ void Player::CloudNext(Milliseconds currentTime) {
 }
 #endif  // CLOUDS
 
-void Player::next(Milliseconds currentTime) {
+void Player::next() {
 #if JL_IS_CONFIG(CLOUDS)
   set_enabled(!enabled());
 #endif  // CLOUDS
   jll_info("next command received: switching from %s (%08x) to %s (%08x), currentLeader=" DEVICE_ID_FMT,
            patternName(currentPattern_, *this).c_str(), currentPattern_, patternName(nextPattern_, *this).c_str(),
            nextPattern_, DEVICE_ID_HEX(currentLeader_));
+  Milliseconds currentTime = timeMillis();
   lastUserInputTime_ = currentTime;
   currentPatternStartTime_ = currentTime;
   if (loop_ && currentPattern_ == nextPattern_) {
@@ -720,10 +720,11 @@ void Player::next(Milliseconds currentTime) {
   for (Network* network : networks_) { network->triggerSendAsap(); }
 }
 
-void Player::setPattern(PatternBits pattern, Milliseconds currentTime) {
+void Player::setPattern(PatternBits pattern) {
   jll_info("set pattern command received: switching from %s (%08x) to %s (%08x), currentLeader=" DEVICE_ID_FMT,
            patternName(currentPattern_, *this).c_str(), currentPattern_, patternName(pattern, *this).c_str(), pattern,
            DEVICE_ID_HEX(currentLeader_));
+  Milliseconds currentTime = timeMillis();
   lastUserInputTime_ = currentTime;
   currentPatternStartTime_ = currentTime;
   currentPattern_ = pattern;
@@ -740,11 +741,11 @@ void Player::setPattern(PatternBits pattern, Milliseconds currentTime) {
   for (Network* network : networks_) { network->triggerSendAsap(); }
 }
 
-void Player::forcePalette(uint8_t palette, Milliseconds currentTime) {
+void Player::forcePalette(uint8_t palette) {
   jll_info("Forcing palette %u", palette);
   paletteIsForced_ = true;
   forcedPalette_ = palette;
-  setPattern(enforceForcedPalette(currentPattern_), currentTime);
+  setPattern(enforceForcedPalette(currentPattern_));
 }
 
 void Player::stopForcePalette() {
@@ -1249,12 +1250,11 @@ const char* Player::command(const char* req) {
   const size_t MAX_CMD_LEN = 16;
   bool responded = false;
 
-  const Milliseconds currentTime = timeMillis();
   if (!strncmp(req, "status?", MAX_CMD_LEN)) {
     // do nothing
   } else if (!strncmp(req, "next", MAX_CMD_LEN)) {
     stopLooping();
-    next(currentTime);
+    next();
   } else if (!strncmp(req, "prev", MAX_CMD_LEN)) {
     loopOne();
   } else {
