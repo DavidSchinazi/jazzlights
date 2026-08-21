@@ -248,7 +248,8 @@ void OrreryPlanet::RunLoop() {
       }
     }
 
-    const float maxChange = kMaxAccelerationRate * dt / static_cast<float>(ONE_SECOND);
+    // Divide by 1000 because kMaxAccelerationRate operates in seconds (steps/s^2) and dt is in milliseconds.
+    const float maxChange = kMaxAccelerationRate * dt / 1000.0f;
     if (actualSpeed_ < static_cast<float>(effectiveRequestedSpeed)) {
       actualSpeed_ = std::min(static_cast<float>(effectiveRequestedSpeed), actualSpeed_ + maxChange);
     } else if (actualSpeed_ > static_cast<float>(effectiveRequestedSpeed)) {
