@@ -23,12 +23,20 @@ jobs:
       - name: Download and Install GLFW3 Dependency
         run: |
           GLFW_VERSION=$(curl -Ls https://api.github.com/repos/glfw/glfw/releases/latest | grep tag_name | sed 's/.*:[^"]"\([^"]*\)".*/\1/')
-          echo ${GLFW_VERSION}
-          curl -OLs https://github.com/glfw/glfw/releases/download/${GLFW_VERSION}/glfw-${GLFW_VERSION}.zip
-          rm -rf glfw-${GLFW_VERSION} >/dev/null 2>&1
-          unzip -q glfw-${GLFW_VERSION}.zip
-          cmake -S glfw-${GLFW_VERSION} -B glfw-${GLFW_VERSION}/build
-          sudo make -C glfw-${GLFW_VERSION}/build install
+          echo "${GLFW_VERSION}"
+          if [ -z "${GLFW_VERSION}" ] ; then
+            echo "Failed to parse latest GLFW version"
+            exit 1
+          fi
+          curl -OLs "https://github.com/glfw/glfw/releases/download/${GLFW_VERSION}/glfw-${GLFW_VERSION}.zip"
+          if [ ! -s "glfw-${GLFW_VERSION}.zip" ] ; then
+            echo "Failed to download GLFW zip file"
+            exit 1
+          fi
+          rm -rf "glfw-${GLFW_VERSION}" >/dev/null 2>&1
+          unzip -q "glfw-${GLFW_VERSION}.zip"
+          cmake -S "glfw-${GLFW_VERSION}" -B "glfw-${GLFW_VERSION}/build"
+          sudo make -C "glfw-${GLFW_VERSION}/build" install
       - name: Prepare CMake Files
         run: cmake -S extras -B extras/build
       - name: Build
