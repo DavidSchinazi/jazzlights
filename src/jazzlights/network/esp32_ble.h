@@ -11,7 +11,7 @@
 
 #if !JL_DISABLE_BLUETOOTH
 
-#include <esp_gap_ble_api.h>
+#include <NimBLEDevice.h>
 
 #include <atomic>
 #include <list>
@@ -19,7 +19,7 @@
 
 namespace jazzlights {
 
-// This class interfaces with the ESP32 Bluetooth Low Energy module. It is
+// This class interfaces with the ESP32 Bluetooth Low Energy module via NimBLE-Arduino. It is
 // designed to allow both sending and receiving by alternating between the two.
 // All calls are thread-safe.
 class Esp32BleNetwork : public Network {
@@ -45,53 +45,55 @@ class Esp32BleNetwork : public Network {
  private:
   // All public calls in this class are static, but internally they are backed by a
   // singleton which keeps state and uses a mutex to allow safe access from callers
-  // and the internal BLE thread.
+  // and NimBLE's internal host task.
+  //
+  // Unlike the previous raw-Bluedroid implementation, NimBLE-Arduino's start()/stop() calls are
+  // synchronous, so there's no need to track "requested" vs. "completed" sub-states -- the device
+  // is always in exactly one of these two states.
   enum class State {
-    kInvalid,
-    kIdle,
-    kStartingScan,
     kScanning,
-    kStoppingScan,
-    kConfiguringAdvertising,
-    kStartingAdvertising,
     kAdvertising,
-    kStoppingAdvertising,
   };
-  std::string StateToString(State state);
-  // 29 is dictated by the BLE standard.
-  static constexpr size_t kMaxInnerPayloadLength = 29;
 
-  explicit Esp32BleNetwork() {}
+  class ScanCallbacks : public NimBLEScanCallbacks {
+   public:
+    explicit ScanCallbacks(Esp32BleNetwork* owner) : owner_(owner) {}
+    void onResult(const NimBLEAdvertisedDevice* dev) override;
+
+   private:
+    Esp32BleNetwork* owner_;
+  };
+
+  explicit Esp32BleNetwork();
   void StartScanning();
-  void StopScanning();
   void StartAdvertising();
-  void StopAdvertising();
-  void StartConfigureAdvertising();
   void MaybeUpdateAdvertisingState();
-  void StopAdvertisingIn(Milliseconds duration);
-  void StopScanningIn(Milliseconds duration);
   void ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifier, uint8_t innerPayloadLength,
                             const uint8_t* innerPayload, int rssi);
   uint8_t GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_t maxInnerPayloadLength);
-  void UpdateState(State expectedCurrentState, State newState);
   bool ExtractShouldTriggerSendAsap();
-  void GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param);
 
-  static void GapCallback(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param);
-
+  // Only initializes the NimBLE stack and queries the local device ID -- run as localDeviceId_'s
+  // member-initializer, before any other member (including scan_/advertising_/scanCallbacks_) has
+  // been constructed, so it must not touch instance state. The rest of the setup (scan/advertising
+  // configuration, starting the first scan) happens in the constructor body below instead.
   static NetworkDeviceId InitBluetoothStackAndQueryLocalDeviceId();
 
   const NetworkDeviceId localDeviceId_ = InitBluetoothStackAndQueryLocalDeviceId();
   std::atomic<Milliseconds> lastReceiveTime_{-1};
   std::mutex mutex_;
   // All the variables below are protected by mutex_.
-  State state_ = State::kIdle;
+  State state_ = State::kScanning;
   bool hasDataToSend_ = false;
   NetworkMessage messageToSend_;
   uint8_t numUrgentSends_ = 0;
   std::list<NetworkMessage> receivedMessages_;
   Milliseconds timeToStopAdvertising_ = 0;
   Milliseconds timeToStopScanning_ = 0;
+
+  NimBLEScan* scan_ = nullptr;
+  NimBLEAdvertising* advertising_ = nullptr;
+  ScanCallbacks scanCallbacks_{this};
 };
 
 }  // namespace jazzlights
