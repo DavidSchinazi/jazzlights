@@ -11,14 +11,9 @@
 
 namespace jazzlights {
 
-enum : size_t {
-  kMaxStateAlignment = 8,
-};
+inline constexpr Milliseconds kEffectDurationMs = 10000;  // 10s.
 
-enum : Milliseconds {
-  kEffectDuration = 10 * ONE_SECOND,
-};
-
+inline constexpr size_t kMaxStateAlignment = 8;
 static_assert((kMaxStateAlignment & (kMaxStateAlignment - 1)) == 0, "kMaxStateAlignment must be a power of 2");
 static_assert(kMaxStateAlignment >= sizeof(void*), "kMaxStateAlignment must be bigger than pointer");
 

@@ -469,9 +469,9 @@ bool Player::render(Milliseconds currentTime) {
   for (Network* network : networks_) { network->runLoop(); }
 
   frame_.context = nullptr;
-  if (currentTime - currentPatternStartTime_ > kEffectDuration) {
+  if (currentTime - currentPatternStartTime_ > kEffectDurationMs) {
     frame_.pattern = nextPattern_;
-    frame_.time = currentTime - currentPatternStartTime_ - kEffectDuration;
+    frame_.time = currentTime - currentPatternStartTime_ - kEffectDurationMs;
   } else {
     frame_.pattern = currentPattern_;
     frame_.time = currentTime - currentPatternStartTime_;
@@ -801,13 +801,13 @@ Player::OriginatorEntry* Player::getOriginatorEntry(NetworkDeviceId originator) 
   return entry;
 }
 
-static constexpr Milliseconds kOriginationTimeOverride = 6000;
-static constexpr Milliseconds kOriginationTimeDiscard = 9000;
+static constexpr Milliseconds kOriginationTimeOverrideMs = 6000;
+static constexpr Milliseconds kOriginationTimeDiscardMs = 9000;
 
-static_assert(kOriginationTimeOverride < kOriginationTimeDiscard,
+static_assert(kOriginationTimeOverrideMs < kOriginationTimeDiscardMs,
               "Inverting these can lead to retracting an originator "
               "while disallowing picking a replacement.");
-static_assert(kOriginationTimeDiscard < kEffectDuration,
+static_assert(kOriginationTimeDiscardMs < kEffectDurationMs,
               "Inverting these can lead to keeping an originator "
               "past the end of its intended next pattern.");
 
@@ -815,12 +815,12 @@ void Player::checkLeaderAndPattern() {
   Milliseconds currentTime = timeMillis();
   // Remove elements that have aged out.
   originatorEntries_.remove_if([currentTime](const OriginatorEntry& e) {
-    if (currentTime > e.lastOriginationTime + kOriginationTimeDiscard) {
+    if (currentTime > e.lastOriginationTime + kOriginationTimeDiscardMs) {
       jll_info("Removing " DEVICE_ID_FMT ".p%u entry due to origination time", DEVICE_ID_HEX(e.originator),
                e.precedence);
       return true;
     }
-    if (currentTime > e.currentPatternStartTime + 2 * kEffectDuration) {
+    if (currentTime > e.currentPatternStartTime + 2 * kEffectDurationMs) {
       jll_info("Removing " DEVICE_ID_FMT ".p%u entry due to effect duration", DEVICE_ID_HEX(e.originator),
                e.precedence);
       return true;
@@ -842,11 +842,11 @@ void Player::checkLeaderAndPattern() {
       jll_debug("ignoring " DEVICE_ID_FMT " due to retracted", DEVICE_ID_HEX(e.originator));
       continue;
     }
-    if (currentTime > e.lastOriginationTime + kOriginationTimeDiscard) {
+    if (currentTime > e.lastOriginationTime + kOriginationTimeDiscardMs) {
       jll_debug("ignoring " DEVICE_ID_FMT " due to origination time", DEVICE_ID_HEX(e.originator));
       continue;
     }
-    if (currentTime > e.currentPatternStartTime + 2 * kEffectDuration) {
+    if (currentTime > e.currentPatternStartTime + 2 * kEffectDurationMs) {
       jll_debug("ignoring " DEVICE_ID_FMT " due to effect duration", DEVICE_ID_HEX(e.originator));
       continue;
     }
@@ -931,8 +931,8 @@ void Player::checkLeaderAndPattern() {
     followedNextHopNetworkType_ = NetworkType::kLeading;
     currentNumHops_ = 0;
     lastOriginationTime = currentTime;
-    while (currentTime - currentPatternStartTime_ > kEffectDuration) {
-      currentPatternStartTime_ += kEffectDuration;
+    while (currentTime - currentPatternStartTime_ > kEffectDurationMs) {
+      currentPatternStartTime_ += kEffectDurationMs;
       if (loop_) {
         nextPattern_ = currentPattern_;
       } else {
@@ -1028,11 +1028,11 @@ void Player::handleReceivedMessage(NetworkMessage message) {
     return;
   }
   NumHops receiptNumHops = message.numHops + 1;
-  if (currentTime > message.lastOriginationTime + kOriginationTimeDiscard) {
+  if (currentTime > message.lastOriginationTime + kOriginationTimeDiscardMs) {
     jll_player_info("Ignoring received message due to origination time %s", networkMessageToString(message).c_str());
     return;
   }
-  if (currentTime > message.currentPatternStartTime + 2 * kEffectDuration) {
+  if (currentTime > message.currentPatternStartTime + 2 * kEffectDurationMs) {
     jll_player_info("Ignoring received message due to effect duration %s", networkMessageToString(message).c_str());
     return;
   }
@@ -1067,7 +1067,7 @@ void Player::handleReceivedMessage(NetworkMessage message) {
     // neighbors. To avoid loops in this tree, we ignore any update that has same
     // or more hops than our currently saved one. To allow us to recover from
     // situations where the originator has moved further away in the network, we
-    // accept those updates if they're more recent by kOriginationTimeOverride
+    // accept those updates if they're more recent by kOriginationTimeOverrideMs
     // than what we've seen so far. This is based on the theoretical points made
     // in Section 2 of RFC 8966 - we can say that while much simpler and less
     // powerful, this is inspired by the Babel Routing Protocol.
@@ -1083,7 +1083,7 @@ void Player::handleReceivedMessage(NetworkMessage message) {
                         NetworkTypeToString(message.receiptNetworkType), receiptNumHops,
                         currentTime - message.lastOriginationTime);
         changeNextHop = true;
-      } else if (message.lastOriginationTime > entry->lastOriginationTime + kOriginationTimeOverride) {
+      } else if (message.lastOriginationTime > entry->lastOriginationTime + kOriginationTimeOverrideMs) {
         jll_player_info("Switching " DEVICE_ID_FMT ".p%u entry via " DEVICE_ID_FMT
                         ".%s "
                         "nh %u ot %u to better nextHop " DEVICE_ID_FMT ".%s nh %u ot %u due to originationTime",
@@ -1150,12 +1150,12 @@ void Player::handleReceivedMessage(NetworkMessage message) {
         }
       } else if (entry->currentPatternStartTime < message.currentPatternStartTime) {
         const Milliseconds timeDelta = message.currentPatternStartTime - entry->currentPatternStartTime;
-        if (timeDelta > kEffectDuration - kEffectDuration / 10 && entry->originator == currentLeader_) {
+        if (timeDelta > kEffectDurationMs - kEffectDurationMs / 10 && entry->originator == currentLeader_) {
           shouldBeginPattern_ = true;
         }
         if (shouldUpdateStartTime || timeDelta >= kPatternStartTimeDeltaMax) {
           changes << ", elapsedTime += " << timeDelta;
-          if (entry->currentPattern == message.currentPattern && timeDelta >= kEffectDuration / 2) {
+          if (entry->currentPattern == message.currentPattern && timeDelta >= kEffectDurationMs / 2) {
             changes << " (keeping currentPattern " << patternName(entry->currentPattern, *this) << ")";
           }
           shouldUpdateStartTime = true;

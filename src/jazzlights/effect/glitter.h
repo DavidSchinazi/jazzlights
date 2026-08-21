@@ -20,7 +20,7 @@ class Glitter : public Effect {
   }
 
   void rewind(const Frame& frame) const override {
-    uint8_t hueOffset = 256 * frame.time / kEffectDuration;
+    uint8_t hueOffset = 256 * frame.time / kEffectDurationMs;
     if (state(frame)->backwards) { hueOffset = 255 - hueOffset; }
     state(frame)->hue = state(frame)->startHue + hueOffset;
   }

@@ -151,7 +151,7 @@ CRGB PlanetEffect::color(const Frame& frame, const Pixel& px) const {
   }
 #endif  // !JL_ORRERY_SUN && !JL_ORRERY_PLUTO
   const TProgmemRGBPalette16* palette = GetPlanetPalette(currentPlanet_);
-  uint8_t colorIndex = (256 * px.cumulativeIndex / numPixels_) + (256 * frame.time / kEffectDuration);
+  uint8_t colorIndex = (256 * px.cumulativeIndex / numPixels_) + (256 * frame.time / kEffectDurationMs);
   return ColorFromPalette(*palette, colorIndex);
 }
 
