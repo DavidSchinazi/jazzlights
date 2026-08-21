@@ -1,0 +1,30 @@
+src/jazzlights/network/esp32_ble.h
+  s_2f6ebdb3792f8d::t_8d1742d450c0a3 14,22,48-52,58-67,76-79,86,93-96
+src/jazzlights/network/ble_payload.cpp
+  s_2f6ebdb3792f8d::t_672dd34cc56ada 1-279
+src/jazzlights/network/esp32_ble.cpp
+  s_2f6ebdb3792f8d::t_ba14176c32dd69 10,41-74,76-81,86-91,95-118,120,124,139-154,193,196-198,216,218-220,222-224
+platformio.ini
+  s_2f6ebdb3792f8d::t_0186980d469968 42
+src/jazzlights/network/ble_payload.h
+  s_2f6ebdb3792f8d::t_cc6ddf62f9d39c 1-44
+test/test_network/test_main.cpp
+  s_2f6ebdb3792f8d::t_0164956463efd7 63-153,159-166
+  s_2f6ebdb3792f8d::t_2df8023a1bd74b 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "4a68e226836176ca1910784b9efdc819f2ea2399",
+  "prompts": {},
+  "sessions": {
+    "s_2f6ebdb3792f8d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8c23cb28-daf8-4add-b399-d00c6b32f249",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "Claudio Spiess <claudiosv@users.noreply.github.com>"
+    }
+  }
+}
