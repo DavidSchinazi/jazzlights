@@ -26,9 +26,9 @@ class Esp32BleNetwork : public Network {
  public:
   static Esp32BleNetwork* get();
 
-  void setMessageToSend(const NetworkMessage& messageToSend, Milliseconds currentTime) override;
+  void setMessageToSend(const NetworkMessage& messageToSend) override;
   void disableSending() override;
-  void triggerSendAsap(Milliseconds currentTime) override;
+  void triggerSendAsap() override;
 
   // Get this device's BLE MAC address.
   NetworkDeviceId getLocalDeviceId() const override { return localDeviceId_; }
@@ -38,8 +38,8 @@ class Esp32BleNetwork : public Network {
   std::string getStatusStr() override;
 
  protected:
-  void runLoopImpl(Milliseconds currentTime) override;
-  NetworkStatus update(NetworkStatus /*status*/, Milliseconds /*currentTime*/) override { return CONNECTED; }
+  void runLoopImpl() override;
+  NetworkStatus update(NetworkStatus /*status*/) override { return CONNECTED; }
   std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds currentTime) override;
 
  private:
@@ -67,7 +67,7 @@ class Esp32BleNetwork : public Network {
   void StartAdvertising();
   void StopAdvertising();
   void StartConfigureAdvertising(Milliseconds currentTime);
-  void MaybeUpdateAdvertisingState(Milliseconds currentTime);
+  void MaybeUpdateAdvertisingState();
   void StopAdvertisingIn(Milliseconds duration);
   void StopScanningIn(Milliseconds duration);
   void ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifier, uint8_t innerPayloadLength,
@@ -104,9 +104,9 @@ class Esp32BleNetwork : public Network {
  public:
   static Esp32BleNetwork* get();
 
-  void setMessageToSend(const NetworkMessage& /*messageToSend*/, Milliseconds /*currentTime*/) override {}
+  void setMessageToSend(const NetworkMessage& /*messageToSend*/) override {}
   void disableSending() override {}
-  void triggerSendAsap(Milliseconds /*currentTime*/) override {}
+  void triggerSendAsap() override {}
   NetworkDeviceId getLocalDeviceId() const override { return NetworkDeviceId(); }
   NetworkType type() const override { return NetworkType::kBLE; }
   bool shouldEcho() const override { return false; }
@@ -114,8 +114,8 @@ class Esp32BleNetwork : public Network {
   std::string getStatusStr() override { return "Compiled Out"; }
 
  protected:
-  void runLoopImpl(Milliseconds /*currentTime*/) override {}
-  NetworkStatus update(NetworkStatus /*status*/, Milliseconds /*currentTime*/) override { return CONNECTED; }
+  void runLoopImpl() override {}
+  NetworkStatus update(NetworkStatus /*status*/) override { return CONNECTED; }
   std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds /*currentTime*/) override { return {}; }
 };
 }  // namespace jazzlights

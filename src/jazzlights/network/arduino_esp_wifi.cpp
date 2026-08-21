@@ -121,7 +121,8 @@ void WiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
   }
 }
 
-NetworkStatus ArduinoEspWiFiNetwork::update(NetworkStatus status, Milliseconds currentTime) {
+NetworkStatus ArduinoEspWiFiNetwork::update(NetworkStatus status) {
+  Milliseconds currentTime = timeMillis();
   const wl_status_t newWiFiStatus = WiFi.status();
   if (newWiFiStatus != currentWiFiStatus_) {
     jll_info("Wi-Fi status changing from %s to %s", WiFiStatusToString(currentWiFiStatus_).c_str(),

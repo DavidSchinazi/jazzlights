@@ -161,7 +161,7 @@ void RunPrimaryRunLoop() {
   OrreryPlanet::Get()->RunLoop();
 #endif  // ORRERY
   SAVE_TIME_POINT(PrimaryRunLoop, UserInterface);
-  Esp32BleNetwork::get()->runLoop(currentTime);
+  Esp32BleNetwork::get()->runLoop();
   SAVE_TIME_POINT(PrimaryRunLoop, Bluetooth);
 
 #if !JL_IS_CONFIG(PHONE)

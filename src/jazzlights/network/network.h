@@ -125,7 +125,7 @@ struct NetworkMessage {
 };
 
 std::string displayBitsAsBinary(PatternBits p);
-std::string networkMessageToString(const NetworkMessage& message, Milliseconds currentTime);
+std::string networkMessageToString(const NetworkMessage& message);
 
 class Network {
  public:
@@ -138,7 +138,7 @@ class Network {
   virtual ~Network() = default;
 
   // Set message to send during next send opportunity.
-  virtual void setMessageToSend(const NetworkMessage& messageToSend, Milliseconds currentTime) = 0;
+  virtual void setMessageToSend(const NetworkMessage& messageToSend) = 0;
 
   // Disables sending until the next call to setMessageToSend.
   virtual void disableSending() = 0;
@@ -147,7 +147,7 @@ class Network {
   std::list<NetworkMessage> getReceivedMessages(Milliseconds currentTime);
 
   // Called once per primary runloop.
-  void runLoop(Milliseconds currentTime);
+  void runLoop();
 
   // Get current network status.
   NetworkStatus status() const;
@@ -156,7 +156,7 @@ class Network {
   NetworkId id() const { return id_; }
 
   // Request an immediate send.
-  virtual void triggerSendAsap(Milliseconds currentTime) = 0;
+  virtual void triggerSendAsap() = 0;
 
   // Returns this device's unique ID, often using its MAC address.
   virtual NetworkDeviceId getLocalDeviceId() const = 0;
@@ -176,11 +176,11 @@ class Network {
  protected:
   Network() = default;
   // Perform any work necessary to switch to requested state.
-  virtual NetworkStatus update(NetworkStatus status, Milliseconds currentTime) = 0;
+  virtual NetworkStatus update(NetworkStatus status) = 0;
   // Gets list of received messages since last call.
   virtual std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds currentTime) = 0;
   // Called once per primary runloop.
-  virtual void runLoopImpl(Milliseconds currentTime) = 0;
+  virtual void runLoopImpl() = 0;
   NetworkStatus getStatus() const { return status_; }
   // Default address and port for sync packets over IP.
   static constexpr uint16_t DefaultUdpPort() {
@@ -200,12 +200,11 @@ class Network {
                        Milliseconds currentTime, NetworkMessage* outMessage);
 
   // Write a NetworkMessage into a buffer that can be sent over UDP/IP.
-  bool WriteUdpPayload(const NetworkMessage& messageToSend, uint8_t* udpPayload, size_t udpPayloadLength,
-                       Milliseconds currentTime);
+  bool WriteUdpPayload(const NetworkMessage& messageToSend, uint8_t* udpPayload, size_t udpPayloadLength);
 
  private:
-  void checkStatus(Milliseconds currentTime);
-  void reconnect(Milliseconds currentTime);
+  void checkStatus();
+  void reconnect();
 
   static NetworkId NextAvailableId();
 
@@ -221,15 +220,15 @@ class Network {
 
 class UdpNetwork : public Network {
  public:
-  void setMessageToSend(const NetworkMessage& messageToSend, Milliseconds currentTime) override;
+  void setMessageToSend(const NetworkMessage& messageToSend) override;
   void disableSending() override;
-  void triggerSendAsap(Milliseconds currentTime) override;
+  void triggerSendAsap() override;
   bool shouldEcho() const override { return false; }
   Milliseconds getLastReceiveTime() const override { return lastReceiveTime_; }
 
  protected:
   std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds currentTime) override;
-  void runLoopImpl(Milliseconds currentTime) override;
+  void runLoopImpl() override;
   virtual int recv(void* buf, size_t bufsize, std::string* details) = 0;
   virtual void send(void* buf, size_t bufsize) = 0;
 

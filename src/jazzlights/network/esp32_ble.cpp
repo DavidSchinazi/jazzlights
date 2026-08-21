@@ -102,9 +102,10 @@ void Esp32BleNetwork::StopAdvertising() {
 
 constexpr size_t Esp32BleNetwork::kMaxInnerPayloadLength;
 
-void Esp32BleNetwork::MaybeUpdateAdvertisingState(Milliseconds currentTime) {
+void Esp32BleNetwork::MaybeUpdateAdvertisingState() {
   bool shouldStopAdvertising = false;
   bool shouldStopScanning = false;
+  Milliseconds currentTime = timeMillis();
   {
     const std::lock_guard<std::mutex> lock(mutex_);
     if (state_ == State::kAdvertising && timeToStopAdvertising_ > 0 && currentTime >= timeToStopAdvertising_) {
@@ -141,20 +142,20 @@ std::list<NetworkMessage> Esp32BleNetwork::getReceivedMessagesImpl(Milliseconds 
   return results;
 }
 
-void Esp32BleNetwork::triggerSendAsap(Milliseconds currentTime) {
+void Esp32BleNetwork::triggerSendAsap() {
   ESP32_BLE_DEBUG("TriggerSendAsap");
   {
     const std::lock_guard<std::mutex> lock(mutex_);
     numUrgentSends_ = 10;
   }
-  MaybeUpdateAdvertisingState(currentTime);
+  MaybeUpdateAdvertisingState();
 }
 
-void Esp32BleNetwork::setMessageToSend(const NetworkMessage& messageToSend, Milliseconds currentTime) {
+void Esp32BleNetwork::setMessageToSend(const NetworkMessage& messageToSend) {
   const std::lock_guard<std::mutex> lock(mutex_);
   if (!hasDataToSend_ || !messageToSend_.isEqualExceptOriginationTime(messageToSend)) {
-    ESP32_BLE_DEBUG("Setting messageToSend %s", networkMessageToString(messageToSend, currentTime).c_str());
-    ESP32_BLE_DEBUG("Old messageToSend was %s", networkMessageToString(messageToSend_, currentTime).c_str());
+    ESP32_BLE_DEBUG("Setting messageToSend %s", networkMessageToString(messageToSend).c_str());
+    ESP32_BLE_DEBUG("Old messageToSend was %s", networkMessageToString(messageToSend_).c_str());
   }
   hasDataToSend_ = true;
   messageToSend_ = messageToSend;
@@ -320,7 +321,7 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
     message.lastOriginationTime = 0;
   }
 
-  ESP32_BLE_DEBUG("Received %s", networkMessageToString(message, currentTime).c_str());
+  ESP32_BLE_DEBUG("Received %s", networkMessageToString(message).c_str());
   lastReceiveTime_ = receiptTime;
 
   {
@@ -603,7 +604,7 @@ NetworkDeviceId Esp32BleNetwork::InitBluetoothStackAndQueryLocalDeviceId() {
   return NetworkDeviceId(localAddress);
 }
 
-void Esp32BleNetwork::runLoopImpl(Milliseconds currentTime) { MaybeUpdateAdvertisingState(currentTime); }
+void Esp32BleNetwork::runLoopImpl() { MaybeUpdateAdvertisingState(); }
 
 std::string Esp32BleNetwork::StateToString(Esp32BleNetwork::State state) {
 #define CASE_STATE_RETURN_STRING(_case) \

@@ -78,7 +78,7 @@ ArduinoEthernetNetwork* ArduinoEthernetNetwork::get() {
   return &sSingleton;
 }
 
-NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status, Milliseconds /*currentTime*/) {
+NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status) {
   switch (status) {
     case INITIALIZING: {
       EthernetHardwareStatus hwStatus = Ethernet.hardwareStatus();

@@ -84,7 +84,8 @@ std::string displayBitsAsBinary(PatternBits p) {
   return std::string(bits);
 }
 
-std::string networkMessageToString(const NetworkMessage& message, Milliseconds currentTime) {
+std::string networkMessageToString(const NetworkMessage& message) {
+  Milliseconds currentTime = timeMillis();
   char str[sizeof(", t=4294967296, p=65536, nh=255, ot=4294967296}")] = {};
   snprintf(str, sizeof(str), ", t=%u, p=%u, nh=%u, ot=%u}", currentTime - message.currentPatternStartTime,
            message.precedence, message.numHops, currentTime - message.lastOriginationTime);
@@ -137,20 +138,20 @@ NetworkId Network::NextAvailableId() {
 
 NetworkStatus Network::status() const { return status_; }
 
-void Network::reconnect(Milliseconds currentTime) {
+void Network::reconnect() {
   if (status_ != CONNECTED) {
-    lastConnectionAttempt_ = currentTime;
+    lastConnectionAttempt_ = timeMillis();
     jll_info("%s Network Reconnecting", NetworkTypeToString(type()));
-    status_ = update(CONNECTING, currentTime);
+    status_ = update(CONNECTING);
   }
 }
 
-void UdpNetwork::triggerSendAsap(Milliseconds currentTime) {
+void UdpNetwork::triggerSendAsap() {
   effectLastTxTime_ = 0;
-  runLoop(currentTime);
+  runLoop();
 }
 
-void UdpNetwork::setMessageToSend(const NetworkMessage& messageToSend, Milliseconds /*currentTime*/) {
+void UdpNetwork::setMessageToSend(const NetworkMessage& messageToSend) {
   hasDataToSend_ = true;
   messageToSend_ = messageToSend;
 }
@@ -158,7 +159,7 @@ void UdpNetwork::setMessageToSend(const NetworkMessage& messageToSend, Milliseco
 void UdpNetwork::disableSending() { hasDataToSend_ = false; }
 
 std::list<NetworkMessage> Network::getReceivedMessages(Milliseconds currentTime) {
-  checkStatus(currentTime);
+  checkStatus();
   std::list<NetworkMessage> receivedMessages = getReceivedMessagesImpl(currentTime);
   for (NetworkMessage& message : receivedMessages) {
     message.receiptNetworkId = id();
@@ -221,8 +222,7 @@ bool Network::ParseUdpPayload(uint8_t* udpPayload, size_t udpPayloadLength, cons
     receivedMessage.lastOriginationTime = 0;
   }
 
-  jll_debug("%s received %s", NetworkTypeToString(type()),
-            networkMessageToString(receivedMessage, currentTime).c_str());
+  jll_debug("%s received %s", NetworkTypeToString(type()), networkMessageToString(receivedMessage).c_str());
 
   *outMessage = receivedMessage;
   return true;
@@ -244,13 +244,14 @@ std::list<NetworkMessage> UdpNetwork::getReceivedMessagesImpl(Milliseconds curre
   return receivedMessages;
 }
 
-void Network::checkStatus(Milliseconds currentTime) {
+void Network::checkStatus() {
+  Milliseconds currentTime = timeMillis();
   if (status_ == CONNECTION_FAILED) {
     backoffTimeout_ = std::min(MaxBackoffTimeout(), backoffTimeout_ * 2);
-    if (currentTime - lastConnectionAttempt_ > backoffTimeout_) { reconnect(currentTime); }
+    if (currentTime - lastConnectionAttempt_ > backoffTimeout_) { reconnect(); }
   } else {
     const NetworkStatus previousStatus = status_;
-    status_ = update(status_, currentTime);
+    status_ = update(status_);
     if (status_ != previousStatus) {
       jll_info("%s updated status from %s to %s", NetworkTypeToString(type()),
                NetworkStatusToString(previousStatus).c_str(), NetworkStatusToString(status_).c_str());
@@ -259,19 +260,19 @@ void Network::checkStatus(Milliseconds currentTime) {
   if (status_ == CONNECTED) { backoffTimeout_ = MinBackoffTimeout(); }
 }
 
-void Network::runLoop(Milliseconds currentTime) {
-  checkStatus(currentTime);
-  runLoopImpl(currentTime);
+void Network::runLoop() {
+  checkStatus();
+  runLoopImpl();
 }
 
-bool Network::WriteUdpPayload(const NetworkMessage& messageToSend, uint8_t* udpPayload, size_t udpPayloadLength,
-                              Milliseconds currentTime) {
+bool Network::WriteUdpPayload(const NetworkMessage& messageToSend, uint8_t* udpPayload, size_t udpPayloadLength) {
   if (udpPayloadLength < kPayloadLength) {
     jll_error("%s cannot send message due to payload too short %zu < %zu", NetworkTypeToString(type()),
               udpPayloadLength, kPayloadLength);
     return false;
   }
 
+  Milliseconds currentTime = timeMillis();
   Milliseconds originationTimeDelta;
   if (messageToSend.lastOriginationTime <= currentTime && currentTime - messageToSend.lastOriginationTime <= 0xFFFF) {
     originationTimeDelta = currentTime - messageToSend.lastOriginationTime;
@@ -285,7 +286,7 @@ bool Network::WriteUdpPayload(const NetworkMessage& messageToSend, uint8_t* udpP
   } else {
     patternTime = 0xFFFF;
   }
-  jll_debug("%s sending %s", NetworkTypeToString(type()), networkMessageToString(messageToSend, currentTime).c_str());
+  jll_debug("%s sending %s", NetworkTypeToString(type()), networkMessageToString(messageToSend).c_str());
 
   udpPayload[kVersionOffset] = kVersion;
   messageToSend.originator.writeTo(&udpPayload[kOriginatorOffset]);
@@ -299,10 +300,11 @@ bool Network::WriteUdpPayload(const NetworkMessage& messageToSend, uint8_t* udpP
   return true;
 }
 
-void UdpNetwork::runLoopImpl(Milliseconds currentTime) {
+void UdpNetwork::runLoopImpl() {
   if (status() != CONNECTED) { return; }
 
   // Do we need to send?
+  Milliseconds currentTime = timeMillis();
   static constexpr Milliseconds kMinTimeBetweenUdpSends = 100;
   if (hasDataToSend_ && (effectLastTxTime_ < 1 || currentTime - effectLastTxTime_ > kMinTimeBetweenUdpSends ||
                          messageToSend_.currentPattern != lastSentPattern_)) {
@@ -310,7 +312,7 @@ void UdpNetwork::runLoopImpl(Milliseconds currentTime) {
     lastSentPattern_ = messageToSend_.currentPattern;
 
     uint8_t udpPayload[kPayloadLength] = {};
-    if (!WriteUdpPayload(messageToSend_, udpPayload, sizeof(udpPayload), currentTime)) {
+    if (!WriteUdpPayload(messageToSend_, udpPayload, sizeof(udpPayload))) {
       jll_fatal("%s unexpected payload length issue", NetworkTypeToString(type()));
     }
     send(&udpPayload[0], sizeof(udpPayload));

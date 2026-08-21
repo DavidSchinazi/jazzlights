@@ -397,7 +397,7 @@ void Player::updatePrecedence(Precedence basePrecedence, Precedence precedenceGa
   jll_info("updating precedence to base %u gain %u", basePrecedence, precedenceGain);
   if (!ready_) { return; }
   checkLeaderAndPattern(currentTime);
-  for (Network* network : networks_) { network->triggerSendAsap(currentTime); }
+  for (Network* network : networks_) { network->triggerSendAsap(); }
 }
 
 void Player::handleSpecial() {
@@ -469,7 +469,7 @@ bool Player::render(Milliseconds currentTime) {
   checkLeaderAndPattern(currentTime);
 
   // Then give all networks the opportunity to send.
-  for (Network* network : networks_) { network->runLoop(currentTime); }
+  for (Network* network : networks_) { network->runLoop(); }
 
   frame_.context = nullptr;
   if (currentTime - currentPatternStartTime_ > kEffectDuration) {
@@ -693,7 +693,7 @@ void Player::CloudNext(Milliseconds currentTime) {
            patternName(currentPattern_, *this).c_str(), currentPattern_, patternName(nextPattern_, *this).c_str(),
            nextPattern_, DEVICE_ID_HEX(currentLeader_));
 
-  for (Network* network : networks_) { network->triggerSendAsap(currentTime); }
+  for (Network* network : networks_) { network->triggerSendAsap(); }
   if (status_watcher_ != nullptr) { status_watcher_->OnStatus(); }
 }
 #endif  // CLOUDS
@@ -719,7 +719,7 @@ void Player::next(Milliseconds currentTime) {
            patternName(currentPattern_, *this).c_str(), currentPattern_, patternName(nextPattern_, *this).c_str(),
            nextPattern_, DEVICE_ID_HEX(currentLeader_));
 
-  for (Network* network : networks_) { network->triggerSendAsap(currentTime); }
+  for (Network* network : networks_) { network->triggerSendAsap(); }
 }
 
 void Player::setPattern(PatternBits pattern, Milliseconds currentTime) {
@@ -739,7 +739,7 @@ void Player::setPattern(PatternBits pattern, Milliseconds currentTime) {
            patternName(currentPattern_, *this).c_str(), currentPattern_, patternName(nextPattern_, *this).c_str(),
            nextPattern_, DEVICE_ID_HEX(currentLeader_));
 
-  for (Network* network : networks_) { network->triggerSendAsap(currentTime); }
+  for (Network* network : networks_) { network->triggerSendAsap(); }
 }
 
 void Player::forcePalette(uint8_t palette, Milliseconds currentTime) {
@@ -992,50 +992,47 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
   for (Network* network : networks_) {
     if (!network->shouldEcho() && messageToSend.receiptNetworkId == network->id()) {
       jll_debug("Not echoing for %s to %s ", NetworkTypeToString(network->type()),
-                networkMessageToString(messageToSend, currentTime).c_str());
+                networkMessageToString(messageToSend).c_str());
       network->disableSending();
       continue;
     }
     jll_player_message("Setting messageToSend for %s to %s ", NetworkTypeToString(network->type()),
-                       networkMessageToString(messageToSend, currentTime).c_str());
-    network->setMessageToSend(messageToSend, currentTime);
+                       networkMessageToString(messageToSend).c_str());
+    network->setMessageToSend(messageToSend);
   }
 }
 
 void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentTime) {
 #if JL_IS_CONFIG(CREATURE)
   if (message.isCreature) {
-    jll_info("creature recv %s", networkMessageToString(message, currentTime).c_str());
+    jll_info("creature recv %s", networkMessageToString(message).c_str());
     KnownCreatures::Get()->AddCreature(message.creatureColor, message.receiptTime, message.receiptRssi,
                                        message.isPartying);
   }
   if (message.orrerySceneId.has_value()) { KnownCreatures::Get()->HandleHeardOrrery(); }
 #endif  // CREATURE
-  jll_player_message("handleReceivedMessage %s", networkMessageToString(message, currentTime).c_str());
+  jll_player_message("handleReceivedMessage %s", networkMessageToString(message).c_str());
   if (message.sender == localDeviceId_) {
-    jll_debug("Ignoring received message that we sent %s", networkMessageToString(message, currentTime).c_str());
+    jll_debug("Ignoring received message that we sent %s", networkMessageToString(message).c_str());
     return;
   }
   if (message.originator == localDeviceId_) {
-    jll_debug("Ignoring received message that we originated %s", networkMessageToString(message, currentTime).c_str());
+    jll_debug("Ignoring received message that we originated %s", networkMessageToString(message).c_str());
     return;
   }
   if (orrerySceneIdWatcher_ != nullptr) { orrerySceneIdWatcher_->OnOrrerySceneId(message.orrerySceneId); }
   if (message.numHops == std::numeric_limits<NumHops>::max()) {
     // This avoids overflow when incrementing below.
-    jll_player_info("Ignoring received message with high numHops %s",
-                    networkMessageToString(message, currentTime).c_str());
+    jll_player_info("Ignoring received message with high numHops %s", networkMessageToString(message).c_str());
     return;
   }
   NumHops receiptNumHops = message.numHops + 1;
   if (currentTime > message.lastOriginationTime + kOriginationTimeDiscard) {
-    jll_player_info("Ignoring received message due to origination time %s",
-                    networkMessageToString(message, currentTime).c_str());
+    jll_player_info("Ignoring received message due to origination time %s", networkMessageToString(message).c_str());
     return;
   }
   if (currentTime > message.currentPatternStartTime + 2 * kEffectDuration) {
-    jll_player_info("Ignoring received message due to effect duration %s",
-                    networkMessageToString(message, currentTime).c_str());
+    jll_player_info("Ignoring received message due to effect duration %s", networkMessageToString(message).c_str());
     return;
   }
   OriginatorEntry* entry = getOriginatorEntry(message.originator, currentTime);

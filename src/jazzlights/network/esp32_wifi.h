@@ -23,19 +23,19 @@ class Esp32WiFiNetwork : public Network {
   static Esp32WiFiNetwork* get();
   ~Esp32WiFiNetwork();
 
-  NetworkStatus update(NetworkStatus /*status*/, Milliseconds /*currentTime*/) override { return CONNECTED; }
+  NetworkStatus update(NetworkStatus /*status*/) override { return CONNECTED; }
   NetworkDeviceId getLocalDeviceId() const override { return localDeviceId_; }
   NetworkType type() const override { return NetworkType::kWiFi; }
   std::string getStatusStr() override;
-  void setMessageToSend(const NetworkMessage& messageToSend, Milliseconds currentTime) override;
+  void setMessageToSend(const NetworkMessage& messageToSend) override;
   void disableSending() override;
-  void triggerSendAsap(Milliseconds currentTime) override;
+  void triggerSendAsap() override;
   bool shouldEcho() const override { return false; }
   Milliseconds getLastReceiveTime() const override { return lastReceiveTime_.load(std::memory_order_relaxed); }
 
  protected:
   std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds currentTime) override;
-  void runLoopImpl(Milliseconds /*currentTime*/) override {}
+  void runLoopImpl() override {}
 
  private:
   struct Esp32WiFiNetworkEvent {

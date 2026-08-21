@@ -114,7 +114,7 @@ std::string Esp32WiFiNetwork::getStatusStr() {
   }
 }
 
-void Esp32WiFiNetwork::setMessageToSend(const NetworkMessage& messageToSend, Milliseconds /*currentTime*/) {
+void Esp32WiFiNetwork::setMessageToSend(const NetworkMessage& messageToSend) {
   const std::lock_guard<std::mutex> lock(mutex_);
   hasDataToSend_ = true;
   messageToSend_ = messageToSend;
@@ -125,7 +125,7 @@ void Esp32WiFiNetwork::disableSending() {
   hasDataToSend_ = false;
 }
 
-void Esp32WiFiNetwork::triggerSendAsap(Milliseconds /*currentTime*/) {}
+void Esp32WiFiNetwork::triggerSendAsap() {}
 
 std::list<NetworkMessage> Esp32WiFiNetwork::getReceivedMessagesImpl(Milliseconds /*currentTime*/) {
   std::list<NetworkMessage> results;
@@ -315,7 +315,7 @@ void Esp32WiFiNetwork::RunTask() {
                          messageToSend.currentPattern != lastSentPattern_)) {
     lastSendTime_ = currentTime;
     lastSentPattern_ = messageToSend.currentPattern;
-    if (!WriteUdpPayload(messageToSend, udpPayload_, kReceiveBufferLength, currentTime)) {
+    if (!WriteUdpPayload(messageToSend, udpPayload_, kReceiveBufferLength)) {
       jll_fatal("Esp32WiFiNetwork unexpected payload length issue");
     }
     struct sockaddr_in sin = {

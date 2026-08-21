@@ -85,7 +85,7 @@ std::string Esp32EthernetNetwork::getStatusStr() {
   }
 }
 
-void Esp32EthernetNetwork::setMessageToSend(const NetworkMessage& messageToSend, Milliseconds /*currentTime*/) {
+void Esp32EthernetNetwork::setMessageToSend(const NetworkMessage& messageToSend) {
   const std::lock_guard<std::mutex> lock(mutex_);
   hasDataToSend_ = true;
   messageToSend_ = messageToSend;
@@ -96,7 +96,7 @@ void Esp32EthernetNetwork::disableSending() {
   hasDataToSend_ = false;
 }
 
-void Esp32EthernetNetwork::triggerSendAsap(Milliseconds /*currentTime*/) {}
+void Esp32EthernetNetwork::triggerSendAsap() {}
 
 std::list<NetworkMessage> Esp32EthernetNetwork::getReceivedMessagesImpl(Milliseconds /*currentTime*/) {
   std::list<NetworkMessage> results;
@@ -265,7 +265,7 @@ void Esp32EthernetNetwork::RunTask() {
                          messageToSend.currentPattern != lastSentPattern_)) {
     lastSendTime_ = currentTime;
     lastSentPattern_ = messageToSend.currentPattern;
-    if (!WriteUdpPayload(messageToSend, udpPayload_, kReceiveBufferLength, currentTime)) {
+    if (!WriteUdpPayload(messageToSend, udpPayload_, kReceiveBufferLength)) {
       jll_fatal("Esp32EthernetNetwork unexpected payload length issue");
     }
     struct sockaddr_in sin = {
