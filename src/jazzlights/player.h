@@ -104,7 +104,7 @@ class Player {
   void stopSpecial();
   size_t getSpecial() const { return specialMode_; }
 #if JL_IS_CONFIG(FAIRY_WAND)
-  void triggerPatternOverride(Milliseconds currentTime);
+  void triggerPatternOverride();
 #endif  // FAIRY_WAND
 
   bool is_power_limited() const { return powerLimited_; }

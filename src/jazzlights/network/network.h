@@ -178,7 +178,7 @@ class Network {
   // Perform any work necessary to switch to requested state.
   virtual NetworkStatus update(NetworkStatus status) = 0;
   // Gets list of received messages since last call.
-  virtual std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds currentTime) = 0;
+  virtual std::list<NetworkMessage> getReceivedMessagesImpl() = 0;
   // Called once per primary runloop.
   virtual void runLoopImpl() = 0;
   NetworkStatus getStatus() const { return status_; }
@@ -227,7 +227,7 @@ class UdpNetwork : public Network {
   Milliseconds getLastReceiveTime() const override { return lastReceiveTime_; }
 
  protected:
-  std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds currentTime) override;
+  std::list<NetworkMessage> getReceivedMessagesImpl() override;
   void runLoopImpl() override;
   virtual int recv(void* buf, size_t bufsize, std::string* details) = 0;
   virtual void send(void* buf, size_t bufsize) = 0;

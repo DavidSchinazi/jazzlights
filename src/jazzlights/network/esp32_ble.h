@@ -40,7 +40,7 @@ class Esp32BleNetwork : public Network {
  protected:
   void runLoopImpl() override;
   NetworkStatus update(NetworkStatus /*status*/) override { return CONNECTED; }
-  std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds currentTime) override;
+  std::list<NetworkMessage> getReceivedMessagesImpl() override;
 
  private:
   // All public calls in this class are static, but internally they are backed by a
@@ -66,13 +66,13 @@ class Esp32BleNetwork : public Network {
   void StopScanning();
   void StartAdvertising();
   void StopAdvertising();
-  void StartConfigureAdvertising(Milliseconds currentTime);
+  void StartConfigureAdvertising();
   void MaybeUpdateAdvertisingState();
   void StopAdvertisingIn(Milliseconds duration);
   void StopScanningIn(Milliseconds duration);
   void ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifier, uint8_t innerPayloadLength,
                             const uint8_t* innerPayload, int rssi, Milliseconds currentTime);
-  uint8_t GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_t maxInnerPayloadLength, Milliseconds currentTime);
+  uint8_t GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_t maxInnerPayloadLength);
   void UpdateState(State expectedCurrentState, State newState);
   bool ExtractShouldTriggerSendAsap();
   void GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param, Milliseconds currentTime);
@@ -116,7 +116,7 @@ class Esp32BleNetwork : public Network {
  protected:
   void runLoopImpl() override {}
   NetworkStatus update(NetworkStatus /*status*/) override { return CONNECTED; }
-  std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds /*currentTime*/) override { return {}; }
+  std::list<NetworkMessage> getReceivedMessagesImpl() override { return {}; }
 };
 }  // namespace jazzlights
 #endif  // JL_DISABLE_BLUETOOTH

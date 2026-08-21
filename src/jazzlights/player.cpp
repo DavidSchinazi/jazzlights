@@ -425,9 +425,9 @@ void Player::stopSpecial() {
 }
 
 #if JL_IS_CONFIG(FAIRY_WAND)
-void Player::triggerPatternOverride(Milliseconds currentTime) {
+void Player::triggerPatternOverride() {
   jll_info("Triggering pattern override");
-  overridePatternStartTime_ = currentTime;
+  overridePatternStartTime_ = timeMillis();
 }
 #endif  // FAIRY_WAND
 

@@ -132,7 +132,7 @@ void Esp32BleNetwork::StopScanningIn(Milliseconds duration) {
   timeToStopScanning_ = timeMillis() + duration;
 }
 
-std::list<NetworkMessage> Esp32BleNetwork::getReceivedMessagesImpl(Milliseconds /*currentTime*/) {
+std::list<NetworkMessage> Esp32BleNetwork::getReceivedMessagesImpl() {
   std::list<NetworkMessage> results;
   {
     const std::lock_guard<std::mutex> lock(mutex_);
@@ -335,9 +335,9 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
   }
 }
 
-uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_t maxInnerPayloadLength,
-                                                   Milliseconds currentTime) {
+uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_t maxInnerPayloadLength) {
   const std::lock_guard<std::mutex> lock(mutex_);
+  Milliseconds currentTime = timeMillis();
   static_assert(kMaxPayloadLength <= kMaxInnerPayloadLength, "bad size");
   if (kMaxPayloadLength > maxInnerPayloadLength) {
     jll_error("GetNextInnerPayloadToSend nonsense %u > %u", kMaxPayloadLength, maxInnerPayloadLength);
@@ -448,11 +448,11 @@ bool Esp32BleNetwork::ExtractShouldTriggerSendAsap() {
   return shouldTriggerSendAsap;
 }
 
-void Esp32BleNetwork::StartConfigureAdvertising(Milliseconds currentTime) {
+void Esp32BleNetwork::StartConfigureAdvertising() {
   ESP32_BLE_DEBUG("StartConfigureAdvertising");
   UpdateState(State::kIdle, State::kConfiguringAdvertising);
   uint8_t advPayload[kMaxInnerPayloadLength + 2];
-  uint8_t innerPayloadSize = GetNextInnerPayloadToSend(&advPayload[2], kMaxInnerPayloadLength, currentTime);
+  uint8_t innerPayloadSize = GetNextInnerPayloadToSend(&advPayload[2], kMaxInnerPayloadLength);
   if (innerPayloadSize > kMaxInnerPayloadLength) {
     jll_error("getNextAdvertisementToSend returned nonsense %u", innerPayloadSize);
     innerPayloadSize = kMaxInnerPayloadLength;
@@ -514,7 +514,7 @@ void Esp32BleNetwork::GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap
         case ESP_GAP_SEARCH_INQ_CMPL_EVT: {
           ESP32_BLE_DEBUG("Scanning has now stopped via ESP_GAP_SEARCH_INQ_CMPL_EVT");
           UpdateState(State::kStoppingScan, State::kIdle);
-          StartConfigureAdvertising(currentTime);
+          StartConfigureAdvertising();
         } break;
         default: {
           ESP32_BLE_DEBUG("GAP scan event %d!", param->scan_rst.search_evt);
@@ -533,7 +533,7 @@ void Esp32BleNetwork::GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap
     case ESP_GAP_BLE_SCAN_STOP_COMPLETE_EVT: {
       ESP32_BLE_DEBUG("Scanning has now stopped");
       UpdateState(State::kStoppingScan, State::kIdle);
-      StartConfigureAdvertising(currentTime);
+      StartConfigureAdvertising();
     } break;
     case ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT: {
       ESP32_BLE_DEBUG("Advertising params set");
@@ -548,7 +548,7 @@ void Esp32BleNetwork::GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap
       ESP32_BLE_DEBUG("Advertising has now stopped");
       UpdateState(State::kStoppingAdvertising, State::kIdle);
       if (ExtractShouldTriggerSendAsap()) {
-        StartConfigureAdvertising(currentTime);
+        StartConfigureAdvertising();
       } else {
         StartScanning();
       }

@@ -39,7 +39,7 @@ class IpInterfaceManager : public Network {
   Milliseconds getLastReceiveTime() const override { return lastReceiveTime_.load(std::memory_order_relaxed); }
 
  protected:
-  std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds currentTime) override;
+  std::list<NetworkMessage> getReceivedMessagesImpl() override;
   void runLoopImpl() override {}
 
  private:

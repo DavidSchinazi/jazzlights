@@ -160,8 +160,7 @@ void UdpNetwork::disableSending() { hasDataToSend_ = false; }
 
 std::list<NetworkMessage> Network::getReceivedMessages() {
   checkStatus();
-  Milliseconds currentTime = timeMillis();
-  std::list<NetworkMessage> receivedMessages = getReceivedMessagesImpl(currentTime);
+  std::list<NetworkMessage> receivedMessages = getReceivedMessagesImpl();
   for (NetworkMessage& message : receivedMessages) {
     message.receiptNetworkId = id();
     message.receiptNetworkType = type();
@@ -229,9 +228,10 @@ bool Network::ParseUdpPayload(uint8_t* udpPayload, size_t udpPayloadLength, cons
   return true;
 }
 
-std::list<NetworkMessage> UdpNetwork::getReceivedMessagesImpl(Milliseconds currentTime) {
+std::list<NetworkMessage> UdpNetwork::getReceivedMessagesImpl() {
   std::list<NetworkMessage> receivedMessages;
   if (status() != CONNECTED) { return receivedMessages; }
+  Milliseconds currentTime = timeMillis();
   while (true) {
     uint8_t udpPayload[2000] = {};
     std::string receiptDetails;

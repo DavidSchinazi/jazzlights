@@ -657,9 +657,9 @@ void lockScreen() {
   TouchButtonManager::Get()->Redraw();
 }
 
-void patternControlButtonPressed(Player& player, Milliseconds currentTime) {
+void patternControlButtonPressed(Player& player) {
   gScreenMode = ScreenMode::kPatternControlMenu;
-  gLastScreenInteractionTime = currentTime;
+  gLastScreenInteractionTime = timeMillis();
   HideMainMenuButtons();
   core2ScreenRenderer.setEnabled(false);
   TouchButtonManager::Get()->Redraw();
@@ -667,9 +667,9 @@ void patternControlButtonPressed(Player& player, Milliseconds currentTime) {
   gPatternControlMenu.draw();
 }
 
-void orreryButtonPressed(Player& player, Milliseconds currentTime) {
+void orreryButtonPressed(Player& player) {
   gScreenMode = ScreenMode::kOrreryMenu;
-  gLastScreenInteractionTime = currentTime;
+  gLastScreenInteractionTime = timeMillis();
   HideMainMenuButtons();
   core2ScreenRenderer.setEnabled(false);
   TouchButtonManager::Get()->Redraw();
@@ -677,8 +677,8 @@ void orreryButtonPressed(Player& player, Milliseconds currentTime) {
   gOrreryMenu.draw();
 }
 
-void confirmButtonPressed(Player& player, Milliseconds currentTime) {
-  gLastScreenInteractionTime = currentTime;
+void confirmButtonPressed(Player& player) {
+  gLastScreenInteractionTime = timeMillis();
   if (gScreenMode == ScreenMode::kPatternControlMenu) {
     if (gPatternControlMenu.confirmPressed(player)) {
       HidePatternControlMenuButtons();
@@ -856,7 +856,7 @@ void Core2AwsUi::RunLoop() {
   if (patternControlButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kMainMenu) {
       jll_info("pattern control button pressed");
-      patternControlButtonPressed(player_, currentTime);
+      patternControlButtonPressed(player_);
     } else {
       jll_info("ignoring pattern control button pressed");
     }
@@ -864,7 +864,7 @@ void Core2AwsUi::RunLoop() {
   if (orreryButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kMainMenu) {
       jll_info("orrery button pressed");
-      orreryButtonPressed(player_, currentTime);
+      orreryButtonPressed(player_);
     } else {
       jll_info("ignoring orrery button pressed");
     }
@@ -935,7 +935,7 @@ void Core2AwsUi::RunLoop() {
   if (confirmButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kPatternControlMenu || gScreenMode == ScreenMode::kOrreryMenu) {
       jll_info("confirm button pressed");
-      confirmButtonPressed(player_, currentTime);
+      confirmButtonPressed(player_);
     } else {
       jll_info("ignoring confirm button pressed");
     }
@@ -964,10 +964,10 @@ void Core2AwsUi::RunLoop() {
       startMainMenu(player_);
     } else if (gScreenMode == ScreenMode::kMainMenu) {
       jll_info("unlock2 button unexpectedly pressed in main menu, treating as pattern control button");
-      patternControlButtonPressed(player_, currentTime);
+      patternControlButtonPressed(player_);
     } else if (gScreenMode == ScreenMode::kPatternControlMenu) {
       jll_info("unlock2 button unexpectedly pressed in pattern control menu, treating as confirm button");
-      confirmButtonPressed(player_, currentTime);
+      confirmButtonPressed(player_);
     } else if (gScreenMode == ScreenMode::kSystemMenu) {
       jll_info("unlock2 button unexpectedly pressed in system menu, treating as shutdown button");
       CorePowerOff();

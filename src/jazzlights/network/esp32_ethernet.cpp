@@ -98,7 +98,7 @@ void Esp32EthernetNetwork::disableSending() {
 
 void Esp32EthernetNetwork::triggerSendAsap() {}
 
-std::list<NetworkMessage> Esp32EthernetNetwork::getReceivedMessagesImpl(Milliseconds /*currentTime*/) {
+std::list<NetworkMessage> Esp32EthernetNetwork::getReceivedMessagesImpl() {
   std::list<NetworkMessage> results;
   {
     const std::lock_guard<std::mutex> lock(mutex_);

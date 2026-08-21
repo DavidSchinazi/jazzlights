@@ -340,7 +340,7 @@ void AtomMatrixUi::RunLoop() {
 #if JL_IS_CONFIG(FAIRY_WAND)
   ScreenClear();
   ScreenDisplay();
-  if (button_.IsPressed()) { player_.triggerPatternOverride(currentTime); }
+  if (button_.IsPressed()) { player_.triggerPatternOverride(); }
   return;
 #endif  // FAIRY_WAND
 

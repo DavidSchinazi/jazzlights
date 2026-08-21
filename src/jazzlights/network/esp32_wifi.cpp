@@ -127,7 +127,7 @@ void Esp32WiFiNetwork::disableSending() {
 
 void Esp32WiFiNetwork::triggerSendAsap() {}
 
-std::list<NetworkMessage> Esp32WiFiNetwork::getReceivedMessagesImpl(Milliseconds /*currentTime*/) {
+std::list<NetworkMessage> Esp32WiFiNetwork::getReceivedMessagesImpl() {
   std::list<NetworkMessage> results;
   {
     const std::lock_guard<std::mutex> lock(mutex_);
