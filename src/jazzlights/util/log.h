@@ -1,6 +1,7 @@
 #ifndef JL_UTIL_LOG_H
 #define JL_UTIL_LOG_H
 
+#include <cinttypes>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -42,13 +43,13 @@ void SetupLogging();
 // level to error-only at compile time (see CONFIG_LOG_MAXIMUM_LEVEL=1). Additionally, it logs function, file, and line
 // number - and that makes logs longer than a screen. We could revisit this if we end up compiling our own ESP-IDF.
 
-#define _JL_LOG_LEVEL_STRING_DEBUG "DEBUG"
-#define _JL_LOG_LEVEL_STRING_INFO " INFO"
-#define _JL_LOG_LEVEL_STRING_ERROR "ERROR"
-#define _JL_LOG_LEVEL_STRING_FATAL "FATAL"
+#define _JL_LOG_LEVEL_STRING_DEBUG "D"
+#define _JL_LOG_LEVEL_STRING_INFO "I"
+#define _JL_LOG_LEVEL_STRING_ERROR "E"
+#define _JL_LOG_LEVEL_STRING_FATAL "F"
 
 #define _LOG_AT_LEVEL(levelStr, format, ...) \
-  ::printf(levelStr ": %u " format "\n", static_cast<unsigned>(timeMillis()), ##__VA_ARGS__)
+  ::printf("[%6" PRId64 "][" levelStr "] " format "\n", MillisecondsSinceBootForLoggingOnly(), ##__VA_ARGS__)
 
 #define _LOG_BUFFER_AT_LEVEL(levelStr, buffer, format, ...)                            \
   do {                                                                                 \
