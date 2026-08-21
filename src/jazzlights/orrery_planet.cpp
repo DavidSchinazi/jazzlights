@@ -145,39 +145,36 @@ void OrreryPlanet::HandleHallSensorChange(uint8_t pin, bool isClosed, Millisecon
     if (timeHallSensorLastClosed_.has_value()) { lastClosedDuration_ = timeOfChange - *timeHallSensorLastClosed_; }
     timeHallSensorLastOpened_ = timeOfChange;
   }
-  jll_info("%u Hall sensor at pin %d is now %s, %sborder", timeOfChange, static_cast<int>(pin),
-           (isClosed ? "closed" : "open"), (isBorder ? "" : "not "));
+  jll_info("Hall sensor at pin %d is now %s, %sborder", static_cast<int>(pin), (isClosed ? "closed" : "open"),
+           (isBorder ? "" : "not "));
   if (isBorder) {
     IncrementStepCount();
     if (ignoreNextCalibration_) {
       ignoreNextCalibration_ = false;
-      jll_info("%u Ignoring calibration stepsPerRev %.2f, staying with %.2f", timeOfChange, std::abs(currentSteps_),
-               stepsPerRev_);
+      jll_info("Ignoring calibration stepsPerRev %.2f, staying with %.2f", std::abs(currentSteps_), stepsPerRev_);
     } else if (currentSteps_ != 0) {
       float currentStepsAbs = std::abs(currentSteps_);
       if (currentStepsAbs < kStartupStepsPerRev * 0.6f || currentStepsAbs > kStartupStepsPerRev * 1.5f) {
-        jll_info("%u Fully ignoring out of bounds calibration value %.2f, keeping %.2f", timeOfChange, currentStepsAbs,
-                 stepsPerRev_);
+        jll_info("Fully ignoring out of bounds calibration value %.2f, keeping %.2f", currentStepsAbs, stepsPerRev_);
       } else {
         const float lowBound = kStartupStepsPerRev * 0.75f;
         const float highBound = kStartupStepsPerRev * 1.25f;
         if (currentStepsAbs < lowBound) {
-          jll_info("%u Clamping low calibration value %.2f to %.2f", timeOfChange, currentStepsAbs, lowBound);
+          jll_info("Clamping low calibration value %.2f to %.2f", currentStepsAbs, lowBound);
           currentStepsAbs = lowBound;
         } else if (currentStepsAbs > highBound) {
-          jll_info("%u Clamping high calibration value %.2f to %.2f", timeOfChange, currentStepsAbs, highBound);
+          jll_info("Clamping high calibration value %.2f to %.2f", currentStepsAbs, highBound);
           currentStepsAbs = highBound;
         }
         float previousStepsPerRev = stepsPerRev_;
         if (currentState_.calibration.has_value()) {
           static constexpr float kCalibrationSmoothing = 0.5f;
           stepsPerRev_ = kCalibrationSmoothing * stepsPerRev_ + (1.0f - kCalibrationSmoothing) * currentStepsAbs;
-          jll_info("%u Calibrated stepsPerRev: new measurement %.2f smoothed from %.2f to %.2f", timeOfChange,
-                   currentStepsAbs, previousStepsPerRev, stepsPerRev_);
+          jll_info("Calibrated stepsPerRev: new measurement %.2f smoothed from %.2f to %.2f", currentStepsAbs,
+                   previousStepsPerRev, stepsPerRev_);
         } else {
           stepsPerRev_ = currentStepsAbs;
-          jll_info("%u First calibration of stepsPerRev from %.2f to %.2f", timeOfChange, previousStepsPerRev,
-                   stepsPerRev_);
+          jll_info("First calibration of stepsPerRev from %.2f to %.2f", previousStepsPerRev, stepsPerRev_);
         }
         currentState_.calibration = static_cast<uint32_t>(std::round(stepsPerRev_));
       }
