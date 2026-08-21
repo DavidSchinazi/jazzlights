@@ -53,8 +53,9 @@ void test_orrery_message_hall_sensor_serialization() {
   msg1.leaderSequenceNumber = 0xCAFEBABE;
   msg1.timeHallSensorLastOpened = 10000;
   msg1.timeHallSensorLastClosed = 20000;
-  msg1.lastOpenDuration = 1234;
-  msg1.lastClosedDuration = 5678;
+  // Durations are quantized to milliseconds on the wire, so use values that survive the round trip exactly.
+  msg1.lastOpenDuration = 1234000;
+  msg1.lastClosedDuration = 5678000;
 
   uint8_t buffer[64];
   NetworkWriter writer(buffer, sizeof(buffer));
@@ -66,14 +67,13 @@ void test_orrery_message_hall_sensor_serialization() {
 
   TEST_ASSERT_EQUAL(static_cast<uint8_t>(OrreryMessageType::FollowerResponse), static_cast<uint8_t>(msg2.type));
   TEST_ASSERT(msg2.timeHallSensorLastOpened);
-  // Note: timeHallSensorLastOpened is relative to timeMillis() during Write/Read
-  // So we can only test approximate equality if we want to be safe, but since this is native and fast, it should be
-  // exact if timeMillis() doesn't change. Actually, WriteOrreryMessage uses timeMillis() -
-  // *msg.timeHallSensorLastOpened. ReadOrreryMessage uses timeMillis() - delta. So msg2.timeHallSensorLastOpened =
-  // timeMillis() - (timeMillis() - msg1.timeHallSensorLastOpened) = msg1.timeHallSensorLastOpened.
-  TEST_ASSERT_EQUAL_UINT32(*msg1.timeHallSensorLastOpened, *msg2.timeHallSensorLastOpened);
+  // WriteOrreryMessage() and ReadOrreryMessage() each snapshot the current time independently (once to compute the
+  // "time since" delta, once to reconstruct the absolute time from it), and the wire value is quantized to
+  // milliseconds. So the round-tripped value can be off from the original by up to a millisecond of quantization
+  // plus whatever wall-clock time elapses between the two calls, which is at most a handful of microseconds here.
+  TEST_ASSERT_INT64_WITHIN(2000, *msg1.timeHallSensorLastOpened, *msg2.timeHallSensorLastOpened);
   TEST_ASSERT(msg2.timeHallSensorLastClosed);
-  TEST_ASSERT_EQUAL_UINT32(*msg1.timeHallSensorLastClosed, *msg2.timeHallSensorLastClosed);
+  TEST_ASSERT_INT64_WITHIN(2000, *msg1.timeHallSensorLastClosed, *msg2.timeHallSensorLastClosed);
   TEST_ASSERT(msg2.lastOpenDuration);
   TEST_ASSERT_EQUAL_UINT32(*msg1.lastOpenDuration, *msg2.lastOpenDuration);
   TEST_ASSERT(msg2.lastClosedDuration);

@@ -51,7 +51,9 @@ bool WriteOrreryMessage(const OrreryMessage& msg, NetworkWriter& writer) {
   if (msg.speed) { flags |= kOrreryFlagSpeed; }
   if (msg.position) { flags |= kOrreryFlagPosition; }
   if (msg.calibration) { flags |= kOrreryFlagCalibration; }
-  if (msg.timeHallSensorLastOpened) { flags |= kOrreryFlagTimeHallSensorLastOpened; }
+  if (msg.timeHallSensorLastOpened && !TimeSinceMs32Overflows(*msg.timeHallSensorLastOpened)) {
+    flags |= kOrreryFlagTimeHallSensorLastOpened;
+  }
   if (msg.ledPattern) { flags |= kOrreryFlagLedPattern; }
   if (msg.ledBrightness) { flags |= kOrreryFlagLedBrightness; }
   if (msg.ledBasePrecedence) { flags |= kOrreryFlagLedBasePrecedence; }
@@ -59,9 +61,13 @@ bool WriteOrreryMessage(const OrreryMessage& msg, NetworkWriter& writer) {
   if (!writer.WriteUint8(flags)) { return false; }
 
   uint8_t flags2 = 0;
-  if (msg.timeHallSensorLastClosed) { flags2 |= kOrreryFlag2TimeHallSensorLastClosed; }
-  if (msg.lastOpenDuration) { flags2 |= kOrreryFlag2LastOpenDuration; }
-  if (msg.lastClosedDuration) { flags2 |= kOrreryFlag2LastClosedDuration; }
+  if (msg.timeHallSensorLastClosed && !TimeSinceMs32Overflows(*msg.timeHallSensorLastClosed)) {
+    flags2 |= kOrreryFlag2TimeHallSensorLastClosed;
+  }
+  if (msg.lastOpenDuration && !DurationMs32Overflows(*msg.lastOpenDuration)) { flags2 |= kOrreryFlag2LastOpenDuration; }
+  if (msg.lastClosedDuration && !DurationMs32Overflows(*msg.lastClosedDuration)) {
+    flags2 |= kOrreryFlag2LastClosedDuration;
+  }
   if (!writer.WriteUint8(flags2)) { return false; }
 
   if (!writer.WriteUint32(msg.leaderBootId)) { return false; }
@@ -69,14 +75,10 @@ bool WriteOrreryMessage(const OrreryMessage& msg, NetworkWriter& writer) {
   if (msg.speed && !writer.WriteInt32(*msg.speed)) { return false; }
   if (msg.position && !writer.WriteUint32(*msg.position)) { return false; }
   if (msg.calibration && !writer.WriteUint32(*msg.calibration)) { return false; }
-  if (msg.timeHallSensorLastOpened && !writer.WriteUint32(timeMillis() - *msg.timeHallSensorLastOpened)) {
-    return false;
-  }
-  if (msg.timeHallSensorLastClosed && !writer.WriteUint32(timeMillis() - *msg.timeHallSensorLastClosed)) {
-    return false;
-  }
-  if (msg.lastOpenDuration && !writer.WriteUint32(*msg.lastOpenDuration)) { return false; }
-  if (msg.lastClosedDuration && !writer.WriteUint32(*msg.lastClosedDuration)) { return false; }
+  if (!writer.WriteOptionalTimeSinceMs32(msg.timeHallSensorLastOpened)) { return false; }
+  if (!writer.WriteOptionalTimeSinceMs32(msg.timeHallSensorLastClosed)) { return false; }
+  if (!writer.WriteOptionalDurationMs32(msg.lastOpenDuration)) { return false; }
+  if (!writer.WriteOptionalDurationMs32(msg.lastClosedDuration)) { return false; }
   if (msg.ledPattern && !writer.WriteUint32(static_cast<uint32_t>(*msg.ledPattern))) { return false; }
   if (msg.ledBrightness && !writer.WriteUint8(*msg.ledBrightness)) { return false; }
   if (msg.ledBasePrecedence && !writer.WriteUint16(*msg.ledBasePrecedence)) { return false; }
@@ -117,30 +119,30 @@ bool ReadOrreryMessage(NetworkReader& reader, OrreryMessage* msg) {
     msg->calibration = std::nullopt;
   }
   if (flags & kOrreryFlagTimeHallSensorLastOpened) {
-    uint32_t delta;
-    if (!reader.ReadUint32(&delta)) { return false; }
-    msg->timeHallSensorLastOpened = timeMillis() - delta;
+    Microseconds t;
+    if (!reader.ReadTimeSinceMs32(&t)) { return false; }
+    msg->timeHallSensorLastOpened = t;
   } else {
     msg->timeHallSensorLastOpened = std::nullopt;
   }
   if (flags2 & kOrreryFlag2TimeHallSensorLastClosed) {
-    uint32_t delta;
-    if (!reader.ReadUint32(&delta)) { return false; }
-    msg->timeHallSensorLastClosed = timeMillis() - delta;
+    Microseconds t;
+    if (!reader.ReadTimeSinceMs32(&t)) { return false; }
+    msg->timeHallSensorLastClosed = t;
   } else {
     msg->timeHallSensorLastClosed = std::nullopt;
   }
   if (flags2 & kOrreryFlag2LastOpenDuration) {
-    uint32_t lastOpenDuration;
-    if (!reader.ReadUint32(&lastOpenDuration)) { return false; }
-    msg->lastOpenDuration = lastOpenDuration;
+    uint32_t lastOpenDurationMs;
+    if (!reader.ReadUint32(&lastOpenDurationMs)) { return false; }
+    msg->lastOpenDuration = MillisecondsToMicroseconds(static_cast<Milliseconds>(lastOpenDurationMs));
   } else {
     msg->lastOpenDuration = std::nullopt;
   }
   if (flags2 & kOrreryFlag2LastClosedDuration) {
-    uint32_t lastClosedDuration;
-    if (!reader.ReadUint32(&lastClosedDuration)) { return false; }
-    msg->lastClosedDuration = lastClosedDuration;
+    uint32_t lastClosedDurationMs;
+    if (!reader.ReadUint32(&lastClosedDurationMs)) { return false; }
+    msg->lastClosedDuration = MillisecondsToMicroseconds(static_cast<Milliseconds>(lastClosedDurationMs));
   } else {
     msg->lastClosedDuration = std::nullopt;
   }
@@ -187,17 +189,19 @@ std::string OrreryMessageToString(const OrreryMessage& msg) {
   }
   if (msg.timeHallSensorLastOpened) {
     n += snprintf(buf + n, sizeof(buf) - n, " lastOpen=%" PRId64 "s_ago",
-                  static_cast<int64_t>((timeMillis() - *msg.timeHallSensorLastOpened) / 1000));
+                  static_cast<int64_t>((timeMicros() - *msg.timeHallSensorLastOpened) / kMicrosecondsPerSecond));
   }
   if (msg.timeHallSensorLastClosed) {
     n += snprintf(buf + n, sizeof(buf) - n, " lastClosed=%" PRId64 "s_ago",
-                  static_cast<int64_t>((timeMillis() - *msg.timeHallSensorLastClosed) / 1000));
+                  static_cast<int64_t>((timeMicros() - *msg.timeHallSensorLastClosed) / kMicrosecondsPerSecond));
   }
   if (msg.lastOpenDuration) {
-    n += snprintf(buf + n, sizeof(buf) - n, " openDur=%" PRIu32 "ms", static_cast<uint32_t>(*msg.lastOpenDuration));
+    n += snprintf(buf + n, sizeof(buf) - n, " openDur=%" PRId64 "ms",
+                  static_cast<int64_t>(*msg.lastOpenDuration / kMicrosecondsPerMillisecond));
   }
   if (msg.lastClosedDuration) {
-    n += snprintf(buf + n, sizeof(buf) - n, " closedDur=%" PRIu32 "ms", static_cast<uint32_t>(*msg.lastClosedDuration));
+    n += snprintf(buf + n, sizeof(buf) - n, " closedDur=%" PRId64 "ms",
+                  static_cast<int64_t>(*msg.lastClosedDuration / kMicrosecondsPerMillisecond));
   }
   if (msg.ledPattern) {
     n += snprintf(buf + n, sizeof(buf) - n, " pattern=%08" PRIx32, static_cast<uint32_t>(*msg.ledPattern));

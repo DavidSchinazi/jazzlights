@@ -41,12 +41,6 @@ constexpr float kStartupStepsPerRev = 12700.0f;
 constexpr float kStartupStepsPerRev = 34000.0f;
 #endif  // JL_LOCAL_CALIBRATION_TEST
 
-// Converts internal microsecond timestamps to the milliseconds used by the wire protocol.
-std::optional<Milliseconds> ToWireMilliseconds(std::optional<Microseconds> t) {
-  if (!t) { return std::nullopt; }
-  return MicrosecondsToMilliseconds(*t);
-}
-
 #endif  // !JL_ORRERY_SUN
 
 #if JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_LITE)
@@ -348,10 +342,10 @@ void OrreryPlanet::RunLoop() {
         }
       }
 
-      currentState_.timeHallSensorLastOpened = ToWireMilliseconds(timeHallSensorLastOpened_);
-      currentState_.timeHallSensorLastClosed = ToWireMilliseconds(timeHallSensorLastClosed_);
-      currentState_.lastOpenDuration = ToWireMilliseconds(lastOpenDuration_);
-      currentState_.lastClosedDuration = ToWireMilliseconds(lastClosedDuration_);
+      currentState_.timeHallSensorLastOpened = timeHallSensorLastOpened_;
+      currentState_.timeHallSensorLastClosed = timeHallSensorLastClosed_;
+      currentState_.lastOpenDuration = lastOpenDuration_;
+      currentState_.lastClosedDuration = lastClosedDuration_;
 #endif  // !JL_ORRERY_SUN
 
       if (msg.ledBrightness && msg.ledBrightness != currentState_.ledBrightness) {

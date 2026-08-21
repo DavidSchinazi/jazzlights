@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>  // memcpy, size_t
 
+#include <limits>
 #include <list>
 #include <optional>
 #include <string>
@@ -13,6 +14,15 @@
 #include "jazzlights/util/time.h"
 
 namespace jazzlights {
+
+// Returns whether encoding a duration as milliseconds would not fit in a uint32_t.
+inline bool DurationMs32Overflows(Microseconds durationUs) {
+  const Microseconds durationMs = durationUs / kMicrosecondsPerMillisecond;
+  return durationMs < 0 || durationMs > static_cast<Microseconds>(std::numeric_limits<uint32_t>::max());
+}
+
+// Returns whether a time is far enough in the past that the milliseconds elapsed since would not fit in a uint32_t.
+inline bool TimeSinceMs32Overflows(Microseconds pastTime) { return DurationMs32Overflows(timeMicros() - pastTime); }
 
 enum class NetworkType {
   kLeading,
@@ -299,6 +309,17 @@ class NetworkReader {
     return true;
   }
 
+  // Reads a point in time written by NetworkWriter::WriteTimeSinceMs32(): a 32-bit count of milliseconds elapsed
+  // since that time, which gets turned back into an absolute Microseconds timestamp relative to the current time.
+  // This keeps the wire format a millisecond-resolution relative delta (robust to clock differences between
+  // devices) while letting callers work with Microseconds internally.
+  bool ReadTimeSinceMs32(Microseconds* out) {
+    uint32_t deltaMs;
+    if (!ReadUint32(&deltaMs)) { return false; }
+    *out = timeMicros() - MillisecondsToMicroseconds(static_cast<Milliseconds>(deltaMs));
+    return true;
+  }
+
  private:
   const uint8_t* data_;
   const size_t size_;
@@ -351,6 +372,25 @@ class NetworkWriter {
     in.writeTo(&data_[pos_]);
     pos_ += NetworkDeviceId::size();
     return true;
+  }
+
+  // Writes a point in time in the past as a 32-bit count of milliseconds elapsed between it and now, pairing with
+  // NetworkReader::ReadTimeSinceMs32(). Writes nothing, and still returns true, if `t` is empty or if that many
+  // elapsed milliseconds wouldn't fit in a uint32_t (see TimeSinceMs32Overflows()) — callers that need to track
+  // whether a value was actually written (e.g. to set a presence flag) should check TimeSinceMs32Overflows()
+  // themselves before calling this. Returns false only if writing an actual value failed.
+  bool WriteOptionalTimeSinceMs32(std::optional<Microseconds> t) {
+    if (!t || TimeSinceMs32Overflows(*t)) { return true; }
+    return WriteUint32(static_cast<uint32_t>((timeMicros() - *t) / kMicrosecondsPerMillisecond));
+  }
+
+  // Writes a duration as a 32-bit count of milliseconds. Writes nothing, and still returns true, if `d` is empty
+  // or if that many milliseconds wouldn't fit in a uint32_t (see DurationMs32Overflows()) — callers that need to
+  // track whether a value was actually written (e.g. to set a presence flag) should check DurationMs32Overflows()
+  // themselves before calling this. Returns false only if writing an actual value failed.
+  bool WriteOptionalDurationMs32(std::optional<Microseconds> d) {
+    if (!d || DurationMs32Overflows(*d)) { return true; }
+    return WriteUint32(static_cast<uint32_t>(*d / kMicrosecondsPerMillisecond));
   }
 
  private:

@@ -347,33 +347,25 @@ uint32_t OrreryLeader::GetLedPattern(Planet planet) const {
 
 std::optional<Microseconds> OrreryLeader::GetTimeHallSensorLastOpened(Planet planet) const {
   auto it = responses_.find(planet);
-  if (it != responses_.end() && it->second.timeHallSensorLastOpened) {
-    return MillisecondsToMicroseconds(*it->second.timeHallSensorLastOpened);
-  }
+  if (it != responses_.end()) { return it->second.timeHallSensorLastOpened; }
   return std::nullopt;
 }
 
 std::optional<Microseconds> OrreryLeader::GetTimeHallSensorLastClosed(Planet planet) const {
   auto it = responses_.find(planet);
-  if (it != responses_.end() && it->second.timeHallSensorLastClosed) {
-    return MillisecondsToMicroseconds(*it->second.timeHallSensorLastClosed);
-  }
+  if (it != responses_.end()) { return it->second.timeHallSensorLastClosed; }
   return std::nullopt;
 }
 
 std::optional<Microseconds> OrreryLeader::GetLastOpenDuration(Planet planet) const {
   auto it = responses_.find(planet);
-  if (it != responses_.end() && it->second.lastOpenDuration) {
-    return MillisecondsToMicroseconds(*it->second.lastOpenDuration);
-  }
+  if (it != responses_.end()) { return it->second.lastOpenDuration; }
   return std::nullopt;
 }
 
 std::optional<Microseconds> OrreryLeader::GetLastClosedDuration(Planet planet) const {
   auto it = responses_.find(planet);
-  if (it != responses_.end() && it->second.lastClosedDuration) {
-    return MillisecondsToMicroseconds(*it->second.lastClosedDuration);
-  }
+  if (it != responses_.end()) { return it->second.lastClosedDuration; }
   return std::nullopt;
 }
 
