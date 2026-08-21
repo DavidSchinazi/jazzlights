@@ -35,7 +35,7 @@ static void DisplayCenteredText(const std::string& text, int textColor, int back
 
 }  // namespace
 
-void M5StickCUi::Display(const DisplayContents& contents, Milliseconds currentTime) {
+void M5StickCUi::Display(const DisplayContents& contents) {
   if (lastDisplayedContents_ == contents) {
     // Do not display if nothing has changed.
     return;
@@ -78,7 +78,7 @@ void M5StickCUi::Display(const DisplayContents& contents, Milliseconds currentTi
   lastDisplayedContents_ = contents;
 }
 
-void M5StickCUi::UpdateScreen(Milliseconds currentTime) {
+void M5StickCUi::UpdateScreen() {
   DisplayContents contents;
   switch (menuMode_) {
     case MenuMode::kNext: {
@@ -96,7 +96,7 @@ void M5StickCUi::UpdateScreen(Milliseconds currentTime) {
       contents = DisplayContents(DisplayContents::Mode::kSpecial);
     } break;
   }
-  Display(contents, currentTime);
+  Display(contents);
 }
 
 M5StickCUi::M5StickCUi(Player& player)
@@ -133,7 +133,7 @@ void M5StickCUi::InitialSetup() {
 #endif  // JL_M5_EXT_POWER
 
   M5.Display.init();
-  Display(DisplayContents(DisplayContents::Mode::kOff), timeMillis());
+  Display(DisplayContents(DisplayContents::Mode::kOff));
 }
 
 void M5StickCUi::FinalSetup() {}
@@ -145,7 +145,7 @@ void M5StickCUi::RunLoop(Milliseconds currentTime) {
 #if JL_BUTTON_LOCK
   // If idle-time expired, return to ‘locked’ state
   if (buttonLockState_ != 0 && currentTime - lockButtonTime_ >= 0) {
-    jll_info("%u Locking buttons", currentTime);
+    jll_info("Locking buttons");
     buttonLockState_ = 0;
   }
   if (IsLocked()) {
@@ -156,13 +156,13 @@ void M5StickCUi::RunLoop(Milliseconds currentTime) {
     // 3. In the final transition from state 4 (awaiting release) to state 5 (unlocked)
     if ((buttonLockState_ == 0 && !button_.IsPressed()) || button_.HasBeenPressedLongEnoughForLongPress() ||
         buttonLockState_ >= 4) {
-      Display(DisplayContents(DisplayContents::Mode::kOff), currentTime);
+      Display(DisplayContents(DisplayContents::Mode::kOff));
     } else if ((buttonLockState_ % 2) == 1) {
       // In odd  states (1,3) we show "L".
-      Display(DisplayContents(DisplayContents::Mode::kLockedLong), currentTime);
+      Display(DisplayContents(DisplayContents::Mode::kLockedLong));
     } else {
       // In even states (0,2) we show "S".
-      Display(DisplayContents(DisplayContents::Mode::kLockedShort), currentTime);
+      Display(DisplayContents(DisplayContents::Mode::kLockedShort));
     }
 
     // In lock state 4, wait for release of the button, and then move to state 5 (fully unlocked)
@@ -173,46 +173,46 @@ void M5StickCUi::RunLoop(Milliseconds currentTime) {
     lockButtonTime_ = currentTime + kButtonLockTimeout;
   }
 #endif  // JL_BUTTON_LOCK
-  UpdateScreen(currentTime);
+  UpdateScreen();
 }
 
 void M5StickCUi::ShortPress(uint8_t pin) {
   if (pin != kButtonPin) { return; }
   const Milliseconds currentTime = timeMillis();
-  jll_info("%u M5StickCUi ShortPress", currentTime);
+  jll_info("M5StickCUi ShortPress");
   HandleUnlockSequence(/*wasLongPress=*/false, currentTime);
   if (IsLocked()) { return; }
 
   // Act on current menu mode.
   switch (menuMode_) {
     case MenuMode::kNext:
-      jll_info("%u Next button has been hit", currentTime);
-      player_.stopSpecial(currentTime);
-      player_.stopLooping(currentTime);
+      jll_info("Next button has been hit");
+      player_.stopSpecial();
+      player_.stopLooping();
       player_.next(currentTime);
       break;
     case MenuMode::kLoop:
-      jll_info("%u Loop button has been hit", currentTime);
-      player_.stopSpecial(currentTime);
-      player_.loopOne(currentTime);
+      jll_info("Loop button has been hit");
+      player_.stopSpecial();
+      player_.loopOne();
       break;
     case MenuMode::kBrightness:
       brightnessCursor_ = (brightnessCursor_ + 1 < kNumBrightnesses) ? brightnessCursor_ + 1 : 0;
-      jll_info("%u Brightness button has been hit %u", currentTime, kBrightnessList[brightnessCursor_]);
+      jll_info("Brightness button has been hit %u", kBrightnessList[brightnessCursor_]);
       player_.set_brightness(kBrightnessList[brightnessCursor_]);
       break;
     case MenuMode::kSpecial:
-      jll_info("%u Special button has been hit", currentTime);
-      player_.handleSpecial(currentTime);
+      jll_info("Special button has been hit");
+      player_.handleSpecial();
       break;
   }
-  UpdateScreen(currentTime);
+  UpdateScreen();
 }
 
 void M5StickCUi::LongPress(uint8_t pin) {
   if (pin != kButtonPin) { return; }
   const Milliseconds currentTime = timeMillis();
-  jll_info("%u M5StickCUi LongPress", currentTime);
+  jll_info("M5StickCUi LongPress");
   HandleUnlockSequence(/*wasLongPress=*/true, currentTime);
   if (IsLocked()) { return; }
 
@@ -223,20 +223,19 @@ void M5StickCUi::LongPress(uint8_t pin) {
     case MenuMode::kBrightness: menuMode_ = MenuMode::kNext; break;
     case MenuMode::kSpecial: menuMode_ = MenuMode::kNext; break;
   }
-  UpdateScreen(currentTime);
+  UpdateScreen();
 }
 
 void M5StickCUi::HeldDown(uint8_t pin) {
   if (pin != kButtonPin) { return; }
-  const Milliseconds currentTime = timeMillis();
-  jll_info("%u M5StickCUi HeldDown", currentTime);
+  jll_info("M5StickCUi HeldDown");
   if (IsLocked()) {
     // Button was held too long, go back to beginning of unlock sequence.
     buttonLockState_ = 0;
     return;
   }
   menuMode_ = MenuMode::kSpecial;
-  UpdateScreen(currentTime);
+  UpdateScreen();
 }
 
 M5StickCUi::DisplayContents& M5StickCUi::DisplayContents::operator=(const DisplayContents& other) {

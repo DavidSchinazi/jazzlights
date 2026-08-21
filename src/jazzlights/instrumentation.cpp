@@ -117,7 +117,7 @@ void printInstrumentationInfo(Milliseconds currentTime) {
   if (tastStatuses == nullptr) { jll_fatal("Failed to allocate %zu*%zu", numTasks + 10, sizeof(TaskStatus_t)); }
   uint32_t totalRuntime = 0;
   numTasks = uxTaskGetSystemState(tastStatuses, numTasks, &totalRuntime);
-  jll_info("%u INSTRUMENTATION for %u tasks:", currentTime, numTasks);
+  jll_info("INSTRUMENTATION for %u tasks:", numTasks);
   for (UBaseType_t i = 0; i < numTasks; i++) {
     const TaskStatus_t& ts = tastStatuses[i];
     Measurement* m;

@@ -244,31 +244,31 @@ void AtomMatrixUi::HandleUnlockSequence(bool wasLongPress, Milliseconds currentT
 void AtomMatrixUi::ShortPress(uint8_t pin) {
   if (pin != kButtonPin) { return; }
   const Milliseconds currentTime = timeMillis();
-  jll_info("%u AtomMatrixUi ShortPress", currentTime);
+  jll_info("AtomMatrixUi ShortPress");
   HandleUnlockSequence(/*wasLongPress=*/false, currentTime);
   if (IsLocked()) { return; }
 
   // Act on current menu mode.
   switch (menuMode_) {
     case MenuMode::kNext:
-      jll_info("%u Next button has been hit", currentTime);
-      player_.stopSpecial(currentTime);
-      player_.stopLooping(currentTime);
+      jll_info("Next button has been hit");
+      player_.stopSpecial();
+      player_.stopLooping();
       player_.next(currentTime);
       break;
     case MenuMode::kPrevious:
-      jll_info("%u Back button has been hit", currentTime);
-      player_.stopSpecial(currentTime);
-      player_.loopOne(currentTime);
+      jll_info("Back button has been hit");
+      player_.stopSpecial();
+      player_.loopOne();
       break;
     case MenuMode::kBrightness:
       brightnessCursor_ = (brightnessCursor_ + 1 < kNumBrightnesses) ? brightnessCursor_ + 1 : 0;
-      jll_info("%u Brightness button has been hit %u", currentTime, kBrightnessList[brightnessCursor_]);
+      jll_info("Brightness button has been hit %u", kBrightnessList[brightnessCursor_]);
       player_.set_brightness(kBrightnessList[brightnessCursor_]);
       break;
     case MenuMode::kSpecial:
-      jll_info("%u Special button has been hit", currentTime);
-      player_.handleSpecial(currentTime);
+      jll_info("Special button has been hit");
+      player_.handleSpecial();
       break;
   }
 }
@@ -276,7 +276,7 @@ void AtomMatrixUi::ShortPress(uint8_t pin) {
 void AtomMatrixUi::LongPress(uint8_t pin) {
   if (pin != kButtonPin) { return; }
   const Milliseconds currentTime = timeMillis();
-  jll_info("%u AtomMatrixUi LongPress", currentTime);
+  jll_info("AtomMatrixUi LongPress");
   HandleUnlockSequence(/*wasLongPress=*/true, currentTime);
   if (IsLocked()) { return; }
 
@@ -291,8 +291,7 @@ void AtomMatrixUi::LongPress(uint8_t pin) {
 
 void AtomMatrixUi::HeldDown(uint8_t pin) {
   if (pin != kButtonPin) { return; }
-  const Milliseconds currentTime = timeMillis();
-  jll_info("%u AtomMatrixUi HeldDown", currentTime);
+  jll_info("AtomMatrixUi HeldDown");
   if (IsLocked()) {
     // Button was held too long, go back to beginning of unlock sequence.
     buttonLockState_ = 0;
@@ -304,7 +303,7 @@ void AtomMatrixUi::HeldDown(uint8_t pin) {
 bool AtomMatrixUi::ScreenMessage(const Milliseconds currentTime) {
   if (!displayingBootMessage_) { return false; }
   if (button_.IsPressed()) {
-    jll_info("%u Stopping boot message due to button press", currentTime);
+    jll_info("Stopping boot message due to button press");
     displayingBootMessage_ = false;
   } else {
     static Milliseconds bootMessageStartTime = -1;
@@ -325,7 +324,7 @@ bool AtomMatrixUi::ScreenMessage(const Milliseconds currentTime) {
 #endif  // CREATURE
     displayingBootMessage_ = displayText(BOOT_MESSAGE, screenLEDs_, textColor, CRGB::Black, offsetMillis);
     if (!displayingBootMessage_) {
-      jll_info("%u Done displaying boot message", currentTime);
+      jll_info("Done displaying boot message");
     } else {
       ScreenDisplay(currentTime);
     }
@@ -349,7 +348,7 @@ void AtomMatrixUi::RunLoop(Milliseconds currentTime) {
 
   // If idle-time expired, return to ‘locked’ state
   if (buttonLockState_ != 0 && currentTime - lockButtonTime_ >= 0) {
-    jll_info("%u Locking buttons", currentTime);
+    jll_info("Locking buttons");
     buttonLockState_ = 0;
   }
 

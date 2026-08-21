@@ -140,7 +140,7 @@ void KnownCreatures::AddCreature(uint32_t color, Milliseconds lastHeard, int rss
     new_creature.smoothedRssi = rssi;
     new_creature.isNearby = rssi >= kRssiNearbyThresholdUp;
     creatures_.push_back(new_creature);
-    jll_info("%u Adding new creature rgb=%06x rssi=%d %s %s partying", timeMillis(), static_cast<int>(color), rssi,
+    jll_info("Adding new creature rgb=%06x rssi=%d %s %s partying", static_cast<int>(color), rssi,
              (new_creature.isNearby ? "near" : "far"), (isPartying ? "is" : "not"));
   }
   std::sort(creatures_.begin(), creatures_.end(),
@@ -158,12 +158,10 @@ void KnownCreatures::update() {
                     (kRssiDecayFactor * (currentTime - creature.lastHeard - kRssiDecayDelayMs)) / ONE_SECOND;
     }
     if (decayedRssi >= kRssiNearbyThresholdUp && !creature.isNearby) {
-      jll_info("%u Adding nearby to creature rgb=%06x rssi=%d", currentTime, static_cast<int>(creature.color),
-               decayedRssi);
+      jll_info("Adding nearby to creature rgb=%06x rssi=%d", static_cast<int>(creature.color), decayedRssi);
       creature.isNearby = true;
     } else if (decayedRssi <= kRssiNearbyThresholdDown && creature.isNearby) {
-      jll_info("%u Removing nearby from creature rgb=%06x rssi=%d", currentTime, static_cast<int>(creature.color),
-               decayedRssi);
+      jll_info("Removing nearby from creature rgb=%06x rssi=%d", static_cast<int>(creature.color), decayedRssi);
       creature.isNearby = false;
     }
   }
@@ -172,7 +170,7 @@ void KnownCreatures::update() {
 KnownCreatures::KnownCreatures() {
   Creature ourselves;
   ourselves.color = ThisCreatureColor();
-  jll_info("%u Using color rgb=%06x for ourselves", timeMillis(), static_cast<int>(ourselves.color));
+  jll_info("Using color rgb=%06x for ourselves", static_cast<int>(ourselves.color));
   ourselves.lastHeard = -1;
   ourselves.lastHeardPartying = -1;
   ourselves.smoothedRssi = kRssiMax;
@@ -182,7 +180,7 @@ KnownCreatures::KnownCreatures() {
 
 void KnownCreatures::HandleHeardOrrery(Milliseconds currentTime) {
   lastHeardOrreryTime_ = currentTime;
-  jll_info("%u Heard the orrery", currentTime);
+  jll_info("Heard the orrery");
 }
 
 bool KnownCreatures::HasRecentlyHeardOrrery(Milliseconds currentTime) {

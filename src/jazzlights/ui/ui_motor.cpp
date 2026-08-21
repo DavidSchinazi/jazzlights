@@ -61,13 +61,13 @@ void CoreMotorUi::FinalSetup() {
   TouchButtonManager::Get()->MaybePaint();
 }
 
-void CoreMotorUi::RunLoop(Milliseconds currentTime) {
+void CoreMotorUi::RunLoop(Milliseconds /*currentTime*/) {
   M5.update();
   auto touchDetail = M5.Touch.getDetail();
   if (touchDetail.isPressed()) {
     int16_t px = touchDetail.x;
     int16_t py = touchDetail.y;
-    jll_debug("%u button pressed x=%d y=%d", currentTime, px, py);
+    jll_debug("button pressed x=%d y=%d", px, py);
     bool buttonPressed = TouchButtonManager::Get()->HandlePress(px, py);
   } else {
     TouchButtonManager::Get()->HandleIdle();

@@ -27,7 +27,7 @@ class Esp32BleNetwork : public Network {
   static Esp32BleNetwork* get();
 
   void setMessageToSend(const NetworkMessage& messageToSend, Milliseconds currentTime) override;
-  void disableSending(Milliseconds currentTime) override;
+  void disableSending() override;
   void triggerSendAsap(Milliseconds currentTime) override;
 
   // Get this device's BLE MAC address.
@@ -62,10 +62,10 @@ class Esp32BleNetwork : public Network {
   static constexpr size_t kMaxInnerPayloadLength = 29;
 
   explicit Esp32BleNetwork() {}
-  void StartScanning(Milliseconds currentTime);
-  void StopScanning(Milliseconds currentTime);
-  void StartAdvertising(Milliseconds currentTime);
-  void StopAdvertising(Milliseconds currentTime);
+  void StartScanning();
+  void StopScanning();
+  void StartAdvertising();
+  void StopAdvertising();
   void StartConfigureAdvertising(Milliseconds currentTime);
   void MaybeUpdateAdvertisingState(Milliseconds currentTime);
   void StopAdvertisingIn(Milliseconds duration);
@@ -105,7 +105,7 @@ class Esp32BleNetwork : public Network {
   static Esp32BleNetwork* get();
 
   void setMessageToSend(const NetworkMessage& /*messageToSend*/, Milliseconds /*currentTime*/) override {}
-  void disableSending(Milliseconds /*currentTime*/) override {}
+  void disableSending() override {}
   void triggerSendAsap(Milliseconds /*currentTime*/) override {}
   NetworkDeviceId getLocalDeviceId() const override { return NetworkDeviceId(); }
   NetworkType type() const override { return NetworkType::kBLE; }
@@ -116,7 +116,7 @@ class Esp32BleNetwork : public Network {
  protected:
   void runLoopImpl(Milliseconds /*currentTime*/) override {}
   NetworkStatus update(NetworkStatus /*status*/, Milliseconds /*currentTime*/) override { return CONNECTED; }
-  std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds currentTime) override { return {}; }
+  std::list<NetworkMessage> getReceivedMessagesImpl(Milliseconds /*currentTime*/) override { return {}; }
 };
 }  // namespace jazzlights
 #endif  // JL_DISABLE_BLUETOOTH

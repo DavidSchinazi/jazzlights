@@ -90,7 +90,7 @@ void Esp32EthernetNetwork::setMessageToSend(const NetworkMessage& messageToSend,
   messageToSend_ = messageToSend;
 }
 
-void Esp32EthernetNetwork::disableSending(Milliseconds /*currentTime*/) {
+void Esp32EthernetNetwork::disableSending() {
   const std::lock_guard<std::mutex> lock(mutex_);
   hasDataToSend_ = false;
 }
@@ -155,7 +155,7 @@ void Esp32EthernetNetwork::CreateSocket() {
     jll_fatal("Esp32EthernetNetwork setting nonblocking failed with error %d: %s", errno, strerror(errno));
   }
 
-  jll_info("%u Esp32EthernetNetwork created socket", timeMillis());
+  jll_info("Esp32EthernetNetwork created socket");
   // Notify our task that the socket is ready.
   Esp32EthernetNetworkEvent networkEvent(Esp32EthernetNetworkEvent::Type::kSocketReady);
   xQueueOverwrite(eventQueue_, &networkEvent);
@@ -163,7 +163,7 @@ void Esp32EthernetNetwork::CreateSocket() {
 
 void Esp32EthernetNetwork::CloseSocket() {
   if (socket_ < 0) { return; }
-  jll_info("%u Esp32EthernetNetwork closing socket", timeMillis());
+  jll_info("Esp32EthernetNetwork closing socket");
   close(socket_);
   socket_ = -1;
 }
@@ -191,16 +191,16 @@ void Esp32EthernetNetwork::HandleEvent(esp_event_base_t event_base, int32_t even
   } else if (event_base == IP_EVENT) {
     if (event_id == IP_EVENT_ETH_GOT_IP) {
       ip_event_got_ip_t* event = reinterpret_cast<ip_event_got_ip_t*>(event_data);
-      jll_info("%u Esp32EthernetNetwork got IP: " IPSTR, timeMillis(), IP2STR(&event->ip_info.ip));
+      jll_info("Esp32EthernetNetwork got IP: " IPSTR, IP2STR(&event->ip_info.ip));
       Esp32EthernetNetworkEvent networkEvent(Esp32EthernetNetworkEvent::Type::kGotIp);
       memcpy(&networkEvent.data.address, &event->ip_info.ip, sizeof(networkEvent.data.address));
       xQueueOverwrite(eventQueue_, &networkEvent);
     } else if (event_id == IP_EVENT_ETH_LOST_IP) {
-      jll_info("%u Esp32EthernetNetwork lost IP", timeMillis());
+      jll_info("Esp32EthernetNetwork lost IP");
       Esp32EthernetNetworkEvent networkEvent(Esp32EthernetNetworkEvent::Type::kLostIp);
       xQueueOverwrite(eventQueue_, &networkEvent);
     } else if (event_id == IP_EVENT_GOT_IP6) {
-      jll_info("%u Esp32EthernetNetwork got IPv6", timeMillis());
+      jll_info("Esp32EthernetNetwork got IPv6");
     } else {
       jll_info("Esp32EthernetNetwork handling IP_EVENT id %d", static_cast<int>(event_id));
     }
@@ -221,7 +221,7 @@ void Esp32EthernetNetwork::HandleNetworkEvent(const Esp32EthernetNetworkEvent& n
       jll_fatal("Unexpected Esp32EthernetNetworkEvent::Type::kReserved");
       break;
     case Esp32EthernetNetworkEvent::Type::kGotIp:
-      jll_info("%u Esp32EthernetNetwork queue got IP", timeMillis());
+      jll_info("Esp32EthernetNetwork queue got IP");
       {
         const std::lock_guard<std::mutex> lock(mutex_);
         memcpy(&localAddress_, &networkEvent.data.address, sizeof(localAddress_));
@@ -229,16 +229,14 @@ void Esp32EthernetNetwork::HandleNetworkEvent(const Esp32EthernetNetworkEvent& n
       CreateSocket();
       break;
     case Esp32EthernetNetworkEvent::Type::kLostIp:
-      jll_info("%u Esp32EthernetNetwork queue lost IP", timeMillis());
+      jll_info("Esp32EthernetNetwork queue lost IP");
       {
         const std::lock_guard<std::mutex> lock(mutex_);
         memset(&localAddress_, 0, sizeof(localAddress_));
       }
       CloseSocket();
       break;
-    case Esp32EthernetNetworkEvent::Type::kSocketReady:
-      jll_info("%u Esp32EthernetNetwork queue SocketReady", timeMillis());
-      break;
+    case Esp32EthernetNetworkEvent::Type::kSocketReady: jll_info("Esp32EthernetNetwork queue SocketReady"); break;
   }
 }
 
@@ -247,12 +245,12 @@ void Esp32EthernetNetwork::RunTask() {
   while (xQueueReceive(eventQueue_, &networkEvent, /*xTicksToWait=*/0)) { HandleNetworkEvent(networkEvent); }
   if (socket_ < 0) {
     // Wait until socket is created.
-    jll_info("%u Esp32EthernetNetwork waiting for queue event forever", timeMillis());
+    jll_info("Esp32EthernetNetwork waiting for queue event forever");
     BaseType_t queueResult = xQueueReceive(eventQueue_, &networkEvent, portMAX_DELAY);
     if (queueResult == pdTRUE) {
       HandleNetworkEvent(networkEvent);
     } else {
-      jll_info("%u Esp32EthernetNetwork timed out waiting for queue event", timeMillis());
+      jll_info("Esp32EthernetNetwork timed out waiting for queue event");
     }
     return;  // Restart loop.
   }
@@ -301,12 +299,12 @@ void Esp32EthernetNetwork::RunTask() {
       } else if (pollRes == 0) {  // Timed out.
                                   // Do nothing, just restart loop to write.
       } else {                    // Error.
-        jll_error("%u Esp32EthernetNetwork poll failed with error %d: %s", timeMillis(), errno, strerror(errno));
+        jll_error("Esp32EthernetNetwork poll failed with error %d: %s", errno, strerror(errno));
         CreateSocket();
       }
       return;  // Restart loop.
     }
-    jll_error("%u Esp32EthernetNetwork recvfrom failed with error %d: %s", timeMillis(), errno, strerror(errno));
+    jll_error("Esp32EthernetNetwork recvfrom failed with error %d: %s", errno, strerror(errno));
     CreateSocket();
     return;
   }
@@ -363,7 +361,7 @@ Esp32EthernetNetwork::Esp32EthernetNetwork()
   };
   esp_err_t spiInitErr = spi_bus_initialize(host_id, &buscfg, SPI_DMA_CH_AUTO);
   if (spiInitErr == ESP_ERR_INVALID_STATE) {
-    jll_error("%u Esp32EthernetNetwork - SPI bus already initialized", timeMillis());
+    jll_error("Esp32EthernetNetwork - SPI bus already initialized");
     spiInitErr = ESP_OK;
   }
   ESP_ERROR_CHECK(spiInitErr);
@@ -425,8 +423,7 @@ Esp32EthernetNetwork::Esp32EthernetNetwork()
     jll_fatal("Failed to create Esp32EthernetNetwork task");
   }
 
-  jll_info("%u Esp32EthernetNetwork initialized ethernet with MAC address " DEVICE_ID_FMT, timeMillis(),
-           DEVICE_ID_HEX(localDeviceId_));
+  jll_info("Esp32EthernetNetwork initialized ethernet with MAC address " DEVICE_ID_FMT, DEVICE_ID_HEX(localDeviceId_));
 }
 
 // static

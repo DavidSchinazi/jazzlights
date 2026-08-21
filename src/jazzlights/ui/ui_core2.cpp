@@ -321,23 +321,23 @@ class PatternControlMenu {
     if (state_ == State::kPattern) {
       State nextState = kSelectablePatterns[selectedPatternIndex_].nextState;
       if (nextState == State::kPalette || nextState == State::kColor) {
-        jll_info("%u Pattern %s confirmed now asking for %s", currentTime,
-                 kSelectablePatterns[selectedPatternIndex_].name, (nextState == State::kPalette ? "palette" : "color"));
+        jll_info("Pattern %s confirmed now asking for %s", kSelectablePatterns[selectedPatternIndex_].name,
+                 (nextState == State::kPalette ? "palette" : "color"));
         state_ = nextState;
         draw();
       } else {
-        jll_info("%u Pattern %s confirmed now playing", currentTime, kSelectablePatterns[selectedPatternIndex_].name);
-        player.stopForcePalette(currentTime);
+        jll_info("Pattern %s confirmed now playing", kSelectablePatterns[selectedPatternIndex_].name);
+        player.stopForcePalette();
         return setPattern(player, kSelectablePatterns[selectedPatternIndex_].bits, currentTime);
       }
     } else if (state_ == State::kPalette) {
-      jll_info("%u Pattern %s and palette %s confirmed now playing", currentTime,
-               kSelectablePatterns[selectedPatternIndex_].name, kPaletteNames[selectedPaletteIndex_]);
+      jll_info("Pattern %s and palette %s confirmed now playing", kSelectablePatterns[selectedPatternIndex_].name,
+               kPaletteNames[selectedPaletteIndex_]);
       return setPatternWithPalette(player, kSelectablePatterns[selectedPatternIndex_].bits, selectedPaletteIndex_,
                                    currentTime);
     } else if (state_ == State::kColor) {
-      jll_info("%u Pattern %s and color %s confirmed now playing", currentTime,
-               kSelectablePatterns[selectedPatternIndex_].name, kColorNames[selectedColorIndex_]);
+      jll_info("Pattern %s and color %s confirmed now playing", kSelectablePatterns[selectedPatternIndex_].name,
+               kColorNames[selectedColorIndex_]);
       return setPatternWithColor(player, kSelectablePatterns[selectedPatternIndex_].bits, selectedColorIndex_,
                                  currentTime);
     }
@@ -356,18 +356,18 @@ class PatternControlMenu {
     return true;
   }
   bool setPatternWithPalette(Player& player, PatternBits patternBits, uint8_t palette, Milliseconds currentTime) {
-    jll_info("%u setPatternWithPalette patternBits=%08x palette=%u combined=%08x", currentTime, patternBits, palette,
+    jll_info("setPatternWithPalette patternBits=%08x palette=%u combined=%08x", patternBits, palette,
              patternBits | (palette << 13));
     if (patternBits == kAllPalettePattern) {  // forced palette.
       player.forcePalette(palette, currentTime);
       state_ = State::kOff;
       return true;
     }
-    player.stopForcePalette(currentTime);
+    player.stopForcePalette();
     return setPattern(player, patternBits | (palette << 13), currentTime);
   }
   bool setPatternWithColor(Player& player, PatternBits patternBits, uint8_t color, Milliseconds currentTime) {
-    player.stopForcePalette(currentTime);
+    player.stopForcePalette();
     if (patternBits == 0x0700 && color == 0) {  // glow-black is just solid-black.
       return setPattern(player, 0, currentTime);
     }
@@ -499,7 +499,7 @@ class OrreryMenu {
       }
     }
   }
-  bool confirmPressed(Player& player, Milliseconds currentTime) {
+  bool confirmPressed(Player& player) {
     OrreryScene scene = static_cast<OrreryScene>(selectedSceneIndex_ + static_cast<int>(OrreryScene::kMinScene));
     player.SetOrrerySceneIdToSend(static_cast<OrrerySceneId>(scene));
     return true;
@@ -642,14 +642,14 @@ void HideSystemMenuButtons() {
   screenMinusButton->Hide();
 }
 
-void startMainMenu(Player& player, Milliseconds currentTime) {
+void startMainMenu(Player& player) {
   gScreenMode = ScreenMode::kMainMenu;
   TouchButtonManager::Get()->Redraw();
   DrawMainMenuButtons();
   core2ScreenRenderer.setEnabled(true);
 }
 
-void lockScreen(Milliseconds currentTime) {
+void lockScreen() {
   gLastScreenInteractionTime = -1;
   gScreenMode = ScreenMode::kOff;
   unlock1Button->Hide();
@@ -688,12 +688,12 @@ void confirmButtonPressed(Player& player, Milliseconds currentTime) {
   if (gScreenMode == ScreenMode::kPatternControlMenu) {
     if (gPatternControlMenu.confirmPressed(player, currentTime)) {
       HidePatternControlMenuButtons();
-      startMainMenu(player, currentTime);
+      startMainMenu(player);
     }
   } else if (gScreenMode == ScreenMode::kOrreryMenu) {
-    if (gOrreryMenu.confirmPressed(player, currentTime)) {
+    if (gOrreryMenu.confirmPressed(player)) {
       HideOrreryMenuButtons();
-      startMainMenu(player, currentTime);
+      startMainMenu(player);
     }
   }
 }
@@ -731,7 +731,7 @@ void Core2AwsUi::FinalSetup() {
   TouchButtonManager::Get()->MaybePaint();
   gCurrentPatternName = player_.currentEffectName();
   if (gScreenMode == ScreenMode::kMainMenu) {
-    startMainMenu(player_, timeMillis());
+    startMainMenu(player_);
   } else {
     HideMainMenuButtons();
     core2ScreenRenderer.setEnabled(false);
@@ -778,7 +778,7 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
     uint32_t totalPSRAM = ESP.getPsramSize();
     int16_t px = touchDetail.x;
     int16_t py = touchDetail.y;
-    jll_info("%u background pressed x=%d y=%d, free RAM %u/%u free PSRAM %u/%u", currentTime, px, py,
+    jll_info("background pressed x=%d y=%d, free RAM %u/%u free PSRAM %u/%u", px, py,
              static_cast<unsigned int>(freeHeap), static_cast<unsigned int>(totalHeap),
              static_cast<unsigned int>(freePSRAM), static_cast<unsigned int>(totalPSRAM));
     bool buttonPressed = TouchButtonManager::Get()->HandlePress(px, py);
@@ -789,20 +789,20 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
           gLastScreenInteractionTime = currentTime;
           SetCore2ScreenBrightness(onBrightness_);
 #if JL_BUTTON_LOCK
-          jll_info("%u starting unlock sequence from button press", currentTime);
+          jll_info("starting unlock sequence from button press");
           gScreenMode = ScreenMode::kLocked1;
           unlock2Button->Hide();
           unlock1Button->Draw();
 #else   // JL_BUTTON_LOCK
-          jll_info("%u unlocking from button press", currentTime);
-          startMainMenu(player_, currentTime);
+          jll_info("unlocking from button press");
+          startMainMenu(player_);
           gLastScreenInteractionTime = currentTime;
 #endif  // JL_BUTTON_LOCK
         } break;
         case ScreenMode::kMainMenu: {
           if (px < 160 && py < 120) {
             gScreenMode = ScreenMode::kFullScreenPattern;
-            jll_info("%u pattern screen pressed", currentTime);
+            jll_info("pattern screen pressed");
             HideMainMenuButtons();
             TouchButtonManager::Get()->Redraw();
             core2ScreenRenderer.setFullScreen(true);
@@ -810,9 +810,9 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
           }
         } break;
         case ScreenMode::kFullScreenPattern: {
-          jll_info("%u full screen pattern pressed", currentTime);
+          jll_info("full screen pattern pressed");
           core2ScreenRenderer.setFullScreen(false);
-          startMainMenu(player_, currentTime);
+          startMainMenu(player_);
           gLastScreenInteractionTime = currentTime;
         } break;
         case ScreenMode::kPatternControlMenu: {
@@ -822,11 +822,11 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
         case ScreenMode::kSystemMenu: {
         } break;
         case ScreenMode::kLocked1: {
-          jll_info("%u ignoring background press during unlock1", currentTime);
+          jll_info("ignoring background press during unlock1");
         } break;
         case ScreenMode::kLocked2: {
-          jll_info("%u locking screen due to background press while unlocking", currentTime);
-          lockScreen(currentTime);
+          jll_info("locking screen due to background press while unlocking");
+          lockScreen();
         } break;
       }
     }
@@ -834,7 +834,7 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
     TouchButtonManager::Get()->HandleIdle();
   }
   if (nextButton->JustReleased()) {
-    jll_info("%u next pressed", currentTime);
+    jll_info("next pressed");
     if (gScreenMode == ScreenMode::kMainMenu) {
       gLastScreenInteractionTime = currentTime;
       player_.next(currentTime);
@@ -842,41 +842,41 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
   }
   if (loopButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kMainMenu) {
-      jll_info("%u loop pressed", currentTime);
+      jll_info("loop pressed");
       gLastScreenInteractionTime = currentTime;
       if (player_.isLooping()) {
-        player_.stopLooping(currentTime);
+        player_.stopLooping();
         loopButton->SetLabelText("Loop");
         loopButton->SetHighlight(false);
       } else {
-        player_.loopOne(currentTime);
+        player_.loopOne();
         loopButton->SetLabelText("Looping");
         loopButton->SetHighlight(true);
       }
       loopButton->Draw(/*force=*/true);
     } else {
-      jll_info("%u ignoring loop pressed", currentTime);
+      jll_info("ignoring loop pressed");
     }
   }
   if (patternControlButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kMainMenu) {
-      jll_info("%u pattern control button pressed", currentTime);
+      jll_info("pattern control button pressed");
       patternControlButtonPressed(player_, currentTime);
     } else {
-      jll_info("%u ignoring pattern control button pressed", currentTime);
+      jll_info("ignoring pattern control button pressed");
     }
   }
   if (orreryButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kMainMenu) {
-      jll_info("%u orrery button pressed", currentTime);
+      jll_info("orrery button pressed");
       orreryButtonPressed(player_, currentTime);
     } else {
-      jll_info("%u ignoring orrery button pressed", currentTime);
+      jll_info("ignoring orrery button pressed");
     }
   }
   if (systemButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kMainMenu) {
-      jll_info("%u system button pressed", currentTime);
+      jll_info("system button pressed");
       gScreenMode = ScreenMode::kSystemMenu;
       gLastScreenInteractionTime = currentTime;
       HideMainMenuButtons();
@@ -885,137 +885,136 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
       DrawSystemMenuButtons();
       DrawSystemTextLines(currentTime);
     } else {
-      jll_info("%u ignoring system button pressed", currentTime);
+      jll_info("ignoring system button pressed");
     }
   }
   if (backButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kSystemMenu ||
         (gScreenMode == ScreenMode::kPatternControlMenu && gPatternControlMenu.backPressed()) ||
         gScreenMode == ScreenMode::kOrreryMenu) {
-      jll_info("%u back button pressed", currentTime);
+      jll_info("back button pressed");
       gLastScreenInteractionTime = currentTime;
       HidePatternControlMenuButtons();
       HideOrreryMenuButtons();
       HideSystemMenuButtons();
-      startMainMenu(player_, currentTime);
+      startMainMenu(player_);
     } else {
-      jll_info("%u ignoring back button pressed", currentTime);
+      jll_info("ignoring back button pressed");
     }
   }
   if (downButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kPatternControlMenu) {
-      jll_info("%u down button pressed", currentTime);
+      jll_info("down button pressed");
       gLastScreenInteractionTime = currentTime;
       gPatternControlMenu.downPressed();
     } else if (gScreenMode == ScreenMode::kOrreryMenu) {
-      jll_info("%u orrery down button pressed", currentTime);
+      jll_info("orrery down button pressed");
       gLastScreenInteractionTime = currentTime;
       gOrreryMenu.downPressed();
     } else {
-      jll_info("%u ignoring down button pressed", currentTime);
+      jll_info("ignoring down button pressed");
     }
   }
   if (upButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kPatternControlMenu) {
-      jll_info("%u up button pressed", currentTime);
+      jll_info("up button pressed");
       gLastScreenInteractionTime = currentTime;
       gPatternControlMenu.upPressed();
     } else if (gScreenMode == ScreenMode::kOrreryMenu) {
-      jll_info("%u orrery up button pressed", currentTime);
+      jll_info("orrery up button pressed");
       gLastScreenInteractionTime = currentTime;
       gOrreryMenu.upPressed();
     } else {
-      jll_info("%u ignoring up button pressed", currentTime);
+      jll_info("ignoring up button pressed");
     }
   }
   if (overrideButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kPatternControlMenu) {
-      jll_info("%u override button pressed", currentTime);
+      jll_info("override button pressed");
       gLastScreenInteractionTime = currentTime;
       gPatternControlMenu.overridePressed(player_, currentTime);
     } else {
-      jll_info("%u ignoring override button pressed", currentTime);
+      jll_info("ignoring override button pressed");
     }
   }
   if (confirmButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kPatternControlMenu || gScreenMode == ScreenMode::kOrreryMenu) {
-      jll_info("%u confirm button pressed", currentTime);
+      jll_info("confirm button pressed");
       confirmButtonPressed(player_, currentTime);
     } else {
-      jll_info("%u ignoring confirm button pressed", currentTime);
+      jll_info("ignoring confirm button pressed");
     }
   }
   if (lockButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kSystemMenu) {
-      jll_info("%u lock button pressed", currentTime);
-      lockScreen(currentTime);
+      jll_info("lock button pressed");
+      lockScreen();
     } else {
-      jll_info("%u ignoring lock button pressed", currentTime);
+      jll_info("ignoring lock button pressed");
     }
   }
   if (shutdownButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kSystemMenu) {
-      jll_info("%u shutdown button pressed", currentTime);
+      jll_info("shutdown button pressed");
       CorePowerOff();
     } else {
-      jll_info("%u ignoring shutdown button pressed", currentTime);
+      jll_info("ignoring shutdown button pressed");
     }
   }
   if (unlock2Button->JustReleased()) {
     gLastScreenInteractionTime = currentTime;
     if (gScreenMode == ScreenMode::kLocked2) {
-      jll_info("%u unlock2 button pressed", currentTime);
+      jll_info("unlock2 button pressed");
       unlock2Button->Hide();
-      startMainMenu(player_, currentTime);
+      startMainMenu(player_);
     } else if (gScreenMode == ScreenMode::kMainMenu) {
-      jll_info("%u unlock2 button unexpectedly pressed in main menu, treating as pattern control button", currentTime);
+      jll_info("unlock2 button unexpectedly pressed in main menu, treating as pattern control button");
       patternControlButtonPressed(player_, currentTime);
     } else if (gScreenMode == ScreenMode::kPatternControlMenu) {
-      jll_info("%u unlock2 button unexpectedly pressed in pattern control menu, treating as confirm button",
-               currentTime);
+      jll_info("unlock2 button unexpectedly pressed in pattern control menu, treating as confirm button");
       confirmButtonPressed(player_, currentTime);
     } else if (gScreenMode == ScreenMode::kSystemMenu) {
-      jll_info("%u unlock2 button unexpectedly pressed in system menu, treating as shutdown button", currentTime);
+      jll_info("unlock2 button unexpectedly pressed in system menu, treating as shutdown button");
       CorePowerOff();
     } else {
-      jll_info("%u ignoring unlock2 button pressed", currentTime);
+      jll_info("ignoring unlock2 button pressed");
     }
   }
   if (unlock1Button->JustReleased()) {
     gLastScreenInteractionTime = currentTime;
     if (gScreenMode == ScreenMode::kLocked1) {
-      jll_info("%u unlock1 button pressed", currentTime);
+      jll_info("unlock1 button pressed");
       gScreenMode = ScreenMode::kLocked2;
       unlock1Button->Hide();
       TouchButtonManager::Get()->Redraw();
       unlock2Button->Draw();
     } else if (gScreenMode == ScreenMode::kMainMenu) {
-      jll_info("%u unlock1 button unexpectedly pressed in main menu, treating as next button", currentTime);
+      jll_info("unlock1 button unexpectedly pressed in main menu, treating as next button");
       player_.next(currentTime);
     } else {
-      jll_info("%u ignoring unlock1 button pressed", currentTime);
+      jll_info("ignoring unlock1 button pressed");
     }
   }
   if (ledPlusButton->JustReleased()) {
-    jll_info("%u ledPlusButton button pressed", currentTime);
+    jll_info("ledPlusButton button pressed");
     if (ledBrightness_ < 255 && gScreenMode == ScreenMode::kSystemMenu) {
       ledBrightness_++;
-      jll_info("%u setting LED brightness to %u", currentTime, ledBrightness_);
+      jll_info("setting LED brightness to %u", ledBrightness_);
       player_.set_brightness(ledBrightness_);
       DrawSystemTextLines(currentTime);
     }
   }
   if (ledMinusButton->JustReleased()) {
-    jll_info("%u ledMinusButton button pressed", currentTime);
+    jll_info("ledMinusButton button pressed");
     if (ledBrightness_ > 0 && gScreenMode == ScreenMode::kSystemMenu) {
       ledBrightness_--;
-      jll_info("%u setting LED brightness to %u", currentTime, ledBrightness_);
+      jll_info("setting LED brightness to %u", ledBrightness_);
       player_.set_brightness(ledBrightness_);
       DrawSystemTextLines(currentTime);
     }
   }
   if (screenPlusButton->JustReleased()) {
-    jll_info("%u screenPlusButton button pressed", currentTime);
+    jll_info("screenPlusButton button pressed");
     if (onBrightness_ < kMaxOnBrightness && gScreenMode == ScreenMode::kSystemMenu) {
       onBrightness_++;
       SetCore2ScreenBrightness(onBrightness_);
@@ -1023,7 +1022,7 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
     }
   }
   if (screenMinusButton->JustReleased()) {
-    jll_info("%u screenMinusButton button pressed", currentTime);
+    jll_info("screenMinusButton button pressed");
     if (onBrightness_ > kMinOnBrightness && gScreenMode == ScreenMode::kSystemMenu) {
       onBrightness_--;
       SetCore2ScreenBrightness(onBrightness_);
@@ -1035,7 +1034,7 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
   if (patternName != gCurrentPatternName) {
     gCurrentPatternName = patternName;
     if (gScreenMode == ScreenMode::kMainMenu) {
-      jll_info("%u drawing new pattern name in pattern control button", currentTime);
+      jll_info("drawing new pattern name in pattern control button");
       patternControlButton->Draw(/*force=*/true);
     }
   }
@@ -1044,8 +1043,8 @@ void Core2AwsUi::RunLoop(Milliseconds currentTime) {
     Milliseconds lockTime = kLockDelay;
     if (gScreenMode == ScreenMode::kLocked1 || gScreenMode == ScreenMode::kLocked2) { lockTime = kUnlockingTime; }
     if (currentTime - gLastScreenInteractionTime > lockTime) {
-      jll_info("%u Locking screen due to inactivity", currentTime);
-      lockScreen(currentTime);
+      jll_info("Locking screen due to inactivity");
+      lockScreen();
     }
   }
 #endif  // JL_BUTTON_LOCK
@@ -1055,7 +1054,7 @@ void Core2AwsUi::OnOrrerySceneId(std::optional<OrrerySceneId> orrerySceneId) {
   if (!orrerySceneId.has_value()) { return; }
   OrreryScene scene = static_cast<OrreryScene>(*orrerySceneId);
   if (scene == gOrreryScene) { return; }
-  jll_info("%u Received new orrery scene %d", timeMillis(), static_cast<int>(scene));
+  jll_info("Received new orrery scene %d", static_cast<int>(scene));
   gOrreryScene = scene;
   if (gScreenMode == ScreenMode::kMainMenu) { orreryButton->Draw(/*force=*/true); }
 }

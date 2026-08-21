@@ -32,13 +32,13 @@ StepperMotor::StepperMotor(int enablePin, int directionPin, int stepPin)
 void StepperMotor::SetSpeed(std::optional<int32_t> frequencyHz) {
   if (Setup(frequencyHz)) { return; }
   if (!frequencyHz.has_value()) {
-    jll_motor_debug("%u Disabling motor", timeMillis());
+    jll_motor_debug("Disabling motor");
     SetEnabled(false);
     if (timer_) { ESP_ERROR_CHECK(mcpwm_timer_start_stop(timer_, MCPWM_TIMER_STOP_EMPTY)); }
     return;
   }
   int32_t freq = *frequencyHz;
-  jll_motor_debug("%u Setting motor speed to %lldHz", timeMillis(), static_cast<int64_t>(freq));
+  jll_motor_debug("Setting motor speed to %lldHz", static_cast<int64_t>(freq));
   uint32_t halfPeriod;
   if (freq > 0) {
     SetDirection(true);
@@ -63,9 +63,9 @@ void StepperMotor::SetSpeed(std::optional<int32_t> frequencyHz) {
 bool StepperMotor::Setup(std::optional<int32_t> frequencyHz) {
   if (isSetup_) { return false; }
   if (!frequencyHz.has_value()) {
-    jll_info("%u Setting up motor as disabled", timeMillis());
+    jll_info("Setting up motor as disabled");
   } else {
-    jll_info("%u Setting up motor at %lldHz", timeMillis(), static_cast<int64_t>(*frequencyHz));
+    jll_info("Setting up motor at %lldHz", static_cast<int64_t>(*frequencyHz));
   }
   isSetup_ = true;
   gpio_config_t directionConf = {
@@ -147,7 +147,7 @@ bool StepperMotor::Setup(std::optional<int32_t> frequencyHz) {
 void StepperMotor::SetEnabled(bool enabled) {
   if (enablePin_ == GPIO_NUM_NC) { return; }
   if (enabled == lastEnabled_) { return; }
-  jll_motor_debug("%u Setting enable pin %d to %u", timeMillis(), enablePin_, (enabled ? 0 : 1));
+  jll_motor_debug("Setting enable pin %d to %u", enablePin_, (enabled ? 0 : 1));
   ESP_ERROR_CHECK(gpio_set_level(enablePin_, (enabled ? 0 : 1)));
   lastEnabled_ = enabled;
 }
@@ -157,7 +157,7 @@ void StepperMotor::SetDirection(bool direction) {
   if (direction == lastDirection_) { return; }
   unsigned int pinValue = direction ? 1 : 0;
   if (runBackwards_) { pinValue = !pinValue; }
-  jll_motor_debug("%u Setting direction pin %d to %u", timeMillis(), directionPin_, pinValue);
+  jll_motor_debug("Setting direction pin %d to %u", directionPin_, pinValue);
   ESP_ERROR_CHECK(gpio_set_level(directionPin_, pinValue));
   lastDirection_ = direction;
 }

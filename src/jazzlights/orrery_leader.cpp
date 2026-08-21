@@ -57,14 +57,14 @@ void OrreryLeader::OnOverriddenPattern(std::optional<PatternBits> pattern) {
   if (pattern == patternOverride_) { return; }
   patternOverride_ = pattern;
   if (patternOverride_.has_value()) {
-    jll_info("%u OrreryLeader overriding pattern with 0x%08x", timeMillis(), *patternOverride_);
+    jll_info("OrreryLeader overriding pattern with 0x%08x", *patternOverride_);
     for (int i = 0; i < kNumPlanets; i++) {
       Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
       patternBeforeOverride_[planet] = GetLedPattern(planet);
     }
     SetLedPattern(Planet::All, *patternOverride_);
   } else {
-    jll_info("%u OrreryLeader disabling pattern override", timeMillis());
+    jll_info("OrreryLeader disabling pattern override");
     for (int i = 0; i < kNumPlanets; i++) {
       std::optional<uint32_t> ledPattern;
       Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
@@ -196,7 +196,7 @@ void OrreryLeader::SetScene(OrreryScene scene) {
 
 void OrreryLeader::SetSpeed(Planet planet, int32_t speed) {
   if (planet == Planet::All) {
-    jll_info("%u OrreryLeader setting all planets milli-RPM to %" PRId32, timeMillis(), speed);
+    jll_info("OrreryLeader setting all planets milli-RPM to %" PRId32, speed);
     OrreryMessage msg;
     msg.speed = speed;
     SendBroadcastMessage(msg);
@@ -210,7 +210,7 @@ void OrreryLeader::SetSpeed(Planet planet, int32_t speed) {
     OrreryMessage& msg = it->second;
     if (!msg.speed.has_value() || *msg.speed != speed) {
       msg.speed = speed;
-      jll_info("%u OrreryLeader setting planet %s milli-RPM to %" PRId32, timeMillis(), GetPlanetName(planet), speed);
+      jll_info("OrreryLeader setting planet %s milli-RPM to %" PRId32, GetPlanetName(planet), speed);
       SendMessage(planet);
     }
   }
@@ -233,9 +233,9 @@ std::optional<int32_t> OrreryLeader::GetReportedSpeed(Planet planet) const {
 void OrreryLeader::SetPosition(Planet planet, std::optional<uint32_t> position) {
   if (planet == Planet::All) {
     if (position.has_value()) {
-      jll_info("%u OrreryLeader setting all planets position to %" PRIu32, timeMillis(), *position);
+      jll_info("OrreryLeader setting all planets position to %" PRIu32, *position);
     } else {
-      jll_info("%u OrreryLeader unsetting all planets position", timeMillis());
+      jll_info("OrreryLeader unsetting all planets position");
     }
     OrreryMessage msg;
     msg.position = position.has_value() ? *position : kOrreryPositionNone;
@@ -252,10 +252,9 @@ void OrreryLeader::SetPosition(Planet planet, std::optional<uint32_t> position) 
     if (msg.position != wirePosition) {
       msg.position = wirePosition;
       if (position.has_value()) {
-        jll_info("%u OrreryLeader setting planet %s position to %" PRIu32, timeMillis(), GetPlanetName(planet),
-                 *position);
+        jll_info("OrreryLeader setting planet %s position to %" PRIu32, GetPlanetName(planet), *position);
       } else {
-        jll_info("%u OrreryLeader unsetting planet %s position", timeMillis(), GetPlanetName(planet));
+        jll_info("OrreryLeader unsetting planet %s position", GetPlanetName(planet));
       }
       SendMessage(planet);
     }
@@ -287,7 +286,7 @@ std::optional<uint32_t> OrreryLeader::GetCalibration(Planet planet) const {
 
 void OrreryLeader::SetBrightness(Planet planet, uint8_t brightness) {
   if (planet == Planet::All) {
-    jll_info("%u OrreryLeader setting all planets brightness to %u", timeMillis(), brightness);
+    jll_info("OrreryLeader setting all planets brightness to %u", brightness);
     OrreryMessage msg;
     msg.ledBrightness = brightness;
     SendBroadcastMessage(msg);
@@ -301,7 +300,7 @@ void OrreryLeader::SetBrightness(Planet planet, uint8_t brightness) {
     OrreryMessage& msg = it->second;
     if (!msg.ledBrightness.has_value() || *msg.ledBrightness != brightness) {
       msg.ledBrightness = brightness;
-      jll_info("%u OrreryLeader setting planet %s brightness to %u", timeMillis(), GetPlanetName(planet), brightness);
+      jll_info("OrreryLeader setting planet %s brightness to %u", GetPlanetName(planet), brightness);
       SendMessage(planet);
     }
   }
@@ -317,7 +316,7 @@ uint8_t OrreryLeader::GetBrightness(Planet planet) const {
 void OrreryLeader::SetLedPattern(Planet planet, uint32_t ledPattern) {
   if (patternOverride_.has_value()) { ledPattern = *patternOverride_; }
   if (planet == Planet::All) {
-    jll_info("%u OrreryLeader setting all planets LED pattern to 0x%08" PRIx32, timeMillis(), ledPattern);
+    jll_info("OrreryLeader setting all planets LED pattern to 0x%08" PRIx32, ledPattern);
     OrreryMessage msg;
     msg.ledPattern = ledPattern;
     SendBroadcastMessage(msg);
@@ -331,8 +330,7 @@ void OrreryLeader::SetLedPattern(Planet planet, uint32_t ledPattern) {
     OrreryMessage& msg = it->second;
     if (!msg.ledPattern.has_value() || *msg.ledPattern != ledPattern) {
       msg.ledPattern = ledPattern;
-      jll_info("%u OrreryLeader setting planet %s LED pattern to 0x%08" PRIx32, timeMillis(), GetPlanetName(planet),
-               ledPattern);
+      jll_info("OrreryLeader setting planet %s LED pattern to 0x%08" PRIx32, GetPlanetName(planet), ledPattern);
       SendMessage(planet);
     }
   }
@@ -422,12 +420,12 @@ void OrreryLeader::RunLoop(Milliseconds currentTime) {
     const std::vector<OrreryScene> repertoire = {OrreryScene::Silly, OrreryScene::MercuryRetrograde,
                                                  OrreryScene::Align};
     OrreryScene nextScene = repertoire[UnpredictableRandom::GetNumberBetween(0, repertoire.size() - 1)];
-    jll_info("%u Randomly selecting next scene %s", currentTime, OrrerySceneToString(nextScene));
+    jll_info("Randomly selecting next scene %s", OrrerySceneToString(nextScene));
     SetScene(nextScene);
   }
 
   if (scene_ == OrreryScene::Silly && currentTime - sceneStartTime_ > 5 * 60 * 1000) {
-    jll_info("%u Silly scene ending after 5 minutes, starting Realistic scene", currentTime);
+    jll_info("Silly scene ending after 5 minutes, starting Realistic scene");
     SetScene(OrreryScene::Realistic);
   }
 
@@ -435,19 +433,19 @@ void OrreryLeader::RunLoop(Milliseconds currentTime) {
        scene_ == OrreryScene::FocusMars || scene_ == OrreryScene::FocusJupiter || scene_ == OrreryScene::FocusSaturn ||
        scene_ == OrreryScene::FocusUranus || scene_ == OrreryScene::FocusNeptune || scene_ == OrreryScene::FocusSun) &&
       currentTime - sceneStartTime_ > 60 * 1000) {
-    jll_info("%u Focus scene ending after 1 minute, starting Realistic scene", currentTime);
+    jll_info("Focus scene ending after 1 minute, starting Realistic scene");
     SetBrightness(Planet::All, kDefaultPlanetBrightness);
     SetScene(OrreryScene::Realistic);
   }
 
   if (scene_ == OrreryScene::MercuryRetrograde && currentTime - sceneStartTime_ > 60 * 1000) {
-    jll_info("%u MercuryRetrograde scene ending after 1 minute, starting Realistic scene", currentTime);
+    jll_info("MercuryRetrograde scene ending after 1 minute, starting Realistic scene");
     SetScene(OrreryScene::Realistic);
   }
 
   if (scene_ == OrreryScene::Align) {
     if (currentTime - sceneStartTime_ > 2 * 60 * 1000) {
-      jll_info("%u Align scene timing out after 2 minutes, starting Realistic scene", currentTime);
+      jll_info("Align scene timing out after 2 minutes, starting Realistic scene");
       SetScene(OrreryScene::Realistic);
     } else if (waitingForAlignment_) {
       bool allArrived = true;
@@ -468,7 +466,7 @@ void OrreryLeader::RunLoop(Milliseconds currentTime) {
         }
       }
       if (allArrived) {
-        jll_info("%u Planets have aligned, starting one revolution", currentTime);
+        jll_info("Planets have aligned, starting one revolution");
         waitingForAlignment_ = false;
         SetPosition(Planet::All, std::nullopt);
         SetSpeed(Planet::All, 1000);
@@ -493,7 +491,7 @@ void OrreryLeader::RunLoop(Milliseconds currentTime) {
         }
       }
       if (allRevolutionCompleted) {
-        jll_info("%u All planets have completed one revolution, starting Realistic scene", currentTime);
+        jll_info("All planets have completed one revolution, starting Realistic scene");
         SetScene(OrreryScene::Realistic);
       }
     }
@@ -501,7 +499,7 @@ void OrreryLeader::RunLoop(Milliseconds currentTime) {
 }
 
 void OrreryLeader::StateChanged(uint8_t pin, bool isClosed) {
-  jll_info("%u switch on pin %u is now %s", timeMillis(), pin, (isClosed ? "closed" : "open"));
+  jll_info("switch on pin %u is now %s", pin, (isClosed ? "closed" : "open"));
   if (pin == kSwitch1Pin) {
     HandleSwitch1(isClosed);
   } else if (pin == kSwitch3Pin) {
@@ -548,12 +546,10 @@ void OrreryLeader::OnOrrerySceneId(std::optional<OrrerySceneId> orrerySceneId) {
   if (receivedSceneActionTime_ >= 0 && currentTime - receivedSceneActionTime_ < 2000 &&
       *orrerySceneId == receivedOrrerySceneId_) {
     // We already acted on this scene recently, ignore this command.
-    jll_info("%u Ignoring received scene %s", currentTime,
-             OrrerySceneToString(static_cast<OrreryScene>(*orrerySceneId)));
+    jll_info("Ignoring received scene %s", OrrerySceneToString(static_cast<OrreryScene>(*orrerySceneId)));
     return;
   }
-  jll_info("%u Acting on received scene %s", currentTime,
-           OrrerySceneToString(static_cast<OrreryScene>(*orrerySceneId)));
+  jll_info("Acting on received scene %s", OrrerySceneToString(static_cast<OrreryScene>(*orrerySceneId)));
   receivedSceneActionTime_ = currentTime;
   receivedOrrerySceneId_ = *orrerySceneId;
   SetScene(static_cast<OrreryScene>(*orrerySceneId));

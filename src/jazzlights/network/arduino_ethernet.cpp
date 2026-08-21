@@ -39,13 +39,13 @@ std::string EthernetHardwareStatusToString(EthernetHardwareStatus hwStatus) {
 NetworkDeviceId ArduinoEthernetNetwork::QueryLocalDeviceId() {
   uint8_t wifiMacAddress[6] = {};
   uint64_t efuseMac64 = ESP.getEfuseMac();
-  if (efuseMac64 == 0) { jll_fatal("%u Wi-Fi failed to read MAC address from EFUSE", timeMillis()); }
+  if (efuseMac64 == 0) { jll_fatal("Wi-Fi failed to read MAC address from EFUSE"); }
   memcpy(wifiMacAddress, &efuseMac64, sizeof(wifiMacAddress));
   return NetworkDeviceId(wifiMacAddress).PlusOne();
 }
 
 ArduinoEthernetNetwork::ArduinoEthernetNetwork() {
-  jll_info("%u Starting Ethernet with MAC address " DEVICE_ID_FMT, timeMillis(), DEVICE_ID_HEX(localDeviceId_));
+  jll_info("Starting Ethernet with MAC address " DEVICE_ID_FMT, DEVICE_ID_HEX(localDeviceId_));
 #if JL_CORE2AWS_ETHERNET
   // These pins work with the M5Stack Core2AWS connected to the Ethernet W5500 module.
   // https://docs.m5stack.com/en/core/core2_for_aws
@@ -78,26 +78,25 @@ ArduinoEthernetNetwork* ArduinoEthernetNetwork::get() {
   return &sSingleton;
 }
 
-NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status, Milliseconds currentTime) {
+NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status, Milliseconds /*currentTime*/) {
   switch (status) {
     case INITIALIZING: {
       EthernetHardwareStatus hwStatus = Ethernet.hardwareStatus();
       if (hwStatus == EthernetNoHardware) {
-        jll_error("%u Ethernet failed to communicate with hardware", currentTime);
+        jll_error("Ethernet failed to communicate with hardware");
         // In some cases this will fail because the W5500 chip hasn't booted yet.
         // Currently, this is fixed by the automatic reconnect attempt 10s later.
         // TODO try much sooner to avoid waiting 10s.
         return CONNECTION_FAILED;
       }
-      jll_info("%u Ethernet detected hardware status %s with MAC address " DEVICE_ID_FMT, currentTime,
+      jll_info("Ethernet detected hardware status %s with MAC address " DEVICE_ID_FMT,
                EthernetHardwareStatusToString(hwStatus).c_str(), DEVICE_ID_HEX(localDeviceId_));
       return CONNECTING;
     }
     case CONNECTING: {
       EthernetLinkStatus linkStatus = Ethernet.linkStatus();
       if (linkStatus != LinkON) {
-        jll_error("%u Ethernet is not plugged in (state %s)", currentTime,
-                  EthernetLinkStatusToString(linkStatus).c_str());
+        jll_error("Ethernet is not plugged in (state %s)", EthernetLinkStatusToString(linkStatus).c_str());
         return CONNECTION_FAILED;
       }
       constexpr unsigned long kDhcpTimeoutMs = 5000;
@@ -108,13 +107,13 @@ NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status, Milliseconds 
       localDeviceId_.writeTo(macAddress);
       int beginRes = Ethernet.begin(macAddress, kDhcpTimeoutMs, kResponseTimeoutMs);
       if (beginRes == 0) {
-        jll_error("%u Ethernet DHCP failed", currentTime);
+        jll_error("Ethernet DHCP failed");
         // TODO add support for IPv4 link-local addresses.
         return CONNECTION_FAILED;
       }
       IPAddress ip = Ethernet.localIP();
-      jll_info("%u Ethernet DHCP provided IP: %d.%d.%d.%d, bound to port %d, multicast group: %s", currentTime, ip[0],
-               ip[1], ip[2], ip[3], port_, mcastAddr_);
+      jll_info("Ethernet DHCP provided IP: %d.%d.%d.%d, bound to port %d, multicast group: %s", ip[0], ip[1], ip[2],
+               ip[3], port_, mcastAddr_);
       IPAddress mcaddr;
       mcaddr.fromString(mcastAddr_);
       udp_.beginMulticast(mcaddr, port_);

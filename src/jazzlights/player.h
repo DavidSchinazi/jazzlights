@@ -47,12 +47,12 @@ class Player {
   /**
    *  Loop current effect forever.
    */
-  void loopOne(Milliseconds currentTime);
+  void loopOne();
 
   /**
    *  Stop looping current effect forever.
    */
-  void stopLooping(Milliseconds currentTime);
+  void stopLooping();
 
   /**
    *  Returns whether we are looping current effect forever.
@@ -72,7 +72,7 @@ class Player {
   /**
    *  Cancels previous call to forcePalette.
    */
-  void stopForcePalette(Milliseconds currentTime);
+  void stopForcePalette();
 
   /**
    * Returns whether the palette is currently forced.
@@ -100,8 +100,8 @@ class Player {
    */
   const Box& bounds() const { return frame_.viewport; }
 
-  void handleSpecial(Milliseconds currentTime);
-  void stopSpecial(Milliseconds currentTime);
+  void handleSpecial();
+  void stopSpecial();
   size_t getSpecial() const { return specialMode_; }
 #if JL_IS_CONFIG(FAIRY_WAND)
   void triggerPatternOverride(Milliseconds currentTime);

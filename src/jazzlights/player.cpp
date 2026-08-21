@@ -306,7 +306,7 @@ Player& Player::addStrand(const Layout& l, Renderer& r) {
 }
 
 Player& Player::connect(Network* n) {
-  jll_info("%u Connecting network %s", timeMillis(), NetworkTypeToString(n->type()));
+  jll_info("Connecting network %s", NetworkTypeToString(n->type()));
   networks_.push_back(n);
   ready_ = false;
   return *this;
@@ -347,13 +347,13 @@ void Player::begin() {
   currentLeader_ = localDeviceId_;
   Milliseconds currentTime = timeMillis();
   jll_info(
-      "%u Starting JazzLights player %s; "
+      "Starting JazzLights player %s; "
       "basePrecedence %u precedenceGain %u strands: %zu%s, "
       "pixels: %zu, %s " DEVICE_ID_FMT " w %f h %f ox %f oy %f xv %zu yv %zu",
-      currentTime, BOOT_MESSAGE, basePrecedence_, precedenceGain_, strands_.size(),
-      strands_.empty() ? " (CONTROLLER ONLY!)" : "", frame_.pixelCount, !networks_.empty() ? "networked" : "standalone",
-      DEVICE_ID_HEX(localDeviceId_), frame_.viewport.size.width, frame_.viewport.size.height, frame_.viewport.origin.x,
-      frame_.viewport.origin.y, xyIndexStore_.xValuesCount(), xyIndexStore_.yValuesCount());
+      BOOT_MESSAGE, basePrecedence_, precedenceGain_, strands_.size(), strands_.empty() ? " (CONTROLLER ONLY!)" : "",
+      frame_.pixelCount, !networks_.empty() ? "networked" : "standalone", DEVICE_ID_HEX(localDeviceId_),
+      frame_.viewport.size.width, frame_.viewport.size.height, frame_.viewport.origin.x, frame_.viewport.origin.y,
+      xyIndexStore_.xValuesCount(), xyIndexStore_.yValuesCount());
 
   ready_ = true;
 
@@ -366,7 +366,7 @@ void Player::begin() {
   currentPattern_ = enforceForcedPalette(kStartingPattern);
   nextPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
 #if defined(JL_START_SPECIAL) && JL_START_SPECIAL
-  handleSpecial(currentTime);
+  handleSpecial();
 #elif JL_IS_CONFIG(XMAS_TREE)
   currentPattern_ = kWarmPattern;
   nextPattern_ = currentPattern_;
@@ -394,13 +394,13 @@ void Player::updatePrecedence(Precedence basePrecedence, Precedence precedenceGa
   if (basePrecedence == basePrecedence_ && precedenceGain == precedenceGain_) { return; }
   basePrecedence_ = basePrecedence;
   precedenceGain_ = precedenceGain;
-  jll_info("%u updating precedence to base %u gain %u", currentTime, basePrecedence, precedenceGain);
+  jll_info("updating precedence to base %u gain %u", basePrecedence, precedenceGain);
   if (!ready_) { return; }
   checkLeaderAndPattern(currentTime);
   for (Network* network : networks_) { network->triggerSendAsap(currentTime); }
 }
 
-void Player::handleSpecial(Milliseconds currentTime) {
+void Player::handleSpecial() {
   static constexpr PatternBits kSpecialPatternBits[] = {
       0x00001000,  // calibration.
       0x00000000,  // black.
@@ -414,12 +414,12 @@ void Player::handleSpecial(Milliseconds currentTime) {
   currentPattern_ = kSpecialPatternBits[specialMode_ - 1];
   nextPattern_ = currentPattern_;
   loop_ = true;
-  jll_info("%u Starting special mode %zu", currentTime, specialMode_);
+  jll_info("Starting special mode %zu", specialMode_);
 }
 
-void Player::stopSpecial(Milliseconds currentTime) {
+void Player::stopSpecial() {
   if (specialMode_ == 0) { return; }
-  jll_info("%u Stopping special mode", currentTime);
+  jll_info("Stopping special mode");
   specialMode_ = 0;
   currentPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
   nextPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
@@ -427,7 +427,7 @@ void Player::stopSpecial(Milliseconds currentTime) {
 
 #if JL_IS_CONFIG(FAIRY_WAND)
 void Player::triggerPatternOverride(Milliseconds currentTime) {
-  jll_info("%u Triggering pattern override", currentTime);
+  jll_info("Triggering pattern override");
   overridePatternStartTime_ = currentTime;
 }
 #endif  // FAIRY_WAND
@@ -445,13 +445,13 @@ bool Player::render(Milliseconds currentTime) {
       } else if (!sound_reactive_suppressed_ && currentTime - squelch_start_time_ > 30000) {
         sound_reactive_suppressed_ = true;
         shouldBeginPattern_ = true;
-        jll_info("%u Auto sound reactive suppressed due to 30s squelch", currentTime);
+        jll_info("Auto sound reactive suppressed due to 30s squelch");
       }
     } else {
       if (sound_reactive_suppressed_) {
         sound_reactive_suppressed_ = false;
         shouldBeginPattern_ = true;
-        jll_info("%u Auto sound reactive resumed", currentTime);
+        jll_info("Auto sound reactive resumed");
       }
       squelch_start_time_ = -1;
     }
@@ -520,16 +520,16 @@ bool Player::render(Milliseconds currentTime) {
       // aligned_alloc required the allocation size to be a multiple of the alignment.
       effectContextSize += kMaxStateAlignment - (effectContextSize % kMaxStateAlignment);
     }
-    jll_info("%u realloc context size from %zu to %zu (%s w %f h %f xv %zu yv %zu)", currentTime, effectContextSize_,
-             effectContextSize, effect->effectName(frame_.pattern).c_str(), frame_.viewport.size.width,
-             frame_.viewport.size.height, xyIndexStore_.xValuesCount(), xyIndexStore_.yValuesCount());
+    jll_info("realloc context size from %zu to %zu (%s w %f h %f xv %zu yv %zu)", effectContextSize_, effectContextSize,
+             effect->effectName(frame_.pattern).c_str(), frame_.viewport.size.width, frame_.viewport.size.height,
+             xyIndexStore_.xValuesCount(), xyIndexStore_.yValuesCount());
     // realloc doesn't support alignment requirements, so we need to use aligned_alloc and copy the data ourselves.
     size_t previousContextSize = effectContextSize_;
     void* previousContext = effectContext_;
     effectContextSize_ = effectContextSize;
     effectContext_ = aligned_alloc(kMaxStateAlignment, effectContextSize_);
     if (effectContext_ == nullptr) {
-      jll_fatal("%u aligned_alloc(%zu, %zu) failed", currentTime, kMaxStateAlignment, effectContextSize_);
+      jll_fatal("aligned_alloc(%zu, %zu) failed", kMaxStateAlignment, effectContextSize_);
     }
     memcpy(effectContext_, previousContext, previousContextSize);
     free(previousContext);
@@ -689,7 +689,7 @@ void Player::CloudNext(Milliseconds currentTime) {
   currentPattern_ = nextPattern_;
   nextPattern_ = enforceForcedPalette(computeNextPattern(nextPattern_));
   checkLeaderAndPattern(currentTime);
-  jll_info("%u next command processed: now current %s (%08x) next %s (%08x), currentLeader=" DEVICE_ID_FMT, currentTime,
+  jll_info("next command processed: now current %s (%08x) next %s (%08x), currentLeader=" DEVICE_ID_FMT,
            patternName(currentPattern_, *this).c_str(), currentPattern_, patternName(nextPattern_, *this).c_str(),
            nextPattern_, DEVICE_ID_HEX(currentLeader_));
 
@@ -702,7 +702,7 @@ void Player::next(Milliseconds currentTime) {
 #if JL_IS_CONFIG(CLOUDS)
   set_enabled(!enabled());
 #endif  // CLOUDS
-  jll_info("%u next command received: switching from %s (%08x) to %s (%08x), currentLeader=" DEVICE_ID_FMT, currentTime,
+  jll_info("next command received: switching from %s (%08x) to %s (%08x), currentLeader=" DEVICE_ID_FMT,
            patternName(currentPattern_, *this).c_str(), currentPattern_, patternName(nextPattern_, *this).c_str(),
            nextPattern_, DEVICE_ID_HEX(currentLeader_));
   lastUserInputTime_ = currentTime;
@@ -715,7 +715,7 @@ void Player::next(Milliseconds currentTime) {
     nextPattern_ = enforceForcedPalette(computeNextPattern(nextPattern_));
   }
   checkLeaderAndPattern(currentTime);
-  jll_info("%u next command processed: now current %s (%08x) next %s (%08x), currentLeader=" DEVICE_ID_FMT, currentTime,
+  jll_info("next command processed: now current %s (%08x) next %s (%08x), currentLeader=" DEVICE_ID_FMT,
            patternName(currentPattern_, *this).c_str(), currentPattern_, patternName(nextPattern_, *this).c_str(),
            nextPattern_, DEVICE_ID_HEX(currentLeader_));
 
@@ -723,9 +723,9 @@ void Player::next(Milliseconds currentTime) {
 }
 
 void Player::setPattern(PatternBits pattern, Milliseconds currentTime) {
-  jll_info("%u set pattern command received: switching from %s (%08x) to %s (%08x), currentLeader=" DEVICE_ID_FMT,
-           currentTime, patternName(currentPattern_, *this).c_str(), currentPattern_,
-           patternName(pattern, *this).c_str(), pattern, DEVICE_ID_HEX(currentLeader_));
+  jll_info("set pattern command received: switching from %s (%08x) to %s (%08x), currentLeader=" DEVICE_ID_FMT,
+           patternName(currentPattern_, *this).c_str(), currentPattern_, patternName(pattern, *this).c_str(), pattern,
+           DEVICE_ID_HEX(currentLeader_));
   lastUserInputTime_ = currentTime;
   currentPatternStartTime_ = currentTime;
   currentPattern_ = pattern;
@@ -735,23 +735,23 @@ void Player::setPattern(PatternBits pattern, Milliseconds currentTime) {
     nextPattern_ = enforceForcedPalette(computeNextPattern(pattern));
   }
   checkLeaderAndPattern(currentTime);
-  jll_info("%u set pattern command processed: now current %s (%08x) next %s (%08x), currentLeader=" DEVICE_ID_FMT,
-           currentTime, patternName(currentPattern_, *this).c_str(), currentPattern_,
-           patternName(nextPattern_, *this).c_str(), nextPattern_, DEVICE_ID_HEX(currentLeader_));
+  jll_info("set pattern command processed: now current %s (%08x) next %s (%08x), currentLeader=" DEVICE_ID_FMT,
+           patternName(currentPattern_, *this).c_str(), currentPattern_, patternName(nextPattern_, *this).c_str(),
+           nextPattern_, DEVICE_ID_HEX(currentLeader_));
 
   for (Network* network : networks_) { network->triggerSendAsap(currentTime); }
 }
 
 void Player::forcePalette(uint8_t palette, Milliseconds currentTime) {
-  jll_info("%u Forcing palette %u", currentTime, palette);
+  jll_info("Forcing palette %u", palette);
   paletteIsForced_ = true;
   forcedPalette_ = palette;
   setPattern(enforceForcedPalette(currentPattern_), currentTime);
 }
 
-void Player::stopForcePalette(Milliseconds currentTime) {
+void Player::stopForcePalette() {
   if (!paletteIsForced_) { return; }
-  jll_info("%u Stop forcing palette %u", currentTime, forcedPalette_);
+  jll_info("Stop forcing palette %u", forcedPalette_);
   paletteIsForced_ = false;
   forcedPalette_ = 0;
 }
@@ -816,13 +816,13 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
   // Remove elements that have aged out.
   originatorEntries_.remove_if([currentTime](const OriginatorEntry& e) {
     if (currentTime > e.lastOriginationTime + kOriginationTimeDiscard) {
-      jll_info("%u Removing " DEVICE_ID_FMT ".p%u entry due to origination time", currentTime,
-               DEVICE_ID_HEX(e.originator), e.precedence);
+      jll_info("Removing " DEVICE_ID_FMT ".p%u entry due to origination time", DEVICE_ID_HEX(e.originator),
+               e.precedence);
       return true;
     }
     if (currentTime > e.currentPatternStartTime + 2 * kEffectDuration) {
-      jll_info("%u Removing " DEVICE_ID_FMT ".p%u entry due to effect duration", currentTime,
-               DEVICE_ID_HEX(e.originator), e.precedence);
+      jll_info("Removing " DEVICE_ID_FMT ".p%u entry due to effect duration", DEVICE_ID_HEX(e.originator),
+               e.precedence);
       return true;
     }
     return false;
@@ -839,20 +839,20 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
     if ((hadRecentUserInput || loop_) && e.precedence < kAdminPrecedence) { continue; }
 #endif  // CREATURE
     if (e.retracted) {
-      jll_debug("%u ignoring " DEVICE_ID_FMT " due to retracted", currentTime, DEVICE_ID_HEX(e.originator));
+      jll_debug("ignoring " DEVICE_ID_FMT " due to retracted", DEVICE_ID_HEX(e.originator));
       continue;
     }
     if (currentTime > e.lastOriginationTime + kOriginationTimeDiscard) {
-      jll_debug("%u ignoring " DEVICE_ID_FMT " due to origination time", currentTime, DEVICE_ID_HEX(e.originator));
+      jll_debug("ignoring " DEVICE_ID_FMT " due to origination time", DEVICE_ID_HEX(e.originator));
       continue;
     }
     if (currentTime > e.currentPatternStartTime + 2 * kEffectDuration) {
-      jll_debug("%u ignoring " DEVICE_ID_FMT " due to effect duration", currentTime, DEVICE_ID_HEX(e.originator));
+      jll_debug("ignoring " DEVICE_ID_FMT " due to effect duration", DEVICE_ID_HEX(e.originator));
       continue;
     }
     if (comparePrecedence(e.precedence, e.originator, precedence, originator) <= 0) {
-      jll_debug("%u ignoring " DEVICE_ID_FMT ".p%u due to better " DEVICE_ID_FMT ".p%u", currentTime,
-                DEVICE_ID_HEX(e.originator), e.precedence, DEVICE_ID_HEX(originator), precedence);
+      jll_debug("ignoring " DEVICE_ID_FMT ".p%u due to better " DEVICE_ID_FMT ".p%u", DEVICE_ID_HEX(e.originator),
+                e.precedence, DEVICE_ID_HEX(originator), precedence);
       continue;
     }
     precedence = e.precedence;
@@ -861,8 +861,8 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
   }
 
   if (currentLeader_ != originator) {
-    jll_player_info("%u Switching leader from " DEVICE_ID_FMT " to " DEVICE_ID_FMT, currentTime,
-                    DEVICE_ID_HEX(currentLeader_), DEVICE_ID_HEX(originator));
+    jll_player_info("Switching leader from " DEVICE_ID_FMT " to " DEVICE_ID_FMT, DEVICE_ID_HEX(currentLeader_),
+                    DEVICE_ID_HEX(originator));
     currentLeader_ = originator;
     UpdateOverriddenPatternWatcher(precedence);
   }
@@ -874,7 +874,7 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
     // Creatures only follow non-creatures if they have override enabled.
     const bool newCreatureIsFollowingNonCreature = precedence >= OverridePrecedence();
     if (creatureIsFollowingNonCreature_ != newCreatureIsFollowingNonCreature) {
-      jll_info("%u now %s because " DEVICE_ID_FMT " has precedence %u %s override limit %u", currentTime,
+      jll_info("now %s because " DEVICE_ID_FMT " has precedence %u %s override limit %u",
                (creatureIsFollowingNonCreature_ ? "creatureFollowing" : "creatureIgnoring"), DEVICE_ID_HEX(originator),
                precedence, (creatureIsFollowingNonCreature_ ? "below" : "above"), OverridePrecedence());
     }
@@ -894,9 +894,9 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
       Milliseconds timeSpentComputingThisEpoch;
       Milliseconds epochDuration;
       GenerateFPSReport(&fpsCompute, &fpsWrites, &utilization, &timeSpentComputingThisEpoch, &epochDuration);
-      jll_player_info("%u Following " DEVICE_ID_FMT
+      jll_player_info("Following " DEVICE_ID_FMT
                       ".p%u nh=%u %s new currentPattern %s (%08x)%s computed %u FPS wrote %u FPS %u%% %u/%ums",
-                      currentTime, DEVICE_ID_HEX(originator), precedence, currentNumHops_,
+                      DEVICE_ID_HEX(originator), precedence, currentNumHops_,
                       NetworkTypeToString(followedNextHopNetworkType_), patternName(currentPattern_, *this).c_str(),
                       currentPattern_,
 #if JL_IS_CONFIG(CREATURE) || JL_IS_CONFIG(ORRERY_PLANET)
@@ -917,7 +917,7 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
     nextPattern_ = currentPattern_;
     loop_ = true;
 #elif JL_IS_CONFIG(CREATURE) || JL_IS_CONFIG(ORRERY_PLANET)
-    if (creatureIsFollowingNonCreature_) { jll_info("%u now creatureIgnoring because we are leading", currentTime); }
+    if (creatureIsFollowingNonCreature_) { jll_info("now creatureIgnoring because we are leading"); }
     creatureIsFollowingNonCreature_ = false;
 #if JL_IS_CONFIG(CREATURE)
     currentPattern_ = kCreaturePattern;
@@ -945,11 +945,10 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
       Milliseconds timeSpentComputingThisEpoch;
       Milliseconds epochDuration;
       GenerateFPSReport(&fpsCompute, &fpsWrites, &utilization, &timeSpentComputingThisEpoch, &epochDuration);
-      jll_player_info("%u We (" DEVICE_ID_FMT
+      jll_player_info("We (" DEVICE_ID_FMT
                       ".p%u) are leading, new currentPattern %s (%08x) computed %u FPS wrote %u FPS %u%% %u/%ums",
-                      currentTime, DEVICE_ID_HEX(localDeviceId_), precedence,
-                      patternName(currentPattern_, *this).c_str(), currentPattern_, fpsCompute, fpsWrites, utilization,
-                      timeSpentComputingThisEpoch, epochDuration);
+                      DEVICE_ID_HEX(localDeviceId_), precedence, patternName(currentPattern_, *this).c_str(),
+                      currentPattern_, fpsCompute, fpsWrites, utilization, timeSpentComputingThisEpoch, epochDuration);
       printInstrumentationInfo(currentTime);
       lastLEDWriteTime_ = -1;
       shouldBeginPattern_ = true;
@@ -957,7 +956,7 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
   }
 
   if (networks_.empty()) {
-    jll_debug("%u not setting messageToSend without networks", currentTime);
+    jll_debug("not setting messageToSend without networks");
     return;
   }
   NetworkMessage messageToSend;
@@ -982,22 +981,22 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
 #else   // ORRERY_LEADER
     static constexpr Milliseconds kOrrerySceneMaxSendDuration = 59000;
     if (lastOrrerySceneIdSetTime_ < 0 || currentTime - lastOrrerySceneIdSetTime_ > kOrrerySceneMaxSendDuration) {
-      jll_info("%u No longer sending orrery scene ID %d", currentTime, static_cast<int>(*orrerySceneIdToSend_));
+      jll_info("No longer sending orrery scene ID %d", static_cast<int>(*orrerySceneIdToSend_));
       orrerySceneIdToSend_ = std::nullopt;
     } else {
-      jll_info("%u Sending orrery scene ID %d", currentTime, static_cast<int>(*orrerySceneIdToSend_));
+      jll_info("Sending orrery scene ID %d", static_cast<int>(*orrerySceneIdToSend_));
       messageToSend.orrerySceneId = orrerySceneIdToSend_;
     }
 #endif  // ORRERY_LEADER
   }
   for (Network* network : networks_) {
     if (!network->shouldEcho() && messageToSend.receiptNetworkId == network->id()) {
-      jll_debug("%u Not echoing for %s to %s ", currentTime, NetworkTypeToString(network->type()),
+      jll_debug("Not echoing for %s to %s ", NetworkTypeToString(network->type()),
                 networkMessageToString(messageToSend, currentTime).c_str());
-      network->disableSending(currentTime);
+      network->disableSending();
       continue;
     }
-    jll_player_message("%u Setting messageToSend for %s to %s ", currentTime, NetworkTypeToString(network->type()),
+    jll_player_message("Setting messageToSend for %s to %s ", NetworkTypeToString(network->type()),
                        networkMessageToString(messageToSend, currentTime).c_str());
     network->setMessageToSend(messageToSend, currentTime);
   }
@@ -1006,38 +1005,36 @@ void Player::checkLeaderAndPattern(Milliseconds currentTime) {
 void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentTime) {
 #if JL_IS_CONFIG(CREATURE)
   if (message.isCreature) {
-    jll_info("%u creature recv %s", currentTime, networkMessageToString(message, currentTime).c_str());
+    jll_info("creature recv %s", networkMessageToString(message, currentTime).c_str());
     KnownCreatures::Get()->AddCreature(message.creatureColor, message.receiptTime, message.receiptRssi,
                                        message.isPartying);
   }
   if (message.orrerySceneId.has_value()) { KnownCreatures::Get()->HandleHeardOrrery(currentTime); }
 #endif  // CREATURE
-  jll_player_message("%u handleReceivedMessage %s", currentTime, networkMessageToString(message, currentTime).c_str());
+  jll_player_message("handleReceivedMessage %s", networkMessageToString(message, currentTime).c_str());
   if (message.sender == localDeviceId_) {
-    jll_debug("%u Ignoring received message that we sent %s", currentTime,
-              networkMessageToString(message, currentTime).c_str());
+    jll_debug("Ignoring received message that we sent %s", networkMessageToString(message, currentTime).c_str());
     return;
   }
   if (message.originator == localDeviceId_) {
-    jll_debug("%u Ignoring received message that we originated %s", currentTime,
-              networkMessageToString(message, currentTime).c_str());
+    jll_debug("Ignoring received message that we originated %s", networkMessageToString(message, currentTime).c_str());
     return;
   }
   if (orrerySceneIdWatcher_ != nullptr) { orrerySceneIdWatcher_->OnOrrerySceneId(message.orrerySceneId); }
   if (message.numHops == std::numeric_limits<NumHops>::max()) {
     // This avoids overflow when incrementing below.
-    jll_player_info("%u Ignoring received message with high numHops %s", currentTime,
+    jll_player_info("Ignoring received message with high numHops %s",
                     networkMessageToString(message, currentTime).c_str());
     return;
   }
   NumHops receiptNumHops = message.numHops + 1;
   if (currentTime > message.lastOriginationTime + kOriginationTimeDiscard) {
-    jll_player_info("%u Ignoring received message due to origination time %s", currentTime,
+    jll_player_info("Ignoring received message due to origination time %s",
                     networkMessageToString(message, currentTime).c_str());
     return;
   }
   if (currentTime > message.currentPatternStartTime + 2 * kEffectDuration) {
-    jll_player_info("%u Ignoring received message due to effect duration %s", currentTime,
+    jll_player_info("Ignoring received message due to effect duration %s",
                     networkMessageToString(message, currentTime).c_str());
     return;
   }
@@ -1057,11 +1054,11 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
     entry->numHops = receiptNumHops;
     entry->retracted = false;
     entry->patternStartTimeMovementCounter = 0;
-    jll_player_info("%u Adding " DEVICE_ID_FMT ".p%u entry via " DEVICE_ID_FMT
+    jll_player_info("Adding " DEVICE_ID_FMT ".p%u entry via " DEVICE_ID_FMT
                     ".%s"
                     " nh %u ot %u current %s (%08x) next %s (%08x) elapsed %u",
-                    currentTime, DEVICE_ID_HEX(entry->originator), entry->precedence,
-                    DEVICE_ID_HEX(entry->nextHopDevice), NetworkTypeToString(entry->nextHopNetworkType), entry->numHops,
+                    DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(entry->nextHopDevice),
+                    NetworkTypeToString(entry->nextHopNetworkType), entry->numHops,
                     currentTime - entry->lastOriginationTime, patternName(entry->currentPattern, *this).c_str(),
                     entry->currentPattern, patternName(entry->nextPattern, *this).c_str(), entry->nextPattern,
                     currentTime - entry->currentPatternStartTime);
@@ -1079,22 +1076,22 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
     if (entry->nextHopDevice != message.sender || entry->nextHopNetworkId != message.receiptNetworkId) {
       bool changeNextHop = false;
       if (receiptNumHops < entry->numHops) {
-        jll_player_info("%u Switching " DEVICE_ID_FMT ".p%u entry via " DEVICE_ID_FMT
+        jll_player_info("Switching " DEVICE_ID_FMT ".p%u entry via " DEVICE_ID_FMT
                         ".%s "
                         "nh %u ot %u to better nextHop " DEVICE_ID_FMT ".%s nh %u ot %u due to nextHops",
-                        currentTime, DEVICE_ID_HEX(entry->originator), entry->precedence,
-                        DEVICE_ID_HEX(entry->nextHopDevice), NetworkTypeToString(entry->nextHopNetworkType),
-                        entry->numHops, currentTime - entry->lastOriginationTime, DEVICE_ID_HEX(message.sender),
+                        DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(entry->nextHopDevice),
+                        NetworkTypeToString(entry->nextHopNetworkType), entry->numHops,
+                        currentTime - entry->lastOriginationTime, DEVICE_ID_HEX(message.sender),
                         NetworkTypeToString(message.receiptNetworkType), receiptNumHops,
                         currentTime - message.lastOriginationTime);
         changeNextHop = true;
       } else if (message.lastOriginationTime > entry->lastOriginationTime + kOriginationTimeOverride) {
-        jll_player_info("%u Switching " DEVICE_ID_FMT ".p%u entry via " DEVICE_ID_FMT
+        jll_player_info("Switching " DEVICE_ID_FMT ".p%u entry via " DEVICE_ID_FMT
                         ".%s "
                         "nh %u ot %u to better nextHop " DEVICE_ID_FMT ".%s nh %u ot %u due to originationTime",
-                        currentTime, DEVICE_ID_HEX(entry->originator), entry->precedence,
-                        DEVICE_ID_HEX(entry->nextHopDevice), NetworkTypeToString(entry->nextHopNetworkType),
-                        entry->numHops, currentTime - entry->lastOriginationTime, DEVICE_ID_HEX(message.sender),
+                        DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(entry->nextHopDevice),
+                        NetworkTypeToString(entry->nextHopNetworkType), entry->numHops,
+                        currentTime - entry->lastOriginationTime, DEVICE_ID_HEX(message.sender),
                         NetworkTypeToString(message.receiptNetworkType), receiptNumHops,
                         currentTime - message.lastOriginationTime);
         changeNextHop = true;
@@ -1201,7 +1198,7 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
       std::string changesStr = changes.str();
       if (!changesStr.empty()) {
         const bool followedUpdate = entry->originator == currentLeader_;
-        jll_player_info("%u Accepting %s update from " DEVICE_ID_FMT ".p%u via " DEVICE_ID_FMT ".%s%s%s", currentTime,
+        jll_player_info("Accepting %s update from " DEVICE_ID_FMT ".p%u via " DEVICE_ID_FMT ".%s%s%s",
                         (followedUpdate ? "followed" : "ignored"), DEVICE_ID_HEX(entry->originator), entry->precedence,
                         DEVICE_ID_HEX(entry->nextHopDevice), NetworkTypeToString(entry->nextHopNetworkType),
                         changesStr.c_str(), message.receiptDetails.c_str());
@@ -1209,12 +1206,11 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
       }
       UpdateOverriddenPatternWatcher(entry->precedence);
     } else {
-      jll_debug("%u Rejecting %s update from " DEVICE_ID_FMT ".p%u via " DEVICE_ID_FMT
+      jll_debug("Rejecting %s update from " DEVICE_ID_FMT ".p%u via " DEVICE_ID_FMT
                 ".%s because we are following " DEVICE_ID_FMT ".%s",
-                currentTime, (entry->originator == currentLeader_ ? "followed" : "ignored"),
-                DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(message.sender),
-                NetworkTypeToString(message.receiptNetworkType), DEVICE_ID_HEX(entry->nextHopDevice),
-                NetworkTypeToString(entry->nextHopNetworkType));
+                (entry->originator == currentLeader_ ? "followed" : "ignored"), DEVICE_ID_HEX(entry->originator),
+                entry->precedence, DEVICE_ID_HEX(message.sender), NetworkTypeToString(message.receiptNetworkType),
+                DEVICE_ID_HEX(entry->nextHopDevice), NetworkTypeToString(entry->nextHopNetworkType));
     }
   }
   // If this sender is following another originator from what we previously heard,
@@ -1223,12 +1219,12 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
     if (e.nextHopDevice == message.sender && e.nextHopNetworkId == message.receiptNetworkId &&
         e.originator != message.originator && !e.retracted) {
       e.retracted = true;
-      jll_player_info("%u Retracting entry for originator " DEVICE_ID_FMT
+      jll_player_info("Retracting entry for originator " DEVICE_ID_FMT
                       ".p%u"
                       " due to abandonment from " DEVICE_ID_FMT
                       ".%s"
                       " in favor of " DEVICE_ID_FMT ".p%u",
-                      currentTime, DEVICE_ID_HEX(e.originator), e.precedence, DEVICE_ID_HEX(message.sender),
+                      DEVICE_ID_HEX(e.originator), e.precedence, DEVICE_ID_HEX(message.sender),
                       NetworkTypeToString(message.receiptNetworkType), DEVICE_ID_HEX(message.originator),
                       message.precedence);
     }
@@ -1237,16 +1233,16 @@ void Player::handleReceivedMessage(NetworkMessage message, Milliseconds currentT
   lastLEDWriteTime_ = -1;
 }
 
-void Player::loopOne(Milliseconds currentTime) {
+void Player::loopOne() {
   if (loop_) { return; }
-  jll_info("%u Looping", currentTime);
+  jll_info("Looping");
   loop_ = true;
   nextPattern_ = currentPattern_;
 }
 
-void Player::stopLooping(Milliseconds currentTime) {
+void Player::stopLooping() {
   if (!loop_) { return; }
-  jll_info("%u Stopping loop", currentTime);
+  jll_info("Stopping loop");
   loop_ = false;
   nextPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
 }
@@ -1260,10 +1256,10 @@ const char* Player::command(const char* req) {
   if (!strncmp(req, "status?", MAX_CMD_LEN)) {
     // do nothing
   } else if (!strncmp(req, "next", MAX_CMD_LEN)) {
-    stopLooping(currentTime);
+    stopLooping();
     next(currentTime);
   } else if (!strncmp(req, "prev", MAX_CMD_LEN)) {
-    loopOne(currentTime);
+    loopOne();
   } else {
     snprintf(res, sizeof(res), "! unknown command");
     responded = true;

@@ -33,7 +33,7 @@ class IpInterfaceManager : public Network {
   NetworkType type() const override { return NetworkType::kOther; }
   std::string getStatusStr(Milliseconds currentTime) override;
   void setMessageToSend(const NetworkMessage& messageToSend, Milliseconds currentTime) override;
-  void disableSending(Milliseconds currentTime) override;
+  void disableSending() override;
   void triggerSendAsap(Milliseconds currentTime) override;
   bool shouldEcho() const override { return false; }
   Milliseconds getLastReceiveTime() const override { return lastReceiveTime_.load(std::memory_order_relaxed); }

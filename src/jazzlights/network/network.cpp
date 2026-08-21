@@ -140,7 +140,7 @@ NetworkStatus Network::status() const { return status_; }
 void Network::reconnect(Milliseconds currentTime) {
   if (status_ != CONNECTED) {
     lastConnectionAttempt_ = currentTime;
-    jll_info("%u %s Network Reconnecting", currentTime, NetworkTypeToString(type()));
+    jll_info("%s Network Reconnecting", NetworkTypeToString(type()));
     status_ = update(CONNECTING, currentTime);
   }
 }
@@ -155,7 +155,7 @@ void UdpNetwork::setMessageToSend(const NetworkMessage& messageToSend, Milliseco
   messageToSend_ = messageToSend;
 }
 
-void UdpNetwork::disableSending(Milliseconds /*currentTime*/) { hasDataToSend_ = false; }
+void UdpNetwork::disableSending() { hasDataToSend_ = false; }
 
 std::list<NetworkMessage> Network::getReceivedMessages(Milliseconds currentTime) {
   checkStatus(currentTime);
@@ -182,12 +182,12 @@ constexpr size_t kPayloadLength = kPatternTimeOffset + 2;
 bool Network::ParseUdpPayload(uint8_t* udpPayload, size_t udpPayloadLength, const std::string& receiptDetails,
                               Milliseconds currentTime, NetworkMessage* outMessage) {
   if (udpPayloadLength < kPayloadLength) {
-    jll_debug("%u %s Received packet too short, received %zd bytes, expected at least %zu bytes", currentTime,
+    jll_debug("%s Received packet too short, received %zd bytes, expected at least %zu bytes",
               NetworkTypeToString(type()), udpPayloadLength, kPayloadLength);
     return false;
   }
   if ((udpPayload[kVersionOffset] & 0xF0) != kVersion) {
-    jll_debug("%u %s Received packet with unexpected prefix %02x", currentTime, NetworkTypeToString(type()),
+    jll_debug("%s Received packet with unexpected prefix %02x", NetworkTypeToString(type()),
               udpPayload[kVersionOffset]);
     return false;
   }
@@ -221,7 +221,7 @@ bool Network::ParseUdpPayload(uint8_t* udpPayload, size_t udpPayloadLength, cons
     receivedMessage.lastOriginationTime = 0;
   }
 
-  jll_debug("%u %s received %s", currentTime, NetworkTypeToString(type()),
+  jll_debug("%s received %s", NetworkTypeToString(type()),
             networkMessageToString(receivedMessage, currentTime).c_str());
 
   *outMessage = receivedMessage;
@@ -252,7 +252,7 @@ void Network::checkStatus(Milliseconds currentTime) {
     const NetworkStatus previousStatus = status_;
     status_ = update(status_, currentTime);
     if (status_ != previousStatus) {
-      jll_info("%u %s updated status from %s to %s", currentTime, NetworkTypeToString(type()),
+      jll_info("%s updated status from %s to %s", NetworkTypeToString(type()),
                NetworkStatusToString(previousStatus).c_str(), NetworkStatusToString(status_).c_str());
     }
   }
@@ -267,7 +267,7 @@ void Network::runLoop(Milliseconds currentTime) {
 bool Network::WriteUdpPayload(const NetworkMessage& messageToSend, uint8_t* udpPayload, size_t udpPayloadLength,
                               Milliseconds currentTime) {
   if (udpPayloadLength < kPayloadLength) {
-    jll_error("%u %s cannot send message due to payload too short %zu < %zu", currentTime, NetworkTypeToString(type()),
+    jll_error("%s cannot send message due to payload too short %zu < %zu", NetworkTypeToString(type()),
               udpPayloadLength, kPayloadLength);
     return false;
   }
@@ -285,8 +285,7 @@ bool Network::WriteUdpPayload(const NetworkMessage& messageToSend, uint8_t* udpP
   } else {
     patternTime = 0xFFFF;
   }
-  jll_debug("%u %s sending %s", currentTime, NetworkTypeToString(type()),
-            networkMessageToString(messageToSend, currentTime).c_str());
+  jll_debug("%s sending %s", NetworkTypeToString(type()), networkMessageToString(messageToSend, currentTime).c_str());
 
   udpPayload[kVersionOffset] = kVersion;
   messageToSend.originator.writeTo(&udpPayload[kOriginatorOffset]);

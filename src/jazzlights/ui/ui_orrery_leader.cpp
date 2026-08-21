@@ -269,7 +269,7 @@ void OrreryLeaderUi::DrawSceneMenu() {
   TouchButtonManager::Get()->Redraw();
 }
 
-void OrreryLeaderUi::RunLoop(Milliseconds currentTime) {
+void OrreryLeaderUi::RunLoop(Milliseconds /*currentTime*/) {
   UpdateCalibrationMenuButton();
   UpdateStatusSubmenu();
   OrreryScene currentScene = OrreryLeader::Get()->GetScene();

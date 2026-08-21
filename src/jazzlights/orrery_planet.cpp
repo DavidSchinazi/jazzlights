@@ -97,7 +97,7 @@ OrreryPlanet::OrreryPlanet()
       busId_(static_cast<BusId>(Planet::Sun)),
 #endif  // !JL_ORRERY_SUN
       max485BusFollower_(UART_NUM_2, kMax485TxPin, kMax485RxPin, busId_) {
-  jll_info("%u OrreryPlanet created with busId %u", timeMillis(), busId_);
+  jll_info("OrreryPlanet created with busId %u", busId_);
   PlanetEffect::Get()->SetPlanet(static_cast<Planet>(busId_));
   currentState_.type = OrreryMessageType::FollowerResponse;
 }
@@ -111,8 +111,7 @@ BusId OrreryPlanet::ComputeBusId() const {
 
 void OrreryPlanet::StateChanged(uint8_t pin, bool isClosed) {
   if (pin == kPlanetSwitchPin3) {
-    jll_info("%u OrreryPlanet motor direction switch on pin %u is now %s", timeMillis(), pin,
-             (isClosed ? "closed" : "open"));
+    jll_info("OrreryPlanet motor direction switch on pin %u is now %s", pin, (isClosed ? "closed" : "open"));
     GetMainStepperMotor()->SetRunBackwards(isClosed);
     return;
   }
@@ -122,7 +121,7 @@ void OrreryPlanet::StateChanged(uint8_t pin, bool isClosed) {
   max485BusFollower_.SetBusIdSelf(busId_);
 
   PlanetEffect::Get()->SetPlanet(static_cast<Planet>(busId_));
-  jll_info("%u OrreryPlanet planet switch on pin %u is now %s, new planet %s (busId %u)", timeMillis(), pin,
+  jll_info("OrreryPlanet planet switch on pin %u is now %s, new planet %s (busId %u)", pin,
            (isClosed ? "closed" : "open"), GetPlanetName(static_cast<Planet>(busId_)), busId_);
 }
 
@@ -218,8 +217,8 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
       static Milliseconds lastLogTime = -1;
       if (lastLogTime < 0 || currentTime - lastLogTime > 1000) {
         lastLogTime = currentTime;
-        jll_info("%u targetSteps %f currentSteps %f positionalSteps %f stepsToGo %f actualSpeed %f stepsPerRev %f",
-                 currentTime, targetSteps, currentSteps_, positionalSteps_, stepsToGo, actualSpeed_, stepsPerRev_);
+        jll_info("targetSteps %f currentSteps %f positionalSteps %f stepsToGo %f actualSpeed %f stepsPerRev %f",
+                 targetSteps, currentSteps_, positionalSteps_, stepsToGo, actualSpeed_, stepsPerRev_);
       }
 
       if (stepsToGo < (stepsPerRev_ / 72.0f) && std::abs(actualSpeed_) < 10.0f) {
@@ -227,10 +226,10 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
         actualSpeed_ = 0;
         arrivedAtTarget_ = true;
         jll_info(
-            "%u Planet %s arrived at target position %lu targetSteps %f currentSteps %f positionalSteps %f "
+            "Planet %s arrived at target position %lu targetSteps %f currentSteps %f positionalSteps %f "
             "stepsToGo %f actualSpeed %f stepsPerRev %f",
-            currentTime, GetPlanetName(static_cast<Planet>(busId_)), *targetPosition_, targetSteps, currentSteps_,
-            positionalSteps_, stepsToGo, actualSpeed_, stepsPerRev_);
+            GetPlanetName(static_cast<Planet>(busId_)), *targetPosition_, targetSteps, currentSteps_, positionalSteps_,
+            stepsToGo, actualSpeed_, stepsPerRev_);
 
       } else {
         // Distance to stop depends on current speed and max deceleration rate.
@@ -240,10 +239,9 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
         if (lastLogTime3 < 0 || currentTime - lastLogTime3 > 1000) {
           lastLogTime3 = currentTime;
           jll_info(
-              "%u targetSteps %f currentSteps %f positionalSteps %f stepsToGo %f actualSpeed_ %f stop_distance %f "
+              "targetSteps %f currentSteps %f positionalSteps %f stepsToGo %f actualSpeed_ %f stop_distance %f "
               "stepsPerRev %f",
-              currentTime, targetSteps, currentSteps_, positionalSteps_, stepsToGo, actualSpeed_, stop_distance,
-              stepsPerRev_);
+              targetSteps, currentSteps_, positionalSteps_, stepsToGo, actualSpeed_, stop_distance, stepsPerRev_);
         }
         if (stepsToGo <= stop_distance) { effectiveRequestedSpeed = 0; }
       }
@@ -265,8 +263,8 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
     static Milliseconds lastLogTime2 = -1;
     if (lastLogTime2 < 0 || currentTime - lastLogTime2 > 1000) {
       lastLogTime2 = currentTime;
-      jll_info("%u Setting roundedSpeed to %f; currentSteps %f positionalSteps %f actualSpeed %f stepsPerRev %f",
-               currentTime, roundedSpeed_, currentSteps_, positionalSteps_, actualSpeed_, stepsPerRev_);
+      jll_info("Setting roundedSpeed to %f; currentSteps %f positionalSteps %f actualSpeed %f stepsPerRev %f",
+               roundedSpeed_, currentSteps_, positionalSteps_, actualSpeed_, stepsPerRev_);
     }
     if (!currentState_.speed.has_value() || roundedSpeed_ != *currentState_.speed) {
       // Ignore calibration if the motor stops or reverses direction.
@@ -311,14 +309,14 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
       if (msg.speed.has_value()) {
         if (*msg.speed == kOrrerySpeedDisable) {
           if (requestedSpeed_ != kOrrerySpeedDisable) {
-            jll_info("%u Planet %s requested motor disable", currentTime, ourPlanetName);
+            jll_info("Planet %s requested motor disable", ourPlanetName);
             requestedSpeed_ = kOrrerySpeedDisable;
           }
         } else {
           const int32_t targetFrequency = std::round((*msg.speed / 60000.0f) * stepsPerRev_);
           if (targetFrequency != requestedSpeed_) {
-            jll_info("%u Planet %s requested milli-RPM %" PRId32 " (target frequency %" PRId32 "Hz)", currentTime,
-                     ourPlanetName, *msg.speed, targetFrequency);
+            jll_info("Planet %s requested milli-RPM %" PRId32 " (target frequency %" PRId32 "Hz)", ourPlanetName,
+                     *msg.speed, targetFrequency);
             requestedSpeed_ = targetFrequency;
           }
         }
@@ -326,20 +324,19 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
       if (msg.position.has_value()) {
         if (*msg.position == kOrreryPositionNone) {
           if (targetPosition_.has_value()) {
-            jll_info("%u Planet %s clearing target position", currentTime, ourPlanetName);
+            jll_info("Planet %s clearing target position", ourPlanetName);
             targetPosition_ = std::nullopt;
             arrivedAtTarget_ = false;
           }
         } else if (!targetPosition_.has_value() || *msg.position != *targetPosition_) {
-          jll_info("%u Planet %s requested position %" PRIu32, currentTime, ourPlanetName, *msg.position);
+          jll_info("Planet %s requested position %" PRIu32, ourPlanetName, *msg.position);
           targetPosition_ = msg.position;
           arrivedAtTarget_ = false;
         }
       }
       if (msg.calibration.has_value() && !currentState_.calibration.has_value()) {
         if (static_cast<float>(*msg.calibration) != stepsPerRev_) {
-          jll_info("%u Planet %s applying calibration %" PRIu32 " from leader", currentTime, ourPlanetName,
-                   *msg.calibration);
+          jll_info("Planet %s applying calibration %" PRIu32 " from leader", ourPlanetName, *msg.calibration);
           stepsPerRev_ = *msg.calibration;
         }
       }
@@ -351,24 +348,24 @@ void OrreryPlanet::RunLoop(Milliseconds currentTime) {
 #endif  // !JL_ORRERY_SUN
 
       if (msg.ledBrightness.has_value() && msg.ledBrightness != currentState_.ledBrightness) {
-        jll_info("%u Planet %s applying brightness %u", currentTime, ourPlanetName, *msg.ledBrightness);
+        jll_info("Planet %s applying brightness %u", ourPlanetName, *msg.ledBrightness);
         if (player_ != nullptr) { player_->set_brightness(*msg.ledBrightness); }
         currentState_.ledBrightness = *msg.ledBrightness;
       }
       if (msg.ledPattern.has_value() && msg.ledPattern != currentState_.ledPattern) {
         if (player_ != nullptr && player_->GetPlanetPattern() != *msg.ledPattern) {
-          jll_info("%u Planet %s applying pattern %08x from leader", currentTime, ourPlanetName, *msg.ledPattern);
+          jll_info("Planet %s applying pattern %08x from leader", ourPlanetName, *msg.ledPattern);
           player_->SetPlanetPattern(*msg.ledPattern);
         }
         currentState_.ledPattern = *msg.ledPattern;
       }
       if (msg.ledBasePrecedence.has_value() && msg.ledBasePrecedence != currentState_.ledBasePrecedence) {
-        jll_info("%u Planet %s applying base precedence %u", currentTime, ourPlanetName, *msg.ledBasePrecedence);
+        jll_info("Planet %s applying base precedence %u", ourPlanetName, *msg.ledBasePrecedence);
         if (player_ != nullptr) { player_->setBasePrecedence(*msg.ledBasePrecedence); }
         currentState_.ledBasePrecedence = *msg.ledBasePrecedence;
       }
       if (msg.ledPrecedenceGain.has_value() && msg.ledPrecedenceGain != currentState_.ledPrecedenceGain) {
-        jll_info("%u Planet %s applying precedence gain %u", currentTime, ourPlanetName, *msg.ledPrecedenceGain);
+        jll_info("Planet %s applying precedence gain %u", ourPlanetName, *msg.ledPrecedenceGain);
         if (player_ != nullptr) { player_->setPrecedenceGain(*msg.ledPrecedenceGain); }
         currentState_.ledPrecedenceGain = *msg.ledPrecedenceGain;
       }

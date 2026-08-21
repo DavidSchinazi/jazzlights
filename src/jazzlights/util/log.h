@@ -22,6 +22,7 @@
 #endif  // JL_M5_LOGGING
 
 #include "jazzlights/util/buffer.h"
+#include "jazzlights/util/time.h"
 
 namespace jazzlights {
 
@@ -46,7 +47,8 @@ void SetupLogging();
 #define _JL_LOG_LEVEL_STRING_ERROR "ERROR"
 #define _JL_LOG_LEVEL_STRING_FATAL "FATAL"
 
-#define _LOG_AT_LEVEL(levelStr, format, ...) ::printf(levelStr ": " format "\n", ##__VA_ARGS__)
+#define _LOG_AT_LEVEL(levelStr, format, ...) \
+  ::printf(levelStr ": %u " format "\n", static_cast<unsigned>(timeMillis()), ##__VA_ARGS__)
 
 #define _LOG_BUFFER_AT_LEVEL(levelStr, buffer, format, ...)                            \
   do {                                                                                 \

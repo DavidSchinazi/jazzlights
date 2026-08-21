@@ -59,14 +59,14 @@ void convertToHex(char* target, size_t targetLength, const uint8_t* source, uint
 void Esp32BleNetwork::UpdateState(Esp32BleNetwork::State expectedCurrentState, Esp32BleNetwork::State newState) {
   const std::lock_guard<std::mutex> lock(mutex_);
   if (state_ != expectedCurrentState) {
-    jll_error("%u Unexpected state %s updating from %s to %s", timeMillis(), StateToString(state_).c_str(),
+    jll_error("Unexpected state %s updating from %s to %s", StateToString(state_).c_str(),
               StateToString(expectedCurrentState).c_str(), StateToString(newState).c_str());
   }
   state_ = newState;
 }
 
-void Esp32BleNetwork::StartScanning(Milliseconds currentTime) {
-  ESP32_BLE_DEBUG("%u Starting scan...", currentTime);
+void Esp32BleNetwork::StartScanning() {
+  ESP32_BLE_DEBUG("Starting scan...");
   UpdateState(State::kIdle, State::kStartingScan);
   // Set scan duration to one hour so it never stops unless we request it to.
   // For some reasons very high values do not work.
@@ -74,14 +74,14 @@ void Esp32BleNetwork::StartScanning(Milliseconds currentTime) {
   ESP_ERROR_CHECK(esp_ble_gap_start_scanning(kScanDurationSeconds));
 }
 
-void Esp32BleNetwork::StopScanning(Milliseconds currentTime) {
-  ESP32_BLE_DEBUG("%u Stopping scan...", currentTime);
+void Esp32BleNetwork::StopScanning() {
+  ESP32_BLE_DEBUG("Stopping scan...");
   UpdateState(State::kScanning, State::kStoppingScan);
   ESP_ERROR_CHECK(esp_ble_gap_stop_scanning());
 }
 
-void Esp32BleNetwork::StartAdvertising(Milliseconds currentTime) {
-  ESP32_BLE_DEBUG("%u StartAdvertising", currentTime);
+void Esp32BleNetwork::StartAdvertising() {
+  ESP32_BLE_DEBUG("StartAdvertising");
   UpdateState(State::kConfiguringAdvertising, State::kStartingAdvertising);
   esp_ble_adv_params_t advParams = {};
   advParams.adv_int_min = 0x20;
@@ -94,8 +94,8 @@ void Esp32BleNetwork::StartAdvertising(Milliseconds currentTime) {
   ESP_ERROR_CHECK(esp_ble_gap_start_advertising(&advParams));
 }
 
-void Esp32BleNetwork::StopAdvertising(Milliseconds currentTime) {
-  ESP32_BLE_DEBUG("%u StopAdvertising", currentTime);
+void Esp32BleNetwork::StopAdvertising() {
+  ESP32_BLE_DEBUG("StopAdvertising");
   UpdateState(State::kAdvertising, State::kStoppingAdvertising);
   ESP_ERROR_CHECK(esp_ble_gap_stop_advertising());
 }
@@ -117,8 +117,8 @@ void Esp32BleNetwork::MaybeUpdateAdvertisingState(Milliseconds currentTime) {
       shouldStopScanning = true;
     }
   }
-  if (shouldStopAdvertising) { StopAdvertising(currentTime); }
-  if (shouldStopScanning) { StopScanning(currentTime); }
+  if (shouldStopAdvertising) { StopAdvertising(); }
+  if (shouldStopScanning) { StopScanning(); }
 }
 
 void Esp32BleNetwork::StopAdvertisingIn(Milliseconds duration) {
@@ -131,7 +131,7 @@ void Esp32BleNetwork::StopScanningIn(Milliseconds duration) {
   timeToStopScanning_ = timeMillis() + duration;
 }
 
-std::list<NetworkMessage> Esp32BleNetwork::getReceivedMessagesImpl(Milliseconds currentTime) {
+std::list<NetworkMessage> Esp32BleNetwork::getReceivedMessagesImpl(Milliseconds /*currentTime*/) {
   std::list<NetworkMessage> results;
   {
     const std::lock_guard<std::mutex> lock(mutex_);
@@ -142,7 +142,7 @@ std::list<NetworkMessage> Esp32BleNetwork::getReceivedMessagesImpl(Milliseconds 
 }
 
 void Esp32BleNetwork::triggerSendAsap(Milliseconds currentTime) {
-  ESP32_BLE_DEBUG("%u TriggerSendAsap", currentTime);
+  ESP32_BLE_DEBUG("TriggerSendAsap");
   {
     const std::lock_guard<std::mutex> lock(mutex_);
     numUrgentSends_ = 10;
@@ -153,16 +153,14 @@ void Esp32BleNetwork::triggerSendAsap(Milliseconds currentTime) {
 void Esp32BleNetwork::setMessageToSend(const NetworkMessage& messageToSend, Milliseconds currentTime) {
   const std::lock_guard<std::mutex> lock(mutex_);
   if (!hasDataToSend_ || !messageToSend_.isEqualExceptOriginationTime(messageToSend)) {
-    ESP32_BLE_DEBUG("%u Setting messageToSend %s", currentTime,
-                    networkMessageToString(messageToSend, currentTime).c_str());
-    ESP32_BLE_DEBUG("%u Old messageToSend was %s", currentTime,
-                    networkMessageToString(messageToSend_, currentTime).c_str());
+    ESP32_BLE_DEBUG("Setting messageToSend %s", networkMessageToString(messageToSend, currentTime).c_str());
+    ESP32_BLE_DEBUG("Old messageToSend was %s", networkMessageToString(messageToSend_, currentTime).c_str());
   }
   hasDataToSend_ = true;
   messageToSend_ = messageToSend;
 }
 
-void Esp32BleNetwork::disableSending(Milliseconds currentTime) {
+void Esp32BleNetwork::disableSending() {
   const std::lock_guard<std::mutex> lock(mutex_);
   hasDataToSend_ = false;
 }
@@ -202,53 +200,53 @@ constexpr uint8_t kExtensionByteFlagHasOrreryScene = 0x20;
 void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifier, uint8_t innerPayloadLength,
                                            const uint8_t* innerPayload, int rssi, Milliseconds currentTime) {
   if (innerPayloadLength > kMaxInnerPayloadLength) {
-    jll_error("%u Received advertisement with unexpected length %u", currentTime, innerPayloadLength);
+    jll_error("Received advertisement with unexpected length %u", innerPayloadLength);
     return;
   }
 #if JL_IS_CONFIG(CREATURE)
   if (innerPayloadLength < kMinPayloadLength) {
-    jll_error("%u Ignoring received creature BLE with unexpected length %u", currentTime, innerPayloadLength);
+    jll_error("Ignoring received creature BLE with unexpected length %u", innerPayloadLength);
     return;
   }
   NetworkReader reader(innerPayload, innerPayloadLength);
   NetworkMessage message;
   message.sender = deviceIdentifier;
   if (!reader.ReadNetworkDeviceId(&message.originator)) {
-    jll_error("%u Failed to parse creature originator", currentTime);
+    jll_error("Failed to parse creature originator");
     return;
   }
   if (!reader.ReadUint16(&message.precedence)) {
-    jll_error("%u Failed to parse creature precedence", currentTime);
+    jll_error("Failed to parse creature precedence");
     return;
   }
   if (!reader.ReadUint8(&message.numHops)) {
-    jll_error("%u Failed to parse creature numHops", currentTime);
+    jll_error("Failed to parse creature numHops");
     return;
   }
   uint16_t originationTimeDelta16;
   if (!reader.ReadUint16(&originationTimeDelta16)) {
-    jll_error("%u Failed to parse creature originationTimeDelta", currentTime);
+    jll_error("Failed to parse creature originationTimeDelta");
     return;
   }
   Milliseconds originationTimeDelta = originationTimeDelta16;
   if (!reader.ReadPatternBits(&message.currentPattern)) {
-    jll_error("%u Failed to parse creature currentPattern", currentTime);
+    jll_error("Failed to parse creature currentPattern");
     return;
   }
   if (!reader.ReadPatternBits(&message.nextPattern)) {
-    jll_error("%u Failed to parse creature nextPattern", currentTime);
+    jll_error("Failed to parse creature nextPattern");
     return;
   }
   uint16_t patternTimeDelta16;
   if (!reader.ReadUint16(&patternTimeDelta16)) {
-    jll_error("%u Failed to parse creature patternTimeDelta", currentTime);
+    jll_error("Failed to parse creature patternTimeDelta");
     return;
   }
   Milliseconds patternTimeDelta = patternTimeDelta16;
   uint8_t extensionByte = 0x00;
   if (!reader.Done()) {
     if (!reader.ReadUint8(&extensionByte)) {
-      jll_error("%u Failed to parse creature extensionByte", currentTime);
+      jll_error("Failed to parse creature extensionByte");
       return;
     }
   }
@@ -257,7 +255,7 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
     message.isPartying = (extensionByte & kExtensionByteFlagIsPartying) != 0;
     uint8_t creatureRed, creatureGreen, creatureBlue;
     if (!reader.ReadUint8(&creatureRed) || !reader.ReadUint8(&creatureGreen) || !reader.ReadUint8(&creatureBlue)) {
-      jll_error("%u Failed to parse creature RGB", currentTime);
+      jll_error("Failed to parse creature RGB");
       return;
     }
     message.creatureColor = (creatureRed << 16) | (creatureGreen << 8) | creatureBlue;
@@ -268,7 +266,7 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
   if ((extensionByte & kExtensionByteFlagHasOrreryScene) != 0) {
     uint8_t orrerySceneId;
     if (!reader.ReadUint8(&orrerySceneId)) {
-      jll_error("%u Failed to parse creature orrerySceneId", currentTime);
+      jll_error("Failed to parse creature orrerySceneId");
       return;
     }
     message.orrerySceneId = orrerySceneId;
@@ -278,7 +276,7 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
 #else   // CREATURE
   (void)rssi;
   if (innerPayloadLength < kMinPayloadLength) {
-    ESP32_BLE_DEBUG("%u Ignoring received BLE with unexpected length %u", currentTime, innerPayloadLength);
+    ESP32_BLE_DEBUG("Ignoring received BLE with unexpected length %u", innerPayloadLength);
     return;
   }
   NetworkMessage message;
@@ -322,7 +320,7 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
     message.lastOriginationTime = 0;
   }
 
-  ESP32_BLE_DEBUG("%u Received %s", currentTime, networkMessageToString(message, currentTime).c_str());
+  ESP32_BLE_DEBUG("Received %s", networkMessageToString(message, currentTime).c_str());
   lastReceiveTime_ = receiptTime;
 
   {
@@ -341,7 +339,7 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_
   const std::lock_guard<std::mutex> lock(mutex_);
   static_assert(kMaxPayloadLength <= kMaxInnerPayloadLength, "bad size");
   if (kMaxPayloadLength > maxInnerPayloadLength) {
-    jll_error("%u GetNextInnerPayloadToSend nonsense %u > %u", currentTime, kMaxPayloadLength, maxInnerPayloadLength);
+    jll_error("GetNextInnerPayloadToSend nonsense %u > %u", kMaxPayloadLength, maxInnerPayloadLength);
     return 0;
   }
   uint8_t innerPayloadLength;
@@ -363,11 +361,11 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_
 #if JL_IS_CONFIG(CREATURE)
   NetworkWriter writer(innerPayload, maxInnerPayloadLength);
   if (!writer.WriteNetworkDeviceId(messageToSend_.originator)) {
-    jll_error("%u Failed to write creature originator", currentTime);
+    jll_error("Failed to write creature originator");
     return 0;
   }
   if (!writer.WriteUint16(messageToSend_.precedence)) {
-    jll_error("%u Failed to write creature precedence", currentTime);
+    jll_error("Failed to write creature precedence");
     return 0;
   }
 
@@ -375,37 +373,37 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_
   // creatureRGB: 3
 
   if (!writer.WriteUint8(messageToSend_.numHops)) {
-    jll_error("%u Failed to write creature numHops", currentTime);
+    jll_error("Failed to write creature numHops");
     return 0;
   }
   if (!writer.WriteUint16(originationTimeDelta)) {
-    jll_error("%u Failed to write creature originationTimeDelta", currentTime);
+    jll_error("Failed to write creature originationTimeDelta");
     return 0;
   }
   if (!writer.WriteUint32(messageToSend_.currentPattern)) {
-    jll_error("%u Failed to write creature currentPattern", currentTime);
+    jll_error("Failed to write creature currentPattern");
     return 0;
   }
   if (!writer.WriteUint32(messageToSend_.nextPattern)) {
-    jll_error("%u Failed to write creature nextPattern", currentTime);
+    jll_error("Failed to write creature nextPattern");
     return 0;
   }
   if (!writer.WriteUint16(patternTimeDelta)) {
-    jll_error("%u Failed to write creature patternTimeDelta", currentTime);
+    jll_error("Failed to write creature patternTimeDelta");
     return 0;
   }
   if (messageToSend_.isCreature) {
     uint8_t extensionByte = kExtensionByteFlagIsCreature;
     if (messageToSend_.isPartying) { extensionByte |= kExtensionByteFlagIsPartying; }
     if (!writer.WriteUint8(extensionByte)) {
-      jll_error("%u Failed to write creature extensionByte", currentTime);
+      jll_error("Failed to write creature extensionByte");
       return 0;
     }
     uint8_t creatureRed = (messageToSend_.creatureColor >> 16) & 0xFF;
     uint8_t creatureGreen = (messageToSend_.creatureColor >> 8) & 0xFF;
     uint8_t creatureBlue = messageToSend_.creatureColor & 0xFF;
     if (!writer.WriteUint8(creatureRed) || !writer.WriteUint8(creatureGreen) || !writer.WriteUint8(creatureBlue)) {
-      jll_error("%u Failed to write creature RGB", currentTime);
+      jll_error("Failed to write creature RGB");
       return 0;
     }
   }
@@ -430,7 +428,7 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_
   if (ESP32_BLE_DEBUG_ENABLED()) {
     char advRawData[kMaxPayloadLength * 2 + 1] = {};
     convertToHex(advRawData, sizeof(advRawData), innerPayload, innerPayloadLength);
-    ESP32_BLE_DEBUG("%u Setting inner payload to <%u:%s>", currentTime, innerPayloadLength, advRawData);
+    ESP32_BLE_DEBUG("Setting inner payload to <%u:%s>", innerPayloadLength, advRawData);
   }
   return innerPayloadLength;
 }
@@ -450,12 +448,12 @@ bool Esp32BleNetwork::ExtractShouldTriggerSendAsap() {
 }
 
 void Esp32BleNetwork::StartConfigureAdvertising(Milliseconds currentTime) {
-  ESP32_BLE_DEBUG("%u StartConfigureAdvertising", currentTime);
+  ESP32_BLE_DEBUG("StartConfigureAdvertising");
   UpdateState(State::kIdle, State::kConfiguringAdvertising);
   uint8_t advPayload[kMaxInnerPayloadLength + 2];
   uint8_t innerPayloadSize = GetNextInnerPayloadToSend(&advPayload[2], kMaxInnerPayloadLength, currentTime);
   if (innerPayloadSize > kMaxInnerPayloadLength) {
-    jll_error("%u getNextAdvertisementToSend returned nonsense %u", currentTime, innerPayloadSize);
+    jll_error("getNextAdvertisementToSend returned nonsense %u", innerPayloadSize);
     innerPayloadSize = kMaxInnerPayloadLength;
     memset(advPayload, 0, sizeof(advPayload));
   }
@@ -464,7 +462,7 @@ void Esp32BleNetwork::StartConfigureAdvertising(Milliseconds currentTime) {
   if (ESP32_BLE_DEBUG_ENABLED()) {
     char advRawData[(2 + innerPayloadSize) * 2 + 1] = {};
     convertToHex(advRawData, sizeof(advRawData), advPayload, 2 + innerPayloadSize);
-    ESP32_BLE_DEBUG("%u Sending adv<%u:%s>", currentTime, 2 + innerPayloadSize, advRawData);
+    ESP32_BLE_DEBUG("Sending adv<%u:%s>", 2 + innerPayloadSize, advRawData);
   }
   ESP_ERROR_CHECK(esp_ble_gap_config_adv_data_raw(advPayload, 2 + innerPayloadSize));
 }
@@ -495,67 +493,67 @@ void Esp32BleNetwork::GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap
                      param->scan_rst.bda[0], param->scan_rst.bda[1], param->scan_rst.bda[2], param->scan_rst.bda[3],
                      param->scan_rst.bda[4], param->scan_rst.bda[5]);
             jll_error(
-                "%u Unexpected scan result %s dev_type=%d ble_addr_type=%d"
+                "Unexpected scan result %s dev_type=%d ble_addr_type=%d"
                 " ble_evt_type=%d rssi=%d flag=%d num_resps=%d adv_data_len=%u"
                 " scan_rsp_len=%u num_dis=%" PRIu32,
-                currentTime, macAddressString, param->scan_rst.dev_type, param->scan_rst.ble_addr_type,
-                param->scan_rst.ble_evt_type, param->scan_rst.rssi, param->scan_rst.flag, param->scan_rst.num_resps,
-                param->scan_rst.adv_data_len, param->scan_rst.scan_rsp_len, param->scan_rst.num_dis);
+                macAddressString, param->scan_rst.dev_type, param->scan_rst.ble_addr_type, param->scan_rst.ble_evt_type,
+                param->scan_rst.rssi, param->scan_rst.flag, param->scan_rst.num_resps, param->scan_rst.adv_data_len,
+                param->scan_rst.scan_rsp_len, param->scan_rst.num_dis);
             break;
           }
           if (ESP32_BLE_DEBUG_ENABLED()) {
             char advRawData[31 * 2 + 1] = {};
             convertToHex(advRawData, sizeof(advRawData), param->scan_rst.ble_adv, param->scan_rst.adv_data_len);
-            ESP32_BLE_DEBUG("%u Received adv<%u:%s> from " ESP_BD_ADDR_STR, currentTime, param->scan_rst.adv_data_len,
-                            advRawData, ESP_BD_ADDR_HEX(param->scan_rst.bda));
+            ESP32_BLE_DEBUG("Received adv<%u:%s> from " ESP_BD_ADDR_STR, param->scan_rst.adv_data_len, advRawData,
+                            ESP_BD_ADDR_HEX(param->scan_rst.bda));
           }
           ReceiveAdvertisement(NetworkDeviceId(param->scan_rst.bda), param->scan_rst.adv_data_len - 2,
                                &param->scan_rst.ble_adv[2], param->scan_rst.rssi, currentTime);
         } break;
         case ESP_GAP_SEARCH_INQ_CMPL_EVT: {
-          ESP32_BLE_DEBUG("%u Scanning has now stopped via ESP_GAP_SEARCH_INQ_CMPL_EVT", currentTime);
+          ESP32_BLE_DEBUG("Scanning has now stopped via ESP_GAP_SEARCH_INQ_CMPL_EVT");
           UpdateState(State::kStoppingScan, State::kIdle);
           StartConfigureAdvertising(currentTime);
         } break;
         default: {
-          ESP32_BLE_DEBUG("%u GAP scan event %d!", currentTime, param->scan_rst.search_evt);
+          ESP32_BLE_DEBUG("GAP scan event %d!", param->scan_rst.search_evt);
         } break;
       }
     } break;
     case ESP_GAP_BLE_SCAN_PARAM_SET_COMPLETE_EVT: {
-      ESP32_BLE_DEBUG("%u Scan params set", currentTime);
-      StartScanning(currentTime);
+      ESP32_BLE_DEBUG("Scan params set");
+      StartScanning();
     } break;
     case ESP_GAP_BLE_SCAN_START_COMPLETE_EVT: {
-      ESP32_BLE_DEBUG("%u Scanning has now started", currentTime);
+      ESP32_BLE_DEBUG("Scanning has now started");
       UpdateState(State::kStartingScan, State::kScanning);
       StopScanningIn(UnpredictableRandom::GetNumberBetween(500, 1000));
     } break;
     case ESP_GAP_BLE_SCAN_STOP_COMPLETE_EVT: {
-      ESP32_BLE_DEBUG("%u Scanning has now stopped", currentTime);
+      ESP32_BLE_DEBUG("Scanning has now stopped");
       UpdateState(State::kStoppingScan, State::kIdle);
       StartConfigureAdvertising(currentTime);
     } break;
     case ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT: {
-      ESP32_BLE_DEBUG("%u Advertising params set", currentTime);
-      StartAdvertising(currentTime);
+      ESP32_BLE_DEBUG("Advertising params set");
+      StartAdvertising();
     } break;
     case ESP_GAP_BLE_ADV_START_COMPLETE_EVT: {
-      ESP32_BLE_DEBUG("%u Advertising has now started", currentTime);
+      ESP32_BLE_DEBUG("Advertising has now started");
       UpdateState(State::kStartingAdvertising, State::kAdvertising);
       StopAdvertisingIn(5);
     } break;
     case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT: {
-      ESP32_BLE_DEBUG("%u Advertising has now stopped", currentTime);
+      ESP32_BLE_DEBUG("Advertising has now stopped");
       UpdateState(State::kStoppingAdvertising, State::kIdle);
       if (ExtractShouldTriggerSendAsap()) {
         StartConfigureAdvertising(currentTime);
       } else {
-        StartScanning(currentTime);
+        StartScanning();
       }
     } break;
     default: {
-      ESP32_BLE_DEBUG("%u GAP callback fired with unknown event=%d!", currentTime, event);
+      ESP32_BLE_DEBUG("GAP callback fired with unknown event=%d!", event);
     } break;
   }
 }
@@ -600,8 +598,8 @@ NetworkDeviceId Esp32BleNetwork::InitBluetoothStackAndQueryLocalDeviceId() {
   esp_bd_addr_t localAddress;
   memset(localAddress, 0, sizeof(localAddress));
   ESP_ERROR_CHECK(esp_ble_gap_get_local_used_addr(localAddress, &addressType));
-  jll_info("%u Initialized BLE with local MAC address " ESP_BD_ADDR_STR " (type %u)", timeMillis(),
-           ESP_BD_ADDR_HEX(localAddress), addressType);
+  jll_info("Initialized BLE with local MAC address " ESP_BD_ADDR_STR " (type %u)", ESP_BD_ADDR_HEX(localAddress),
+           addressType);
   return NetworkDeviceId(localAddress);
 }
 

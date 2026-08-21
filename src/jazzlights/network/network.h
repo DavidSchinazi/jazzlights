@@ -141,7 +141,7 @@ class Network {
   virtual void setMessageToSend(const NetworkMessage& messageToSend, Milliseconds currentTime) = 0;
 
   // Disables sending until the next call to setMessageToSend.
-  virtual void disableSending(Milliseconds currentTime) = 0;
+  virtual void disableSending() = 0;
 
   // Gets list of received messages since last call.
   std::list<NetworkMessage> getReceivedMessages(Milliseconds currentTime);
@@ -222,7 +222,7 @@ class Network {
 class UdpNetwork : public Network {
  public:
   void setMessageToSend(const NetworkMessage& messageToSend, Milliseconds currentTime) override;
-  void disableSending(Milliseconds currentTime) override;
+  void disableSending() override;
   void triggerSendAsap(Milliseconds currentTime) override;
   bool shouldEcho() const override { return false; }
   Milliseconds getLastReceiveTime() const override { return lastReceiveTime_; }

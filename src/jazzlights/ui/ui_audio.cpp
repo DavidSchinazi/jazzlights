@@ -50,11 +50,11 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
     if (visualization_mode_ == VisualizationMode::kMenu) {
       if (detail.y >= 10 && detail.y <= 48 && detail.x >= 20 && detail.x <= 300) {
         visualization_mode_ = VisualizationMode::kSpectrum;
-        jll_info("%u Switched to spectrum mode", currentTime);
+        jll_info("Switched to spectrum mode");
         M5.Display.fillScreen(BLACK);
       } else if (detail.y >= 53 && detail.y <= 91 && detail.x >= 20 && detail.x <= 300) {
         visualization_mode_ = VisualizationMode::kWaveform;
-        jll_info("%u Switched to waveform mode", currentTime);
+        jll_info("Switched to waveform mode");
         M5.Display.fillScreen(BLACK);
       } else if (detail.y >= 96 && detail.y <= 134 && detail.x >= 20 && detail.x <= 300) {
         Player::SoundReactiveMode next_mode;
@@ -70,17 +70,17 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
           case Player::SoundReactiveMode::kOn: mode_str = "ON"; break;
           case Player::SoundReactiveMode::kOff: mode_str = "OFF"; break;
         }
-        jll_info("%u Toggled sound reactive to %s", currentTime, mode_str);
+        jll_info("Toggled sound reactive to %s", mode_str);
         M5.Display.fillScreen(BLACK);
       } else if (detail.y >= 139 && detail.y <= 177 && detail.x >= 20 && detail.x <= 300) {
         visualization_mode_ = VisualizationMode::kBrightnessKeypad;
         keypad_value_ = 0;
         keypad_has_value_ = false;
-        jll_info("%u Switched to brightness keypad", currentTime);
+        jll_info("Switched to brightness keypad");
         M5.Display.fillScreen(BLACK);
       } else if (detail.y >= 182 && detail.y <= 220 && detail.x >= 20 && detail.x <= 300) {
         visualization_mode_ = VisualizationMode::kPaletteMenu;
-        jll_info("%u Switched to palette menu", currentTime);
+        jll_info("Switched to palette menu");
         M5.Display.fillScreen(BLACK);
       }
     } else if (visualization_mode_ == VisualizationMode::kBrightnessKeypad) {
@@ -110,7 +110,7 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
           if (keypad_has_value_) {
             if (keypad_value_ > 255) keypad_value_ = 255;
             player_.set_brightness(keypad_value_);
-            jll_info("%u Set brightness to %" PRId32, currentTime, keypad_value_);
+            jll_info("Set brightness to %" PRId32, keypad_value_);
           }
           visualization_mode_ = VisualizationMode::kMenu;
           M5.Display.fillScreen(BLACK);
@@ -125,7 +125,7 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
         visualization_mode_ = VisualizationMode::kMenu;
         M5.Display.fillScreen(BLACK);
       } else if (row == 0 && col == 1) {
-        player_.stopForcePalette(currentTime);
+        player_.stopForcePalette();
         visualization_mode_ = VisualizationMode::kMenu;
         M5.Display.fillScreen(BLACK);
       } else {
@@ -153,7 +153,7 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
       }
     } else {
       visualization_mode_ = VisualizationMode::kMenu;
-      jll_info("%u Switched to menu mode", currentTime);
+      jll_info("Switched to menu mode");
       M5.Display.fillScreen(BLACK);
     }
   }
@@ -180,13 +180,13 @@ void AudioVisualizerUi::RunLoop(Milliseconds currentTime) {
   const bool no_audio_data = data.last_read_time < 0 || currentTime - data.last_read_time > 1000;
   if (no_audio_data != showing_no_audio_data_) {
     showing_no_audio_data_ = no_audio_data;
-    jll_info("%u %s 'No Audio Data' mode", currentTime, showing_no_audio_data_ ? "Entered" : "Exited");
+    jll_info("%s 'No Audio Data' mode", showing_no_audio_data_ ? "Entered" : "Exited");
     M5.Display.fillScreen(BLACK);
   }
 
   if (data.squelch != showing_squelch_) {
     showing_squelch_ = data.squelch;
-    jll_info("%u %s 'Squelch' mode", currentTime, showing_squelch_ ? "Entered" : "Exited");
+    jll_info("%s 'Squelch' mode", showing_squelch_ ? "Entered" : "Exited");
     M5.Display.fillScreen(BLACK);
   }
 
