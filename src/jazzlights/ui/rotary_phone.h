@@ -7,6 +7,7 @@
 #if JL_IS_CONFIG(PHONE)
 
 #include <cstdint>
+#include <optional>
 
 #include "jazzlights/ui/gpio_button.h"
 
@@ -19,7 +20,7 @@ class PhonePinHandler : public GpioPin::PinInterface {
   // Called once per primary runloop.
   void RunLoop();
   // From GpioPin::PinInterface.
-  void HandleChange(uint8_t pin, bool isClosed, int64_t timeOfChange) override;
+  void HandleChange(uint8_t pin, bool isClosed, Microseconds timeOfChange) override;
 
  private:
   PhonePinHandler();
@@ -27,9 +28,9 @@ class PhonePinHandler : public GpioPin::PinInterface {
   bool dialing_ = false;
   bool lastKnownDigitIsClosed_ = false;
   uint8_t digitCount_ = 0;
-  int64_t lastDigitEvent_ = -1;
+  std::optional<Microseconds> lastDigitEvent_;
   uint64_t fullNumber_ = 0;
-  int64_t lastNumberEvent_ = -1;
+  std::optional<Microseconds> lastNumberEvent_;
   GpioPin digitPin_;
   GpioPin dialPin_;
 };

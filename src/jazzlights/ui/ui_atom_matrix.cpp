@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 
 #include "jazzlights/effect/creatures.h"
 #include "jazzlights/fastled_runner.h"
@@ -19,8 +20,8 @@ namespace jazzlights {
 namespace {
 
 static constexpr uint8_t kButtonPin = 39;
-static constexpr Milliseconds kButtonLockTimeout = 10000;                     // 10s.
-static constexpr Milliseconds kButtonLockTimeoutDuringUnlockSequence = 4000;  // 4s.
+static constexpr Microseconds kButtonLockTimeout = 10000000;                     // 10s.
+static constexpr Microseconds kButtonLockTimeoutDuringUnlockSequence = 4000000;  // 4s.
 
 static constexpr uint8_t kBrightnessList[] = {2, 4, 8, 16, 32, 64, 128, 255};
 static constexpr uint8_t kNumBrightnesses = sizeof(kBrightnessList) / sizeof(kBrightnessList[0]);
@@ -111,11 +112,11 @@ uint8_t GetReceiveTimeBrightness(Milliseconds lastReceiveTime) {
 void AtomMatrixUi::ScreenDisplay() {
   // M5Stack recommends not setting the atom screen brightness greater
   // than 20 to avoid melting the screen/cover over the LEDs.
-  // Extract bits 6,7,8,9 from milliseconds timer to get a value that cycles from 0 to 15 every second
+  // Extract bits 16,17,18,19 from microseconds timer to get a value that cycles from 0 to 15 every second
   // For t values 0..7 we subtract that from 20 to get brightness 20..13
   // For t values 8..15 we add that to 4 to get brightness 12..19
   // This gives us a brightness that starts at 20, dims to 12, and then brightens back to 20 every second
-  const uint32_t t = (timeMillis() >> 6) & 0xF;
+  const uint32_t t = (timeMicros() >> 16) & 0xF;
   uint8_t brightness = t & 8 ? 4 + t : 20 - t;
   if (memcmp(screenLEDs_, kAtomScreenLEDsAllZero, sizeof(screenLEDs_)) == 0) { brightness = 0; }
   if (brightness == brightnessLastWrite_ && memcmp(screenLEDs_, screenLEDsLastWrite_, sizeof(screenLEDs_)) == 0) {
@@ -237,7 +238,7 @@ void AtomMatrixUi::HandleUnlockSequence(bool wasLongPress) {
   } else {
     buttonLockState_++;
     // To reject accidental presses, exit unlock sequence if four seconds without progress
-    lockButtonTime_ = timeMillis() + kButtonLockTimeoutDuringUnlockSequence;
+    lockButtonTime_ = timeMicros() + kButtonLockTimeoutDuringUnlockSequence;
   }
 }
 
@@ -304,24 +305,23 @@ bool AtomMatrixUi::ScreenMessage() {
     jll_info("Stopping boot message due to button press");
     displayingBootMessage_ = false;
   } else {
-    Milliseconds currentTime = timeMillis();
-    static Milliseconds bootMessageStartTime = -1;
-    if (bootMessageStartTime < 0) { bootMessageStartTime = currentTime; }
-    Milliseconds offsetMillis = currentTime - bootMessageStartTime;
+    Microseconds currentTime = timeMicros();
+    if (!bootMessageStartTime_) { bootMessageStartTime_ = currentTime; }
+    Microseconds offsetMicros = currentTime - *bootMessageStartTime_;
 #if JL_IS_CONFIG(CREATURE)
     static const CRGB textColor = ThisCreatureColor();
-    static constexpr Milliseconds kShowColorTime = 3000;
-    if (offsetMillis <= kShowColorTime) {
+    static constexpr Microseconds kShowColorTime = 3000000;
+    if (offsetMicros <= kShowColorTime) {
       // Show this creature's color for `kShowColorTime` after boot.
       for (int i = 0; i < ATOM_SCREEN_NUM_LEDS; i++) { screenLEDs_[i] = textColor; }
       ScreenDisplay();
       return true;
     }
-    offsetMillis -= kShowColorTime;
+    offsetMicros -= kShowColorTime;
 #else   // CREATURE
     static const CRGB textColor = CRGB::Red;
 #endif  // CREATURE
-    displayingBootMessage_ = displayText(BOOT_MESSAGE, screenLEDs_, textColor, CRGB::Black, offsetMillis);
+    displayingBootMessage_ = displayText(BOOT_MESSAGE, screenLEDs_, textColor, CRGB::Black, offsetMicros);
     if (!displayingBootMessage_) {
       jll_info("Done displaying boot message");
     } else {
@@ -332,7 +332,7 @@ bool AtomMatrixUi::ScreenMessage() {
 }
 
 void AtomMatrixUi::RunLoop() {
-  Milliseconds currentTime = timeMillis();
+  Microseconds currentTime = timeMicros();
   button_.RunLoop();
 
   if (ScreenMessage()) { return; }
@@ -347,7 +347,7 @@ void AtomMatrixUi::RunLoop() {
 #if JL_BUTTON_LOCK
 
   // If idle-time expired, return to ‘locked’ state
-  if (buttonLockState_ != 0 && currentTime - lockButtonTime_ >= 0) {
+  if (buttonLockState_ != 0 && lockButtonTime_ && currentTime - *lockButtonTime_ >= 0) {
     jll_info("Locking buttons");
     buttonLockState_ = 0;
   }

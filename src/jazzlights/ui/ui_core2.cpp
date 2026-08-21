@@ -166,9 +166,9 @@ void SetupButtons() {
 }
 
 std::string gCurrentPatternName;
-constexpr Milliseconds kLockDelay = 60000;
-constexpr Milliseconds kUnlockingTime = 5000;
-Milliseconds gLastScreenInteractionTime = -1;
+constexpr Microseconds kLockDelay = 60000000;
+constexpr Microseconds kUnlockingTime = 5000000;
+std::optional<Microseconds> gLastScreenInteractionTime;
 
 class PatternControlMenu {
  public:
@@ -644,7 +644,7 @@ void startMainMenu(Player& player) {
 }
 
 void lockScreen() {
-  gLastScreenInteractionTime = -1;
+  gLastScreenInteractionTime.reset();
   gScreenMode = ScreenMode::kOff;
   unlock1Button->Hide();
   unlock2Button->Hide();
@@ -659,7 +659,7 @@ void lockScreen() {
 
 void patternControlButtonPressed(Player& player) {
   gScreenMode = ScreenMode::kPatternControlMenu;
-  gLastScreenInteractionTime = timeMillis();
+  gLastScreenInteractionTime = timeMicros();
   HideMainMenuButtons();
   core2ScreenRenderer.setEnabled(false);
   TouchButtonManager::Get()->Redraw();
@@ -669,7 +669,7 @@ void patternControlButtonPressed(Player& player) {
 
 void orreryButtonPressed(Player& player) {
   gScreenMode = ScreenMode::kOrreryMenu;
-  gLastScreenInteractionTime = timeMillis();
+  gLastScreenInteractionTime = timeMicros();
   HideMainMenuButtons();
   core2ScreenRenderer.setEnabled(false);
   TouchButtonManager::Get()->Redraw();
@@ -678,7 +678,7 @@ void orreryButtonPressed(Player& player) {
 }
 
 void confirmButtonPressed(Player& player) {
-  gLastScreenInteractionTime = timeMillis();
+  gLastScreenInteractionTime = timeMicros();
   if (gScreenMode == ScreenMode::kPatternControlMenu) {
     if (gPatternControlMenu.confirmPressed(player)) {
       HidePatternControlMenuButtons();
@@ -761,7 +761,7 @@ void Core2AwsUi::DrawSystemTextLines() {
 }
 
 void Core2AwsUi::RunLoop() {
-  Milliseconds currentTime = timeMillis();
+  Microseconds currentTime = timeMicros();
   M5.update();
   auto touchDetail = M5.Touch.getDetail();
   if (touchDetail.isPressed()) {
@@ -1034,10 +1034,10 @@ void Core2AwsUi::RunLoop() {
     }
   }
 #if JL_BUTTON_LOCK
-  if (gLastScreenInteractionTime >= 0) {
-    Milliseconds lockTime = kLockDelay;
+  if (gLastScreenInteractionTime) {
+    Microseconds lockTime = kLockDelay;
     if (gScreenMode == ScreenMode::kLocked1 || gScreenMode == ScreenMode::kLocked2) { lockTime = kUnlockingTime; }
-    if (currentTime - gLastScreenInteractionTime > lockTime) {
+    if (currentTime - *gLastScreenInteractionTime > lockTime) {
       jll_info("Locking screen due to inactivity");
       lockScreen();
     }

@@ -78,7 +78,7 @@ class M5StickCUi : public Esp32Ui, public GpioButton::ButtonInterface {
   // 4 Awaiting release
   // 5 Unlocked
   uint8_t buttonLockState_ = 0;
-  Milliseconds lockButtonTime_ = 0;  // Time at which we'll lock the buttons.
+  std::optional<Microseconds> lockButtonTime_;  // Time at which we'll lock the buttons.
 };
 
 }  // namespace jazzlights

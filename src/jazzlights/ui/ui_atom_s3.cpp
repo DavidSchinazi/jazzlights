@@ -8,8 +8,8 @@
 namespace jazzlights {
 namespace {
 static constexpr uint8_t kButtonPin = 41;
-static constexpr Milliseconds kButtonLockTimeout = 10000;                     // 10s.
-static constexpr Milliseconds kButtonLockTimeoutDuringUnlockSequence = 4000;  // 4s.
+static constexpr Microseconds kButtonLockTimeout = 10000000;                     // 10s.
+static constexpr Microseconds kButtonLockTimeoutDuringUnlockSequence = 4000000;  // 4s.
 
 static constexpr uint8_t kBrightnessList[] = {2, 4, 8, 16, 32, 64, 128, 255};
 static constexpr uint8_t kNumBrightnesses = sizeof(kBrightnessList) / sizeof(kBrightnessList[0]);
@@ -119,7 +119,7 @@ void AtomS3Ui::HandleUnlockSequence(bool wasLongPress) {
   } else {
     buttonLockState_++;
     // To reject accidental presses, exit unlock sequence if four seconds without progress
-    lockButtonTime_ = timeMillis() + kButtonLockTimeoutDuringUnlockSequence;
+    lockButtonTime_ = timeMicros() + kButtonLockTimeoutDuringUnlockSequence;
   }
 }
 
@@ -133,13 +133,13 @@ void AtomS3Ui::InitialSetup() {
 void AtomS3Ui::FinalSetup() {}
 
 void AtomS3Ui::RunLoop() {
-  Milliseconds currentTime = timeMillis();
+  Microseconds currentTime = timeMicros();
   button_.RunLoop();
   M5.update();
 
 #if JL_BUTTON_LOCK
   // If idle-time expired, return to ‘locked’ state
-  if (buttonLockState_ != 0 && currentTime - lockButtonTime_ >= 0) {
+  if (buttonLockState_ != 0 && lockButtonTime_ && currentTime - *lockButtonTime_ >= 0) {
     jll_info("Locking buttons");
     buttonLockState_ = 0;
   }

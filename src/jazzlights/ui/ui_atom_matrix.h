@@ -8,6 +8,8 @@
 
 #define ATOM_SCREEN_NUM_LEDS 25
 
+#include <optional>
+
 #include "jazzlights/fastled_wrapper.h"
 #include "jazzlights/ui/gpio_button.h"
 
@@ -39,6 +41,7 @@ class AtomMatrixUi : public Esp32Ui, public GpioButton::ButtonInterface {
 
   GpioButton button_;
   bool displayingBootMessage_ = true;
+  std::optional<Microseconds> bootMessageStartTime_;
   // Definitions of the button lock states:
   // 0 Awaiting short press
   // 1 Awaiting long press
@@ -47,7 +50,7 @@ class AtomMatrixUi : public Esp32Ui, public GpioButton::ButtonInterface {
   // 4 Awaiting release
   // 5 Unlocked
   uint8_t buttonLockState_ = 0;
-  Milliseconds lockButtonTime_ = 0;  // Time at which we'll lock the buttons.
+  std::optional<Microseconds> lockButtonTime_;  // Time at which we'll lock the buttons.
 
   enum class MenuMode {
     kNext,

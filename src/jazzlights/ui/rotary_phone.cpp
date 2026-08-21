@@ -33,10 +33,10 @@ static constexpr uint8_t kPhoneDialPin = 2;
 #error "unsupported controller for phone"
 #endif
 
-static constexpr int64_t kPhoneDebounceDuration = 2000;  // 2ms.
-static constexpr int64_t kNumberTime = 3000000;          // 3s.
-static constexpr int64_t kDigitMinTime = 30000;          // 30ms.
-static constexpr int64_t kDigitMaxTime = 120000;         // 120ms.
+static constexpr Microseconds kPhoneDebounceDuration = 2000;  // 2ms.
+static constexpr Microseconds kNumberTime = 3000000;          // 3s.
+static constexpr Microseconds kDigitMinTime = 30000;          // 30ms.
+static constexpr Microseconds kDigitMaxTime = 120000;         // 120ms.
 }  // namespace
 
 PhonePinHandler::PhonePinHandler()
@@ -54,7 +54,7 @@ void PhonePinHandler::RunLoop() {
   dialPin_.RunLoop();
 }
 
-void PhonePinHandler::HandleChange(uint8_t pin, bool isClosed, int64_t timeOfChange) {
+void PhonePinHandler::HandleChange(uint8_t pin, bool isClosed, Microseconds timeOfChange) {
   JL_PHONE_DEBUG(JL_PHONE_TIME_FMT " PhonePinHandler: pin %u %s", JL_PHONE_TIME_VAL(timeOfChange), pin,
                  (isClosed ? "closed" : "opened"));
   if (pin == kPhoneDialPin) {
@@ -64,8 +64,8 @@ void PhonePinHandler::HandleChange(uint8_t pin, bool isClosed, int64_t timeOfCha
     } else {
       JL_PHONE_DEBUG(JL_PHONE_TIME_FMT " Dialed %u lastKnownDigitIsClosed_=%s", JL_PHONE_TIME_VAL(timeOfChange),
                      digitCount_, (lastKnownDigitIsClosed_ ? "closed" : "open"));
-      if (!lastKnownDigitIsClosed_) {
-        const int64_t timeListLastDigitEvent = timeOfChange - lastDigitEvent_;
+      if (!lastKnownDigitIsClosed_ && lastDigitEvent_) {
+        const Microseconds timeListLastDigitEvent = timeOfChange - *lastDigitEvent_;
         JL_PHONE_DEBUG(JL_PHONE_TIME_FMT " Dialing ended with digit pin still open after " JL_PHONE_TIME_FMT,
                        JL_PHONE_TIME_VAL(timeOfChange), JL_PHONE_TIME_VAL(timeListLastDigitEvent));
         if (timeListLastDigitEvent >= kDigitMinTime && timeListLastDigitEvent <= kDigitMaxTime) {
@@ -76,13 +76,13 @@ void PhonePinHandler::HandleChange(uint8_t pin, bool isClosed, int64_t timeOfCha
       }
       if (0 < digitCount_ && digitCount_ <= 10) {
         if (digitCount_ == 10) { digitCount_ = 0; }
-        if (lastNumberEvent_ < 0 || timeOfChange - lastNumberEvent_ > kNumberTime) { fullNumber_ = 0; }
+        if (!lastNumberEvent_ || timeOfChange - *lastNumberEvent_ > kNumberTime) { fullNumber_ = 0; }
         fullNumber_ = fullNumber_ * 10 + digitCount_;
         jll_info(JL_PHONE_TIME_FMT " Dialed %llu", JL_PHONE_TIME_VAL(timeOfChange), fullNumber_);
         lastNumberEvent_ = timeOfChange;
       }
       digitCount_ = 0;
-      lastDigitEvent_ = -1;
+      lastDigitEvent_.reset();
     }
   } else if (pin == kPhoneDigitPin) {
     if (lastKnownDigitIsClosed_ == isClosed) {
@@ -92,8 +92,8 @@ void PhonePinHandler::HandleChange(uint8_t pin, bool isClosed, int64_t timeOfCha
       lastKnownDigitIsClosed_ = isClosed;
     }
     if (dialing_) {
-      if (lastDigitEvent_ >= 0) {
-        const int64_t timeListLastDigitEvent = timeOfChange - lastDigitEvent_;
+      if (lastDigitEvent_) {
+        const Microseconds timeListLastDigitEvent = timeOfChange - *lastDigitEvent_;
         JL_PHONE_DEBUG(JL_PHONE_TIME_FMT " Digit pin was %s for " JL_PHONE_TIME_FMT, JL_PHONE_TIME_VAL(timeOfChange),
                        (isClosed ? "open" : "closed"), JL_PHONE_TIME_VAL(timeListLastDigitEvent));
         if (isClosed && timeListLastDigitEvent >= kDigitMinTime && timeListLastDigitEvent <= kDigitMaxTime) {

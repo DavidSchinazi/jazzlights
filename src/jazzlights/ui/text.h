@@ -15,7 +15,7 @@ namespace jazzlights {
 #define MATRIX_SIZE 25
 
 bool displayText(const std::string& text, CRGB pixels[MATRIX_SIZE], CRGB textColor, CRGB backgroundColor,
-                 Milliseconds offsetMillis);
+                 Microseconds offsetMicros);
 
 }  // namespace jazzlights
 

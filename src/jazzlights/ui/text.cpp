@@ -111,11 +111,11 @@ void writeColumn(const CharacterPixels& characterPixels, uint8_t characterColumn
 }
 
 bool displayText(const std::string& text, CRGB pixels[MATRIX_SIZE], CRGB textColor, CRGB backgroundColor,
-                 Milliseconds offsetMillis) {
-  constexpr Milliseconds quantum = 150;
+                 Microseconds offsetMicros) {
+  constexpr Microseconds quantum = 150000;
   // Start at 4 to start displaying from right edge of screen.
   size_t columns = 4;
-  const size_t col0 = offsetMillis / quantum;
+  const size_t col0 = offsetMicros / quantum;
   const size_t col4 = col0 + 4;
   size_t textIndex = 0;
   CRGB tmpPixels[MATRIX_SIZE];
