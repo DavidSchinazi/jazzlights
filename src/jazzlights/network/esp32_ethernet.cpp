@@ -317,7 +317,7 @@ void Esp32EthernetNetwork::RunTask() {
   s << " (from " << addressString << ":" << ntohs(sin.sin_port) << ")";
   std::string receiptDetails = s.str();
   NetworkMessage receivedMessage;
-  if (ParseUdpPayload(udpPayload_, n, receiptDetails, currentTime, &receivedMessage)) {
+  if (ParseUdpPayload(udpPayload_, n, receiptDetails, &receivedMessage)) {
     lastReceiveTime_.store(timeMillis(), std::memory_order_relaxed);
     const std::lock_guard<std::mutex> lock(mutex_);
     receivedMessages_.push_back(receivedMessage);

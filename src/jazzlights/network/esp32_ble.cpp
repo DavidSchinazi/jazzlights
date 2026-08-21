@@ -199,7 +199,8 @@ constexpr uint8_t kExtensionByteFlagIsPartying = 0x40;
 constexpr uint8_t kExtensionByteFlagHasOrreryScene = 0x20;
 
 void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifier, uint8_t innerPayloadLength,
-                                           const uint8_t* innerPayload, int rssi, Milliseconds currentTime) {
+                                           const uint8_t* innerPayload, int rssi) {
+  Milliseconds currentTime = timeMillis();
   if (innerPayloadLength > kMaxInnerPayloadLength) {
     jll_error("Received advertisement with unexpected length %u", innerPayloadLength);
     return;
@@ -469,11 +470,10 @@ void Esp32BleNetwork::StartConfigureAdvertising() {
 }
 
 void Esp32BleNetwork::GapCallback(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param) {
-  get()->GapCallbackInner(event, param, timeMillis());
+  get()->GapCallbackInner(event, param);
 }
 
-void Esp32BleNetwork::GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param,
-                                       Milliseconds currentTime) {
+void Esp32BleNetwork::GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param) {
   switch (event) {
     case ESP_GAP_BLE_SCAN_RESULT_EVT: {
       switch (param->scan_rst.search_evt) {
@@ -509,7 +509,7 @@ void Esp32BleNetwork::GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap
                             ESP_BD_ADDR_HEX(param->scan_rst.bda));
           }
           ReceiveAdvertisement(NetworkDeviceId(param->scan_rst.bda), param->scan_rst.adv_data_len - 2,
-                               &param->scan_rst.ble_adv[2], param->scan_rst.rssi, currentTime);
+                               &param->scan_rst.ble_adv[2], param->scan_rst.rssi);
         } break;
         case ESP_GAP_SEARCH_INQ_CMPL_EVT: {
           ESP32_BLE_DEBUG("Scanning has now stopped via ESP_GAP_SEARCH_INQ_CMPL_EVT");

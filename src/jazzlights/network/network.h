@@ -197,7 +197,7 @@ class Network {
 
   // Parse the UDP payload we use over IP networks into a NetworkMessage.
   bool ParseUdpPayload(uint8_t* udpPayload, size_t udpPayloadLength, const std::string& receiptDetails,
-                       Milliseconds currentTime, NetworkMessage* outMessage);
+                       NetworkMessage* outMessage);
 
   // Write a NetworkMessage into a buffer that can be sent over UDP/IP.
   bool WriteUdpPayload(const NetworkMessage& messageToSend, uint8_t* udpPayload, size_t udpPayloadLength);

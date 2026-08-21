@@ -181,7 +181,8 @@ constexpr uint8_t kPatternTimeOffset = kNextPatternOffset + 4;
 constexpr size_t kPayloadLength = kPatternTimeOffset + 2;
 
 bool Network::ParseUdpPayload(uint8_t* udpPayload, size_t udpPayloadLength, const std::string& receiptDetails,
-                              Milliseconds currentTime, NetworkMessage* outMessage) {
+                              NetworkMessage* outMessage) {
+  Milliseconds currentTime = timeMillis();
   if (udpPayloadLength < kPayloadLength) {
     jll_debug("%s Received packet too short, received %zd bytes, expected at least %zu bytes",
               NetworkTypeToString(type()), udpPayloadLength, kPayloadLength);
@@ -238,7 +239,7 @@ std::list<NetworkMessage> UdpNetwork::getReceivedMessagesImpl() {
     ssize_t n = recv(&udpPayload[0], sizeof(udpPayload), &receiptDetails);
     if (n <= 0) { break; }
     NetworkMessage receivedMessage;
-    if (!ParseUdpPayload(udpPayload, n, receiptDetails, currentTime, &receivedMessage)) { continue; }
+    if (!ParseUdpPayload(udpPayload, n, receiptDetails, &receivedMessage)) { continue; }
     receivedMessages.push_back(receivedMessage);
     lastReceiveTime_ = currentTime;
   }
