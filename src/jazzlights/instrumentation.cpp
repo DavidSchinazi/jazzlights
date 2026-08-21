@@ -4,6 +4,7 @@
 #include <freertos/FreeRTOS.h>
 
 #include <cstddef>
+#include <optional>
 
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/time.h"
@@ -36,13 +37,13 @@ const char* CountPointToString(CountPoint countPoint) {
   return "Unknown";
 }
 
-int64_t gLastCountPointPrint = -1;
+std::optional<Microseconds> gLastCountPointPrint;
 uint64_t gCountPointDatas[kNumCountPoints];
 
 void printAndClearCountPoints() {
-  int64_t curTime = esp_timer_get_time();
-  if (gLastCountPointPrint >= 0) {
-    const int64_t period = curTime - gLastCountPointPrint;
+  Microseconds curTime = timeMicros();
+  if (gLastCountPointPrint) {
+    const Microseconds period = curTime - *gLastCountPointPrint;
     for (size_t i = 0; i < kNumCountPoints; i++) {
       jll_info("%12s: %f counts/s", CountPointToString(static_cast<CountPoint>(i)),
                1000000.0 * gCountPointDatas[i] / period);
@@ -58,16 +59,16 @@ int64_t gNumLedWrites = 0;
 
 void saveCountPoint(CountPoint countPoint) { gCountPointDatas[countPoint]++; }
 
-int64_t gLastLedStart = 0;
-int64_t gLedTimeSum = 0;
+Microseconds gLastLedStart = 0;
+Microseconds gLedTimeSum = 0;
 int64_t gLedTimeCount = 0;
-int64_t gLedTimeMin = std::numeric_limits<int64_t>::max();
-int64_t gLedTimeMax = -1;
+Microseconds gLedTimeMin = std::numeric_limits<Microseconds>::max();
+Microseconds gLedTimeMax = std::numeric_limits<Microseconds>::min();
 
-void ledWriteStart() { gLastLedStart = esp_timer_get_time(); }
+void ledWriteStart() { gLastLedStart = timeMicros(); }
 
 void ledWriteEnd() {
-  const int64_t ledTime = esp_timer_get_time() - gLastLedStart;
+  const Microseconds ledTime = timeMicros() - gLastLedStart;
   gLedTimeSum += ledTime;
   gLedTimeCount++;
   gNumLedWrites++;
@@ -168,8 +169,8 @@ void printInstrumentationInfo() {
   }
   gLedTimeCount = 0;
   gLedTimeSum = 0;
-  gLedTimeMin = std::numeric_limits<int64_t>::max();
-  gLedTimeMax = -1;
+  gLedTimeMin = std::numeric_limits<Microseconds>::max();
+  gLedTimeMax = std::numeric_limits<Microseconds>::min();
 #endif  // JL_TIMING
 }
 

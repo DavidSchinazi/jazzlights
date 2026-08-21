@@ -2,6 +2,7 @@
 #define JL_INSTRUMENTATION_H
 
 #include <cstddef>
+#include <optional>
 
 #include "jazzlights/config.h"
 #include "jazzlights/util/time.h"
@@ -82,7 +83,7 @@ template <typename ENUM>
 class TimePointSaver {
  public:
   void PrintAndClearTimePoints() {
-    int64_t totalTimePointsSum = 0;
+    Microseconds totalTimePointsSum = 0;
     for (size_t i = 0; i < static_cast<size_t>(ENUM::kNumTimePoints); i++) {
       totalTimePointsSum += timePointDatas_[i].sumTimes;
     }
@@ -101,9 +102,9 @@ class TimePointSaver {
     const TimePointData& prevTimePointData = static_cast<size_t>(timePoint) > 0
                                                  ? timePointDatas_[static_cast<size_t>(timePoint) - 1]
                                                  : timePointDatas_[static_cast<size_t>(ENUM::kNumTimePoints) - 1];
-    thisTimePointData.lastSavedTime = esp_timer_get_time();
-    if (prevTimePointData.lastSavedTime >= 0) {
-      thisTimePointData.sumTimes += thisTimePointData.lastSavedTime - prevTimePointData.lastSavedTime;
+    thisTimePointData.lastSavedTime = timeMicros();
+    if (prevTimePointData.lastSavedTime) {
+      thisTimePointData.sumTimes += *thisTimePointData.lastSavedTime - *prevTimePointData.lastSavedTime;
     }
   }
 
@@ -114,8 +115,8 @@ class TimePointSaver {
 
  private:
   struct TimePointData {
-    int64_t lastSavedTime = -1;
-    int64_t sumTimes = 0;
+    std::optional<Microseconds> lastSavedTime;
+    Microseconds sumTimes = 0;
   };
 
   TimePointData timePointDatas_[static_cast<size_t>(ENUM::kNumTimePoints)];
