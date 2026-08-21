@@ -19,11 +19,11 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev wayland-protocols libwayland-dev libxkbcommon-dev libglu1-mesa-dev freeglut3-dev mesa-common-dev
+          sudo apt install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev wayland-protocols libwayland-dev libxkbcommon-dev libglu1-mesa-dev freeglut3-dev mesa-common-dev jq
       - name: Download and Install GLFW3 Dependency
         run: |
-          GLFW_VERSION=$(curl -Ls https://api.github.com/repos/glfw/glfw/releases/latest | grep tag_name | sed 's/.*:[^"]"\([^"]*\)".*/\1/')
-          echo "${GLFW_VERSION}"
+          GLFW_VERSION=$(curl -Ls https://api.github.com/repos/glfw/glfw/releases/latest | jq -r '.tag_name')
+          echo "GLFW_VERSION: ${GLFW_VERSION}"
           if [ -z "${GLFW_VERSION}" ] ; then
             echo "Failed to parse latest GLFW version"
             exit 1
