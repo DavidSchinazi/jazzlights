@@ -35,7 +35,7 @@ int runMain(int argc, char** argv) {
   player.setRandomizeLocalDeviceId(true);
   player.connect(UnixUdpNetwork::get());
   player.begin();
-  if (startLooping) { player.loopOne(timeMillis()); }
+  if (startLooping) { player.loopOne(); }
   if (shouldSetPattern) { player.setPattern(pattern, timeMillis()); }
 
   return runGui("JazzLights Demo", player, player.bounds(), /*fullscreen=*/false, killTime);
