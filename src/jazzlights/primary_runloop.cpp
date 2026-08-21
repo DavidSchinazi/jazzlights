@@ -2,11 +2,6 @@
 
 #include "jazzlights/config.h"
 
-#if JL_M5_EXT_POWER
-// We have to enable power to Grove
-#include <M5Unified.h>
-#endif
-
 #ifdef ESP32
 
 #include <memory>
