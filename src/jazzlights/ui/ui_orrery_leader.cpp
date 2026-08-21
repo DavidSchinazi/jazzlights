@@ -601,9 +601,9 @@ void OrreryLeaderUi::UpdateSpeedMultiplierButton() {
 void OrreryLeaderUi::UpdateMotorCurrentSpeedButton() {
   char label[32];
   std::optional<int32_t> reportedSpeed = OrreryLeader::Get()->GetReportedSpeed(currentPlanet_);
-  if (reportedSpeed.has_value()) {
+  if (reportedSpeed) {
     std::optional<uint32_t> calibration = OrreryLeader::Get()->GetCalibration(currentPlanet_);
-    if (calibration.has_value() && *calibration > 0) {
+    if (calibration && *calibration > 0) {
       float rpm = (*reportedSpeed * 60.0f) / *calibration;
       snprintf(label, sizeof(label), "Speed: %.1f RPM", rpm);
     } else {
@@ -618,7 +618,7 @@ void OrreryLeaderUi::UpdateMotorCurrentSpeedButton() {
 void OrreryLeaderUi::UpdateMotorCurrentHzButton() {
   char label[32];
   std::optional<int32_t> reportedSpeed = OrreryLeader::Get()->GetReportedSpeed(currentPlanet_);
-  if (reportedSpeed.has_value()) {
+  if (reportedSpeed) {
     snprintf(label, sizeof(label), "Speed: %ld Hz", (long)*reportedSpeed);
   } else {
     snprintf(label, sizeof(label), "Speed: Unknown");
@@ -634,7 +634,7 @@ void OrreryLeaderUi::UpdateSceneButton() {
 
 void OrreryLeaderUi::UpdateMotorPositionButton() {
   char label[32];
-  if (targetPosition_.has_value()) {
+  if (targetPosition_) {
     snprintf(label, sizeof(label), "Set: %lu deg", (unsigned long)(*targetPosition_ / 1000));
   } else {
     snprintf(label, sizeof(label), "Set: unset");
@@ -645,7 +645,7 @@ void OrreryLeaderUi::UpdateMotorPositionButton() {
 void OrreryLeaderUi::UpdateMotorCurrentPositionButton() {
   char label[32];
   std::optional<uint32_t> currentPos = OrreryLeader::Get()->GetPosition(currentPlanet_);
-  if (currentPos.has_value()) {
+  if (currentPos) {
     snprintf(label, sizeof(label), "Pos: %lu deg", (unsigned long)(*currentPos / 1000));
   } else {
     snprintf(label, sizeof(label), "Pos: Unknown");
@@ -656,7 +656,7 @@ void OrreryLeaderUi::UpdateMotorCurrentPositionButton() {
 void OrreryLeaderUi::UpdateMotorCalibrationButton() {
   char label[32];
   std::optional<uint32_t> calibration = OrreryLeader::Get()->GetCalibration(currentPlanet_);
-  if (calibration.has_value()) {
+  if (calibration) {
     snprintf(label, sizeof(label), "Calib: %lu", (unsigned long)*calibration);
   } else {
     snprintf(label, sizeof(label), "Calib: Unknown");
@@ -725,8 +725,8 @@ void OrreryLeaderUi::UpdateStatusSubmenu() {
     std::optional<Milliseconds> lastHeard = OrreryLeader::Get()->GetLastHeardTime(planet);
     std::optional<Milliseconds> maxRtt = OrreryLeader::Get()->GetMaxRtt(planet);
     char label[64];
-    if (lastHeard.has_value()) {
-      if (maxRtt.has_value()) {
+    if (lastHeard) {
+      if (maxRtt) {
         snprintf(label, sizeof(label), "%s: %llds ago, max %lldms", GetPlanetName(planet),
                  static_cast<long long>((timeMillis() - *lastHeard) / 1000), static_cast<long long>(*maxRtt));
       } else {
@@ -744,11 +744,11 @@ void OrreryLeaderUi::UpdateCalibrationMenuButton() {
   std::optional<Milliseconds> lastOpened = OrreryLeader::Get()->GetTimeHallSensorLastOpened(currentPlanet_);
   std::optional<Milliseconds> lastClosed = OrreryLeader::Get()->GetTimeHallSensorLastClosed(currentPlanet_);
   char label[32];
-  if (lastOpened.has_value() || lastClosed.has_value()) {
+  if (lastOpened || lastClosed) {
     bool isClosed = false;
-    if (lastOpened.has_value() && lastClosed.has_value()) {
+    if (lastOpened && lastClosed) {
       isClosed = (*lastClosed > *lastOpened);
-    } else if (lastClosed.has_value()) {
+    } else if (lastClosed) {
       isClosed = true;
     }
     snprintf(label, sizeof(label), "HS %s", isClosed ? "Closed" : "Open");
@@ -766,7 +766,7 @@ void OrreryLeaderUi::UpdateHallSensorSubmenu() {
   std::optional<Milliseconds> lastClosedDuration = OrreryLeader::Get()->GetLastClosedDuration(currentPlanet_);
 
   char label[64];
-  if (lastOpened.has_value()) {
+  if (lastOpened) {
     snprintf(label, sizeof(label), "Last Opened: %llds ago",
              static_cast<long long>((timeMillis() - *lastOpened) / 1000));
   } else {
@@ -774,7 +774,7 @@ void OrreryLeaderUi::UpdateHallSensorSubmenu() {
   }
   hallSensorInfoButtons_[0]->SetLabelText(label);
 
-  if (lastClosed.has_value()) {
+  if (lastClosed) {
     snprintf(label, sizeof(label), "Last Closed: %llds ago",
              static_cast<long long>((timeMillis() - *lastClosed) / 1000));
   } else {
@@ -782,14 +782,14 @@ void OrreryLeaderUi::UpdateHallSensorSubmenu() {
   }
   hallSensorInfoButtons_[1]->SetLabelText(label);
 
-  if (lastOpenDuration.has_value()) {
+  if (lastOpenDuration) {
     snprintf(label, sizeof(label), "Last Open Dur: %lldms", static_cast<long long>(*lastOpenDuration));
   } else {
     snprintf(label, sizeof(label), "Last Open Dur: Unknown");
   }
   hallSensorInfoButtons_[2]->SetLabelText(label);
 
-  if (lastClosedDuration.has_value()) {
+  if (lastClosedDuration) {
     snprintf(label, sizeof(label), "Last Closed Dur: %lldms", static_cast<long long>(*lastClosedDuration));
   } else {
     snprintf(label, sizeof(label), "Last Closed Dur: Unknown");

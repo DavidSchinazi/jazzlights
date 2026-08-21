@@ -419,7 +419,7 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_
   writeUint32(&innerPayload[kCurrentPatternOffset], messageToSend_.currentPattern);
   writeUint32(&innerPayload[kNextPatternOffset], messageToSend_.nextPattern);
   writeUint16(&innerPayload[kPatternTimeOffset], patternTimeDelta);
-  if (messageToSend_.orrerySceneId.has_value()) {
+  if (messageToSend_.orrerySceneId) {
     innerPayload[kExtensionByteOffset] = kExtensionByteFlagHasOrreryScene;
     innerPayload[kOrrerySceneOffset] = *messageToSend_.orrerySceneId;
     innerPayloadLength = kOrrerySceneOffset + 1;

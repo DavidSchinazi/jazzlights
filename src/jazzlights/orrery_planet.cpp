@@ -139,11 +139,11 @@ void OrreryPlanet::HandleHallSensorChange(uint8_t pin, bool isClosed, Microsecon
   Milliseconds timeOfChangeMs = MicrosecondsToMilliseconds(timeOfChange);
   if (isClosed) {
     if (roundedSpeed_ > 10.0f) { isBorder = true; }
-    if (timeHallSensorLastOpened_.has_value()) { lastOpenDuration_ = timeOfChangeMs - *timeHallSensorLastOpened_; }
+    if (timeHallSensorLastOpened_) { lastOpenDuration_ = timeOfChangeMs - *timeHallSensorLastOpened_; }
     timeHallSensorLastClosed_ = timeOfChangeMs;
   } else {
     if (roundedSpeed_ < -10.0f) { isBorder = true; }
-    if (timeHallSensorLastClosed_.has_value()) { lastClosedDuration_ = timeOfChangeMs - *timeHallSensorLastClosed_; }
+    if (timeHallSensorLastClosed_) { lastClosedDuration_ = timeOfChangeMs - *timeHallSensorLastClosed_; }
     timeHallSensorLastOpened_ = timeOfChangeMs;
   }
   jll_info("Hall sensor at pin %d is now %s, %sborder", static_cast<int>(pin), (isClosed ? "closed" : "open"),
@@ -168,7 +168,7 @@ void OrreryPlanet::HandleHallSensorChange(uint8_t pin, bool isClosed, Microsecon
           currentStepsAbs = highBound;
         }
         float previousStepsPerRev = stepsPerRev_;
-        if (currentState_.calibration.has_value()) {
+        if (currentState_.calibration) {
           static constexpr float kCalibrationSmoothing = 0.5f;
           stepsPerRev_ = kCalibrationSmoothing * stepsPerRev_ + (1.0f - kCalibrationSmoothing) * currentStepsAbs;
           jll_info("Calibrated stepsPerRev: new measurement %.2f smoothed from %.2f to %.2f", currentStepsAbs,
@@ -206,7 +206,7 @@ void OrreryPlanet::RunLoop() {
     if (arrivedAtTarget_) {
       effectiveRequestedSpeed = 0;
       actualSpeed_ = 0;
-    } else if (targetPosition_.has_value() && currentState_.calibration.has_value()) {
+    } else if (targetPosition_ && currentState_.calibration) {
       const float targetSteps = (*targetPosition_ / 360000.0f) * stepsPerRev_;
       float stepsToGo = targetSteps - positionalSteps_;
       if (actualSpeed_ < 0) { stepsToGo = -stepsToGo; }
@@ -266,10 +266,10 @@ void OrreryPlanet::RunLoop() {
       jll_info("Setting roundedSpeed to %f; currentSteps %f positionalSteps %f actualSpeed %f stepsPerRev %f",
                roundedSpeed_, currentSteps_, positionalSteps_, actualSpeed_, stepsPerRev_);
     }
-    if (!currentState_.speed.has_value() || roundedSpeed_ != *currentState_.speed) {
+    if (!currentState_.speed || roundedSpeed_ != *currentState_.speed) {
       // Ignore calibration if the motor stops or reverses direction.
       int wasForward = 0;
-      if (currentState_.speed.has_value()) {
+      if (currentState_.speed) {
         if (*currentState_.speed > 0) {
           wasForward = 1;
         } else if (*currentState_.speed < 0) {
@@ -306,7 +306,7 @@ void OrreryPlanet::RunLoop() {
       currentState_.leaderBootId = msg.leaderBootId;
       currentState_.leaderSequenceNumber = msg.leaderSequenceNumber;
 #if !JL_ORRERY_SUN
-      if (msg.speed.has_value()) {
+      if (msg.speed) {
         if (*msg.speed == kOrrerySpeedDisable) {
           if (requestedSpeed_ != kOrrerySpeedDisable) {
             jll_info("Planet %s requested motor disable", ourPlanetName);
@@ -321,20 +321,20 @@ void OrreryPlanet::RunLoop() {
           }
         }
       }
-      if (msg.position.has_value()) {
+      if (msg.position) {
         if (*msg.position == kOrreryPositionNone) {
-          if (targetPosition_.has_value()) {
+          if (targetPosition_) {
             jll_info("Planet %s clearing target position", ourPlanetName);
             targetPosition_ = std::nullopt;
             arrivedAtTarget_ = false;
           }
-        } else if (!targetPosition_.has_value() || *msg.position != *targetPosition_) {
+        } else if (!targetPosition_ || *msg.position != *targetPosition_) {
           jll_info("Planet %s requested position %" PRIu32, ourPlanetName, *msg.position);
           targetPosition_ = msg.position;
           arrivedAtTarget_ = false;
         }
       }
-      if (msg.calibration.has_value() && !currentState_.calibration.has_value()) {
+      if (msg.calibration && !currentState_.calibration) {
         if (static_cast<float>(*msg.calibration) != stepsPerRev_) {
           jll_info("Planet %s applying calibration %" PRIu32 " from leader", ourPlanetName, *msg.calibration);
           stepsPerRev_ = *msg.calibration;
@@ -347,24 +347,24 @@ void OrreryPlanet::RunLoop() {
       currentState_.lastClosedDuration = lastClosedDuration_;
 #endif  // !JL_ORRERY_SUN
 
-      if (msg.ledBrightness.has_value() && msg.ledBrightness != currentState_.ledBrightness) {
+      if (msg.ledBrightness && msg.ledBrightness != currentState_.ledBrightness) {
         jll_info("Planet %s applying brightness %u", ourPlanetName, *msg.ledBrightness);
         if (player_ != nullptr) { player_->set_brightness(*msg.ledBrightness); }
         currentState_.ledBrightness = *msg.ledBrightness;
       }
-      if (msg.ledPattern.has_value() && msg.ledPattern != currentState_.ledPattern) {
+      if (msg.ledPattern && msg.ledPattern != currentState_.ledPattern) {
         if (player_ != nullptr && player_->GetPlanetPattern() != *msg.ledPattern) {
           jll_info("Planet %s applying pattern %08x from leader", ourPlanetName, *msg.ledPattern);
           player_->SetPlanetPattern(*msg.ledPattern);
         }
         currentState_.ledPattern = *msg.ledPattern;
       }
-      if (msg.ledBasePrecedence.has_value() && msg.ledBasePrecedence != currentState_.ledBasePrecedence) {
+      if (msg.ledBasePrecedence && msg.ledBasePrecedence != currentState_.ledBasePrecedence) {
         jll_info("Planet %s applying base precedence %u", ourPlanetName, *msg.ledBasePrecedence);
         if (player_ != nullptr) { player_->setBasePrecedence(*msg.ledBasePrecedence); }
         currentState_.ledBasePrecedence = *msg.ledBasePrecedence;
       }
-      if (msg.ledPrecedenceGain.has_value() && msg.ledPrecedenceGain != currentState_.ledPrecedenceGain) {
+      if (msg.ledPrecedenceGain && msg.ledPrecedenceGain != currentState_.ledPrecedenceGain) {
         jll_info("Planet %s applying precedence gain %u", ourPlanetName, *msg.ledPrecedenceGain);
         if (player_ != nullptr) { player_->setPrecedenceGain(*msg.ledPrecedenceGain); }
         currentState_.ledPrecedenceGain = *msg.ledPrecedenceGain;

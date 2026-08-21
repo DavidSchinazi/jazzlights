@@ -1046,7 +1046,7 @@ void Core2AwsUi::RunLoop() {
 }
 
 void Core2AwsUi::OnOrrerySceneId(std::optional<OrrerySceneId> orrerySceneId) {
-  if (!orrerySceneId.has_value()) { return; }
+  if (!orrerySceneId) { return; }
   OrreryScene scene = static_cast<OrreryScene>(*orrerySceneId);
   if (scene == gOrreryScene) { return; }
   jll_info("Received new orrery scene %d", static_cast<int>(scene));

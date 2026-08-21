@@ -31,7 +31,7 @@ StepperMotor::StepperMotor(int enablePin, int directionPin, int stepPin)
 
 void StepperMotor::SetSpeed(std::optional<int32_t> frequencyHz) {
   if (Setup(frequencyHz)) { return; }
-  if (!frequencyHz.has_value()) {
+  if (!frequencyHz) {
     jll_motor_debug("Disabling motor");
     SetEnabled(false);
     if (timer_) { ESP_ERROR_CHECK(mcpwm_timer_start_stop(timer_, MCPWM_TIMER_STOP_EMPTY)); }
@@ -62,7 +62,7 @@ void StepperMotor::SetSpeed(std::optional<int32_t> frequencyHz) {
 
 bool StepperMotor::Setup(std::optional<int32_t> frequencyHz) {
   if (isSetup_) { return false; }
-  if (!frequencyHz.has_value()) {
+  if (!frequencyHz) {
     jll_info("Setting up motor as disabled");
   } else {
     jll_info("Setting up motor at %lldHz", static_cast<int64_t>(*frequencyHz));
@@ -82,7 +82,7 @@ bool StepperMotor::Setup(std::optional<int32_t> frequencyHz) {
 
   // If the motor is disabled or the speed is 0, set the config to 16Hz just to have a valid unused value.
   uint32_t halfPeriod = kResolution / 2 / 16;
-  if (frequencyHz.has_value()) {
+  if (frequencyHz) {
     int32_t freq = *frequencyHz;
     if (freq > 0) {
       if (freq < 16) { freq = 16; }
@@ -134,7 +134,7 @@ bool StepperMotor::Setup(std::optional<int32_t> frequencyHz) {
       generator_, MCPWM_GEN_COMPARE_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP, comparator_, MCPWM_GEN_ACTION_LOW)));
 
   ESP_ERROR_CHECK(mcpwm_timer_enable(timer_));
-  if (frequencyHz.has_value() && *frequencyHz != 0) {
+  if (frequencyHz && *frequencyHz != 0) {
     SetEnabled(true);
     ESP_ERROR_CHECK(mcpwm_timer_start_stop(timer_, MCPWM_TIMER_START_NO_STOP));
   } else {

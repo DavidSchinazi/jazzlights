@@ -48,39 +48,39 @@ constexpr uint8_t kOrreryFlag2LastClosedDuration = 0x04;
 bool WriteOrreryMessage(const OrreryMessage& msg, NetworkWriter& writer) {
   if (!writer.WriteUint8(static_cast<uint8_t>(msg.type))) { return false; }
   uint8_t flags = 0;
-  if (msg.speed.has_value()) { flags |= kOrreryFlagSpeed; }
-  if (msg.position.has_value()) { flags |= kOrreryFlagPosition; }
-  if (msg.calibration.has_value()) { flags |= kOrreryFlagCalibration; }
-  if (msg.timeHallSensorLastOpened.has_value()) { flags |= kOrreryFlagTimeHallSensorLastOpened; }
-  if (msg.ledPattern.has_value()) { flags |= kOrreryFlagLedPattern; }
-  if (msg.ledBrightness.has_value()) { flags |= kOrreryFlagLedBrightness; }
-  if (msg.ledBasePrecedence.has_value()) { flags |= kOrreryFlagLedBasePrecedence; }
-  if (msg.ledPrecedenceGain.has_value()) { flags |= kOrreryFlagLedPrecedenceGain; }
+  if (msg.speed) { flags |= kOrreryFlagSpeed; }
+  if (msg.position) { flags |= kOrreryFlagPosition; }
+  if (msg.calibration) { flags |= kOrreryFlagCalibration; }
+  if (msg.timeHallSensorLastOpened) { flags |= kOrreryFlagTimeHallSensorLastOpened; }
+  if (msg.ledPattern) { flags |= kOrreryFlagLedPattern; }
+  if (msg.ledBrightness) { flags |= kOrreryFlagLedBrightness; }
+  if (msg.ledBasePrecedence) { flags |= kOrreryFlagLedBasePrecedence; }
+  if (msg.ledPrecedenceGain) { flags |= kOrreryFlagLedPrecedenceGain; }
   if (!writer.WriteUint8(flags)) { return false; }
 
   uint8_t flags2 = 0;
-  if (msg.timeHallSensorLastClosed.has_value()) { flags2 |= kOrreryFlag2TimeHallSensorLastClosed; }
-  if (msg.lastOpenDuration.has_value()) { flags2 |= kOrreryFlag2LastOpenDuration; }
-  if (msg.lastClosedDuration.has_value()) { flags2 |= kOrreryFlag2LastClosedDuration; }
+  if (msg.timeHallSensorLastClosed) { flags2 |= kOrreryFlag2TimeHallSensorLastClosed; }
+  if (msg.lastOpenDuration) { flags2 |= kOrreryFlag2LastOpenDuration; }
+  if (msg.lastClosedDuration) { flags2 |= kOrreryFlag2LastClosedDuration; }
   if (!writer.WriteUint8(flags2)) { return false; }
 
   if (!writer.WriteUint32(msg.leaderBootId)) { return false; }
   if (!writer.WriteUint32(msg.leaderSequenceNumber)) { return false; }
-  if (msg.speed.has_value() && !writer.WriteInt32(*msg.speed)) { return false; }
-  if (msg.position.has_value() && !writer.WriteUint32(*msg.position)) { return false; }
-  if (msg.calibration.has_value() && !writer.WriteUint32(*msg.calibration)) { return false; }
-  if (msg.timeHallSensorLastOpened.has_value() && !writer.WriteUint32(timeMillis() - *msg.timeHallSensorLastOpened)) {
+  if (msg.speed && !writer.WriteInt32(*msg.speed)) { return false; }
+  if (msg.position && !writer.WriteUint32(*msg.position)) { return false; }
+  if (msg.calibration && !writer.WriteUint32(*msg.calibration)) { return false; }
+  if (msg.timeHallSensorLastOpened && !writer.WriteUint32(timeMillis() - *msg.timeHallSensorLastOpened)) {
     return false;
   }
-  if (msg.timeHallSensorLastClosed.has_value() && !writer.WriteUint32(timeMillis() - *msg.timeHallSensorLastClosed)) {
+  if (msg.timeHallSensorLastClosed && !writer.WriteUint32(timeMillis() - *msg.timeHallSensorLastClosed)) {
     return false;
   }
-  if (msg.lastOpenDuration.has_value() && !writer.WriteUint32(*msg.lastOpenDuration)) { return false; }
-  if (msg.lastClosedDuration.has_value() && !writer.WriteUint32(*msg.lastClosedDuration)) { return false; }
-  if (msg.ledPattern.has_value() && !writer.WriteUint32(static_cast<uint32_t>(*msg.ledPattern))) { return false; }
-  if (msg.ledBrightness.has_value() && !writer.WriteUint8(*msg.ledBrightness)) { return false; }
-  if (msg.ledBasePrecedence.has_value() && !writer.WriteUint16(*msg.ledBasePrecedence)) { return false; }
-  if (msg.ledPrecedenceGain.has_value() && !writer.WriteUint16(*msg.ledPrecedenceGain)) { return false; }
+  if (msg.lastOpenDuration && !writer.WriteUint32(*msg.lastOpenDuration)) { return false; }
+  if (msg.lastClosedDuration && !writer.WriteUint32(*msg.lastClosedDuration)) { return false; }
+  if (msg.ledPattern && !writer.WriteUint32(static_cast<uint32_t>(*msg.ledPattern))) { return false; }
+  if (msg.ledBrightness && !writer.WriteUint8(*msg.ledBrightness)) { return false; }
+  if (msg.ledBasePrecedence && !writer.WriteUint16(*msg.ledBasePrecedence)) { return false; }
+  if (msg.ledPrecedenceGain && !writer.WriteUint16(*msg.ledPrecedenceGain)) { return false; }
   return true;
 }
 
@@ -180,39 +180,35 @@ std::string OrreryMessageToString(const OrreryMessage& msg) {
   int n = snprintf(buf, sizeof(buf), "%s seq=%" PRIu32 " boot=%08" PRIx32,
                    msg.type == OrreryMessageType::LeaderCommand ? "LeaderCommand" : "FollowerResponse",
                    static_cast<uint32_t>(msg.leaderSequenceNumber), static_cast<uint32_t>(msg.leaderBootId));
-  if (msg.speed.has_value()) {
-    n += snprintf(buf + n, sizeof(buf) - n, " speed=%" PRId32, static_cast<int32_t>(*msg.speed));
-  }
-  if (msg.position.has_value()) {
-    n += snprintf(buf + n, sizeof(buf) - n, " pos=%" PRIu32, static_cast<uint32_t>(*msg.position));
-  }
-  if (msg.calibration.has_value()) {
+  if (msg.speed) { n += snprintf(buf + n, sizeof(buf) - n, " speed=%" PRId32, static_cast<int32_t>(*msg.speed)); }
+  if (msg.position) { n += snprintf(buf + n, sizeof(buf) - n, " pos=%" PRIu32, static_cast<uint32_t>(*msg.position)); }
+  if (msg.calibration) {
     n += snprintf(buf + n, sizeof(buf) - n, " cal=%" PRIu32, static_cast<uint32_t>(*msg.calibration));
   }
-  if (msg.timeHallSensorLastOpened.has_value()) {
+  if (msg.timeHallSensorLastOpened) {
     n += snprintf(buf + n, sizeof(buf) - n, " lastOpen=%" PRId64 "s_ago",
                   static_cast<int64_t>((timeMillis() - *msg.timeHallSensorLastOpened) / 1000));
   }
-  if (msg.timeHallSensorLastClosed.has_value()) {
+  if (msg.timeHallSensorLastClosed) {
     n += snprintf(buf + n, sizeof(buf) - n, " lastClosed=%" PRId64 "s_ago",
                   static_cast<int64_t>((timeMillis() - *msg.timeHallSensorLastClosed) / 1000));
   }
-  if (msg.lastOpenDuration.has_value()) {
+  if (msg.lastOpenDuration) {
     n += snprintf(buf + n, sizeof(buf) - n, " openDur=%" PRIu32 "ms", static_cast<uint32_t>(*msg.lastOpenDuration));
   }
-  if (msg.lastClosedDuration.has_value()) {
+  if (msg.lastClosedDuration) {
     n += snprintf(buf + n, sizeof(buf) - n, " closedDur=%" PRIu32 "ms", static_cast<uint32_t>(*msg.lastClosedDuration));
   }
-  if (msg.ledPattern.has_value()) {
+  if (msg.ledPattern) {
     n += snprintf(buf + n, sizeof(buf) - n, " pattern=%08" PRIx32, static_cast<uint32_t>(*msg.ledPattern));
   }
-  if (msg.ledBrightness.has_value()) {
+  if (msg.ledBrightness) {
     n += snprintf(buf + n, sizeof(buf) - n, " brightness=%u", static_cast<unsigned int>(*msg.ledBrightness));
   }
-  if (msg.ledBasePrecedence.has_value()) {
+  if (msg.ledBasePrecedence) {
     n += snprintf(buf + n, sizeof(buf) - n, " basePrec=%u", static_cast<unsigned int>(*msg.ledBasePrecedence));
   }
-  if (msg.ledPrecedenceGain.has_value()) {
+  if (msg.ledPrecedenceGain) {
     n += snprintf(buf + n, sizeof(buf) - n, " precGain=%u", static_cast<unsigned int>(*msg.ledPrecedenceGain));
   }
   return std::string(buf);

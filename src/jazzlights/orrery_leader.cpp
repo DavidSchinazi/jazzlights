@@ -56,7 +56,7 @@ void OrreryLeader::Setup(Player& player) {
 void OrreryLeader::OnOverriddenPattern(std::optional<PatternBits> pattern) {
   if (pattern == patternOverride_) { return; }
   patternOverride_ = pattern;
-  if (patternOverride_.has_value()) {
+  if (patternOverride_) {
     jll_info("OrreryLeader overriding pattern with 0x%08x", *patternOverride_);
     for (int i = 0; i < kNumPlanets; i++) {
       Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
@@ -70,7 +70,7 @@ void OrreryLeader::OnOverriddenPattern(std::optional<PatternBits> pattern) {
       Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
       auto it = patternBeforeOverride_.find(planet);
       if (it != patternBeforeOverride_.end()) { ledPattern = it->second; }
-      if (ledPattern.has_value()) {
+      if (ledPattern) {
         SetLedPattern(planet, *ledPattern);
       } else {
         SetLedPattern(planet, kPlanetPattern);
@@ -208,7 +208,7 @@ void OrreryLeader::SetSpeed(Planet planet, int32_t speed) {
   auto it = messages_.find(planet);
   if (it != messages_.end()) {
     OrreryMessage& msg = it->second;
-    if (!msg.speed.has_value() || *msg.speed != speed) {
+    if (!msg.speed || *msg.speed != speed) {
       msg.speed = speed;
       jll_info("OrreryLeader setting planet %s milli-RPM to %" PRId32, GetPlanetName(planet), speed);
       SendMessage(planet);
@@ -219,7 +219,7 @@ void OrreryLeader::SetSpeed(Planet planet, int32_t speed) {
 int32_t OrreryLeader::GetSpeed(Planet planet) const {
   if (planet == Planet::All) { planet = Planet::Mercury; }
   auto it = messages_.find(planet);
-  if (it != messages_.end() && it->second.speed.has_value()) { return *it->second.speed; }
+  if (it != messages_.end() && it->second.speed) { return *it->second.speed; }
   return 0;
 }
 
@@ -232,13 +232,13 @@ std::optional<int32_t> OrreryLeader::GetReportedSpeed(Planet planet) const {
 
 void OrreryLeader::SetPosition(Planet planet, std::optional<uint32_t> position) {
   if (planet == Planet::All) {
-    if (position.has_value()) {
+    if (position) {
       jll_info("OrreryLeader setting all planets position to %" PRIu32, *position);
     } else {
       jll_info("OrreryLeader unsetting all planets position");
     }
     OrreryMessage msg;
-    msg.position = position.has_value() ? *position : kOrreryPositionNone;
+    msg.position = position ? *position : kOrreryPositionNone;
     SendBroadcastMessage(msg);
     for (int i = 0; i < kNumPlanetsWithoutSun; i++) {
       SetPosition(static_cast<Planet>(static_cast<int>(Planet::Mercury) + i), position);
@@ -248,10 +248,10 @@ void OrreryLeader::SetPosition(Planet planet, std::optional<uint32_t> position) 
   auto it = messages_.find(planet);
   if (it != messages_.end()) {
     OrreryMessage& msg = it->second;
-    std::optional<uint32_t> wirePosition = position.has_value() ? position : kOrreryPositionNone;
+    std::optional<uint32_t> wirePosition = position ? position : kOrreryPositionNone;
     if (msg.position != wirePosition) {
       msg.position = wirePosition;
-      if (position.has_value()) {
+      if (position) {
         jll_info("OrreryLeader setting planet %s position to %" PRIu32, GetPlanetName(planet), *position);
       } else {
         jll_info("OrreryLeader unsetting planet %s position", GetPlanetName(planet));
@@ -271,7 +271,7 @@ std::optional<uint32_t> OrreryLeader::GetPosition(Planet planet) const {
 std::optional<uint32_t> OrreryLeader::GetTargetPosition(Planet planet) const {
   if (planet == Planet::All) { planet = Planet::Mercury; }
   auto it = messages_.find(planet);
-  if (it != messages_.end() && it->second.position.has_value() && *it->second.position != kOrreryPositionNone) {
+  if (it != messages_.end() && it->second.position && *it->second.position != kOrreryPositionNone) {
     return it->second.position;
   }
   return std::nullopt;
@@ -298,7 +298,7 @@ void OrreryLeader::SetBrightness(Planet planet, uint8_t brightness) {
   auto it = messages_.find(planet);
   if (it != messages_.end()) {
     OrreryMessage& msg = it->second;
-    if (!msg.ledBrightness.has_value() || *msg.ledBrightness != brightness) {
+    if (!msg.ledBrightness || *msg.ledBrightness != brightness) {
       msg.ledBrightness = brightness;
       jll_info("OrreryLeader setting planet %s brightness to %u", GetPlanetName(planet), brightness);
       SendMessage(planet);
@@ -309,12 +309,12 @@ void OrreryLeader::SetBrightness(Planet planet, uint8_t brightness) {
 uint8_t OrreryLeader::GetBrightness(Planet planet) const {
   if (planet == Planet::All) { planet = Planet::Mercury; }
   auto it = messages_.find(planet);
-  if (it != messages_.end() && it->second.ledBrightness.has_value()) { return *it->second.ledBrightness; }
+  if (it != messages_.end() && it->second.ledBrightness) { return *it->second.ledBrightness; }
   return kDefaultPlanetBrightness;
 }
 
 void OrreryLeader::SetLedPattern(Planet planet, uint32_t ledPattern) {
-  if (patternOverride_.has_value()) { ledPattern = *patternOverride_; }
+  if (patternOverride_) { ledPattern = *patternOverride_; }
   if (planet == Planet::All) {
     jll_info("OrreryLeader setting all planets LED pattern to 0x%08" PRIx32, ledPattern);
     OrreryMessage msg;
@@ -328,7 +328,7 @@ void OrreryLeader::SetLedPattern(Planet planet, uint32_t ledPattern) {
   auto it = messages_.find(planet);
   if (it != messages_.end()) {
     OrreryMessage& msg = it->second;
-    if (!msg.ledPattern.has_value() || *msg.ledPattern != ledPattern) {
+    if (!msg.ledPattern || *msg.ledPattern != ledPattern) {
       msg.ledPattern = ledPattern;
       jll_info("OrreryLeader setting planet %s LED pattern to 0x%08" PRIx32, GetPlanetName(planet), ledPattern);
       SendMessage(planet);
@@ -339,7 +339,7 @@ void OrreryLeader::SetLedPattern(Planet planet, uint32_t ledPattern) {
 uint32_t OrreryLeader::GetLedPattern(Planet planet) const {
   if (planet == Planet::All) { planet = Planet::Mercury; }
   auto it = messages_.find(planet);
-  if (it != messages_.end() && it->second.ledPattern.has_value()) { return *it->second.ledPattern; }
+  if (it != messages_.end() && it->second.ledPattern) { return *it->second.ledPattern; }
   return kPlanetPattern;
 }
 
@@ -412,7 +412,7 @@ void OrreryLeader::RunLoop() {
       if (rtt >= 0) {
         if (maxRtt_.find(planet) == maxRtt_.end() || rtt > maxRtt_[planet]) { maxRtt_[planet] = rtt; }
       }
-      if (msg.calibration.has_value()) { messages_[planet].calibration = msg.calibration; }
+      if (msg.calibration) { messages_[planet].calibration = msg.calibration; }
     }
   }
 
@@ -457,11 +457,11 @@ void OrreryLeader::RunLoop() {
         auto itResp = responses_.find(planet);
         if (itResp == responses_.end()) { continue; }
         const OrreryMessage& resp = itResp->second;
-        if (!resp.position.has_value()) { continue; }
+        if (!resp.position) { continue; }
         bool atZero = false;
         uint32_t pos = *resp.position;
         if (pos < 6000 || pos > 354000) { atZero = true; }
-        if (!atZero || !resp.speed.has_value() || *resp.speed > 10) {
+        if (!atZero || !resp.speed || *resp.speed > 10) {
           allArrived = false;
           break;
         }
@@ -482,7 +482,7 @@ void OrreryLeader::RunLoop() {
         auto itResp = responses_.find(planet);
         if (itResp == responses_.end()) { continue; }
         const OrreryMessage& resp = itResp->second;
-        if (!resp.position.has_value()) { continue; }
+        if (!resp.position) { continue; }
         const uint32_t pos = *resp.position;
         if (!hasPassedHalfway_[planet]) {
           if (pos > 180000 && pos < 350000) { hasPassedHalfway_[planet] = true; }
@@ -537,7 +537,7 @@ void OrreryLeader::HandleSwitch4(bool isClosed) {
 }
 
 void OrreryLeader::OnOrrerySceneId(std::optional<OrrerySceneId> orrerySceneId) {
-  if (!orrerySceneId.has_value()) { return; }
+  if (!orrerySceneId) { return; }
   if (*orrerySceneId < static_cast<OrrerySceneId>(OrreryScene::kMinScene) ||
       *orrerySceneId > static_cast<OrrerySceneId>(OrreryScene::kMaxScene)) {
     // Ignoring unexpected scene.

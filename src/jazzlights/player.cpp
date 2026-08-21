@@ -975,7 +975,7 @@ void Player::checkLeaderAndPattern() {
   messageToSend.isPartying = KnownCreatures::Get()->IsPartying();
   messageToSend.creatureColor = ThisCreatureColor();
 #endif  // CREATURE
-  if (orrerySceneIdToSend_.has_value()) {
+  if (orrerySceneIdToSend_) {
 #if JL_IS_CONFIG(ORRERY_LEADER)
     messageToSend.orrerySceneId = orrerySceneIdToSend_;
 #else   // ORRERY_LEADER
@@ -1010,7 +1010,7 @@ void Player::handleReceivedMessage(NetworkMessage message) {
     KnownCreatures::Get()->AddCreature(message.creatureColor, message.receiptTime, message.receiptRssi,
                                        message.isPartying);
   }
-  if (message.orrerySceneId.has_value()) { KnownCreatures::Get()->HandleHeardOrrery(); }
+  if (message.orrerySceneId) { KnownCreatures::Get()->HandleHeardOrrery(); }
 #endif  // CREATURE
   jll_player_message("handleReceivedMessage %s", networkMessageToString(message).c_str());
   if (message.sender == localDeviceId_) {
@@ -1271,7 +1271,7 @@ const char* Player::command(const char* req) {
 
 void Player::SetOrrerySceneIdToSend(std::optional<OrrerySceneId> orrerySceneIdToSend) {
   orrerySceneIdToSend_ = orrerySceneIdToSend;
-  if (orrerySceneIdToSend_.has_value()) {
+  if (orrerySceneIdToSend_) {
     lastOrrerySceneIdSetTime_ = timeMillis();
     jll_info("%u Start sending orrery scene ID %d", lastOrrerySceneIdSetTime_, static_cast<int>(*orrerySceneIdToSend_));
   } else {
