@@ -59,6 +59,7 @@
 #define JL_CONTROLLER_M5STAMP_S3 8
 #define JL_CONTROLLER_M5_NANO_C6 9
 #define JL_CONTROLLER_CORES3 10
+#define JL_CONTROLLER_M5STICK_C 11
 
 #define JL_IS_CONTROLLER(controller_) \
   (JL_MERGE_TOKENS(JL_CONTROLLER_, JL_CONTROLLER) == JL_MERGE_TOKENS(JL_CONTROLLER_, controller_))
@@ -195,6 +196,14 @@
 #define JL_M5_LOGGING 0
 #endif  // JL_M5_LOGGING
 
+#ifndef JL_M5_EXT_POWER
+#if JL_IS_CONTROLLER(M5STICK_C)
+#define JL_M5_EXT_POWER 1
+#else  // M5STICK_C
+#define JL_M5_EXT_POWER 0
+#endif  // M5STICK_C
+#endif  // JL_M5_EXT_POWER
+
 // For all of these GROVE ports, 1 is white and 2 is yellow.
 #if JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_LITE)
 inline constexpr int kPinA1 = 21;
@@ -210,6 +219,10 @@ inline constexpr int kPinB1 = 8;
 inline constexpr int kPinB2 = 7;
 inline constexpr int kPinC1 = 6;
 inline constexpr int kPinC2 = 5;
+#elif JL_IS_CONTROLLER(M5STICK_C)
+inline constexpr int kPinA1 = 26;
+inline constexpr int kPinA2 = 25;
+inline constexpr int kPinB1 = 0;
 #elif JL_IS_CONTROLLER(CORES3)
 inline constexpr int kPinA1 = 1;
 inline constexpr int kPinA2 = 2;
