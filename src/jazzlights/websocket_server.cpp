@@ -166,13 +166,13 @@ void WebSocketServer::ResumeUpdates() {
 void WebSocketServer::ShareStatus(AsyncWebSocketClient* client) {
   if (paused_update_state_ != PausedUpdateState::kOpen) {
     if (client == nullptr) {
-      paused_update_state_ != PausedUpdateState::kPausedUpdateAllClients;
+      paused_update_state_ = PausedUpdateState::kPausedUpdateAllClients;
       client_to_update_ = nullptr;
     } else if (paused_update_state_ == PausedUpdateState::kPausedNoUpdate) {
       paused_update_state_ = PausedUpdateState::kPausedUpdateOneClient;
       client_to_update_ = client;
     } else if (paused_update_state_ == PausedUpdateState::kPausedUpdateOneClient && client_to_update_ != client) {
-      paused_update_state_ != PausedUpdateState::kPausedUpdateAllClients;
+      paused_update_state_ = PausedUpdateState::kPausedUpdateAllClients;
       client_to_update_ = nullptr;
     }
     jll_debug("Skipping WebSocket update to client #%u because we are paused", id(client));
