@@ -499,12 +499,11 @@ bool Player::render() {
 
   const Effect* effect = patternFromBits(frame_.pattern, *this);
 #if JL_IS_CONFIG(FAIRY_WAND)
-  constexpr Milliseconds kOverridePatternDuration = 8000;
+  constexpr Microseconds kOverridePatternDuration = 8 * kMicrosecondsPerSecond;  // 8s.
   static const FunctionalEffect fairy_wand_effect = fairy_wand();
   if (overridePatternStartTime_) {
-    const Milliseconds overridePatternStartTimeMs = MicrosecondsToMilliseconds(*overridePatternStartTime_);
-    if (currentTime - overridePatternStartTimeMs < kOverridePatternDuration) {
-      frame_.time = currentTime - overridePatternStartTimeMs;
+    if (currentTimeUs - *overridePatternStartTime_ < kOverridePatternDuration) {
+      frame_.time = MicrosecondsToMilliseconds(currentTimeUs - *overridePatternStartTime_);
       effect = &fairy_wand_effect;
     }
   }
