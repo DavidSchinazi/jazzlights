@@ -102,9 +102,9 @@ struct NetworkMessage {
   PatternBits currentPattern = 0;
   PatternBits nextPattern = 0;
   NumHops numHops = 0;
-  // Times are sent over the wire as time since that event.
-  Milliseconds currentPatternStartTime = 0;
-  Milliseconds lastOriginationTime = 0;
+  // Times are sent over the wire as milliseconds since that event, but kept as microseconds internally.
+  Microseconds currentPatternStartTime = 0;
+  Microseconds lastOriginationTime = 0;
   // Receipt values are not sent over the wire.
   // Note that, when sending, `receiptNetworkId` and `receiptNetworkType` represent
   // the network where our followed next hop is; or 0 / kLeading if we are leading.

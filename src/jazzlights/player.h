@@ -193,8 +193,8 @@ class Player {
     Precedence precedence = 0;
     PatternBits currentPattern = 0;
     PatternBits nextPattern = 0;
-    Milliseconds currentPatternStartTime = 0;
-    Milliseconds lastOriginationTime = 0;
+    Microseconds currentPatternStartTime = 0;
+    Microseconds lastOriginationTime = 0;
     NetworkDeviceId nextHopDevice = NetworkDeviceId();
     NetworkId nextHopNetworkId = 0;
     NetworkType nextHopNetworkType = NetworkType::kLeading;
@@ -228,7 +228,7 @@ class Player {
   void* effectContext_ = nullptr;
   size_t effectContextSize_ = 0;
 
-  Milliseconds currentPatternStartTime_ = 0;
+  Microseconds currentPatternStartTime_ = 0;
   PatternBits currentPattern_;
   PatternBits nextPattern_;
   PatternBits lastBegunPattern_ = 0;

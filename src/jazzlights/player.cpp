@@ -361,7 +361,7 @@ void Player::begin() {
   forcePalette(kForestPalette);
 #endif  // RHINO_HAT || RHINO_STAFF
 
-  currentPatternStartTime_ = timeMillis();
+  currentPatternStartTime_ = timeMicros();
   currentPattern_ = enforceForcedPalette(kStartingPattern);
   nextPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
 #if defined(JL_START_SPECIAL) && JL_START_SPECIAL
@@ -469,12 +469,15 @@ bool Player::render(Milliseconds currentTime) {
   for (Network* network : networks_) { network->runLoop(); }
 
   frame_.context = nullptr;
-  if (currentTime - currentPatternStartTime_ > kEffectDurationMs) {
+  // currentPatternStartTime_ is kept as Microseconds, but frame_.time (like kEffectDurationMs) stays in Milliseconds
+  // since it's shared with every pattern effect, so convert down to Milliseconds right here.
+  const Milliseconds currentPatternStartTimeMs = MicrosecondsToMilliseconds(currentPatternStartTime_);
+  if (currentTime - currentPatternStartTimeMs > kEffectDurationMs) {
     frame_.pattern = nextPattern_;
-    frame_.time = currentTime - currentPatternStartTime_ - kEffectDurationMs;
+    frame_.time = currentTime - currentPatternStartTimeMs - kEffectDurationMs;
   } else {
     frame_.pattern = currentPattern_;
-    frame_.time = currentTime - currentPatternStartTime_;
+    frame_.time = currentTime - currentPatternStartTimeMs;
   }
 
   if (!enabled()) {
@@ -702,9 +705,10 @@ void Player::next() {
   jll_info("next command received: switching from %s (%08x) to %s (%08x), currentLeader=" DEVICE_ID_FMT,
            patternName(currentPattern_, *this).c_str(), currentPattern_, patternName(nextPattern_, *this).c_str(),
            nextPattern_, DEVICE_ID_HEX(currentLeader_));
-  Milliseconds currentTime = timeMillis();
+  Microseconds currentTimeUs = timeMicros();
+  Milliseconds currentTime = MicrosecondsToMilliseconds(currentTimeUs);
   lastUserInputTime_ = currentTime;
-  currentPatternStartTime_ = currentTime;
+  currentPatternStartTime_ = currentTimeUs;
   if (loop_ && currentPattern_ == nextPattern_) {
     currentPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
     nextPattern_ = currentPattern_;
@@ -724,9 +728,10 @@ void Player::setPattern(PatternBits pattern) {
   jll_info("set pattern command received: switching from %s (%08x) to %s (%08x), currentLeader=" DEVICE_ID_FMT,
            patternName(currentPattern_, *this).c_str(), currentPattern_, patternName(pattern, *this).c_str(), pattern,
            DEVICE_ID_HEX(currentLeader_));
-  Milliseconds currentTime = timeMillis();
+  Microseconds currentTimeUs = timeMicros();
+  Milliseconds currentTime = MicrosecondsToMilliseconds(currentTimeUs);
   lastUserInputTime_ = currentTime;
-  currentPatternStartTime_ = currentTime;
+  currentPatternStartTime_ = currentTimeUs;
   currentPattern_ = pattern;
   if (loop_ && currentPattern_ == nextPattern_) {
     nextPattern_ = currentPattern_;
@@ -801,26 +806,31 @@ Player::OriginatorEntry* Player::getOriginatorEntry(NetworkDeviceId originator) 
   return entry;
 }
 
-static constexpr Milliseconds kOriginationTimeOverrideMs = 6000;
-static constexpr Milliseconds kOriginationTimeDiscardMs = 9000;
+static constexpr Microseconds kOriginationTimeOverride = 6 * kMicrosecondsPerSecond;
+static constexpr Microseconds kOriginationTimeDiscard = 9 * kMicrosecondsPerSecond;
+static constexpr Microseconds kEffectDuration = kEffectDurationMs * kMicrosecondsPerMillisecond;
 
-static_assert(kOriginationTimeOverrideMs < kOriginationTimeDiscardMs,
+static_assert(kOriginationTimeOverride < kOriginationTimeDiscard,
               "Inverting these can lead to retracting an originator "
               "while disallowing picking a replacement.");
-static_assert(kOriginationTimeDiscardMs < kEffectDurationMs,
+static_assert(kOriginationTimeDiscard < kEffectDuration,
               "Inverting these can lead to keeping an originator "
               "past the end of its intended next pattern.");
 
 void Player::checkLeaderAndPattern() {
-  Milliseconds currentTime = timeMillis();
+  // currentTime is used for things unrelated to currentPatternStartTime_/lastOriginationTime (e.g. lastUserInputTime_
+  // below), which stay in Milliseconds; currentTimeUs is used for those two fields, which are Microseconds. Both are
+  // derived from a single timeMicros() call to keep them consistent with each other.
+  Microseconds currentTimeUs = timeMicros();
+  Milliseconds currentTime = MicrosecondsToMilliseconds(currentTimeUs);
   // Remove elements that have aged out.
-  originatorEntries_.remove_if([currentTime](const OriginatorEntry& e) {
-    if (currentTime > e.lastOriginationTime + kOriginationTimeDiscardMs) {
+  originatorEntries_.remove_if([currentTimeUs](const OriginatorEntry& e) {
+    if (currentTimeUs > e.lastOriginationTime + kOriginationTimeDiscard) {
       jll_info("Removing " DEVICE_ID_FMT ".p%u entry due to origination time", DEVICE_ID_HEX(e.originator),
                e.precedence);
       return true;
     }
-    if (currentTime > e.currentPatternStartTime + 2 * kEffectDurationMs) {
+    if (currentTimeUs > e.currentPatternStartTime + 2 * kEffectDuration) {
       jll_info("Removing " DEVICE_ID_FMT ".p%u entry due to effect duration", DEVICE_ID_HEX(e.originator),
                e.precedence);
       return true;
@@ -842,11 +852,11 @@ void Player::checkLeaderAndPattern() {
       jll_debug("ignoring " DEVICE_ID_FMT " due to retracted", DEVICE_ID_HEX(e.originator));
       continue;
     }
-    if (currentTime > e.lastOriginationTime + kOriginationTimeDiscardMs) {
+    if (currentTimeUs > e.lastOriginationTime + kOriginationTimeDiscard) {
       jll_debug("ignoring " DEVICE_ID_FMT " due to origination time", DEVICE_ID_HEX(e.originator));
       continue;
     }
-    if (currentTime > e.currentPatternStartTime + 2 * kEffectDurationMs) {
+    if (currentTimeUs > e.currentPatternStartTime + 2 * kEffectDuration) {
       jll_debug("ignoring " DEVICE_ID_FMT " due to effect duration", DEVICE_ID_HEX(e.originator));
       continue;
     }
@@ -867,7 +877,7 @@ void Player::checkLeaderAndPattern() {
     UpdateOverriddenPatternWatcher(precedence);
   }
 
-  Milliseconds lastOriginationTime;
+  Microseconds lastOriginationTime;
   if (entry != nullptr) {
     // Update our state based on entry from leader.
 #if JL_IS_CONFIG(CREATURE) || JL_IS_CONFIG(ORRERY_PLANET)
@@ -930,9 +940,9 @@ void Player::checkLeaderAndPattern() {
     followedNextHopNetworkId_ = 0;
     followedNextHopNetworkType_ = NetworkType::kLeading;
     currentNumHops_ = 0;
-    lastOriginationTime = currentTime;
-    while (currentTime - currentPatternStartTime_ > kEffectDurationMs) {
-      currentPatternStartTime_ += kEffectDurationMs;
+    lastOriginationTime = currentTimeUs;
+    while (currentTimeUs - currentPatternStartTime_ > kEffectDuration) {
+      currentPatternStartTime_ += kEffectDuration;
       if (loop_) {
         nextPattern_ = currentPattern_;
       } else {
@@ -1003,7 +1013,7 @@ void Player::checkLeaderAndPattern() {
 }
 
 void Player::handleReceivedMessage(NetworkMessage message) {
-  Milliseconds currentTime = timeMillis();
+  Microseconds currentTime = timeMicros();
 #if JL_IS_CONFIG(CREATURE)
   if (message.isCreature) {
     jll_info("creature recv %s", networkMessageToString(message).c_str());
@@ -1028,11 +1038,11 @@ void Player::handleReceivedMessage(NetworkMessage message) {
     return;
   }
   NumHops receiptNumHops = message.numHops + 1;
-  if (currentTime > message.lastOriginationTime + kOriginationTimeDiscardMs) {
+  if (currentTime > message.lastOriginationTime + kOriginationTimeDiscard) {
     jll_player_info("Ignoring received message due to origination time %s", networkMessageToString(message).c_str());
     return;
   }
-  if (currentTime > message.currentPatternStartTime + 2 * kEffectDurationMs) {
+  if (currentTime > message.currentPatternStartTime + 2 * kEffectDuration) {
     jll_player_info("Ignoring received message due to effect duration %s", networkMessageToString(message).c_str());
     return;
   }
@@ -1052,14 +1062,16 @@ void Player::handleReceivedMessage(NetworkMessage message) {
     entry->numHops = receiptNumHops;
     entry->retracted = false;
     entry->patternStartTimeMovementCounter = 0;
-    jll_player_info("Adding " DEVICE_ID_FMT ".p%u entry via " DEVICE_ID_FMT
-                    ".%s"
-                    " nh %u ot %u current %s (%08x) next %s (%08x) elapsed %u",
-                    DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(entry->nextHopDevice),
-                    NetworkTypeToString(entry->nextHopNetworkType), entry->numHops,
-                    currentTime - entry->lastOriginationTime, patternName(entry->currentPattern, *this).c_str(),
-                    entry->currentPattern, patternName(entry->nextPattern, *this).c_str(), entry->nextPattern,
-                    currentTime - entry->currentPatternStartTime);
+    jll_player_info(
+        "Adding " DEVICE_ID_FMT ".p%u entry via " DEVICE_ID_FMT
+        ".%s"
+        " nh %u ot %lldms current %s (%08x) next %s (%08x) elapsed %lldms",
+        DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(entry->nextHopDevice),
+        NetworkTypeToString(entry->nextHopNetworkType), entry->numHops,
+        static_cast<long long>((currentTime - entry->lastOriginationTime) / kMicrosecondsPerMillisecond),
+        patternName(entry->currentPattern, *this).c_str(), entry->currentPattern,
+        patternName(entry->nextPattern, *this).c_str(), entry->nextPattern,
+        static_cast<long long>((currentTime - entry->currentPatternStartTime) / kMicrosecondsPerMillisecond));
   } else {
     // The concept behind this is that we build a tree rooted at each originator
     // using a variant of the Bellman-Ford algorithm. We then only ever listen
@@ -1067,31 +1079,33 @@ void Player::handleReceivedMessage(NetworkMessage message) {
     // neighbors. To avoid loops in this tree, we ignore any update that has same
     // or more hops than our currently saved one. To allow us to recover from
     // situations where the originator has moved further away in the network, we
-    // accept those updates if they're more recent by kOriginationTimeOverrideMs
+    // accept those updates if they're more recent by kOriginationTimeOverride
     // than what we've seen so far. This is based on the theoretical points made
     // in Section 2 of RFC 8966 - we can say that while much simpler and less
     // powerful, this is inspired by the Babel Routing Protocol.
     if (entry->nextHopDevice != message.sender || entry->nextHopNetworkId != message.receiptNetworkId) {
       bool changeNextHop = false;
       if (receiptNumHops < entry->numHops) {
-        jll_player_info("Switching " DEVICE_ID_FMT ".p%u entry via " DEVICE_ID_FMT
-                        ".%s "
-                        "nh %u ot %u to better nextHop " DEVICE_ID_FMT ".%s nh %u ot %u due to nextHops",
-                        DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(entry->nextHopDevice),
-                        NetworkTypeToString(entry->nextHopNetworkType), entry->numHops,
-                        currentTime - entry->lastOriginationTime, DEVICE_ID_HEX(message.sender),
-                        NetworkTypeToString(message.receiptNetworkType), receiptNumHops,
-                        currentTime - message.lastOriginationTime);
+        jll_player_info(
+            "Switching " DEVICE_ID_FMT ".p%u entry via " DEVICE_ID_FMT
+            ".%s "
+            "nh %u ot %lldms to better nextHop " DEVICE_ID_FMT ".%s nh %u ot %lldms due to nextHops",
+            DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(entry->nextHopDevice),
+            NetworkTypeToString(entry->nextHopNetworkType), entry->numHops,
+            static_cast<long long>((currentTime - entry->lastOriginationTime) / kMicrosecondsPerMillisecond),
+            DEVICE_ID_HEX(message.sender), NetworkTypeToString(message.receiptNetworkType), receiptNumHops,
+            static_cast<long long>((currentTime - message.lastOriginationTime) / kMicrosecondsPerMillisecond));
         changeNextHop = true;
-      } else if (message.lastOriginationTime > entry->lastOriginationTime + kOriginationTimeOverrideMs) {
-        jll_player_info("Switching " DEVICE_ID_FMT ".p%u entry via " DEVICE_ID_FMT
-                        ".%s "
-                        "nh %u ot %u to better nextHop " DEVICE_ID_FMT ".%s nh %u ot %u due to originationTime",
-                        DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(entry->nextHopDevice),
-                        NetworkTypeToString(entry->nextHopNetworkType), entry->numHops,
-                        currentTime - entry->lastOriginationTime, DEVICE_ID_HEX(message.sender),
-                        NetworkTypeToString(message.receiptNetworkType), receiptNumHops,
-                        currentTime - message.lastOriginationTime);
+      } else if (message.lastOriginationTime > entry->lastOriginationTime + kOriginationTimeOverride) {
+        jll_player_info(
+            "Switching " DEVICE_ID_FMT ".p%u entry via " DEVICE_ID_FMT
+            ".%s "
+            "nh %u ot %lldms to better nextHop " DEVICE_ID_FMT ".%s nh %u ot %lldms due to originationTime",
+            DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(entry->nextHopDevice),
+            NetworkTypeToString(entry->nextHopNetworkType), entry->numHops,
+            static_cast<long long>((currentTime - entry->lastOriginationTime) / kMicrosecondsPerMillisecond),
+            DEVICE_ID_HEX(message.sender), NetworkTypeToString(message.receiptNetworkType), receiptNumHops,
+            static_cast<long long>((currentTime - message.lastOriginationTime) / kMicrosecondsPerMillisecond));
         changeNextHop = true;
       }
       if (changeNextHop) {
@@ -1120,68 +1134,72 @@ void Player::handleReceivedMessage(NetworkMessage message) {
       }
       // Debounce incoming updates to currentPatternStartTime to avoid visual jitter in the presence
       // of network jitter.
-      static constexpr Milliseconds kPatternStartTimeDeltaMin = 100;
-      static constexpr Milliseconds kPatternStartTimeDeltaMax = 500;
+      static constexpr Microseconds kPatternStartTimeDeltaMin = 100 * kMicrosecondsPerMillisecond;
+      static constexpr Microseconds kPatternStartTimeDeltaMax = 500 * kMicrosecondsPerMillisecond;
       static constexpr int8_t kPatternStartTimeMovementThreshold = 5;
       if (entry->currentPatternStartTime > message.currentPatternStartTime) {
-        const Milliseconds timeDelta = entry->currentPatternStartTime - message.currentPatternStartTime;
+        const Microseconds timeDelta = entry->currentPatternStartTime - message.currentPatternStartTime;
+        const long long timeDeltaMs = static_cast<long long>(timeDelta / kMicrosecondsPerMillisecond);
         if (shouldUpdateStartTime || timeDelta >= kPatternStartTimeDeltaMax) {
-          changes << ", elapsedTime -= " << timeDelta;
+          changes << ", elapsedTime -= " << timeDeltaMs;
           shouldUpdateStartTime = true;
         } else if (timeDelta < kPatternStartTimeDeltaMin) {
-          if (is_debug_logging_enabled()) { changes << ", elapsedTime !-= " << timeDelta; }
+          if (is_debug_logging_enabled()) { changes << ", elapsedTime !-= " << timeDeltaMs; }
           entry->patternStartTimeMovementCounter = 0;
         } else {
           if (entry->patternStartTimeMovementCounter <= 1) {
             entry->patternStartTimeMovementCounter--;
             if (entry->patternStartTimeMovementCounter <= -kPatternStartTimeMovementThreshold) {
-              changes << ", elapsedTime -= " << timeDelta;
+              changes << ", elapsedTime -= " << timeDeltaMs;
               shouldUpdateStartTime = true;
             } else {
               if (is_debug_logging_enabled()) {
-                changes << ", elapsedTime ~-= " << timeDelta << " (movement "
+                changes << ", elapsedTime ~-= " << timeDeltaMs << " (movement "
                         << static_cast<int>(-entry->patternStartTimeMovementCounter) << ")";
               }
             }
           } else {
             entry->patternStartTimeMovementCounter = 0;
-            if (is_debug_logging_enabled()) { changes << ", elapsedTime ~-= " << timeDelta << " (flip)"; }
+            if (is_debug_logging_enabled()) { changes << ", elapsedTime ~-= " << timeDeltaMs << " (flip)"; }
           }
         }
       } else if (entry->currentPatternStartTime < message.currentPatternStartTime) {
-        const Milliseconds timeDelta = message.currentPatternStartTime - entry->currentPatternStartTime;
-        if (timeDelta > kEffectDurationMs - kEffectDurationMs / 10 && entry->originator == currentLeader_) {
+        const Microseconds timeDelta = message.currentPatternStartTime - entry->currentPatternStartTime;
+        const long long timeDeltaMs = static_cast<long long>(timeDelta / kMicrosecondsPerMillisecond);
+        if (timeDelta > kEffectDuration - kEffectDuration / 10 && entry->originator == currentLeader_) {
           shouldBeginPattern_ = true;
         }
         if (shouldUpdateStartTime || timeDelta >= kPatternStartTimeDeltaMax) {
-          changes << ", elapsedTime += " << timeDelta;
-          if (entry->currentPattern == message.currentPattern && timeDelta >= kEffectDurationMs / 2) {
+          changes << ", elapsedTime += " << timeDeltaMs;
+          if (entry->currentPattern == message.currentPattern && timeDelta >= kEffectDuration / 2) {
             changes << " (keeping currentPattern " << patternName(entry->currentPattern, *this) << ")";
           }
           shouldUpdateStartTime = true;
         } else if (timeDelta < kPatternStartTimeDeltaMin) {
-          if (is_debug_logging_enabled()) { changes << ", elapsedTime !+= " << timeDelta; }
+          if (is_debug_logging_enabled()) { changes << ", elapsedTime !+= " << timeDeltaMs; }
           entry->patternStartTimeMovementCounter = 0;
         } else {
           if (entry->patternStartTimeMovementCounter >= -1) {
             entry->patternStartTimeMovementCounter++;
             if (entry->patternStartTimeMovementCounter >= kPatternStartTimeMovementThreshold) {
-              changes << ", elapsedTime += " << timeDelta;
+              changes << ", elapsedTime += " << timeDeltaMs;
               shouldUpdateStartTime = true;
             } else {
               if (is_debug_logging_enabled()) {
-                changes << ", elapsedTime ~+= " << timeDelta << " (movement "
+                changes << ", elapsedTime ~+= " << timeDeltaMs << " (movement "
                         << static_cast<int>(entry->patternStartTimeMovementCounter) << ")";
               }
             }
           } else {
             entry->patternStartTimeMovementCounter = 0;
-            if (is_debug_logging_enabled()) { changes << ", elapsedTime ~+= " << timeDelta << " (flip)"; }
+            if (is_debug_logging_enabled()) { changes << ", elapsedTime ~+= " << timeDeltaMs << " (flip)"; }
           }
         }
       }
       if (entry->lastOriginationTime > message.lastOriginationTime) {
-        changes << ", originationTime -= " << entry->lastOriginationTime - message.lastOriginationTime;
+        changes << ", originationTime -= "
+                << static_cast<long long>((entry->lastOriginationTime - message.lastOriginationTime) /
+                                          kMicrosecondsPerMillisecond);
       }  // Do not log increases to origination time since all originated messages cause it.
       if (entry->retracted) { changes << ", unretracted"; }
       entry->precedence = message.precedence;

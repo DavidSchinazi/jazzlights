@@ -312,12 +312,12 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
     receiptTime = 0;
   }
   if (receiptTime >= patternTimeDelta) {
-    message.currentPatternStartTime = receiptTime - patternTimeDelta;
+    message.currentPatternStartTime = MillisecondsToMicroseconds(receiptTime - patternTimeDelta);
   } else {
     message.currentPatternStartTime = 0;
   }
   if (receiptTime >= originationTimeDelta) {
-    message.lastOriginationTime = receiptTime - originationTimeDelta;
+    message.lastOriginationTime = MillisecondsToMicroseconds(receiptTime - originationTimeDelta);
   } else {
     message.lastOriginationTime = 0;
   }
@@ -346,16 +346,17 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_
   }
   uint8_t innerPayloadLength;
 
+  const Milliseconds lastOriginationTimeMs = MicrosecondsToMilliseconds(messageToSend_.lastOriginationTime);
+  const Milliseconds currentPatternStartTimeMs = MicrosecondsToMilliseconds(messageToSend_.currentPatternStartTime);
   uint16_t originationTimeDelta;
-  if (messageToSend_.lastOriginationTime <= currentTime && currentTime - messageToSend_.lastOriginationTime <= 0xFFFF) {
-    originationTimeDelta = currentTime - messageToSend_.lastOriginationTime;
+  if (lastOriginationTimeMs <= currentTime && currentTime - lastOriginationTimeMs <= 0xFFFF) {
+    originationTimeDelta = currentTime - lastOriginationTimeMs;
   } else {
     originationTimeDelta = 0xFFFF;
   }
   uint16_t patternTimeDelta;
-  if (messageToSend_.currentPatternStartTime <= currentTime &&
-      currentTime - messageToSend_.currentPatternStartTime <= 0xFFFF) {
-    patternTimeDelta = currentTime - messageToSend_.currentPatternStartTime;
+  if (currentPatternStartTimeMs <= currentTime && currentTime - currentPatternStartTimeMs <= 0xFFFF) {
+    patternTimeDelta = currentTime - currentPatternStartTimeMs;
   } else {
     patternTimeDelta = 0xFFFF;
   }

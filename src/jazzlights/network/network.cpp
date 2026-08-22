@@ -88,11 +88,9 @@ std::string networkMessageToString(const NetworkMessage& message) {
   Microseconds currentTime = timeMicros();
   char str[sizeof(", t=4294967296, p=65536, nh=255, ot=4294967296}")] = {};
   snprintf(str, sizeof(str), ", t=%u, p=%u, nh=%u, ot=%u}",
-           static_cast<unsigned int>((currentTime - MillisecondsToMicroseconds(message.currentPatternStartTime)) /
-                                     kMicrosecondsPerMillisecond),
+           static_cast<unsigned int>((currentTime - message.currentPatternStartTime) / kMicrosecondsPerMillisecond),
            message.precedence, message.numHops,
-           static_cast<unsigned int>((currentTime - MillisecondsToMicroseconds(message.lastOriginationTime)) /
-                                     kMicrosecondsPerMillisecond));
+           static_cast<unsigned int>((currentTime - message.lastOriginationTime) / kMicrosecondsPerMillisecond));
   std::string rv = "{o=" + message.originator.toString() + ", s=" + message.sender.toString();
 #if !JL_IS_CONFIG(CREATURE)
   rv += ", c=" + displayBitsAsBinary(message.currentPattern);
@@ -217,12 +215,12 @@ bool Network::ParseUdpPayload(uint8_t* udpPayload, size_t udpPayloadLength, cons
     receiptTime = 0;
   }
   if (receiptTime >= patternTimeDelta) {
-    receivedMessage.currentPatternStartTime = receiptTime - patternTimeDelta;
+    receivedMessage.currentPatternStartTime = MillisecondsToMicroseconds(receiptTime - patternTimeDelta);
   } else {
     receivedMessage.currentPatternStartTime = 0;
   }
   if (receiptTime >= originationTimeDelta) {
-    receivedMessage.lastOriginationTime = receiptTime - originationTimeDelta;
+    receivedMessage.lastOriginationTime = MillisecondsToMicroseconds(receiptTime - originationTimeDelta);
   } else {
     receivedMessage.lastOriginationTime = 0;
   }
@@ -279,16 +277,17 @@ bool Network::WriteUdpPayload(const NetworkMessage& messageToSend, uint8_t* udpP
   }
 
   Milliseconds currentTime = timeMillis();
+  const Milliseconds lastOriginationTimeMs = MicrosecondsToMilliseconds(messageToSend.lastOriginationTime);
+  const Milliseconds currentPatternStartTimeMs = MicrosecondsToMilliseconds(messageToSend.currentPatternStartTime);
   Milliseconds originationTimeDelta;
-  if (messageToSend.lastOriginationTime <= currentTime && currentTime - messageToSend.lastOriginationTime <= 0xFFFF) {
-    originationTimeDelta = currentTime - messageToSend.lastOriginationTime;
+  if (lastOriginationTimeMs <= currentTime && currentTime - lastOriginationTimeMs <= 0xFFFF) {
+    originationTimeDelta = currentTime - lastOriginationTimeMs;
   } else {
     originationTimeDelta = 0xFFFF;
   }
   Milliseconds patternTime;
-  if (messageToSend.currentPatternStartTime <= currentTime &&
-      currentTime - messageToSend.currentPatternStartTime <= 0xFFFF) {
-    patternTime = currentTime - messageToSend.currentPatternStartTime;
+  if (currentPatternStartTimeMs <= currentTime && currentTime - currentPatternStartTimeMs <= 0xFFFF) {
+    patternTime = currentTime - currentPatternStartTimeMs;
   } else {
     patternTime = 0xFFFF;
   }
