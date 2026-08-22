@@ -24,19 +24,7 @@ using Microseconds = int64_t;
 // microsecond timestamps, as 62 bits can represent over a hundred thousand years in microseconds.
 class OptionalMicroseconds {
  public:
-  constexpr OptionalMicroseconds() noexcept : inner_(kPresentBit) {
-    // These are sufficiently guaranteed in C++20, but our codebase supports C++17 so we double-check.
-    static_assert(CHAR_BIT == 8, "Silly platform");
-    static_assert(std::numeric_limits<Microseconds>::min() == -std::numeric_limits<Microseconds>::max() - 1,
-                  "Bad two's complement limits");
-    static_assert(sizeof(Microseconds) * CHAR_BIT == std::numeric_limits<Microseconds>::digits + 1,
-                  "Bad two's complement number of bits");
-    static_assert(sizeof(Microseconds) == sizeof(inner_), "bad type size");
-    static_assert(std::numeric_limits<Microseconds>::min() == std::numeric_limits<decltype(inner_)>::min(),
-                  "bad type min");
-    static_assert(std::numeric_limits<Microseconds>::max() == std::numeric_limits<decltype(inner_)>::max(),
-                  "bad type max");
-  }
+  constexpr OptionalMicroseconds() noexcept : inner_(kPresentBit) {}
   constexpr OptionalMicroseconds(std::nullopt_t) noexcept : inner_(kPresentBit) {}
   constexpr OptionalMicroseconds(Microseconds micros) noexcept : inner_(CheckValue(micros)) {}
   constexpr OptionalMicroseconds(const OptionalMicroseconds& other) noexcept = default;
@@ -78,6 +66,19 @@ class OptionalMicroseconds {
   static inline constexpr uint64_t kPresentBit = 0x4000000000000000ULL;
 
   static constexpr Microseconds CheckValue(Microseconds micros) noexcept {
+    // These are sufficiently guaranteed in C++20, but our codebase supports C++17 so we double-check.
+    static_assert(CHAR_BIT == 8, "Silly platform");
+    static_assert(std::numeric_limits<Microseconds>::min() == -std::numeric_limits<Microseconds>::max() - 1,
+                  "Bad two's complement limits");
+    static_assert(sizeof(Microseconds) * CHAR_BIT == std::numeric_limits<Microseconds>::digits + 1,
+                  "Bad two's complement number of bits");
+    static_assert(sizeof(Microseconds) == sizeof(inner_), "bad type size");
+    static_assert(std::numeric_limits<Microseconds>::min() == std::numeric_limits<decltype(inner_)>::min(),
+                  "bad type min");
+    static_assert(std::numeric_limits<Microseconds>::max() == std::numeric_limits<decltype(inner_)>::max(),
+                  "bad type max");
+    static_assert(kPresentBit != 0, "kPresentBit cannot be zero");
+    static_assert((kPresentBit & (kPresentBit - 1)) == 0, "kPresentBit is not a single bit");
 #if JL_OPT_US_DEBUG
     if ((micros & kPresentBit) != 0) { abort(); }
 #endif  // JL_OPT_US_DEBUG
