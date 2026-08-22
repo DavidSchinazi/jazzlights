@@ -29,8 +29,8 @@ class OptionalMicroseconds {
   constexpr OptionalMicroseconds(Microseconds micros) noexcept : inner_(CheckValue(micros)) {}
   constexpr OptionalMicroseconds(const OptionalMicroseconds& other) noexcept = default;
   constexpr OptionalMicroseconds(OptionalMicroseconds&& other) noexcept = default;
-  constexpr OptionalMicroseconds& operator=(const OptionalMicroseconds& other) = default;
-  constexpr OptionalMicroseconds& operator=(OptionalMicroseconds&& other) = default;
+  constexpr OptionalMicroseconds& operator=(const OptionalMicroseconds& other) noexcept = default;
+  constexpr OptionalMicroseconds& operator=(OptionalMicroseconds&& other) noexcept = default;
   constexpr OptionalMicroseconds& operator=(Microseconds micros) noexcept {
     inner_ = CheckValue(micros);
     return *this;
@@ -53,10 +53,10 @@ class OptionalMicroseconds {
     }
   }
 
-  constexpr bool operator==(const OptionalMicroseconds& other) { return inner_ == other.inner_; }
-  constexpr bool operator!=(const OptionalMicroseconds& other) { return inner_ != other.inner_; }
-  constexpr bool operator==(std::nullopt_t) { return !has_value(); }
-  constexpr bool operator!=(std::nullopt_t) { return has_value(); }
+  constexpr bool operator==(const OptionalMicroseconds& other) const noexcept { return inner_ == other.inner_; }
+  constexpr bool operator!=(const OptionalMicroseconds& other) const noexcept { return inner_ != other.inner_; }
+  constexpr bool operator==(std::nullopt_t) const noexcept { return !has_value(); }
+  constexpr bool operator!=(std::nullopt_t) const noexcept { return has_value(); }
 
   constexpr void reset() noexcept { inner_ = kPresentBit; }
 
