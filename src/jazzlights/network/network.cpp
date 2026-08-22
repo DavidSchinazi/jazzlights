@@ -200,12 +200,10 @@ bool Network::ParseUdpPayload(uint8_t* udpPayload, size_t udpPayloadLength, cons
   receivedMessage.sender = NetworkDeviceId(&udpPayload[kSenderOffset]);
   receivedMessage.precedence = readUint16(&udpPayload[kPrecedenceOffset]);
   receivedMessage.numHops = udpPayload[kNumHopsOffset];
-  Milliseconds originationTimeDeltaMs = readUint16(&udpPayload[kOriginationTimeOffset]);
-  Microseconds originationTimeDelta = MillisecondsToMicroseconds(originationTimeDeltaMs);
+  Microseconds originationTimeDelta = MillisecondsToMicroseconds(readUint16(&udpPayload[kOriginationTimeOffset]));
   receivedMessage.currentPattern = readUint32(&udpPayload[kCurrentPatternOffset]);
   receivedMessage.nextPattern = readUint32(&udpPayload[kNextPatternOffset]);
-  Milliseconds patternTimeDeltaMs = readUint16(&udpPayload[kPatternTimeOffset]);
-  Microseconds patternTimeDelta = MillisecondsToMicroseconds(patternTimeDeltaMs);
+  Microseconds patternTimeDelta = MillisecondsToMicroseconds(readUint16(&udpPayload[kPatternTimeOffset]));
   receivedMessage.receiptDetails = receiptDetails;
 
   // TODO measure transmission offset over various underlying UDP networks like Wi-Fi and Ethernet.

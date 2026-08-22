@@ -313,7 +313,7 @@ class NetworkReader {
   bool ReadTimeSinceMs32(Microseconds* out) {
     uint32_t deltaMs;
     if (!ReadUint32(&deltaMs)) { return false; }
-    *out = timeMicros() - (kMicrosecondsPerMillisecond * deltaMs);
+    *out = timeMicros() - MillisecondsToMicroseconds(deltaMs);
     return true;
   }
 
