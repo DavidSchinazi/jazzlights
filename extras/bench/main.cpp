@@ -49,7 +49,7 @@ int runMain(int argc, char** argv) {
                static_cast<long long>(epochDuration / kMicrosecondsPerMillisecond));
       lastFpsEpochTime = currentTime;
     }
-    player.render(currentTime);
+    player.render();
   }
   return 0;
 }

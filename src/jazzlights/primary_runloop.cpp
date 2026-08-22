@@ -153,7 +153,6 @@ void SetupPrimaryRunLoop() {
 
 void RunPrimaryRunLoop() {
   SAVE_TIME_POINT(PrimaryRunLoop, LoopStart);
-  Milliseconds currentTime = timeMillis();
   GetUi()->RunLoop();
 #if JL_IS_CONFIG(ORRERY_LEADER)
   OrreryLeader::Get()->RunLoop();
@@ -165,7 +164,7 @@ void RunPrimaryRunLoop() {
   SAVE_TIME_POINT(PrimaryRunLoop, Bluetooth);
 
 #if !JL_IS_CONFIG(PHONE)
-  const bool shouldRender = player.render(currentTime);
+  const bool shouldRender = player.render();
 #else   // PHONE
   PhonePinHandler::Get()->RunLoop();
   const bool shouldRender = true;

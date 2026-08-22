@@ -12,6 +12,7 @@
 namespace jazzlights {
 
 inline constexpr Milliseconds kEffectDurationMs = 10000;  // 10s.
+static constexpr Microseconds kEffectDuration = kEffectDurationMs * kMicrosecondsPerMillisecond;
 
 inline constexpr size_t kMaxStateAlignment = 8;
 static_assert((kMaxStateAlignment & (kMaxStateAlignment - 1)) == 0, "kMaxStateAlignment must be a power of 2");

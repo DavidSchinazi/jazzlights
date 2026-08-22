@@ -431,9 +431,9 @@ void Player::triggerPatternOverride() {
 }
 #endif  // FAIRY_WAND
 
-bool Player::render(Milliseconds currentTime) {
+bool Player::render() {
   if (!ready_) { begin(); }
-  const Microseconds currentTimeUs = MillisecondsToMicroseconds(currentTime);
+  const Microseconds currentTimeUs = timeMicros();
 
 #if JL_AUDIO_VISUALIZER
   if (sound_reactive_mode_ == SoundReactiveMode::kAuto) {
@@ -470,15 +470,12 @@ bool Player::render(Milliseconds currentTime) {
   for (Network* network : networks_) { network->runLoop(); }
 
   frame_.context = nullptr;
-  // currentPatternStartTime_ is kept as Microseconds, but frame_.time (like kEffectDurationMs) stays in Milliseconds
-  // since it's shared with every pattern effect, so convert down to Milliseconds right here.
-  const Milliseconds currentPatternStartTimeMs = MicrosecondsToMilliseconds(currentPatternStartTime_);
-  if (currentTime - currentPatternStartTimeMs > kEffectDurationMs) {
+  if (currentTimeUs - currentPatternStartTime_ > kEffectDuration) {
     frame_.pattern = nextPattern_;
-    frame_.time = currentTime - currentPatternStartTimeMs - kEffectDurationMs;
+    frame_.time = MicrosecondsToMilliseconds(currentTimeUs - currentPatternStartTime_ - kEffectDuration);
   } else {
     frame_.pattern = currentPattern_;
-    frame_.time = currentTime - currentPatternStartTimeMs;
+    frame_.time = MicrosecondsToMilliseconds(currentTimeUs - currentPatternStartTime_);
   }
 
   if (!enabled()) {
@@ -810,7 +807,6 @@ Player::OriginatorEntry* Player::getOriginatorEntry(NetworkDeviceId originator) 
 
 static constexpr Microseconds kOriginationTimeOverride = 6 * kMicrosecondsPerSecond;
 static constexpr Microseconds kOriginationTimeDiscard = 9 * kMicrosecondsPerSecond;
-static constexpr Microseconds kEffectDuration = kEffectDurationMs * kMicrosecondsPerMillisecond;
 
 static_assert(kOriginationTimeOverride < kOriginationTimeDiscard,
               "Inverting these can lead to retracting an originator "

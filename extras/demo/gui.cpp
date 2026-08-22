@@ -92,7 +92,7 @@ int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen, Mil
     }
     glClear(GL_COLOR_BUFFER_BIT);
 
-    player->render(currentTime);
+    player->render();
     std::ostringstream title;
     title << "jazzlights-demo-" << REVISION << " " << player->currentEffectName();
     glfwSetWindowTitle(window, title.str().c_str());
