@@ -5,6 +5,8 @@
 #include <cmath>
 #include <cstring>
 
+#include "jazzlights/pseudorandom.h"
+
 namespace jazzlights {
 namespace {
 const TProgmemRGBPalette16* SoundReactivePaletteFromOurColorPalette(OurColorPalette ocp) {

@@ -28,9 +28,7 @@ class OptionalMicroseconds {
   constexpr OptionalMicroseconds(std::nullopt_t) noexcept : inner_(kPresentBit) {}
   constexpr OptionalMicroseconds(Microseconds micros) noexcept : inner_(CheckValue(micros)) {}
   constexpr OptionalMicroseconds(const OptionalMicroseconds& other) noexcept = default;
-  constexpr OptionalMicroseconds(OptionalMicroseconds&& other) noexcept = default;
   constexpr OptionalMicroseconds& operator=(const OptionalMicroseconds& other) noexcept = default;
-  constexpr OptionalMicroseconds& operator=(OptionalMicroseconds&& other) noexcept = default;
   constexpr OptionalMicroseconds& operator=(Microseconds micros) noexcept {
     inner_ = CheckValue(micros);
     return *this;
@@ -39,8 +37,10 @@ class OptionalMicroseconds {
     inner_ = kPresentBit;
     return *this;
   }
-  constexpr Microseconds value() const noexcept { return CheckValue(inner_); }
-  constexpr Microseconds operator*() const noexcept { return value(); }
+  constexpr Microseconds& value() & noexcept { return CheckReference(inner_); }
+  constexpr const Microseconds& value() const& noexcept { return CheckConstReference(inner_); }
+  constexpr Microseconds& operator*() & noexcept { return CheckReference(inner_); }
+  constexpr const Microseconds& operator*() const& noexcept { return CheckConstReference(inner_); }
 
   constexpr bool has_value() const noexcept { return (inner_ & kPresentBit) == 0; }
   constexpr explicit operator bool() const noexcept { return has_value(); }
@@ -62,6 +62,8 @@ class OptionalMicroseconds {
 
   void swap(OptionalMicroseconds& other) noexcept { std::swap(inner_, other.inner_); }
 
+  ~OptionalMicroseconds() noexcept = default;
+
  private:
   static inline constexpr uint64_t kPresentBit = 0x4000000000000000ULL;
 
@@ -79,6 +81,18 @@ class OptionalMicroseconds {
                   "bad type max");
     static_assert(kPresentBit != 0, "kPresentBit cannot be zero");
     static_assert((kPresentBit & (kPresentBit - 1)) == 0, "kPresentBit is not a single bit");
+#if JL_OPT_US_DEBUG
+    if ((micros & kPresentBit) != 0) { abort(); }
+#endif  // JL_OPT_US_DEBUG
+    return micros;
+  }
+  static constexpr Microseconds& CheckReference(Microseconds& micros) noexcept {
+#if JL_OPT_US_DEBUG
+    if ((micros & kPresentBit) != 0) { abort(); }
+#endif  // JL_OPT_US_DEBUG
+    return micros;
+  }
+  static constexpr const Microseconds& CheckConstReference(const Microseconds& micros) noexcept {
 #if JL_OPT_US_DEBUG
     if ((micros & kPresentBit) != 0) { abort(); }
 #endif  // JL_OPT_US_DEBUG
