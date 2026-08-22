@@ -76,7 +76,7 @@ class Esp32WiFiNetwork : public Network {
   struct in_addr multicastAddress_ = {};            // Only modified in constructor.
   int socket_ = -1;                                 // Only used on our task.
   uint8_t* udpPayload_ = nullptr;                   // Only used on our task. Used for both sending and receiving.
-  Milliseconds lastSendTime_ = -1;                  // Only used on our task.
+  std::optional<Microseconds> lastSendTime_;        // Only used on our task.
   PatternBits lastSentPattern_ = 0;                 // Only used on our task.
   bool shouldArmQueueReconnectionTimeout_ = false;  // Only used on our task.
   uint32_t reconnectCount_ = 0;                     // Only used on our task.

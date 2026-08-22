@@ -122,7 +122,7 @@ void WiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
 }
 
 NetworkStatus ArduinoEspWiFiNetwork::update(NetworkStatus status) {
-  Milliseconds currentTime = timeMillis();
+  Microseconds currentTime = timeMicros();
   const wl_status_t newWiFiStatus = WiFi.status();
   if (newWiFiStatus != currentWiFiStatus_) {
     jll_info("Wi-Fi status changing from %s to %s", WiFiStatusToString(currentWiFiStatus_).c_str(),
@@ -130,10 +130,10 @@ NetworkStatus ArduinoEspWiFiNetwork::update(NetworkStatus status) {
     currentWiFiStatus_ = newWiFiStatus;
     timeOfLastWiFiStatusTransition_ = currentTime;
   }
-  static constexpr Milliseconds kDhcpTimeout = 5000;      // 5s.
-  static constexpr Milliseconds kDhcpRetryTime = 600000;  // 10min.
+  static constexpr Microseconds kDhcpTimeout = 5 * kMicrosecondsPerSecond;      // 5s.
+  static constexpr Microseconds kDhcpRetryTime = 600 * kMicrosecondsPerSecond;  // 10min.
   if (staticConf_ == nullptr && attemptingDhcp_ && currentWiFiStatus_ == WL_IDLE_STATUS &&
-      timeOfLastWiFiStatusTransition_ >= 0 && currentTime - timeOfLastWiFiStatusTransition_ > kDhcpTimeout) {
+      timeOfLastWiFiStatusTransition_ && currentTime - *timeOfLastWiFiStatusTransition_ > kDhcpTimeout) {
     attemptingDhcp_ = false;
     IPAddress ip, gw, snm;
     ip[0] = 169;
@@ -144,8 +144,8 @@ NetworkStatus ArduinoEspWiFiNetwork::update(NetworkStatus status) {
     snm.fromString("255.255.0.0");
     jll_info("Wi-Fi giving up on DHCP, using %u.%u.%u.%u", ip[0], ip[1], ip[2], ip[3]);
     WiFi.config(ip, gw, snm);
-  } else if (staticConf_ == nullptr && !attemptingDhcp_ && timeOfLastWiFiStatusTransition_ >= 0 &&
-             currentTime - timeOfLastWiFiStatusTransition_ > kDhcpRetryTime) {
+  } else if (staticConf_ == nullptr && !attemptingDhcp_ && timeOfLastWiFiStatusTransition_ &&
+             currentTime - *timeOfLastWiFiStatusTransition_ > kDhcpRetryTime) {
     attemptingDhcp_ = true;
     jll_info("Wi-Fi going back to another DHCP attempt");
     WiFi.config(IPAddress(), IPAddress(), IPAddress());
@@ -203,14 +203,13 @@ NetworkStatus ArduinoEspWiFiNetwork::update(NetworkStatus status) {
 
         case WL_DISCONNECTED:
         default: {
-          static int32_t last_t = 0;
-          if (currentTime - last_t > 5000) {
+          if (!timeOfLastWiFiStatusLog_ || currentTime - *timeOfLastWiFiStatusLog_ > 5 * kMicrosecondsPerSecond) {
             if (newWiFiStatus == WL_DISCONNECTED) {
               jll_debug("Wi-Fi still connecting...");
             } else {
               jll_info("Wi-Fi still connecting, unexpected status code %s", WiFiStatusToString(newWiFiStatus).c_str());
             }
-            last_t = currentTime;
+            timeOfLastWiFiStatusLog_ = currentTime;
           }
         }
       }

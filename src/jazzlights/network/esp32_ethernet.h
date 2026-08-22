@@ -69,12 +69,12 @@ class Esp32EthernetNetwork : public Network {
 
   QueueHandle_t eventQueue_;
   const NetworkDeviceId localDeviceId_ = QueryLocalDeviceId();
-  TaskHandle_t taskHandle_ = nullptr;     // Only modified in constructor.
-  struct in_addr multicastAddress_ = {};  // Only modified in constructor.
-  int socket_ = -1;                       // Only used on our task.
-  uint8_t* udpPayload_ = nullptr;         // Only used on our task. Used for both sending and receiving.
-  Milliseconds lastSendTime_ = -1;        // Only used on our task.
-  PatternBits lastSentPattern_ = 0;       // Only used on our task.
+  TaskHandle_t taskHandle_ = nullptr;         // Only modified in constructor.
+  struct in_addr multicastAddress_ = {};      // Only modified in constructor.
+  int socket_ = -1;                           // Only used on our task.
+  uint8_t* udpPayload_ = nullptr;             // Only used on our task. Used for both sending and receiving.
+  std::optional<Microseconds> lastSendTime_;  // Only used on our task.
+  PatternBits lastSentPattern_ = 0;           // Only used on our task.
   std::atomic<std::optional<Microseconds>> lastReceiveTime_;
   std::mutex mutex_;
   struct in_addr localAddress_ = {};            // Protected by mutex_.

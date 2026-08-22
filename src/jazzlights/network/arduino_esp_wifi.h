@@ -48,7 +48,8 @@ class ArduinoEspWiFiNetwork : public UdpNetwork {
   StaticConf* staticConf_ = nullptr;
   const NetworkDeviceId localDeviceId_ = QueryLocalDeviceId();
   wl_status_t currentWiFiStatus_ = kUninitialized;
-  Milliseconds timeOfLastWiFiStatusTransition_ = -1;
+  std::optional<Microseconds> timeOfLastWiFiStatusTransition_;
+  std::optional<Microseconds> timeOfLastWiFiStatusLog_;
   bool attemptingDhcp_ = true;
 };
 

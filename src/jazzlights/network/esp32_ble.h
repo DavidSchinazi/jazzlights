@@ -70,8 +70,8 @@ class Esp32BleNetwork : public Network {
   void StopAdvertising();
   void StartConfigureAdvertising();
   void MaybeUpdateAdvertisingState();
-  void StopAdvertisingIn(Milliseconds duration);
-  void StopScanningIn(Milliseconds duration);
+  void StopAdvertisingIn(Microseconds duration);
+  void StopScanningIn(Microseconds duration);
   void ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifier, uint8_t innerPayloadLength,
                             const uint8_t* innerPayload, int rssi);
   uint8_t GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_t maxInnerPayloadLength);
@@ -92,8 +92,8 @@ class Esp32BleNetwork : public Network {
   NetworkMessage messageToSend_;
   uint8_t numUrgentSends_ = 0;
   std::list<NetworkMessage> receivedMessages_;
-  Milliseconds timeToStopAdvertising_ = 0;
-  Milliseconds timeToStopScanning_ = 0;
+  std::optional<Microseconds> timeToStopAdvertising_;
+  std::optional<Microseconds> timeToStopScanning_;
 };
 
 }  // namespace jazzlights

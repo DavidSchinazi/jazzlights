@@ -222,10 +222,10 @@ class Network {
 
   NetworkStatus status_ = INITIALIZING;
 
-  Milliseconds lastConnectionAttempt_ = 0;
-  static constexpr Milliseconds MinBackoffTimeout() { return 1000; }
-  static constexpr Milliseconds MaxBackoffTimeout() { return 16000; }
-  Milliseconds backoffTimeout_ = MinBackoffTimeout();
+  Microseconds lastConnectionAttempt_ = 0;
+  static constexpr Microseconds MinBackoffTimeout() { return 1000 * kMicrosecondsPerMillisecond; }
+  static constexpr Microseconds MaxBackoffTimeout() { return 16000 * kMicrosecondsPerMillisecond; }
+  Microseconds backoffTimeout_ = MinBackoffTimeout();
 };
 
 class UdpNetwork : public Network {
@@ -248,7 +248,7 @@ class UdpNetwork : public Network {
 
   PatternBits lastSentPattern_ = 0;
 
-  Milliseconds effectLastTxTime_ = 0;
+  Microseconds effectLastTxTime_ = 0;
   std::optional<Microseconds> lastReceiveTime_;
 };
 

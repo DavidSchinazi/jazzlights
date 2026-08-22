@@ -26,7 +26,7 @@
 namespace jazzlights {
 namespace {
 constexpr size_t kReceiveBufferLength = 1500;
-constexpr Milliseconds kSendInterval = 100;
+constexpr Microseconds kSendInterval = 100 * kMicrosecondsPerMillisecond;
 constexpr uint32_t kNumReconnectsBeforeDelay = 10;
 #if JL_CORE2AWS_ETHERNET
 constexpr int kEthernetPinSCK = 18;
@@ -260,8 +260,8 @@ void Esp32EthernetNetwork::RunTask() {
     const std::lock_guard<std::mutex> lock(mutex_);
     messageToSend = messageToSend_;
   }
-  Milliseconds currentTime = timeMillis();
-  if (hasDataToSend_ && (lastSendTime_ < 1 || currentTime - lastSendTime_ >= kSendInterval ||
+  Microseconds currentTime = timeMicros();
+  if (hasDataToSend_ && (!lastSendTime_ || currentTime - *lastSendTime_ >= kSendInterval ||
                          messageToSend.currentPattern != lastSentPattern_)) {
     lastSendTime_ = currentTime;
     lastSentPattern_ = messageToSend.currentPattern;
@@ -293,8 +293,13 @@ void Esp32EthernetNetwork::RunTask() {
           .events = POLLIN,
           .revents = 0,
       };
-      Milliseconds timeout = kSendInterval - (timeMillis() - lastSendTime_);
-      int pollRes = poll(&pollFd, 1, timeout);
+      int pollTimeoutMs = static_cast<int>(kSendInterval / kMicrosecondsPerMillisecond);
+      if (lastSendTime_) {
+        const Microseconds timeSinceLastSendMs =
+            static_cast<int>((timeMicros() - *lastSendTime_) / kMicrosecondsPerMillisecond);
+        if (timeSinceLastSendMs <= pollTimeoutMs) { pollTimeoutMs -= timeSinceLastSendMs; }
+      }
+      int pollRes = poll(&pollFd, 1, pollTimeoutMs);
       if (pollRes > 0) {  // Data available.
         // Do nothing, just restart loop to read.
       } else if (pollRes == 0) {  // Timed out.

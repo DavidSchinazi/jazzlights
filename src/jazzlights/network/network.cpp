@@ -85,12 +85,13 @@ std::string displayBitsAsBinary(PatternBits p) {
 }
 
 std::string networkMessageToString(const NetworkMessage& message) {
+  Microseconds currentTime = timeMicros();
   char str[sizeof(", t=4294967296, p=65536, nh=255, ot=4294967296}")] = {};
   snprintf(str, sizeof(str), ", t=%u, p=%u, nh=%u, ot=%u}",
-           static_cast<unsigned int>((timeMicros() - MillisecondsToMicroseconds(message.currentPatternStartTime)) /
+           static_cast<unsigned int>((currentTime - MillisecondsToMicroseconds(message.currentPatternStartTime)) /
                                      kMicrosecondsPerMillisecond),
            message.precedence, message.numHops,
-           static_cast<unsigned int>((timeMicros() - MillisecondsToMicroseconds(message.lastOriginationTime)) /
+           static_cast<unsigned int>((currentTime - MillisecondsToMicroseconds(message.lastOriginationTime)) /
                                      kMicrosecondsPerMillisecond));
   std::string rv = "{o=" + message.originator.toString() + ", s=" + message.sender.toString();
 #if !JL_IS_CONFIG(CREATURE)
@@ -143,7 +144,7 @@ NetworkStatus Network::status() const { return status_; }
 
 void Network::reconnect() {
   if (status_ != CONNECTED) {
-    lastConnectionAttempt_ = timeMillis();
+    lastConnectionAttempt_ = timeMicros();
     jll_info("%s Network Reconnecting", NetworkTypeToString(type()));
     status_ = update(CONNECTING);
   }
@@ -250,7 +251,7 @@ std::list<NetworkMessage> UdpNetwork::getReceivedMessagesImpl() {
 }
 
 void Network::checkStatus() {
-  Milliseconds currentTime = timeMillis();
+  Microseconds currentTime = timeMicros();
   if (status_ == CONNECTION_FAILED) {
     backoffTimeout_ = std::min(MaxBackoffTimeout(), backoffTimeout_ * 2);
     if (currentTime - lastConnectionAttempt_ > backoffTimeout_) { reconnect(); }
@@ -309,8 +310,8 @@ void UdpNetwork::runLoopImpl() {
   if (status() != CONNECTED) { return; }
 
   // Do we need to send?
-  Milliseconds currentTime = timeMillis();
-  static constexpr Milliseconds kMinTimeBetweenUdpSends = 100;
+  Microseconds currentTime = timeMicros();
+  static constexpr Microseconds kMinTimeBetweenUdpSends = 100 * kMicrosecondsPerMillisecond;
   if (hasDataToSend_ && (effectLastTxTime_ < 1 || currentTime - effectLastTxTime_ > kMinTimeBetweenUdpSends ||
                          messageToSend_.currentPattern != lastSentPattern_)) {
     effectLastTxTime_ = currentTime;
