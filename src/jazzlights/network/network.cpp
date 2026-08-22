@@ -278,18 +278,20 @@ bool Network::WriteUdpPayload(const NetworkMessage& messageToSend, uint8_t* udpP
 
   Microseconds currentTime = timeMicros();
   uint16_t originationTimeDeltaMs16;
-  if (messageToSend.lastOriginationTime <= currentTime &&
-      currentTime - messageToSend.lastOriginationTime <= kMicrosecondsPerMillisecond * 0xFFFF) {
+  if (messageToSend.lastOriginationTime >= currentTime) {
+    originationTimeDeltaMs16 = 0;
+  } else if (currentTime - messageToSend.lastOriginationTime < kMicrosecondsPerMillisecond * 0xFFFF) {
     originationTimeDeltaMs16 = (currentTime - messageToSend.lastOriginationTime) / kMicrosecondsPerMillisecond;
   } else {
     originationTimeDeltaMs16 = 0xFFFF;
   }
-  uint16_t patternTimeMs16;
-  if (messageToSend.currentPatternStartTime <= currentTime &&
-      currentTime - messageToSend.currentPatternStartTime <= kMicrosecondsPerMillisecond * 0xFFFF) {
-    patternTimeMs16 = (currentTime - messageToSend.currentPatternStartTime) / kMicrosecondsPerMillisecond;
+  uint16_t patternTimeDeltaMs16;
+  if (messageToSend.currentPatternStartTime >= currentTime) {
+    patternTimeDeltaMs16 = 0;
+  } else if (currentTime - messageToSend.currentPatternStartTime < kMicrosecondsPerMillisecond * 0xFFFF) {
+    patternTimeDeltaMs16 = (currentTime - messageToSend.currentPatternStartTime) / kMicrosecondsPerMillisecond;
   } else {
-    patternTimeMs16 = 0xFFFF;
+    patternTimeDeltaMs16 = 0xFFFF;
   }
   jll_debug("%s sending %s", NetworkTypeToString(type()), networkMessageToString(messageToSend).c_str());
 
@@ -301,7 +303,7 @@ bool Network::WriteUdpPayload(const NetworkMessage& messageToSend, uint8_t* udpP
   writeUint16(&udpPayload[kOriginationTimeOffset], originationTimeDeltaMs16);
   writeUint32(&udpPayload[kCurrentPatternOffset], messageToSend.currentPattern);
   writeUint32(&udpPayload[kNextPatternOffset], messageToSend.nextPattern);
-  writeUint16(&udpPayload[kPatternTimeOffset], patternTimeMs16);
+  writeUint16(&udpPayload[kPatternTimeOffset], patternTimeDeltaMs16);
   return true;
 }
 

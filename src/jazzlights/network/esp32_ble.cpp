@@ -338,7 +338,6 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
 
 uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_t maxInnerPayloadLength) {
   const std::lock_guard<std::mutex> lock(mutex_);
-  Microseconds currentTime = timeMicros();
   static_assert(kMaxPayloadLength <= kMaxInnerPayloadLength, "bad size");
   if (kMaxPayloadLength > maxInnerPayloadLength) {
     jll_error("GetNextInnerPayloadToSend nonsense %u > %u", kMaxPayloadLength, maxInnerPayloadLength);
@@ -346,19 +345,22 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_
   }
   uint8_t innerPayloadLength;
 
-  uint16_t originationTimeDelta;
-  if (messageToSend_.lastOriginationTime <= currentTime &&
-      (currentTime - messageToSend_.lastOriginationTime) <= kMicrosecondsPerMillisecond * 0xFFFF) {
-    originationTimeDelta = (currentTime - messageToSend_.lastOriginationTime) / kMicrosecondsPerMillisecond;
+  Microseconds currentTime = timeMicros();
+  uint16_t originationTimeDeltaMs16;
+  if (messageToSend_.lastOriginationTime >= currentTime) {
+    originationTimeDeltaMs16 = 0;
+  } else if (currentTime - messageToSend_.lastOriginationTime < kMicrosecondsPerMillisecond * 0xFFFF) {
+    originationTimeDeltaMs16 = (currentTime - messageToSend_.lastOriginationTime) / kMicrosecondsPerMillisecond;
   } else {
-    originationTimeDelta = 0xFFFF;
+    originationTimeDeltaMs16 = 0xFFFF;
   }
-  uint16_t patternTimeDelta;
-  if (messageToSend_.currentPatternStartTime <= currentTime &&
-      currentTime - messageToSend_.currentPatternStartTime <= kMicrosecondsPerMillisecond * 0xFFFF) {
-    patternTimeDelta = (currentTime - messageToSend_.currentPatternStartTime) / kMicrosecondsPerMillisecond;
+  uint16_t patternTimeDeltaMs16;
+  if (messageToSend_.currentPatternStartTime >= currentTime) {
+    patternTimeDeltaMs16 = 0;
+  } else if (currentTime - messageToSend_.currentPatternStartTime < kMicrosecondsPerMillisecond * 0xFFFF) {
+    patternTimeDeltaMs16 = (currentTime - messageToSend_.currentPatternStartTime) / kMicrosecondsPerMillisecond;
   } else {
-    patternTimeDelta = 0xFFFF;
+    patternTimeDeltaMs16 = 0xFFFF;
   }
 
 #if JL_IS_CONFIG(CREATURE)
@@ -379,7 +381,7 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_
     jll_error("Failed to write creature numHops");
     return 0;
   }
-  if (!writer.WriteUint16(originationTimeDelta)) {
+  if (!writer.WriteUint16(originationTimeDeltaMs16)) {
     jll_error("Failed to write creature originationTimeDelta");
     return 0;
   }
@@ -391,7 +393,7 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_
     jll_error("Failed to write creature nextPattern");
     return 0;
   }
-  if (!writer.WriteUint16(patternTimeDelta)) {
+  if (!writer.WriteUint16(patternTimeDeltaMs16)) {
     jll_error("Failed to write creature patternTimeDelta");
     return 0;
   }
@@ -416,10 +418,10 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_
   messageToSend_.originator.writeTo(&innerPayload[kOriginatorOffset]);
   writeUint16(&innerPayload[kPrecedenceOffset], messageToSend_.precedence);
   innerPayload[kNumHopsOffset] = messageToSend_.numHops;
-  writeUint16(&innerPayload[kOriginationTimeOffset], originationTimeDelta);
+  writeUint16(&innerPayload[kOriginationTimeOffset], originationTimeDeltaMs16);
   writeUint32(&innerPayload[kCurrentPatternOffset], messageToSend_.currentPattern);
   writeUint32(&innerPayload[kNextPatternOffset], messageToSend_.nextPattern);
-  writeUint16(&innerPayload[kPatternTimeOffset], patternTimeDelta);
+  writeUint16(&innerPayload[kPatternTimeOffset], patternTimeDeltaMs16);
   if (messageToSend_.orrerySceneId) {
     innerPayload[kExtensionByteOffset] = kExtensionByteFlagHasOrreryScene;
     innerPayload[kOrrerySceneOffset] = *messageToSend_.orrerySceneId;

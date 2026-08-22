@@ -24,7 +24,7 @@ using Microseconds = int64_t;
 // microsecond timestamps, as 62 bits can represent over a hundred thousand years in microseconds.
 class OptionalMicroseconds {
  public:
-  OptionalMicroseconds() : inner_(kPresentBit) {
+  constexpr OptionalMicroseconds() noexcept : inner_(kPresentBit) {
     // These are sufficiently guaranteed in C++20, but our codebase supports C++17 so we double-check.
     static_assert(CHAR_BIT == 8, "Silly platform");
     static_assert(std::numeric_limits<Microseconds>::min() == -std::numeric_limits<Microseconds>::max() - 1,
@@ -37,30 +37,51 @@ class OptionalMicroseconds {
     static_assert(std::numeric_limits<Microseconds>::max() == std::numeric_limits<decltype(inner_)>::max(),
                   "bad type max");
   }
-  OptionalMicroseconds(Microseconds micros) { AssignInput(micros); }
-  OptionalMicroseconds& operator=(Microseconds micros) {
-    AssignInput(micros);
+  constexpr OptionalMicroseconds(std::nullopt_t) noexcept : inner_(kPresentBit) {}
+  constexpr OptionalMicroseconds(Microseconds micros) noexcept : inner_(CheckValue(micros)) {}
+  constexpr OptionalMicroseconds(const OptionalMicroseconds& other) noexcept = default;
+  constexpr OptionalMicroseconds(OptionalMicroseconds&& other) noexcept = default;
+  constexpr OptionalMicroseconds& operator=(const OptionalMicroseconds& other) = default;
+  constexpr OptionalMicroseconds& operator=(OptionalMicroseconds&& other) = default;
+  constexpr OptionalMicroseconds& operator=(Microseconds micros) noexcept {
+    inner_ = CheckValue(micros);
     return *this;
   }
-  Microseconds operator*() const noexcept { return GetOutput(); }
-  operator bool() const noexcept { return (inner_ & kPresentBit) == 0; }
-  void reset() { inner_ = kPresentBit; }
+  constexpr OptionalMicroseconds& operator=(std::nullopt_t) noexcept {
+    inner_ = kPresentBit;
+    return *this;
+  }
+  constexpr Microseconds value() const noexcept { return CheckValue(inner_); }
+  constexpr Microseconds operator*() const noexcept { return value(); }
+
+  constexpr bool has_value() const noexcept { return (inner_ & kPresentBit) == 0; }
+  constexpr explicit operator bool() const noexcept { return has_value(); }
+
+  constexpr Microseconds value_or(Microseconds default_micros) const noexcept {
+    if (has_value()) {
+      return value();
+    } else {
+      return default_micros;
+    }
+  }
+
+  constexpr bool operator==(const OptionalMicroseconds& other) { return inner_ == other.inner_; }
+  constexpr bool operator!=(const OptionalMicroseconds& other) { return inner_ != other.inner_; }
+  constexpr bool operator==(std::nullopt_t) { return !has_value(); }
+  constexpr bool operator!=(std::nullopt_t) { return has_value(); }
+
+  constexpr void reset() noexcept { inner_ = kPresentBit; }
+
+  void swap(OptionalMicroseconds& other) noexcept { std::swap(inner_, other.inner_); }
 
  private:
   static inline constexpr uint64_t kPresentBit = 0x4000000000000000ULL;
 
-  void AssignInput(Microseconds micros) {
+  static constexpr Microseconds CheckValue(Microseconds micros) noexcept {
 #if JL_OPT_US_DEBUG
     if ((micros & kPresentBit) != 0) { abort(); }
 #endif  // JL_OPT_US_DEBUG
-    inner_ = micros;
-  }
-
-  Microseconds GetOutput() const noexcept {
-#if JL_OPT_US_DEBUG
-    if ((inner_ & kPresentBit) != 0) { abort(); }
-#endif  // JL_OPT_US_DEBUG
-    return inner_;
+    return micros;
   }
 
   Microseconds inner_;
