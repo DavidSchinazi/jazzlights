@@ -36,8 +36,7 @@ class Max485BusHandler {
 
   virtual ~Max485BusHandler();
 
-  bool ReadMessage(OrreryMessage* message, BusId* destBusId, BusId* srcBusId,
-                   std::optional<Microseconds>* rtt = nullptr);
+  bool ReadMessage(OrreryMessage* message, BusId* destBusId, BusId* srcBusId, OptionalMicroseconds* rtt = nullptr);
 
   BusId GetBusIdSelf() const { return busIdSelf_.load(std::memory_order_relaxed); }
 
@@ -76,9 +75,9 @@ class Max485BusHandler {
   std::map<BusId, OrreryMessage> lastLoggedMessages_;      // Only accessed by task.
   std::map<BusId, OrreryMessage> lastLoggedRecvMessages_;  // Only accessed by task.
 #endif
-  OwnedBufferU8 taskSendMessageBuffer_;                            // Only accessed by task.
-  OwnedBufferU8 taskEncodedSendMessageBuffer_;                     // Only accessed by task.
-  std::optional<Microseconds> taskLastSendTimeExpectingResponse_;  // Only accessed by task.
+  OwnedBufferU8 taskSendMessageBuffer_;                     // Only accessed by task.
+  OwnedBufferU8 taskEncodedSendMessageBuffer_;              // Only accessed by task.
+  OptionalMicroseconds taskLastSendTimeExpectingResponse_;  // Only accessed by task.
   std::mutex recvMutex_;
   OwnedBufferU8 taskRecvBuffer_;            // Only accessed by task.
   size_t lengthInTaskRecvBuffer_ = 0;       // Only accessed by task.
@@ -88,7 +87,7 @@ class Max485BusHandler {
     BusId srcBusId;
     BusId destBusId;
     OrreryMessage message;
-    std::optional<Microseconds> rtt;
+    OptionalMicroseconds rtt;
   };
   std::deque<ReceivedMessage> sharedReceivedMessages_;  // Protected by `recvMutex_`.
 

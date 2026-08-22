@@ -266,7 +266,7 @@ std::string ArduinoEspWiFiNetwork::getStatusStr() {
     case CONNECTION_FAILED: return "failed";
     case CONNECTED: {
       IPAddress ip = WiFi.localIP();
-      const std::optional<Microseconds> lastRcv = getLastReceiveTime();
+      const OptionalMicroseconds lastRcv = getLastReceiveTime();
       char statStr[100] = {};
       snprintf(statStr, sizeof(statStr) - 1, "%s %u.%u.%u.%u - %lldms", WiFiSsid(), ip[0], ip[1], ip[2], ip[3],
                static_cast<long long>(lastRcv ? (currentTime - *lastRcv) / kMicrosecondsPerMillisecond : -1));

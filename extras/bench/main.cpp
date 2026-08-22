@@ -19,7 +19,7 @@ class NoopRenderer : public Renderer {
 NoopRenderer noopRenderer;
 
 int runMain(int argc, char** argv) {
-  std::optional<Microseconds> killTime;
+  OptionalMicroseconds killTime;
   bool useNetwork = false;
   while (true) {
     int ch = getopt(argc, argv, "k:n");

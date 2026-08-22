@@ -99,7 +99,7 @@ static const CRGB menuIconSpecialWhite[ATOM_SCREEN_NUM_LEDS] = {
 
 static const CRGB kAtomScreenLEDsAllZero[ATOM_SCREEN_NUM_LEDS] = {};
 
-uint8_t GetReceiveTimeBrightness(std::optional<Microseconds> lastReceiveTime) {
+uint8_t GetReceiveTimeBrightness(OptionalMicroseconds lastReceiveTime) {
   if (!lastReceiveTime) { return 0; }
   constexpr Microseconds kReceiveMaxTime = 10000 * kMicrosecondsPerMillisecond;
   const Microseconds timeSinceReceive = timeMicros() - *lastReceiveTime;

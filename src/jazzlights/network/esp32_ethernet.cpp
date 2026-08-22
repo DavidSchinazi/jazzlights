@@ -71,7 +71,7 @@ std::string Esp32EthernetNetwork::getStatusStr() {
   }
   struct in_addr emptyAddress = {INADDR_ANY};
   if (memcmp(&emptyAddress, &localAddress, sizeof(localAddress)) != 0) {
-    const std::optional<Microseconds> lastRcv = getLastReceiveTime();
+    const OptionalMicroseconds lastRcv = getLastReceiveTime();
     char addressString[INET_ADDRSTRLEN + 1] = {};
     if (inet_ntop(AF_INET, &localAddress, addressString, sizeof(addressString) - 1) == nullptr) {
       jll_fatal("Esp32EthernetNetwork printing local address failed with error %d: %s", errno, strerror(errno));

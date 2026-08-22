@@ -213,7 +213,7 @@ void OrreryPlanet::RunLoop() {
       while (stepsToGo < (-stepsPerRev_ / 72.0f)) { stepsToGo += stepsPerRev_; }
       while (stepsToGo > (stepsPerRev_ - (stepsPerRev_ / 72.0f))) { stepsToGo -= stepsPerRev_; }
 
-      static std::optional<Microseconds> lastLogTime;
+      static OptionalMicroseconds lastLogTime;
       if (!lastLogTime || currentTime - *lastLogTime > kMicrosecondsPerSecond) {
         lastLogTime = currentTime;
         jll_info("targetSteps %f currentSteps %f positionalSteps %f stepsToGo %f actualSpeed %f stepsPerRev %f",
@@ -234,7 +234,7 @@ void OrreryPlanet::RunLoop() {
         // Distance to stop depends on current speed and max deceleration rate.
         const float stop_distance = (actualSpeed_ * actualSpeed_) / (2.0f * kMaxAccelerationRate);
 
-        static std::optional<Microseconds> lastLogTime3;
+        static OptionalMicroseconds lastLogTime3;
         if (!lastLogTime3 || currentTime - *lastLogTime3 > kMicrosecondsPerSecond) {
           lastLogTime3 = currentTime;
           jll_info(
@@ -261,7 +261,7 @@ void OrreryPlanet::RunLoop() {
     if (roundedSpeed_ > kMaxMotorSpeedHz) { roundedSpeed_ = kMaxMotorSpeedHz; }
     if (roundedSpeed_ < -kMaxMotorSpeedHz) { roundedSpeed_ = -kMaxMotorSpeedHz; }
 
-    static std::optional<Microseconds> lastLogTime2;
+    static OptionalMicroseconds lastLogTime2;
     if (!lastLogTime2 || currentTime - *lastLogTime2 > kMicrosecondsPerSecond) {
       lastLogTime2 = currentTime;
       jll_info("Setting roundedSpeed to %f; currentSteps %f positionalSteps %f actualSpeed %f stepsPerRev %f",

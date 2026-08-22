@@ -628,7 +628,7 @@ std::string Esp32BleNetwork::StateToString(Esp32BleNetwork::State state) {
 std::string Esp32BleNetwork::getStatusStr() {
   const Microseconds currentTime = timeMicros();
   char statStr[100] = {};
-  const std::optional<Microseconds> lastRcv = getLastReceiveTime();
+  const OptionalMicroseconds lastRcv = getLastReceiveTime();
   snprintf(statStr, sizeof(statStr) - 1, "%lldms",
            static_cast<long long>(lastRcv ? (currentTime - *lastRcv) / kMicrosecondsPerMillisecond : -1));
   return std::string(statStr);

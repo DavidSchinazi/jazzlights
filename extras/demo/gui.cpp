@@ -47,7 +47,7 @@ void onKey(GLFWwindow* window, int key, int /*scncode*/, int action, int mods) {
   }
 };
 
-int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen, std::optional<Microseconds> killTime) {
+int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen, OptionalMicroseconds killTime) {
   player = &playerRef;
   viewport = vp;
 

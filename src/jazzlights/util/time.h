@@ -1,11 +1,14 @@
 #ifndef JL_UTIL_TIME_H
 #define JL_UTIL_TIME_H
 
+#include <optional>
+
 #include "jazzlights/types.h"
 
 namespace jazzlights {
 
 using Microseconds = int64_t;
+using OptionalMicroseconds = std::optional<Microseconds>;
 
 // Get monotonically increasing time in microseconds.
 Microseconds timeMicros();

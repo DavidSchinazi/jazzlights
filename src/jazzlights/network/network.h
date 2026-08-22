@@ -114,7 +114,7 @@ struct NetworkMessage {
 
 #if JL_IS_CONFIG(CREATURE)
   int receiptRssi = -1000;
-  std::optional<Microseconds> receiptTime;
+  OptionalMicroseconds receiptTime;
   uint32_t creatureColor = 0;
   bool isCreature = false;
   bool isPartying = false;
@@ -178,7 +178,7 @@ class Network {
   virtual bool shouldEcho() const = 0;
 
   // Last time we received a message, or nullopt to indicate never.
-  virtual std::optional<Microseconds> getLastReceiveTime() const = 0;
+  virtual OptionalMicroseconds getLastReceiveTime() const = 0;
 
   // Get a human-readable status string that can be displayed to the user. Not const to allow taking locks.
   virtual std::string getStatusStr() = 0;
@@ -234,7 +234,7 @@ class UdpNetwork : public Network {
   void disableSending() override;
   void triggerSendAsap() override;
   bool shouldEcho() const override { return false; }
-  std::optional<Microseconds> getLastReceiveTime() const override { return lastReceiveTime_; }
+  OptionalMicroseconds getLastReceiveTime() const override { return lastReceiveTime_; }
 
  protected:
   std::list<NetworkMessage> getReceivedMessagesImpl() override;
@@ -249,7 +249,7 @@ class UdpNetwork : public Network {
   PatternBits lastSentPattern_ = 0;
 
   Microseconds effectLastTxTime_ = 0;
-  std::optional<Microseconds> lastReceiveTime_;
+  OptionalMicroseconds lastReceiveTime_;
 };
 
 void writeUint32(uint8_t* data, uint32_t number);
@@ -376,7 +376,7 @@ class NetworkWriter {
   // elapsed milliseconds wouldn't fit in a uint32_t (see TimeSinceMs32Overflows()) — callers that need to track
   // whether a value was actually written (e.g. to set a presence flag) should check TimeSinceMs32Overflows()
   // themselves before calling this. Returns false only if writing an actual value failed.
-  bool WriteOptionalTimeSinceMs32(std::optional<Microseconds> t) {
+  bool WriteOptionalTimeSinceMs32(OptionalMicroseconds t) {
     if (!t || TimeSinceMs32Overflows(*t)) { return true; }
     return WriteUint32(static_cast<uint32_t>((timeMicros() - *t) / kMicrosecondsPerMillisecond));
   }
@@ -385,7 +385,7 @@ class NetworkWriter {
   // or if that many milliseconds wouldn't fit in a uint32_t (see DurationMs32Overflows()) — callers that need to
   // track whether a value was actually written (e.g. to set a presence flag) should check DurationMs32Overflows()
   // themselves before calling this. Returns false only if writing an actual value failed.
-  bool WriteOptionalDurationMs32(std::optional<Microseconds> d) {
+  bool WriteOptionalDurationMs32(OptionalMicroseconds d) {
     if (!d || DurationMs32Overflows(*d)) { return true; }
     return WriteUint32(static_cast<uint32_t>(*d / kMicrosecondsPerMillisecond));
   }

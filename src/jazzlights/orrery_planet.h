@@ -44,10 +44,10 @@ class OrreryPlanet
   OrreryMessage currentState_ = {};
 #if !JL_ORRERY_SUN
   HallSensor hallSensor_;
-  std::optional<Microseconds> timeHallSensorLastOpened_;
-  std::optional<Microseconds> timeHallSensorLastClosed_;
-  std::optional<Microseconds> lastOpenDuration_;
-  std::optional<Microseconds> lastClosedDuration_;
+  OptionalMicroseconds timeHallSensorLastOpened_;
+  OptionalMicroseconds timeHallSensorLastClosed_;
+  OptionalMicroseconds lastOpenDuration_;
+  OptionalMicroseconds lastClosedDuration_;
   GpioSwitchHigh switch0_;
   GpioSwitchHigh switch1_;
   GpioSwitchHigh switch2_;

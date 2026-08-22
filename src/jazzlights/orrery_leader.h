@@ -37,10 +37,10 @@ class OrreryLeader : public GpioSwitchInterface,
   double GetSpeedMultiplier() const { return speedMultiplier_; }
   void SetLedPattern(Planet planet, uint32_t ledPattern);
   uint32_t GetLedPattern(Planet planet) const;
-  std::optional<Microseconds> GetTimeHallSensorLastOpened(Planet planet) const;
-  std::optional<Microseconds> GetTimeHallSensorLastClosed(Planet planet) const;
-  std::optional<Microseconds> GetLastOpenDuration(Planet planet) const;
-  std::optional<Microseconds> GetLastClosedDuration(Planet planet) const;
+  OptionalMicroseconds GetTimeHallSensorLastOpened(Planet planet) const;
+  OptionalMicroseconds GetTimeHallSensorLastClosed(Planet planet) const;
+  OptionalMicroseconds GetLastOpenDuration(Planet planet) const;
+  OptionalMicroseconds GetLastClosedDuration(Planet planet) const;
 
   // From GpioSwitchInterface.
   void StateChanged(uint8_t pin, bool isClosed) override;
@@ -50,8 +50,8 @@ class OrreryLeader : public GpioSwitchInterface,
   // From Player::OrrerySceneIdWatcher.
   void OnOrrerySceneId(std::optional<OrrerySceneId> orrerySceneId) override;
 
-  std::optional<Microseconds> GetLastHeardTime(Planet planet) const;
-  std::optional<Microseconds> GetMaxRtt(Planet planet) const;
+  OptionalMicroseconds GetLastHeardTime(Planet planet) const;
+  OptionalMicroseconds GetMaxRtt(Planet planet) const;
 
   void RunLoop();
 
@@ -82,7 +82,7 @@ class OrreryLeader : public GpioSwitchInterface,
   Player* player_ = nullptr;
   std::optional<PatternBits> patternOverride_;
   std::unordered_map<Planet, PatternBits> patternBeforeOverride_;
-  std::optional<Microseconds> receivedSceneActionTime_;
+  OptionalMicroseconds receivedSceneActionTime_;
   OrrerySceneId receivedOrrerySceneId_ = static_cast<OrrerySceneId>(OrreryScene::kInvalidScene);
 };
 

@@ -78,7 +78,7 @@ class AtomS3Ui : public Esp32Ui, public GpioButton::ButtonInterface {
   // 4 Awaiting release
   // 5 Unlocked
   uint8_t buttonLockState_ = 0;
-  std::optional<Microseconds> lockButtonTime_;  // Time at which we'll lock the buttons.
+  OptionalMicroseconds lockButtonTime_;  // Time at which we'll lock the buttons.
 };
 
 }  // namespace jazzlights

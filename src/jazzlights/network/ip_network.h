@@ -36,9 +36,7 @@ class IpInterfaceManager : public Network {
   void disableSending() override;
   void triggerSendAsap() override;
   bool shouldEcho() const override { return false; }
-  std::optional<Microseconds> getLastReceiveTime() const override {
-    return lastReceiveTime_.load(std::memory_order_relaxed);
-  }
+  OptionalMicroseconds getLastReceiveTime() const override { return lastReceiveTime_.load(std::memory_order_relaxed); }
 
  protected:
   std::list<NetworkMessage> getReceivedMessagesImpl() override;
@@ -50,12 +48,12 @@ class IpInterfaceManager : public Network {
   void RunTask();
 
   NetworkDeviceId localDeviceId_;
-  struct in_addr multicastAddress_ = {};      // Only modified in constructor.
-  int socket_ = -1;                           // Only used on our task.
-  uint8_t* udpPayload_ = nullptr;             // Only used on our task. Used for both sending and receiving.
-  std::optional<Microseconds> lastSendTime_;  // Only used on our task.
-  PatternBits lastSentPattern_ = 0;           // Only used on our task.
-  std::atomic<std::optional<Microseconds>> lastReceiveTime_;
+  struct in_addr multicastAddress_ = {};  // Only modified in constructor.
+  int socket_ = -1;                       // Only used on our task.
+  uint8_t* udpPayload_ = nullptr;         // Only used on our task. Used for both sending and receiving.
+  OptionalMicroseconds lastSendTime_;     // Only used on our task.
+  PatternBits lastSentPattern_ = 0;       // Only used on our task.
+  std::atomic<OptionalMicroseconds> lastReceiveTime_;
   std::mutex mutex_;
   struct in_addr localAddress_ = {};            // Protected by mutex_.
   bool hasDataToSend_ = false;                  // Protected by mutex_.

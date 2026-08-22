@@ -216,7 +216,7 @@ class Player {
 #if JL_AUDIO_VISUALIZER
   SoundReactiveMode sound_reactive_mode_ = SoundReactiveMode::kAuto;
   bool sound_reactive_suppressed_ = false;
-  std::optional<Microseconds> squelch_start_time_;
+  OptionalMicroseconds squelch_start_time_;
 #endif  // JL_AUDIO_VISUALIZER
 
   bool ready_ = false;
@@ -237,7 +237,7 @@ class Player {
   bool loop_ = false;
   size_t specialMode_ = 0;
 #if JL_IS_CONFIG(FAIRY_WAND)
-  std::optional<Microseconds> overridePatternStartTime_;
+  OptionalMicroseconds overridePatternStartTime_;
 #elif JL_IS_CONFIG(CLOUDS)
   StatusWatcher* status_watcher_ = nullptr;  // Unowned.
   bool color_overridden_ = false;
@@ -258,8 +258,8 @@ class Player {
   std::vector<Network*> networks_;
   std::list<OriginatorEntry> originatorEntries_;
 
-  std::optional<Microseconds> lastLEDWriteTime_;
-  std::optional<Microseconds> lastUserInputTime_;
+  OptionalMicroseconds lastLEDWriteTime_;
+  OptionalMicroseconds lastUserInputTime_;
   Precedence basePrecedence_ = 0;
   Precedence precedenceGain_ = 0;
   bool randomizeLocalDeviceId_ = false;
@@ -281,7 +281,7 @@ class Player {
   uint32_t framesComputedThisEpoch_ = 0;
 
   std::optional<OrrerySceneId> orrerySceneIdToSend_;
-  std::optional<Microseconds> lastOrrerySceneIdSetTime_;
+  OptionalMicroseconds lastOrrerySceneIdSetTime_;
   bool isAllLinear_ = false;
 };
 

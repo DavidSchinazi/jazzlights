@@ -28,9 +28,9 @@ class PhonePinHandler : public GpioPin::PinInterface {
   bool dialing_ = false;
   bool lastKnownDigitIsClosed_ = false;
   uint8_t digitCount_ = 0;
-  std::optional<Microseconds> lastDigitEvent_;
+  OptionalMicroseconds lastDigitEvent_;
   uint64_t fullNumber_ = 0;
-  std::optional<Microseconds> lastNumberEvent_;
+  OptionalMicroseconds lastNumberEvent_;
   GpioPin digitPin_;
   GpioPin dialPin_;
 };

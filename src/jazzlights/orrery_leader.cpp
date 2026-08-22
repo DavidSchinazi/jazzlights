@@ -345,37 +345,37 @@ uint32_t OrreryLeader::GetLedPattern(Planet planet) const {
   return kPlanetPattern;
 }
 
-std::optional<Microseconds> OrreryLeader::GetTimeHallSensorLastOpened(Planet planet) const {
+OptionalMicroseconds OrreryLeader::GetTimeHallSensorLastOpened(Planet planet) const {
   auto it = responses_.find(planet);
   if (it != responses_.end()) { return it->second.timeHallSensorLastOpened; }
   return std::nullopt;
 }
 
-std::optional<Microseconds> OrreryLeader::GetTimeHallSensorLastClosed(Planet planet) const {
+OptionalMicroseconds OrreryLeader::GetTimeHallSensorLastClosed(Planet planet) const {
   auto it = responses_.find(planet);
   if (it != responses_.end()) { return it->second.timeHallSensorLastClosed; }
   return std::nullopt;
 }
 
-std::optional<Microseconds> OrreryLeader::GetLastOpenDuration(Planet planet) const {
+OptionalMicroseconds OrreryLeader::GetLastOpenDuration(Planet planet) const {
   auto it = responses_.find(planet);
   if (it != responses_.end()) { return it->second.lastOpenDuration; }
   return std::nullopt;
 }
 
-std::optional<Microseconds> OrreryLeader::GetLastClosedDuration(Planet planet) const {
+OptionalMicroseconds OrreryLeader::GetLastClosedDuration(Planet planet) const {
   auto it = responses_.find(planet);
   if (it != responses_.end()) { return it->second.lastClosedDuration; }
   return std::nullopt;
 }
 
-std::optional<Microseconds> OrreryLeader::GetLastHeardTime(Planet planet) const {
+OptionalMicroseconds OrreryLeader::GetLastHeardTime(Planet planet) const {
   auto it = lastHeardTime_.find(planet);
   if (it != lastHeardTime_.end()) { return it->second; }
   return std::nullopt;
 }
 
-std::optional<Microseconds> OrreryLeader::GetMaxRtt(Planet planet) const {
+OptionalMicroseconds OrreryLeader::GetMaxRtt(Planet planet) const {
   auto it = maxRtt_.find(planet);
   if (it != maxRtt_.end()) { return it->second; }
   return std::nullopt;
@@ -405,7 +405,7 @@ void OrreryLeader::RunLoop() {
   switch4_.RunLoop();
   BusId destBusId, srcBusId;
   OrreryMessage msg;
-  std::optional<Microseconds> rtt;
+  OptionalMicroseconds rtt;
   while (max485BusLeader_.ReadMessage(&msg, &destBusId, &srcBusId, &rtt)) {
     if (msg.type == OrreryMessageType::FollowerResponse) {
       Planet planet = static_cast<Planet>(srcBusId);

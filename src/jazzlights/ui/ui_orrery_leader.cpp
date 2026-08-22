@@ -722,8 +722,8 @@ void OrreryLeaderUi::UpdateStatusSubmenu() {
   if (!statusSubmenuActive_) { return; }
   for (int i = 0; i < kNumPlanets; i++) {
     Planet planet = static_cast<Planet>(static_cast<int>(Planet::Mercury) + i);
-    std::optional<Microseconds> lastHeard = OrreryLeader::Get()->GetLastHeardTime(planet);
-    std::optional<Microseconds> maxRtt = OrreryLeader::Get()->GetMaxRtt(planet);
+    OptionalMicroseconds lastHeard = OrreryLeader::Get()->GetLastHeardTime(planet);
+    OptionalMicroseconds maxRtt = OrreryLeader::Get()->GetMaxRtt(planet);
     char label[64];
     if (lastHeard) {
       if (maxRtt) {
@@ -742,8 +742,8 @@ void OrreryLeaderUi::UpdateStatusSubmenu() {
 }
 
 void OrreryLeaderUi::UpdateCalibrationMenuButton() {
-  std::optional<Microseconds> lastOpened = OrreryLeader::Get()->GetTimeHallSensorLastOpened(currentPlanet_);
-  std::optional<Microseconds> lastClosed = OrreryLeader::Get()->GetTimeHallSensorLastClosed(currentPlanet_);
+  OptionalMicroseconds lastOpened = OrreryLeader::Get()->GetTimeHallSensorLastOpened(currentPlanet_);
+  OptionalMicroseconds lastClosed = OrreryLeader::Get()->GetTimeHallSensorLastClosed(currentPlanet_);
   char label[32];
   if (lastOpened || lastClosed) {
     bool isClosed = false;
@@ -761,10 +761,10 @@ void OrreryLeaderUi::UpdateCalibrationMenuButton() {
 
 void OrreryLeaderUi::UpdateHallSensorSubmenu() {
   if (!hallSensorSubmenuActive_) { return; }
-  std::optional<Microseconds> lastOpened = OrreryLeader::Get()->GetTimeHallSensorLastOpened(currentPlanet_);
-  std::optional<Microseconds> lastClosed = OrreryLeader::Get()->GetTimeHallSensorLastClosed(currentPlanet_);
-  std::optional<Microseconds> lastOpenDuration = OrreryLeader::Get()->GetLastOpenDuration(currentPlanet_);
-  std::optional<Microseconds> lastClosedDuration = OrreryLeader::Get()->GetLastClosedDuration(currentPlanet_);
+  OptionalMicroseconds lastOpened = OrreryLeader::Get()->GetTimeHallSensorLastOpened(currentPlanet_);
+  OptionalMicroseconds lastClosed = OrreryLeader::Get()->GetTimeHallSensorLastClosed(currentPlanet_);
+  OptionalMicroseconds lastOpenDuration = OrreryLeader::Get()->GetLastOpenDuration(currentPlanet_);
+  OptionalMicroseconds lastClosedDuration = OrreryLeader::Get()->GetLastClosedDuration(currentPlanet_);
 
   char label[64];
   if (lastOpened) {

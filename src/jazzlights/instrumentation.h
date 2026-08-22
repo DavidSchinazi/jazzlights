@@ -115,7 +115,7 @@ class TimePointSaver {
 
  private:
   struct TimePointData {
-    std::optional<Microseconds> lastSavedTime;
+    OptionalMicroseconds lastSavedTime;
     Microseconds sumTimes = 0;
   };
 

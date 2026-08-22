@@ -11,7 +11,7 @@
 namespace jazzlights {
 
 int runMain(int argc, char** argv) {
-  std::optional<Microseconds> killTime;
+  OptionalMicroseconds killTime;
   bool startLooping = false;
   bool shouldSetPattern = false;
   PatternBits pattern = 0;

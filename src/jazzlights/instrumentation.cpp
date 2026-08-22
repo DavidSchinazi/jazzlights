@@ -37,7 +37,7 @@ const char* CountPointToString(CountPoint countPoint) {
   return "Unknown";
 }
 
-std::optional<Microseconds> gLastCountPointPrint;
+OptionalMicroseconds gLastCountPointPrint;
 uint64_t gCountPointDatas[kNumCountPoints];
 
 void printAndClearCountPoints() {
@@ -101,7 +101,7 @@ const char* TaskStateToString(eTaskState taskState) {
 
 void printInstrumentationInfo() {
   Microseconds currentTime = timeMicros();
-  static std::optional<Microseconds> lastInstrumentationLog;
+  static OptionalMicroseconds lastInstrumentationLog;
   static constexpr Microseconds kInstrumentationPeriod = 5000000;  // 5s.
   if (lastInstrumentationLog && currentTime - *lastInstrumentationLog < kInstrumentationPeriod) {
     // Ignore any request to print more than once every 5s.

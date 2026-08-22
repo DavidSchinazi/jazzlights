@@ -763,7 +763,7 @@ PatternBits Player::enforceForcedPalette(PatternBits pattern) {
   return pattern;
 }
 
-Precedence getPrecedenceGain(std::optional<Microseconds> epochTime, Microseconds currentTime, Microseconds duration,
+Precedence getPrecedenceGain(OptionalMicroseconds epochTime, Microseconds currentTime, Microseconds duration,
                              Precedence maxGain) {
   if (!epochTime) {
     return 0;

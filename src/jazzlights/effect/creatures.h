@@ -19,10 +19,10 @@ uint32_t ThisCreatureColor();
 
 struct Creature {
   uint32_t color;
-  std::optional<Microseconds> lastHeard;
+  OptionalMicroseconds lastHeard;
   int smoothedRssi;
   bool isNearby;  // True when the creature is near, used to sticky the nearby flag.
-  std::optional<Microseconds> lastHeardPartying;
+  OptionalMicroseconds lastHeardPartying;
 };
 
 class KnownCreatures {
@@ -48,7 +48,7 @@ class KnownCreatures {
   KnownCreatures();
   std::vector<Creature> creatures_;
   bool isPartying_ = false;
-  std::optional<Microseconds> lastHeardOrreryTime_;
+  OptionalMicroseconds lastHeardOrreryTime_;
 };
 
 class Creatures : public Effect {

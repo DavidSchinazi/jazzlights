@@ -81,10 +81,10 @@ struct OrreryMessage {
   std::optional<int32_t> speed;
   std::optional<uint32_t> position;
   std::optional<uint32_t> calibration;
-  std::optional<Microseconds> timeHallSensorLastOpened;
-  std::optional<Microseconds> timeHallSensorLastClosed;
-  std::optional<Microseconds> lastOpenDuration;
-  std::optional<Microseconds> lastClosedDuration;
+  OptionalMicroseconds timeHallSensorLastOpened;
+  OptionalMicroseconds timeHallSensorLastClosed;
+  OptionalMicroseconds lastOpenDuration;
+  OptionalMicroseconds lastClosedDuration;
   std::optional<PatternBits> ledPattern;
   std::optional<uint8_t> ledBrightness;
   std::optional<Precedence> ledBasePrecedence;

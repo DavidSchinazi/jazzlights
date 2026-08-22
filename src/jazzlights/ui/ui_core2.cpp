@@ -168,7 +168,7 @@ void SetupButtons() {
 std::string gCurrentPatternName;
 constexpr Microseconds kLockDelay = 60000000;
 constexpr Microseconds kUnlockingTime = 5000000;
-std::optional<Microseconds> gLastScreenInteractionTime;
+OptionalMicroseconds gLastScreenInteractionTime;
 
 class PatternControlMenu {
  public:

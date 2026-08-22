@@ -159,7 +159,7 @@ void Max485BusHandler::RunTask() {
                     jll_error("Max485 receive queue full, dropping some messages");
                     for (size_t i = 0; i < kMaxRecvQueueSize / 2; i++) { sharedReceivedMessages_.pop_front(); }
                   }
-                  std::optional<Microseconds> rtt;
+                  OptionalMicroseconds rtt;
                   if (destBusId == GetBusIdSelf() && taskLastSendTimeExpectingResponse_) {
                     rtt = timeMicros() - *taskLastSendTimeExpectingResponse_;
                     taskLastSendTimeExpectingResponse_.reset();
@@ -381,7 +381,7 @@ void Max485BusHandler::ShiftTaskRecvBuffer(size_t messageStartIndex) {
 }
 
 bool Max485BusHandler::ReadMessage(OrreryMessage* message, BusId* destBusId, BusId* srcBusId,
-                                   std::optional<Microseconds>* rtt) {
+                                   OptionalMicroseconds* rtt) {
   if (!IsReady()) { return false; }
   const std::lock_guard<std::mutex> lock(recvMutex_);
   if (sharedReceivedMessages_.empty()) { return false; }

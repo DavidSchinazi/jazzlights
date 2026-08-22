@@ -5,7 +5,7 @@
 
 namespace jazzlights {
 
-int runGui(const char* winTitle, Player& player, Box viewport, bool fullscreen, std::optional<Microseconds> killTime);
+int runGui(const char* winTitle, Player& player, Box viewport, bool fullscreen, OptionalMicroseconds killTime);
 
 }  // namespace jazzlights
 

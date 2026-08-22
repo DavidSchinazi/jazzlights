@@ -45,8 +45,8 @@ class GpioPin {
 
   PinInterface& pinInterface_;
   QueueHandle_t queue_;
-  std::optional<Microseconds> lastRunloopQueueEventTime_;
-  std::optional<Microseconds> lastChangeAwayFromDebounced_;
+  OptionalMicroseconds lastRunloopQueueEventTime_;
+  OptionalMicroseconds lastChangeAwayFromDebounced_;
   bool lastIsClosedInISR_ = false;
   bool isClosedRawRunloop_ = false;
   bool isClosedDebouncedRunloop_ = false;
@@ -92,7 +92,7 @@ class GpioButton : public GpioPin::PinInterface {
  private:
   GpioPin gpioPin_;
   ButtonInterface& buttonInterface_;
-  std::optional<Microseconds> lastEvent_;
+  OptionalMicroseconds lastEvent_;
   bool isHeld_ = false;
 };
 
