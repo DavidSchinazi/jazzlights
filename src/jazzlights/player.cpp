@@ -472,10 +472,10 @@ bool Player::render() {
   frame_.context = nullptr;
   if (currentTime - currentPatternStartTime_ > kEffectDuration) {
     frame_.pattern = nextPattern_;
-    frame_.time = MicrosecondsToMilliseconds(currentTime - currentPatternStartTime_ - kEffectDuration);
+    SetFrameTime(frame_, currentTime, currentPatternStartTime_ + kEffectDuration);
   } else {
     frame_.pattern = currentPattern_;
-    frame_.time = MicrosecondsToMilliseconds(currentTime - currentPatternStartTime_);
+    SetFrameTime(frame_, currentTime, currentPatternStartTime_);
   }
 
   if (!enabled()) {
@@ -503,7 +503,7 @@ bool Player::render() {
   static const FunctionalEffect fairy_wand_effect = fairy_wand();
   if (overridePatternStartTime_) {
     if (currentTime - *overridePatternStartTime_ < kOverridePatternDuration) {
-      frame_.time = MicrosecondsToMilliseconds(currentTime - *overridePatternStartTime_);
+      SetFrameTime(frame_, currentTime, *overridePatternStartTime_);
       effect = &fairy_wand_effect;
     }
   }

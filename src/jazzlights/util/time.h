@@ -12,9 +12,6 @@ JL_DEFINE_INT_TYPE(Milliseconds, int, int32_t);
 // Get monotonically increasing time in microseconds.
 Microseconds timeMicros();
 
-// Convert time from microseconds to milliseconds.
-Milliseconds MicrosecondsToMilliseconds(Microseconds timeMicros);
-
 // Convert time from milliseconds to microseconds.
 Microseconds MillisecondsToMicroseconds(Milliseconds timeMillis);
 

@@ -34,16 +34,6 @@ Microseconds timeMicros() {
   return MicrosecondsSinceBoot() + kTimeStartOffset;
 }
 
-Milliseconds MicrosecondsToMilliseconds(Microseconds timeMicros) {
-  if (timeMicros >
-      static_cast<Microseconds>(std::numeric_limits<Milliseconds>::max() - 3600000) * kMicrosecondsPerMillisecond) {
-    // Crash if we get within one hour of overflowing our Milliseconds type.
-    // This happens after 24 days and 19 hours and will cause the program to restart.
-    abort();
-  }
-  return timeMicros / kMicrosecondsPerMillisecond;
-}
-
 Microseconds MillisecondsToMicroseconds(Milliseconds timeMillis) {
   return static_cast<Microseconds>(timeMillis) * kMicrosecondsPerMillisecond;
 }

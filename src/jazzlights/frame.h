@@ -23,6 +23,15 @@ struct Frame {
   size_t pixelCount;
 };
 
+inline void SetFrameTime(Frame& frame, Microseconds currentTime, Microseconds patternStartTime) {
+  Microseconds frameTimeUs = currentTime - patternStartTime;
+  if (frameTimeUs >= kMicrosecondsPerMillisecond * std::numeric_limits<Milliseconds>::max()) {
+    frame.time = std::numeric_limits<Milliseconds>::max();
+  } else {
+    frame.time = static_cast<Milliseconds>(frameTimeUs / kMicrosecondsPerMillisecond);
+  }
+}
+
 constexpr Coord width(const Frame& frame) { return frame.viewport.size.width; }
 
 constexpr Coord height(const Frame& frame) { return frame.viewport.size.height; }
