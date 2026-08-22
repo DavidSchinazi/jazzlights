@@ -277,19 +277,19 @@ bool Network::WriteUdpPayload(const NetworkMessage& messageToSend, uint8_t* udpP
   }
 
   Microseconds currentTime = timeMicros();
-  Milliseconds originationTimeDelta;
+  uint16_t originationTimeDeltaMs16;
   if (messageToSend.lastOriginationTime <= currentTime &&
       currentTime - messageToSend.lastOriginationTime <= kMicrosecondsPerMillisecond * 0xFFFF) {
-    originationTimeDelta = (currentTime - messageToSend.lastOriginationTime) / kMicrosecondsPerMillisecond;
+    originationTimeDeltaMs16 = (currentTime - messageToSend.lastOriginationTime) / kMicrosecondsPerMillisecond;
   } else {
-    originationTimeDelta = 0xFFFF;
+    originationTimeDeltaMs16 = 0xFFFF;
   }
-  Milliseconds patternTime;
+  uint16_t patternTimeMs16;
   if (messageToSend.currentPatternStartTime <= currentTime &&
       currentTime - messageToSend.currentPatternStartTime <= kMicrosecondsPerMillisecond * 0xFFFF) {
-    patternTime = (currentTime - messageToSend.currentPatternStartTime) / kMicrosecondsPerMillisecond;
+    patternTimeMs16 = (currentTime - messageToSend.currentPatternStartTime) / kMicrosecondsPerMillisecond;
   } else {
-    patternTime = 0xFFFF;
+    patternTimeMs16 = 0xFFFF;
   }
   jll_debug("%s sending %s", NetworkTypeToString(type()), networkMessageToString(messageToSend).c_str());
 
@@ -298,10 +298,10 @@ bool Network::WriteUdpPayload(const NetworkMessage& messageToSend, uint8_t* udpP
   messageToSend.sender.writeTo(&udpPayload[kSenderOffset]);
   writeUint16(&udpPayload[kPrecedenceOffset], messageToSend.precedence);
   udpPayload[kNumHopsOffset] = messageToSend.numHops;
-  writeUint16(&udpPayload[kOriginationTimeOffset], originationTimeDelta);
+  writeUint16(&udpPayload[kOriginationTimeOffset], originationTimeDeltaMs16);
   writeUint32(&udpPayload[kCurrentPatternOffset], messageToSend.currentPattern);
   writeUint32(&udpPayload[kNextPatternOffset], messageToSend.nextPattern);
-  writeUint16(&udpPayload[kPatternTimeOffset], patternTime);
+  writeUint16(&udpPayload[kPatternTimeOffset], patternTimeMs16);
   return true;
 }
 
