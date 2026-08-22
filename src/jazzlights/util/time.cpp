@@ -38,6 +38,6 @@ Microseconds MillisecondsToMicroseconds(Milliseconds timeMillis) {
   return static_cast<Microseconds>(timeMillis) * kMicrosecondsPerMillisecond;
 }
 
-int64_t MillisecondsSinceBootForLoggingOnly() { return MicrosecondsSinceBoot() / kMicrosecondsPerMillisecond; }
+long long MillisecondsSinceBootForLogging() { return MicrosecondsSinceBoot() / kMicrosecondsPerMillisecond; }
 
 }  // namespace jazzlights
