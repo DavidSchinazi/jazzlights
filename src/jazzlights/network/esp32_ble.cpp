@@ -256,7 +256,7 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
 #if JL_IS_CONFIG(CREATURE)
   message.isCreature = isCreature;
   message.isPartying = isPartying;
-  message.creatureColor = (creatureRed << 16) | (creatureGreen << 8) | creatureBlue;
+  message.creatureColor = creatureColor;
 #endif  // CREATURE
   if ((extensionByte & kExtensionByteFlagHasOrreryScene) != 0) {
     uint8_t orrerySceneId;
