@@ -225,12 +225,12 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
     jll_error("Failed to parse creature numHops");
     return;
   }
-  uint16_t originationTimeDelta16;
-  if (!reader.ReadUint16(&originationTimeDelta16)) {
+  uint16_t originationTimeDeltaMs16;
+  if (!reader.ReadUint16(&originationTimeDeltaMs16)) {
     jll_error("Failed to parse creature originationTimeDelta");
     return;
   }
-  Milliseconds originationTimeDelta = originationTimeDelta16;
+  Microseconds originationTimeDelta = MillisecondsToMicroseconds(originationTimeDeltaMs16);
   if (!reader.ReadPatternBits(&message.currentPattern)) {
     jll_error("Failed to parse creature currentPattern");
     return;
@@ -239,12 +239,12 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
     jll_error("Failed to parse creature nextPattern");
     return;
   }
-  uint16_t patternTimeDelta16;
-  if (!reader.ReadUint16(&patternTimeDelta16)) {
+  uint16_t patternTimeDeltaMs16;
+  if (!reader.ReadUint16(&patternTimeDeltaMs16)) {
     jll_error("Failed to parse creature patternTimeDelta");
     return;
   }
-  Milliseconds patternTimeDelta = patternTimeDelta16;
+  Microseconds patternTimeDelta = MillisecondsToMicroseconds(patternTimeDeltaMs16);
   uint8_t extensionByte = 0x00;
   if (!reader.Done()) {
     if (!reader.ReadUint8(&extensionByte)) {
@@ -286,12 +286,10 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
   message.originator = NetworkDeviceId(&innerPayload[kOriginatorOffset]);
   message.precedence = readUint16(&innerPayload[kPrecedenceOffset]);
   message.numHops = innerPayload[kNumHopsOffset];
-  Milliseconds originationTimeDeltaMs = readUint16(&innerPayload[kOriginationTimeOffset]);
-  const Microseconds originationTimeDelta = MillisecondsToMicroseconds(originationTimeDeltaMs);
+  Microseconds originationTimeDelta = MillisecondsToMicroseconds(readUint16(&innerPayload[kOriginationTimeOffset]));
   message.currentPattern = readUint32(&innerPayload[kCurrentPatternOffset]);
   message.nextPattern = readUint32(&innerPayload[kNextPatternOffset]);
-  Milliseconds patternTimeDeltaMs = readUint16(&innerPayload[kPatternTimeOffset]);
-  const Microseconds patternTimeDelta = MillisecondsToMicroseconds(patternTimeDeltaMs);
+  Microseconds patternTimeDelta = MillisecondsToMicroseconds(readUint16(&innerPayload[kPatternTimeOffset]));
   uint8_t extensionByte = 0;
   if (innerPayloadLength > kExtensionByteOffset) { extensionByte = innerPayload[kExtensionByteOffset]; }
   size_t orrerySceneOffset = kExtensionByteOffset + 1;
