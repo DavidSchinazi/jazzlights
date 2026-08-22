@@ -390,6 +390,23 @@ class NetworkWriter {
     return WriteUint32(static_cast<uint32_t>(*d / kMicrosecondsPerMillisecond));
   }
 
+  // Writes the time since `epoch` as a uint16_t in milliseconds. Clamps to 0x0000 or 0xFFFF if value is out of bounds.
+  bool WriteTimeSinceMs16(Microseconds epoch, OptionalMicroseconds currentTime = std::nullopt) {
+    Microseconds currentTimeUs = currentTime.value_or(timeMicros());
+    uint16_t durationMs16;
+    if (currentTimeUs <= epoch) {
+      durationMs16 = 0;
+    } else {
+      int64_t timeSinceMs = (currentTimeUs - epoch) / kMicrosecondsPerMillisecond;
+      if (timeSinceMs >= static_cast<int64_t>(std::numeric_limits<uint16_t>::max())) {
+        durationMs16 = std::numeric_limits<uint16_t>::max();
+      } else {
+        durationMs16 = static_cast<uint16_t>(timeSinceMs);
+      }
+    }
+    return WriteUint16(durationMs16);
+  }
+
  private:
   uint8_t* data_;
   const size_t size_;

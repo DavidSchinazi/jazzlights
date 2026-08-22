@@ -345,24 +345,6 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_
   }
   uint8_t innerPayloadLength;
 
-  Microseconds currentTime = timeMicros();
-  uint16_t originationTimeDeltaMs16;
-  if (messageToSend_.lastOriginationTime >= currentTime) {
-    originationTimeDeltaMs16 = 0;
-  } else if (currentTime - messageToSend_.lastOriginationTime < kMicrosecondsPerMillisecond * 0xFFFF) {
-    originationTimeDeltaMs16 = (currentTime - messageToSend_.lastOriginationTime) / kMicrosecondsPerMillisecond;
-  } else {
-    originationTimeDeltaMs16 = 0xFFFF;
-  }
-  uint16_t patternTimeDeltaMs16;
-  if (messageToSend_.currentPatternStartTime >= currentTime) {
-    patternTimeDeltaMs16 = 0;
-  } else if (currentTime - messageToSend_.currentPatternStartTime < kMicrosecondsPerMillisecond * 0xFFFF) {
-    patternTimeDeltaMs16 = (currentTime - messageToSend_.currentPatternStartTime) / kMicrosecondsPerMillisecond;
-  } else {
-    patternTimeDeltaMs16 = 0xFFFF;
-  }
-
 #if JL_IS_CONFIG(CREATURE)
   NetworkWriter writer(innerPayload, maxInnerPayloadLength);
   if (!writer.WriteNetworkDeviceId(messageToSend_.originator)) {
@@ -381,7 +363,8 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_
     jll_error("Failed to write creature numHops");
     return 0;
   }
-  if (!writer.WriteUint16(originationTimeDeltaMs16)) {
+  Microseconds currentTime = timeMicros();
+  if (!writer.WriteTimeSinceMs16(messageToSend_.lastOriginationTime, currentTime)) {
     jll_error("Failed to write creature originationTimeDelta");
     return 0;
   }
@@ -393,7 +376,7 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_
     jll_error("Failed to write creature nextPattern");
     return 0;
   }
-  if (!writer.WriteUint16(patternTimeDeltaMs16)) {
+  if (!writer.WriteTimeSinceMs16(messageToSend_.currentPatternStartTime, currentTime)) {
     jll_error("Failed to write creature patternTimeDelta");
     return 0;
   }
