@@ -310,10 +310,20 @@ class NetworkReader {
   }
 
   // Reads a time that was in the past from a uint32_t duration in milliseconds.
-  bool ReadTimeSinceMs32(Microseconds* out) {
-    uint32_t deltaMs;
-    if (!ReadUint32(&deltaMs)) { return false; }
-    *out = timeMicros() - MillisecondsToMicroseconds(deltaMs);
+  bool ReadTimeSinceMs32(Microseconds* out, OptionalMicroseconds receiptTime = std::nullopt) {
+    uint32_t deltaMs32;
+    if (!ReadUint32(&deltaMs32)) { return false; }
+    Microseconds receiptTimeUs = receiptTime.value_or(timeMicros());
+    *out = receiptTimeUs - MillisecondsToMicroseconds(deltaMs32);
+    return true;
+  }
+
+  // Reads a time that was in the past from a uint16_t duration in milliseconds.
+  bool ReadTimeSinceMs16(Microseconds* out, OptionalMicroseconds receiptTime = std::nullopt) {
+    uint16_t deltaMs16;
+    if (!ReadUint16(&deltaMs16)) { return false; }
+    Microseconds receiptTimeUs = receiptTime.value_or(timeMicros());
+    *out = receiptTimeUs - MillisecondsToMicroseconds(deltaMs16);
     return true;
   }
 
@@ -376,9 +386,10 @@ class NetworkWriter {
   // elapsed milliseconds wouldn't fit in a uint32_t (see TimeSinceMs32Overflows()) — callers that need to track
   // whether a value was actually written (e.g. to set a presence flag) should check TimeSinceMs32Overflows()
   // themselves before calling this. Returns false only if writing an actual value failed.
-  bool WriteOptionalTimeSinceMs32(OptionalMicroseconds t) {
-    if (!t || TimeSinceMs32Overflows(*t)) { return true; }
-    return WriteUint32(static_cast<uint32_t>((timeMicros() - *t) / kMicrosecondsPerMillisecond));
+  bool WriteOptionalTimeSinceMs32(OptionalMicroseconds epoch, OptionalMicroseconds sendTime = std::nullopt) {
+    if (!epoch || TimeSinceMs32Overflows(*epoch)) { return true; }
+    Microseconds sendTimeUs = sendTime.value_or(timeMicros());
+    return WriteUint32(static_cast<uint32_t>((sendTimeUs - *epoch) / kMicrosecondsPerMillisecond));
   }
 
   // Writes a duration as a 32-bit count of milliseconds. Writes nothing, and still returns true, if `d` is empty
@@ -391,13 +402,13 @@ class NetworkWriter {
   }
 
   // Writes the time since `epoch` as a uint16_t in milliseconds. Clamps to 0x0000 or 0xFFFF if value is out of bounds.
-  bool WriteTimeSinceMs16(Microseconds epoch, OptionalMicroseconds currentTime = std::nullopt) {
-    Microseconds currentTimeUs = currentTime.value_or(timeMicros());
+  bool WriteTimeSinceMs16(Microseconds epoch, OptionalMicroseconds sendTime = std::nullopt) {
+    Microseconds sendTimeUs = sendTime.value_or(timeMicros());
     uint16_t durationMs16;
-    if (currentTimeUs <= epoch) {
+    if (sendTimeUs <= epoch) {
       durationMs16 = 0;
     } else {
-      int64_t timeSinceMs = (currentTimeUs - epoch) / kMicrosecondsPerMillisecond;
+      int64_t timeSinceMs = (sendTimeUs - epoch) / kMicrosecondsPerMillisecond;
       if (timeSinceMs >= static_cast<int64_t>(std::numeric_limits<uint16_t>::max())) {
         durationMs16 = std::numeric_limits<uint16_t>::max();
       } else {

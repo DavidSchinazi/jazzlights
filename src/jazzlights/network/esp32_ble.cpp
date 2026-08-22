@@ -199,12 +199,15 @@ constexpr uint8_t kExtensionByteFlagIsPartying = 0x40;
 constexpr uint8_t kExtensionByteFlagHasOrreryScene = 0x20;
 
 void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifier, uint8_t innerPayloadLength,
-                                           const uint8_t* innerPayload, int rssi) {
-  Microseconds currentTime = timeMicros();
+                                           const uint8_t* innerPayload, int rssi, Microseconds callbackTime) {
   if (innerPayloadLength > kMaxInnerPayloadLength) {
     jll_error("Received advertisement with unexpected length %u", innerPayloadLength);
     return;
   }
+  // Empirical measurements with the ATOM Matrix show a RTT of 50ms,
+  // so we offset the one way transmission time by half that.
+  static constexpr Microseconds kTransmissionOffset = 25 * kMicrosecondsPerMillisecond;
+  const Microseconds receiptTime = callbackTime - kTransmissionOffset;
 #if JL_IS_CONFIG(CREATURE)
   if (innerPayloadLength < kMinPayloadLength) {
     jll_error("Ignoring received creature BLE with unexpected length %u", innerPayloadLength);
@@ -212,6 +215,8 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
   }
   NetworkReader reader(innerPayload, innerPayloadLength);
   NetworkMessage message;
+  message.receiptRssi = rssi;
+  message.receiptTime = receiptTime;
   message.sender = deviceIdentifier;
   if (!reader.ReadNetworkDeviceId(&message.originator)) {
     jll_error("Failed to parse creature originator");
@@ -225,12 +230,10 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
     jll_error("Failed to parse creature numHops");
     return;
   }
-  uint16_t originationTimeDeltaMs16;
-  if (!reader.ReadUint16(&originationTimeDeltaMs16)) {
+  if (!reader.ReadTimeSinceMs16(&message.lastOriginationTime, receiptTime)) {
     jll_error("Failed to parse creature originationTimeDelta");
     return;
   }
-  Microseconds originationTimeDelta = MillisecondsToMicroseconds(originationTimeDeltaMs16);
   if (!reader.ReadPatternBits(&message.currentPattern)) {
     jll_error("Failed to parse creature currentPattern");
     return;
@@ -239,12 +242,10 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
     jll_error("Failed to parse creature nextPattern");
     return;
   }
-  uint16_t patternTimeDeltaMs16;
-  if (!reader.ReadUint16(&patternTimeDeltaMs16)) {
+  if (!reader.ReadTimeSinceMs16(&message.currentPatternStartTime, receiptTime)) {
     jll_error("Failed to parse creature patternTimeDelta");
     return;
   }
-  Microseconds patternTimeDelta = MillisecondsToMicroseconds(patternTimeDeltaMs16);
   uint8_t extensionByte = 0x00;
   if (!reader.Done()) {
     if (!reader.ReadUint8(&extensionByte)) {
@@ -273,8 +274,6 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
     }
     message.orrerySceneId = orrerySceneId;
   }
-  message.receiptRssi = rssi;
-  message.receiptTime = timeMicros();
 #else   // CREATURE
   (void)rssi;
   if (innerPayloadLength < kMinPayloadLength) {
@@ -286,10 +285,12 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
   message.originator = NetworkDeviceId(&innerPayload[kOriginatorOffset]);
   message.precedence = readUint16(&innerPayload[kPrecedenceOffset]);
   message.numHops = innerPayload[kNumHopsOffset];
-  Microseconds originationTimeDelta = MillisecondsToMicroseconds(readUint16(&innerPayload[kOriginationTimeOffset]));
+  message.lastOriginationTime =
+      receiptTime - MillisecondsToMicroseconds(readUint16(&innerPayload[kOriginationTimeOffset]));
   message.currentPattern = readUint32(&innerPayload[kCurrentPatternOffset]);
   message.nextPattern = readUint32(&innerPayload[kNextPatternOffset]);
-  Microseconds patternTimeDelta = MillisecondsToMicroseconds(readUint16(&innerPayload[kPatternTimeOffset]));
+  message.currentPatternStartTime =
+      receiptTime - MillisecondsToMicroseconds(readUint16(&innerPayload[kPatternTimeOffset]));
   uint8_t extensionByte = 0;
   if (innerPayloadLength > kExtensionByteOffset) { extensionByte = innerPayload[kExtensionByteOffset]; }
   size_t orrerySceneOffset = kExtensionByteOffset + 1;
@@ -301,26 +302,6 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
     message.orrerySceneId = innerPayload[orrerySceneOffset];
   }
 #endif  // CREATURE
-
-  // Empirical measurements with the ATOM Matrix show a RTT of 50ms,
-  // so we offset the one way transmission time by half that.
-  constexpr Microseconds kTransmissionOffset = 25 * kMicrosecondsPerMillisecond;
-  Microseconds receiptTime;
-  if (currentTime > kTransmissionOffset) {
-    receiptTime = currentTime - kTransmissionOffset;
-  } else {
-    receiptTime = 0;
-  }
-  if (receiptTime >= patternTimeDelta) {
-    message.currentPatternStartTime = receiptTime - patternTimeDelta;
-  } else {
-    message.currentPatternStartTime = 0;
-  }
-  if (receiptTime >= originationTimeDelta) {
-    message.lastOriginationTime = receiptTime - originationTimeDelta;
-  } else {
-    message.lastOriginationTime = 0;
-  }
 
   ESP32_BLE_DEBUG("Received %s", networkMessageToString(message).c_str());
   lastReceiveTime_.store(receiptTime, std::memory_order_relaxed);
@@ -456,10 +437,12 @@ void Esp32BleNetwork::StartConfigureAdvertising() {
 }
 
 void Esp32BleNetwork::GapCallback(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param) {
-  get()->GapCallbackInner(event, param);
+  const Microseconds callbackTime = timeMicros();
+  get()->GapCallbackInner(event, param, callbackTime);
 }
 
-void Esp32BleNetwork::GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param) {
+void Esp32BleNetwork::GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param,
+                                       Microseconds callbackTime) {
   switch (event) {
     case ESP_GAP_BLE_SCAN_RESULT_EVT: {
       switch (param->scan_rst.search_evt) {
@@ -495,7 +478,7 @@ void Esp32BleNetwork::GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap
                             ESP_BD_ADDR_HEX(param->scan_rst.bda));
           }
           ReceiveAdvertisement(NetworkDeviceId(param->scan_rst.bda), param->scan_rst.adv_data_len - 2,
-                               &param->scan_rst.ble_adv[2], param->scan_rst.rssi);
+                               &param->scan_rst.ble_adv[2], param->scan_rst.rssi, callbackTime);
         } break;
         case ESP_GAP_SEARCH_INQ_CMPL_EVT: {
           ESP32_BLE_DEBUG("Scanning has now stopped via ESP_GAP_SEARCH_INQ_CMPL_EVT");

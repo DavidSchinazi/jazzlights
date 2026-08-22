@@ -71,11 +71,11 @@ class Esp32BleNetwork : public Network {
   void StopAdvertisingIn(Microseconds duration);
   void StopScanningIn(Microseconds duration);
   void ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifier, uint8_t innerPayloadLength,
-                            const uint8_t* innerPayload, int rssi);
+                            const uint8_t* innerPayload, int rssi, Microseconds callbackTime);
   uint8_t GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_t maxInnerPayloadLength);
   void UpdateState(State expectedCurrentState, State newState);
   bool ExtractShouldTriggerSendAsap();
-  void GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param);
+  void GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param, Microseconds callbackTime);
 
   static void GapCallback(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param);
 
