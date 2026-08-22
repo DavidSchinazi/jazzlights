@@ -41,10 +41,12 @@ int runMain(int argc, char** argv) {
       uint16_t fpsCompute;
       uint16_t fpsWrites;
       uint8_t utilization = 0;
-      Milliseconds timeSpentComputingThisEpoch;
-      Milliseconds epochDuration;
+      Microseconds timeSpentComputingThisEpoch;
+      Microseconds epochDuration;
       player.GenerateFPSReport(&fpsCompute, &fpsWrites, &utilization, &timeSpentComputingThisEpoch, &epochDuration);
-      jll_info("%u FPS %u%% %u/%ums", fpsCompute, utilization, timeSpentComputingThisEpoch, epochDuration);
+      jll_info("%u FPS %u%% %lld/%lldms", fpsCompute, utilization,
+               static_cast<long long>(timeSpentComputingThisEpoch / kMicrosecondsPerMillisecond),
+               static_cast<long long>(epochDuration / kMicrosecondsPerMillisecond));
       lastFpsEpochTime = currentTime;
     }
     player.render(currentTime);

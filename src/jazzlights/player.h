@@ -93,7 +93,7 @@ class Player {
    * Computes FPS information and resets counters.
    */
   void GenerateFPSReport(uint16_t* fpsCompute, uint16_t* fpsWrites, uint8_t* utilization,
-                         Milliseconds* timeSpentComputingThisEpoch, Milliseconds* epochDuration);
+                         Microseconds* timeSpentComputingThisEpoch, Microseconds* epochDuration);
 
   /**
    * Returns the bounding box of all pixels
