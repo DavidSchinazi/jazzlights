@@ -427,21 +427,22 @@ void Player::stopSpecial() {
 #if JL_IS_CONFIG(FAIRY_WAND)
 void Player::triggerPatternOverride() {
   jll_info("Triggering pattern override");
-  overridePatternStartTime_ = timeMillis();
+  overridePatternStartTime_ = timeMicros();
 }
 #endif  // FAIRY_WAND
 
 bool Player::render(Milliseconds currentTime) {
   if (!ready_) { begin(); }
+  const Microseconds currentTimeUs = MillisecondsToMicroseconds(currentTime);
 
 #if JL_AUDIO_VISUALIZER
   if (sound_reactive_mode_ == SoundReactiveMode::kAuto) {
     Audio::VisualizerData data;
     Audio::Get().GetVisualizerData(&data);
     if (data.squelch) {
-      if (squelch_start_time_ < 0) {
-        squelch_start_time_ = currentTime;
-      } else if (!sound_reactive_suppressed_ && currentTime - squelch_start_time_ > 30000) {
+      if (!squelch_start_time_) {
+        squelch_start_time_ = currentTimeUs;
+      } else if (!sound_reactive_suppressed_ && currentTimeUs - *squelch_start_time_ > 30 * kMicrosecondsPerSecond) {
         sound_reactive_suppressed_ = true;
         shouldBeginPattern_ = true;
         jll_info("Auto sound reactive suppressed due to 30s squelch");
@@ -452,7 +453,7 @@ bool Player::render(Milliseconds currentTime) {
         shouldBeginPattern_ = true;
         jll_info("Auto sound reactive resumed");
       }
-      squelch_start_time_ = -1;
+      squelch_start_time_.reset();
     }
   }
 #endif  // JL_AUDIO_VISUALIZER
@@ -503,9 +504,12 @@ bool Player::render(Milliseconds currentTime) {
 #if JL_IS_CONFIG(FAIRY_WAND)
   constexpr Milliseconds kOverridePatternDuration = 8000;
   static const FunctionalEffect fairy_wand_effect = fairy_wand();
-  if (overridePatternStartTime_ >= 0 && currentTime - overridePatternStartTime_ < kOverridePatternDuration) {
-    frame_.time = currentTime - overridePatternStartTime_;
-    effect = &fairy_wand_effect;
+  if (overridePatternStartTime_) {
+    const Milliseconds overridePatternStartTimeMs = MicrosecondsToMilliseconds(*overridePatternStartTime_);
+    if (currentTime - overridePatternStartTimeMs < kOverridePatternDuration) {
+      frame_.time = currentTime - overridePatternStartTimeMs;
+      effect = &fairy_wand_effect;
+    }
   }
 #elif JL_IS_CONFIG(CREATURE)
   if (!creatureIsFollowingNonCreature_) { effect = patternFromBits(kCreaturePattern, *this); }
@@ -541,29 +545,29 @@ bool Player::render(Milliseconds currentTime) {
     shouldBeginPattern_ = false;
     predictableRandom_.ResetWithFrameStart(frame_, effect->effectName(frame_.pattern).c_str());
     effect->begin(frame_);
-    lastLEDWriteTime_ = -1;
+    lastLEDWriteTime_.reset();
   }
 
   // Do not send data to LEDs faster than 100Hz.
-  if (lastLEDWriteTime_ >= 0 && lastLEDWriteTime_ <= currentTime) {
-    static constexpr Milliseconds kMinLEDWriteTime = 10;
-    Milliseconds timeSinceLastWrite = currentTime - lastLEDWriteTime_;
+  if (lastLEDWriteTime_ && *lastLEDWriteTime_ <= currentTimeUs) {
+    static constexpr Microseconds kMinLEDWriteTime = 10 * kMicrosecondsPerMillisecond;
+    Microseconds timeSinceLastWrite = currentTimeUs - *lastLEDWriteTime_;
     if (timeSinceLastWrite < kMinLEDWriteTime) {
 #if JL_PLAYER_SLEEPS
       // Note that this mode ends up operating at 90Hz since one spin of the runloop isn't free.
       // We could tweak it if we cared more about FPS than battery life.
-      vTaskDelay((kMinLEDWriteTime - timeSinceLastWrite) / portTICK_PERIOD_MS);
+      vTaskDelay((kMinLEDWriteTime - timeSinceLastWrite) / kMicrosecondsPerMillisecond / portTICK_PERIOD_MS);
 #endif  // JL_PLAYER_SLEEPS
       return false;
     }
   }
-  lastLEDWriteTime_ = currentTime;
+  lastLEDWriteTime_ = currentTimeUs;
 
 #if JL_IS_CONFIG(CREATURE)
   KnownCreatures::Get()->ExpireOldEntries();
 #endif  // CREATURE
 
-  const Milliseconds patternComputeStartTime = timeMillis();
+  const Microseconds patternComputeStartTime = timeMicros();
   // Actually render the pixels.
   predictableRandom_.ResetWithFrameTime(frame_, effect->effectName(frame_.pattern).c_str());
   effect->rewind(frame_);
@@ -589,7 +593,7 @@ bool Player::render(Milliseconds currentTime) {
   effect->afterColors(frame_);
 
   // Save data for measuring FPS.
-  const Milliseconds patternComputeDuration = timeMillis() - patternComputeStartTime;
+  const Microseconds patternComputeDuration = timeMicros() - patternComputeStartTime;
   timeSpentComputingEffectsThisEpoch_ += patternComputeDuration;
   framesComputedThisEpoch_++;
 
@@ -598,10 +602,10 @@ bool Player::render(Milliseconds currentTime) {
 
 void Player::GenerateFPSReport(uint16_t* fpsCompute, uint16_t* fpsWrites, uint8_t* utilization,
                                Milliseconds* timeSpentComputingThisEpoch, Milliseconds* epochDuration) {
-  const Milliseconds currentTime = timeMillis();
-  *epochDuration = currentTime - fpsEpochStart_;
+  const Microseconds currentTime = timeMicros();
+  *epochDuration = MicrosecondsToMilliseconds(currentTime - fpsEpochStart_);
   fpsEpochStart_ = currentTime;
-  *timeSpentComputingThisEpoch = timeSpentComputingEffectsThisEpoch_;
+  *timeSpentComputingThisEpoch = MicrosecondsToMilliseconds(timeSpentComputingEffectsThisEpoch_);
   timeSpentComputingEffectsThisEpoch_ = 0;
   uint32_t numLedWritesThisEpoch = 0;
   if (numLedWritesGetter_ != nullptr) { numLedWritesThisEpoch = numLedWritesGetter_->GetAndClearNumWrites(); }
@@ -623,7 +627,7 @@ std::string Player::currentEffectName() const { return patternName(lastBegunPatt
 void Player::set_enabled(bool enabled) {
   if (enabled_ == enabled) { return; }
 #if JL_IS_CONFIG(CLOUDS)
-  lastUserInputTime_ = -1;
+  lastUserInputTime_.reset();
   if (!enabled) {
     force_clouds_ = true;
     currentPattern_ = enforceForcedPalette(currentPattern_);
@@ -645,7 +649,7 @@ void Player::set_sound_reactive_mode(SoundReactiveMode mode) {
   if (sound_reactive_mode_ == mode) { return; }
   sound_reactive_mode_ = mode;
   sound_reactive_suppressed_ = false;
-  squelch_start_time_ = -1;
+  squelch_start_time_.reset();
   shouldBeginPattern_ = true;
 }
 #endif  // JL_AUDIO_VISUALIZER
@@ -679,7 +683,7 @@ void Player::UpdateOverriddenPatternWatcher(Precedence precedence) {
 #if JL_IS_CONFIG(CLOUDS)
 void Player::CloudNext() {
   set_enabled(true);
-  lastUserInputTime_ = timeMillis();
+  lastUserInputTime_ = timeMicros();
   disable_color_override();
   if (force_clouds_) {
     force_clouds_ = false;
@@ -706,8 +710,7 @@ void Player::next() {
            patternName(currentPattern_, *this).c_str(), currentPattern_, patternName(nextPattern_, *this).c_str(),
            nextPattern_, DEVICE_ID_HEX(currentLeader_));
   Microseconds currentTimeUs = timeMicros();
-  Milliseconds currentTime = MicrosecondsToMilliseconds(currentTimeUs);
-  lastUserInputTime_ = currentTime;
+  lastUserInputTime_ = currentTimeUs;
   currentPatternStartTime_ = currentTimeUs;
   if (loop_ && currentPattern_ == nextPattern_) {
     currentPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
@@ -729,8 +732,7 @@ void Player::setPattern(PatternBits pattern) {
            patternName(currentPattern_, *this).c_str(), currentPattern_, patternName(pattern, *this).c_str(), pattern,
            DEVICE_ID_HEX(currentLeader_));
   Microseconds currentTimeUs = timeMicros();
-  Milliseconds currentTime = MicrosecondsToMilliseconds(currentTimeUs);
-  lastUserInputTime_ = currentTime;
+  lastUserInputTime_ = currentTimeUs;
   currentPatternStartTime_ = currentTimeUs;
   currentPattern_ = pattern;
   if (loop_ && currentPattern_ == nextPattern_) {
@@ -765,16 +767,16 @@ PatternBits Player::enforceForcedPalette(PatternBits pattern) {
   return pattern;
 }
 
-Precedence getPrecedenceGain(Milliseconds epochTime, Milliseconds currentTime, Milliseconds duration,
+Precedence getPrecedenceGain(std::optional<Microseconds> epochTime, Microseconds currentTime, Microseconds duration,
                              Precedence maxGain) {
-  if (epochTime < 0) {
+  if (!epochTime) {
     return 0;
-  } else if (currentTime < epochTime) {
+  } else if (currentTime < *epochTime) {
     return maxGain;
-  } else if (currentTime - epochTime > duration) {
+  } else if (currentTime - *epochTime > duration) {
     return 0;
   }
-  const Milliseconds timeDelta = currentTime - epochTime;
+  const Microseconds timeDelta = currentTime - *epochTime;
   if (timeDelta < duration / 10) { return maxGain; }
   return static_cast<uint64_t>(duration - timeDelta) * maxGain / duration;
 }
@@ -786,14 +788,14 @@ Precedence addPrecedenceGain(Precedence startPrecedence, Precedence gain) {
   return startPrecedence + gain;
 }
 
-static constexpr Milliseconds kInputDuration = 10 * 60 * 1000;  // 10min.
+static constexpr Microseconds kInputDuration = 10 * 60 * kMicrosecondsPerSecond;  // 10min.
 #if JL_IS_CONFIG(XMAS_TREE)
 static constexpr Precedence kAdminPrecedence = 6001;
 #else   // XMAS_TREE
 static constexpr Precedence kAdminPrecedence = 60000;
 #endif  // XMAS_TREE
 
-Precedence Player::getLocalPrecedence(Milliseconds currentTime) {
+Precedence Player::getLocalPrecedence(Microseconds currentTime) {
   return addPrecedenceGain(basePrecedence_,
                            getPrecedenceGain(lastUserInputTime_, currentTime, kInputDuration, precedenceGain_));
 }
@@ -818,19 +820,15 @@ static_assert(kOriginationTimeDiscard < kEffectDuration,
               "past the end of its intended next pattern.");
 
 void Player::checkLeaderAndPattern() {
-  // currentTime is used for things unrelated to currentPatternStartTime_/lastOriginationTime (e.g. lastUserInputTime_
-  // below), which stay in Milliseconds; currentTimeUs is used for those two fields, which are Microseconds. Both are
-  // derived from a single timeMicros() call to keep them consistent with each other.
-  Microseconds currentTimeUs = timeMicros();
-  Milliseconds currentTime = MicrosecondsToMilliseconds(currentTimeUs);
+  Microseconds currentTime = timeMicros();
   // Remove elements that have aged out.
-  originatorEntries_.remove_if([currentTimeUs](const OriginatorEntry& e) {
-    if (currentTimeUs > e.lastOriginationTime + kOriginationTimeDiscard) {
+  originatorEntries_.remove_if([currentTime](const OriginatorEntry& e) {
+    if (currentTime > e.lastOriginationTime + kOriginationTimeDiscard) {
       jll_info("Removing " DEVICE_ID_FMT ".p%u entry due to origination time", DEVICE_ID_HEX(e.originator),
                e.precedence);
       return true;
     }
-    if (currentTimeUs > e.currentPatternStartTime + 2 * kEffectDuration) {
+    if (currentTime > e.currentPatternStartTime + 2 * kEffectDuration) {
       jll_info("Removing " DEVICE_ID_FMT ".p%u entry due to effect duration", DEVICE_ID_HEX(e.originator),
                e.precedence);
       return true;
@@ -840,8 +838,8 @@ void Player::checkLeaderAndPattern() {
   Precedence precedence = getLocalPrecedence(currentTime);
   NetworkDeviceId originator = localDeviceId_;
   const OriginatorEntry* entry = nullptr;
-  const bool hadRecentUserInput = (lastUserInputTime_ >= 0 && lastUserInputTime_ <= currentTime &&
-                                   currentTime - lastUserInputTime_ < kInputDuration);
+  const bool hadRecentUserInput =
+      (lastUserInputTime_ && *lastUserInputTime_ <= currentTime && currentTime - *lastUserInputTime_ < kInputDuration);
   for (const OriginatorEntry& e : originatorEntries_) {
 #if !JL_IS_CONFIG(CREATURE) && !JL_IS_CONFIG(ORRERY_PLANET)
     // Keep ourselves as leader if there was recent user button input or if we are looping, unless the originator has
@@ -852,11 +850,11 @@ void Player::checkLeaderAndPattern() {
       jll_debug("ignoring " DEVICE_ID_FMT " due to retracted", DEVICE_ID_HEX(e.originator));
       continue;
     }
-    if (currentTimeUs > e.lastOriginationTime + kOriginationTimeDiscard) {
+    if (currentTime > e.lastOriginationTime + kOriginationTimeDiscard) {
       jll_debug("ignoring " DEVICE_ID_FMT " due to origination time", DEVICE_ID_HEX(e.originator));
       continue;
     }
-    if (currentTimeUs > e.currentPatternStartTime + 2 * kEffectDuration) {
+    if (currentTime > e.currentPatternStartTime + 2 * kEffectDuration) {
       jll_debug("ignoring " DEVICE_ID_FMT " due to effect duration", DEVICE_ID_HEX(e.originator));
       continue;
     }
@@ -916,7 +914,7 @@ void Player::checkLeaderAndPattern() {
 #endif  // CREATURE
                       fpsCompute, fpsWrites, utilization, timeSpentComputingThisEpoch, epochDuration);
       printInstrumentationInfo();
-      lastLEDWriteTime_ = -1;
+      lastLEDWriteTime_.reset();
       shouldBeginPattern_ = true;
       UpdateOverriddenPatternWatcher(precedence);
     }
@@ -940,8 +938,8 @@ void Player::checkLeaderAndPattern() {
     followedNextHopNetworkId_ = 0;
     followedNextHopNetworkType_ = NetworkType::kLeading;
     currentNumHops_ = 0;
-    lastOriginationTime = currentTimeUs;
-    while (currentTimeUs - currentPatternStartTime_ > kEffectDuration) {
+    lastOriginationTime = currentTime;
+    while (currentTime - currentPatternStartTime_ > kEffectDuration) {
       currentPatternStartTime_ += kEffectDuration;
       if (loop_) {
         nextPattern_ = currentPattern_;
@@ -960,7 +958,7 @@ void Player::checkLeaderAndPattern() {
                       DEVICE_ID_HEX(localDeviceId_), precedence, patternName(currentPattern_, *this).c_str(),
                       currentPattern_, fpsCompute, fpsWrites, utilization, timeSpentComputingThisEpoch, epochDuration);
       printInstrumentationInfo();
-      lastLEDWriteTime_ = -1;
+      lastLEDWriteTime_.reset();
       shouldBeginPattern_ = true;
     }
   }
@@ -989,8 +987,8 @@ void Player::checkLeaderAndPattern() {
 #if JL_IS_CONFIG(ORRERY_LEADER)
     messageToSend.orrerySceneId = orrerySceneIdToSend_;
 #else   // ORRERY_LEADER
-    static constexpr Milliseconds kOrrerySceneMaxSendDuration = 59000;
-    if (lastOrrerySceneIdSetTime_ < 0 || currentTime - lastOrrerySceneIdSetTime_ > kOrrerySceneMaxSendDuration) {
+    static constexpr Microseconds kOrrerySceneMaxSendDuration = 59 * kMicrosecondsPerSecond;
+    if (!lastOrrerySceneIdSetTime_ || currentTime - *lastOrrerySceneIdSetTime_ > kOrrerySceneMaxSendDuration) {
       jll_info("No longer sending orrery scene ID %d", static_cast<int>(*orrerySceneIdToSend_));
       orrerySceneIdToSend_ = std::nullopt;
     } else {
@@ -1246,7 +1244,7 @@ void Player::handleReceivedMessage(NetworkMessage message) {
     }
   }
 
-  lastLEDWriteTime_ = -1;
+  lastLEDWriteTime_.reset();
 }
 
 void Player::loopOne() {
@@ -1290,10 +1288,11 @@ const char* Player::command(const char* req) {
 void Player::SetOrrerySceneIdToSend(std::optional<OrrerySceneId> orrerySceneIdToSend) {
   orrerySceneIdToSend_ = orrerySceneIdToSend;
   if (orrerySceneIdToSend_) {
-    lastOrrerySceneIdSetTime_ = timeMillis();
-    jll_info("%u Start sending orrery scene ID %d", lastOrrerySceneIdSetTime_, static_cast<int>(*orrerySceneIdToSend_));
+    lastOrrerySceneIdSetTime_ = timeMicros();
+    jll_info("%lld Start sending orrery scene ID %d", static_cast<long long>(*lastOrrerySceneIdSetTime_),
+             static_cast<int>(*orrerySceneIdToSend_));
   } else {
-    lastOrrerySceneIdSetTime_ = -1;
+    lastOrrerySceneIdSetTime_.reset();
   }
 }
 

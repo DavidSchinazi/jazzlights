@@ -186,7 +186,7 @@ class Player {
   void UpdateOverriddenPatternWatcher(Precedence precedence);
   void handleReceivedMessage(NetworkMessage message);
 
-  Precedence getLocalPrecedence(Milliseconds currentTime);
+  Precedence getLocalPrecedence(Microseconds currentTime);
 
   struct OriginatorEntry {
     NetworkDeviceId originator = NetworkDeviceId();
@@ -216,7 +216,7 @@ class Player {
 #if JL_AUDIO_VISUALIZER
   SoundReactiveMode sound_reactive_mode_ = SoundReactiveMode::kAuto;
   bool sound_reactive_suppressed_ = false;
-  Milliseconds squelch_start_time_ = -1;
+  std::optional<Microseconds> squelch_start_time_;
 #endif  // JL_AUDIO_VISUALIZER
 
   bool ready_ = false;
@@ -237,7 +237,7 @@ class Player {
   bool loop_ = false;
   size_t specialMode_ = 0;
 #if JL_IS_CONFIG(FAIRY_WAND)
-  Milliseconds overridePatternStartTime_ = -1;
+  std::optional<Microseconds> overridePatternStartTime_;
 #elif JL_IS_CONFIG(CLOUDS)
   StatusWatcher* status_watcher_ = nullptr;  // Unowned.
   bool color_overridden_ = false;
@@ -258,8 +258,8 @@ class Player {
   std::vector<Network*> networks_;
   std::list<OriginatorEntry> originatorEntries_;
 
-  Milliseconds lastLEDWriteTime_ = -1;
-  Milliseconds lastUserInputTime_ = -1;
+  std::optional<Microseconds> lastLEDWriteTime_;
+  std::optional<Microseconds> lastUserInputTime_;
   Precedence basePrecedence_ = 0;
   Precedence precedenceGain_ = 0;
   bool randomizeLocalDeviceId_ = false;
@@ -276,12 +276,12 @@ class Player {
   bool paletteIsForced_ = false;
   uint8_t forcedPalette_ = 0;
 
-  Milliseconds fpsEpochStart_ = 0;
-  Milliseconds timeSpentComputingEffectsThisEpoch_ = 0;
+  Microseconds fpsEpochStart_ = 0;
+  Microseconds timeSpentComputingEffectsThisEpoch_ = 0;
   uint32_t framesComputedThisEpoch_ = 0;
 
   std::optional<OrrerySceneId> orrerySceneIdToSend_;
-  Milliseconds lastOrrerySceneIdSetTime_ = -1;
+  std::optional<Microseconds> lastOrrerySceneIdSetTime_;
   bool isAllLinear_ = false;
 };
 
