@@ -184,7 +184,7 @@ constexpr size_t kPayloadLength = kPatternTimeOffset + 2;
 
 bool Network::ParseUdpPayload(uint8_t* udpPayload, size_t udpPayloadLength, const std::string& receiptDetails,
                               NetworkMessage* outMessage) {
-  Milliseconds currentTime = timeMillis();
+  Microseconds currentTime = timeMicros();
   if (udpPayloadLength < kPayloadLength) {
     jll_debug("%s Received packet too short, received %zd bytes, expected at least %zu bytes",
               NetworkTypeToString(type()), udpPayloadLength, kPayloadLength);
@@ -200,27 +200,29 @@ bool Network::ParseUdpPayload(uint8_t* udpPayload, size_t udpPayloadLength, cons
   receivedMessage.sender = NetworkDeviceId(&udpPayload[kSenderOffset]);
   receivedMessage.precedence = readUint16(&udpPayload[kPrecedenceOffset]);
   receivedMessage.numHops = udpPayload[kNumHopsOffset];
-  Milliseconds originationTimeDelta = readUint16(&udpPayload[kOriginationTimeOffset]);
+  Milliseconds originationTimeDeltaMs = readUint16(&udpPayload[kOriginationTimeOffset]);
+  Microseconds originationTimeDelta = MillisecondsToMicroseconds(originationTimeDeltaMs);
   receivedMessage.currentPattern = readUint32(&udpPayload[kCurrentPatternOffset]);
   receivedMessage.nextPattern = readUint32(&udpPayload[kNextPatternOffset]);
-  Milliseconds patternTimeDelta = readUint16(&udpPayload[kPatternTimeOffset]);
+  Milliseconds patternTimeDeltaMs = readUint16(&udpPayload[kPatternTimeOffset]);
+  Microseconds patternTimeDelta = MillisecondsToMicroseconds(patternTimeDeltaMs);
   receivedMessage.receiptDetails = receiptDetails;
 
   // TODO measure transmission offset over various underlying UDP networks like Wi-Fi and Ethernet.
-  constexpr Milliseconds kTransmissionOffset = 5;
+  static constexpr Microseconds kTransmissionOffset = 5 * kMicrosecondsPerMillisecond;  // 5ms.
   Milliseconds receiptTime;
   if (currentTime > kTransmissionOffset) {
     receiptTime = currentTime - kTransmissionOffset;
   } else {
     receiptTime = 0;
   }
-  if (receiptTime >= patternTimeDelta) {
-    receivedMessage.currentPatternStartTime = MillisecondsToMicroseconds(receiptTime - patternTimeDelta);
+  if (receiptTime > patternTimeDelta) {
+    receivedMessage.currentPatternStartTime = receiptTime - patternTimeDelta;
   } else {
     receivedMessage.currentPatternStartTime = 0;
   }
-  if (receiptTime >= originationTimeDelta) {
-    receivedMessage.lastOriginationTime = MillisecondsToMicroseconds(receiptTime - originationTimeDelta);
+  if (receiptTime > originationTimeDelta) {
+    receivedMessage.lastOriginationTime = receiptTime - originationTimeDelta;
   } else {
     receivedMessage.lastOriginationTime = 0;
   }
