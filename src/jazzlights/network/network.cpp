@@ -278,18 +278,18 @@ bool Network::WriteUdpPayload(const NetworkMessage& messageToSend, uint8_t* udpP
     return false;
   }
 
-  Milliseconds currentTime = timeMillis();
-  const Milliseconds lastOriginationTimeMs = MicrosecondsToMilliseconds(messageToSend.lastOriginationTime);
-  const Milliseconds currentPatternStartTimeMs = MicrosecondsToMilliseconds(messageToSend.currentPatternStartTime);
+  Microseconds currentTime = timeMicros();
   Milliseconds originationTimeDelta;
-  if (lastOriginationTimeMs <= currentTime && currentTime - lastOriginationTimeMs <= 0xFFFF) {
-    originationTimeDelta = currentTime - lastOriginationTimeMs;
+  if (messageToSend.lastOriginationTime <= currentTime &&
+      currentTime - messageToSend.lastOriginationTime <= kMicrosecondsPerMillisecond * 0xFFFF) {
+    originationTimeDelta = (currentTime - messageToSend.lastOriginationTime) / kMicrosecondsPerMillisecond;
   } else {
     originationTimeDelta = 0xFFFF;
   }
   Milliseconds patternTime;
-  if (currentPatternStartTimeMs <= currentTime && currentTime - currentPatternStartTimeMs <= 0xFFFF) {
-    patternTime = currentTime - currentPatternStartTimeMs;
+  if (messageToSend.currentPatternStartTime <= currentTime &&
+      currentTime - messageToSend.currentPatternStartTime <= kMicrosecondsPerMillisecond * 0xFFFF) {
+    patternTime = (currentTime - messageToSend.currentPatternStartTime) / kMicrosecondsPerMillisecond;
   } else {
     patternTime = 0xFFFF;
   }
