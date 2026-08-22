@@ -44,14 +44,14 @@ namespace {
 // https://www.bluetooth.com/specifications/assigned-numbers/
 constexpr uint8_t kAdvType = 0x96;
 
-void convertToHex(char* target, size_t targetLength, const uint8_t* source, uint8_t sourceLength) {
-  if (targetLength <= static_cast<size_t>(sourceLength) * 2) { return; }
-  for (uint8_t i = 0; i < sourceLength; i++) {
-    sprintf(target, "%.2x", (char)*source);
-    source++;
-    target += 2;
+void convertToHex(char* target, size_t targetLength, const uint8_t* source, size_t sourceLength) {
+  if (targetLength == 0) { return; }
+  if (targetLength <= sourceLength * 2) {
+    target[0] = '\0';
+    return;
   }
-  *target = '\0';
+  for (size_t i = 0; i < sourceLength; i++) { sprintf(&target[2 * i], "%.2x", static_cast<char>(source[i])); }
+  target[sourceLength * 2] = '\0';
 }
 
 }  // namespace
@@ -317,16 +317,14 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
   }
 }
 
-uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_t maxInnerPayloadLength) {
+size_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_t maxInnerPayloadLength) {
   const std::lock_guard<std::mutex> lock(mutex_);
   static_assert(kMaxPayloadLength <= kMaxInnerPayloadLength, "bad size");
   if (kMaxPayloadLength > maxInnerPayloadLength) {
     jll_error("GetNextInnerPayloadToSend nonsense %u > %u", kMaxPayloadLength, maxInnerPayloadLength);
     return 0;
   }
-  uint8_t innerPayloadLength;
 
-#if JL_IS_CONFIG(CREATURE)
   NetworkWriter writer(innerPayload, maxInnerPayloadLength);
   if (!writer.WriteNetworkDeviceId(messageToSend_.originator)) {
     jll_error("Failed to write creature originator");
@@ -361,6 +359,7 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_
     jll_error("Failed to write creature patternTimeDelta");
     return 0;
   }
+#if JL_IS_CONFIG(CREATURE)
   if (messageToSend_.isCreature) {
     uint8_t extensionByte = kExtensionByteFlagIsCreature;
     if (messageToSend_.isPartying) { extensionByte |= kExtensionByteFlagIsPartying; }
@@ -376,28 +375,24 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_
       return 0;
     }
   }
-  innerPayloadLength = writer.LengthWritten();
-
 #else   // CREATURE
-  messageToSend_.originator.writeTo(&innerPayload[kOriginatorOffset]);
-  writeUint16(&innerPayload[kPrecedenceOffset], messageToSend_.precedence);
-  innerPayload[kNumHopsOffset] = messageToSend_.numHops;
-  writeUint16(&innerPayload[kOriginationTimeOffset], originationTimeDeltaMs16);
-  writeUint32(&innerPayload[kCurrentPatternOffset], messageToSend_.currentPattern);
-  writeUint32(&innerPayload[kNextPatternOffset], messageToSend_.nextPattern);
-  writeUint16(&innerPayload[kPatternTimeOffset], patternTimeDeltaMs16);
   if (messageToSend_.orrerySceneId) {
-    innerPayload[kExtensionByteOffset] = kExtensionByteFlagHasOrreryScene;
-    innerPayload[kOrrerySceneOffset] = *messageToSend_.orrerySceneId;
-    innerPayloadLength = kOrrerySceneOffset + 1;
-  } else {
-    innerPayloadLength = kExtensionByteOffset;
+    uint8_t extensionByte = kExtensionByteFlagHasOrreryScene;
+    if (!writer.WriteUint8(extensionByte)) {
+      jll_error("Failed to write extensionByte");
+      return 0;
+    }
+    if (!writer.WriteUint8(*messageToSend_.orrerySceneId)) {
+      jll_error("Failed to write orrerySceneId");
+      return 0;
+    }
   }
 #endif  // CREATURE
+  const size_t innerPayloadLength = writer.LengthWritten();
   if (ESP32_BLE_DEBUG_ENABLED()) {
     char advRawData[kMaxPayloadLength * 2 + 1] = {};
     convertToHex(advRawData, sizeof(advRawData), innerPayload, innerPayloadLength);
-    ESP32_BLE_DEBUG("Setting inner payload to <%u:%s>", innerPayloadLength, advRawData);
+    ESP32_BLE_DEBUG("Setting inner payload to <%zu:%s>", innerPayloadLength, advRawData);
   }
   return innerPayloadLength;
 }
@@ -420,18 +415,19 @@ void Esp32BleNetwork::StartConfigureAdvertising() {
   ESP32_BLE_DEBUG("StartConfigureAdvertising");
   UpdateState(State::kIdle, State::kConfiguringAdvertising);
   uint8_t advPayload[kMaxInnerPayloadLength + 2];
-  uint8_t innerPayloadSize = GetNextInnerPayloadToSend(&advPayload[2], kMaxInnerPayloadLength);
+  size_t innerPayloadSize = GetNextInnerPayloadToSend(&advPayload[2], kMaxInnerPayloadLength);
   if (innerPayloadSize > kMaxInnerPayloadLength) {
-    jll_error("getNextAdvertisementToSend returned nonsense %u", innerPayloadSize);
+    jll_error("getNextAdvertisementToSend returned nonsense %zu", innerPayloadSize);
     innerPayloadSize = kMaxInnerPayloadLength;
     memset(advPayload, 0, sizeof(advPayload));
   }
+  static_assert(kMaxInnerPayloadLength <= static_cast<size_t>(std::numeric_limits<uint8_t>::max() - 1), "bad size");
   advPayload[0] = 1 + innerPayloadSize;
   advPayload[1] = kAdvType;
   if (ESP32_BLE_DEBUG_ENABLED()) {
-    char advRawData[(2 + innerPayloadSize) * 2 + 1] = {};
+    char advRawData[(2 + kMaxInnerPayloadLength) * 2 + 1] = {};
     convertToHex(advRawData, sizeof(advRawData), advPayload, 2 + innerPayloadSize);
-    ESP32_BLE_DEBUG("Sending adv<%u:%s>", 2 + innerPayloadSize, advRawData);
+    ESP32_BLE_DEBUG("Sending adv<%zu:%s>", 2 + innerPayloadSize, advRawData);
   }
   ESP_ERROR_CHECK(esp_ble_gap_config_adv_data_raw(advPayload, 2 + innerPayloadSize));
 }
@@ -472,7 +468,7 @@ void Esp32BleNetwork::GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap
             break;
           }
           if (ESP32_BLE_DEBUG_ENABLED()) {
-            char advRawData[31 * 2 + 1] = {};
+            char advRawData[(kMaxInnerPayloadLength + 2) * 2 + 1] = {};
             convertToHex(advRawData, sizeof(advRawData), param->scan_rst.ble_adv, param->scan_rst.adv_data_len);
             ESP32_BLE_DEBUG("Received adv<%u:%s> from " ESP_BD_ADDR_STR, param->scan_rst.adv_data_len, advRawData,
                             ESP_BD_ADDR_HEX(param->scan_rst.bda));
