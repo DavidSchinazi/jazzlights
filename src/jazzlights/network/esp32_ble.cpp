@@ -340,7 +340,7 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
 
 uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_t maxInnerPayloadLength) {
   const std::lock_guard<std::mutex> lock(mutex_);
-  Milliseconds currentTime = timeMillis();
+  Microseconds currentTime = timeMicros();
   static_assert(kMaxPayloadLength <= kMaxInnerPayloadLength, "bad size");
   if (kMaxPayloadLength > maxInnerPayloadLength) {
     jll_error("GetNextInnerPayloadToSend nonsense %u > %u", kMaxPayloadLength, maxInnerPayloadLength);
@@ -348,17 +348,17 @@ uint8_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_
   }
   uint8_t innerPayloadLength;
 
-  const Milliseconds lastOriginationTimeMs = MicrosecondsToMilliseconds(messageToSend_.lastOriginationTime);
-  const Milliseconds currentPatternStartTimeMs = MicrosecondsToMilliseconds(messageToSend_.currentPatternStartTime);
   uint16_t originationTimeDelta;
-  if (lastOriginationTimeMs <= currentTime && currentTime - lastOriginationTimeMs <= 0xFFFF) {
-    originationTimeDelta = currentTime - lastOriginationTimeMs;
+  if (messageToSend_.lastOriginationTime <= currentTime &&
+      (currentTime - messageToSend_.lastOriginationTime) <= kMicrosecondsPerMillisecond * 0xFFFF) {
+    originationTimeDelta = (currentTime - messageToSend_.lastOriginationTime) / kMicrosecondsPerMillisecond;
   } else {
     originationTimeDelta = 0xFFFF;
   }
   uint16_t patternTimeDelta;
-  if (currentPatternStartTimeMs <= currentTime && currentTime - currentPatternStartTimeMs <= 0xFFFF) {
-    patternTimeDelta = currentTime - currentPatternStartTimeMs;
+  if (messageToSend_.currentPatternStartTime <= currentTime &&
+      currentTime - messageToSend_.currentPatternStartTime <= kMicrosecondsPerMillisecond * 0xFFFF) {
+    patternTimeDelta = (currentTime - messageToSend_.currentPatternStartTime) / kMicrosecondsPerMillisecond;
   } else {
     patternTimeDelta = 0xFFFF;
   }
