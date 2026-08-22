@@ -188,13 +188,13 @@ StepperMotor* GetMainStepperMotor() {
 }
 
 void StepperMotorTestRunLoop() {
-  Milliseconds currentTime = timeMillis();
+  Microseconds currentTime = timeMicros();
   static uint8_t sEpoch = 0;
   static constexpr int32_t kSpeeds[] = {3000, 0, -3000, 0};
-  static constexpr Milliseconds kDurations[] = {1000, 5000, 1000, 5000};
+  static constexpr Microseconds kDurations[] = {1000000, 5000000, 1000000, 5000000};
   static_assert(sizeof(kSpeeds) / sizeof(kSpeeds[0]) == sizeof(kDurations) / sizeof(kDurations[0]), "bad sizes");
-  static Milliseconds sTimeOfLastChange = -1;
-  if (sTimeOfLastChange < 0 || currentTime - sTimeOfLastChange > kDurations[sEpoch]) {
+  static std::optional<Microseconds> sTimeOfLastChange;
+  if (!sTimeOfLastChange || currentTime - *sTimeOfLastChange > kDurations[sEpoch]) {
     GetMainStepperMotor()->SetSpeed(kSpeeds[sEpoch]);
     sTimeOfLastChange = currentTime;
     sEpoch++;
