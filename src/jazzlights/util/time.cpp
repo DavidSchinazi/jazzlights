@@ -34,10 +34,6 @@ Microseconds timeMicros() {
   return MicrosecondsSinceBoot() + kTimeStartOffset;
 }
 
-Microseconds MillisecondsToMicroseconds(Milliseconds timeMillis) {
-  return static_cast<Microseconds>(timeMillis) * kMicrosecondsPerMillisecond;
-}
-
 long long MillisecondsSinceBootForLogging() { return MicrosecondsSinceBoot() / kMicrosecondsPerMillisecond; }
 
 }  // namespace jazzlights

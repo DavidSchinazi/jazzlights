@@ -12,15 +12,17 @@ JL_DEFINE_INT_TYPE(Milliseconds, int, int32_t);
 // Get monotonically increasing time in microseconds.
 Microseconds timeMicros();
 
-// Convert time from milliseconds to microseconds.
-Microseconds MillisecondsToMicroseconds(Milliseconds timeMillis);
-
 long long MillisecondsSinceBootForLogging();
 
 using FramesPerSecond = int32_t;
 
 inline constexpr Microseconds kMicrosecondsPerMillisecond = 1000;
 inline constexpr Microseconds kMicrosecondsPerSecond = 1000000;
+
+// Convert time from milliseconds to microseconds.
+constexpr Microseconds MillisecondsToMicroseconds(int64_t timeMillis) {
+  return kMicrosecondsPerMillisecond * timeMillis;
+}
 
 }  // namespace jazzlights
 
