@@ -8,11 +8,11 @@ namespace jazzlights {
 
 namespace {
 
-constexpr Milliseconds kRssiDecayDelayMs = 3000;   // Start decay after 3s of inactivity.
-constexpr Milliseconds kRssiDecayPeriodMs = 1000;  // Then decay every 1s of inactivity.
-constexpr int kRssiDecayFactor = 5;                // Decay RSSI by 5dBm every kRssiDecayPeriodMs.
+constexpr Microseconds kRssiDecayDelay = 3 * kMicrosecondsPerSecond;   // Start decay after 3s of inactivity.
+constexpr Microseconds kRssiDecayPeriod = 1 * kMicrosecondsPerSecond;  // Then decay every 1s of inactivity.
+constexpr int kRssiDecayFactor = 5;                                    // Decay RSSI by 5dBm every kRssiDecayPeriod.
 // Consider creatures far away if no nearby RSSI within 3 second.
-constexpr Milliseconds kNearbyCreatureTimeoutMs = 3000;
+constexpr Microseconds kNearbyCreatureTimeout = 3 * kMicrosecondsPerSecond;
 
 constexpr int kRssiFloor = -90;
 constexpr int kRssiCeiling = -40;
@@ -103,27 +103,27 @@ KnownCreatures* KnownCreatures::Get() {
 }
 
 void KnownCreatures::ExpireOldEntries() {
-  Milliseconds currentTime = timeMillis();
-  creatures_.erase(std::remove_if(creatures_.begin(), creatures_.end(),
-                                  [currentTime](const Creature& creature) {
-                                    static constexpr Milliseconds kCreatureExpirationTime = 10000;  // 10s.
-                                    return creature.lastHeard >= 0 &&
-                                           currentTime - creature.lastHeard > kCreatureExpirationTime;
-                                  }),
-                   creatures_.end());
+  Microseconds currentTime = timeMicros();
+  creatures_.erase(
+      std::remove_if(creatures_.begin(), creatures_.end(),
+                     [currentTime](const Creature& creature) {
+                       static constexpr Microseconds kCreatureExpirationTime = 10 * kMicrosecondsPerSecond;  // 10s.
+                       return creature.lastHeard && currentTime - *creature.lastHeard > kCreatureExpirationTime;
+                     }),
+      creatures_.end());
 }
 
-void KnownCreatures::AddCreature(uint32_t color, Milliseconds lastHeard, int rssi, bool isPartying) {
+void KnownCreatures::AddCreature(uint32_t color, Microseconds lastHeard, int rssi, bool isPartying) {
   bool found = false;
   for (Creature& creature : creatures_) {
     if (creature.color == color) {
-      if (lastHeard > creature.lastHeard) {
+      if (!creature.lastHeard || lastHeard > *creature.lastHeard) {
         creature.lastHeard = lastHeard;
         creature.smoothedRssi += (rssi - creature.smoothedRssi) / 2;
         if (isPartying) {
           creature.lastHeardPartying = lastHeard;
         } else {
-          creature.lastHeardPartying = -1;
+          creature.lastHeardPartying.reset();
         }
       }
       found = true;
@@ -137,7 +137,7 @@ void KnownCreatures::AddCreature(uint32_t color, Milliseconds lastHeard, int rss
     if (isPartying) {
       new_creature.lastHeardPartying = lastHeard;
     } else {
-      new_creature.lastHeardPartying = -1;
+      new_creature.lastHeardPartying.reset();
     }
     new_creature.smoothedRssi = rssi;
     new_creature.isNearby = rssi >= kRssiNearbyThresholdUp;
@@ -150,14 +150,14 @@ void KnownCreatures::AddCreature(uint32_t color, Milliseconds lastHeard, int rss
 }
 
 void KnownCreatures::update() {
-  Milliseconds currentTime = timeMillis();
+  Microseconds currentTime = timeMicros();
   for (Creature& creature : creatures_) {
     int decayedRssi = creature.smoothedRssi;
-    if (creature.lastHeard >= 0 && currentTime - creature.lastHeard > kRssiDecayDelayMs) {
-      // If we haven't heard from this creature in kRssiDecayDelayMs, decay the RSSI by kRssiDecayFactor dBm every
-      // kRssiDecayPeriodMs.
+    if (creature.lastHeard && currentTime - *creature.lastHeard > kRssiDecayDelay) {
+      // If we haven't heard from this creature in kRssiDecayDelay, decay the RSSI by kRssiDecayFactor dBm every
+      // kRssiDecayPeriod.
       decayedRssi = creature.smoothedRssi -
-                    (kRssiDecayFactor * (currentTime - creature.lastHeard - kRssiDecayDelayMs)) / kRssiDecayPeriodMs;
+                    (kRssiDecayFactor * (currentTime - *creature.lastHeard - kRssiDecayDelay)) / kRssiDecayPeriod;
     }
     if (decayedRssi >= kRssiNearbyThresholdUp && !creature.isNearby) {
       jll_info("Adding nearby to creature rgb=%06x rssi=%d", static_cast<int>(creature.color), decayedRssi);
@@ -173,21 +173,19 @@ KnownCreatures::KnownCreatures() {
   Creature ourselves;
   ourselves.color = ThisCreatureColor();
   jll_info("Using color rgb=%06x for ourselves", static_cast<int>(ourselves.color));
-  ourselves.lastHeard = -1;
-  ourselves.lastHeardPartying = -1;
   ourselves.smoothedRssi = kRssiMax;
   ourselves.isNearby = true;
   creatures_.push_back(ourselves);
 }
 
 void KnownCreatures::HandleHeardOrrery() {
-  lastHeardOrreryTime_ = timeMillis();
+  lastHeardOrreryTime_ = timeMicros();
   jll_info("Heard the orrery");
 }
 
 bool KnownCreatures::HasRecentlyHeardOrrery() {
-  static constexpr Milliseconds kOrreryDuration = 60000;  // 1 minute.
-  return lastHeardOrreryTime_ >= 0 && timeMillis() - lastHeardOrreryTime_ <= kOrreryDuration;
+  static constexpr Microseconds kOrreryDuration = 60 * kMicrosecondsPerSecond;  // 1 minute.
+  return lastHeardOrreryTime_ && timeMicros() - *lastHeardOrreryTime_ <= kOrreryDuration;
 }
 
 // Called once to initialize the state.
@@ -213,14 +211,14 @@ void Creatures::rewind(const Frame& frame) const {
   if (num_creatures > kMaxNumCreatureColours - 2) { num_creatures = kMaxNumCreatureColours - 2; }
   uint32_t num_close_creatures = 0;
   bool iShouldParty = false;
-  Milliseconds currentTime = timeMillis();
+  Microseconds currentTime = timeMicros();
   for (size_t i = 0; i < num_creatures; i++) {
     // Compute the color for each known creature.
     const Creature& creature = creatures[i];
     uint8_t intensity = CreatureIntensity(creature);
     state(frame)->colors[i] = FadeColor(CRGB(creature.color), intensity);
     if (creature.isNearby) { num_close_creatures++; }
-    if (creature.lastHeardPartying >= 0 && currentTime - creature.lastHeardPartying < kNearbyCreatureTimeoutMs) {
+    if (creature.lastHeardPartying && currentTime - *creature.lastHeardPartying < kNearbyCreatureTimeout) {
       iShouldParty = true;
     }
   }

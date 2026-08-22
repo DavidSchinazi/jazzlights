@@ -114,7 +114,7 @@ struct NetworkMessage {
 
 #if JL_IS_CONFIG(CREATURE)
   int receiptRssi = -1000;
-  Milliseconds receiptTime = -1;
+  std::optional<Microseconds> receiptTime;
   uint32_t creatureColor = 0;
   bool isCreature = false;
   bool isPartying = false;

@@ -274,7 +274,7 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
     message.orrerySceneId = orrerySceneId;
   }
   message.receiptRssi = rssi;
-  message.receiptTime = currentTime;
+  message.receiptTime = timeMicros();
 #else   // CREATURE
   (void)rssi;
   if (innerPayloadLength < kMinPayloadLength) {

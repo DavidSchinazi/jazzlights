@@ -2,6 +2,7 @@
 #define JL_EFFECT_CREATURES_H
 
 #include <algorithm>
+#include <optional>
 
 #include "jazzlights/config.h"
 #include "jazzlights/effect/effect.h"
@@ -18,10 +19,10 @@ uint32_t ThisCreatureColor();
 
 struct Creature {
   uint32_t color;
-  Milliseconds lastHeard;
+  std::optional<Microseconds> lastHeard;
   int smoothedRssi;
   bool isNearby;  // True when the creature is near, used to sticky the nearby flag.
-  Milliseconds lastHeardPartying;
+  std::optional<Microseconds> lastHeardPartying;
 };
 
 class KnownCreatures {
@@ -35,7 +36,7 @@ class KnownCreatures {
   static KnownCreatures* Get();
   const std::vector<Creature>& creatures() const { return creatures_; }
   void ExpireOldEntries();
-  void AddCreature(uint32_t color, Milliseconds lastHeard, int rssi, bool isPartying);
+  void AddCreature(uint32_t color, Microseconds lastHeard, int rssi, bool isPartying);
   // Update all known creature states (decay RSSI, increment counters, etc).
   void update();
   bool IsPartying() const { return isPartying_; }
@@ -47,7 +48,7 @@ class KnownCreatures {
   KnownCreatures();
   std::vector<Creature> creatures_;
   bool isPartying_ = false;
-  Milliseconds lastHeardOrreryTime_ = -1;
+  std::optional<Microseconds> lastHeardOrreryTime_;
 };
 
 class Creatures : public Effect {

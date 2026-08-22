@@ -1007,8 +1007,8 @@ void Player::handleReceivedMessage(NetworkMessage message) {
 #if JL_IS_CONFIG(CREATURE)
   if (message.isCreature) {
     jll_info("creature recv %s", networkMessageToString(message).c_str());
-    KnownCreatures::Get()->AddCreature(message.creatureColor, message.receiptTime, message.receiptRssi,
-                                       message.isPartying);
+    KnownCreatures::Get()->AddCreature(message.creatureColor, message.receiptTime.value_or(timeMicros()),
+                                       message.receiptRssi, message.isPartying);
   }
   if (message.orrerySceneId) { KnownCreatures::Get()->HandleHeardOrrery(); }
 #endif  // CREATURE
