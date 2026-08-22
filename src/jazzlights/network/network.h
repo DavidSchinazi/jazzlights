@@ -309,14 +309,11 @@ class NetworkReader {
     return true;
   }
 
-  // Reads a point in time written by NetworkWriter::WriteTimeSinceMs32(): a 32-bit count of milliseconds elapsed
-  // since that time, which gets turned back into an absolute Microseconds timestamp relative to the current time.
-  // This keeps the wire format a millisecond-resolution relative delta (robust to clock differences between
-  // devices) while letting callers work with Microseconds internally.
+  // Reads a time that was in the past from a uint32_t duration in milliseconds.
   bool ReadTimeSinceMs32(Microseconds* out) {
     uint32_t deltaMs;
     if (!ReadUint32(&deltaMs)) { return false; }
-    *out = timeMicros() - MillisecondsToMicroseconds(static_cast<Milliseconds>(deltaMs));
+    *out = timeMicros() - (kMicrosecondsPerMillisecond * deltaMs);
     return true;
   }
 
