@@ -24,9 +24,9 @@ jobs:
         run: |
           GLFW_VERSION=$(curl -Ls https://api.github.com/repos/glfw/glfw/releases/latest | jq -r '.tag_name')
           echo "GLFW_VERSION: ${GLFW_VERSION}"
-          if [ -z "${GLFW_VERSION}" ] ; then
-            echo "Failed to parse latest GLFW version"
-            exit 1
+          if [ -z "${GLFW_VERSION}" ] || [ "${GLFW_VERSION}" == "null" ] ; then
+            GLFW_VERSION="3.5.1"
+            echo "Failed to parse latest GLFW version, falling back to known good version ${GLFW_VERSION}"
           fi
           curl -OLs "https://github.com/glfw/glfw/releases/download/${GLFW_VERSION}/glfw-${GLFW_VERSION}.zip"
           if [ ! -s "glfw-${GLFW_VERSION}.zip" ] ; then
