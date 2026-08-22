@@ -135,14 +135,14 @@ bool ReadOrreryMessage(NetworkReader& reader, OrreryMessage* msg) {
   if (flags2 & kOrreryFlag2LastOpenDuration) {
     uint32_t lastOpenDurationMs;
     if (!reader.ReadUint32(&lastOpenDurationMs)) { return false; }
-    msg->lastOpenDuration = MillisecondsToMicroseconds(static_cast<Milliseconds>(lastOpenDurationMs));
+    msg->lastOpenDuration = kMicrosecondsPerMillisecond * lastOpenDurationMs;
   } else {
     msg->lastOpenDuration = std::nullopt;
   }
   if (flags2 & kOrreryFlag2LastClosedDuration) {
     uint32_t lastClosedDurationMs;
     if (!reader.ReadUint32(&lastClosedDurationMs)) { return false; }
-    msg->lastClosedDuration = MillisecondsToMicroseconds(static_cast<Milliseconds>(lastClosedDurationMs));
+    msg->lastClosedDuration = kMicrosecondsPerMillisecond * lastClosedDurationMs;
   } else {
     msg->lastClosedDuration = std::nullopt;
   }
