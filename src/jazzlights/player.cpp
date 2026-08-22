@@ -433,7 +433,7 @@ void Player::triggerPatternOverride() {
 
 bool Player::render() {
   if (!ready_) { begin(); }
-  const Microseconds currentTimeUs = timeMicros();
+  const Microseconds currentTime = timeMicros();
 
 #if JL_AUDIO_VISUALIZER
   if (sound_reactive_mode_ == SoundReactiveMode::kAuto) {
@@ -441,8 +441,8 @@ bool Player::render() {
     Audio::Get().GetVisualizerData(&data);
     if (data.squelch) {
       if (!squelch_start_time_) {
-        squelch_start_time_ = currentTimeUs;
-      } else if (!sound_reactive_suppressed_ && currentTimeUs - *squelch_start_time_ > 30 * kMicrosecondsPerSecond) {
+        squelch_start_time_ = currentTime;
+      } else if (!sound_reactive_suppressed_ && currentTime - *squelch_start_time_ > 30 * kMicrosecondsPerSecond) {
         sound_reactive_suppressed_ = true;
         shouldBeginPattern_ = true;
         jll_info("Auto sound reactive suppressed due to 30s squelch");
@@ -470,12 +470,12 @@ bool Player::render() {
   for (Network* network : networks_) { network->runLoop(); }
 
   frame_.context = nullptr;
-  if (currentTimeUs - currentPatternStartTime_ > kEffectDuration) {
+  if (currentTime - currentPatternStartTime_ > kEffectDuration) {
     frame_.pattern = nextPattern_;
-    frame_.time = MicrosecondsToMilliseconds(currentTimeUs - currentPatternStartTime_ - kEffectDuration);
+    frame_.time = MicrosecondsToMilliseconds(currentTime - currentPatternStartTime_ - kEffectDuration);
   } else {
     frame_.pattern = currentPattern_;
-    frame_.time = MicrosecondsToMilliseconds(currentTimeUs - currentPatternStartTime_);
+    frame_.time = MicrosecondsToMilliseconds(currentTime - currentPatternStartTime_);
   }
 
   if (!enabled()) {
@@ -502,8 +502,8 @@ bool Player::render() {
   constexpr Microseconds kOverridePatternDuration = 8 * kMicrosecondsPerSecond;  // 8s.
   static const FunctionalEffect fairy_wand_effect = fairy_wand();
   if (overridePatternStartTime_) {
-    if (currentTimeUs - *overridePatternStartTime_ < kOverridePatternDuration) {
-      frame_.time = MicrosecondsToMilliseconds(currentTimeUs - *overridePatternStartTime_);
+    if (currentTime - *overridePatternStartTime_ < kOverridePatternDuration) {
+      frame_.time = MicrosecondsToMilliseconds(currentTime - *overridePatternStartTime_);
       effect = &fairy_wand_effect;
     }
   }
@@ -545,9 +545,9 @@ bool Player::render() {
   }
 
   // Do not send data to LEDs faster than 100Hz.
-  if (lastLEDWriteTime_ && *lastLEDWriteTime_ <= currentTimeUs) {
+  if (lastLEDWriteTime_ && *lastLEDWriteTime_ <= currentTime) {
     static constexpr Microseconds kMinLEDWriteTime = 10 * kMicrosecondsPerMillisecond;
-    Microseconds timeSinceLastWrite = currentTimeUs - *lastLEDWriteTime_;
+    Microseconds timeSinceLastWrite = currentTime - *lastLEDWriteTime_;
     if (timeSinceLastWrite < kMinLEDWriteTime) {
 #if JL_PLAYER_SLEEPS
       // Note that this mode ends up operating at 90Hz since one spin of the runloop isn't free.
@@ -557,7 +557,7 @@ bool Player::render() {
       return false;
     }
   }
-  lastLEDWriteTime_ = currentTimeUs;
+  lastLEDWriteTime_ = currentTime;
 
 #if JL_IS_CONFIG(CREATURE)
   KnownCreatures::Get()->ExpireOldEntries();
@@ -705,9 +705,9 @@ void Player::next() {
   jll_info("next command received: switching from %s (%08x) to %s (%08x), currentLeader=" DEVICE_ID_FMT,
            patternName(currentPattern_, *this).c_str(), currentPattern_, patternName(nextPattern_, *this).c_str(),
            nextPattern_, DEVICE_ID_HEX(currentLeader_));
-  Microseconds currentTimeUs = timeMicros();
-  lastUserInputTime_ = currentTimeUs;
-  currentPatternStartTime_ = currentTimeUs;
+  Microseconds currentTime = timeMicros();
+  lastUserInputTime_ = currentTime;
+  currentPatternStartTime_ = currentTime;
   if (loop_ && currentPattern_ == nextPattern_) {
     currentPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
     nextPattern_ = currentPattern_;
@@ -727,9 +727,9 @@ void Player::setPattern(PatternBits pattern) {
   jll_info("set pattern command received: switching from %s (%08x) to %s (%08x), currentLeader=" DEVICE_ID_FMT,
            patternName(currentPattern_, *this).c_str(), currentPattern_, patternName(pattern, *this).c_str(), pattern,
            DEVICE_ID_HEX(currentLeader_));
-  Microseconds currentTimeUs = timeMicros();
-  lastUserInputTime_ = currentTimeUs;
-  currentPatternStartTime_ = currentTimeUs;
+  Microseconds currentTime = timeMicros();
+  lastUserInputTime_ = currentTime;
+  currentPatternStartTime_ = currentTime;
   currentPattern_ = pattern;
   if (loop_ && currentPattern_ == nextPattern_) {
     nextPattern_ = currentPattern_;
