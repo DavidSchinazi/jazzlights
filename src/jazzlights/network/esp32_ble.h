@@ -59,7 +59,8 @@ class Esp32BleNetwork : public Network {
   };
   std::string StateToString(State state);
   // 29 is dictated by the BLE standard.
-  static constexpr size_t kMaxInnerPayloadLength = 29;
+  static inline constexpr size_t kMaxInnerPayloadLength = 29;
+  static inline constexpr size_t kMaxAdvDataHexStringSize = (2 + kMaxInnerPayloadLength) * 2 + 1;
 
   explicit Esp32BleNetwork() {}
   void StartScanning();

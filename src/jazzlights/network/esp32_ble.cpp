@@ -100,8 +100,6 @@ void Esp32BleNetwork::StopAdvertising() {
   ESP_ERROR_CHECK(esp_ble_gap_stop_advertising());
 }
 
-constexpr size_t Esp32BleNetwork::kMaxInnerPayloadLength;
-
 void Esp32BleNetwork::MaybeUpdateAdvertisingState() {
   bool shouldStopAdvertising = false;
   bool shouldStopScanning = false;
@@ -173,26 +171,12 @@ void Esp32BleNetwork::disableSending() {
 // currentPattern: 4
 // nextPattern: 4
 // patternTime: 2
-// extensionByte: 1 (0x80 = isCreature, 0x40 = isPartying)
+// [extensionByte: 1 (0x80 = isCreature, 0x40 = isPartying, 0x20 = orreryScene)]
 // [creatureRGB: 3]
 // [orreryScene: 1]
 
-#if JL_IS_CONFIG(CREATURE)
 constexpr uint8_t kMinPayloadLength = 6 + 2 + 1 + 2 + 4 + 4 + 2;
-constexpr uint8_t kMaxPayloadLength = kMinPayloadLength + 1 + 3;
-#else   // CREATURE
-constexpr uint8_t kOriginatorOffset = 0;
-constexpr uint8_t kPrecedenceOffset = kOriginatorOffset + 6;
-constexpr uint8_t kNumHopsOffset = kPrecedenceOffset + 2;
-constexpr uint8_t kOriginationTimeOffset = kNumHopsOffset + 1;
-constexpr uint8_t kCurrentPatternOffset = kOriginationTimeOffset + 2;
-constexpr uint8_t kNextPatternOffset = kCurrentPatternOffset + 4;
-constexpr uint8_t kPatternTimeOffset = kNextPatternOffset + 4;
-constexpr uint8_t kExtensionByteOffset = kPatternTimeOffset + 2;
-constexpr uint8_t kOrrerySceneOffset = kExtensionByteOffset + 1;
-constexpr uint8_t kMinPayloadLength = kExtensionByteOffset;
-constexpr uint8_t kMaxPayloadLength = kOrrerySceneOffset + 1;
-#endif  // CREATURE
+constexpr uint8_t kMaxPayloadLength = kMinPayloadLength + 1 + 3 + 1;
 
 constexpr uint8_t kExtensionByteFlagIsCreature = 0x80;
 constexpr uint8_t kExtensionByteFlagIsPartying = 0x40;
@@ -208,100 +192,80 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
   // so we offset the one way transmission time by half that.
   static constexpr Microseconds kTransmissionOffset = 25 * kMicrosecondsPerMillisecond;
   const Microseconds receiptTime = callbackTime - kTransmissionOffset;
-#if JL_IS_CONFIG(CREATURE)
+  // #if JL_IS_CONFIG(CREATURE)
   if (innerPayloadLength < kMinPayloadLength) {
-    jll_error("Ignoring received creature BLE with unexpected length %u", innerPayloadLength);
+    jll_error("Ignoring received BLE with unexpected length %u", innerPayloadLength);
     return;
   }
   NetworkReader reader(innerPayload, innerPayloadLength);
   NetworkMessage message;
+#if JL_IS_CONFIG(CREATURE)
   message.receiptRssi = rssi;
   message.receiptTime = receiptTime;
+#else   // CREATURE
+  (void)rssi;
+#endif  // CREATURE
   message.sender = deviceIdentifier;
   if (!reader.ReadNetworkDeviceId(&message.originator)) {
-    jll_error("Failed to parse creature originator");
+    jll_error("Failed to parse BLE originator");
     return;
   }
   if (!reader.ReadUint16(&message.precedence)) {
-    jll_error("Failed to parse creature precedence");
+    jll_error("Failed to parse BLE precedence");
     return;
   }
   if (!reader.ReadUint8(&message.numHops)) {
-    jll_error("Failed to parse creature numHops");
+    jll_error("Failed to parse BLE numHops");
     return;
   }
   if (!reader.ReadTimeSinceMs16(&message.lastOriginationTime, receiptTime)) {
-    jll_error("Failed to parse creature originationTimeDelta");
+    jll_error("Failed to parse BLE originationTimeDelta");
     return;
   }
   if (!reader.ReadPatternBits(&message.currentPattern)) {
-    jll_error("Failed to parse creature currentPattern");
+    jll_error("Failed to parse BLE currentPattern");
     return;
   }
   if (!reader.ReadPatternBits(&message.nextPattern)) {
-    jll_error("Failed to parse creature nextPattern");
+    jll_error("Failed to parse BLE nextPattern");
     return;
   }
   if (!reader.ReadTimeSinceMs16(&message.currentPatternStartTime, receiptTime)) {
-    jll_error("Failed to parse creature patternTimeDelta");
+    jll_error("Failed to parse BLE patternTimeDelta");
     return;
   }
   uint8_t extensionByte = 0x00;
   if (!reader.Done()) {
     if (!reader.ReadUint8(&extensionByte)) {
-      jll_error("Failed to parse creature extensionByte");
+      jll_error("Failed to parse BLE extensionByte");
       return;
     }
   }
-  message.isCreature = (extensionByte & kExtensionByteFlagIsCreature) != 0;
-  if (message.isCreature) {
-    message.isPartying = (extensionByte & kExtensionByteFlagIsPartying) != 0;
+  bool isCreature = (extensionByte & kExtensionByteFlagIsCreature) != 0;
+  bool isPartying = false;
+  uint32_t creatureColor = 0;
+  if (isCreature) {
+    isPartying = (extensionByte & kExtensionByteFlagIsPartying) != 0;
     uint8_t creatureRed, creatureGreen, creatureBlue;
     if (!reader.ReadUint8(&creatureRed) || !reader.ReadUint8(&creatureGreen) || !reader.ReadUint8(&creatureBlue)) {
       jll_error("Failed to parse creature RGB");
       return;
     }
-    message.creatureColor = (creatureRed << 16) | (creatureGreen << 8) | creatureBlue;
-  } else {
-    message.creatureColor = 0;
-    message.isPartying = false;
+    creatureColor = (creatureRed << 16) | (creatureGreen << 8) | creatureBlue;
   }
+#if JL_IS_CONFIG(CREATURE)
+  message.isCreature = isCreature;
+  message.isPartying = isPartying;
+  message.creatureColor = (creatureRed << 16) | (creatureGreen << 8) | creatureBlue;
+#endif  // CREATURE
   if ((extensionByte & kExtensionByteFlagHasOrreryScene) != 0) {
     uint8_t orrerySceneId;
     if (!reader.ReadUint8(&orrerySceneId)) {
-      jll_error("Failed to parse creature orrerySceneId");
+      jll_error("Failed to parse orrerySceneId");
       return;
     }
     message.orrerySceneId = orrerySceneId;
   }
-#else   // CREATURE
-  (void)rssi;
-  if (innerPayloadLength < kMinPayloadLength) {
-    ESP32_BLE_DEBUG("Ignoring received BLE with unexpected length %u", innerPayloadLength);
-    return;
-  }
-  NetworkMessage message;
-  message.sender = deviceIdentifier;
-  message.originator = NetworkDeviceId(&innerPayload[kOriginatorOffset]);
-  message.precedence = readUint16(&innerPayload[kPrecedenceOffset]);
-  message.numHops = innerPayload[kNumHopsOffset];
-  message.lastOriginationTime =
-      receiptTime - MillisecondsToMicroseconds(readUint16(&innerPayload[kOriginationTimeOffset]));
-  message.currentPattern = readUint32(&innerPayload[kCurrentPatternOffset]);
-  message.nextPattern = readUint32(&innerPayload[kNextPatternOffset]);
-  message.currentPatternStartTime =
-      receiptTime - MillisecondsToMicroseconds(readUint16(&innerPayload[kPatternTimeOffset]));
-  uint8_t extensionByte = 0;
-  if (innerPayloadLength > kExtensionByteOffset) { extensionByte = innerPayload[kExtensionByteOffset]; }
-  size_t orrerySceneOffset = kExtensionByteOffset + 1;
-  if ((extensionByte & kExtensionByteFlagIsCreature) != 0) {
-    // Skip over creature RGB,
-    orrerySceneOffset += 3;
-  }
-  if (innerPayloadLength > orrerySceneOffset && (extensionByte & kExtensionByteFlagHasOrreryScene) != 0) {
-    message.orrerySceneId = innerPayload[orrerySceneOffset];
-  }
-#endif  // CREATURE
 
   ESP32_BLE_DEBUG("Received %s", networkMessageToString(message).c_str());
   lastReceiveTime_.store(receiptTime, std::memory_order_relaxed);
@@ -390,7 +354,7 @@ size_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_t
 #endif  // CREATURE
   const size_t innerPayloadLength = writer.LengthWritten();
   if (ESP32_BLE_DEBUG_ENABLED()) {
-    char advRawData[kMaxPayloadLength * 2 + 1] = {};
+    char advRawData[kMaxAdvDataHexStringSize] = {};
     convertToHex(advRawData, sizeof(advRawData), innerPayload, innerPayloadLength);
     ESP32_BLE_DEBUG("Setting inner payload to <%zu:%s>", innerPayloadLength, advRawData);
   }
@@ -425,7 +389,7 @@ void Esp32BleNetwork::StartConfigureAdvertising() {
   advPayload[0] = 1 + innerPayloadSize;
   advPayload[1] = kAdvType;
   if (ESP32_BLE_DEBUG_ENABLED()) {
-    char advRawData[(2 + kMaxInnerPayloadLength) * 2 + 1] = {};
+    char advRawData[kMaxAdvDataHexStringSize] = {};
     convertToHex(advRawData, sizeof(advRawData), advPayload, 2 + innerPayloadSize);
     ESP32_BLE_DEBUG("Sending adv<%zu:%s>", 2 + innerPayloadSize, advRawData);
   }
@@ -468,7 +432,7 @@ void Esp32BleNetwork::GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap
             break;
           }
           if (ESP32_BLE_DEBUG_ENABLED()) {
-            char advRawData[(kMaxInnerPayloadLength + 2) * 2 + 1] = {};
+            char advRawData[kMaxAdvDataHexStringSize] = {};
             convertToHex(advRawData, sizeof(advRawData), param->scan_rst.ble_adv, param->scan_rst.adv_data_len);
             ESP32_BLE_DEBUG("Received adv<%u:%s> from " ESP_BD_ADDR_STR, param->scan_rst.adv_data_len, advRawData,
                             ESP_BD_ADDR_HEX(param->scan_rst.bda));
