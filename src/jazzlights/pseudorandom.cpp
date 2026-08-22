@@ -86,7 +86,7 @@ void PredictableRandom::Reset() {
   numUsedStateBytes_ = 0;
 }
 
-void PredictableRandom::ResetWithPatternTime(PatternBits pattern, Milliseconds elapsedTime, const char* label) {
+void PredictableRandom::ResetWithPatternTime(PatternBits pattern, FrameTimeMs elapsedTime, const char* label) {
   Reset();
   IngestLabel(label);
   Ingest32bits(pattern);

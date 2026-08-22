@@ -39,7 +39,7 @@ class PredictableRandom : public Random {
   void GetRandomBytes(void* buffer, size_t length) override;
 
  private:
-  void ResetWithPatternTime(PatternBits pattern, Milliseconds elapsedTime, const char* label);
+  void ResetWithPatternTime(PatternBits pattern, FrameTimeMs elapsedTime, const char* label);
   void Reset();
   void IngestByte(uint8_t b);
   void IngestLabel(const char* label);

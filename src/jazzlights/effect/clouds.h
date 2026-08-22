@@ -65,7 +65,7 @@ class Clouds : public Effect {
   }
 
  private:
-  static constexpr Milliseconds StrikeDuration() { return 1000; };
+  static constexpr FrameTimeMs StrikeDuration() { return 1000; };
   static uint8_t CloudLength(uint8_t cloudNum) {
     switch (cloudNum) {
       case 1: return 17;
@@ -81,7 +81,7 @@ class Clouds : public Effect {
   struct CloudsState {
     struct LightningStrike {
       uint8_t cloudNum;
-      Milliseconds startTime;
+      FrameTimeMs startTime;
       double progress;
     };
     LightningStrike strikes[32];

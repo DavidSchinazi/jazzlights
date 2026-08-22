@@ -3,7 +3,6 @@
 
 #include <vector>
 
-#include "jazzlights/pseudorandom.h"
 #include "jazzlights/types.h"
 #include "jazzlights/util/geom.h"
 #include "jazzlights/util/time.h"
@@ -12,6 +11,8 @@ namespace jazzlights {
 
 class PredictableRandom;
 
+using FrameTimeMs = int32_t;
+
 struct Frame {
  public:
   PatternBits pattern;
@@ -19,16 +20,16 @@ struct Frame {
   const XYIndexStore* xyIndexStore = nullptr;
   Box viewport;
   void* context = nullptr;
-  Milliseconds time;
+  FrameTimeMs time;
   size_t pixelCount;
 };
 
 inline void SetFrameTime(Frame& frame, Microseconds currentTime, Microseconds patternStartTime) {
   Microseconds frameTimeUs = currentTime - patternStartTime;
-  if (frameTimeUs >= kMicrosecondsPerMillisecond * std::numeric_limits<Milliseconds>::max()) {
-    frame.time = std::numeric_limits<Milliseconds>::max();
+  if (frameTimeUs >= kMicrosecondsPerMillisecond * std::numeric_limits<FrameTimeMs>::max()) {
+    frame.time = std::numeric_limits<FrameTimeMs>::max();
   } else {
-    frame.time = static_cast<Milliseconds>(frameTimeUs / kMicrosecondsPerMillisecond);
+    frame.time = static_cast<FrameTimeMs>(frameTimeUs / kMicrosecondsPerMillisecond);
   }
 }
 

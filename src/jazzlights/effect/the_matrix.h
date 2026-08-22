@@ -7,7 +7,7 @@
 namespace jazzlights {
 
 struct MatrixState {
-  Milliseconds fallInterval;
+  FrameTimeMs fallInterval;
   uint8_t spawnRate;
   uint8_t fadeRate;
   uint8_t maxTicks;

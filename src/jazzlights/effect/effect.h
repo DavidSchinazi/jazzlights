@@ -11,7 +11,7 @@
 
 namespace jazzlights {
 
-inline constexpr Milliseconds kEffectDurationMs = 10000;  // 10s.
+inline constexpr FrameTimeMs kEffectDurationMs = 10000;  // 10s.
 static constexpr Microseconds kEffectDuration = kEffectDurationMs * kMicrosecondsPerMillisecond;
 
 inline constexpr size_t kMaxStateAlignment = 8;
