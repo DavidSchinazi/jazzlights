@@ -208,7 +208,7 @@ bool Network::ParseUdpPayload(uint8_t* udpPayload, size_t udpPayloadLength, cons
 
   // TODO measure transmission offset over various underlying UDP networks like Wi-Fi and Ethernet.
   static constexpr Microseconds kTransmissionOffset = 5 * kMicrosecondsPerMillisecond;  // 5ms.
-  Milliseconds receiptTime;
+  Microseconds receiptTime;
   if (currentTime > kTransmissionOffset) {
     receiptTime = currentTime - kTransmissionOffset;
   } else {
