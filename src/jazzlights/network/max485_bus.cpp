@@ -66,9 +66,8 @@ static_assert(kUartDriverBufferSize >= kMaxEncodedMessageLength, "bad size");
 
 // This timeout formula was established based on the following empirical measurements using a 10m shiedled cable.
 // In (message size in bytes, maximum observed RTT in ms) pairs: (50, 14), (100, 23), (500, 92), (1000, 180).
-constexpr Milliseconds kUartResponseTimeoutMs = ((kMaxMessageLength * 2) / 5) + 10;
-constexpr Microseconds kUartResponseTimeout = kUartResponseTimeoutMs * kMicrosecondsPerMillisecond;
-constexpr TickType_t kLeaderReceiveDelay = kUartResponseTimeoutMs / portTICK_PERIOD_MS;
+constexpr Microseconds kUartResponseTimeout = (((kMaxMessageLength * 2) / 5) + 10) * kMicrosecondsPerMillisecond;
+constexpr TickType_t kLeaderReceiveDelay = kUartResponseTimeout / kMicrosecondsPerMillisecond / portTICK_PERIOD_MS;
 
 }  // namespace
 
