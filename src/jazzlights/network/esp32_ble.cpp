@@ -200,7 +200,7 @@ constexpr uint8_t kExtensionByteFlagHasOrreryScene = 0x20;
 
 void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifier, uint8_t innerPayloadLength,
                                            const uint8_t* innerPayload, int rssi) {
-  Milliseconds currentTime = timeMillis();
+  Microseconds currentTime = timeMicros();
   if (innerPayloadLength > kMaxInnerPayloadLength) {
     jll_error("Received advertisement with unexpected length %u", innerPayloadLength);
     return;
@@ -286,10 +286,12 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
   message.originator = NetworkDeviceId(&innerPayload[kOriginatorOffset]);
   message.precedence = readUint16(&innerPayload[kPrecedenceOffset]);
   message.numHops = innerPayload[kNumHopsOffset];
-  Milliseconds originationTimeDelta = readUint16(&innerPayload[kOriginationTimeOffset]);
+  Milliseconds originationTimeDeltaMs = readUint16(&innerPayload[kOriginationTimeOffset]);
+  const Microseconds originationTimeDelta = MillisecondsToMicroseconds(originationTimeDeltaMs);
   message.currentPattern = readUint32(&innerPayload[kCurrentPatternOffset]);
   message.nextPattern = readUint32(&innerPayload[kNextPatternOffset]);
-  Milliseconds patternTimeDelta = readUint16(&innerPayload[kPatternTimeOffset]);
+  Milliseconds patternTimeDeltaMs = readUint16(&innerPayload[kPatternTimeOffset]);
+  const Microseconds patternTimeDelta = MillisecondsToMicroseconds(patternTimeDeltaMs);
   uint8_t extensionByte = 0;
   if (innerPayloadLength > kExtensionByteOffset) { extensionByte = innerPayload[kExtensionByteOffset]; }
   size_t orrerySceneOffset = kExtensionByteOffset + 1;
@@ -304,26 +306,26 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
 
   // Empirical measurements with the ATOM Matrix show a RTT of 50ms,
   // so we offset the one way transmission time by half that.
-  constexpr Milliseconds kTransmissionOffset = 25;
-  Milliseconds receiptTime;
+  constexpr Microseconds kTransmissionOffset = 25 * kMicrosecondsPerMillisecond;
+  Microseconds receiptTime;
   if (currentTime > kTransmissionOffset) {
     receiptTime = currentTime - kTransmissionOffset;
   } else {
     receiptTime = 0;
   }
   if (receiptTime >= patternTimeDelta) {
-    message.currentPatternStartTime = MillisecondsToMicroseconds(receiptTime - patternTimeDelta);
+    message.currentPatternStartTime = receiptTime - patternTimeDelta;
   } else {
     message.currentPatternStartTime = 0;
   }
   if (receiptTime >= originationTimeDelta) {
-    message.lastOriginationTime = MillisecondsToMicroseconds(receiptTime - originationTimeDelta);
+    message.lastOriginationTime = receiptTime - originationTimeDelta;
   } else {
     message.lastOriginationTime = 0;
   }
 
   ESP32_BLE_DEBUG("Received %s", networkMessageToString(message).c_str());
-  lastReceiveTime_.store(MillisecondsToMicroseconds(receiptTime), std::memory_order_relaxed);
+  lastReceiveTime_.store(receiptTime, std::memory_order_relaxed);
 
   {
     const std::lock_guard<std::mutex> lock(mutex_);
