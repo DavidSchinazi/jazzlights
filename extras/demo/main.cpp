@@ -11,14 +11,14 @@
 namespace jazzlights {
 
 int runMain(int argc, char** argv) {
-  int killTime = 0;
+  std::optional<Microseconds> killTime;
   bool startLooping = false;
   bool shouldSetPattern = false;
   PatternBits pattern = 0;
   while (true) {
     int ch = getopt(argc, argv, "k:p:l");
     if (ch == -1) { break; }
-    if (ch == 'k') { killTime = timeMillis() + strtol(optarg, nullptr, 10) * 1000; }
+    if (ch == 'k') { killTime = timeMicros() + strtol(optarg, nullptr, 10) * kMicrosecondsPerSecond; }
     if (ch == 'p') {
       shouldSetPattern = true;
       pattern = strtoll(optarg, nullptr, 16);

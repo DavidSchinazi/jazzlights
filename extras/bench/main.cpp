@@ -19,25 +19,25 @@ class NoopRenderer : public Renderer {
 NoopRenderer noopRenderer;
 
 int runMain(int argc, char** argv) {
-  int killTime = 0;
+  std::optional<Microseconds> killTime;
   bool useNetwork = false;
   while (true) {
     int ch = getopt(argc, argv, "k:n");
     if (ch == -1) { break; }
-    if (ch == 'k') { killTime = timeMillis() + strtol(optarg, nullptr, 10) * 1000; }
+    if (ch == 'k') { killTime = timeMicros() + strtol(optarg, nullptr, 10) * kMicrosecondsPerSecond; }
     if (ch == 'n') { useNetwork = true; }
   }
   player.addStrand(pixels, noopRenderer);
   if (useNetwork) { player.connect(UnixUdpNetwork::get()); }
   player.begin();
-  Milliseconds lastFpsEpochTime = 0;
+  Microseconds lastFpsEpochTime = 0;
   while (true) {
-    const Milliseconds currentTime = timeMillis();
-    if (killTime > 0 && currentTime > killTime) {
+    const Microseconds currentTime = timeMicros();
+    if (killTime && currentTime > *killTime) {
       jll_info("Kill time reached, exiting.");
       exit(0);
     }
-    if (currentTime - lastFpsEpochTime > 1000) {
+    if (currentTime - lastFpsEpochTime > kMicrosecondsPerSecond) {
       uint16_t fpsCompute;
       uint16_t fpsWrites;
       uint8_t utilization = 0;

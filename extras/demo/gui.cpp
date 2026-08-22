@@ -47,7 +47,7 @@ void onKey(GLFWwindow* window, int key, int /*scncode*/, int action, int mods) {
   }
 };
 
-int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen, Milliseconds killTime) {
+int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen, std::optional<Microseconds> killTime) {
   player = &playerRef;
   viewport = vp;
 
@@ -85,8 +85,7 @@ int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen, Mil
 
   glClearColor(0.15, 0.15, 0.15, 1);
   while (!glfwWindowShouldClose(window)) {
-    Milliseconds currentTime = timeMillis();
-    if (killTime > 0 && currentTime > killTime) {
+    if (killTime && timeMicros() > *killTime) {
       jll_info("Kill time reached, exiting.");
       exit(0);
     }
