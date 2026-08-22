@@ -19,6 +19,17 @@ using Microseconds = int64_t;
 #endif  // JL_DEV || JL_DEBUG
 #endif  // JL_OPT_US_DEBUG
 
+#if JL_OPT_US_DEBUG
+#define _JL_CHECK_OPT_US(_micros)                    \
+  do {                                               \
+    if (((_micros) & kPresentBit) != 0) { abort(); } \
+  } while (false)
+#else  // JL_OPT_US_DEBUG
+#define _JL_CHECK_OPT_US(_micros) \
+  do {                            \
+  } while (false)
+#endif  // JL_OPT_US_DEBUG
+
 // OptionalMicroseconds is intended to be similar in interface to std::optional<Microseconds>. It uses the bit before
 // the sign bit bit to mark the optional status to save memory. The assumption is that we'll never need all 64 bits for
 // microsecond timestamps, as 62 bits can represent over a hundred thousand years in microseconds.
@@ -37,10 +48,22 @@ class OptionalMicroseconds {
     inner_ = kPresentBit;
     return *this;
   }
-  constexpr Microseconds& value() & noexcept { return CheckReference(inner_); }
-  constexpr const Microseconds& value() const& noexcept { return CheckConstReference(inner_); }
-  constexpr Microseconds& operator*() & noexcept { return CheckReference(inner_); }
-  constexpr const Microseconds& operator*() const& noexcept { return CheckConstReference(inner_); }
+  constexpr Microseconds& value() & noexcept {
+    _JL_CHECK_OPT_US(inner_);
+    return inner_;
+  }
+  constexpr const Microseconds& value() const& noexcept {
+    _JL_CHECK_OPT_US(inner_);
+    return inner_;
+  }
+  constexpr Microseconds& operator*() & noexcept {
+    _JL_CHECK_OPT_US(inner_);
+    return inner_;
+  }
+  constexpr const Microseconds& operator*() const& noexcept {
+    _JL_CHECK_OPT_US(inner_);
+    return inner_;
+  }
 
   constexpr bool has_value() const noexcept { return (inner_ & kPresentBit) == 0; }
   constexpr explicit operator bool() const noexcept { return has_value(); }
@@ -81,21 +104,7 @@ class OptionalMicroseconds {
                   "bad type max");
     static_assert(kPresentBit != 0, "kPresentBit cannot be zero");
     static_assert((kPresentBit & (kPresentBit - 1)) == 0, "kPresentBit is not a single bit");
-#if JL_OPT_US_DEBUG
-    if ((micros & kPresentBit) != 0) { abort(); }
-#endif  // JL_OPT_US_DEBUG
-    return micros;
-  }
-  static constexpr Microseconds& CheckReference(Microseconds& micros) noexcept {
-#if JL_OPT_US_DEBUG
-    if ((micros & kPresentBit) != 0) { abort(); }
-#endif  // JL_OPT_US_DEBUG
-    return micros;
-  }
-  static constexpr const Microseconds& CheckConstReference(const Microseconds& micros) noexcept {
-#if JL_OPT_US_DEBUG
-    if ((micros & kPresentBit) != 0) { abort(); }
-#endif  // JL_OPT_US_DEBUG
+    _JL_CHECK_OPT_US(micros);
     return micros;
   }
 
