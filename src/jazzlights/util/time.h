@@ -9,9 +9,6 @@ using Microseconds = int64_t;
 
 JL_DEFINE_INT_TYPE(Milliseconds, int, int32_t);
 
-// Get monotonically increasing time in milliseconds.
-Milliseconds timeMillis();
-
 // Get monotonically increasing time in microseconds.
 Microseconds timeMicros();
 

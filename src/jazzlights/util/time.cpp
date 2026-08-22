@@ -27,8 +27,6 @@ Microseconds MicrosecondsSinceBoot() {
 
 }  // namespace
 
-Milliseconds timeMillis() { return MicrosecondsToMilliseconds(timeMicros()); }
-
 Microseconds timeMicros() {
   // We add 100000 here to have the time start at 100s. That allows subtracting without having the time become negative.
   // In particular, without this addition, we would not properly handle received pattern time sync messages because the
