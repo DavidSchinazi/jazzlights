@@ -34,7 +34,9 @@ class Esp32BleNetwork : public Network {
   NetworkDeviceId getLocalDeviceId() const override { return localDeviceId_; }
   NetworkType type() const override { return NetworkType::kBLE; }
   bool shouldEcho() const override { return true; }
-  Milliseconds getLastReceiveTime() const override { return lastReceiveTime_; }
+  std::optional<Microseconds> getLastReceiveTime() const override {
+    return lastReceiveTime_.load(std::memory_order_relaxed);
+  }
   std::string getStatusStr() override;
 
  protected:
@@ -82,7 +84,7 @@ class Esp32BleNetwork : public Network {
   static NetworkDeviceId InitBluetoothStackAndQueryLocalDeviceId();
 
   const NetworkDeviceId localDeviceId_ = InitBluetoothStackAndQueryLocalDeviceId();
-  std::atomic<Milliseconds> lastReceiveTime_{-1};
+  std::atomic<std::optional<Microseconds>> lastReceiveTime_;
   std::mutex mutex_;
   // All the variables below are protected by mutex_.
   State state_ = State::kIdle;
@@ -110,7 +112,7 @@ class Esp32BleNetwork : public Network {
   NetworkDeviceId getLocalDeviceId() const override { return NetworkDeviceId(); }
   NetworkType type() const override { return NetworkType::kBLE; }
   bool shouldEcho() const override { return false; }
-  Milliseconds getLastReceiveTime() const override { return -1; }
+  std::optional<Microseconds> getLastReceiveTime() const override { return std::nullopt; }
   std::string getStatusStr() override { return "Compiled Out"; }
 
  protected:

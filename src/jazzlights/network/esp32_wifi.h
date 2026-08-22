@@ -31,7 +31,9 @@ class Esp32WiFiNetwork : public Network {
   void disableSending() override;
   void triggerSendAsap() override;
   bool shouldEcho() const override { return false; }
-  Milliseconds getLastReceiveTime() const override { return lastReceiveTime_.load(std::memory_order_relaxed); }
+  std::optional<Microseconds> getLastReceiveTime() const override {
+    return lastReceiveTime_.load(std::memory_order_relaxed);
+  }
 
  protected:
   std::list<NetworkMessage> getReceivedMessagesImpl() override;
@@ -78,7 +80,7 @@ class Esp32WiFiNetwork : public Network {
   PatternBits lastSentPattern_ = 0;                 // Only used on our task.
   bool shouldArmQueueReconnectionTimeout_ = false;  // Only used on our task.
   uint32_t reconnectCount_ = 0;                     // Only used on our task.
-  std::atomic<Milliseconds> lastReceiveTime_;
+  std::atomic<std::optional<Microseconds>> lastReceiveTime_;
   std::mutex mutex_;
   struct in_addr localAddress_ = {};            // Protected by mutex_.
   bool hasDataToSend_ = false;                  // Protected by mutex_.

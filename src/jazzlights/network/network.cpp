@@ -232,7 +232,7 @@ bool Network::ParseUdpPayload(uint8_t* udpPayload, size_t udpPayloadLength, cons
 std::list<NetworkMessage> UdpNetwork::getReceivedMessagesImpl() {
   std::list<NetworkMessage> receivedMessages;
   if (status() != CONNECTED) { return receivedMessages; }
-  Milliseconds currentTime = timeMillis();
+  Microseconds currentTime = timeMicros();
   while (true) {
     uint8_t udpPayload[2000] = {};
     std::string receiptDetails;

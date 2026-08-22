@@ -92,7 +92,7 @@ std::string WiFiReasonToString(uint8_t reason) {
 }  // namespace
 
 std::string Esp32WiFiNetwork::getStatusStr() {
-  const Milliseconds currentTime = timeMillis();
+  const Microseconds currentTime = timeMicros();
   struct in_addr localAddress = {};
   {
     const std::lock_guard<std::mutex> lock(mutex_);
@@ -100,14 +100,14 @@ std::string Esp32WiFiNetwork::getStatusStr() {
   }
   struct in_addr emptyAddress = {INADDR_ANY};
   if (memcmp(&emptyAddress, &localAddress, sizeof(localAddress)) != 0) {
-    const Milliseconds lastRcv = getLastReceiveTime();
+    const std::optional<Microseconds> lastRcv = getLastReceiveTime();
     char addressString[INET_ADDRSTRLEN + 1] = {};
     if (inet_ntop(AF_INET, &localAddress, addressString, sizeof(addressString) - 1) == nullptr) {
       jll_fatal("Esp32WiFiNetwork printing local address failed with error %d: %s", errno, strerror(errno));
     }
     char statStr[100] = {};
-    snprintf(statStr, sizeof(statStr) - 1, "%s %s - %ums", WiFiSsid(), addressString,
-             (lastRcv >= 0 ? currentTime - getLastReceiveTime() : -1));
+    snprintf(statStr, sizeof(statStr) - 1, "%s %s - %lldms", WiFiSsid(), addressString,
+             static_cast<long long>(lastRcv ? (currentTime - *lastRcv) / kMicrosecondsPerMillisecond : -1));
     return std::string(statStr);
   } else {
     return "disconnected";
@@ -369,7 +369,7 @@ void Esp32WiFiNetwork::RunTask() {
   std::string receiptDetails = s.str();
   NetworkMessage receivedMessage;
   if (ParseUdpPayload(udpPayload_, n, receiptDetails, &receivedMessage)) {
-    lastReceiveTime_.store(timeMillis(), std::memory_order_relaxed);
+    lastReceiveTime_.store(timeMicros(), std::memory_order_relaxed);
     const std::lock_guard<std::mutex> lock(mutex_);
     receivedMessages_.push_back(receivedMessage);
   }

@@ -323,7 +323,7 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
   }
 
   ESP32_BLE_DEBUG("Received %s", networkMessageToString(message).c_str());
-  lastReceiveTime_ = receiptTime;
+  lastReceiveTime_.store(MillisecondsToMicroseconds(receiptTime), std::memory_order_relaxed);
 
   {
     const std::lock_guard<std::mutex> lock(mutex_);
@@ -625,10 +625,11 @@ std::string Esp32BleNetwork::StateToString(Esp32BleNetwork::State state) {
 }
 
 std::string Esp32BleNetwork::getStatusStr() {
-  const Milliseconds currentTime = timeMillis();
+  const Microseconds currentTime = timeMicros();
   char statStr[100] = {};
-  const Milliseconds lastRcv = getLastReceiveTime();
-  snprintf(statStr, sizeof(statStr) - 1, "%dms", (lastRcv >= 0 ? currentTime - getLastReceiveTime() : -1));
+  const std::optional<Microseconds> lastRcv = getLastReceiveTime();
+  snprintf(statStr, sizeof(statStr) - 1, "%lldms",
+           static_cast<long long>(lastRcv ? (currentTime - *lastRcv) / kMicrosecondsPerMillisecond : -1));
   return std::string(statStr);
 }
 

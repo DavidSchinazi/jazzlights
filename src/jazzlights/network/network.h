@@ -177,8 +177,8 @@ class Network {
   // Whether we should advertise patterns on this network if that's where we received them.
   virtual bool shouldEcho() const = 0;
 
-  // Last time we received a message, or -1 to indicate never.
-  virtual Milliseconds getLastReceiveTime() const = 0;
+  // Last time we received a message, or nullopt to indicate never.
+  virtual std::optional<Microseconds> getLastReceiveTime() const = 0;
 
   // Get a human-readable status string that can be displayed to the user. Not const to allow taking locks.
   virtual std::string getStatusStr() = 0;
@@ -234,7 +234,7 @@ class UdpNetwork : public Network {
   void disableSending() override;
   void triggerSendAsap() override;
   bool shouldEcho() const override { return false; }
-  Milliseconds getLastReceiveTime() const override { return lastReceiveTime_; }
+  std::optional<Microseconds> getLastReceiveTime() const override { return lastReceiveTime_; }
 
  protected:
   std::list<NetworkMessage> getReceivedMessagesImpl() override;
@@ -249,7 +249,7 @@ class UdpNetwork : public Network {
   PatternBits lastSentPattern_ = 0;
 
   Milliseconds effectLastTxTime_ = 0;
-  Milliseconds lastReceiveTime_ = -1;
+  std::optional<Microseconds> lastReceiveTime_;
 };
 
 void writeUint32(uint8_t* data, uint32_t number);

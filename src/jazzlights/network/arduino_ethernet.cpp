@@ -131,17 +131,17 @@ NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status) {
 }
 
 std::string ArduinoEthernetNetwork::getStatusStr() {
-  const Milliseconds currentTime = timeMillis();
+  const Microseconds currentTime = timeMicros();
   switch (getStatus()) {
     case INITIALIZING: return "init";
     case CONNECTING: return "connecting";
     case CONNECTION_FAILED: return "failed";
     case CONNECTED: {
       IPAddress ip = Ethernet.localIP();
-      const Milliseconds lastRcv = getLastReceiveTime();
+      const std::optional<Microseconds> lastRcv = getLastReceiveTime();
       char statStr[100] = {};
-      snprintf(statStr, sizeof(statStr) - 1, "%u.%u.%u.%u - %ums", ip[0], ip[1], ip[2], ip[3],
-               (lastRcv >= 0 ? currentTime - lastRcv : -1));
+      snprintf(statStr, sizeof(statStr) - 1, "%u.%u.%u.%u - %lldms", ip[0], ip[1], ip[2], ip[3],
+               static_cast<long long>(lastRcv ? (currentTime - *lastRcv) / kMicrosecondsPerMillisecond : -1));
       return std::string(statStr);
     }
   }
