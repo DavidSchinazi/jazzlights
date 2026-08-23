@@ -21,10 +21,10 @@ void test_orrery_message_serialization() {
   msg1.ledPrecedenceGain = 500;
 
   uint8_t buffer[64];
-  NetworkWriter writer(buffer, sizeof(buffer));
+  ProtocolWriter writer(buffer, sizeof(buffer));
   TEST_ASSERT(WriteOrreryMessage(msg1, writer));
 
-  NetworkReader reader(buffer, writer.LengthWritten());
+  ProtocolReader reader(buffer, writer.LengthWritten());
   OrreryMessage msg2;
   TEST_ASSERT(ReadOrreryMessage(reader, &msg2));
 
@@ -60,10 +60,10 @@ void test_orrery_message_hall_sensor_serialization() {
   msg1.lastClosedDuration = 5678000;
 
   uint8_t buffer[64];
-  NetworkWriter writer(buffer, sizeof(buffer));
+  ProtocolWriter writer(buffer, sizeof(buffer));
   TEST_ASSERT(WriteOrreryMessage(msg1, writer));
 
-  NetworkReader reader(buffer, writer.LengthWritten());
+  ProtocolReader reader(buffer, writer.LengthWritten());
   OrreryMessage msg2;
   TEST_ASSERT(ReadOrreryMessage(reader, &msg2));
 
@@ -97,10 +97,10 @@ void test_orrery_message_sparse_serialization() {
   msg1.ledPrecedenceGain = std::nullopt;
 
   uint8_t buffer[64];
-  NetworkWriter writer(buffer, sizeof(buffer));
+  ProtocolWriter writer(buffer, sizeof(buffer));
   TEST_ASSERT(WriteOrreryMessage(msg1, writer));
 
-  NetworkReader reader(buffer, writer.LengthWritten());
+  ProtocolReader reader(buffer, writer.LengthWritten());
   OrreryMessage msg2;
   TEST_ASSERT(ReadOrreryMessage(reader, &msg2));
 
@@ -127,10 +127,10 @@ void test_orrery_message_disable_serialization() {
   msg1.speed = kOrrerySpeedDisable;
 
   uint8_t buffer[64];
-  NetworkWriter writer(buffer, sizeof(buffer));
+  ProtocolWriter writer(buffer, sizeof(buffer));
   TEST_ASSERT(WriteOrreryMessage(msg1, writer));
 
-  NetworkReader reader(buffer, writer.LengthWritten());
+  ProtocolReader reader(buffer, writer.LengthWritten());
   OrreryMessage msg2;
   TEST_ASSERT(ReadOrreryMessage(reader, &msg2));
 

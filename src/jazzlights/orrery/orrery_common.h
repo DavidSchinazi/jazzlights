@@ -104,8 +104,8 @@ struct OrreryMessage {
   bool operator!=(const OrreryMessage& other) const { return !(*this == other); }
 };
 
-bool WriteOrreryMessage(const OrreryMessage& msg, NetworkWriter& writer);
-bool ReadOrreryMessage(NetworkReader& reader, OrreryMessage* msg);
+bool WriteOrreryMessage(const OrreryMessage& msg, ProtocolWriter& writer);
+bool ReadOrreryMessage(ProtocolReader& reader, OrreryMessage* msg);
 std::string OrreryMessageToString(const OrreryMessage& msg);
 const char* GetPlanetName(Planet planet);
 

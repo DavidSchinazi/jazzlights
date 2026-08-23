@@ -47,7 +47,7 @@ constexpr uint8_t kOrreryFlag2LastOpenDuration = 0x02;
 constexpr uint8_t kOrreryFlag2LastClosedDuration = 0x04;
 }  // namespace
 
-bool WriteOrreryMessage(const OrreryMessage& msg, NetworkWriter& writer) {
+bool WriteOrreryMessage(const OrreryMessage& msg, ProtocolWriter& writer) {
   if (!writer.WriteUint8(static_cast<uint8_t>(msg.type))) { return false; }
   uint8_t flags = 0;
   if (msg.speed) { flags |= kOrreryFlagSpeed; }
@@ -88,7 +88,7 @@ bool WriteOrreryMessage(const OrreryMessage& msg, NetworkWriter& writer) {
   return true;
 }
 
-bool ReadOrreryMessage(NetworkReader& reader, OrreryMessage* msg) {
+bool ReadOrreryMessage(ProtocolReader& reader, OrreryMessage* msg) {
   uint8_t typeByte;
   if (!reader.ReadUint8(&typeByte)) { return false; }
   msg->type = static_cast<OrreryMessageType>(typeByte);

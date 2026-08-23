@@ -8,7 +8,7 @@ namespace jazzlights {
 
 void test_network_reader() {
   uint8_t buffer[7] = {1, 2, 3, 4, 5, 6, 7};
-  NetworkReader reader(buffer, sizeof(buffer));
+  ProtocolReader reader(buffer, sizeof(buffer));
   uint8_t u8;
   TEST_ASSERT(reader.ReadUint8(&u8));
   TEST_ASSERT_EQUAL(u8, 0x01);
@@ -22,7 +22,7 @@ void test_network_reader() {
 }
 void test_network_writer() {
   uint8_t buffer[7] = {};
-  NetworkWriter writer(buffer, sizeof(buffer));
+  ProtocolWriter writer(buffer, sizeof(buffer));
   uint8_t u8 = 1;
   TEST_ASSERT(writer.WriteUint8(u8));
   TEST_ASSERT_EQUAL(buffer[0], 0x01);
@@ -50,11 +50,11 @@ void test_network_int32() {
 
   for (size_t i = 0; i < 4; ++i) {
     uint8_t buffer[4];
-    NetworkWriter writer(buffer, sizeof(buffer));
+    ProtocolWriter writer(buffer, sizeof(buffer));
     TEST_ASSERT(writer.WriteInt32(values[i]));
     for (size_t j = 0; j < 4; ++j) { TEST_ASSERT_EQUAL_HEX8(expected_bytes[i][j], buffer[j]); }
 
-    NetworkReader reader(buffer, sizeof(buffer));
+    ProtocolReader reader(buffer, sizeof(buffer));
     int32_t out;
     TEST_ASSERT(reader.ReadInt32(&out));
     TEST_ASSERT_EQUAL_INT32(values[i], out);

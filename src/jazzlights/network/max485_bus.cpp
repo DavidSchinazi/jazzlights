@@ -143,7 +143,7 @@ void Max485BusHandler::RunTask() {
             jll_max485_data_buffer(taskMessageView, "Received from %d to %d", static_cast<int>(srcBusId),
                                    static_cast<int>(destBusId));
             OrreryMessage orreryMessage;
-            NetworkReader reader(taskMessageView.data(), taskMessageView.size());
+            ProtocolReader reader(taskMessageView.data(), taskMessageView.size());
             if (ReadOrreryMessage(reader, &orreryMessage)) {
 #if JL_LOG_MAX485_MESSAGES
               auto itLogged = lastLoggedRecvMessages_.find(srcBusId);
@@ -266,7 +266,7 @@ void Max485BusHandler::CopyEncodeAndSendMessage(BusId destBusId) {
   }
   if (!found) { return; }
 
-  NetworkWriter writer(&taskSendMessageBuffer_[0], taskSendMessageBuffer_.size());
+  ProtocolWriter writer(&taskSendMessageBuffer_[0], taskSendMessageBuffer_.size());
   if (!WriteOrreryMessage(msg, writer)) {
     jll_error("Failed to serialize OrreryMessage");
     return;

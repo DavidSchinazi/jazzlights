@@ -11,9 +11,9 @@
 
 namespace jazzlights {
 
-class NetworkWriter {
+class ProtocolWriter {
  public:
-  explicit NetworkWriter(uint8_t* data, size_t size) : data_(data), size_(size) {}
+  explicit ProtocolWriter(uint8_t* data, size_t size) : data_(data), size_(size) {}
   size_t LengthWritten() const { return pos_; }
 
   bool WriteUint8(uint8_t in) {
@@ -60,7 +60,7 @@ class NetworkWriter {
   }
 
   // Writes a point in time in the past as a 32-bit count of milliseconds elapsed between it and now, pairing with
-  // NetworkReader::ReadTimeSinceMs32(). Writes nothing, and still returns true, if `t` is empty or if that many
+  // ProtocolReader::ReadTimeSinceMs32(). Writes nothing, and still returns true, if `t` is empty or if that many
   // elapsed milliseconds wouldn't fit in a uint32_t (see TimeSinceMs32Overflows()) — callers that need to track
   // whether a value was actually written (e.g. to set a presence flag) should check TimeSinceMs32Overflows()
   // themselves before calling this. Returns false only if writing an actual value failed.

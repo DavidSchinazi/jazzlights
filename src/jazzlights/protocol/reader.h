@@ -11,9 +11,9 @@
 
 namespace jazzlights {
 
-class NetworkReader {
+class ProtocolReader {
  public:
-  explicit NetworkReader(const uint8_t* data, size_t size) : data_(data), size_(size) {}
+  explicit ProtocolReader(const uint8_t* data, size_t size) : data_(data), size_(size) {}
 
   bool Done() const { return pos_ >= size_; }
 

@@ -199,7 +199,7 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
     jll_error("Ignoring received BLE with unexpected length %u", innerPayloadLength);
     return;
   }
-  NetworkReader reader(innerPayload, innerPayloadLength);
+  ProtocolReader reader(innerPayload, innerPayloadLength);
   NetworkMessage message;
 #if JL_IS_CONFIG(CREATURE)
   message.receiptRssi = rssi;
@@ -291,7 +291,7 @@ size_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_t
     return 0;
   }
 
-  NetworkWriter writer(innerPayload, maxInnerPayloadLength);
+  ProtocolWriter writer(innerPayload, maxInnerPayloadLength);
   if (!writer.WriteNetworkDeviceId(messageToSend_.originator)) {
     jll_error("Failed to write creature originator");
     return 0;
