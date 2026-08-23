@@ -2,6 +2,7 @@
 #define JL_UTIL_TIME_H
 
 #include <climits>
+#include <cstdint>
 #include <limits>
 #include <optional>
 
