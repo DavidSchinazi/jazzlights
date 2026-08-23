@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <optional>
 
-#include "jazzlights/network/network.h"
+#include "jazzlights/protocol/wire_types.h"
 #include "jazzlights/util/time.h"
 #include "jazzlights/util/types.h"
 

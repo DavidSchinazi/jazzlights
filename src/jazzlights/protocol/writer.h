@@ -6,10 +6,19 @@
 #include <limits>
 #include <optional>
 
-#include "jazzlights/network/network.h"
+#include "jazzlights/protocol/wire_types.h"
 #include "jazzlights/util/time.h"
 
 namespace jazzlights {
+
+// Returns whether encoding a duration as milliseconds would not fit in a uint32_t.
+inline bool DurationMs32Overflows(Microseconds durationUs) {
+  const Microseconds durationMs = durationUs / kMicrosecondsPerMillisecond;
+  return durationMs < 0 || durationMs > static_cast<Microseconds>(std::numeric_limits<uint32_t>::max());
+}
+
+// Returns whether a time is far enough in the past that the milliseconds elapsed since would not fit in a uint32_t.
+inline bool TimeSinceMs32Overflows(Microseconds pastTime) { return DurationMs32Overflows(timeMicros() - pastTime); }
 
 class ProtocolWriter {
  public:
