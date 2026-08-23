@@ -25,11 +25,15 @@ struct Frame {
 };
 
 inline void SetFrameTime(Frame& frame, Microseconds currentTime, Microseconds patternStartTime) {
-  Microseconds frameTimeUs = currentTime - patternStartTime;
-  if (frameTimeUs >= kMicrosecondsPerMillisecond * std::numeric_limits<FrameTimeMs>::max()) {
-    frame.time = std::numeric_limits<FrameTimeMs>::max();
+  if (currentTime <= patternStartTime) {
+    frame.time = 0;
   } else {
-    frame.time = static_cast<FrameTimeMs>(frameTimeUs / kMicrosecondsPerMillisecond);
+    int64_t frameTimeMs = (currentTime - patternStartTime) / kMicrosecondsPerMillisecond;
+    if (frameTimeMs >= static_cast<int64_t>(std::numeric_limits<FrameTimeMs>::max())) {
+      frame.time = std::numeric_limits<FrameTimeMs>::max();
+    } else {
+      frame.time = static_cast<FrameTimeMs>(frameTimeMs);
+    }
   }
 }
 
