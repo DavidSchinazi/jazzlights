@@ -87,7 +87,7 @@ class NetworkDeviceId {
   static constexpr size_t size() { return kNetworkDeviceIdSize; }
 
  private:
-  static constexpr size_t kNetworkDeviceIdSize = 6;
+  static inline constexpr size_t kNetworkDeviceIdSize = 6;
   uint8_t data_[kNetworkDeviceIdSize];
 };
 
