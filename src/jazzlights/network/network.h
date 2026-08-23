@@ -38,8 +38,6 @@ const char* NetworkTypeToString(NetworkType type);
 // instead of having received it.
 using NetworkId = uint32_t;
 
-class Network;
-
 #define ALL_NETWORK_STATUSES \
   X(INITIALIZING)            \
   X(CONNECTING)              \
@@ -92,8 +90,6 @@ class NetworkDeviceId {
   static constexpr size_t kNetworkDeviceIdSize = 6;
   uint8_t data_[kNetworkDeviceIdSize];
 };
-
-class Network;
 
 struct NetworkMessage {
   NetworkDeviceId sender = NetworkDeviceId();
