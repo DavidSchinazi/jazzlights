@@ -9,7 +9,7 @@
 #include "jazzlights/layout/matrix.h"
 #include "jazzlights/network/esp32_ble.h"
 #include "jazzlights/network/wifi.h"
-#include "jazzlights/orrery_common.h"
+#include "jazzlights/orrery/orrery_common.h"
 #include "jazzlights/ui/touch_button.h"
 
 namespace jazzlights {

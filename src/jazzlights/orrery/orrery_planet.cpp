@@ -1,4 +1,4 @@
-#include "jazzlights/orrery_planet.h"
+#include "jazzlights/orrery/orrery_planet.h"
 
 #if JL_IS_CONFIG(ORRERY_PLANET) && !JL_ORRERY_PLUTO
 
@@ -8,10 +8,10 @@
 #include <cstring>
 
 #include "jazzlights/effect/planet.h"
-#include "jazzlights/motor.h"
+#include "jazzlights/motor/motor.h"
 #include "jazzlights/network/max485_bus.h"
 #include "jazzlights/network/network.h"
-#include "jazzlights/orrery_common.h"
+#include "jazzlights/orrery/orrery_common.h"
 #include "jazzlights/render/player.h"
 #include "jazzlights/ui/hall_sensor.h"
 #include "jazzlights/util/log.h"

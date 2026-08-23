@@ -1,4 +1,4 @@
-#include "jazzlights/motor.h"
+#include "jazzlights/motor/motor.h"
 
 #if JL_MOTOR
 

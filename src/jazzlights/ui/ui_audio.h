@@ -13,7 +13,7 @@
 #include <optional>
 #include <vector>
 
-#include "jazzlights/audio.h"
+#include "jazzlights/audio/audio.h"
 
 namespace jazzlights {
 

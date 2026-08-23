@@ -1,4 +1,4 @@
-#include "jazzlights/orrery_leader.h"
+#include "jazzlights/orrery/orrery_leader.h"
 
 #if JL_IS_CONFIG(ORRERY_LEADER)
 
@@ -7,11 +7,11 @@
 #include <cstring>
 #include <vector>
 
-#include "jazzlights/motor.h"
+#include "jazzlights/motor/motor.h"
 #include "jazzlights/network/max485_bus.h"
 #include "jazzlights/network/network.h"
-#include "jazzlights/pseudorandom.h"
 #include "jazzlights/util/log.h"
+#include "jazzlights/util/pseudorandom.h"
 
 namespace jazzlights {
 

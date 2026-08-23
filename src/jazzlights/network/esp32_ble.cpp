@@ -12,8 +12,8 @@
 #include <string>
 #include <unordered_map>
 
-#include "jazzlights/pseudorandom.h"
 #include "jazzlights/util/log.h"
+#include "jazzlights/util/pseudorandom.h"
 
 // This is an Arduino header and in theory we shouldn't need it, but see comment near btStarted() below.
 #include <esp32-hal-bt.h>

@@ -1,7 +1,7 @@
 #include <unity.h>
 
 #include "jazzlights/network/network.h"
-#include "jazzlights/orrery_common.h"
+#include "jazzlights/orrery/orrery_common.h"
 
 namespace jazzlights {
 

@@ -9,8 +9,8 @@
 #include <cinttypes>
 #include <cstring>
 
-#include "jazzlights/audio.h"
-#include "jazzlights/palette.h"
+#include "jazzlights/audio/audio.h"
+#include "jazzlights/effect/palette.h"
 #include "jazzlights/render/player.h"
 #include "jazzlights/util/log.h"
 

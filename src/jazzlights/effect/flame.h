@@ -1,7 +1,7 @@
 #ifndef JL_EFFECT_FLAME_H
 #define JL_EFFECT_FLAME_H
 
-#include "jazzlights/palette.h"
+#include "jazzlights/effect/palette.h"
 
 namespace jazzlights {
 

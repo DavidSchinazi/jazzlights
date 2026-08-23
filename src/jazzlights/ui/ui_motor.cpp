@@ -6,7 +6,7 @@
 
 #include <functional>
 
-#include "jazzlights/motor.h"
+#include "jazzlights/motor/motor.h"
 #include "jazzlights/ui/touch_button.h"
 #include "jazzlights/util/log.h"
 

@@ -4,7 +4,7 @@
 
 #include <esp_mac.h>
 
-#include "jazzlights/pseudorandom.h"
+#include "jazzlights/util/pseudorandom.h"
 
 namespace jazzlights {
 

@@ -1,4 +1,4 @@
-#include "jazzlights/audio.h"
+#include "jazzlights/audio/audio.h"
 
 #if JL_AUDIO_VISUALIZER
 

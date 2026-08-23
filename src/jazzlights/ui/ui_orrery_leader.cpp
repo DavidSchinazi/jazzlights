@@ -7,7 +7,7 @@
 #include <cstdlib>
 #include <functional>
 
-#include "jazzlights/orrery_leader.h"
+#include "jazzlights/orrery/orrery_leader.h"
 #include "jazzlights/ui/touch_button.h"
 #include "jazzlights/util/log.h"
 

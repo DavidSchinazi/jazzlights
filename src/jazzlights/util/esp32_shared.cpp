@@ -1,4 +1,4 @@
-#include "jazzlights/esp32_shared.h"
+#include "jazzlights/util/esp32_shared.h"
 
 #ifdef ESP32
 

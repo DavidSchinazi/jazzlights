@@ -2,7 +2,7 @@
 #define JL_EFFECT_PLASMA_H
 
 #include "jazzlights/effect/effect.h"
-#include "jazzlights/palette.h"
+#include "jazzlights/effect/palette.h"
 #include "jazzlights/render/fastled_wrapper.h"
 #include "jazzlights/util/geom.h"
 

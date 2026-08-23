@@ -17,7 +17,7 @@
 #include <optional>
 #include <vector>
 
-#include "jazzlights/orrery_common.h"
+#include "jazzlights/orrery/orrery_common.h"
 #include "jazzlights/util/buffer.h"
 #include "jazzlights/util/cobs.h"
 #include "jazzlights/util/time.h"

@@ -1,4 +1,4 @@
-#include "jazzlights/orrery_common.h"
+#include "jazzlights/orrery/orrery_common.h"
 
 #include <cinttypes>
 

@@ -5,8 +5,8 @@
 
 #include <sstream>
 
-#include "jazzlights/pseudorandom.h"
 #include "jazzlights/util/log.h"
+#include "jazzlights/util/pseudorandom.h"
 #include "jazzlights/util/time.h"
 
 namespace jazzlights {

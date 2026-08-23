@@ -5,7 +5,7 @@
 #include <cmath>
 #include <cstring>
 
-#include "jazzlights/pseudorandom.h"
+#include "jazzlights/util/pseudorandom.h"
 
 namespace jazzlights {
 namespace {

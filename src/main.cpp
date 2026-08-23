@@ -12,8 +12,8 @@
 // 89 written FPS on the vests, which is currently our highest LED count. So we have it disabled for now, but could
 // enable it for other devices with different properties.
 
-#include "jazzlights/esp32_shared.h"
 #include "jazzlights/primary_runloop.h"
+#include "jazzlights/util/esp32_shared.h"
 
 #if JL_PRIMARY_RUNLOOP_ON_OTHER_CORE
 

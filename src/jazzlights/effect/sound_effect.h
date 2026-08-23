@@ -1,8 +1,8 @@
 #ifndef JL_EFFECT_SOUND_EFFECT_H
 #define JL_EFFECT_SOUND_EFFECT_H
 
-#include "jazzlights/audio.h"
-#include "jazzlights/palette.h"
+#include "jazzlights/audio/audio.h"
+#include "jazzlights/effect/palette.h"
 #include "jazzlights/render/fastled_wrapper.h"
 
 #if JL_AUDIO_VISUALIZER

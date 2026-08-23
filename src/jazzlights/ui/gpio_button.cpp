@@ -9,7 +9,7 @@
 #include <freertos/task.h>
 #include <rom/ets_sys.h>
 
-#include "jazzlights/esp32_shared.h"
+#include "jazzlights/util/esp32_shared.h"
 #include "jazzlights/util/log.h"
 
 #define JL_GPIO_DEBUG_ENABLED 0

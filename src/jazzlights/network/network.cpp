@@ -5,7 +5,7 @@
 
 #include <atomic>
 
-#include "jazzlights/orrery_common.h"
+#include "jazzlights/orrery/orrery_common.h"
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/time.h"
 #ifndef ESP32

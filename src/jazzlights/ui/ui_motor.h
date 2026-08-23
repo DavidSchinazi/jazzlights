@@ -1,7 +1,7 @@
 #ifndef JL_UI_UI_MOTOR_H
 #define JL_UI_UI_MOTOR_H
 
-#include "jazzlights/motor.h"
+#include "jazzlights/motor/motor.h"
 #include "jazzlights/util/config.h"
 
 #ifndef JL_UI_MOTOR
@@ -21,7 +21,7 @@
 #include <memory>
 #include <string>
 
-#include "jazzlights/orrery_common.h"
+#include "jazzlights/orrery/orrery_common.h"
 #include "jazzlights/ui/touch_button.h"
 #include "jazzlights/ui/ui.h"
 

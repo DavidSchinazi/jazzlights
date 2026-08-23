@@ -3,7 +3,7 @@
 
 #include <algorithm>
 
-#include "jazzlights/palette.h"
+#include "jazzlights/effect/palette.h"
 
 namespace jazzlights {
 

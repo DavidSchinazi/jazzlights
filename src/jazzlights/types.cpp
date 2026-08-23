@@ -1,6 +1,6 @@
 #include "jazzlights/types.h"
 
-#include "jazzlights/pseudorandom.h"
+#include "jazzlights/util/pseudorandom.h"
 
 namespace jazzlights {
 

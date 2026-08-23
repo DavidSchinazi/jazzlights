@@ -3,9 +3,9 @@
 #include <cstring>
 #include <iostream>
 
-#include "jazzlights/pseudorandom.h"
 #include "jazzlights/util/buffer.h"
 #include "jazzlights/util/cobs.h"
+#include "jazzlights/util/pseudorandom.h"
 
 namespace jazzlights {
 

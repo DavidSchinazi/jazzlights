@@ -6,7 +6,7 @@
 #if JL_IS_CONFIG(ORRERY_PLANET)
 
 #include "jazzlights/effect/effect.h"
-#include "jazzlights/orrery_common.h"
+#include "jazzlights/orrery/orrery_common.h"
 
 namespace jazzlights {
 

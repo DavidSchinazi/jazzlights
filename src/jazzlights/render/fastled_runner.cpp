@@ -4,9 +4,9 @@
 
 #ifdef ESP32
 
-#include "jazzlights/esp32_shared.h"
 #include "jazzlights/instrumentation.h"
 #include "jazzlights/ui/ui.h"
+#include "jazzlights/util/esp32_shared.h"
 #include "jazzlights/util/log.h"
 
 namespace jazzlights {

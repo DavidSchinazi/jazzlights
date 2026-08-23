@@ -2,9 +2,9 @@
 #define JL_EFFECT_HIPHOTIC_H
 
 #include "jazzlights/effect/effect.h"
-#include "jazzlights/palette.h"
-#include "jazzlights/pseudorandom.h"
+#include "jazzlights/effect/palette.h"
 #include "jazzlights/render/fastled_wrapper.h"
+#include "jazzlights/util/pseudorandom.h"
 
 namespace jazzlights {
 

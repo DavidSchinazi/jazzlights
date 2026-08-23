@@ -12,8 +12,8 @@
 #include <memory>
 #include <string>
 
-#include "jazzlights/orrery_common.h"
-#include "jazzlights/orrery_leader.h"
+#include "jazzlights/orrery/orrery_common.h"
+#include "jazzlights/orrery/orrery_leader.h"
 #include "jazzlights/ui/touch_button.h"
 #include "jazzlights/ui/ui.h"
 
