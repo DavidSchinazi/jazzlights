@@ -1,9 +1,9 @@
 #ifndef JL_LAYOUT_LAYOUT_H
 #define JL_LAYOUT_LAYOUT_H
 
-#include "jazzlights/types.h"
 #include "jazzlights/util/geom.h"
 #include "jazzlights/util/log.h"
+#include "jazzlights/util/types.h"
 
 namespace jazzlights {
 

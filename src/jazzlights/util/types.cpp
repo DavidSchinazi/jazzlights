@@ -1,4 +1,4 @@
-#include "jazzlights/types.h"
+#include "jazzlights/util/types.h"
 
 #include "jazzlights/util/pseudorandom.h"
 

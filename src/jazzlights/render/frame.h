@@ -4,9 +4,9 @@
 #include <vector>
 
 #include "jazzlights/render/xy_index.h"
-#include "jazzlights/types.h"
 #include "jazzlights/util/geom.h"
 #include "jazzlights/util/time.h"
+#include "jazzlights/util/types.h"
 
 namespace jazzlights {
 

@@ -9,9 +9,9 @@
 #include <optional>
 #include <string>
 
-#include "jazzlights/types.h"
 #include "jazzlights/util/config.h"
 #include "jazzlights/util/time.h"
+#include "jazzlights/util/types.h"
 
 namespace jazzlights {
 

@@ -4,7 +4,7 @@
 #include "jazzlights/effect/effect.h"
 #include "jazzlights/effect/palette.h"
 #include "jazzlights/render/fastled_wrapper.h"
-#include "jazzlights/util/math.h"
+#include "jazzlights/render/math.h"
 #include "jazzlights/util/pseudorandom.h"
 
 namespace jazzlights {

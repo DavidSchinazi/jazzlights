@@ -3,8 +3,8 @@
 
 #include <vector>
 
-#include "jazzlights/types.h"
 #include "jazzlights/util/geom.h"
+#include "jazzlights/util/types.h"
 
 namespace jazzlights {
 
