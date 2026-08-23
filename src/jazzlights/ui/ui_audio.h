@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_UI_AUDIO_H
-#define JAZZLIGHTS_UI_AUDIO_H
+#ifndef JL_UI_UI_AUDIO_H
+#define JL_UI_UI_AUDIO_H
 
 #include "jazzlights/ui/ui.h"
 #include "jazzlights/util/config.h"
@@ -60,4 +60,4 @@ class AudioVisualizerUi : public Esp32Ui {
 
 #endif  // ESP32
 
-#endif  // JAZZLIGHTS_UI_AUDIO_H
+#endif  // JL_UI_UI_AUDIO_H
