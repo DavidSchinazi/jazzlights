@@ -28,7 +28,7 @@
 #include "jazzlights/effect/sync_test.h"
 #include "jazzlights/effect/the_matrix.h"
 #include "jazzlights/effect/threesine.h"
-#include "jazzlights/instrumentation.h"
+#include "jazzlights/util/instrumentation.h"
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/pseudorandom.h"
 #include "jazzlights/util/time.h"

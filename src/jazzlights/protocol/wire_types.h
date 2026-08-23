@@ -105,6 +105,30 @@ struct NetworkMessage {
   bool operator!=(const NetworkMessage& other) const { return !(*this == other); }
 };
 
+// Interpretation of NetworkMessage::orrerySceneId.
+enum class OrreryScene : uint8_t {
+  Paused = 0,
+  Realistic = 1,
+  Align = 2,
+  Silly = 3,
+  FocusMercury = 4,
+  FocusVenus = 5,
+  FocusEarth = 6,
+  FocusMars = 7,
+  FocusJupiter = 8,
+  FocusSaturn = 9,
+  FocusUranus = 10,
+  FocusNeptune = 11,
+  FocusSun = 12,
+  MercuryRetrograde = 13,
+
+  kInvalidScene = 100,
+  kMinScene = Paused,
+  kMaxScene = MercuryRetrograde,
+};
+
+const char* OrrerySceneToString(OrreryScene scene);
+
 }  // namespace jazzlights
 
 #endif  // JL_PROTOCOL_WIRE_TYPES_H

@@ -5,7 +5,7 @@
 
 #if JL_IS_CONFIG(ORRERY_PLANET) && !JL_ORRERY_PLUTO
 
-#include "jazzlights/network/max485_bus.h"
+#include "jazzlights/orrery/max485_bus.h"
 #include "jazzlights/orrery/orrery_common.h"
 #include "jazzlights/render/player.h"
 #include "jazzlights/ui/gpio_button.h"

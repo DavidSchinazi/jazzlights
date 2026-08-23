@@ -1,5 +1,5 @@
-#ifndef JL_NETWORK_MAX485_BUS_H
-#define JL_NETWORK_MAX485_BUS_H
+#ifndef JL_ORRERY_MAX485_BUS_H
+#define JL_ORRERY_MAX485_BUS_H
 
 #include "jazzlights/util/config.h"
 
@@ -130,4 +130,4 @@ class Max485BusFollower : public Max485BusHandler {
 
 #endif  // JL_MAX485_BUS
 
-#endif  // JL_NETWORK_MAX485_BUS_H
+#endif  // JL_ORRERY_MAX485_BUS_H

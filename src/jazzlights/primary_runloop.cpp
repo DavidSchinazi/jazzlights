@@ -7,13 +7,12 @@
 #include <memory>
 #include <mutex>
 
-#include "jazzlights/instrumentation.h"
 #include "jazzlights/layout/layout_data.h"
 #include "jazzlights/motor/motor.h"
 #include "jazzlights/network/esp32_ble.h"
 #include "jazzlights/network/ethernet.h"
-#include "jazzlights/network/max485_bus.h"
 #include "jazzlights/network/wifi.h"
+#include "jazzlights/orrery/max485_bus.h"
 #include "jazzlights/orrery/orrery_common.h"
 #include "jazzlights/orrery/orrery_leader.h"
 #include "jazzlights/orrery/orrery_planet.h"
@@ -29,6 +28,7 @@
 #include "jazzlights/ui/ui_m5stick_c.h"
 #include "jazzlights/ui/ui_motor.h"
 #include "jazzlights/ui/ui_orrery_leader.h"
+#include "jazzlights/util/instrumentation.h"
 #include "jazzlights/util/log.h"
 #include "jazzlights/websocket_server.h"
 

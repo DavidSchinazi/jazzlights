@@ -1,4 +1,4 @@
-#include "jazzlights/network/max485_bus.h"
+#include "jazzlights/orrery/max485_bus.h"
 
 #if JL_MAX485_BUS
 
@@ -14,7 +14,6 @@
 #include <deque>
 #include <mutex>
 
-#include "jazzlights/network/network.h"
 #include "jazzlights/orrery/orrery_planet.h"
 #include "jazzlights/protocol/reader.h"
 #include "jazzlights/protocol/writer.h"

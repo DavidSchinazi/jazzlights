@@ -9,8 +9,7 @@
 
 #include "jazzlights/effect/planet.h"
 #include "jazzlights/motor/motor.h"
-#include "jazzlights/network/max485_bus.h"
-#include "jazzlights/network/network.h"
+#include "jazzlights/orrery/max485_bus.h"
 #include "jazzlights/orrery/orrery_common.h"
 #include "jazzlights/render/player.h"
 #include "jazzlights/ui/hall_sensor.h"

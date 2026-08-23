@@ -8,8 +8,7 @@
 #include <vector>
 
 #include "jazzlights/motor/motor.h"
-#include "jazzlights/network/max485_bus.h"
-#include "jazzlights/network/network.h"
+#include "jazzlights/orrery/max485_bus.h"
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/pseudorandom.h"
 

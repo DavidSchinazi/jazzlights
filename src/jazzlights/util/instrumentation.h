@@ -1,5 +1,5 @@
-#ifndef JL_INSTRUMENTATION_H
-#define JL_INSTRUMENTATION_H
+#ifndef JL_UTIL_INSTRUMENTATION_H
+#define JL_UTIL_INSTRUMENTATION_H
 
 #include <cstddef>
 #include <optional>
@@ -158,4 +158,4 @@ inline void ledWriteEnd() {}
 
 }  // namespace jazzlights
 
-#endif  // JL_INSTRUMENTATION_H
+#endif  // JL_UTIL_INSTRUMENTATION_H
