@@ -7,13 +7,12 @@
 
 #include "jazzlights/network/max485_bus.h"
 #include "jazzlights/orrery/orrery_common.h"
+#include "jazzlights/render/player.h"
 #include "jazzlights/ui/gpio_button.h"
 #include "jazzlights/ui/hall_sensor.h"
 #include "jazzlights/util/time.h"
 
 namespace jazzlights {
-
-class Player;
 
 class OrreryPlanet
 #if !JL_ORRERY_SUN

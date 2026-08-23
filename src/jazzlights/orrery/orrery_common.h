@@ -5,6 +5,7 @@
 #include <optional>
 #include <string>
 
+#include "jazzlights/network/network.h"
 #include "jazzlights/util/config.h"
 #include "jazzlights/util/time.h"
 #include "jazzlights/util/types.h"
@@ -33,9 +34,6 @@ enum class OrreryScene : uint8_t {
 };
 
 const char* OrrerySceneToString(OrreryScene scene);
-
-class NetworkReader;
-class NetworkWriter;
 
 enum class Planet : BusId {
   Mercury = 4,
