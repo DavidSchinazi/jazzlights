@@ -106,12 +106,12 @@ void FastLedRunner::Render() {
   player_->set_power_limited(powerAtDesiredBrightness > JL_MAX_MILLIWATTS);
   if (player_->is_power_limited()) { brightness = brightness * JL_MAX_MILLIWATTS / powerAtDesiredBrightness; }
 
-  jll_debug("pf%6" PRIu32 "    pd%5" PRIu32 "    bu%4u    bs%4" PRIu32 "    mW%5" PRIu32 "    mA%5" PRIu32 "%s",
-            powerAtFullBrightness,
-            powerAtDesiredBrightness,           // Full-brightness power, desired-brightness power.
-            player_->brightness(), brightness,  // Desired and selected brightness.
-            powerAtFullBrightness * brightness / 256,
-            powerAtFullBrightness * brightness / 256 / 5,  // Selected power & current.
+  jll_debug("pf%6lld    pd%5lld    bu%4u    bs%4lld    mW%5lld    mA%5lld%s",
+            static_cast<long long>(powerAtFullBrightness),
+            static_cast<long long>(powerAtDesiredBrightness),  // Full-brightness power, desired-brightness power.
+            player_->brightness(), static_cast<long long>(brightness),  // Desired and selected brightness.
+            static_cast<long long>(powerAtFullBrightness) * brightness / 256,
+            static_cast<long long>(powerAtFullBrightness) * brightness / 256 / 5,  // Selected power & current.
             player_->is_power_limited() ? " (limited)" : "");
 #endif  // JL_MAX_MILLIWATTS
 

@@ -251,11 +251,11 @@ void Esp32WiFiNetwork::HandleNetworkEvent(const Esp32WiFiNetworkEvent& networkEv
     case Esp32WiFiNetworkEvent::Type::kStationDisconnected:
       reconnectCount_++;
       if (reconnectCount_ < kNumReconnectsBeforeDelay) {
-        jll_info("Esp32WiFiNetwork queue station disconnected (count %" PRIu32 ") - reconnecting immediately",
-                 reconnectCount_);
+        jll_info("Esp32WiFiNetwork queue station disconnected (count %lld) - reconnecting immediately",
+                 static_cast<long long>(reconnectCount_));
         esp_wifi_connect();
       } else {
-        jll_info("Esp32WiFiNetwork queue station disconnected (count %" PRIu32 ")", reconnectCount_);
+        jll_info("Esp32WiFiNetwork queue station disconnected (count %lld)", static_cast<long long>(reconnectCount_));
         shouldArmQueueReconnectionTimeout_ = true;
       }
       break;
@@ -290,7 +290,7 @@ void Esp32WiFiNetwork::RunTask() {
       shouldArmQueueReconnectionTimeout_ = false;
       // Backoff exponentially from 1s to 32s.
       queueDelay = 1 << std::min<uint32_t>(reconnectCount_ - kNumReconnectsBeforeDelay, 5);
-      jll_info("Esp32WiFiNetwork waiting for queue event with %" PRIu32 "s timeout", queueDelay);
+      jll_info("Esp32WiFiNetwork waiting for queue event with %llds timeout", static_cast<long long>(queueDelay));
       queueDelay *= 1000 / portTICK_PERIOD_MS;
     } else {
       jll_info("Esp32WiFiNetwork waiting for queue event forever");

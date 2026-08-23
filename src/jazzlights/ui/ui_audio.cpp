@@ -111,7 +111,7 @@ void AudioVisualizerUi::RunLoop() {
           if (keypad_has_value_) {
             if (keypad_value_ > 255) keypad_value_ = 255;
             player_.set_brightness(keypad_value_);
-            jll_info("Set brightness to %" PRId32, keypad_value_);
+            jll_info("Set brightness to %d", keypad_value_);
           }
           visualization_mode_ = VisualizationMode::kMenu;
           M5.Display.fillScreen(BLACK);
@@ -249,7 +249,7 @@ void AudioVisualizerUi::RunLoop() {
     M5.Display.fillRect(w + 2, 2, screen_width_ - w - 4, h - 4, BLACK);
     char buf[64];
     if (keypad_has_value_) {
-      snprintf(buf, sizeof(buf), "%" PRId32, keypad_value_);
+      snprintf(buf, sizeof(buf), "%d", keypad_value_);
     } else {
       snprintf(buf, sizeof(buf), "_ (curr %u)", player_.brightness());
     }

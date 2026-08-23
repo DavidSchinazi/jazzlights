@@ -179,42 +179,31 @@ bool ReadOrreryMessage(NetworkReader& reader, OrreryMessage* msg) {
 
 std::string OrreryMessageToString(const OrreryMessage& msg) {
   char buf[512];
-  int n = snprintf(buf, sizeof(buf), "%s seq=%" PRIu32 " boot=%08" PRIx32,
+  int n = snprintf(buf, sizeof(buf), "%s seq=%u boot=%08x",
                    msg.type == OrreryMessageType::LeaderCommand ? "LeaderCommand" : "FollowerResponse",
-                   static_cast<uint32_t>(msg.leaderSequenceNumber), static_cast<uint32_t>(msg.leaderBootId));
-  if (msg.speed) { n += snprintf(buf + n, sizeof(buf) - n, " speed=%" PRId32, static_cast<int32_t>(*msg.speed)); }
-  if (msg.position) { n += snprintf(buf + n, sizeof(buf) - n, " pos=%" PRIu32, static_cast<uint32_t>(*msg.position)); }
+                   static_cast<unsigned int>(msg.leaderSequenceNumber), static_cast<unsigned int>(msg.leaderBootId));
+  if (msg.speed) { n += snprintf(buf + n, sizeof(buf) - n, " speed=%d", static_cast<int>(*msg.speed)); }
+  if (msg.position) { n += snprintf(buf + n, sizeof(buf) - n, " pos=%u", static_cast<unsigned int>(*msg.position)); }
   if (msg.calibration) {
-    n += snprintf(buf + n, sizeof(buf) - n, " cal=%" PRIu32, static_cast<uint32_t>(*msg.calibration));
+    n += snprintf(buf + n, sizeof(buf) - n, " cal=%u", static_cast<unsigned int>(*msg.calibration));
   }
   if (msg.timeHallSensorLastOpened) {
-    n += snprintf(buf + n, sizeof(buf) - n, " lastOpen=%" PRId64 "s_ago",
-                  static_cast<int64_t>((timeMicros() - *msg.timeHallSensorLastOpened) / kMicrosecondsPerSecond));
+    n += snprintf(buf + n, sizeof(buf) - n, " lastOpen=%llds_ago", SecondsSinceForLogs(*msg.timeHallSensorLastOpened));
   }
   if (msg.timeHallSensorLastClosed) {
-    n += snprintf(buf + n, sizeof(buf) - n, " lastClosed=%" PRId64 "s_ago",
-                  static_cast<int64_t>((timeMicros() - *msg.timeHallSensorLastClosed) / kMicrosecondsPerSecond));
+    n +=
+        snprintf(buf + n, sizeof(buf) - n, " lastClosed=%llds_ago", SecondsSinceForLogs(*msg.timeHallSensorLastClosed));
   }
   if (msg.lastOpenDuration) {
-    n += snprintf(buf + n, sizeof(buf) - n, " openDur=%" PRId64 "ms",
-                  static_cast<int64_t>(*msg.lastOpenDuration / kMicrosecondsPerMillisecond));
+    n += snprintf(buf + n, sizeof(buf) - n, " openDur=%lldms", MsForLogs(*msg.lastOpenDuration));
   }
   if (msg.lastClosedDuration) {
-    n += snprintf(buf + n, sizeof(buf) - n, " closedDur=%" PRId64 "ms",
-                  static_cast<int64_t>(*msg.lastClosedDuration / kMicrosecondsPerMillisecond));
+    n += snprintf(buf + n, sizeof(buf) - n, " closedDur=%lldms", MsForLogs(*msg.lastClosedDuration));
   }
-  if (msg.ledPattern) {
-    n += snprintf(buf + n, sizeof(buf) - n, " pattern=%08" PRIx32, static_cast<uint32_t>(*msg.ledPattern));
-  }
-  if (msg.ledBrightness) {
-    n += snprintf(buf + n, sizeof(buf) - n, " brightness=%u", static_cast<unsigned int>(*msg.ledBrightness));
-  }
-  if (msg.ledBasePrecedence) {
-    n += snprintf(buf + n, sizeof(buf) - n, " basePrec=%u", static_cast<unsigned int>(*msg.ledBasePrecedence));
-  }
-  if (msg.ledPrecedenceGain) {
-    n += snprintf(buf + n, sizeof(buf) - n, " precGain=%u", static_cast<unsigned int>(*msg.ledPrecedenceGain));
-  }
+  if (msg.ledPattern) { n += snprintf(buf + n, sizeof(buf) - n, " pattern=%08x", *msg.ledPattern); }
+  if (msg.ledBrightness) { n += snprintf(buf + n, sizeof(buf) - n, " brightness=%u", *msg.ledBrightness); }
+  if (msg.ledBasePrecedence) { n += snprintf(buf + n, sizeof(buf) - n, " basePrec=%u", *msg.ledBasePrecedence); }
+  if (msg.ledPrecedenceGain) { n += snprintf(buf + n, sizeof(buf) - n, " precGain=%u", *msg.ledPrecedenceGain); }
   return std::string(buf);
 }
 

@@ -316,8 +316,8 @@ void OrreryPlanet::RunLoop() {
         } else {
           const int32_t targetFrequency = std::round((*msg.speed / 60000.0f) * stepsPerRev_);
           if (targetFrequency != requestedSpeed_) {
-            jll_info("Planet %s requested milli-RPM %" PRId32 " (target frequency %" PRId32 "Hz)", ourPlanetName,
-                     *msg.speed, targetFrequency);
+            jll_info("Planet %s requested milli-RPM %lld (target frequency %lldHz)", ourPlanetName,
+                     static_cast<long long>(*msg.speed), static_cast<long long>(targetFrequency));
             requestedSpeed_ = targetFrequency;
           }
         }
@@ -330,14 +330,15 @@ void OrreryPlanet::RunLoop() {
             arrivedAtTarget_ = false;
           }
         } else if (!targetPosition_ || *msg.position != *targetPosition_) {
-          jll_info("Planet %s requested position %" PRIu32, ourPlanetName, *msg.position);
+          jll_info("Planet %s requested position %lld", ourPlanetName, static_cast<long long>(*msg.position));
           targetPosition_ = msg.position;
           arrivedAtTarget_ = false;
         }
       }
       if (msg.calibration && !currentState_.calibration) {
         if (static_cast<float>(*msg.calibration) != stepsPerRev_) {
-          jll_info("Planet %s applying calibration %" PRIu32 " from leader", ourPlanetName, *msg.calibration);
+          jll_info("Planet %s applying calibration %lld from leader", ourPlanetName,
+                   static_cast<long long>(*msg.calibration));
           stepsPerRev_ = *msg.calibration;
         }
       }

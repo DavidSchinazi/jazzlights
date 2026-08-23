@@ -117,7 +117,7 @@ class OrreryLeaderUi : public Esp32Ui {
   bool sceneSubmenuActive_ = false;
   bool hallSensorSubmenuActive_ = false;
   bool statusSubmenuActive_ = false;
-  int32_t keypadValue_ = 0;
+  int keypadValue_ = 0;
   bool keypadHasValue_ = false;
   Planet currentPlanet_ = Planet::Mercury;
   std::optional<uint32_t> targetPosition_;

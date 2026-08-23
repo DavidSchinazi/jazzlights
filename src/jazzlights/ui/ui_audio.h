@@ -30,7 +30,7 @@ class AudioVisualizerUi : public Esp32Ui {
   int screen_height_;
   enum class VisualizationMode { kMenu, kSpectrum, kWaveform, kBrightnessKeypad, kPaletteMenu };
   VisualizationMode visualization_mode_ = VisualizationMode::kSpectrum;
-  int32_t keypad_value_ = 0;
+  int keypad_value_ = 0;
   bool keypad_has_value_ = false;
   std::vector<float> waveform_buffer_;
   std::vector<bool> beat_buffer_;

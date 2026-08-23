@@ -800,19 +800,19 @@ void OrreryLeaderUi::DrawSpeedDisplayButton(TouchButton* button, int /*outline*/
   const char* valueStr = keypadHasValue_ ? "" : "_";
   if (editingBrightness_) {
     if (keypadHasValue_) {
-      snprintf(label, sizeof(label), "Brightness: %" PRId32, keypadValue_);
+      snprintf(label, sizeof(label), "Brightness: %d", keypadValue_);
     } else {
       snprintf(label, sizeof(label), "Brightness: _");
     }
   } else if (editingOffset_) {
     if (keypadHasValue_) {
-      snprintf(label, sizeof(label), "Offset: %" PRId32, keypadValue_);
+      snprintf(label, sizeof(label), "Offset: %d", keypadValue_);
     } else {
       snprintf(label, sizeof(label), "Offset: _");
     }
   } else if (editingPosition_) {
     if (keypadHasValue_) {
-      snprintf(label, sizeof(label), "Pos: %" PRId32, keypadValue_);
+      snprintf(label, sizeof(label), "Pos: %d", keypadValue_);
     } else {
       snprintf(label, sizeof(label), "Pos: _");
     }
