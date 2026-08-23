@@ -728,11 +728,9 @@ void OrreryLeaderUi::UpdateStatusSubmenu() {
     if (lastHeard) {
       if (maxRtt) {
         snprintf(label, sizeof(label), "%s: %llds ago, max %lldms", GetPlanetName(planet),
-                 static_cast<long long>((timeMicros() - *lastHeard) / kMicrosecondsPerSecond),
-                 static_cast<long long>(*maxRtt / kMicrosecondsPerMillisecond));
+                 SecondsSinceForLogs(*lastHeard), MsForLogs(*maxRtt));
       } else {
-        snprintf(label, sizeof(label), "%s: %llds ago", GetPlanetName(planet),
-                 static_cast<long long>((timeMicros() - *lastHeard) / kMicrosecondsPerSecond));
+        snprintf(label, sizeof(label), "%s: %llds ago", GetPlanetName(planet), SecondsSinceForLogs(*lastHeard));
       }
     } else {
       snprintf(label, sizeof(label), "%s: Never heard", GetPlanetName(planet));
@@ -768,32 +766,28 @@ void OrreryLeaderUi::UpdateHallSensorSubmenu() {
 
   char label[64];
   if (lastOpened) {
-    snprintf(label, sizeof(label), "Last Opened: %llds ago",
-             static_cast<long long>((timeMicros() - *lastOpened) / kMicrosecondsPerSecond));
+    snprintf(label, sizeof(label), "Last Opened: %llds ago", SecondsSinceForLogs(*lastOpened));
   } else {
     snprintf(label, sizeof(label), "Last Opened: Unknown");
   }
   hallSensorInfoButtons_[0]->SetLabelText(label);
 
   if (lastClosed) {
-    snprintf(label, sizeof(label), "Last Closed: %llds ago",
-             static_cast<long long>((timeMicros() - *lastClosed) / kMicrosecondsPerSecond));
+    snprintf(label, sizeof(label), "Last Closed: %llds ago", SecondsSinceForLogs(*lastClosed));
   } else {
     snprintf(label, sizeof(label), "Last Closed: Unknown");
   }
   hallSensorInfoButtons_[1]->SetLabelText(label);
 
   if (lastOpenDuration) {
-    snprintf(label, sizeof(label), "Last Open Dur: %lldms",
-             static_cast<long long>(*lastOpenDuration / kMicrosecondsPerMillisecond));
+    snprintf(label, sizeof(label), "Last Open Dur: %lldms", MsForLogs(*lastOpenDuration));
   } else {
     snprintf(label, sizeof(label), "Last Open Dur: Unknown");
   }
   hallSensorInfoButtons_[2]->SetLabelText(label);
 
   if (lastClosedDuration) {
-    snprintf(label, sizeof(label), "Last Closed Dur: %lldms",
-             static_cast<long long>(*lastClosedDuration / kMicrosecondsPerMillisecond));
+    snprintf(label, sizeof(label), "Last Closed Dur: %lldms", MsForLogs(*lastClosedDuration));
   } else {
     snprintf(label, sizeof(label), "Last Closed Dur: Unknown");
   }

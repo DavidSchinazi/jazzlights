@@ -92,7 +92,6 @@ std::string WiFiReasonToString(uint8_t reason) {
 }  // namespace
 
 std::string Esp32WiFiNetwork::getStatusStr() {
-  const Microseconds currentTime = timeMicros();
   struct in_addr localAddress = {};
   {
     const std::lock_guard<std::mutex> lock(mutex_);
@@ -107,7 +106,7 @@ std::string Esp32WiFiNetwork::getStatusStr() {
     }
     char statStr[100] = {};
     snprintf(statStr, sizeof(statStr) - 1, "%s %s - %lldms", WiFiSsid(), addressString,
-             static_cast<long long>(lastRcv ? (currentTime - *lastRcv) / kMicrosecondsPerMillisecond : -1));
+             lastRcv ? MsSinceForLogs(*lastRcv) : -1);
     return std::string(statStr);
   } else {
     return "disconnected";

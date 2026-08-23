@@ -34,6 +34,17 @@ Microseconds timeMicros() {
   return MicrosecondsSinceBoot() + kTimeStartOffset;
 }
 
-long long MillisecondsSinceBootForLogging() { return MicrosecondsSinceBoot() / kMicrosecondsPerMillisecond; }
+long long MsForLogs(Microseconds duration) { return static_cast<long long>(duration / kMicrosecondsPerMillisecond); }
+
+long long MsSinceBootForLogs() { return MsForLogs(MicrosecondsSinceBoot()); }
+
+long long MsSinceForLogs(Microseconds epoch, OptionalMicroseconds currentTime) {
+  return MsForLogs(currentTime.value_or(timeMicros()) - epoch);
+}
+
+long long SecondsForLogs(Microseconds duration) { return static_cast<long long>(duration / kMicrosecondsPerSecond); }
+long long SecondsSinceForLogs(Microseconds epoch, OptionalMicroseconds currentTime) {
+  return SecondsForLogs(currentTime.value_or(timeMicros()) - epoch);
+}
 
 }  // namespace jazzlights

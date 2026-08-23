@@ -44,9 +44,8 @@ int runMain(int argc, char** argv) {
       Microseconds timeSpentComputingThisEpoch;
       Microseconds epochDuration;
       player.GenerateFPSReport(&fpsCompute, &fpsWrites, &utilization, &timeSpentComputingThisEpoch, &epochDuration);
-      jll_info("%u FPS %u%% %lld/%lldms", fpsCompute, utilization,
-               static_cast<long long>(timeSpentComputingThisEpoch / kMicrosecondsPerMillisecond),
-               static_cast<long long>(epochDuration / kMicrosecondsPerMillisecond));
+      jll_info("%u FPS %u%% %lld/%lldms", fpsCompute, utilization, MsForLogs(timeSpentComputingThisEpoch),
+               MsForLogs(epochDuration));
       lastFpsEpochTime = currentTime;
     }
     player.render();

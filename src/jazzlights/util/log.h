@@ -49,7 +49,7 @@ void SetupLogging();
 #define _JL_LOG_LEVEL_STRING_FATAL "F"
 
 #define _LOG_AT_LEVEL(levelStr, format, ...) \
-  ::printf("[%6lld][" levelStr "] " format "\n", MillisecondsSinceBootForLogging(), ##__VA_ARGS__)
+  ::printf("[%6lld][" levelStr "] " format "\n", MsSinceBootForLogs(), ##__VA_ARGS__)
 
 #define _LOG_BUFFER_AT_LEVEL(levelStr, buffer, format, ...)                            \
   do {                                                                                 \

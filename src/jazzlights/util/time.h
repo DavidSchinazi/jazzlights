@@ -114,7 +114,12 @@ class OptionalMicroseconds {
 // Get monotonically increasing time in microseconds.
 Microseconds timeMicros();
 
-long long MillisecondsSinceBootForLogging();
+long long MsForLogs(Microseconds duration);
+long long MsSinceBootForLogs();
+long long MsSinceForLogs(Microseconds epoch, OptionalMicroseconds currentTime = std::nullopt);
+
+long long SecondsForLogs(Microseconds duration);
+long long SecondsSinceForLogs(Microseconds epoch, OptionalMicroseconds currentTime = std::nullopt);
 
 inline constexpr Microseconds kMicrosecondsPerMillisecond = 1000;
 inline constexpr Microseconds kMicrosecondsPerSecond = 1000000;

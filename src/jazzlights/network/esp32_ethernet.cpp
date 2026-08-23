@@ -63,7 +63,6 @@ constexpr int kEthernetPinInterrupt = 21;  // Fake because -1 isn't supported in
 }  // namespace
 
 std::string Esp32EthernetNetwork::getStatusStr() {
-  const Microseconds currentTime = timeMicros();
   struct in_addr localAddress = {};
   {
     const std::lock_guard<std::mutex> lock(mutex_);
@@ -77,8 +76,7 @@ std::string Esp32EthernetNetwork::getStatusStr() {
       jll_fatal("Esp32EthernetNetwork printing local address failed with error %d: %s", errno, strerror(errno));
     }
     char statStr[100] = {};
-    snprintf(statStr, sizeof(statStr) - 1, "%s - %lldms", addressString,
-             static_cast<long long>(lastRcv ? (currentTime - *lastRcv) / kMicrosecondsPerMillisecond : -1));
+    snprintf(statStr, sizeof(statStr) - 1, "%s - %lldms", addressString, lastRcv ? MsSinceForLogs(*lastRcv) : -1);
     return std::string(statStr);
   } else {
     return "disconnected";

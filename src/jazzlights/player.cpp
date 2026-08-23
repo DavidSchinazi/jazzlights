@@ -897,19 +897,17 @@ void Player::checkLeaderAndPattern() {
       Microseconds timeSpentComputingThisEpoch;
       Microseconds epochDuration;
       GenerateFPSReport(&fpsCompute, &fpsWrites, &utilization, &timeSpentComputingThisEpoch, &epochDuration);
-      jll_player_info("Following " DEVICE_ID_FMT
-                      ".p%u nh=%u %s new currentPattern %s (%08x)%s computed %u FPS wrote %u FPS %u%% %lld/%lldms",
-                      DEVICE_ID_HEX(originator), precedence, currentNumHops_,
-                      NetworkTypeToString(followedNextHopNetworkType_), patternName(currentPattern_, *this).c_str(),
-                      currentPattern_,
+      jll_player_info(
+          "Following " DEVICE_ID_FMT
+          ".p%u nh=%u %s new currentPattern %s (%08x)%s computed %u FPS wrote %u FPS %u%% %lld/%lldms",
+          DEVICE_ID_HEX(originator), precedence, currentNumHops_, NetworkTypeToString(followedNextHopNetworkType_),
+          patternName(currentPattern_, *this).c_str(), currentPattern_,
 #if JL_IS_CONFIG(CREATURE) || JL_IS_CONFIG(ORRERY_PLANET)
-                      (creatureIsFollowingNonCreature_ ? " creatureFollowing" : " creatureIgnoring"),
+          (creatureIsFollowingNonCreature_ ? " creatureFollowing" : " creatureIgnoring"),
 #else   // CREATURE
-                      "",
+          "",
 #endif  // CREATURE
-                      fpsCompute, fpsWrites, utilization,
-                      static_cast<long long>(timeSpentComputingThisEpoch / kMicrosecondsPerMillisecond),
-                      static_cast<long long>(epochDuration / kMicrosecondsPerMillisecond));
+          fpsCompute, fpsWrites, utilization, MsForLogs(timeSpentComputingThisEpoch), MsForLogs(epochDuration));
       printInstrumentationInfo();
       lastLEDWriteTime_.reset();
       shouldBeginPattern_ = true;
@@ -953,9 +951,8 @@ void Player::checkLeaderAndPattern() {
       jll_player_info("We (" DEVICE_ID_FMT
                       ".p%u) are leading, new currentPattern %s (%08x) computed %u FPS wrote %u FPS %u%% %lld/%lldms",
                       DEVICE_ID_HEX(localDeviceId_), precedence, patternName(currentPattern_, *this).c_str(),
-                      currentPattern_, fpsCompute, fpsWrites, utilization,
-                      static_cast<long long>(timeSpentComputingThisEpoch / kMicrosecondsPerMillisecond),
-                      static_cast<long long>(epochDuration / kMicrosecondsPerMillisecond));
+                      currentPattern_, fpsCompute, fpsWrites, utilization, MsForLogs(timeSpentComputingThisEpoch),
+                      MsForLogs(epochDuration));
       printInstrumentationInfo();
       lastLEDWriteTime_.reset();
       shouldBeginPattern_ = true;
@@ -1059,16 +1056,15 @@ void Player::handleReceivedMessage(NetworkMessage message) {
     entry->numHops = receiptNumHops;
     entry->retracted = false;
     entry->patternStartTimeMovementCounter = 0;
-    jll_player_info(
-        "Adding " DEVICE_ID_FMT ".p%u entry via " DEVICE_ID_FMT
-        ".%s"
-        " nh %u ot %lldms current %s (%08x) next %s (%08x) elapsed %lldms",
-        DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(entry->nextHopDevice),
-        NetworkTypeToString(entry->nextHopNetworkType), entry->numHops,
-        static_cast<long long>((currentTime - entry->lastOriginationTime) / kMicrosecondsPerMillisecond),
-        patternName(entry->currentPattern, *this).c_str(), entry->currentPattern,
-        patternName(entry->nextPattern, *this).c_str(), entry->nextPattern,
-        static_cast<long long>((currentTime - entry->currentPatternStartTime) / kMicrosecondsPerMillisecond));
+    jll_player_info("Adding " DEVICE_ID_FMT ".p%u entry via " DEVICE_ID_FMT
+                    ".%s"
+                    " nh %u ot %lldms current %s (%08x) next %s (%08x) elapsed %lldms",
+                    DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(entry->nextHopDevice),
+                    NetworkTypeToString(entry->nextHopNetworkType), entry->numHops,
+                    MsSinceForLogs(entry->lastOriginationTime, currentTime),
+                    patternName(entry->currentPattern, *this).c_str(), entry->currentPattern,
+                    patternName(entry->nextPattern, *this).c_str(), entry->nextPattern,
+                    MsSinceForLogs(entry->currentPatternStartTime, currentTime));
   } else {
     // The concept behind this is that we build a tree rooted at each originator
     // using a variant of the Bellman-Ford algorithm. We then only ever listen
@@ -1083,26 +1079,24 @@ void Player::handleReceivedMessage(NetworkMessage message) {
     if (entry->nextHopDevice != message.sender || entry->nextHopNetworkId != message.receiptNetworkId) {
       bool changeNextHop = false;
       if (receiptNumHops < entry->numHops) {
-        jll_player_info(
-            "Switching " DEVICE_ID_FMT ".p%u entry via " DEVICE_ID_FMT
-            ".%s "
-            "nh %u ot %lldms to better nextHop " DEVICE_ID_FMT ".%s nh %u ot %lldms due to nextHops",
-            DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(entry->nextHopDevice),
-            NetworkTypeToString(entry->nextHopNetworkType), entry->numHops,
-            static_cast<long long>((currentTime - entry->lastOriginationTime) / kMicrosecondsPerMillisecond),
-            DEVICE_ID_HEX(message.sender), NetworkTypeToString(message.receiptNetworkType), receiptNumHops,
-            static_cast<long long>((currentTime - message.lastOriginationTime) / kMicrosecondsPerMillisecond));
+        jll_player_info("Switching " DEVICE_ID_FMT ".p%u entry via " DEVICE_ID_FMT
+                        ".%s "
+                        "nh %u ot %lldms to better nextHop " DEVICE_ID_FMT ".%s nh %u ot %lldms due to nextHops",
+                        DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(entry->nextHopDevice),
+                        NetworkTypeToString(entry->nextHopNetworkType), entry->numHops,
+                        MsSinceForLogs(entry->lastOriginationTime, currentTime), DEVICE_ID_HEX(message.sender),
+                        NetworkTypeToString(message.receiptNetworkType), receiptNumHops,
+                        MsSinceForLogs(message.lastOriginationTime, currentTime));
         changeNextHop = true;
       } else if (message.lastOriginationTime > entry->lastOriginationTime + kOriginationTimeOverride) {
-        jll_player_info(
-            "Switching " DEVICE_ID_FMT ".p%u entry via " DEVICE_ID_FMT
-            ".%s "
-            "nh %u ot %lldms to better nextHop " DEVICE_ID_FMT ".%s nh %u ot %lldms due to originationTime",
-            DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(entry->nextHopDevice),
-            NetworkTypeToString(entry->nextHopNetworkType), entry->numHops,
-            static_cast<long long>((currentTime - entry->lastOriginationTime) / kMicrosecondsPerMillisecond),
-            DEVICE_ID_HEX(message.sender), NetworkTypeToString(message.receiptNetworkType), receiptNumHops,
-            static_cast<long long>((currentTime - message.lastOriginationTime) / kMicrosecondsPerMillisecond));
+        jll_player_info("Switching " DEVICE_ID_FMT ".p%u entry via " DEVICE_ID_FMT
+                        ".%s "
+                        "nh %u ot %lldms to better nextHop " DEVICE_ID_FMT ".%s nh %u ot %lldms due to originationTime",
+                        DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(entry->nextHopDevice),
+                        NetworkTypeToString(entry->nextHopNetworkType), entry->numHops,
+                        MsSinceForLogs(entry->lastOriginationTime, currentTime), DEVICE_ID_HEX(message.sender),
+                        NetworkTypeToString(message.receiptNetworkType), receiptNumHops,
+                        MsSinceForLogs(message.lastOriginationTime, currentTime));
         changeNextHop = true;
       }
       if (changeNextHop) {
@@ -1136,7 +1130,7 @@ void Player::handleReceivedMessage(NetworkMessage message) {
       static constexpr int8_t kPatternStartTimeMovementThreshold = 5;
       if (entry->currentPatternStartTime > message.currentPatternStartTime) {
         const Microseconds timeDelta = entry->currentPatternStartTime - message.currentPatternStartTime;
-        const long long timeDeltaMs = static_cast<long long>(timeDelta / kMicrosecondsPerMillisecond);
+        const long long timeDeltaMs = MsForLogs(timeDelta);
         if (shouldUpdateStartTime || timeDelta >= kPatternStartTimeDeltaMax) {
           changes << ", elapsedTime -= " << timeDeltaMs;
           shouldUpdateStartTime = true;
@@ -1162,7 +1156,7 @@ void Player::handleReceivedMessage(NetworkMessage message) {
         }
       } else if (entry->currentPatternStartTime < message.currentPatternStartTime) {
         const Microseconds timeDelta = message.currentPatternStartTime - entry->currentPatternStartTime;
-        const long long timeDeltaMs = static_cast<long long>(timeDelta / kMicrosecondsPerMillisecond);
+        const long long timeDeltaMs = MsForLogs(timeDelta);
         if (timeDelta > kEffectDuration - kEffectDuration / 10 && entry->originator == currentLeader_) {
           shouldBeginPattern_ = true;
         }
@@ -1194,9 +1188,7 @@ void Player::handleReceivedMessage(NetworkMessage message) {
         }
       }
       if (entry->lastOriginationTime > message.lastOriginationTime) {
-        changes << ", originationTime -= "
-                << static_cast<long long>((entry->lastOriginationTime - message.lastOriginationTime) /
-                                          kMicrosecondsPerMillisecond);
+        changes << ", originationTime -= " << MsSinceForLogs(message.lastOriginationTime, entry->lastOriginationTime);
       }  // Do not log increases to origination time since all originated messages cause it.
       if (entry->retracted) { changes << ", unretracted"; }
       entry->precedence = message.precedence;
@@ -1288,8 +1280,7 @@ void Player::SetOrrerySceneIdToSend(std::optional<OrrerySceneId> orrerySceneIdTo
   orrerySceneIdToSend_ = orrerySceneIdToSend;
   if (orrerySceneIdToSend_) {
     lastOrrerySceneIdSetTime_ = timeMicros();
-    jll_info("%lld Start sending orrery scene ID %d", static_cast<long long>(*lastOrrerySceneIdSetTime_),
-             static_cast<int>(*orrerySceneIdToSend_));
+    jll_info("Start sending orrery scene ID %d", static_cast<int>(*orrerySceneIdToSend_));
   } else {
     lastOrrerySceneIdSetTime_.reset();
   }

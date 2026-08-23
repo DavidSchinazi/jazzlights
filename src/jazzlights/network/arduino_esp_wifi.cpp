@@ -259,7 +259,6 @@ void ArduinoEspWiFiNetwork::send(void* buf, size_t bufsize) {
 }
 
 std::string ArduinoEspWiFiNetwork::getStatusStr() {
-  const Microseconds currentTime = timeMicros();
   switch (getStatus()) {
     case INITIALIZING: return "init";
     case CONNECTING: return "connecting";
@@ -269,7 +268,7 @@ std::string ArduinoEspWiFiNetwork::getStatusStr() {
       const OptionalMicroseconds lastRcv = getLastReceiveTime();
       char statStr[100] = {};
       snprintf(statStr, sizeof(statStr) - 1, "%s %u.%u.%u.%u - %lldms", WiFiSsid(), ip[0], ip[1], ip[2], ip[3],
-               static_cast<long long>(lastRcv ? (currentTime - *lastRcv) / kMicrosecondsPerMillisecond : -1));
+               lastRcv ? MsSinceForLogs(*lastRcv) : -1);
       return std::string(statStr);
     }
   }
