@@ -3,9 +3,9 @@
 
 #include <algorithm>
 
-#include "jazzlights/config.h"
 #include "jazzlights/effect/effect.h"
 #include "jazzlights/layout/layout_data_clouds.h"
+#include "jazzlights/util/config.h"
 
 #if JL_IS_CONFIG(CLOUDS)
 

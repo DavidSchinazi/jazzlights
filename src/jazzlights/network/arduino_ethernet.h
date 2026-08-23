@@ -1,7 +1,7 @@
 #ifndef JL_NETWORK_ARDUINO_ETHERNET_H
 #define JL_NETWORK_ARDUINO_ETHERNET_H
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #if JL_ETHERNET && !JL_ESP32_ETHERNET
 

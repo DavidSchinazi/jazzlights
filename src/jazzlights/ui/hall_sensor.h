@@ -1,7 +1,7 @@
 #ifndef JL_UI_HALL_SENSOR_H
 #define JL_UI_HALL_SENSOR_H
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #if JL_HALL_SENSOR
 

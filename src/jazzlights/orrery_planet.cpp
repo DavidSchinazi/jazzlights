@@ -12,7 +12,7 @@
 #include "jazzlights/network/max485_bus.h"
 #include "jazzlights/network/network.h"
 #include "jazzlights/orrery_common.h"
-#include "jazzlights/player.h"
+#include "jazzlights/render/player.h"
 #include "jazzlights/ui/hall_sensor.h"
 #include "jazzlights/util/log.h"
 

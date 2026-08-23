@@ -17,9 +17,9 @@
 
 #include <sstream>
 
-#include "jazzlights/config.h"
 #include "jazzlights/esp32_shared.h"
 #include "jazzlights/pseudorandom.h"
+#include "jazzlights/util/config.h"
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/time.h"
 

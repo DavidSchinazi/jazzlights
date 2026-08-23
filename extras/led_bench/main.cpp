@@ -1,4 +1,4 @@
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 // This file hasn't been designed with a build file yet.
 // To use it, copy it to src/main.cpp and run on ESP32.
@@ -27,7 +27,7 @@
 
 #ifdef ESP32
 
-#include "jazzlights/fastled_wrapper.h"
+#include "jazzlights/render/fastled_wrapper.h"
 
 #define ALLOCATE_LED(n, num)         \
   constexpr size_t numLeds##n = num; \

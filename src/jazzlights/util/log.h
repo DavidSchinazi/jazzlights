@@ -7,7 +7,7 @@
 #include <cstdlib>
 #include <mutex>
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #if JL_M5_LOGGING
 

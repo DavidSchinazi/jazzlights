@@ -1,7 +1,7 @@
 #ifndef JL_FASTLED_RUNNER_H
 #define JL_FASTLED_RUNNER_H
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #ifdef ESP32
 
@@ -11,10 +11,10 @@
 #include <mutex>
 #include <vector>
 
-#include "jazzlights/fastled_renderer.h"
-#include "jazzlights/fastled_wrapper.h"
-#include "jazzlights/player.h"
-#include "jazzlights/renderer.h"
+#include "jazzlights/render/fastled_renderer.h"
+#include "jazzlights/render/fastled_wrapper.h"
+#include "jazzlights/render/player.h"
+#include "jazzlights/render/renderer.h"
 
 #if JL_IS_CONTROLLER(ATOM_MATRIX)
 #define JL_FASTLED_RUNNER_HAS_UI 1

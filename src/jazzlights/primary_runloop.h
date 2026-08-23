@@ -1,7 +1,7 @@
 #ifndef JL_PRIMARY_RUNLOOP_H
 #define JL_PRIMARY_RUNLOOP_H
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #ifdef ESP32
 

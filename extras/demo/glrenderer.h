@@ -2,7 +2,7 @@
 #define JL_EXTRAS_DEMO_GLRENDERER_H
 
 #include "jazzlights/layout/layout.h"
-#include "jazzlights/renderer.h"
+#include "jazzlights/render/renderer.h"
 
 namespace jazzlights {
 

@@ -1,7 +1,7 @@
 #ifndef JL_NETWORK_ESP32_ETHERNET_H
 #define JL_NETWORK_ESP32_ETHERNET_H
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #if JL_ESP32_ETHERNET
 #include <esp_event.h>

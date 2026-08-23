@@ -1,6 +1,6 @@
 #include "jazzlights/ui/ui_atom_matrix.h"
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #if JL_IS_CONTROLLER(ATOM_MATRIX)
 
@@ -9,10 +9,10 @@
 #include <optional>
 
 #include "jazzlights/effect/creatures.h"
-#include "jazzlights/fastled_runner.h"
-#include "jazzlights/fastled_wrapper.h"
 #include "jazzlights/network/esp32_ble.h"
 #include "jazzlights/network/wifi.h"
+#include "jazzlights/render/fastled_runner.h"
+#include "jazzlights/render/fastled_wrapper.h"
 #include "jazzlights/ui/gpio_button.h"
 #include "jazzlights/ui/text.h"
 

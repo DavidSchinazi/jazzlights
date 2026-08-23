@@ -3,9 +3,8 @@
 
 #include <cstdint>
 #include <limits>
-#include <vector>
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 #include "jazzlights/util/geom.h"
 
 namespace jazzlights {
@@ -62,33 +61,6 @@ struct Pixel {
   size_t strandIndex = 0;
   size_t cumulativeIndex = 0;
   Point coord = {0.0, 0.0};
-};
-
-struct XYIndex {
-  size_t xIndex = 0;
-  size_t yIndex = 0;
-};
-
-class XYIndexStore {
- public:
-  XYIndexStore();
-  void Reset();
-  void IngestLayout(const Layout* layout);
-  void Finalize(const Box& viewport);
-  XYIndex FromPixel(const Pixel& pixel) const;
-  size_t xValuesCount() const { return xValuesCount_; }
-  size_t yValuesCount() const { return yValuesCount_; }
-
- private:
-  struct LayoutInfo {
-    const Layout* layout;
-    std::vector<XYIndex> xyIndices;
-  };
-  std::vector<LayoutInfo> layoutInfos_;
-  size_t xValuesCount_;
-  size_t yValuesCount_;
-  bool useSmallerXGrid_;
-  bool useSmallerYGrid_;
 };
 
 }  // namespace jazzlights

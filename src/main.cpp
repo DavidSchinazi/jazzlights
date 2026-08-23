@@ -1,4 +1,4 @@
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #ifndef PIO_UNIT_TESTING
 

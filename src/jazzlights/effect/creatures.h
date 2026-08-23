@@ -4,8 +4,8 @@
 #include <algorithm>
 #include <optional>
 
-#include "jazzlights/config.h"
 #include "jazzlights/effect/effect.h"
+#include "jazzlights/util/config.h"
 
 #if JL_IS_CONFIG(CREATURE)
 

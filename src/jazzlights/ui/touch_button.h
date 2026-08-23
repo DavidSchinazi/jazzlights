@@ -1,7 +1,7 @@
 #ifndef JL_UI_TOUCH_BUTTON_H
 #define JL_UI_TOUCH_BUTTON_H
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #ifndef JL_TOUCH_SCREEN
 #if defined(ESP32) && (JL_IS_CONTROLLER(CORE2AWS) || JL_IS_CONTROLLER(CORES3))

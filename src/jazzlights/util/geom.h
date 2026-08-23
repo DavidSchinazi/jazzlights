@@ -1,6 +1,7 @@
 #ifndef JL_UTIL_GEOM_H
 #define JL_UTIL_GEOM_H
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 

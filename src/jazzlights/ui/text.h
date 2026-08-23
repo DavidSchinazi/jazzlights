@@ -1,13 +1,13 @@
 #ifndef JL_UI_TEXT_H
 #define JL_UI_TEXT_H
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #if JL_IS_CONTROLLER(ATOM_MATRIX)
 
 #include <string>
 
-#include "jazzlights/fastled_wrapper.h"
+#include "jazzlights/render/fastled_wrapper.h"
 #include "jazzlights/util/time.h"
 
 namespace jazzlights {

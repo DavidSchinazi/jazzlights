@@ -3,6 +3,7 @@
 
 #include <vector>
 
+#include "jazzlights/render/xy_index.h"
 #include "jazzlights/types.h"
 #include "jazzlights/util/geom.h"
 #include "jazzlights/util/time.h"

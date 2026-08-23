@@ -1,7 +1,7 @@
 #ifndef JL_ESP32_SHARED_H
 #define JL_ESP32_SHARED_H
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #ifdef ESP32
 

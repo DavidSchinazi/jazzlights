@@ -1,7 +1,7 @@
 #ifndef JL_NETWORK_MAX485_BUS_H
 #define JL_NETWORK_MAX485_BUS_H
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #if JL_MAX485_BUS
 

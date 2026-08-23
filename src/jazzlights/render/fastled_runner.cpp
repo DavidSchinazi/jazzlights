@@ -1,6 +1,6 @@
-#include "jazzlights/fastled_runner.h"
+#include "jazzlights/render/fastled_runner.h"
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #ifdef ESP32
 

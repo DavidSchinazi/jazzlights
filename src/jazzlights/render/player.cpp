@@ -1,4 +1,4 @@
-#include "jazzlights/player.h"
+#include "jazzlights/render/player.h"
 
 #include <assert.h>
 #include <stdlib.h>

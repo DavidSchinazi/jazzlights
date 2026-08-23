@@ -11,7 +11,7 @@
 
 #include "jazzlights/audio.h"
 #include "jazzlights/palette.h"
-#include "jazzlights/player.h"
+#include "jazzlights/render/player.h"
 #include "jazzlights/util/log.h"
 
 namespace jazzlights {

@@ -1,7 +1,7 @@
 #ifndef JL_MOTOR_H
 #define JL_MOTOR_H
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #if JL_MOTOR
 

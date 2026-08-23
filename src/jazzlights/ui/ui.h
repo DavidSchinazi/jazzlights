@@ -1,7 +1,7 @@
 #ifndef JL_UI_UI_H
 #define JL_UI_UI_H
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #ifdef ESP32
 
@@ -9,8 +9,8 @@
 #define JL_BUTTON_LOCK (!JL_DEV)
 #endif  // JL_BUTTON_LOCK
 
-#include "jazzlights/fastled_runner.h"
-#include "jazzlights/player.h"
+#include "jazzlights/render/fastled_runner.h"
+#include "jazzlights/render/player.h"
 
 namespace jazzlights {
 

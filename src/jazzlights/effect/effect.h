@@ -3,8 +3,8 @@
 
 #include <string>
 
-#include "jazzlights/fastled_wrapper.h"
-#include "jazzlights/frame.h"
+#include "jazzlights/render/fastled_wrapper.h"
+#include "jazzlights/render/frame.h"
 #include "jazzlights/util/geom.h"
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/time.h"

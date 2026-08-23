@@ -6,8 +6,8 @@
 #include <functional>
 #include <memory>
 
-#include "jazzlights/fastled_wrapper.h"
-#include "jazzlights/renderer.h"
+#include "jazzlights/render/fastled_wrapper.h"
+#include "jazzlights/render/renderer.h"
 
 namespace jazzlights {
 

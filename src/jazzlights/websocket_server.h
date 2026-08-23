@@ -1,7 +1,7 @@
 #ifndef JL_WEBSOCKET_SERVER_H
 #define JL_WEBSOCKET_SERVER_H
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #ifndef JL_WEBSOCKET_SERVER
 #if JL_IS_CONFIG(CLOUDS)
@@ -15,7 +15,7 @@
 
 #include <ESPAsyncWebServer.h>
 
-#include "jazzlights/player.h"
+#include "jazzlights/render/player.h"
 
 namespace jazzlights {
 

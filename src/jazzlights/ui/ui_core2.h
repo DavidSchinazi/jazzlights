@@ -10,7 +10,7 @@
 #define CORE2AWS_LCD_ENABLED 1
 #endif  // CORE2AWS_LCD_ENABLED
 
-#include "jazzlights/player.h"
+#include "jazzlights/render/player.h"
 #include "jazzlights/ui/ui_disabled.h"
 
 namespace jazzlights {

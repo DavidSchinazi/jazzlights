@@ -1,8 +1,8 @@
 #ifndef JL_UI_UI_MOTOR_H
 #define JL_UI_UI_MOTOR_H
 
-#include "jazzlights/config.h"
 #include "jazzlights/motor.h"
+#include "jazzlights/util/config.h"
 
 #ifndef JL_UI_MOTOR
 #if JL_MOTOR && defined(ESP32) && (JL_IS_CONTROLLER(CORE2AWS) || JL_IS_CONTROLLER(CORES3))

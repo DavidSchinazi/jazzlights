@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <optional>
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 #include "jazzlights/util/time.h"
 
 #if JL_TIMING

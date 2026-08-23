@@ -1,6 +1,6 @@
 #include "jazzlights/ui/ui_disabled.h"
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #ifdef ESP32
 

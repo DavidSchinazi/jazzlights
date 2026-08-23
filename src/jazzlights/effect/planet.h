@@ -1,7 +1,7 @@
 #ifndef JL_EFFECT_PLANET_H
 #define JL_EFFECT_PLANET_H
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #if JL_IS_CONFIG(ORRERY_PLANET)
 

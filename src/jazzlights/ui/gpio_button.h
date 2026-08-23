@@ -1,7 +1,7 @@
 #ifndef JL_UI_GPIO_BUTTON_H
 #define JL_UI_GPIO_BUTTON_H
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #ifdef ESP32
 

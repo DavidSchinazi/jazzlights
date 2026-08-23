@@ -1,4 +1,4 @@
-#include "jazzlights/fastled_renderer.h"
+#include "jazzlights/render/fastled_renderer.h"
 
 #ifdef ESP32
 

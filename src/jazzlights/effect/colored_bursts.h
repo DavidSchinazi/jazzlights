@@ -2,9 +2,9 @@
 #define JL_EFFECT_COLOREDBURSTS_H
 
 #include "jazzlights/effect/effect.h"
-#include "jazzlights/fastled_wrapper.h"
 #include "jazzlights/palette.h"
 #include "jazzlights/pseudorandom.h"
+#include "jazzlights/render/fastled_wrapper.h"
 #include "jazzlights/util/math.h"
 
 namespace jazzlights {

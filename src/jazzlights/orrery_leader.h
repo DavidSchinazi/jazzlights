@@ -1,7 +1,7 @@
 #ifndef JL_ORRERY_LEADER_H
 #define JL_ORRERY_LEADER_H
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #if JL_IS_CONFIG(ORRERY_LEADER)
 
@@ -10,7 +10,7 @@
 
 #include "jazzlights/network/max485_bus.h"
 #include "jazzlights/orrery_common.h"
-#include "jazzlights/player.h"
+#include "jazzlights/render/player.h"
 #include "jazzlights/ui/gpio_button.h"
 #include "jazzlights/util/time.h"
 

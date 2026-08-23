@@ -1,8 +1,8 @@
 #ifndef JAZZLIGHTS_UI_AUDIO_H
 #define JAZZLIGHTS_UI_AUDIO_H
 
-#include "jazzlights/config.h"
 #include "jazzlights/ui/ui.h"
+#include "jazzlights/util/config.h"
 
 #ifdef ESP32
 

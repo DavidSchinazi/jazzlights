@@ -1,7 +1,7 @@
 #ifndef JL_NETWORK_ESP32_WIFI_H
 #define JL_NETWORK_ESP32_WIFI_H
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #if JL_WIFI
 

@@ -7,7 +7,8 @@
 #include "jazzlights/layout/layout.h"
 #include "jazzlights/network/network.h"
 #include "jazzlights/pseudorandom.h"
-#include "jazzlights/renderer.h"
+#include "jazzlights/render/renderer.h"
+#include "jazzlights/render/xy_index.h"
 #include "jazzlights/types.h"
 
 namespace jazzlights {

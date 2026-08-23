@@ -1,7 +1,7 @@
 #ifndef JL_UI_UI_ORRERY_LEADER_H
 #define JL_UI_UI_ORRERY_LEADER_H
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #if JL_IS_CONFIG(ORRERY_LEADER) && defined(ESP32) && (JL_IS_CONTROLLER(CORE2AWS) || JL_IS_CONTROLLER(CORES3))
 

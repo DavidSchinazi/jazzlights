@@ -10,7 +10,7 @@
 
 #include <optional>
 
-#include "jazzlights/fastled_wrapper.h"
+#include "jazzlights/render/fastled_wrapper.h"
 #include "jazzlights/ui/gpio_button.h"
 
 namespace jazzlights {

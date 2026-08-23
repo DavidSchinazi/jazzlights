@@ -1,13 +1,13 @@
 #ifndef JL_LAYOUT_LAYOUT_DATA_H
 #define JL_LAYOUT_LAYOUT_DATA_H
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #ifdef ESP32
 
 #define JL_LENGTH(_a) (sizeof(_a) / sizeof((_a)[0]))
 
-#include "jazzlights/fastled_runner.h"
+#include "jazzlights/render/fastled_runner.h"
 
 #if !JL_IS_CONFIG(PHONE)
 #if JL_IS_CONTROLLER(CORE2AWS) || JL_IS_CONTROLLER(M5STAMP_PICO) || JL_IS_CONTROLLER(M5STICK_C)

@@ -1,7 +1,7 @@
 #ifndef JL_EXTRAS_DEMO_GUI_H
 #define JL_EXTRAS_DEMO_GUI_H
 
-#include "jazzlights/player.h"
+#include "jazzlights/render/player.h"
 
 namespace jazzlights {
 

@@ -1,6 +1,6 @@
 #include "jazzlights/ui/ui_core2.h"
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #if JL_IS_CONTROLLER(CORE2AWS) || JL_IS_CONTROLLER(CORES3)
 

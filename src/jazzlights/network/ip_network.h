@@ -13,8 +13,8 @@
 #include <atomic>
 #include <mutex>
 
-#include "jazzlights/config.h"
 #include "jazzlights/network/network.h"
+#include "jazzlights/util/config.h"
 
 #ifdef ESP32
 #include <lwip/inet.h>

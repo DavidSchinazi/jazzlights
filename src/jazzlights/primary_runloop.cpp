@@ -1,13 +1,12 @@
 #include "jazzlights/primary_runloop.h"
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #ifdef ESP32
 
 #include <memory>
 #include <mutex>
 
-#include "jazzlights/fastled_runner.h"
 #include "jazzlights/instrumentation.h"
 #include "jazzlights/layout/layout_data.h"
 #include "jazzlights/motor.h"
@@ -18,7 +17,8 @@
 #include "jazzlights/orrery_common.h"
 #include "jazzlights/orrery_leader.h"
 #include "jazzlights/orrery_planet.h"
-#include "jazzlights/player.h"
+#include "jazzlights/render/fastled_runner.h"
+#include "jazzlights/render/player.h"
 #include "jazzlights/ui/rotary_phone.h"
 #include "jazzlights/ui/ui.h"
 #include "jazzlights/ui/ui_atom_matrix.h"

@@ -2,7 +2,7 @@
 
 #include "jazzlights/layout/matrix.h"
 #include "jazzlights/network/unix_udp.h"
-#include "jazzlights/player.h"
+#include "jazzlights/render/player.h"
 #include "jazzlights/util/log.h"
 
 namespace jazzlights {

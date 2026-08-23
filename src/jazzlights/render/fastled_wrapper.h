@@ -1,7 +1,7 @@
 #ifndef JL_FASTLED_WRAPPER_H
 #define JL_FASTLED_WRAPPER_H
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #ifdef ESP32
 

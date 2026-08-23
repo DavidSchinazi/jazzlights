@@ -1,7 +1,7 @@
 #ifndef JL_ORRERY_PLANET_H
 #define JL_ORRERY_PLANET_H
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #if JL_IS_CONFIG(ORRERY_PLANET) && !JL_ORRERY_PLUTO
 

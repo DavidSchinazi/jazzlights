@@ -1,7 +1,7 @@
 #ifndef JAZZLIGHTS_AUDIO_H
 #define JAZZLIGHTS_AUDIO_H
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #if JL_AUDIO_VISUALIZER
 

@@ -2,8 +2,8 @@
 
 #include <assert.h>
 
-#include "jazzlights/config.h"
-#include "jazzlights/player.h"
+#include "jazzlights/render/player.h"
+#include "jazzlights/util/config.h"
 
 namespace jazzlights {
 

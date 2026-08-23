@@ -1,7 +1,7 @@
 #ifndef JL_UI_ROTARY_PHONE_H
 #define JL_UI_ROTARY_PHONE_H
 
-#include "jazzlights/config.h"
+#include "jazzlights/util/config.h"
 
 #ifdef ESP32
 #if JL_IS_CONFIG(PHONE)
