@@ -1,5 +1,5 @@
-#ifndef JL_ESP32_SHARED_H
-#define JL_ESP32_SHARED_H
+#ifndef JL_UTIL_ESP32_SHARED_H
+#define JL_UTIL_ESP32_SHARED_H
 
 #include "jazzlights/util/config.h"
 
@@ -26,4 +26,4 @@ enum : UBaseType_t {
 }  // namespace jazzlights
 
 #endif  // ESP32
-#endif  // JL_ESP32_SHARED_H
+#endif  // JL_UTIL_ESP32_SHARED_H

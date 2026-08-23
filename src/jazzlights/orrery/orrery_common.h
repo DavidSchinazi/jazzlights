@@ -1,5 +1,5 @@
-#ifndef JL_ORRERY_COMMON_H
-#define JL_ORRERY_COMMON_H
+#ifndef JL_ORRERY_ORRERY_COMMON_H
+#define JL_ORRERY_ORRERY_COMMON_H
 
 #include <cstdint>
 #include <optional>
@@ -112,4 +112,4 @@ const char* GetPlanetName(Planet planet);
 
 }  // namespace jazzlights
 
-#endif  // JL_ORRERY_COMMON_H
+#endif  // JL_ORRERY_ORRERY_COMMON_H

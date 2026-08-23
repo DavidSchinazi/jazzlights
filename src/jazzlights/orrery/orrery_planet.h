@@ -1,5 +1,5 @@
-#ifndef JL_ORRERY_PLANET_H
-#define JL_ORRERY_PLANET_H
+#ifndef JL_ORRERY_ORRERY_PLANET_H
+#define JL_ORRERY_ORRERY_PLANET_H
 
 #include "jazzlights/util/config.h"
 
@@ -71,4 +71,4 @@ class OrreryPlanet
 
 #endif  // JL_IS_CONFIG(ORRERY_PLANET) && !JL_ORRERY_PLUTO
 
-#endif  // JL_ORRERY_PLANET_H
+#endif  // JL_ORRERY_ORRERY_PLANET_H

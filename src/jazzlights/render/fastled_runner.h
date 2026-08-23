@@ -1,5 +1,5 @@
-#ifndef JL_FASTLED_RUNNER_H
-#define JL_FASTLED_RUNNER_H
+#ifndef JL_RENDER_FASTLED_RUNNER_H
+#define JL_RENDER_FASTLED_RUNNER_H
 
 #include "jazzlights/util/config.h"
 
@@ -123,4 +123,4 @@ class FastLedRunner : public Player::NumLedWritesGetter {
 
 #endif  // ESP32
 
-#endif  // JL_FASTLED_RUNNER_H
+#endif  // JL_RENDER_FASTLED_RUNNER_H

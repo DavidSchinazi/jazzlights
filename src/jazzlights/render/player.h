@@ -1,5 +1,5 @@
-#ifndef JL_PLAYER_H
-#define JL_PLAYER_H
+#ifndef JL_RENDER_PLAYER_H
+#define JL_RENDER_PLAYER_H
 
 #include <vector>
 
@@ -289,4 +289,4 @@ class Player {
 std::string patternName(PatternBits pattern, const Player& player);
 
 }  // namespace jazzlights
-#endif  // JL_PLAYER_H
+#endif  // JL_RENDER_PLAYER_H

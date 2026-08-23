@@ -1,5 +1,5 @@
-#ifndef JL_CONFIG_H
-#define JL_CONFIG_H
+#ifndef JL_UTIL_CONFIG_H
+#define JL_UTIL_CONFIG_H
 
 #ifdef ESP32
 #include "sdkconfig.h"
@@ -251,4 +251,4 @@ inline constexpr int kPinE1 = kPinE1_1;
 inline constexpr int kPinE2 = kPinE2_2;
 #endif  // Core
 
-#endif  // JL_CONFIG_H
+#endif  // JL_UTIL_CONFIG_H

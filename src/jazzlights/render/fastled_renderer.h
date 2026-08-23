@@ -1,5 +1,5 @@
-#ifndef JL_FASTLED_RENDERER_H
-#define JL_FASTLED_RENDERER_H
+#ifndef JL_RENDER_FASTLED_RENDERER_H
+#define JL_RENDER_FASTLED_RENDERER_H
 
 #ifdef ESP32
 
@@ -73,4 +73,4 @@ class FastLedRenderer : public Renderer {
 
 #endif  // ESP32
 
-#endif  // JL_FASTLED_RENDERER_H
+#endif  // JL_RENDER_FASTLED_RENDERER_H

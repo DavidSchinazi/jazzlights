@@ -1,5 +1,5 @@
-#ifndef JL_FRAME_H
-#define JL_FRAME_H
+#ifndef JL_RENDER_FRAME_H
+#define JL_RENDER_FRAME_H
 
 #include <vector>
 
@@ -67,4 +67,4 @@ constexpr Point rightbottom(const Frame& frame) {
 inline Coord diagonal(const Frame& frame) { return distance(lefttop(frame), rightbottom(frame)); }
 
 }  // namespace jazzlights
-#endif  // JL_FRAME_H
+#endif  // JL_RENDER_FRAME_H

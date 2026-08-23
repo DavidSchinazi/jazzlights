@@ -1,5 +1,5 @@
-#ifndef JL_FASTLED_WRAPPER_H
-#define JL_FASTLED_WRAPPER_H
+#ifndef JL_RENDER_FASTLED_WRAPPER_H
+#define JL_RENDER_FASTLED_WRAPPER_H
 
 #include "jazzlights/util/config.h"
 
@@ -399,4 +399,4 @@ CRGB ColorFromPalette(const TProgmemRGBPalette16& pal, uint8_t index, uint8_t br
 
 #endif  // ESP32
 
-#endif  // JL_FASTLED_WRAPPER_H
+#endif  // JL_RENDER_FASTLED_WRAPPER_H

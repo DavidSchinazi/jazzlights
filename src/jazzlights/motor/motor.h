@@ -1,5 +1,5 @@
-#ifndef JL_MOTOR_H
-#define JL_MOTOR_H
+#ifndef JL_MOTOR_MOTOR_H
+#define JL_MOTOR_MOTOR_H
 
 #include "jazzlights/util/config.h"
 
@@ -54,4 +54,4 @@ void StepperMotorTestRunLoop();
 }  // namespace jazzlights
 
 #endif  // JL_MOTOR
-#endif  // JL_MOTOR_H
+#endif  // JL_MOTOR_MOTOR_H

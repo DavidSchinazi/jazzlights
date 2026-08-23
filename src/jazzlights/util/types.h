@@ -1,5 +1,5 @@
-#ifndef JL_TYPES_H
-#define JL_TYPES_H
+#ifndef JL_UTIL_TYPES_H
+#define JL_UTIL_TYPES_H
 
 #include <cstdint>
 #include <limits>
@@ -47,4 +47,4 @@ constexpr Precedence OverridePrecedence() {
 
 }  // namespace jazzlights
 
-#endif  // JL_TYPES_H
+#endif  // JL_UTIL_TYPES_H

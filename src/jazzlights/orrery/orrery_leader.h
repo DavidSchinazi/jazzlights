@@ -1,5 +1,5 @@
-#ifndef JL_ORRERY_LEADER_H
-#define JL_ORRERY_LEADER_H
+#ifndef JL_ORRERY_ORRERY_LEADER_H
+#define JL_ORRERY_ORRERY_LEADER_H
 
 #include "jazzlights/util/config.h"
 
@@ -90,4 +90,4 @@ class OrreryLeader : public GpioSwitchInterface,
 
 #endif  // JL_IS_CONFIG(ORRERY_LEADER)
 
-#endif  // JL_ORRERY_LEADER_H
+#endif  // JL_ORRERY_ORRERY_LEADER_H

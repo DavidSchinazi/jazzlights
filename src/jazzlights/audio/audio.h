@@ -1,5 +1,5 @@
-#ifndef JAZZLIGHTS_AUDIO_H
-#define JAZZLIGHTS_AUDIO_H
+#ifndef JL_AUDIO_AUDIO_H
+#define JL_AUDIO_AUDIO_H
 
 #include "jazzlights/util/config.h"
 
@@ -82,4 +82,4 @@ class Audio {
 
 #endif  // JL_AUDIO_VISUALIZER
 
-#endif  // JAZZLIGHTS_AUDIO_H
+#endif  // JL_AUDIO_AUDIO_H

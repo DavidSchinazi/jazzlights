@@ -1,5 +1,5 @@
-#ifndef JL_RENDERER_H
-#define JL_RENDERER_H
+#ifndef JL_RENDER_RENDERER_H
+#define JL_RENDER_RENDERER_H
 
 #include "jazzlights/render/fastled_wrapper.h"
 
@@ -13,4 +13,4 @@ class Renderer {
 };
 
 }  // namespace jazzlights
-#endif  // JL_RENDERER_H
+#endif  // JL_RENDER_RENDERER_H

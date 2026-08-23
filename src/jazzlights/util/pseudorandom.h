@@ -1,5 +1,5 @@
-#ifndef JL_PSEUDORANDOM_H
-#define JL_PSEUDORANDOM_H
+#ifndef JL_UTIL_PSEUDORANDOM_H
+#define JL_UTIL_PSEUDORANDOM_H
 
 #include <cstddef>
 #include <cstdint>
@@ -39,4 +39,4 @@ class UnpredictableRandom : public Random {
 
 }  // namespace jazzlights
 
-#endif  // JL_PSEUDORANDOM_H
+#endif  // JL_UTIL_PSEUDORANDOM_H
