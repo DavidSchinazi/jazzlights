@@ -5,11 +5,7 @@
 #include <limits>
 #include <optional>
 
-#include "jazzlights/util/types.h"
-
-namespace jazzlights {
-
-using Microseconds = int64_t;
+#include "jazzlights/util/config.h"
 
 #ifndef JL_OPT_US_DEBUG
 #if JL_DEV || JL_DEBUG
@@ -18,6 +14,14 @@ using Microseconds = int64_t;
 #define JL_OPT_US_DEBUG 0
 #endif  // JL_DEV || JL_DEBUG
 #endif  // JL_OPT_US_DEBUG
+
+#if JL_OPT_US_DEBUG
+#include <cstdlib>
+#endif  // JL_OPT_US_DEBUG
+
+namespace jazzlights {
+
+using Microseconds = int64_t;
 
 #if JL_OPT_US_DEBUG
 #define _JL_CHECK_OPT_US(_micros)                    \
