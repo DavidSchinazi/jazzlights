@@ -1,6 +1,8 @@
 #include <unity.h>
 
 #include "jazzlights/network/network.h"
+#include "jazzlights/protocol/reader.h"
+#include "jazzlights/protocol/writer.h"
 
 namespace jazzlights {
 

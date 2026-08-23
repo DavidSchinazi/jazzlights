@@ -5,7 +5,8 @@
 #include <optional>
 #include <string>
 
-#include "jazzlights/network/network.h"
+#include "jazzlights/protocol/reader.h"
+#include "jazzlights/protocol/writer.h"
 #include "jazzlights/util/config.h"
 #include "jazzlights/util/time.h"
 #include "jazzlights/util/types.h"

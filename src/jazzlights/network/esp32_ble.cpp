@@ -12,6 +12,8 @@
 #include <string>
 #include <unordered_map>
 
+#include "jazzlights/protocol/reader.h"
+#include "jazzlights/protocol/writer.h"
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/pseudorandom.h"
 

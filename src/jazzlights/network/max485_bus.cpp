@@ -16,6 +16,8 @@
 
 #include "jazzlights/network/network.h"
 #include "jazzlights/orrery/orrery_planet.h"
+#include "jazzlights/protocol/reader.h"
+#include "jazzlights/protocol/writer.h"
 #include "jazzlights/util/buffer.h"
 #include "jazzlights/util/cobs.h"
 #include "jazzlights/util/esp32_shared.h"
