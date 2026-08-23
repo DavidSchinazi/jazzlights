@@ -116,8 +116,6 @@ Microseconds timeMicros();
 
 long long MillisecondsSinceBootForLogging();
 
-using FramesPerSecond = int32_t;
-
 inline constexpr Microseconds kMicrosecondsPerMillisecond = 1000;
 inline constexpr Microseconds kMicrosecondsPerSecond = 1000000;
 
