@@ -5,7 +5,6 @@
 #include <limits>
 
 #include "jazzlights/util/config.h"
-#include "jazzlights/util/geom.h"
 
 namespace jazzlights {
 
@@ -45,23 +44,6 @@ constexpr Precedence OverridePrecedence() {
   return kDefaultOverridePrecedence;
 #endif  // CREATURE
 }
-
-class Layout;
-class Player;
-class Renderer;
-
-struct Strand {
-  const Layout& layout;
-  Renderer& renderer;
-  size_t index;
-};
-
-struct Pixel {
-  const Strand* strand = nullptr;
-  size_t strandIndex = 0;
-  size_t cumulativeIndex = 0;
-  Point coord = {0.0, 0.0};
-};
 
 }  // namespace jazzlights
 

@@ -5,6 +5,7 @@
 
 #include "jazzlights/render/fastled_wrapper.h"
 #include "jazzlights/render/frame.h"
+#include "jazzlights/render/pixel.h"
 #include "jazzlights/render/predictable_random.h"
 #include "jazzlights/util/geom.h"
 #include "jazzlights/util/log.h"

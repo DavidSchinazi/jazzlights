@@ -1,10 +1,12 @@
 #ifndef JL_RENDER_XY_INDEX_H
 #define JL_RENDER_XY_INDEX_H
 
+#include <cstddef>
 #include <vector>
 
+#include "jazzlights/layout/layout.h"
+#include "jazzlights/render/pixel.h"
 #include "jazzlights/util/geom.h"
-#include "jazzlights/util/types.h"
 
 namespace jazzlights {
 
