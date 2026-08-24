@@ -94,12 +94,6 @@ void ProtocolEngine::SetupDeviceId(NetworkDeviceId localDeviceIdFromNetworks) {
   currentLeader_ = localDeviceId_;
 }
 
-bool ProtocolEngine::GetMessageToSend(NetworkMessage* messageToSend) const {
-  if (!hasMessageToSend_) { return false; }
-  *messageToSend = messageToSend_;
-  return true;
-}
-
 bool ProtocolEngine::UpdatePrecedence(Precedence basePrecedence, Precedence precedenceGain) {
   if (basePrecedence == basePrecedence_ && precedenceGain == precedenceGain_) { return false; }
   basePrecedence_ = basePrecedence;
@@ -376,7 +370,7 @@ void ProtocolEngine::CheckLeaderAndPattern(OptionalMicroseconds currentTimeOpt) 
 
   if (!hasNetworks_) {
     jll_debug("not setting messageToSend without networks");
-    hasMessageToSend_ = false;
+    messageToSend_.reset();
     return;
   }
   ComputeMessageToSend(originator, precedence, lastOriginationTime, currentTime);
@@ -385,24 +379,25 @@ void ProtocolEngine::CheckLeaderAndPattern(OptionalMicroseconds currentTimeOpt) 
 void ProtocolEngine::ComputeMessageToSend(NetworkDeviceId originator, Precedence precedence,
                                           Microseconds lastOriginationTime, Microseconds currentTime) {
   messageToSend_ = NetworkMessage();
-  messageToSend_.originator = originator;
-  messageToSend_.sender = localDeviceId_;
-  messageToSend_.currentPattern = currentPattern_;
-  messageToSend_.nextPattern = nextPattern_;
-  messageToSend_.currentPatternStartTime = currentPatternStartTime_;
-  messageToSend_.precedence = precedence;
-  messageToSend_.lastOriginationTime = lastOriginationTime;
-  messageToSend_.numHops = currentNumHops_;
-  messageToSend_.receiptNetworkId = followedNextHopNetworkId_;
-  messageToSend_.receiptNetworkType = followedNextHopNetworkType_;
+  messageToSend_->originator = originator;
+  messageToSend_->sender = localDeviceId_;
+  messageToSend_->currentPattern = currentPattern_;
+  messageToSend_->nextPattern = nextPattern_;
+  messageToSend_->currentPatternStartTime = currentPatternStartTime_;
+  messageToSend_->precedence = precedence;
+  messageToSend_->lastOriginationTime = lastOriginationTime;
+  messageToSend_->numHops = currentNumHops_;
+  messageToSend_->receiptNetworkId = followedNextHopNetworkId_;
+  messageToSend_->receiptNetworkType = followedNextHopNetworkType_;
 #if JL_IS_CONFIG(CREATURE)
-  messageToSend_.isCreature = true;
-  messageToSend_.isPartying = delegate_->IsPartying();
-  messageToSend_.creatureColor = delegate_->CreatureColor();
+  messageToSend_->isCreature = true;
+  messageToSend_->isPartying = delegate_->IsPartying();
+  messageToSend_->creatureColor = delegate_->CreatureColor();
 #endif  // CREATURE
   if (orrerySceneIdToSend_) {
 #if JL_IS_CONFIG(ORRERY_LEADER)
-    messageToSend_.orrerySceneId = orrerySceneIdToSend_;
+    messageToSend_->orrerySceneId = orrerySceneIdToSend_;
+    (void)currentTime;
 #else   // ORRERY_LEADER
     static constexpr Microseconds kOrrerySceneMaxSendDuration = 59 * kMicrosecondsPerSecond;
     if (!lastOrrerySceneIdSetTime_ || currentTime - *lastOrrerySceneIdSetTime_ > kOrrerySceneMaxSendDuration) {
@@ -410,12 +405,10 @@ void ProtocolEngine::ComputeMessageToSend(NetworkDeviceId originator, Precedence
       orrerySceneIdToSend_ = std::nullopt;
     } else {
       jll_info("Sending orrery scene ID %d", static_cast<int>(*orrerySceneIdToSend_));
-      messageToSend_.orrerySceneId = orrerySceneIdToSend_;
+      messageToSend_->orrerySceneId = orrerySceneIdToSend_;
     }
 #endif  // ORRERY_LEADER
   }
-  (void)currentTime;
-  hasMessageToSend_ = true;
 }
 
 void ProtocolEngine::HandleReceivedMessage(NetworkMessage message, OptionalMicroseconds currentTimeOpt) {

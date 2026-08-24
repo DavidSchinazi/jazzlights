@@ -128,20 +128,21 @@ void test_standalone_leading() {
   // Without networks we have nothing to advertise.
   engine.SetHasNetworks(false);
   engine.CheckLeaderAndPattern(t0);
-  NetworkMessage message;
-  TEST_ASSERT_FALSE(engine.GetMessageToSend(&message));
+  std::optional<NetworkMessage> message = engine.GetMessageToSend();
+  TEST_ASSERT_FALSE(message);
 
   // With networks we advertise ourselves as the originator.
   engine.SetHasNetworks(true);
   engine.SetBasePrecedence(1000);
   engine.CheckLeaderAndPattern(t0);
-  TEST_ASSERT(engine.GetMessageToSend(&message));
-  TEST_ASSERT(message.originator == engine.localDeviceId());
-  TEST_ASSERT(message.sender == engine.localDeviceId());
-  TEST_ASSERT_EQUAL_UINT8(0, message.numHops);
-  TEST_ASSERT(message.receiptNetworkType == NetworkType::kLeading);
-  TEST_ASSERT_EQUAL_UINT16(1000, message.precedence);
-  TEST_ASSERT_EQUAL_UINT32(engine.GetCurrentPattern(), message.currentPattern);
+  message = engine.GetMessageToSend();
+  TEST_ASSERT(message);
+  TEST_ASSERT(message->originator == engine.localDeviceId());
+  TEST_ASSERT(message->sender == engine.localDeviceId());
+  TEST_ASSERT_EQUAL_UINT8(0, message->numHops);
+  TEST_ASSERT(message->receiptNetworkType == NetworkType::kLeading);
+  TEST_ASSERT_EQUAL_UINT16(1000, message->precedence);
+  TEST_ASSERT_EQUAL_UINT32(engine.GetCurrentPattern(), message->currentPattern);
   TEST_ASSERT(engine.currentLeader() == engine.localDeviceId());
 }
 
@@ -164,11 +165,11 @@ void test_follow_higher_precedence() {
   TEST_ASSERT_EQUAL_INT(1, delegate.fpsReports);
 
   // We relay the leader's pattern onwards, attributed to the original originator.
-  NetworkMessage message;
-  TEST_ASSERT(engine.GetMessageToSend(&message));
-  TEST_ASSERT(message.originator == other);
-  TEST_ASSERT(message.sender == engine.localDeviceId());
-  TEST_ASSERT_EQUAL_UINT8(1, message.numHops);
+  std::optional<NetworkMessage> message = engine.GetMessageToSend();
+  TEST_ASSERT(message);
+  TEST_ASSERT(message->originator == other);
+  TEST_ASSERT(message->sender == engine.localDeviceId());
+  TEST_ASSERT_EQUAL_UINT8(1, message->numHops);
 }
 
 void test_ignore_lower_precedence() {
@@ -472,23 +473,25 @@ void test_orrery_scene_id() {
   ProtocolEngine engine(&delegate);
   const Microseconds t0 = StartEngine(&engine);
 
-  NetworkMessage message;
   engine.CheckLeaderAndPattern(t0);
-  TEST_ASSERT(engine.GetMessageToSend(&message));
-  TEST_ASSERT_FALSE(message.orrerySceneId.has_value());
+  std::optional<NetworkMessage> message = engine.GetMessageToSend();
+  TEST_ASSERT(message);
+  TEST_ASSERT_FALSE(message->orrerySceneId.has_value());
 
   // Once set, the scene ID rides along on what we advertise.
   engine.SetOrrerySceneIdToSend(static_cast<OrrerySceneId>(7));
   engine.CheckLeaderAndPattern(t0);
-  TEST_ASSERT(engine.GetMessageToSend(&message));
-  TEST_ASSERT(message.orrerySceneId.has_value());
-  TEST_ASSERT_EQUAL_UINT8(7, *message.orrerySceneId);
+  message = engine.GetMessageToSend();
+  TEST_ASSERT(message);
+  TEST_ASSERT(message->orrerySceneId.has_value());
+  TEST_ASSERT_EQUAL_UINT8(7, *message->orrerySceneId);
 
   // Clearing it takes it back off.
   engine.SetOrrerySceneIdToSend(std::nullopt);
   engine.CheckLeaderAndPattern(t0);
-  TEST_ASSERT(engine.GetMessageToSend(&message));
-  TEST_ASSERT_FALSE(message.orrerySceneId.has_value());
+  message = engine.GetMessageToSend();
+  TEST_ASSERT(message);
+  TEST_ASSERT_FALSE(message->orrerySceneId.has_value());
 }
 
 void test_orrery_scene_id_watcher() {

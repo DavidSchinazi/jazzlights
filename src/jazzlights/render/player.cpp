@@ -314,18 +314,18 @@ void Player::updatePrecedence(Precedence basePrecedence, Precedence precedenceGa
 }
 
 void Player::SendPendingMessage(bool sendAsap) {
-  NetworkMessage messageToSend;
-  if (!engine_.GetMessageToSend(&messageToSend)) { return; }
+  std::optional<NetworkMessage> messageToSend = engine_.GetMessageToSend();
+  if (!messageToSend) { return; }
   for (Network* network : networks_) {
-    if (!network->shouldEcho() && messageToSend.receiptNetworkId == network->id()) {
+    if (!network->shouldEcho() && messageToSend->receiptNetworkId == network->id()) {
       jll_debug("Not echoing for %s to %s ", NetworkTypeToString(network->type()),
-                networkMessageToString(messageToSend).c_str());
+                networkMessageToString(*messageToSend).c_str());
       network->disableSending();
       continue;
     }
     jll_player_message("Setting messageToSend for %s to %s ", NetworkTypeToString(network->type()),
-                       networkMessageToString(messageToSend).c_str());
-    network->setMessageToSend(messageToSend);
+                       networkMessageToString(*messageToSend).c_str());
+    network->setMessageToSend(*messageToSend);
   }
   if (sendAsap) {
     for (Network* network : networks_) { network->triggerSendAsap(); }

@@ -114,9 +114,9 @@ class ProtocolEngine {
   // advertise. Called once per frame and after every user command.
   void CheckLeaderAndPattern(OptionalMicroseconds currentTimeOpt = std::nullopt);
 
-  // Returns the message that should currently be advertised on every transport, or false if there is nothing to
+  // Returns the message that should currently be advertised on every transport, or std::nullopt if there is nothing to
   // advertise. This does not consume the message: it returns whatever the last CheckLeaderAndPattern() computed.
-  bool GetMessageToSend(NetworkMessage* messageToSend) const;
+  std::optional<NetworkMessage> GetMessageToSend() const { return messageToSend_; }
 
   // Synchronized state, read by the renderer.
   PatternBits GetCurrentPattern() const { return currentPattern_; }
@@ -211,8 +211,7 @@ class ProtocolEngine {
   PatternBits nextPattern_ = EnforceForcedPalette(computeNextPattern(currentPattern_));
 
   bool hasNetworks_ = false;
-  bool hasMessageToSend_ = false;
-  NetworkMessage messageToSend_;
+  std::optional<NetworkMessage> messageToSend_;
 
   OptionalMicroseconds lastUserInputTime_;
   Precedence basePrecedence_ = 0;
