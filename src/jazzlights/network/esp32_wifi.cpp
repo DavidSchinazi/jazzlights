@@ -91,7 +91,7 @@ std::string WiFiReasonToString(uint8_t reason) {
 }
 }  // namespace
 
-std::string Esp32WiFiNetwork::getStatusStr() {
+std::string Esp32WiFiNetwork::GetStatusStr() {
   struct in_addr localAddress = {};
   {
     const std::lock_guard<std::mutex> lock(mutex_);
@@ -99,7 +99,7 @@ std::string Esp32WiFiNetwork::getStatusStr() {
   }
   struct in_addr emptyAddress = {INADDR_ANY};
   if (memcmp(&emptyAddress, &localAddress, sizeof(localAddress)) != 0) {
-    const OptionalMicroseconds lastRcv = getLastReceiveTime();
+    const OptionalMicroseconds lastRcv = GetLastReceiveTime();
     char addressString[INET_ADDRSTRLEN + 1] = {};
     if (inet_ntop(AF_INET, &localAddress, addressString, sizeof(addressString) - 1) == nullptr) {
       jll_fatal("Esp32WiFiNetwork printing local address failed with error %d: %s", errno, strerror(errno));
@@ -113,20 +113,20 @@ std::string Esp32WiFiNetwork::getStatusStr() {
   }
 }
 
-void Esp32WiFiNetwork::setMessageToSend(const ProtocolMessage& messageToSend) {
+void Esp32WiFiNetwork::SetMessageToSend(const ProtocolMessage& messageToSend) {
   const std::lock_guard<std::mutex> lock(mutex_);
   hasDataToSend_ = true;
   messageToSend_ = messageToSend;
 }
 
-void Esp32WiFiNetwork::disableSending() {
+void Esp32WiFiNetwork::DisableSending() {
   const std::lock_guard<std::mutex> lock(mutex_);
   hasDataToSend_ = false;
 }
 
-void Esp32WiFiNetwork::triggerSendAsap() {}
+void Esp32WiFiNetwork::TriggerSendAsap() {}
 
-std::list<ProtocolMessage> Esp32WiFiNetwork::getReceivedMessagesImpl() {
+std::list<ProtocolMessage> Esp32WiFiNetwork::GetReceivedMessagesImpl() {
   std::list<ProtocolMessage> results;
   {
     const std::lock_guard<std::mutex> lock(mutex_);
@@ -198,38 +198,38 @@ void Esp32WiFiNetwork::CloseSocket() {
 }
 
 // static
-void Esp32WiFiNetwork::EventHandler(void* event_handler_arg, esp_event_base_t event_base, int32_t event_id,
-                                    void* event_data) {
-  Esp32WiFiNetwork* wifiNetwork = reinterpret_cast<Esp32WiFiNetwork*>(event_handler_arg);
-  wifiNetwork->HandleEvent(event_base, event_id, event_data);
+void Esp32WiFiNetwork::EventHandler(void* eventHandlerArg, esp_event_base_t eventBase, int32_t eventId,
+                                    void* eventData) {
+  Esp32WiFiNetwork* wifiNetwork = reinterpret_cast<Esp32WiFiNetwork*>(eventHandlerArg);
+  wifiNetwork->HandleEvent(eventBase, eventId, eventData);
 }
 
-void Esp32WiFiNetwork::HandleEvent(esp_event_base_t event_base, int32_t event_id, void* event_data) {
-  if (event_base == WIFI_EVENT) {
-    if (event_id == WIFI_EVENT_STA_START) {
+void Esp32WiFiNetwork::HandleEvent(esp_event_base_t eventBase, int32_t eventId, void* eventData) {
+  if (eventBase == WIFI_EVENT) {
+    if (eventId == WIFI_EVENT_STA_START) {
       jll_info("Esp32WiFiNetwork STA started");
       Esp32WiFiNetworkEvent networkEvent(Esp32WiFiNetworkEvent::Type::kStationStarted);
       xQueueOverwrite(eventQueue_, &networkEvent);
-    } else if (event_id == WIFI_EVENT_STA_CONNECTED) {
+    } else if (eventId == WIFI_EVENT_STA_CONNECTED) {
       jll_info("Esp32WiFiNetwork STA connected");
-    } else if (event_id == WIFI_EVENT_STA_DISCONNECTED) {
-      wifi_event_sta_disconnected_t* event = reinterpret_cast<wifi_event_sta_disconnected_t*>(event_data);
+    } else if (eventId == WIFI_EVENT_STA_DISCONNECTED) {
+      wifi_event_sta_disconnected_t* event = reinterpret_cast<wifi_event_sta_disconnected_t*>(eventData);
       jll_info("Esp32WiFiNetwork STA disconnected: %s", WiFiReasonToString(event->reason).c_str());
       Esp32WiFiNetworkEvent networkEvent(Esp32WiFiNetworkEvent::Type::kStationDisconnected);
       xQueueOverwrite(eventQueue_, &networkEvent);
     }
-  } else if (event_base == IP_EVENT) {
-    if (event_id == IP_EVENT_STA_GOT_IP) {
-      ip_event_got_ip_t* event = reinterpret_cast<ip_event_got_ip_t*>(event_data);
+  } else if (eventBase == IP_EVENT) {
+    if (eventId == IP_EVENT_STA_GOT_IP) {
+      ip_event_got_ip_t* event = reinterpret_cast<ip_event_got_ip_t*>(eventData);
       jll_info("Esp32WiFiNetwork got IP: " IPSTR, IP2STR(&event->ip_info.ip));
       Esp32WiFiNetworkEvent networkEvent(Esp32WiFiNetworkEvent::Type::kGotIp);
       memcpy(&networkEvent.data.address, &event->ip_info.ip, sizeof(networkEvent.data.address));
       xQueueOverwrite(eventQueue_, &networkEvent);
-    } else if (event_id == IP_EVENT_STA_LOST_IP) {
+    } else if (eventId == IP_EVENT_STA_LOST_IP) {
       jll_info("Esp32WiFiNetwork lost IP");
       Esp32WiFiNetworkEvent networkEvent(Esp32WiFiNetworkEvent::Type::kLostIp);
       xQueueOverwrite(eventQueue_, &networkEvent);
-    } else if (event_id == IP_EVENT_GOT_IP6) {
+    } else if (eventId == IP_EVENT_GOT_IP6) {
       jll_info("Esp32WiFiNetwork got IPv6");
     }
   }
@@ -383,8 +383,8 @@ NetworkDeviceId Esp32WiFiNetwork::InitWiFiStackAndQueryLocalDeviceId() {
   InitializeNetStack();
   esp_netif_create_default_wifi_sta();
 
-  wifi_init_config_t wifi_init_config = WIFI_INIT_CONFIG_DEFAULT();
-  ESP_ERROR_CHECK(esp_wifi_init(&wifi_init_config));
+  wifi_init_config_t wifiInitConfig = WIFI_INIT_CONFIG_DEFAULT();
+  ESP_ERROR_CHECK(esp_wifi_init(&wifiInitConfig));
 
   esp_event_handler_instance_t wifiInstance;
   esp_event_handler_instance_t ipInstance;
@@ -394,16 +394,16 @@ NetworkDeviceId Esp32WiFiNetwork::InitWiFiStackAndQueryLocalDeviceId() {
       esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &EventHandler, this, &wifiInstance));
   ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, ESP_EVENT_ANY_ID, &EventHandler, this, &ipInstance));
 
-  wifi_config_t wifi_config;
-  memset(&wifi_config, 0, sizeof(wifi_config));
-  wifi_config.sta = {};
-  strncpy(reinterpret_cast<char*>(wifi_config.sta.ssid), WiFiSsid(), sizeof(wifi_config.sta.ssid) - 1);
-  strncpy(reinterpret_cast<char*>(wifi_config.sta.password), WiFiPassword(), sizeof(wifi_config.sta.password) - 1);
+  wifi_config_t wifiConfig;
+  memset(&wifiConfig, 0, sizeof(wifiConfig));
+  wifiConfig.sta = {};
+  strncpy(reinterpret_cast<char*>(wifiConfig.sta.ssid), WiFiSsid(), sizeof(wifiConfig.sta.ssid) - 1);
+  strncpy(reinterpret_cast<char*>(wifiConfig.sta.password), WiFiPassword(), sizeof(wifiConfig.sta.password) - 1);
   // TODO add support for IPv4 link-local addressing in the absence of DHCP. It looks like ESP-IDF supports it via
   // CONFIG_LWIP_AUTOIP but that doesn't seem to exist in our sdkconfig. I think that's because ESP-IDF disables it by
   // default, and the Arduino Core doesn't override that, so we'll need a custom ESP-IDF sdkconfig to enable it.
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-  ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+  ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifiConfig));
   ESP_ERROR_CHECK(esp_wifi_start());
 
   uint8_t macAddress[6];
@@ -412,7 +412,7 @@ NetworkDeviceId Esp32WiFiNetwork::InitWiFiStackAndQueryLocalDeviceId() {
 }
 
 Esp32WiFiNetwork::Esp32WiFiNetwork()
-    : eventQueue_(xQueueCreate(/*num_queue_items=*/1, /*queue_item_size=*/sizeof(Esp32WiFiNetworkEvent))) {
+    : eventQueue_(xQueueCreate(/*numQueueItems=*/1, /*queueItemSize=*/sizeof(Esp32WiFiNetworkEvent))) {
   if (eventQueue_ == nullptr) { jll_fatal("Failed to create Esp32WiFiNetwork queue"); }
   udpPayload_ = reinterpret_cast<uint8_t*>(malloc(kReceiveBufferLength));
   if (udpPayload_ == nullptr) {
@@ -433,7 +433,7 @@ Esp32WiFiNetwork::Esp32WiFiNetwork()
 }
 
 // static
-Esp32WiFiNetwork* Esp32WiFiNetwork::get() {
+Esp32WiFiNetwork* Esp32WiFiNetwork::Get() {
   static Esp32WiFiNetwork sSingleton;
   return &sSingleton;
 }

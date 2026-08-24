@@ -13,13 +13,13 @@
 namespace jazzlights {
 
 #define ALL_NETWORK_STATUSES \
-  X(INITIALIZING)            \
-  X(CONNECTING)              \
-  X(CONNECTED)               \
-  X(CONNECTION_FAILED)
+  X(Initializing)            \
+  X(Connecting)              \
+  X(Connected)               \
+  X(ConnectionFailed)
 
 enum NetworkStatus {
-#define X(s) s,
+#define X(s) k##s,
   ALL_NETWORK_STATUSES
 #undef X
 };
@@ -37,50 +37,50 @@ class Network {
   virtual ~Network() = default;
 
   // Set message to send during next send opportunity.
-  virtual void setMessageToSend(const ProtocolMessage& messageToSend) = 0;
+  virtual void SetMessageToSend(const ProtocolMessage& messageToSend) = 0;
 
-  // Disables sending until the next call to setMessageToSend.
-  virtual void disableSending() = 0;
+  // Disables sending until the next call to SetMessageToSend.
+  virtual void DisableSending() = 0;
 
   // Gets list of received messages since last call.
-  std::list<ProtocolMessage> getReceivedMessages();
+  std::list<ProtocolMessage> GetReceivedMessages();
 
   // Called once per primary runloop.
-  void runLoop();
+  void RunLoop();
 
   // Get current network status.
-  NetworkStatus status() const;
+  NetworkStatus Status() const;
 
   // Get unique identifier for this network.
   NetworkId id() const { return id_; }
 
   // Request an immediate send.
-  virtual void triggerSendAsap() = 0;
+  virtual void TriggerSendAsap() = 0;
 
   // Returns this device's unique ID, often using its MAC address.
-  virtual NetworkDeviceId getLocalDeviceId() const = 0;
+  virtual NetworkDeviceId GetLocalDeviceId() const = 0;
 
   // The type of this network.
-  virtual NetworkType type() const = 0;
+  virtual NetworkType Type() const = 0;
 
   // Whether we should advertise patterns on this network if that's where we received them.
-  virtual bool shouldEcho() const = 0;
+  virtual bool ShouldEcho() const = 0;
 
   // Last time we received a message, or nullopt to indicate never.
-  virtual OptionalMicroseconds getLastReceiveTime() const = 0;
+  virtual OptionalMicroseconds GetLastReceiveTime() const = 0;
 
   // Get a human-readable status string that can be displayed to the user. Not const to allow taking locks.
-  virtual std::string getStatusStr() = 0;
+  virtual std::string GetStatusStr() = 0;
 
  protected:
   Network() = default;
   // Perform any work necessary to switch to requested state.
-  virtual NetworkStatus update(NetworkStatus status) = 0;
+  virtual NetworkStatus Update(NetworkStatus status) = 0;
   // Gets list of received messages since last call.
-  virtual std::list<ProtocolMessage> getReceivedMessagesImpl() = 0;
+  virtual std::list<ProtocolMessage> GetReceivedMessagesImpl() = 0;
   // Called once per primary runloop.
-  virtual void runLoopImpl() = 0;
-  NetworkStatus getStatus() const { return status_; }
+  virtual void RunLoopImpl() = 0;
+  NetworkStatus GetStatus() const { return status_; }
   // Default address and port for sync packets over IP.
   static constexpr uint16_t DefaultUdpPort() {
     // We intentionally squat on the babel-dtls port. Hopefully Juliusz won't mind.
@@ -102,14 +102,14 @@ class Network {
   bool WriteUdpPayload(const ProtocolMessage& messageToSend, uint8_t* udpPayload, size_t udpPayloadLength);
 
  private:
-  void checkStatus();
-  void reconnect();
+  void CheckStatus();
+  void Reconnect();
 
   static NetworkId NextAvailableId();
 
   const NetworkId id_ = NextAvailableId();
 
-  NetworkStatus status_ = INITIALIZING;
+  NetworkStatus status_ = kInitializing;
 
   Microseconds lastConnectionAttempt_ = 0;
   static constexpr Microseconds MinBackoffTimeout() { return 1000 * kMicrosecondsPerMillisecond; }
@@ -119,17 +119,17 @@ class Network {
 
 class UdpNetwork : public Network {
  public:
-  void setMessageToSend(const ProtocolMessage& messageToSend) override;
-  void disableSending() override;
-  void triggerSendAsap() override;
-  bool shouldEcho() const override { return false; }
-  OptionalMicroseconds getLastReceiveTime() const override { return lastReceiveTime_; }
+  void SetMessageToSend(const ProtocolMessage& messageToSend) override;
+  void DisableSending() override;
+  void TriggerSendAsap() override;
+  bool ShouldEcho() const override { return false; }
+  OptionalMicroseconds GetLastReceiveTime() const override { return lastReceiveTime_; }
 
  protected:
-  std::list<ProtocolMessage> getReceivedMessagesImpl() override;
-  void runLoopImpl() override;
-  virtual int recv(void* buf, size_t bufsize, std::string* details) = 0;
-  virtual void send(void* buf, size_t bufsize) = 0;
+  std::list<ProtocolMessage> GetReceivedMessagesImpl() override;
+  void RunLoopImpl() override;
+  virtual int Recv(void* buf, size_t bufsize, std::string* details) = 0;
+  virtual void Send(void* buf, size_t bufsize) = 0;
 
  private:
   bool hasDataToSend_ = false;
@@ -141,10 +141,10 @@ class UdpNetwork : public Network {
   OptionalMicroseconds lastReceiveTime_;
 };
 
-void writeUint32(uint8_t* data, uint32_t number);
-void writeUint16(uint8_t* data, uint16_t number);
-uint32_t readUint32(const uint8_t* data);
-uint16_t readUint16(const uint8_t* data);
+void WriteUint32(uint8_t* data, uint32_t number);
+void WriteUint16(uint8_t* data, uint16_t number);
+uint32_t ReadUint32(const uint8_t* data);
+uint16_t ReadUint16(const uint8_t* data);
 
 }  // namespace jazzlights
 

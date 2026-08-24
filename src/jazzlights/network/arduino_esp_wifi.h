@@ -20,14 +20,14 @@ namespace jazzlights {
 
 class ArduinoEspWiFiNetwork : public UdpNetwork {
  public:
-  static ArduinoEspWiFiNetwork* get();
+  static ArduinoEspWiFiNetwork* Get();
 
-  NetworkStatus update(NetworkStatus status) override;
-  int recv(void* buf, size_t bufsize, std::string* details) override;
-  void send(void* buf, size_t bufsize) override;
-  NetworkDeviceId getLocalDeviceId() const override { return localDeviceId_; }
-  NetworkType type() const override { return NetworkType::kWiFi; }
-  std::string getStatusStr() override;
+  NetworkStatus Update(NetworkStatus status) override;
+  int Recv(void* buf, size_t bufsize, std::string* details) override;
+  void Send(void* buf, size_t bufsize) override;
+  NetworkDeviceId GetLocalDeviceId() const override { return localDeviceId_; }
+  NetworkType Type() const override { return NetworkType::kWiFi; }
+  std::string GetStatusStr() override;
 
   struct StaticConf {
     const char* ip;

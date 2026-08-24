@@ -743,11 +743,11 @@ void Core2AwsUi::DrawSystemTextLines() {
   snprintf(line, sizeof(line) - 1, "Scrn Brgt %u/%u", onBrightness_, kMaxOnBrightness);
   DrawSystemTextLine(i++, line);
   // BLE.
-  snprintf(line, sizeof(line) - 1, "BLE: %s", Esp32BleNetwork::get()->getStatusStr().c_str());
+  snprintf(line, sizeof(line) - 1, "BLE: %s", Esp32BleNetwork::Get()->GetStatusStr().c_str());
   DrawSystemTextLine(i++, line);
 #if JL_WIFI
   // Wi-Fi.
-  snprintf(line, sizeof(line) - 1, "Wi-Fi: %s", WiFiNetwork::get()->getStatusStr().c_str());
+  snprintf(line, sizeof(line) - 1, "Wi-Fi: %s", WiFiNetwork::Get()->GetStatusStr().c_str());
   DrawSystemTextLine(i++, line);
 #endif  // JL_WIFI
   // Other.

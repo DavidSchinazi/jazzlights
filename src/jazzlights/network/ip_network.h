@@ -26,21 +26,21 @@ namespace jazzlights {
 
 class IpInterfaceManager : public Network {
  public:
-  static IpInterfaceManager* get();
+  static IpInterfaceManager* Get();
 
-  NetworkStatus update(NetworkStatus /*status*/) override { return CONNECTED; }
-  NetworkDeviceId getLocalDeviceId() const override { return localDeviceId_; }
-  NetworkType type() const override { return NetworkType::kOther; }
-  std::string getStatusStr() override;
-  void setMessageToSend(const ProtocolMessage& messageToSend) override;
-  void disableSending() override;
-  void triggerSendAsap() override;
-  bool shouldEcho() const override { return false; }
-  OptionalMicroseconds getLastReceiveTime() const override { return lastReceiveTime_.load(std::memory_order_relaxed); }
+  NetworkStatus Update(NetworkStatus /*status*/) override { return kConnected; }
+  NetworkDeviceId GetLocalDeviceId() const override { return localDeviceId_; }
+  NetworkType Type() const override { return NetworkType::kOther; }
+  std::string GetStatusStr() override;
+  void SetMessageToSend(const ProtocolMessage& messageToSend) override;
+  void DisableSending() override;
+  void TriggerSendAsap() override;
+  bool ShouldEcho() const override { return false; }
+  OptionalMicroseconds GetLastReceiveTime() const override { return lastReceiveTime_.load(std::memory_order_relaxed); }
 
  protected:
-  std::list<ProtocolMessage> getReceivedMessagesImpl() override;
-  void runLoopImpl() override {}
+  std::list<ProtocolMessage> GetReceivedMessagesImpl() override;
+  void RunLoopImpl() override {}
 
  private:
   explicit IpInterfaceManager();

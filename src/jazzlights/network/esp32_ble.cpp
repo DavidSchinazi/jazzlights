@@ -42,7 +42,7 @@ namespace jazzlights {
 namespace {
 
 // Squat on an unused Bluetooth Advertising Data Type.
-// https://bitbucket.org/bluetooth-SIG/public/src/main/assigned_numbers/core/ad_types.yaml
+// https://bitbucket.org/bluetooth-SIG/public/src/main/assigned_numbers/core/adTypes.yaml
 // https://www.bluetooth.com/specifications/assigned-numbers/
 constexpr uint8_t kAdvType = 0x96;
 
@@ -132,7 +132,7 @@ void Esp32BleNetwork::StopScanningIn(Microseconds duration) {
   timeToStopScanning_ = TimeMicros() + duration;
 }
 
-std::list<ProtocolMessage> Esp32BleNetwork::getReceivedMessagesImpl() {
+std::list<ProtocolMessage> Esp32BleNetwork::GetReceivedMessagesImpl() {
   std::list<ProtocolMessage> results;
   {
     const std::lock_guard<std::mutex> lock(mutex_);
@@ -142,7 +142,7 @@ std::list<ProtocolMessage> Esp32BleNetwork::getReceivedMessagesImpl() {
   return results;
 }
 
-void Esp32BleNetwork::triggerSendAsap() {
+void Esp32BleNetwork::TriggerSendAsap() {
   ESP32_BLE_DEBUG("TriggerSendAsap");
   {
     const std::lock_guard<std::mutex> lock(mutex_);
@@ -151,7 +151,7 @@ void Esp32BleNetwork::triggerSendAsap() {
   MaybeUpdateAdvertisingState();
 }
 
-void Esp32BleNetwork::setMessageToSend(const ProtocolMessage& messageToSend) {
+void Esp32BleNetwork::SetMessageToSend(const ProtocolMessage& messageToSend) {
   const std::lock_guard<std::mutex> lock(mutex_);
   if (!hasDataToSend_ || !messageToSend_.IsEqualExceptOriginationTime(messageToSend)) {
     ESP32_BLE_DEBUG("Setting messageToSend %s", NetworkMessageToString(messageToSend).c_str());
@@ -161,7 +161,7 @@ void Esp32BleNetwork::setMessageToSend(const ProtocolMessage& messageToSend) {
   messageToSend_ = messageToSend;
 }
 
-void Esp32BleNetwork::disableSending() {
+void Esp32BleNetwork::DisableSending() {
   const std::lock_guard<std::mutex> lock(mutex_);
   hasDataToSend_ = false;
 }
@@ -400,7 +400,7 @@ void Esp32BleNetwork::StartConfigureAdvertising() {
 
 void Esp32BleNetwork::GapCallback(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param) {
   const Microseconds callbackTime = TimeMicros();
-  get()->GapCallbackInner(event, param, callbackTime);
+  Get()->GapCallbackInner(event, param, callbackTime);
 }
 
 void Esp32BleNetwork::GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param,
@@ -535,7 +535,7 @@ NetworkDeviceId Esp32BleNetwork::InitBluetoothStackAndQueryLocalDeviceId() {
   return NetworkDeviceId(localAddress);
 }
 
-void Esp32BleNetwork::runLoopImpl() { MaybeUpdateAdvertisingState(); }
+void Esp32BleNetwork::RunLoopImpl() { MaybeUpdateAdvertisingState(); }
 
 std::string Esp32BleNetwork::StateToString(Esp32BleNetwork::State state) {
 #define CASE_STATE_RETURN_STRING(_case) \
@@ -555,9 +555,9 @@ std::string Esp32BleNetwork::StateToString(Esp32BleNetwork::State state) {
 #undef CASE_STATE_RETURN_STRING
 }
 
-std::string Esp32BleNetwork::getStatusStr() {
+std::string Esp32BleNetwork::GetStatusStr() {
   char statStr[100] = {};
-  const OptionalMicroseconds lastRcv = getLastReceiveTime();
+  const OptionalMicroseconds lastRcv = GetLastReceiveTime();
   snprintf(statStr, sizeof(statStr) - 1, "%lldms", lastRcv ? MsSinceForLogs(*lastRcv) : -1);
   return std::string(statStr);
 }
@@ -569,9 +569,9 @@ std::string Esp32BleNetwork::getStatusStr() {
 namespace jazzlights {
 
 // static
-Esp32BleNetwork* Esp32BleNetwork::get() {
-  static Esp32BleNetwork static_instance;
-  return &static_instance;
+Esp32BleNetwork* Esp32BleNetwork::Get() {
+  static Esp32BleNetwork sStaticInstance;
+  return &sStaticInstance;
 }
 
 }  // namespace jazzlights

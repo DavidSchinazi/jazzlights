@@ -28,7 +28,7 @@ int runMain(int argc, char** argv) {
     if (ch == 'n') { useNetwork = true; }
   }
   player.AddStrand(gPixels, noopRenderer);
-  if (useNetwork) { player.Connect(UnixUdpNetwork::get()); }
+  if (useNetwork) { player.Connect(UnixUdpNetwork::Get()); }
   player.Begin();
   Microseconds lastFpsEpochTime = 0;
   while (true) {

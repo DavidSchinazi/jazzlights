@@ -24,23 +24,23 @@ namespace jazzlights {
 // All calls are thread-safe.
 class Esp32BleNetwork : public Network {
  public:
-  static Esp32BleNetwork* get();
+  static Esp32BleNetwork* Get();
 
-  void setMessageToSend(const ProtocolMessage& messageToSend) override;
-  void disableSending() override;
-  void triggerSendAsap() override;
+  void SetMessageToSend(const ProtocolMessage& messageToSend) override;
+  void DisableSending() override;
+  void TriggerSendAsap() override;
 
   // Get this device's BLE MAC address.
-  NetworkDeviceId getLocalDeviceId() const override { return localDeviceId_; }
-  NetworkType type() const override { return NetworkType::kBLE; }
-  bool shouldEcho() const override { return true; }
-  OptionalMicroseconds getLastReceiveTime() const override { return lastReceiveTime_.load(std::memory_order_relaxed); }
-  std::string getStatusStr() override;
+  NetworkDeviceId GetLocalDeviceId() const override { return localDeviceId_; }
+  NetworkType Type() const override { return NetworkType::kBLE; }
+  bool ShouldEcho() const override { return true; }
+  OptionalMicroseconds GetLastReceiveTime() const override { return lastReceiveTime_.load(std::memory_order_relaxed); }
+  std::string GetStatusStr() override;
 
  protected:
-  void runLoopImpl() override;
-  NetworkStatus update(NetworkStatus /*status*/) override { return CONNECTED; }
-  std::list<ProtocolMessage> getReceivedMessagesImpl() override;
+  void RunLoopImpl() override;
+  NetworkStatus Update(NetworkStatus /*status*/) override { return kConnected; }
+  std::list<ProtocolMessage> GetReceivedMessagesImpl() override;
 
  private:
   // All public calls in this class are static, but internally they are backed by a
@@ -103,21 +103,21 @@ namespace jazzlights {
 // the rest of the codebase.
 class Esp32BleNetwork : public Network {
  public:
-  static Esp32BleNetwork* get();
+  static Esp32BleNetwork* Get();
 
-  void setMessageToSend(const ProtocolMessage& /*messageToSend*/) override {}
-  void disableSending() override {}
-  void triggerSendAsap() override {}
-  NetworkDeviceId getLocalDeviceId() const override { return NetworkDeviceId(); }
-  NetworkType type() const override { return NetworkType::kBLE; }
-  bool shouldEcho() const override { return false; }
-  OptionalMicroseconds getLastReceiveTime() const override { return std::nullopt; }
-  std::string getStatusStr() override { return "Compiled Out"; }
+  void SetMessageToSend(const ProtocolMessage& /*messageToSend*/) override {}
+  void DisableSending() override {}
+  void TriggerSendAsap() override {}
+  NetworkDeviceId GetLocalDeviceId() const override { return NetworkDeviceId(); }
+  NetworkType Type() const override { return NetworkType::kBLE; }
+  bool ShouldEcho() const override { return false; }
+  OptionalMicroseconds GetLastReceiveTime() const override { return std::nullopt; }
+  std::string GetStatusStr() override { return "Compiled Out"; }
 
  protected:
-  void runLoopImpl() override {}
-  NetworkStatus update(NetworkStatus /*status*/) override { return CONNECTED; }
-  std::list<ProtocolMessage> getReceivedMessagesImpl() override { return {}; }
+  void RunLoopImpl() override {}
+  NetworkStatus Update(NetworkStatus /*status*/) override { return kConnected; }
+  std::list<ProtocolMessage> GetReceivedMessagesImpl() override { return {}; }
 };
 }  // namespace jazzlights
 #endif  // JL_DISABLE_BLUETOOTH

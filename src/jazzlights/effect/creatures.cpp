@@ -151,7 +151,7 @@ void KnownCreatures::AddCreature(uint32_t color, Microseconds lastHeard, int rss
             [](Creature a, Creature b) { return ColorHash(a.color) > ColorHash(b.color); });
 }
 
-void KnownCreatures::update() {
+void KnownCreatures::Update() {
   Microseconds currentTime = TimeMicros();
   for (Creature& creature : creatures_) {
     int decayedRssi = creature.smoothedRssi;
@@ -207,7 +207,7 @@ void Creatures::Begin(const Frame& frame) const {
 
 // Called once for each point in time to prepare the state before calling Color() for each pixel.
 void Creatures::Rewind(const Frame& frame) const {
-  KnownCreatures::Get()->update();
+  KnownCreatures::Get()->Update();
   const std::vector<Creature>& creatures = KnownCreatures::Get()->creatures();
   size_t num_creatures = creatures.size();
   if (num_creatures > kMaxNumCreatureColours - 2) { num_creatures = kMaxNumCreatureColours - 2; }

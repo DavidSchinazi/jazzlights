@@ -132,11 +132,11 @@ void AtomMatrixUi::ScreenNetwork() {
   CRGB wifiStatusColor = CRGB::Black;
   CRGB followedNetworkColor = CRGB::Red;
 #if JL_WIFI
-  switch (WiFiNetwork::get()->status()) {
-    case INITIALIZING: wifiStatusColor = CRGB::Pink; break;
-    case CONNECTING: wifiStatusColor = CRGB::Yellow; break;
-    case CONNECTED: wifiStatusColor = CRGB(0, 255, 0); break;
-    case CONNECTION_FAILED: wifiStatusColor = CRGB::Red; break;
+  switch (WiFiNetwork::Get()->Status()) {
+    case kInitializing: wifiStatusColor = CRGB::Pink; break;
+    case kConnecting: wifiStatusColor = CRGB::Yellow; break;
+    case kConnected: wifiStatusColor = CRGB(0, 255, 0); break;
+    case kConnectionFailed: wifiStatusColor = CRGB::Red; break;
   }
   if (player_.following() == NetworkType::kWiFi) {
     switch (player_.currentNumHops()) {
@@ -145,11 +145,11 @@ void AtomMatrixUi::ScreenNetwork() {
       default: followedNetworkColor = CRGB(255, 255, 0); break;
     }
   }
-  const uint8_t wifiBrightness = GetReceiveTimeBrightness(WiFiNetwork::get()->getLastReceiveTime());
+  const uint8_t wifiBrightness = GetReceiveTimeBrightness(WiFiNetwork::Get()->GetLastReceiveTime());
 #else   // JL_WIFI
   const uint8_t wifiBrightness = 0;
 #endif  // JL_WIFI
-  const uint8_t bleBrightness = GetReceiveTimeBrightness(Esp32BleNetwork::get()->getLastReceiveTime());
+  const uint8_t bleBrightness = GetReceiveTimeBrightness(Esp32BleNetwork::Get()->GetLastReceiveTime());
   if (player_.following() == NetworkType::kBLE) {
     switch (player_.currentNumHops()) {
       case 1: followedNetworkColor = CRGB(0, 0, 255); break;

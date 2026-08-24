@@ -238,7 +238,7 @@ Player& Player::AddStrand(const Layout& l, Renderer& r) {
 }
 
 Player& Player::Connect(Network* n) {
-  jll_info("Connecting network %s", NetworkTypeToString(n->type()));
+  jll_info("Connecting network %s", NetworkTypeToString(n->Type()));
   networks_.push_back(n);
   engine_.SetHasNetworks(true);
   ready_ = false;
@@ -265,7 +265,7 @@ void Player::Begin() {
   engine_.SetHasNetworks(!networks_.empty());
   NetworkDeviceId localDeviceIdFromNetworks;
   for (const Network* network : networks_) {
-    NetworkDeviceId localDeviceId = network->getLocalDeviceId();
+    NetworkDeviceId localDeviceId = network->GetLocalDeviceId();
     if (localDeviceId != NetworkDeviceId()) {
       localDeviceIdFromNetworks = localDeviceId;
       break;
@@ -316,18 +316,18 @@ void Player::SendPendingMessage(bool sendAsap) {
   std::optional<ProtocolMessage> messageToSend = engine_.GetMessageToSend();
   if (!messageToSend) { return; }
   for (Network* network : networks_) {
-    if (!network->shouldEcho() && messageToSend->receiptNetworkId == network->id()) {
-      jll_debug("Not echoing for %s to %s ", NetworkTypeToString(network->type()),
+    if (!network->ShouldEcho() && messageToSend->receiptNetworkId == network->id()) {
+      jll_debug("Not echoing for %s to %s ", NetworkTypeToString(network->Type()),
                 NetworkMessageToString(*messageToSend).c_str());
-      network->disableSending();
+      network->DisableSending();
       continue;
     }
-    jll_player_message("Setting messageToSend for %s to %s ", NetworkTypeToString(network->type()),
+    jll_player_message("Setting messageToSend for %s to %s ", NetworkTypeToString(network->Type()),
                        NetworkMessageToString(*messageToSend).c_str());
-    network->setMessageToSend(*messageToSend);
+    network->SetMessageToSend(*messageToSend);
   }
   if (sendAsap) {
-    for (Network* network : networks_) { network->triggerSendAsap(); }
+    for (Network* network : networks_) { network->TriggerSendAsap(); }
   }
 }
 
@@ -389,7 +389,7 @@ bool Player::Render() {
 
   // First listen on all networks.
   for (Network* network : networks_) {
-    for (ProtocolMessage receivedMessage : network->getReceivedMessages()) {
+    for (ProtocolMessage receivedMessage : network->GetReceivedMessages()) {
       engine_.HandleReceivedMessage(receivedMessage);
     }
   }
@@ -399,7 +399,7 @@ bool Player::Render() {
   SendPendingMessage();
 
   // Then give all networks the opportunity to send.
-  for (Network* network : networks_) { network->runLoop(); }
+  for (Network* network : networks_) { network->RunLoop(); }
 
   frame_.context = nullptr;
   const Microseconds currentPatternStartTime = engine_.currentPatternStartTime();

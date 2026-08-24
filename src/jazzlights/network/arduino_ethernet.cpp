@@ -73,31 +73,31 @@ ArduinoEthernetNetwork::ArduinoEthernetNetwork() {
 }
 
 // static
-ArduinoEthernetNetwork* ArduinoEthernetNetwork::get() {
+ArduinoEthernetNetwork* ArduinoEthernetNetwork::Get() {
   static ArduinoEthernetNetwork sSingleton;
   return &sSingleton;
 }
 
-NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status) {
+NetworkStatus ArduinoEthernetNetwork::Update(NetworkStatus status) {
   switch (status) {
-    case INITIALIZING: {
+    case kInitializing: {
       EthernetHardwareStatus hwStatus = Ethernet.hardwareStatus();
       if (hwStatus == EthernetNoHardware) {
         jll_error("Ethernet failed to communicate with hardware");
         // In some cases this will fail because the W5500 chip hasn't booted yet.
-        // Currently, this is fixed by the automatic reconnect attempt 10s later.
+        // Currently, this is fixed by the automatic Reconnect attempt 10s later.
         // TODO try much sooner to avoid waiting 10s.
-        return CONNECTION_FAILED;
+        return kConnectionFailed;
       }
       jll_info("Ethernet detected hardware status %s with MAC address " DEVICE_ID_FMT,
                EthernetHardwareStatusToString(hwStatus).c_str(), DEVICE_ID_HEX(localDeviceId_));
-      return CONNECTING;
+      return kConnecting;
     }
-    case CONNECTING: {
+    case kConnecting: {
       EthernetLinkStatus linkStatus = Ethernet.linkStatus();
       if (linkStatus != LinkON) {
         jll_error("Ethernet is not plugged in (state %s)", EthernetLinkStatusToString(linkStatus).c_str());
-        return CONNECTION_FAILED;
+        return kConnectionFailed;
       }
       constexpr unsigned long kDhcpTimeoutMs = 5000;
       constexpr unsigned long kResponseTimeoutMs = 1000;
@@ -109,7 +109,7 @@ NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status) {
       if (beginRes == 0) {
         jll_error("Ethernet DHCP failed");
         // TODO add support for IPv4 link-local addresses.
-        return CONNECTION_FAILED;
+        return kConnectionFailed;
       }
       IPAddress ip = Ethernet.localIP();
       jll_info("Ethernet DHCP provided IP: %d.%d.%d.%d, bound to port %d, multicast group: %s", ip[0], ip[1], ip[2],
@@ -117,27 +117,27 @@ NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status) {
       IPAddress mcaddr;
       mcaddr.fromString(mcastAddr_);
       udp_.beginMulticast(mcaddr, port_);
-      return CONNECTED;
+      return kConnected;
     }
-    case CONNECTED: {
+    case kConnected: {
       Ethernet.maintain();
       return status;
     }
-    case CONNECTION_FAILED:
+    case kConnectionFailed:
       // Do nothing.
       return status;
   }
   return status;
 }
 
-std::string ArduinoEthernetNetwork::getStatusStr() {
-  switch (getStatus()) {
-    case INITIALIZING: return "init";
-    case CONNECTING: return "connecting";
-    case CONNECTION_FAILED: return "failed";
-    case CONNECTED: {
+std::string ArduinoEthernetNetwork::GetStatusStr() {
+  switch (GetStatus()) {
+    case kInitializing: return "init";
+    case kConnecting: return "connecting";
+    case kConnectionFailed: return "failed";
+    case kConnected: {
       IPAddress ip = Ethernet.localIP();
-      const OptionalMicroseconds lastRcv = getLastReceiveTime();
+      const OptionalMicroseconds lastRcv = GetLastReceiveTime();
       char statStr[100] = {};
       snprintf(statStr, sizeof(statStr) - 1, "%u.%u.%u.%u - %lldms", ip[0], ip[1], ip[2], ip[3],
                lastRcv ? MsSinceForLogs(*lastRcv) : -1);
@@ -147,7 +147,7 @@ std::string ArduinoEthernetNetwork::getStatusStr() {
   return "error";
 }
 
-int ArduinoEthernetNetwork::recv(void* buf, size_t bufsize, std::string* /*details*/) {
+int ArduinoEthernetNetwork::Recv(void* buf, size_t bufsize, std::string* /*details*/) {
   // TODO: figure out why udp_.parsePacket() sometimes blocks for multiple seconds or indefinitely.
   // From observing logs it looks like it sometimes returns way more than what would be expected in a single packet even
   // though it's supposed to return how many bytes are available in the next packet. From looking at the source code for
@@ -158,7 +158,7 @@ int ArduinoEthernetNetwork::recv(void* buf, size_t bufsize, std::string* /*detai
   return udp_.read((unsigned char*)buf, bufsize);
 }
 
-void ArduinoEthernetNetwork::send(void* buf, size_t bufsize) {
+void ArduinoEthernetNetwork::Send(void* buf, size_t bufsize) {
   IPAddress ip;
   ip.fromString(mcastAddr_);
   udp_.beginPacket(ip, port_);

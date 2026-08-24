@@ -62,7 +62,7 @@ constexpr int kEthernetPinInterrupt = 21;  // Fake because -1 isn't supported in
 #endif
 }  // namespace
 
-std::string Esp32EthernetNetwork::getStatusStr() {
+std::string Esp32EthernetNetwork::GetStatusStr() {
   struct in_addr localAddress = {};
   {
     const std::lock_guard<std::mutex> lock(mutex_);
@@ -70,7 +70,7 @@ std::string Esp32EthernetNetwork::getStatusStr() {
   }
   struct in_addr emptyAddress = {INADDR_ANY};
   if (memcmp(&emptyAddress, &localAddress, sizeof(localAddress)) != 0) {
-    const OptionalMicroseconds lastRcv = getLastReceiveTime();
+    const OptionalMicroseconds lastRcv = GetLastReceiveTime();
     char addressString[INET_ADDRSTRLEN + 1] = {};
     if (inet_ntop(AF_INET, &localAddress, addressString, sizeof(addressString) - 1) == nullptr) {
       jll_fatal("Esp32EthernetNetwork printing local address failed with error %d: %s", errno, strerror(errno));
@@ -83,20 +83,20 @@ std::string Esp32EthernetNetwork::getStatusStr() {
   }
 }
 
-void Esp32EthernetNetwork::setMessageToSend(const ProtocolMessage& messageToSend) {
+void Esp32EthernetNetwork::SetMessageToSend(const ProtocolMessage& messageToSend) {
   const std::lock_guard<std::mutex> lock(mutex_);
   hasDataToSend_ = true;
   messageToSend_ = messageToSend;
 }
 
-void Esp32EthernetNetwork::disableSending() {
+void Esp32EthernetNetwork::DisableSending() {
   const std::lock_guard<std::mutex> lock(mutex_);
   hasDataToSend_ = false;
 }
 
-void Esp32EthernetNetwork::triggerSendAsap() {}
+void Esp32EthernetNetwork::TriggerSendAsap() {}
 
-std::list<ProtocolMessage> Esp32EthernetNetwork::getReceivedMessagesImpl() {
+std::list<ProtocolMessage> Esp32EthernetNetwork::GetReceivedMessagesImpl() {
   std::list<ProtocolMessage> results;
   {
     const std::lock_guard<std::mutex> lock(mutex_);
@@ -168,43 +168,43 @@ void Esp32EthernetNetwork::CloseSocket() {
 }
 
 // static
-void Esp32EthernetNetwork::EventHandler(void* event_handler_arg, esp_event_base_t event_base, int32_t event_id,
-                                        void* event_data) {
-  Esp32EthernetNetwork* ethNetwork = reinterpret_cast<Esp32EthernetNetwork*>(event_handler_arg);
-  ethNetwork->HandleEvent(event_base, event_id, event_data);
+void Esp32EthernetNetwork::EventHandler(void* eventHandlerArg, esp_event_base_t eventBase, int32_t eventId,
+                                        void* eventData) {
+  Esp32EthernetNetwork* ethNetwork = reinterpret_cast<Esp32EthernetNetwork*>(eventHandlerArg);
+  ethNetwork->HandleEvent(eventBase, eventId, eventData);
 }
 
-void Esp32EthernetNetwork::HandleEvent(esp_event_base_t event_base, int32_t event_id, void* event_data) {
-  if (event_base == ETH_EVENT) {
-    if (event_id == ETHERNET_EVENT_CONNECTED) {
+void Esp32EthernetNetwork::HandleEvent(esp_event_base_t eventBase, int32_t eventId, void* eventData) {
+  if (eventBase == ETH_EVENT) {
+    if (eventId == ETHERNET_EVENT_CONNECTED) {
       jll_info("Esp32EthernetNetwork got a valid link");
-    } else if (event_id == ETHERNET_EVENT_DISCONNECTED) {
+    } else if (eventId == ETHERNET_EVENT_DISCONNECTED) {
       jll_info("Esp32EthernetNetwork lost a valid link");
-    } else if (event_id == ETHERNET_EVENT_START) {
+    } else if (eventId == ETHERNET_EVENT_START) {
       jll_info("Esp32EthernetNetwork driver start");
-    } else if (event_id == ETHERNET_EVENT_STOP) {
+    } else if (eventId == ETHERNET_EVENT_STOP) {
       jll_info("Esp32EthernetNetwork driver stop");
     } else {
-      jll_info("Esp32EthernetNetwork handling ETH_EVENT id %d", static_cast<int>(event_id));
+      jll_info("Esp32EthernetNetwork handling ETH_EVENT id %d", static_cast<int>(eventId));
     }
-  } else if (event_base == IP_EVENT) {
-    if (event_id == IP_EVENT_ETH_GOT_IP) {
-      ip_event_got_ip_t* event = reinterpret_cast<ip_event_got_ip_t*>(event_data);
+  } else if (eventBase == IP_EVENT) {
+    if (eventId == IP_EVENT_ETH_GOT_IP) {
+      ip_event_got_ip_t* event = reinterpret_cast<ip_event_got_ip_t*>(eventData);
       jll_info("Esp32EthernetNetwork got IP: " IPSTR, IP2STR(&event->ip_info.ip));
       Esp32EthernetNetworkEvent networkEvent(Esp32EthernetNetworkEvent::Type::kGotIp);
       memcpy(&networkEvent.data.address, &event->ip_info.ip, sizeof(networkEvent.data.address));
       xQueueOverwrite(eventQueue_, &networkEvent);
-    } else if (event_id == IP_EVENT_ETH_LOST_IP) {
+    } else if (eventId == IP_EVENT_ETH_LOST_IP) {
       jll_info("Esp32EthernetNetwork lost IP");
       Esp32EthernetNetworkEvent networkEvent(Esp32EthernetNetworkEvent::Type::kLostIp);
       xQueueOverwrite(eventQueue_, &networkEvent);
-    } else if (event_id == IP_EVENT_GOT_IP6) {
+    } else if (eventId == IP_EVENT_GOT_IP6) {
       jll_info("Esp32EthernetNetwork got IPv6");
     } else {
-      jll_info("Esp32EthernetNetwork handling IP_EVENT id %d", static_cast<int>(event_id));
+      jll_info("Esp32EthernetNetwork handling IP_EVENT id %d", static_cast<int>(eventId));
     }
   } else {
-    jll_info("Esp32EthernetNetwork handling unknown event base %p id %d", event_base, (int)event_id);
+    jll_info("Esp32EthernetNetwork handling unknown event base %p id %d", eventBase, (int)eventId);
   }
 }
 
@@ -330,17 +330,17 @@ void Esp32EthernetNetwork::RunTask() {
 // static
 NetworkDeviceId Esp32EthernetNetwork::QueryLocalDeviceId() {
   // W5500 SPI Ethernet modules do not have a MAC address, so we instead add one to the Wi-Fi MAC.
-  uint8_t wifi_mac_addr[6];
+  uint8_t wifiMacAddr[6];
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
-  ESP_ERROR_CHECK(esp_read_mac(wifi_mac_addr, ESP_MAC_EFUSE_FACTORY));
+  ESP_ERROR_CHECK(esp_read_mac(wifiMacAddr, ESP_MAC_EFUSE_FACTORY));
 #else
-  ESP_ERROR_CHECK(esp_efuse_mac_get_default(wifi_mac_addr));
+  ESP_ERROR_CHECK(esp_efuse_mac_get_default(wifiMacAddr));
 #endif
-  return NetworkDeviceId(wifi_mac_addr).PlusOne();
+  return NetworkDeviceId(wifiMacAddr).PlusOne();
 }
 
 Esp32EthernetNetwork::Esp32EthernetNetwork()
-    : eventQueue_(xQueueCreate(/*num_queue_items=*/1, /*queue_item_size=*/sizeof(Esp32EthernetNetworkEvent))) {
+    : eventQueue_(xQueueCreate(/*numQueueItems=*/1, /*queueItemSize=*/sizeof(Esp32EthernetNetworkEvent))) {
   if (eventQueue_ == nullptr) { jll_fatal("Failed to create Esp32EthernetNetwork queue"); }
   udpPayload_ = reinterpret_cast<uint8_t*>(malloc(kReceiveBufferLength));
   if (udpPayload_ == nullptr) {
@@ -353,7 +353,7 @@ Esp32EthernetNetwork::Esp32EthernetNetwork()
   // Install GPIO ISR handler to be able to service SPI ethernet modules interrupts.
   InstallGpioIsrService();
 
-  spi_host_device_t host_id = SPI3_HOST;
+  spi_host_device_t hostId = SPI3_HOST;
 
   // Init SPI bus.
   spi_bus_config_t buscfg = {
@@ -363,19 +363,19 @@ Esp32EthernetNetwork::Esp32EthernetNetwork()
       .quadwp_io_num = -1,
       .quadhd_io_num = -1,
   };
-  esp_err_t spiInitErr = spi_bus_initialize(host_id, &buscfg, SPI_DMA_CH_AUTO);
+  esp_err_t spiInitErr = spi_bus_initialize(hostId, &buscfg, SPI_DMA_CH_AUTO);
   if (spiInitErr == ESP_ERR_INVALID_STATE) {
     jll_error("Esp32EthernetNetwork - SPI bus already initialized");
     spiInitErr = ESP_OK;
   }
   ESP_ERROR_CHECK(spiInitErr);
 
-  eth_mac_config_t mac_config = ETH_MAC_DEFAULT_CONFIG();
-  eth_phy_config_t phy_config = ETH_PHY_DEFAULT_CONFIG();
-  phy_config.phy_addr = host_id;
-  phy_config.reset_gpio_num = kEthernetPinReset;
+  eth_mac_config_t macConfig = ETH_MAC_DEFAULT_CONFIG();
+  eth_phy_config_t phyConfig = ETH_PHY_DEFAULT_CONFIG();
+  phyConfig.phy_addr = hostId;
+  phyConfig.reset_gpio_num = kEthernetPinReset;
 
-  spi_device_interface_config_t spi_devcfg = {
+  spi_device_interface_config_t spiDevCfg = {
       .mode = 0,
       .clock_speed_hz = 20 * 1000 * 1000,
       .spics_io_num = kEthernetPinCS,
@@ -383,30 +383,30 @@ Esp32EthernetNetwork::Esp32EthernetNetwork()
   };
 
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
-  eth_w5500_config_t w5500_config = ETH_W5500_DEFAULT_CONFIG(host_id, &spi_devcfg);
-  if (kEthernetPinInterrupt < 0) { w5500_config.poll_period_ms = 10; }
+  eth_w5500_config_t w5500Config = ETH_W5500_DEFAULT_CONFIG(hostId, &spiDevCfg);
+  if (kEthernetPinInterrupt < 0) { w5500Config.poll_period_ms = 10; }
 #else
-  spi_device_handle_t spi_handle = nullptr;
-  ESP_ERROR_CHECK(spi_bus_add_device(host_id, &spi_devcfg, &spi_handle));
-  eth_w5500_config_t w5500_config = ETH_W5500_DEFAULT_CONFIG(spi_handle);
+  spi_device_handle_t spiHandle = nullptr;
+  ESP_ERROR_CHECK(spi_bus_add_device(hostId, &spiDevCfg, &spiHandle));
+  eth_w5500_config_t w5500Config = ETH_W5500_DEFAULT_CONFIG(spiHandle);
 #endif
-  w5500_config.int_gpio_num = kEthernetPinInterrupt;
-  esp_eth_mac_t* mac = esp_eth_mac_new_w5500(&w5500_config, &mac_config);
-  esp_eth_phy_t* phy = esp_eth_phy_new_w5500(&phy_config);
+  w5500Config.int_gpio_num = kEthernetPinInterrupt;
+  esp_eth_mac_t* mac = esp_eth_mac_new_w5500(&w5500Config, &macConfig);
+  esp_eth_phy_t* phy = esp_eth_phy_new_w5500(&phyConfig);
 
-  esp_eth_handle_t eth_handle = nullptr;
-  esp_eth_config_t eth_config_spi = ETH_DEFAULT_CONFIG(mac, phy);
-  ESP_ERROR_CHECK(esp_eth_driver_install(&eth_config_spi, &eth_handle));
+  esp_eth_handle_t ethHandle = nullptr;
+  esp_eth_config_t ethConfigSpi = ETH_DEFAULT_CONFIG(mac, phy);
+  ESP_ERROR_CHECK(esp_eth_driver_install(&ethConfigSpi, &ethHandle));
 
-  uint8_t mac_address[6];
-  localDeviceId_.WriteTo(mac_address);
-  ESP_ERROR_CHECK(esp_eth_ioctl(eth_handle, ETH_CMD_S_MAC_ADDR, mac_address));
+  uint8_t macAddress[6];
+  localDeviceId_.WriteTo(macAddress);
+  ESP_ERROR_CHECK(esp_eth_ioctl(ethHandle, ETH_CMD_S_MAC_ADDR, macAddress));
 
   InitializeNetStack();
 
   esp_netif_config_t cfg = ESP_NETIF_DEFAULT_ETH();
-  esp_netif_t* eth_netif = esp_netif_new(&cfg);
-  ESP_ERROR_CHECK(esp_netif_attach(eth_netif, esp_eth_new_netif_glue(eth_handle)));
+  esp_netif_t* ethNetif = esp_netif_new(&cfg);
+  ESP_ERROR_CHECK(esp_netif_attach(ethNetif, esp_eth_new_netif_glue(ethHandle)));
 
   esp_event_handler_instance_t ethInstance;
   esp_event_handler_instance_t ipInstance;
@@ -414,7 +414,7 @@ Esp32EthernetNetwork::Esp32EthernetNetwork()
   ESP_ERROR_CHECK(esp_event_handler_instance_register(ETH_EVENT, ESP_EVENT_ANY_ID, &EventHandler, this, &ethInstance));
   ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, ESP_EVENT_ANY_ID, &EventHandler, this, &ipInstance));
 
-  ESP_ERROR_CHECK(esp_eth_start(eth_handle));
+  ESP_ERROR_CHECK(esp_eth_start(ethHandle));
   ESP_ERROR_CHECK(esp_netif_init());
 
   if (inet_pton(AF_INET, DefaultMulticastAddress(), &multicastAddress_) != 1) {
@@ -431,7 +431,7 @@ Esp32EthernetNetwork::Esp32EthernetNetwork()
 }
 
 // static
-Esp32EthernetNetwork* Esp32EthernetNetwork::get() {
+Esp32EthernetNetwork* Esp32EthernetNetwork::Get() {
   static Esp32EthernetNetwork sSingleton;
   return &sSingleton;
 }

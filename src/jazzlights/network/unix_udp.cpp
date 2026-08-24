@@ -24,7 +24,7 @@
 namespace jazzlights {
 
 // returns 2 when newly created, 1 when already existing, 0 on failure.
-int UnixUdpNetwork::setupSocketForInterface(const char* ifName, struct in_addr localAddr, int ifIndex) {
+int UnixUdpNetwork::SetupSocketForInterface(const char* ifName, struct in_addr localAddr, int ifIndex) {
   int fd = -1;
   auto search = sockets_.find(std::string(ifName));
   if (search != sockets_.end()) { fd = search->second; }
@@ -115,7 +115,7 @@ int UnixUdpNetwork::setupSocketForInterface(const char* ifName, struct in_addr l
   return 0;
 }
 
-void UnixUdpNetwork::invalidateSocket(std::string ifName) {
+void UnixUdpNetwork::InvalidateSocket(std::string ifName) {
   auto search = sockets_.find(ifName);
   if (search == sockets_.end()) {
     // No socket for ifName.
@@ -158,7 +158,7 @@ NetworkDeviceId UnixUdpNetwork::QueryLocalDeviceId() {
   return localAddress;
 }
 
-bool UnixUdpNetwork::setupSockets() {
+bool UnixUdpNetwork::SetupSockets() {
   struct ifaddrs* ifaddr = NULL;
   if (getifaddrs(&ifaddr) == -1) {
     jll_error("getifaddrs failed: %s", strerror(errno));
@@ -193,7 +193,7 @@ bool UnixUdpNetwork::setupSockets() {
     }
 
     sockaddr_in* sin = reinterpret_cast<sockaddr_in*>(ifa->ifa_addr);
-    if (setupSocketForInterface(ifa->ifa_name, sin->sin_addr, ifIndex) == 2) { newValidSockets++; }
+    if (SetupSocketForInterface(ifa->ifa_name, sin->sin_addr, ifIndex) == 2) { newValidSockets++; }
   }
 
   freeifaddrs(ifaddr);
@@ -205,16 +205,16 @@ UnixUdpNetwork::UnixUdpNetwork() {
   if (inet_pton(AF_INET, DefaultMulticastAddress(), &mcastAddr_) != 1) {
     jll_fatal("UnixUdpNetwork failed to parse multicast address");
   }
-  setupSockets();
+  SetupSockets();
 }
 
 // static
-UnixUdpNetwork* UnixUdpNetwork::get() {
+UnixUdpNetwork* UnixUdpNetwork::Get() {
   static UnixUdpNetwork sSingleton;
   return &sSingleton;
 }
 
-int UnixUdpNetwork::recv(void* buf, size_t bufsize, std::string* /*details*/) {
+int UnixUdpNetwork::Recv(void* buf, size_t bufsize, std::string* /*details*/) {
   for (auto pair : sockets_) {
     std::string ifName = pair.first;
     int fd = pair.second;
@@ -229,8 +229,8 @@ int UnixUdpNetwork::recv(void* buf, size_t bufsize, std::string* /*details*/) {
         continue;  // no data on nonblocking socket
       }
       jll_error("Failed to receive data on UDP socket %d ifName %s: %s", fd, ifName.c_str(), strerror(errorCode));
-      invalidateSocket(ifName);
-      setupSockets();
+      InvalidateSocket(ifName);
+      SetupSockets();
       // Exit loop since sockets_ has been modified, and that invalidates the loop iterator.
       break;
     }
@@ -249,8 +249,8 @@ int UnixUdpNetwork::recv(void* buf, size_t bufsize, std::string* /*details*/) {
   return -1;
 }
 
-void UnixUdpNetwork::send(void* buf, size_t bufsize) {
-  setupSockets();
+void UnixUdpNetwork::Send(void* buf, size_t bufsize) {
+  SetupSockets();
   sockaddr_in sin = {
       // Do not set sin_len since it is no longer available on Linux and it is not needed on macOS.
       .sin_family = AF_INET,
@@ -274,16 +274,16 @@ void UnixUdpNetwork::send(void* buf, size_t bufsize) {
         // recreate it and infinite loop.
         continue;
       }
-      invalidateSocket(ifName);
-      setupSockets();
+      InvalidateSocket(ifName);
+      SetupSockets();
       // Exit loop since sockets_ has been modified, and that invalidates the loop iterator.
       break;
     }
     if (static_cast<size_t>(sendResult) != bufsize) {
       jll_error("Incorrectly sent %zd bytes instead of %zu on UDP socket %d ifName %s: %s", sendResult, bufsize, fd,
                 ifName.c_str(), strerror(errno));
-      invalidateSocket(ifName);
-      setupSockets();
+      InvalidateSocket(ifName);
+      SetupSockets();
       // Exit loop since sockets_ has been modified, and that invalidates the loop iterator.
       break;
     }

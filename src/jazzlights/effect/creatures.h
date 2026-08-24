@@ -38,7 +38,7 @@ class KnownCreatures {
   void ExpireOldEntries();
   void AddCreature(uint32_t color, Microseconds lastHeard, int rssi, bool isPartying);
   // Update all known creature states (decay RSSI, increment counters, etc).
-  void update();
+  void Update();
   bool IsPartying() const { return isPartying_; }
   void SetIsPartying(bool isPartying) { isPartying_ = isPartying; }
   void HandleHeardOrrery();

@@ -20,22 +20,22 @@ namespace jazzlights {
 
 class Esp32WiFiNetwork : public Network {
  public:
-  static Esp32WiFiNetwork* get();
+  static Esp32WiFiNetwork* Get();
   ~Esp32WiFiNetwork();
 
-  NetworkStatus update(NetworkStatus /*status*/) override { return CONNECTED; }
-  NetworkDeviceId getLocalDeviceId() const override { return localDeviceId_; }
-  NetworkType type() const override { return NetworkType::kWiFi; }
-  std::string getStatusStr() override;
-  void setMessageToSend(const ProtocolMessage& messageToSend) override;
-  void disableSending() override;
-  void triggerSendAsap() override;
-  bool shouldEcho() const override { return false; }
-  OptionalMicroseconds getLastReceiveTime() const override { return lastReceiveTime_.load(std::memory_order_relaxed); }
+  NetworkStatus Update(NetworkStatus /*status*/) override { return kConnected; }
+  NetworkDeviceId GetLocalDeviceId() const override { return localDeviceId_; }
+  NetworkType Type() const override { return NetworkType::kWiFi; }
+  std::string GetStatusStr() override;
+  void SetMessageToSend(const ProtocolMessage& messageToSend) override;
+  void DisableSending() override;
+  void TriggerSendAsap() override;
+  bool ShouldEcho() const override { return false; }
+  OptionalMicroseconds GetLastReceiveTime() const override { return lastReceiveTime_.load(std::memory_order_relaxed); }
 
  protected:
-  std::list<ProtocolMessage> getReceivedMessagesImpl() override;
-  void runLoopImpl() override {}
+  std::list<ProtocolMessage> GetReceivedMessagesImpl() override;
+  void RunLoopImpl() override {}
 
  private:
   struct Esp32WiFiNetworkEvent {
@@ -58,8 +58,8 @@ class Esp32WiFiNetwork : public Network {
     explicit Esp32WiFiNetworkEvent() : Esp32WiFiNetworkEvent(Type::kReserved) {}
   };
   explicit Esp32WiFiNetwork();
-  static void EventHandler(void* event_handler_arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
-  void HandleEvent(esp_event_base_t event_base, int32_t event_id, void* event_data);
+  static void EventHandler(void* eventHandlerArg, esp_event_base_t eventBase, int32_t eventId, void* eventData);
+  void HandleEvent(esp_event_base_t eventBase, int32_t eventId, void* eventData);
   void HandleNetworkEvent(const Esp32WiFiNetworkEvent& networkEvent);
   static void TaskFunction(void* parameters);
   void RunTask();

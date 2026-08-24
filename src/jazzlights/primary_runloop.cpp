@@ -129,12 +129,12 @@ void SetupPrimaryRunLoop() {
   player.SetPrecedenceGain(1000);
 #endif
 
-  player.Connect(Esp32BleNetwork::get());
+  player.Connect(Esp32BleNetwork::Get());
 #if JL_WIFI
-  player.Connect(WiFiNetwork::get());
+  player.Connect(WiFiNetwork::Get());
 #endif  // JL_WIFI
 #if JL_ETHERNET
-  player.Connect(EthernetNetwork::get());
+  player.Connect(EthernetNetwork::Get());
 #endif  // JL_ETHERNET
 #if JL_IS_CONFIG(ORRERY_PLANET) && !JL_ORRERY_PLUTO
   OrreryPlanet::Get()->Setup(player);
@@ -160,7 +160,7 @@ void RunPrimaryRunLoop() {
   OrreryPlanet::Get()->RunLoop();
 #endif  // ORRERY
   SAVE_TIME_POINT(PrimaryRunLoop, UserInterface);
-  Esp32BleNetwork::get()->runLoop();
+  Esp32BleNetwork::Get()->RunLoop();
   SAVE_TIME_POINT(PrimaryRunLoop, Bluetooth);
 
 #if !JL_IS_CONFIG(PHONE)
@@ -172,7 +172,7 @@ void RunPrimaryRunLoop() {
   SAVE_TIME_POINT(PrimaryRunLoop, PlayerCompute);
   if (shouldRender) { runner.Render(); }
 #if JL_WEBSOCKET_SERVER
-  if (WiFiNetwork::get()->status() != INITIALIZING) {
+  if (WiFiNetwork::Get()->Status() != kInitializing) {
     // This can't be called until after the networks have been initialized.
     websocket_server.Start();
   }

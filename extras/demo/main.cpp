@@ -33,7 +33,7 @@ int runMain(int argc, char** argv) {
   player.SetPrecedenceGain(5000);
   player.AddStrand(layout, renderer);
   player.SetRandomizeLocalDeviceId(true);
-  player.Connect(UnixUdpNetwork::get());
+  player.Connect(UnixUdpNetwork::Get());
   player.Begin();
   if (startLooping) { player.LoopOne(); }
   if (shouldSetPattern) { player.SetPattern(pattern); }
