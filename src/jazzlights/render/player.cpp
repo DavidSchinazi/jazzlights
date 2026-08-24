@@ -121,8 +121,8 @@ static const Effect* PatternFromBits(PatternBits pattern, const Player& player) 
   // Reserved types 0 (basic), 1 (mapping), and 2 (coloring) don’t use a palette.
   // Reserved type 3 and the non-reserved patterns do use ColorWithPalette.
   if (PatternIsReserved(pattern)) {
-    const uint8_t reserved_type = (pattern >> 4) & 0xF;
-    if (reserved_type == 0x0) {
+    const uint8_t reservedType = (pattern >> 4) & 0xF;
+    if (reservedType == 0x0) {
       switch ((pattern >> 8) & 0xFF) {
         case 0x00: return &kBlackEffect;
         case 0x01: return &kRedEffect;
@@ -157,11 +157,11 @@ static const Effect* PatternFromBits(PatternBits pattern, const Player& player) 
           return &kWhiteGlowEffect;
 #endif  // CREATURE
       }
-    } else if (reserved_type == 0x1) {
+    } else if (reservedType == 0x1) {
       return &kMappingEffect;
-    } else if (reserved_type == 0x2) {
+    } else if (reservedType == 0x2) {
       return &kColoringEffect;
-    } else if (reserved_type == 0x3) {
+    } else if (reservedType == 0x3) {
       // Reserved effects that use a palette.
       switch ((pattern >> 8) & 0xF) {
         case 0x0:  // Use the pattern bits.
@@ -180,7 +180,7 @@ static const Effect* PatternFromBits(PatternBits pattern, const Player& player) 
       }
     }
 #if JL_IS_CONFIG(CLOUDS)
-    else if (reserved_type == 0xF) {
+    else if (reservedType == 0xF) {
       return &kCloudsEffect;
     }
 #endif  // CLOUDS
@@ -433,11 +433,11 @@ bool Player::Render() {
   const Effect* effect = PatternFromBits(frame_.pattern, *this);
 #if JL_IS_CONFIG(FAIRY_WAND)
   constexpr Microseconds kOverridePatternDuration = 8 * kMicrosecondsPerSecond;  // 8s.
-  static const FunctionalEffect fairy_wand_effect = FairyWand();
+  static const FunctionalEffect kFairyWandEffect = FairyWand();
   if (overridePatternStartTime_) {
     if (currentTime - *overridePatternStartTime_ < kOverridePatternDuration) {
       SetFrameTime(frame_, currentTime, *overridePatternStartTime_);
-      effect = &fairy_wand_effect;
+      effect = &kFairyWandEffect;
     }
   }
 #elif JL_IS_CONFIG(CREATURE)

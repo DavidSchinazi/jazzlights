@@ -86,13 +86,13 @@ constexpr Point pixelMap2[] = {
 };
 
 static_assert(JL_LENGTH(pixelMap2) == 33, "bad size");
-PixelMap pixels2(JL_LENGTH(pixelMap2), pixelMap2);
+PixelMap sPixels2(JL_LENGTH(pixelMap2), pixelMap2);
 
 }  // namespace
 
 void AddLedsToRunner(FastLedRunner* runner) {
   runner->AddLeds<WS2811, LED_PIN, RGB>(sPixels);
-  runner->AddLeds<WS2812B, LED_PIN2, GRB>(pixels2);
+  runner->AddLeds<WS2812B, LED_PIN2, GRB>(sPixels2);
 }
 
 }  // namespace jazzlights

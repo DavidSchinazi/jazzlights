@@ -28,14 +28,14 @@ class TheMatrix : public XYIndexStateEffect<MatrixState, uint8_t> {
     state->maxTicks = f.predictableRandom->GetRandomNumberBetween(1, 5);
     state->currentTicks = 0;
     // Progress the effect 2*h times to get pixels on all rows.
-    for (size_t y = 0; y < 2 * H(f); y++) { progressEffect(f, state); }
+    for (size_t y = 0; y < 2 * H(f); y++) { ProgressEffect(f, state); }
   }
   void InnerRewind(const Frame& frame, MatrixState* state) const override {
     // Only act every maxTicks ticks.
     state->currentTicks++;
     if (state->currentTicks < state->maxTicks) { return; }
     state->currentTicks = 0;
-    progressEffect(frame, state);
+    ProgressEffect(frame, state);
   }
 
   CRGB InnerColor(const Frame& f, MatrixState* /*state*/, const Pixel& /*px*/) const override {
@@ -51,7 +51,7 @@ class TheMatrix : public XYIndexStateEffect<MatrixState, uint8_t> {
   std::string EffectName(PatternBits /*pattern*/) const override { return "the-matrix"; }
 
  private:
-  void progressEffect(const Frame& f, MatrixState* state) const {
+  void ProgressEffect(const Frame& f, MatrixState* state) const {
     for (size_t y = H(f) - 1;; y--) {
       for (size_t x = 0; x < W(f); x++) {
         if (Ps(f, x, y) == kMatrixSpawn) {

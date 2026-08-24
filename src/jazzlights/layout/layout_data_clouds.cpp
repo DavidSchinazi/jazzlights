@@ -100,7 +100,7 @@ constexpr Point cloudPixelMap[] = {
 };
 
 static_assert(JL_LENGTH(cloudPixelMap) == 100, "bad size");
-PixelMap cloudPixels(JL_LENGTH(cloudPixelMap), cloudPixelMap);
+PixelMap sCloudPixels(JL_LENGTH(cloudPixelMap), cloudPixelMap);
 
 constexpr Point ceiling1PixelMap[] = {
     {1.00,  -1.00},
@@ -149,7 +149,7 @@ constexpr Point ceiling1PixelMap[] = {
 };
 
 static_assert(JL_LENGTH(ceiling1PixelMap) == 46, "bad size");
-PixelMap ceiling1Pixels(JL_LENGTH(ceiling1PixelMap), ceiling1PixelMap);
+PixelMap sCeiling1Pixels(JL_LENGTH(ceiling1PixelMap), ceiling1PixelMap);
 
 constexpr Point ceiling2PixelMap[] = {
     {2.00,  -1.00},
@@ -194,7 +194,7 @@ constexpr Point ceiling2PixelMap[] = {
 };
 
 static_assert(JL_LENGTH(ceiling2PixelMap) == 42, "bad size");
-PixelMap ceiling2Pixels(JL_LENGTH(ceiling2PixelMap), ceiling2PixelMap);
+PixelMap sCeiling2Pixels(JL_LENGTH(ceiling2PixelMap), ceiling2PixelMap);
 
 constexpr Point ceiling3PixelMap[] = {
     {3.00,  -1.00},
@@ -214,11 +214,11 @@ constexpr Point ceiling3PixelMap[] = {
 };
 
 static_assert(JL_LENGTH(ceiling3PixelMap) == 32, "bad size");
-PixelMap ceiling3Pixels(JL_LENGTH(ceiling3PixelMap), ceiling3PixelMap);
+PixelMap sCeiling3Pixels(JL_LENGTH(ceiling3PixelMap), ceiling3PixelMap);
 
 }  // namespace
 
-Layout* GetCloudsLayout() { return &cloudPixels; }
+Layout* GetCloudsLayout() { return &sCloudPixels; }
 
 void AddLedsToRunner(FastLedRunner* runner) {
 #if JL_IS_CONTROLLER(ATOM_MATRIX) || JL_IS_CONTROLLER(ATOM_LITE)
@@ -235,11 +235,11 @@ void AddLedsToRunner(FastLedRunner* runner) {
 #error "Clouds config does not currently support this controller"
 #endif
   // Clouds.
-  runner->AddLeds<WS2812B, kCloudsPin, GRB>(cloudPixels);
+  runner->AddLeds<WS2812B, kCloudsPin, GRB>(sCloudPixels);
   // Ceiling.
-  runner->AddLeds<WS2812B, kCeiling1Pin, GRB>(ceiling1Pixels);
-  runner->AddLeds<WS2812B, kCeiling2Pin, GRB>(ceiling2Pixels);
-  runner->AddLeds<WS2812B, kCeiling3Pin, GRB>(ceiling3Pixels);
+  runner->AddLeds<WS2812B, kCeiling1Pin, GRB>(sCeiling1Pixels);
+  runner->AddLeds<WS2812B, kCeiling2Pin, GRB>(sCeiling2Pixels);
+  runner->AddLeds<WS2812B, kCeiling3Pin, GRB>(sCeiling3Pixels);
 }
 
 }  // namespace jazzlights

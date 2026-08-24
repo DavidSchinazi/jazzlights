@@ -19,22 +19,22 @@ class Matrix : public Layout {
         resolution_(other.resolution_),
         flags_(other.flags_) {}
 
-  Matrix& resolution(PixelsPerMeter r) {
+  Matrix& Resolution(PixelsPerMeter r) {
     resolution_ = r;
     return *this;
   }
 
-  Matrix& origin(Coord x, Coord y) {
+  Matrix& Origin(Coord x, Coord y) {
     origin_ = {x, y};
     return *this;
   }
 
-  Matrix& progressive() {
+  Matrix& Progressive() {
     flags_ |= kProgressive;
     return *this;
   }
 
-  Matrix& zigzag() {
+  Matrix& Zigzag() {
     flags_ |= kZigzag;
     return *this;
   }

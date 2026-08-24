@@ -20,8 +20,8 @@ Microseconds MicrosecondsSinceBoot() {
 #ifdef ESP32
   return esp_timer_get_time();
 #else   // ESP32
-  static auto t0 = std::chrono::steady_clock::now();
-  return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - t0).count();
+  static auto sT0 = std::chrono::steady_clock::now();
+  return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - sT0).count();
 #endif  // ESP32
 }
 

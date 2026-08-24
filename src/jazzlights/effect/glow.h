@@ -6,27 +6,27 @@ namespace jazzlights {
 
 inline FunctionalEffect Glow(CRGB color, const std::string& name) {
   return FunctionalEffectFrom(name, [color](const Frame& frame) {
-    constexpr uint32_t period = 2500;
-    constexpr uint32_t half_low_time = 10;
-    constexpr uint32_t half_high_time = 400;
-    constexpr uint32_t half_period = period / 2;
-    uint32_t time_in_period = frame.time % period;
-    if (time_in_period > half_period) { time_in_period = period - time_in_period; }
-    constexpr uint8_t min_intensity = 25;
-    constexpr uint8_t max_intensity = 255;
-    constexpr uint8_t intensity_delta = max_intensity - min_intensity;
+    constexpr uint32_t kPeriod = 2500;
+    constexpr uint32_t kHalfLowTime = 10;
+    constexpr uint32_t kHalfHighTime = 400;
+    constexpr uint32_t kHalfPeriod = kPeriod / 2;
+    uint32_t timeInPeriod = frame.time % kPeriod;
+    if (timeInPeriod > kHalfPeriod) { timeInPeriod = kPeriod - timeInPeriod; }
+    constexpr uint8_t kMinIntensity = 25;
+    constexpr uint8_t kMaxIntensity = 255;
+    constexpr uint8_t kIntensityDelta = kMaxIntensity - kMinIntensity;
     uint8_t intensity;
-    if (time_in_period <= half_low_time) {
-      intensity = min_intensity;
-    } else if (time_in_period > half_low_time && time_in_period < (half_period - half_high_time)) {
-      const uint32_t ramp_time = time_in_period - half_low_time;
-      constexpr uint32_t ramp_length = half_period - (half_low_time + half_high_time);
-      intensity = (ramp_time * intensity_delta / ramp_length) + min_intensity;
+    if (timeInPeriod <= kHalfLowTime) {
+      intensity = kMinIntensity;
+    } else if (timeInPeriod > kHalfLowTime && timeInPeriod < (kHalfPeriod - kHalfHighTime)) {
+      const uint32_t rampTime = timeInPeriod - kHalfLowTime;
+      constexpr uint32_t kRampLength = kHalfPeriod - (kHalfLowTime + kHalfHighTime);
+      intensity = (rampTime * kIntensityDelta / kRampLength) + kMinIntensity;
     } else {
-      intensity = max_intensity;
+      intensity = kMaxIntensity;
     }
-    const CRGB faded_color = FadeColor(color, intensity);
-    return [faded_color](const Pixel& /*pt*/) -> CRGB { return faded_color; };
+    const CRGB fadedColor = FadeColor(color, intensity);
+    return [fadedColor](const Pixel& /*pt*/) -> CRGB { return fadedColor; };
   });
 };
 

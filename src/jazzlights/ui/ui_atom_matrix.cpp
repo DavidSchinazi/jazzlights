@@ -36,21 +36,21 @@ static constexpr uint8_t kInitialBrightnessCursor = 7;
 static constexpr uint8_t kInitialBrightnessCursor = 4;
 #endif
 
-static const CRGB nextColor = CRGB::Blue;
-static const CRGB menuIconNext[ATOM_SCREEN_NUM_LEDS] = {
-    nextColor,   CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, nextColor,   nextColor,   CRGB::Black, CRGB::Black,
-    CRGB::Black, nextColor,   nextColor,   nextColor,   CRGB::Black, CRGB::Black, nextColor,   nextColor,   CRGB::Black,
-    CRGB::Black, CRGB::Black, nextColor,   CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black,
+static const CRGB kNextColor = CRGB::Blue;
+static const CRGB kMenuIconNext[ATOM_SCREEN_NUM_LEDS] = {
+    kNextColor,  CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, kNextColor,  kNextColor,  CRGB::Black, CRGB::Black,
+    CRGB::Black, kNextColor,  kNextColor,  kNextColor,  CRGB::Black, CRGB::Black, kNextColor,  kNextColor,  CRGB::Black,
+    CRGB::Black, CRGB::Black, kNextColor,  CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black,
 };
 
-static const CRGB prevColor = CRGB::Red;
-static const CRGB menuIconPrevious[ATOM_SCREEN_NUM_LEDS] = {
-    CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, prevColor,   CRGB::Black, prevColor,
-    CRGB::Black, CRGB::Black, prevColor,   CRGB::Black, prevColor,   CRGB::Black, CRGB::Black, prevColor,   CRGB::Black,
-    prevColor,   CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black,
+static const CRGB kPrevColor = CRGB::Red;
+static const CRGB kMenuIconPrevious[ATOM_SCREEN_NUM_LEDS] = {
+    CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, kPrevColor,  CRGB::Black, kPrevColor,
+    CRGB::Black, CRGB::Black, kPrevColor,  CRGB::Black, kPrevColor,  CRGB::Black, CRGB::Black, kPrevColor,  CRGB::Black,
+    kPrevColor,  CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black,
 };
 
-static const CRGB menuIconBrightness[ATOM_SCREEN_NUM_LEDS] = {
+static const CRGB kMenuIconBrightness[ATOM_SCREEN_NUM_LEDS] = {
     CRGB::Black,     CRGB::Black,         CRGB::Black, CRGB::Black,         CRGB::Black,     CRGB::DarkGoldenrod,
     CRGB::Goldenrod, CRGB::DarkGoldenrod, CRGB::Black, CRGB::Black,         CRGB::Goldenrod, CRGB::LightGoldenrodYellow,
     CRGB::Goldenrod, CRGB::Black,         CRGB::Black, CRGB::DarkGoldenrod, CRGB::Goldenrod, CRGB::DarkGoldenrod,
@@ -58,40 +58,40 @@ static const CRGB menuIconBrightness[ATOM_SCREEN_NUM_LEDS] = {
     CRGB::Black,
 };
 
-static const CRGB menuIconSpecialOff[ATOM_SCREEN_NUM_LEDS] = {
+static const CRGB kMenuIconSpecialOff[ATOM_SCREEN_NUM_LEDS] = {
     CRGB::Yellow, CRGB::Yellow, CRGB::Yellow, CRGB::Black, CRGB::Black,  CRGB::Black, CRGB::Black,
     CRGB::Yellow, CRGB::Black,  CRGB::Black,  CRGB::Black, CRGB::Yellow, CRGB::Black, CRGB::Black,
     CRGB::Black,  CRGB::Black,  CRGB::Black,  CRGB::Black, CRGB::Black,  CRGB::Black, CRGB::Black,
     CRGB::Yellow, CRGB::Black,  CRGB::Black,  CRGB::Black,
 };
-static const CRGB menuIconSpecialCalibration[ATOM_SCREEN_NUM_LEDS] = {
+static const CRGB kMenuIconSpecialCalibration[ATOM_SCREEN_NUM_LEDS] = {
     CRGB::Red,    CRGB::Green, CRGB::Blue,  CRGB::Black, CRGB::Black,  CRGB::Black, CRGB::Black,
     CRGB::Yellow, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Purple, CRGB::Black, CRGB::Black,
     CRGB::Black,  CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black,  CRGB::Black, CRGB::Black,
     CRGB::White,  CRGB::Black, CRGB::Black, CRGB::Black,
 };
-static const CRGB menuIconSpecialBlack[ATOM_SCREEN_NUM_LEDS] = {
+static const CRGB kMenuIconSpecialBlack[ATOM_SCREEN_NUM_LEDS] = {
     CRGB::Purple, CRGB::Purple, CRGB::Purple, CRGB::Black, CRGB::Black,  CRGB::Black, CRGB::Black,
     CRGB::Purple, CRGB::Black,  CRGB::Black,  CRGB::Black, CRGB::Purple, CRGB::Black, CRGB::Black,
     CRGB::Black,  CRGB::Black,  CRGB::Black,  CRGB::Black, CRGB::Black,  CRGB::Black, CRGB::Black,
     CRGB::Purple, CRGB::Black,  CRGB::Black,  CRGB::Black,
 };
-static const CRGB menuIconSpecialRed[ATOM_SCREEN_NUM_LEDS] = {
+static const CRGB kMenuIconSpecialRed[ATOM_SCREEN_NUM_LEDS] = {
     CRGB::Red,   CRGB::Red,   CRGB::Red,   CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Red,   CRGB::Black,
     CRGB::Black, CRGB::Black, CRGB::Red,   CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black,
     CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Red,   CRGB::Black, CRGB::Black, CRGB::Black,
 };
-static const CRGB menuIconSpecialGreen[ATOM_SCREEN_NUM_LEDS] = {
+static const CRGB kMenuIconSpecialGreen[ATOM_SCREEN_NUM_LEDS] = {
     CRGB::Green, CRGB::Green, CRGB::Green, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Green, CRGB::Black,
     CRGB::Black, CRGB::Black, CRGB::Green, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black,
     CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Green, CRGB::Black, CRGB::Black, CRGB::Black,
 };
-static const CRGB menuIconSpecialBlue[ATOM_SCREEN_NUM_LEDS] = {
+static const CRGB kMenuIconSpecialBlue[ATOM_SCREEN_NUM_LEDS] = {
     CRGB::Blue,  CRGB::Blue,  CRGB::Blue,  CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Blue,  CRGB::Black,
     CRGB::Black, CRGB::Black, CRGB::Blue,  CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black,
     CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Blue,  CRGB::Black, CRGB::Black, CRGB::Black,
 };
-static const CRGB menuIconSpecialWhite[ATOM_SCREEN_NUM_LEDS] = {
+static const CRGB kMenuIconSpecialWhite[ATOM_SCREEN_NUM_LEDS] = {
     CRGB::White, CRGB::White, CRGB::White, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::White, CRGB::Black,
     CRGB::Black, CRGB::Black, CRGB::White, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black, CRGB::Black,
     CRGB::Black, CRGB::Black, CRGB::Black, CRGB::White, CRGB::Black, CRGB::Black, CRGB::Black,
@@ -173,29 +173,29 @@ void AtomMatrixUi::ScreenNetwork() {
 void AtomMatrixUi::ScreenUnlocked() {
   const CRGB* icon = screenLEDs_;
   switch (menuMode_) {
-    case MenuMode::kNext: icon = menuIconNext; break;
-    case MenuMode::kPrevious: icon = menuIconPrevious; break;
-    case MenuMode::kBrightness: icon = menuIconBrightness; break;
+    case MenuMode::kNext: icon = kMenuIconNext; break;
+    case MenuMode::kPrevious: icon = kMenuIconPrevious; break;
+    case MenuMode::kBrightness: icon = kMenuIconBrightness; break;
     case MenuMode::kSpecial: {
       switch (player_.GetSpecial()) {
-        case 1: icon = menuIconSpecialCalibration; break;
-        case 2: icon = menuIconSpecialBlack; break;
-        case 3: icon = menuIconSpecialRed; break;
-        case 4: icon = menuIconSpecialGreen; break;
-        case 5: icon = menuIconSpecialBlue; break;
-        case 6: icon = menuIconSpecialWhite; break;
-        default: icon = menuIconSpecialOff; break;
+        case 1: icon = kMenuIconSpecialCalibration; break;
+        case 2: icon = kMenuIconSpecialBlack; break;
+        case 3: icon = kMenuIconSpecialRed; break;
+        case 4: icon = kMenuIconSpecialGreen; break;
+        case 5: icon = kMenuIconSpecialBlue; break;
+        case 6: icon = kMenuIconSpecialWhite; break;
+        default: icon = kMenuIconSpecialOff; break;
       }
     } break;
   }
   for (int i = 0; i < ATOM_SCREEN_NUM_LEDS; i++) { screenLEDs_[i] = icon[i]; }
   if (menuMode_ == MenuMode::kBrightness) {
     for (int i = 0; i < 8; i++) {
-      static const uint8_t brightnessDial[] = {06, 07, 12, 17, 16, 15, 10, 05};
+      static const uint8_t kBrightnessDial[] = {06, 07, 12, 17, 16, 15, 10, 05};
       if (brightnessCursor_ < i) {
-        screenLEDs_[brightnessDial[i]] = CRGB::Black;
+        screenLEDs_[kBrightnessDial[i]] = CRGB::Black;
       } else if (player_.isPowerLimited()) {
-        screenLEDs_[brightnessDial[i]] = CRGB::Red;
+        screenLEDs_[kBrightnessDial[i]] = CRGB::Red;
       }
     }
   }
@@ -309,19 +309,19 @@ bool AtomMatrixUi::ScreenMessage() {
     if (!bootMessageStartTime_) { bootMessageStartTime_ = currentTime; }
     Microseconds offsetMicros = currentTime - *bootMessageStartTime_;
 #if JL_IS_CONFIG(CREATURE)
-    static const CRGB textColor = ThisCreatureColor();
+    static const CRGB kTextColor = ThisCreatureColor();
     static constexpr Microseconds kShowColorTime = 3000000;
     if (offsetMicros <= kShowColorTime) {
       // Show this creature's color for `kShowColorTime` after boot.
-      for (int i = 0; i < ATOM_SCREEN_NUM_LEDS; i++) { screenLEDs_[i] = textColor; }
+      for (int i = 0; i < ATOM_SCREEN_NUM_LEDS; i++) { screenLEDs_[i] = kTextColor; }
       ScreenDisplay();
       return true;
     }
     offsetMicros -= kShowColorTime;
 #else   // CREATURE
-    static const CRGB textColor = CRGB::Red;
+    static const CRGB kTextColor = CRGB::Red;
 #endif  // CREATURE
-    displayingBootMessage_ = displayText(BOOT_MESSAGE, screenLEDs_, textColor, CRGB::Black, offsetMicros);
+    displayingBootMessage_ = displayText(BOOT_MESSAGE, screenLEDs_, kTextColor, CRGB::Black, offsetMicros);
     if (!displayingBootMessage_) {
       jll_info("Done displaying boot message");
     } else {

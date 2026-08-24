@@ -68,7 +68,7 @@ class Creatures : public Effect {
   struct CreaturesState {
     Point origin;
     double maxDistance;
-    size_t num_colors;
+    size_t numColors;
     size_t offset;
     bool rainbow;
     uint8_t initialHue;

@@ -133,19 +133,19 @@ void KnownCreatures::AddCreature(uint32_t color, Microseconds lastHeard, int rss
     }
   }
   if (!found) {
-    Creature new_creature;
-    new_creature.color = color;
-    new_creature.lastHeard = lastHeard;
+    Creature newCreature;
+    newCreature.color = color;
+    newCreature.lastHeard = lastHeard;
     if (isPartying) {
-      new_creature.lastHeardPartying = lastHeard;
+      newCreature.lastHeardPartying = lastHeard;
     } else {
-      new_creature.lastHeardPartying.reset();
+      newCreature.lastHeardPartying.reset();
     }
-    new_creature.smoothedRssi = rssi;
-    new_creature.isNearby = rssi >= kRssiNearbyThresholdUp;
-    creatures_.push_back(new_creature);
+    newCreature.smoothedRssi = rssi;
+    newCreature.isNearby = rssi >= kRssiNearbyThresholdUp;
+    creatures_.push_back(newCreature);
     jll_info("Adding new creature rgb=%06x rssi=%d %s %s partying", static_cast<int>(color), rssi,
-             (new_creature.isNearby ? "near" : "far"), (isPartying ? "is" : "not"));
+             (newCreature.isNearby ? "near" : "far"), (isPartying ? "is" : "not"));
   }
   std::sort(creatures_.begin(), creatures_.end(),
             [](Creature a, Creature b) { return ColorHash(a.color) > ColorHash(b.color); });
@@ -209,31 +209,31 @@ void Creatures::Begin(const Frame& frame) const {
 void Creatures::Rewind(const Frame& frame) const {
   KnownCreatures::Get()->Update();
   const std::vector<Creature>& creatures = KnownCreatures::Get()->creatures();
-  size_t num_creatures = creatures.size();
-  if (num_creatures > kMaxNumCreatureColours - 2) { num_creatures = kMaxNumCreatureColours - 2; }
-  uint32_t num_close_creatures = 0;
+  size_t numCreatures = creatures.size();
+  if (numCreatures > kMaxNumCreatureColours - 2) { numCreatures = kMaxNumCreatureColours - 2; }
+  uint32_t numCloseCreatures = 0;
   bool iShouldParty = false;
   Microseconds currentTime = TimeMicros();
-  for (size_t i = 0; i < num_creatures; i++) {
+  for (size_t i = 0; i < numCreatures; i++) {
     // Compute the color for each known creature.
     const Creature& creature = creatures[i];
     uint8_t intensity = CreatureIntensity(creature);
     State(frame)->colors[i] = FadeColor(CRGB(creature.color), intensity);
-    if (creature.isNearby) { num_close_creatures++; }
+    if (creature.isNearby) { numCloseCreatures++; }
     if (creature.lastHeardPartying && currentTime - *creature.lastHeardPartying < kNearbyCreatureTimeout) {
       iShouldParty = true;
     }
   }
-  State(frame)->colors[num_creatures] = CRGB::Black;
-  State(frame)->colors[num_creatures + 1] = CRGB::Black;
-  State(frame)->num_colors = num_creatures + 2;
+  State(frame)->colors[numCreatures] = CRGB::Black;
+  State(frame)->colors[numCreatures + 1] = CRGB::Black;
+  State(frame)->numColors = numCreatures + 2;
   // The offset increases over time and makes the pixels scroll.
   State(frame)->offset = frame.time / 100;
   // TODO the rainbow mode sometimes only triggers on some creatures but not others. To fix it, we need to make the
   // metric bidirectional. We can do that by having every node broadcast its list of known creatures and decayed RSSI
   // (or intensity) then we use a symmetric function (such as min or average) to decide when to put it in
-  // num_close_creatures.
-  KnownCreatures::Get()->SetIsPartying(num_close_creatures >= kMinCreaturesForAParty);
+  // numCloseCreatures.
+  KnownCreatures::Get()->SetIsPartying(numCloseCreatures >= kMinCreaturesForAParty);
   State(frame)->rainbow = iShouldParty || KnownCreatures::Get()->IsPartying();
   State(frame)->initialHue = 256 * frame.time / 1667;
   State(frame)->orrery = KnownCreatures::Get()->HasRecentlyHeardOrrery();
@@ -269,10 +269,10 @@ CRGB Creatures::Color(const Frame& frame, const Pixel& px) const {
   uint8_t paletteIndex = static_cast<uint8_t>(px.strandIndex * 8 + 256 * frame.time / 10000);
   return ColorFromPalette(*kCyberPunkPalette, paletteIndex);
 #else   // JL_CREATURE_CYBERPUNK
-  size_t num_colors = State(frame)->num_colors;
+  size_t numColors = State(frame)->numColors;
   // Display the colors in order based on the current offset.
-  const size_t reverseIndex = (-px.strandIndex % num_colors) + num_colors - 1;
-  return State(frame)->colors[(State(frame)->offset + reverseIndex) % num_colors];
+  const size_t reverseIndex = (-px.strandIndex % numColors) + numColors - 1;
+  return State(frame)->colors[(State(frame)->offset + reverseIndex) % numColors];
 #endif  // JL_CREATURE_CYBERPUNK
 }
 

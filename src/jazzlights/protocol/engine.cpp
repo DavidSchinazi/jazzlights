@@ -40,8 +40,8 @@ PatternBits ComputeNextPattern(PatternBits pattern) {
   pattern += 0x1337;
   // Apparently xorshift doesn't have great entropy in the lower bits, so let's
   // move those around just because we can.
-  const uint8_t shift_offset = (pattern / 16384) % 32;
-  pattern = (pattern << shift_offset) | (pattern >> (32 - shift_offset));
+  const uint8_t shiftOffset = (pattern / 16384) % 32;
+  pattern = (pattern << shiftOffset) | (pattern >> (32 - shiftOffset));
   if (pattern == 0) { pattern = kStartingPattern; }
   while (PatternIsReserved(pattern)) {
     // Skip reserved patterns.

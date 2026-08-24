@@ -73,11 +73,11 @@ class OptionalMicroseconds {
   constexpr bool has_value() const noexcept { return (inner_ & kPresentBit) == 0; }
   constexpr explicit operator bool() const noexcept { return has_value(); }
 
-  constexpr Microseconds value_or(Microseconds default_micros) const noexcept {
+  constexpr Microseconds value_or(Microseconds defaultMicros) const noexcept {
     if (has_value()) {
       return value();
     } else {
-      return default_micros;
+      return defaultMicros;
     }
   }
 
