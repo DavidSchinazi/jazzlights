@@ -38,18 +38,18 @@ static_assert(kOriginationTimeDiscard < kEffectDuration,
 
 // Compares two (precedence, deviceId) pairs. Returns a negative number if left sorts before right, a positive number
 // if it sorts after, and zero if they are equal.
-int comparePrecedence(Precedence leftPrecedence, const NetworkDeviceId& leftDeviceId, Precedence rightPrecedence,
+int ComparePrecedence(Precedence leftPrecedence, const NetworkDeviceId& leftDeviceId, Precedence rightPrecedence,
                       const NetworkDeviceId& rightDeviceId);
 
 // Patterns with lowest 4 bits set to zero are reserved.
-constexpr bool patternIsReserved(PatternBits pattern) { return (pattern & 0xF) == 0; }
+constexpr bool PatternIsReserved(PatternBits pattern) { return (pattern & 0xF) == 0; }
 
-PatternBits computeNextPattern(PatternBits pattern);
-PatternBits applyPalette(PatternBits pattern, uint8_t palette);
+PatternBits ComputeNextPattern(PatternBits pattern);
+PatternBits ApplyPalette(PatternBits pattern, uint8_t palette);
 
-Precedence getPrecedenceGain(OptionalMicroseconds epochTime, Microseconds currentTime, Microseconds duration,
+Precedence GetPrecedenceGain(OptionalMicroseconds epochTime, Microseconds currentTime, Microseconds duration,
                              Precedence maxGain);
-Precedence addPrecedenceGain(Precedence startPrecedence, Precedence gain);
+Precedence AddPrecedenceGain(Precedence startPrecedence, Precedence gain);
 
 // ProtocolEngine implements the JazzLights synchronization protocol: leader election, the originator table, and the
 // synchronized pattern rotation. It is a pure state machine that owns no transport and performs no rendering.
@@ -208,7 +208,7 @@ class ProtocolEngine {
 
   Microseconds currentPatternStartTime_ = TimeMicros();
   PatternBits currentPattern_ = EnforceForcedPalette(kStartingPattern);
-  PatternBits nextPattern_ = EnforceForcedPalette(computeNextPattern(currentPattern_));
+  PatternBits nextPattern_ = EnforceForcedPalette(ComputeNextPattern(currentPattern_));
 
   bool hasNetworks_ = false;
   std::optional<ProtocolMessage> messageToSend_;

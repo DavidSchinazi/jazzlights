@@ -34,26 +34,26 @@ NetworkDeviceId NetworkDeviceId::PlusOne() const {
 
 const char* OrrerySceneToString(OrreryScene scene) {
   switch (scene) {
-    case OrreryScene::Paused: return "Paused";
-    case OrreryScene::Realistic: return "Realistic";
-    case OrreryScene::Align: return "Align";
-    case OrreryScene::Silly: return "Silly";
-    case OrreryScene::FocusMercury: return "FocusMercury";
-    case OrreryScene::FocusVenus: return "FocusVenus";
-    case OrreryScene::FocusEarth: return "FocusEarth";
-    case OrreryScene::FocusMars: return "FocusMars";
-    case OrreryScene::FocusJupiter: return "FocusJupiter";
-    case OrreryScene::FocusSaturn: return "FocusSaturn";
-    case OrreryScene::FocusUranus: return "FocusUranus";
-    case OrreryScene::FocusNeptune: return "FocusNeptune";
-    case OrreryScene::FocusSun: return "FocusSun";
-    case OrreryScene::MercuryRetrograde: return "MercuryRetrograde";
+    case OrreryScene::kPaused: return "Paused";
+    case OrreryScene::kRealistic: return "Realistic";
+    case OrreryScene::kAlign: return "Align";
+    case OrreryScene::kSilly: return "Silly";
+    case OrreryScene::kFocusMercury: return "FocusMercury";
+    case OrreryScene::kFocusVenus: return "FocusVenus";
+    case OrreryScene::kFocusEarth: return "FocusEarth";
+    case OrreryScene::kFocusMars: return "FocusMars";
+    case OrreryScene::kFocusJupiter: return "FocusJupiter";
+    case OrreryScene::kFocusSaturn: return "FocusSaturn";
+    case OrreryScene::kFocusUranus: return "FocusUranus";
+    case OrreryScene::kFocusNeptune: return "FocusNeptune";
+    case OrreryScene::kFocusSun: return "FocusSun";
+    case OrreryScene::kMercuryRetrograde: return "MercuryRetrograde";
     case OrreryScene::kInvalidScene: return "Invalid";
   }
   return "Unknown";
 }
 
-std::string displayBitsAsBinary(PatternBits p) {
+std::string DisplayBitsAsBinary(PatternBits p) {
   static_assert(sizeof(p) == 4, "32bits");
   char bits[33] = {};
   for (uint8_t b = 0; b < 32; b++) {
@@ -66,17 +66,17 @@ std::string displayBitsAsBinary(PatternBits p) {
   return std::string(bits);
 }
 
-std::string networkMessageToString(const ProtocolMessage& message) {
+std::string NetworkMessageToString(const ProtocolMessage& message) {
   Microseconds currentTime = TimeMicros();
   char str[sizeof(", t=4294967296, p=65536, nh=255, ot=4294967296}")] = {};
   snprintf(str, sizeof(str), ", t=%u, p=%u, nh=%u, ot=%u}",
            static_cast<unsigned int>((currentTime - message.currentPatternStartTime) / kMicrosecondsPerMillisecond),
            message.precedence, message.numHops,
            static_cast<unsigned int>((currentTime - message.lastOriginationTime) / kMicrosecondsPerMillisecond));
-  std::string rv = "{o=" + message.originator.toString() + ", s=" + message.sender.toString();
+  std::string rv = "{o=" + message.originator.ToString() + ", s=" + message.sender.ToString();
 #if !JL_IS_CONFIG(CREATURE)
-  rv += ", c=" + displayBitsAsBinary(message.currentPattern);
-  rv += ", n=" + displayBitsAsBinary(message.nextPattern);
+  rv += ", c=" + DisplayBitsAsBinary(message.currentPattern);
+  rv += ", n=" + DisplayBitsAsBinary(message.nextPattern);
 #endif  // !CREATURE
   if (message.receiptNetworkType != NetworkType::kLeading) {
     rv += ", ";

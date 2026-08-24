@@ -104,7 +104,7 @@ NetworkStatus ArduinoEthernetNetwork::update(NetworkStatus status) {
       // TODO move Ethernet.begin() call to its own thread because it performs DHCP synchronously
       // and currently blocks our main thread while waiting for a DHCP response.
       uint8_t macAddress[6];
-      localDeviceId_.writeTo(macAddress);
+      localDeviceId_.WriteTo(macAddress);
       int beginRes = Ethernet.begin(macAddress, kDhcpTimeoutMs, kResponseTimeoutMs);
       if (beginRes == 0) {
         jll_error("Ethernet DHCP failed");

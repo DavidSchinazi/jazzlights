@@ -153,9 +153,9 @@ void Esp32BleNetwork::triggerSendAsap() {
 
 void Esp32BleNetwork::setMessageToSend(const ProtocolMessage& messageToSend) {
   const std::lock_guard<std::mutex> lock(mutex_);
-  if (!hasDataToSend_ || !messageToSend_.isEqualExceptOriginationTime(messageToSend)) {
-    ESP32_BLE_DEBUG("Setting messageToSend %s", networkMessageToString(messageToSend).c_str());
-    ESP32_BLE_DEBUG("Old messageToSend was %s", networkMessageToString(messageToSend_).c_str());
+  if (!hasDataToSend_ || !messageToSend_.IsEqualExceptOriginationTime(messageToSend)) {
+    ESP32_BLE_DEBUG("Setting messageToSend %s", NetworkMessageToString(messageToSend).c_str());
+    ESP32_BLE_DEBUG("Old messageToSend was %s", NetworkMessageToString(messageToSend_).c_str());
   }
   hasDataToSend_ = true;
   messageToSend_ = messageToSend;
@@ -269,7 +269,7 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
     message.orrerySceneId = orrerySceneId;
   }
 
-  ESP32_BLE_DEBUG("Received %s", networkMessageToString(message).c_str());
+  ESP32_BLE_DEBUG("Received %s", NetworkMessageToString(message).c_str());
   lastReceiveTime_.store(receiptTime, std::memory_order_relaxed);
 
   {

@@ -63,7 +63,7 @@ class ProtocolWriter {
 
   bool WriteNetworkDeviceId(const NetworkDeviceId& in) {
     if (NetworkDeviceId::size() > size_ || pos_ > size_ - NetworkDeviceId::size()) { return false; }
-    in.writeTo(&data_[pos_]);
+    in.WriteTo(&data_[pos_]);
     pos_ += NetworkDeviceId::size();
     return true;
   }

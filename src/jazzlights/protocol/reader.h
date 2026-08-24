@@ -58,7 +58,7 @@ class ProtocolReader {
 
   bool ReadNetworkDeviceId(NetworkDeviceId* out) {
     if (NetworkDeviceId::size() > size_ || pos_ > size_ - NetworkDeviceId::size()) { return false; }
-    out->readFrom(&data_[pos_]);
+    out->ReadFrom(&data_[pos_]);
     pos_ += NetworkDeviceId::size();
     return true;
   }

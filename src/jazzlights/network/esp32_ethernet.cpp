@@ -399,7 +399,7 @@ Esp32EthernetNetwork::Esp32EthernetNetwork()
   ESP_ERROR_CHECK(esp_eth_driver_install(&eth_config_spi, &eth_handle));
 
   uint8_t mac_address[6];
-  localDeviceId_.writeTo(mac_address);
+  localDeviceId_.WriteTo(mac_address);
   ESP_ERROR_CHECK(esp_eth_ioctl(eth_handle, ETH_CMD_S_MAC_ADDR, mac_address));
 
   InitializeNetStack();

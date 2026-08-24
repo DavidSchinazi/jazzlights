@@ -119,7 +119,7 @@ void OrreryLeaderUi::InitialSetup() {  // 320w * 240h
     const char* label;
     if (i >= 4 && i < 13) {
       label = GetPlanetName(static_cast<Planet>(i));
-    } else if (static_cast<OrreryScene>(i) == OrreryScene::MercuryRetrograde) {
+    } else if (static_cast<OrreryScene>(i) == OrreryScene::kMercuryRetrograde) {
       label = "MercRetro";
     } else {
       label = OrrerySceneToString(static_cast<OrreryScene>(i));
@@ -590,9 +590,9 @@ void OrreryLeaderUi::UpdateMotorSpeedButton() {
 void OrreryLeaderUi::UpdateSpeedMultiplierButton() {
   char label[32];
   snprintf(label, sizeof(label), "Mult: %.3f",
-           OrreryLeader::Get()->GetScene() == OrreryScene::Realistic ||
-                   OrreryLeader::Get()->GetScene() == OrreryScene::Silly ||
-                   OrreryLeader::Get()->GetScene() == OrreryScene::MercuryRetrograde
+           OrreryLeader::Get()->GetScene() == OrreryScene::kRealistic ||
+                   OrreryLeader::Get()->GetScene() == OrreryScene::kSilly ||
+                   OrreryLeader::Get()->GetScene() == OrreryScene::kMercuryRetrograde
                ? OrreryLeader::Get()->GetSpeedMultiplier()
                : 1.0);
   speedMultiplierButton_->SetLabelText(label);

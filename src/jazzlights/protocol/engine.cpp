@@ -19,17 +19,17 @@
 
 namespace jazzlights {
 
-int comparePrecedence(Precedence leftPrecedence, const NetworkDeviceId& leftDeviceId, Precedence rightPrecedence,
+int ComparePrecedence(Precedence leftPrecedence, const NetworkDeviceId& leftDeviceId, Precedence rightPrecedence,
                       const NetworkDeviceId& rightDeviceId) {
   if (leftPrecedence < rightPrecedence) {
     return -1;
   } else if (leftPrecedence > rightPrecedence) {
     return 1;
   }
-  return leftDeviceId.compare(rightDeviceId);
+  return leftDeviceId.Compare(rightDeviceId);
 }
 
-PatternBits computeNextPattern(PatternBits pattern) {
+PatternBits ComputeNextPattern(PatternBits pattern) {
   static_assert(sizeof(PatternBits) == 4, "32bits");
   // This code is inspired by xorshift, amended to only require 32 bits of
   // state. This algorithm was informed by 10 minutes of Googling and a half
@@ -43,16 +43,16 @@ PatternBits computeNextPattern(PatternBits pattern) {
   const uint8_t shift_offset = (pattern / 16384) % 32;
   pattern = (pattern << shift_offset) | (pattern >> (32 - shift_offset));
   if (pattern == 0) { pattern = kStartingPattern; }
-  while (patternIsReserved(pattern)) {
+  while (PatternIsReserved(pattern)) {
     // Skip reserved patterns.
-    pattern = computeNextPattern(pattern);
+    pattern = ComputeNextPattern(pattern);
   }
   return pattern;
 }
 
-PatternBits applyPalette(PatternBits pattern, uint8_t palette) {
+PatternBits ApplyPalette(PatternBits pattern, uint8_t palette) {
   // Avoid any reserved patterns.
-  while (patternIsReserved(pattern)) { pattern = computeNextPattern(pattern); }
+  while (PatternIsReserved(pattern)) { pattern = ComputeNextPattern(pattern); }
   // Clear palette.
   pattern &= 0xFFFF1FFF;
   // Set palette.
@@ -60,7 +60,7 @@ PatternBits applyPalette(PatternBits pattern, uint8_t palette) {
   return pattern;
 }
 
-Precedence getPrecedenceGain(OptionalMicroseconds epochTime, Microseconds currentTime, Microseconds duration,
+Precedence GetPrecedenceGain(OptionalMicroseconds epochTime, Microseconds currentTime, Microseconds duration,
                              Precedence maxGain) {
   if (!epochTime) {
     return 0;
@@ -74,7 +74,7 @@ Precedence getPrecedenceGain(OptionalMicroseconds epochTime, Microseconds curren
   return static_cast<uint64_t>(duration - timeDelta) * maxGain / duration;
 }
 
-Precedence addPrecedenceGain(Precedence startPrecedence, Precedence gain) {
+Precedence AddPrecedenceGain(Precedence startPrecedence, Precedence gain) {
   if (startPrecedence >= std::numeric_limits<Precedence>::max() - gain) {
     return std::numeric_limits<Precedence>::max();
   }
@@ -110,11 +110,11 @@ void ProtocolEngine::GoToNextPattern() {
   lastUserInputTime_ = currentTime;
   currentPatternStartTime_ = currentTime;
   if (loop_ && currentPattern_ == nextPattern_) {
-    currentPattern_ = EnforceForcedPalette(computeNextPattern(currentPattern_));
+    currentPattern_ = EnforceForcedPalette(ComputeNextPattern(currentPattern_));
     nextPattern_ = currentPattern_;
   } else {
     currentPattern_ = nextPattern_;
-    nextPattern_ = EnforceForcedPalette(computeNextPattern(nextPattern_));
+    nextPattern_ = EnforceForcedPalette(ComputeNextPattern(nextPattern_));
   }
   CheckLeaderAndPattern(currentTime);
   jll_info("next command processed: now current %s (%08x) next %s (%08x), currentLeader=" DEVICE_ID_FMT,
@@ -133,7 +133,7 @@ void ProtocolEngine::SetPattern(PatternBits pattern) {
   if (loop_ && currentPattern_ == nextPattern_) {
     nextPattern_ = currentPattern_;
   } else {
-    nextPattern_ = EnforceForcedPalette(computeNextPattern(pattern));
+    nextPattern_ = EnforceForcedPalette(ComputeNextPattern(pattern));
   }
   CheckLeaderAndPattern(currentTime);
   jll_info("set pattern command processed: now current %s (%08x) next %s (%08x), currentLeader=" DEVICE_ID_FMT,
@@ -152,7 +152,7 @@ void ProtocolEngine::StopLooping() {
   if (!loop_) { return; }
   jll_info("Stopping loop");
   loop_ = false;
-  nextPattern_ = EnforceForcedPalette(computeNextPattern(currentPattern_));
+  nextPattern_ = EnforceForcedPalette(ComputeNextPattern(currentPattern_));
 }
 
 void ProtocolEngine::SetPatternAndLoop(PatternBits pattern) {
@@ -162,8 +162,8 @@ void ProtocolEngine::SetPatternAndLoop(PatternBits pattern) {
 }
 
 void ProtocolEngine::ResumeRotation() {
-  currentPattern_ = EnforceForcedPalette(computeNextPattern(currentPattern_));
-  nextPattern_ = EnforceForcedPalette(computeNextPattern(currentPattern_));
+  currentPattern_ = EnforceForcedPalette(ComputeNextPattern(currentPattern_));
+  nextPattern_ = EnforceForcedPalette(ComputeNextPattern(currentPattern_));
 }
 
 void ProtocolEngine::ForcePalette(uint8_t palette) {
@@ -179,14 +179,14 @@ void ProtocolEngine::StopForcePalette() {
 }
 
 PatternBits ProtocolEngine::EnforceForcedPalette(PatternBits pattern) {
-  if (forcedPalette_) { pattern = applyPalette(pattern, *forcedPalette_); }
+  if (forcedPalette_) { pattern = ApplyPalette(pattern, *forcedPalette_); }
   return pattern;
 }
 
 #if JL_IS_CONFIG(CLOUDS)
 void ProtocolEngine::ReapplyForcedPalette() {
   currentPattern_ = EnforceForcedPalette(currentPattern_);
-  nextPattern_ = EnforceForcedPalette(computeNextPattern(currentPattern_));
+  nextPattern_ = EnforceForcedPalette(ComputeNextPattern(currentPattern_));
 }
 
 void ProtocolEngine::CloudNext(bool extraAdvance) {
@@ -194,10 +194,10 @@ void ProtocolEngine::CloudNext(bool extraAdvance) {
   lastUserInputTime_ = currentTime;
   if (extraAdvance) {
     currentPattern_ = nextPattern_;
-    nextPattern_ = EnforceForcedPalette(computeNextPattern(nextPattern_));
+    nextPattern_ = EnforceForcedPalette(ComputeNextPattern(nextPattern_));
   }
   currentPattern_ = nextPattern_;
-  nextPattern_ = EnforceForcedPalette(computeNextPattern(nextPattern_));
+  nextPattern_ = EnforceForcedPalette(ComputeNextPattern(nextPattern_));
   CheckLeaderAndPattern(currentTime);
   jll_info("next command processed: now current %s (%08x) next %s (%08x), currentLeader=" DEVICE_ID_FMT,
            delegate_->PatternName(currentPattern_).c_str(), currentPattern_,
@@ -220,8 +220,8 @@ void ProtocolEngine::UpdateOverriddenPatternWatcher(Precedence precedence) {
 }
 
 Precedence ProtocolEngine::GetLocalPrecedence(Microseconds currentTime) {
-  return addPrecedenceGain(basePrecedence_,
-                           getPrecedenceGain(lastUserInputTime_, currentTime, kInputDuration, precedenceGain_));
+  return AddPrecedenceGain(basePrecedence_,
+                           GetPrecedenceGain(lastUserInputTime_, currentTime, kInputDuration, precedenceGain_));
 }
 
 ProtocolEngine::OriginatorEntry* ProtocolEngine::GetOriginatorEntry(NetworkDeviceId originator) {
@@ -281,7 +281,7 @@ void ProtocolEngine::CheckLeaderAndPattern(OptionalMicroseconds currentTimeOpt) 
       jll_debug("ignoring " DEVICE_ID_FMT " due to effect duration", DEVICE_ID_HEX(e.originator));
       continue;
     }
-    if (comparePrecedence(e.precedence, e.originator, precedence, originator) <= 0) {
+    if (ComparePrecedence(e.precedence, e.originator, precedence, originator) <= 0) {
       jll_debug("ignoring " DEVICE_ID_FMT ".p%u due to better " DEVICE_ID_FMT ".p%u", DEVICE_ID_HEX(e.originator),
                 e.precedence, DEVICE_ID_HEX(originator), precedence);
       continue;
@@ -358,7 +358,7 @@ void ProtocolEngine::CheckLeaderAndPattern(OptionalMicroseconds currentTimeOpt) 
         nextPattern_ = currentPattern_;
       } else {
         currentPattern_ = nextPattern_;
-        nextPattern_ = EnforceForcedPalette(computeNextPattern(nextPattern_));
+        nextPattern_ = EnforceForcedPalette(ComputeNextPattern(nextPattern_));
       }
       jll_protocol_info("We (" DEVICE_ID_FMT ".p%u) are leading, new currentPattern %s (%08x)",
                         DEVICE_ID_HEX(localDeviceId_), precedence, delegate_->PatternName(currentPattern_).c_str(),
@@ -415,34 +415,34 @@ void ProtocolEngine::HandleReceivedMessage(ProtocolMessage message, OptionalMicr
   Microseconds currentTime = currentTimeOpt.value_or(TimeMicros());
 #if JL_IS_CONFIG(CREATURE)
   if (message.isCreature) {
-    jll_info("creature recv %s", networkMessageToString(message).c_str());
+    jll_info("creature recv %s", NetworkMessageToString(message).c_str());
     delegate_->OnCreatureHeard(message.creatureColor, message.receiptTime.value_or(currentTime), message.receiptRssi,
                                message.isPartying);
   }
   if (message.orrerySceneId) { delegate_->OnOrreryHeard(); }
 #endif  // CREATURE
-  jll_player_message("handleReceivedMessage %s", networkMessageToString(message).c_str());
+  jll_player_message("handleReceivedMessage %s", NetworkMessageToString(message).c_str());
   if (message.sender == localDeviceId_) {
-    jll_debug("Ignoring received message that we sent %s", networkMessageToString(message).c_str());
+    jll_debug("Ignoring received message that we sent %s", NetworkMessageToString(message).c_str());
     return;
   }
   if (message.originator == localDeviceId_) {
-    jll_debug("Ignoring received message that we originated %s", networkMessageToString(message).c_str());
+    jll_debug("Ignoring received message that we originated %s", NetworkMessageToString(message).c_str());
     return;
   }
   if (orrerySceneIdWatcher_ != nullptr) { orrerySceneIdWatcher_->OnOrrerySceneId(message.orrerySceneId); }
   if (message.numHops == std::numeric_limits<NumHops>::max()) {
     // This avoids overflow when incrementing below.
-    jll_protocol_info("Ignoring received message with high numHops %s", networkMessageToString(message).c_str());
+    jll_protocol_info("Ignoring received message with high numHops %s", NetworkMessageToString(message).c_str());
     return;
   }
   NumHops receiptNumHops = message.numHops + 1;
   if (currentTime > message.lastOriginationTime + kOriginationTimeDiscard) {
-    jll_protocol_info("Ignoring received message due to origination time %s", networkMessageToString(message).c_str());
+    jll_protocol_info("Ignoring received message due to origination time %s", NetworkMessageToString(message).c_str());
     return;
   }
   if (currentTime > message.currentPatternStartTime + 2 * kEffectDuration) {
-    jll_protocol_info("Ignoring received message due to effect duration %s", networkMessageToString(message).c_str());
+    jll_protocol_info("Ignoring received message due to effect duration %s", NetworkMessageToString(message).c_str());
     return;
   }
   OriginatorEntry* entry = GetOriginatorEntry(message.originator);

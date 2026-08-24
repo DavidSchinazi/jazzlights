@@ -68,23 +68,23 @@ Microseconds StartEngine(ProtocolEngine* engine, uint8_t localDeviceIdLastByte =
 
 void test_compute_next_pattern() {
   // Make sure kStartingSecondPattern is correct.
-  TEST_ASSERT_EQUAL_UINT32(computeNextPattern(kStartingPattern), kStartingSecondPattern);
+  TEST_ASSERT_EQUAL_UINT32(ComputeNextPattern(kStartingPattern), kStartingSecondPattern);
   // The rotation never lands on a reserved pattern and never returns zero.
   PatternBits pattern = kStartingPattern;
   for (int i = 0; i < 1000; i++) {
-    pattern = computeNextPattern(pattern);
-    TEST_ASSERT_FALSE(patternIsReserved(pattern));
+    pattern = ComputeNextPattern(pattern);
+    TEST_ASSERT_FALSE(PatternIsReserved(pattern));
     TEST_ASSERT_NOT_EQUAL(0u, pattern);
   }
   // It is deterministic.
-  TEST_ASSERT_EQUAL_UINT32(computeNextPattern(kStartingPattern), computeNextPattern(kStartingPattern));
+  TEST_ASSERT_EQUAL_UINT32(ComputeNextPattern(kStartingPattern), ComputeNextPattern(kStartingPattern));
 }
 
 void test_apply_palette() {
   for (uint8_t palette = 0; palette < 8; palette++) {
-    const PatternBits pattern = applyPalette(kPatternA, palette);
+    const PatternBits pattern = ApplyPalette(kPatternA, palette);
     TEST_ASSERT_EQUAL_UINT8(palette, (pattern >> 13) & 0x7);
-    TEST_ASSERT_FALSE(patternIsReserved(pattern));
+    TEST_ASSERT_FALSE(PatternIsReserved(pattern));
     // Everything outside the palette bits is preserved.
     TEST_ASSERT_EQUAL_UINT32(kPatternA & 0xFFFF1FFF, pattern & 0xFFFF1FFF);
   }
@@ -94,29 +94,29 @@ void test_compare_precedence() {
   const NetworkDeviceId low = MakeDeviceId(0x01);
   const NetworkDeviceId high = MakeDeviceId(0x02);
   // Precedence dominates the device ID.
-  TEST_ASSERT_GREATER_THAN(0, comparePrecedence(200, low, 100, high));
-  TEST_ASSERT_LESS_THAN(0, comparePrecedence(100, high, 200, low));
+  TEST_ASSERT_GREATER_THAN(0, ComparePrecedence(200, low, 100, high));
+  TEST_ASSERT_LESS_THAN(0, ComparePrecedence(100, high, 200, low));
   // Equal precedence falls back to the device ID.
-  TEST_ASSERT_GREATER_THAN(0, comparePrecedence(100, high, 100, low));
-  TEST_ASSERT_LESS_THAN(0, comparePrecedence(100, low, 100, high));
-  TEST_ASSERT_EQUAL_INT(0, comparePrecedence(100, low, 100, low));
+  TEST_ASSERT_GREATER_THAN(0, ComparePrecedence(100, high, 100, low));
+  TEST_ASSERT_LESS_THAN(0, ComparePrecedence(100, low, 100, high));
+  TEST_ASSERT_EQUAL_INT(0, ComparePrecedence(100, low, 100, low));
 }
 
 void test_precedence_gain() {
   constexpr Microseconds kDuration = 1000;
   // No epoch means no gain at all.
-  TEST_ASSERT_EQUAL_UINT16(0, getPrecedenceGain(std::nullopt, 500, kDuration, 100));
+  TEST_ASSERT_EQUAL_UINT16(0, GetPrecedenceGain(std::nullopt, 500, kDuration, 100));
   // Before the epoch, and within the first tenth of the duration, we get the full gain.
-  TEST_ASSERT_EQUAL_UINT16(100, getPrecedenceGain(1000, 500, kDuration, 100));
-  TEST_ASSERT_EQUAL_UINT16(100, getPrecedenceGain(500, 550, kDuration, 100));
+  TEST_ASSERT_EQUAL_UINT16(100, GetPrecedenceGain(1000, 500, kDuration, 100));
+  TEST_ASSERT_EQUAL_UINT16(100, GetPrecedenceGain(500, 550, kDuration, 100));
   // Past the duration the gain is gone.
-  TEST_ASSERT_EQUAL_UINT16(0, getPrecedenceGain(500, 500 + kDuration + 1, kDuration, 100));
+  TEST_ASSERT_EQUAL_UINT16(0, GetPrecedenceGain(500, 500 + kDuration + 1, kDuration, 100));
   // Halfway through it has decayed to about half.
-  TEST_ASSERT_EQUAL_UINT16(50, getPrecedenceGain(500, 1000, kDuration, 100));
+  TEST_ASSERT_EQUAL_UINT16(50, GetPrecedenceGain(500, 1000, kDuration, 100));
 
   // Adding gain saturates rather than wrapping around.
-  TEST_ASSERT_EQUAL_UINT16(150, addPrecedenceGain(100, 50));
-  TEST_ASSERT_EQUAL_UINT16(65535, addPrecedenceGain(65500, 100));
+  TEST_ASSERT_EQUAL_UINT16(150, AddPrecedenceGain(100, 50));
+  TEST_ASSERT_EQUAL_UINT16(65535, AddPrecedenceGain(65500, 100));
 }
 
 void test_standalone_leading() {

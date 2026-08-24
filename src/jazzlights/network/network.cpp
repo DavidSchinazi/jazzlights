@@ -154,7 +154,7 @@ bool Network::ParseUdpPayload(uint8_t* udpPayload, size_t udpPayloadLength, cons
     receivedMessage.lastOriginationTime = 0;
   }
 
-  jll_debug("%s received %s", NetworkTypeToString(type()), networkMessageToString(receivedMessage).c_str());
+  jll_debug("%s received %s", NetworkTypeToString(type()), NetworkMessageToString(receivedMessage).c_str());
 
   *outMessage = receivedMessage;
   return true;
@@ -222,11 +222,11 @@ bool Network::WriteUdpPayload(const ProtocolMessage& messageToSend, uint8_t* udp
   } else {
     patternTimeDeltaMs16 = 0xFFFF;
   }
-  jll_debug("%s sending %s", NetworkTypeToString(type()), networkMessageToString(messageToSend).c_str());
+  jll_debug("%s sending %s", NetworkTypeToString(type()), NetworkMessageToString(messageToSend).c_str());
 
   udpPayload[kVersionOffset] = kVersion;
-  messageToSend.originator.writeTo(&udpPayload[kOriginatorOffset]);
-  messageToSend.sender.writeTo(&udpPayload[kSenderOffset]);
+  messageToSend.originator.WriteTo(&udpPayload[kOriginatorOffset]);
+  messageToSend.sender.WriteTo(&udpPayload[kSenderOffset]);
   writeUint16(&udpPayload[kPrecedenceOffset], messageToSend.precedence);
   udpPayload[kNumHopsOffset] = messageToSend.numHops;
   writeUint16(&udpPayload[kOriginationTimeOffset], originationTimeDeltaMs16);

@@ -42,16 +42,16 @@ class NetworkDeviceId {
     return *this;
   }
   uint8_t operator()(uint8_t i) const { return data_[i]; }
-  int compare(const NetworkDeviceId& other) const { return memcmp(&data_[0], &other.data_[0], kNetworkDeviceIdSize); }
-  void writeTo(uint8_t* data) const { memcpy(data, &data_[0], kNetworkDeviceIdSize); }
-  void readFrom(const uint8_t* data) { memcpy(&data_[0], data, kNetworkDeviceIdSize); }
-  bool operator==(const NetworkDeviceId& other) const { return compare(other) == 0; }
-  bool operator!=(const NetworkDeviceId& other) const { return compare(other) != 0; }
-  bool operator<(const NetworkDeviceId& other) const { return compare(other) < 0; }
-  bool operator<=(const NetworkDeviceId& other) const { return compare(other) <= 0; }
-  bool operator>(const NetworkDeviceId& other) const { return compare(other) > 0; }
-  bool operator>=(const NetworkDeviceId& other) const { return compare(other) >= 0; }
-  std::string toString() const {
+  int Compare(const NetworkDeviceId& other) const { return memcmp(&data_[0], &other.data_[0], kNetworkDeviceIdSize); }
+  void WriteTo(uint8_t* data) const { memcpy(data, &data_[0], kNetworkDeviceIdSize); }
+  void ReadFrom(const uint8_t* data) { memcpy(&data_[0], data, kNetworkDeviceIdSize); }
+  bool operator==(const NetworkDeviceId& other) const { return Compare(other) == 0; }
+  bool operator!=(const NetworkDeviceId& other) const { return Compare(other) != 0; }
+  bool operator<(const NetworkDeviceId& other) const { return Compare(other) < 0; }
+  bool operator<=(const NetworkDeviceId& other) const { return Compare(other) <= 0; }
+  bool operator>(const NetworkDeviceId& other) const { return Compare(other) > 0; }
+  bool operator>=(const NetworkDeviceId& other) const { return Compare(other) >= 0; }
+  std::string ToString() const {
     char result[2 * 6 + 5 + 1] = {};
     snprintf(result, sizeof(result), DEVICE_ID_FMT, DEVICE_ID_HEX(*this));
     return result;
@@ -95,44 +95,44 @@ struct ProtocolMessage {
 
   std::optional<OrrerySceneId> orrerySceneId;
 
-  bool isEqualExceptOriginationTime(const ProtocolMessage& other) const {
+  bool IsEqualExceptOriginationTime(const ProtocolMessage& other) const {
     return sender == other.sender && originator == other.originator && precedence == other.precedence &&
            currentPattern == other.currentPattern && nextPattern == other.nextPattern && numHops == other.numHops &&
            currentPatternStartTime == other.currentPatternStartTime && receiptNetworkId == other.receiptNetworkId &&
            receiptNetworkType == other.receiptNetworkType;
   }
   bool operator==(const ProtocolMessage& other) const {
-    return isEqualExceptOriginationTime(other) && lastOriginationTime == other.lastOriginationTime;
+    return IsEqualExceptOriginationTime(other) && lastOriginationTime == other.lastOriginationTime;
   }
   bool operator!=(const ProtocolMessage& other) const { return !(*this == other); }
 };
 
 // Interpretation of ProtocolMessage::orrerySceneId.
 enum class OrreryScene : uint8_t {
-  Paused = 0,
-  Realistic = 1,
-  Align = 2,
-  Silly = 3,
-  FocusMercury = 4,
-  FocusVenus = 5,
-  FocusEarth = 6,
-  FocusMars = 7,
-  FocusJupiter = 8,
-  FocusSaturn = 9,
-  FocusUranus = 10,
-  FocusNeptune = 11,
-  FocusSun = 12,
-  MercuryRetrograde = 13,
+  kPaused = 0,
+  kRealistic = 1,
+  kAlign = 2,
+  kSilly = 3,
+  kFocusMercury = 4,
+  kFocusVenus = 5,
+  kFocusEarth = 6,
+  kFocusMars = 7,
+  kFocusJupiter = 8,
+  kFocusSaturn = 9,
+  kFocusUranus = 10,
+  kFocusNeptune = 11,
+  kFocusSun = 12,
+  kMercuryRetrograde = 13,
 
   kInvalidScene = 100,
-  kMinScene = Paused,
-  kMaxScene = MercuryRetrograde,
+  kMinScene = kPaused,
+  kMaxScene = kMercuryRetrograde,
 };
 
 const char* OrrerySceneToString(OrreryScene scene);
 
-std::string displayBitsAsBinary(PatternBits p);
-std::string networkMessageToString(const ProtocolMessage& message);
+std::string DisplayBitsAsBinary(PatternBits p);
+std::string NetworkMessageToString(const ProtocolMessage& message);
 
 }  // namespace jazzlights
 

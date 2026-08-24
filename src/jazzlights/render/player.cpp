@@ -120,7 +120,7 @@ static const Effect* patternFromBits(PatternBits pattern, const Player& player) 
   // of the reserved type zero patterns it is (generally simple solid colors).
   // Reserved types 0 (basic), 1 (mapping), and 2 (coloring) don’t use a palette.
   // Reserved type 3 and the non-reserved patterns do use ColorWithPalette.
-  if (patternIsReserved(pattern)) {
+  if (PatternIsReserved(pattern)) {
     const uint8_t reserved_type = (pattern >> 4) & 0xF;
     if (reserved_type == 0x0) {
       switch ((pattern >> 8) & 0xFF) {
@@ -209,7 +209,7 @@ static const Effect* patternFromBits(PatternBits pattern, const Player& player) 
 #endif  // JL_PLAYER_SKIP_FLAME
     }
   }
-  jll_fatal("Failed to pick an effect %s", displayBitsAsBinary(pattern).c_str());
+  jll_fatal("Failed to pick an effect %s", DisplayBitsAsBinary(pattern).c_str());
 }
 
 std::string patternName(PatternBits pattern, const Player& player) {
@@ -318,12 +318,12 @@ void Player::SendPendingMessage(bool sendAsap) {
   for (Network* network : networks_) {
     if (!network->shouldEcho() && messageToSend->receiptNetworkId == network->id()) {
       jll_debug("Not echoing for %s to %s ", NetworkTypeToString(network->type()),
-                networkMessageToString(*messageToSend).c_str());
+                NetworkMessageToString(*messageToSend).c_str());
       network->disableSending();
       continue;
     }
     jll_player_message("Setting messageToSend for %s to %s ", NetworkTypeToString(network->type()),
-                       networkMessageToString(*messageToSend).c_str());
+                       NetworkMessageToString(*messageToSend).c_str());
     network->setMessageToSend(*messageToSend);
   }
   if (sendAsap) {

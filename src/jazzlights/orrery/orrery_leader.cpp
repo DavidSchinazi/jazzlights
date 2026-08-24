@@ -84,7 +84,7 @@ OrreryLeader::OrreryLeader()
       switch1_(kSwitch1Pin, *this),
       switch3_(kSwitch3Pin, *this),
       switch4_(kSwitch4Pin, *this),
-      scene_(OrreryScene::Paused),
+      scene_(OrreryScene::kPaused),
       sceneStartTime_(TimeMicros()),
       lastRandomSceneTime_(0),
       nextRandomSceneDuration_(0) {
@@ -109,7 +109,7 @@ void OrreryLeader::SetScene(OrreryScene scene) {
   scene_ = scene;
   sceneStartTime_ = TimeMicros();
   if (player_ != nullptr) { player_->SetOrrerySceneIdToSend(static_cast<OrrerySceneId>(scene_)); }
-  if (scene == OrreryScene::Realistic) {
+  if (scene == OrreryScene::kRealistic) {
     if (!switch3_.IsClosed()) {
       lastRandomSceneTime_ = sceneStartTime_;
       nextRandomSceneDuration_ = (UnpredictableRandom::GetNumberBetween(2 * 60, 10 * 60)) * kMicrosecondsPerSecond;
@@ -121,13 +121,14 @@ void OrreryLeader::SetScene(OrreryScene scene) {
     nextRandomSceneDuration_ = 0;
   }
   jll_info("OrreryLeader setting scene to %s", OrrerySceneToString(scene));
-  if (scene == OrreryScene::Paused) {
+  if (scene == OrreryScene::kPaused) {
     SetSpeed(Planet::All, 0);
-  } else if (scene == OrreryScene::Realistic || scene == OrreryScene::Silly || scene == OrreryScene::FocusMercury ||
-             scene == OrreryScene::FocusVenus || scene == OrreryScene::FocusEarth || scene == OrreryScene::FocusMars ||
-             scene == OrreryScene::FocusJupiter || scene == OrreryScene::FocusSaturn ||
-             scene == OrreryScene::FocusUranus || scene == OrreryScene::FocusNeptune ||
-             scene == OrreryScene::FocusSun || scene == OrreryScene::MercuryRetrograde) {
+  } else if (scene == OrreryScene::kRealistic || scene == OrreryScene::kSilly || scene == OrreryScene::kFocusMercury ||
+             scene == OrreryScene::kFocusVenus || scene == OrreryScene::kFocusEarth ||
+             scene == OrreryScene::kFocusMars || scene == OrreryScene::kFocusJupiter ||
+             scene == OrreryScene::kFocusSaturn || scene == OrreryScene::kFocusUranus ||
+             scene == OrreryScene::kFocusNeptune || scene == OrreryScene::kFocusSun ||
+             scene == OrreryScene::kMercuryRetrograde) {
     // These values are based on the real speeds of the planets with a log scale applied.
     // RPM = 670.163 * log10(realSpeed) + 5419.638
     struct PlanetSpeed {
@@ -146,29 +147,29 @@ void OrreryLeader::SetScene(OrreryScene scene) {
     };
     for (size_t i = 0; i < sizeof(speeds) / sizeof(speeds[0]); i++) {
       int32_t speed = speeds[i].speed * speedMultiplier_;
-      if (scene == OrreryScene::Silly && (i % 2) == 1) { speed = -speed; }
-      if (scene == OrreryScene::MercuryRetrograde && speeds[i].planet == Planet::Mercury) { speed = -speed; }
+      if (scene == OrreryScene::kSilly && (i % 2) == 1) { speed = -speed; }
+      if (scene == OrreryScene::kMercuryRetrograde && speeds[i].planet == Planet::Mercury) { speed = -speed; }
       SetSpeed(speeds[i].planet, speed);
     }
-    if (scene != OrreryScene::Realistic && scene != OrreryScene::Silly && scene != OrreryScene::MercuryRetrograde) {
+    if (scene != OrreryScene::kRealistic && scene != OrreryScene::kSilly && scene != OrreryScene::kMercuryRetrograde) {
       Planet focusedPlanet = Planet::All;
-      if (scene == OrreryScene::FocusMercury) {
+      if (scene == OrreryScene::kFocusMercury) {
         focusedPlanet = Planet::Mercury;
-      } else if (scene == OrreryScene::FocusVenus) {
+      } else if (scene == OrreryScene::kFocusVenus) {
         focusedPlanet = Planet::Venus;
-      } else if (scene == OrreryScene::FocusEarth) {
+      } else if (scene == OrreryScene::kFocusEarth) {
         focusedPlanet = Planet::Earth;
-      } else if (scene == OrreryScene::FocusMars) {
+      } else if (scene == OrreryScene::kFocusMars) {
         focusedPlanet = Planet::Mars;
-      } else if (scene == OrreryScene::FocusJupiter) {
+      } else if (scene == OrreryScene::kFocusJupiter) {
         focusedPlanet = Planet::Jupiter;
-      } else if (scene == OrreryScene::FocusSaturn) {
+      } else if (scene == OrreryScene::kFocusSaturn) {
         focusedPlanet = Planet::Saturn;
-      } else if (scene == OrreryScene::FocusUranus) {
+      } else if (scene == OrreryScene::kFocusUranus) {
         focusedPlanet = Planet::Uranus;
-      } else if (scene == OrreryScene::FocusNeptune) {
+      } else if (scene == OrreryScene::kFocusNeptune) {
         focusedPlanet = Planet::Neptune;
-      } else if (scene == OrreryScene::FocusSun) {
+      } else if (scene == OrreryScene::kFocusSun) {
         focusedPlanet = Planet::Sun;
       }
       for (int i = 0; i < kNumPlanets; i++) {
@@ -176,7 +177,7 @@ void OrreryLeader::SetScene(OrreryScene scene) {
         SetBrightness(p, p == focusedPlanet ? kDefaultPlanetBrightness : 0);
       }
     }
-  } else if (scene == OrreryScene::Align) {
+  } else if (scene == OrreryScene::kAlign) {
     waitingForAlignment_ = true;
     hasPassedHalfway_.clear();
     SetPosition(Planet::All, 0);
@@ -417,38 +418,40 @@ void OrreryLeader::RunLoop() {
     }
   }
 
-  if (scene_ == OrreryScene::Realistic && nextRandomSceneDuration_ > 0 &&
+  if (scene_ == OrreryScene::kRealistic && nextRandomSceneDuration_ > 0 &&
       currentTime - lastRandomSceneTime_ > nextRandomSceneDuration_) {
-    const std::vector<OrreryScene> repertoire = {OrreryScene::Silly, OrreryScene::MercuryRetrograde,
-                                                 OrreryScene::Align};
+    const std::vector<OrreryScene> repertoire = {OrreryScene::kSilly, OrreryScene::kMercuryRetrograde,
+                                                 OrreryScene::kAlign};
     OrreryScene nextScene = repertoire[UnpredictableRandom::GetNumberBetween(0, repertoire.size() - 1)];
     jll_info("Randomly selecting next scene %s", OrrerySceneToString(nextScene));
     SetScene(nextScene);
   }
 
-  if (scene_ == OrreryScene::Silly && currentTime - sceneStartTime_ > 5 * 60 * kMicrosecondsPerSecond) {
+  if (scene_ == OrreryScene::kSilly && currentTime - sceneStartTime_ > 5 * 60 * kMicrosecondsPerSecond) {
     jll_info("Silly scene ending after 5 minutes, starting Realistic scene");
-    SetScene(OrreryScene::Realistic);
+    SetScene(OrreryScene::kRealistic);
   }
 
-  if ((scene_ == OrreryScene::FocusMercury || scene_ == OrreryScene::FocusVenus || scene_ == OrreryScene::FocusEarth ||
-       scene_ == OrreryScene::FocusMars || scene_ == OrreryScene::FocusJupiter || scene_ == OrreryScene::FocusSaturn ||
-       scene_ == OrreryScene::FocusUranus || scene_ == OrreryScene::FocusNeptune || scene_ == OrreryScene::FocusSun) &&
+  if ((scene_ == OrreryScene::kFocusMercury || scene_ == OrreryScene::kFocusVenus ||
+       scene_ == OrreryScene::kFocusEarth || scene_ == OrreryScene::kFocusMars ||
+       scene_ == OrreryScene::kFocusJupiter || scene_ == OrreryScene::kFocusSaturn ||
+       scene_ == OrreryScene::kFocusUranus || scene_ == OrreryScene::kFocusNeptune ||
+       scene_ == OrreryScene::kFocusSun) &&
       currentTime - sceneStartTime_ > 60 * kMicrosecondsPerSecond) {
     jll_info("Focus scene ending after 1 minute, starting Realistic scene");
     SetBrightness(Planet::All, kDefaultPlanetBrightness);
-    SetScene(OrreryScene::Realistic);
+    SetScene(OrreryScene::kRealistic);
   }
 
-  if (scene_ == OrreryScene::MercuryRetrograde && currentTime - sceneStartTime_ > 60 * kMicrosecondsPerSecond) {
+  if (scene_ == OrreryScene::kMercuryRetrograde && currentTime - sceneStartTime_ > 60 * kMicrosecondsPerSecond) {
     jll_info("MercuryRetrograde scene ending after 1 minute, starting Realistic scene");
-    SetScene(OrreryScene::Realistic);
+    SetScene(OrreryScene::kRealistic);
   }
 
-  if (scene_ == OrreryScene::Align) {
+  if (scene_ == OrreryScene::kAlign) {
     if (currentTime - sceneStartTime_ > 2 * 60 * kMicrosecondsPerSecond) {
       jll_info("Align scene timing out after 2 minutes, starting Realistic scene");
-      SetScene(OrreryScene::Realistic);
+      SetScene(OrreryScene::kRealistic);
     } else if (waitingForAlignment_) {
       bool allArrived = true;
       for (int i = 0; i < kNumPlanetsWithoutSun; i++) {
@@ -498,7 +501,7 @@ void OrreryLeader::RunLoop() {
       }
       if (allRevolutionCompleted) {
         jll_info("All planets have completed one revolution, starting Realistic scene");
-        SetScene(OrreryScene::Realistic);
+        SetScene(OrreryScene::kRealistic);
       }
     }
   }
@@ -515,10 +518,10 @@ void OrreryLeader::StateChanged(uint8_t pin, bool isClosed) {
   }
 }
 
-void OrreryLeader::HandleSwitch1(bool isClosed) { SetScene(isClosed ? OrreryScene::Paused : OrreryScene::Realistic); }
+void OrreryLeader::HandleSwitch1(bool isClosed) { SetScene(isClosed ? OrreryScene::kPaused : OrreryScene::kRealistic); }
 
 void OrreryLeader::HandleSwitch3(bool isClosed) {
-  if (!isClosed && scene_ == OrreryScene::Realistic) {
+  if (!isClosed && scene_ == OrreryScene::kRealistic) {
     lastRandomSceneTime_ = TimeMicros();
     nextRandomSceneDuration_ = (UnpredictableRandom::GetNumberBetween(2 * 60, 10 * 60)) * kMicrosecondsPerSecond;
     jll_info("OrreryLeader scheduling random scene in %llds", SecondsForLogs(nextRandomSceneDuration_));
