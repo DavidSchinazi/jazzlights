@@ -208,12 +208,13 @@ class ProtocolEngine {
 
   std::list<OriginatorEntry> originatorEntries_;
 
-  Microseconds currentPatternStartTime_ = timeMicros();
-  PatternBits currentPattern_ = kStartingPattern;
-  PatternBits nextPattern_ = kStartingSecondPattern;
   bool loop_ = false;
   bool paletteIsForced_ = false;
   uint8_t forcedPalette_ = 0;
+
+  Microseconds currentPatternStartTime_ = timeMicros();
+  PatternBits currentPattern_ = EnforceForcedPalette(kStartingPattern);
+  PatternBits nextPattern_ = EnforceForcedPalette(computeNextPattern(currentPattern_));
 
   bool hasNetworks_ = false;
   bool hasMessageToSend_ = false;
