@@ -80,14 +80,9 @@ class Player : private ProtocolEngine::Delegate {
   void stopForcePalette() { engine_.StopForcePalette(); }
 
   /**
-   * Returns whether the palette is currently forced.
-   */
-  bool paletteIsForced() const { return engine_.paletteIsForced(); }
-
-  /**
    * Returns the currently forced palette.
    */
-  uint8_t forcedPalette() const { return engine_.forcedPalette(); }
+  std::optional<uint8_t> forcedPalette() const { return engine_.forcedPalette(); }
 
   /**
    * Run text command

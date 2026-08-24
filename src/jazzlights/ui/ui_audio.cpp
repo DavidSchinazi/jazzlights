@@ -220,11 +220,8 @@ void AudioVisualizerUi::RunLoop() {
     M5.Display.drawString(buf, screen_width_ / 2, 158);
 
     M5.Display.drawRect(20, 182, 280, 38, WHITE);
-    if (player_.paletteIsForced()) {
-      snprintf(buf, sizeof(buf), "Palette: %s", OurColorPaletteName(player_.forcedPalette()).c_str());
-    } else {
-      snprintf(buf, sizeof(buf), "Palette: Default");
-    }
+    snprintf(buf, sizeof(buf), "Palette: %s",
+             player_.forcedPalette() ? OurColorPaletteName(*player_.forcedPalette()).c_str() : "Default");
     M5.Display.drawString(buf, screen_width_ / 2, 201);
 
     if (showing_no_audio_data_) {
@@ -286,16 +283,16 @@ void AudioVisualizerUi::RunLoop() {
       M5.Display.drawString(label, col * w + w / 2, row * h + h / 2);
     };
 
+    uint8_t forcedPalette = player_.forcedPalette().value_or(255);
     drawCell(0, 0, "Back", false);
-    drawCell(0, 1, "Default", !player_.paletteIsForced());
-    drawCell(0, 2, "Cloud", player_.paletteIsForced() && player_.forcedPalette() == 3);
-    drawCell(1, 0, "Lava", player_.paletteIsForced() && player_.forcedPalette() == 1);
-    drawCell(1, 1, "Ocean", player_.paletteIsForced() && player_.forcedPalette() == 2);
-    drawCell(1, 2, "Forest", player_.paletteIsForced() && player_.forcedPalette() == 5);
-    drawCell(2, 0, "Rainbow",
-             player_.paletteIsForced() && (player_.forcedPalette() == 6 || player_.forcedPalette() == 7));
-    drawCell(2, 1, "Party", player_.paletteIsForced() && player_.forcedPalette() == 4);
-    drawCell(2, 2, "Heat", player_.paletteIsForced() && player_.forcedPalette() == 0);
+    drawCell(0, 1, "Default", !player_.forcedPalette());
+    drawCell(0, 2, "Cloud", forcedPalette == 3);
+    drawCell(1, 0, "Lava", forcedPalette == 1);
+    drawCell(1, 1, "Ocean", forcedPalette == 2);
+    drawCell(1, 2, "Forest", forcedPalette == 5);
+    drawCell(2, 0, "Rainbow", forcedPalette == 6 || forcedPalette == 7);
+    drawCell(2, 1, "Party", forcedPalette == 4);
+    drawCell(2, 2, "Heat", forcedPalette == 0);
   } else if (showing_no_audio_data_) {
     M5.Display.setTextSize(2);
     M5.Display.setTextDatum(TC_DATUM);

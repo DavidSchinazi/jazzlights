@@ -419,8 +419,8 @@ void test_forced_palette_survives_rotation() {
 
   constexpr uint8_t kPalette = 3;
   engine.ForcePalette(kPalette);
-  TEST_ASSERT(engine.paletteIsForced());
-  TEST_ASSERT_EQUAL_UINT8(kPalette, engine.forcedPalette());
+  TEST_ASSERT(engine.forcedPalette());
+  TEST_ASSERT_EQUAL_UINT8(kPalette, *engine.forcedPalette());
   TEST_ASSERT_EQUAL_UINT8(kPalette, (engine.GetCurrentPattern() >> 13) & 0x7);
   TEST_ASSERT_EQUAL_UINT8(kPalette, (engine.GetNextPattern() >> 13) & 0x7);
 
@@ -432,7 +432,7 @@ void test_forced_palette_survives_rotation() {
   }
 
   engine.StopForcePalette();
-  TEST_ASSERT_FALSE(engine.paletteIsForced());
+  TEST_ASSERT_FALSE(engine.forcedPalette());
 }
 
 void test_forced_leading_pattern() {

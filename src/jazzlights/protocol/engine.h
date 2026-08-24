@@ -125,8 +125,7 @@ class ProtocolEngine {
   PatternBits GetNextPattern() const { return nextPattern_; }
   Microseconds currentPatternStartTime() const { return currentPatternStartTime_; }
   bool isLooping() const { return loop_; }
-  bool paletteIsForced() const { return paletteIsForced_; }
-  uint8_t forcedPalette() const { return forcedPalette_; }
+  std::optional<uint8_t> forcedPalette() const { return forcedPalette_; }
   NetworkDeviceId localDeviceId() const { return localDeviceId_; }
   NetworkDeviceId currentLeader() const { return currentLeader_; }
   NetworkType following() const { return followedNextHopNetworkType_; }
@@ -207,8 +206,7 @@ class ProtocolEngine {
   std::list<OriginatorEntry> originatorEntries_;
 
   bool loop_ = false;
-  bool paletteIsForced_ = false;
-  uint8_t forcedPalette_ = 0;
+  std::optional<uint8_t> forcedPalette_;
 
   Microseconds currentPatternStartTime_ = timeMicros();
   PatternBits currentPattern_ = EnforceForcedPalette(kStartingPattern);

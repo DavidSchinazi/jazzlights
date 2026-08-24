@@ -174,20 +174,18 @@ void ProtocolEngine::ResumeRotation() {
 
 void ProtocolEngine::ForcePalette(uint8_t palette) {
   jll_info("Forcing palette %u", palette);
-  paletteIsForced_ = true;
   forcedPalette_ = palette;
   SetPattern(EnforceForcedPalette(currentPattern_));
 }
 
 void ProtocolEngine::StopForcePalette() {
-  if (!paletteIsForced_) { return; }
-  jll_info("Stop forcing palette %u", forcedPalette_);
-  paletteIsForced_ = false;
-  forcedPalette_ = 0;
+  if (!forcedPalette_) { return; }
+  jll_info("Stop forcing palette %u", *forcedPalette_);
+  forcedPalette_.reset();
 }
 
 PatternBits ProtocolEngine::EnforceForcedPalette(PatternBits pattern) {
-  if (paletteIsForced_) { pattern = applyPalette(pattern, forcedPalette_); }
+  if (forcedPalette_) { pattern = applyPalette(pattern, *forcedPalette_); }
   return pattern;
 }
 
