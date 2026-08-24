@@ -102,7 +102,7 @@ static const CRGB kAtomScreenLEDsAllZero[ATOM_SCREEN_NUM_LEDS] = {};
 uint8_t GetReceiveTimeBrightness(OptionalMicroseconds lastReceiveTime) {
   if (!lastReceiveTime) { return 0; }
   constexpr Microseconds kReceiveMaxTime = 10000 * kMicrosecondsPerMillisecond;
-  const Microseconds timeSinceReceive = timeMicros() - *lastReceiveTime;
+  const Microseconds timeSinceReceive = TimeMicros() - *lastReceiveTime;
   if (timeSinceReceive >= kReceiveMaxTime) { return 0; }
   return 255 - static_cast<uint8_t>(timeSinceReceive * 256 / kReceiveMaxTime);
 }
@@ -116,7 +116,7 @@ void AtomMatrixUi::ScreenDisplay() {
   // For t values 0..7 we subtract that from 20 to get brightness 20..13
   // For t values 8..15 we add that to 4 to get brightness 12..19
   // This gives us a brightness that starts at 20, dims to 12, and then brightens back to 20 every second
-  const uint32_t t = (timeMicros() >> 16) & 0xF;
+  const uint32_t t = (TimeMicros() >> 16) & 0xF;
   uint8_t brightness = t & 8 ? 4 + t : 20 - t;
   if (memcmp(screenLEDs_, kAtomScreenLEDsAllZero, sizeof(screenLEDs_)) == 0) { brightness = 0; }
   if (brightness == brightnessLastWrite_ && memcmp(screenLEDs_, screenLEDsLastWrite_, sizeof(screenLEDs_)) == 0) {
@@ -238,7 +238,7 @@ void AtomMatrixUi::HandleUnlockSequence(bool wasLongPress) {
   } else {
     buttonLockState_++;
     // To reject accidental presses, exit unlock sequence if four seconds without progress
-    lockButtonTime_ = timeMicros() + kButtonLockTimeoutDuringUnlockSequence;
+    lockButtonTime_ = TimeMicros() + kButtonLockTimeoutDuringUnlockSequence;
   }
 }
 
@@ -305,7 +305,7 @@ bool AtomMatrixUi::ScreenMessage() {
     jll_info("Stopping boot message due to button press");
     displayingBootMessage_ = false;
   } else {
-    Microseconds currentTime = timeMicros();
+    Microseconds currentTime = TimeMicros();
     if (!bootMessageStartTime_) { bootMessageStartTime_ = currentTime; }
     Microseconds offsetMicros = currentTime - *bootMessageStartTime_;
 #if JL_IS_CONFIG(CREATURE)
@@ -332,7 +332,7 @@ bool AtomMatrixUi::ScreenMessage() {
 }
 
 void AtomMatrixUi::RunLoop() {
-  Microseconds currentTime = timeMicros();
+  Microseconds currentTime = TimeMicros();
   button_.RunLoop();
 
   if (ScreenMessage()) { return; }

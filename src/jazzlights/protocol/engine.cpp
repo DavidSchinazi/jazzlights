@@ -106,7 +106,7 @@ void ProtocolEngine::GoToNextPattern() {
   jll_info("next command received: switching from %s (%08x) to %s (%08x), currentLeader=" DEVICE_ID_FMT,
            delegate_->PatternName(currentPattern_).c_str(), currentPattern_,
            delegate_->PatternName(nextPattern_).c_str(), nextPattern_, DEVICE_ID_HEX(currentLeader_));
-  Microseconds currentTime = timeMicros();
+  Microseconds currentTime = TimeMicros();
   lastUserInputTime_ = currentTime;
   currentPatternStartTime_ = currentTime;
   if (loop_ && currentPattern_ == nextPattern_) {
@@ -126,7 +126,7 @@ void ProtocolEngine::SetPattern(PatternBits pattern) {
   jll_info("set pattern command received: switching from %s (%08x) to %s (%08x), currentLeader=" DEVICE_ID_FMT,
            delegate_->PatternName(currentPattern_).c_str(), currentPattern_, delegate_->PatternName(pattern).c_str(),
            pattern, DEVICE_ID_HEX(currentLeader_));
-  Microseconds currentTime = timeMicros();
+  Microseconds currentTime = TimeMicros();
   lastUserInputTime_ = currentTime;
   currentPatternStartTime_ = currentTime;
   currentPattern_ = pattern;
@@ -190,7 +190,7 @@ void ProtocolEngine::ReapplyForcedPalette() {
 }
 
 void ProtocolEngine::CloudNext(bool extraAdvance) {
-  Microseconds currentTime = timeMicros();
+  Microseconds currentTime = TimeMicros();
   lastUserInputTime_ = currentTime;
   if (extraAdvance) {
     currentPattern_ = nextPattern_;
@@ -235,7 +235,7 @@ ProtocolEngine::OriginatorEntry* ProtocolEngine::GetOriginatorEntry(NetworkDevic
 void ProtocolEngine::SetOrrerySceneIdToSend(std::optional<OrrerySceneId> orrerySceneIdToSend) {
   orrerySceneIdToSend_ = orrerySceneIdToSend;
   if (orrerySceneIdToSend_) {
-    lastOrrerySceneIdSetTime_ = timeMicros();
+    lastOrrerySceneIdSetTime_ = TimeMicros();
     jll_info("Start sending orrery scene ID %d", static_cast<int>(*orrerySceneIdToSend_));
   } else {
     lastOrrerySceneIdSetTime_.reset();
@@ -243,7 +243,7 @@ void ProtocolEngine::SetOrrerySceneIdToSend(std::optional<OrrerySceneId> orreryS
 }
 
 void ProtocolEngine::CheckLeaderAndPattern(OptionalMicroseconds currentTimeOpt) {
-  Microseconds currentTime = currentTimeOpt.value_or(timeMicros());
+  Microseconds currentTime = currentTimeOpt.value_or(TimeMicros());
   // Remove elements that have aged out.
   originatorEntries_.remove_if([currentTime](const OriginatorEntry& e) {
     if (currentTime > e.lastOriginationTime + kOriginationTimeDiscard) {
@@ -412,7 +412,7 @@ void ProtocolEngine::ComputeMessageToSend(NetworkDeviceId originator, Precedence
 }
 
 void ProtocolEngine::HandleReceivedMessage(ProtocolMessage message, OptionalMicroseconds currentTimeOpt) {
-  Microseconds currentTime = currentTimeOpt.value_or(timeMicros());
+  Microseconds currentTime = currentTimeOpt.value_or(TimeMicros());
 #if JL_IS_CONFIG(CREATURE)
   if (message.isCreature) {
     jll_info("creature recv %s", networkMessageToString(message).c_str());
@@ -541,7 +541,7 @@ void ProtocolEngine::HandleReceivedMessage(ProtocolMessage message, OptionalMicr
           changes << ", elapsedTime -= " << timeDeltaMs;
           shouldUpdateStartTime = true;
         } else if (timeDelta < kPatternStartTimeDeltaMin) {
-          if (is_debug_logging_enabled()) { changes << ", elapsedTime !-= " << timeDeltaMs; }
+          if (IsDebugLoggingEnabled()) { changes << ", elapsedTime !-= " << timeDeltaMs; }
           entry->patternStartTimeMovementCounter = 0;
         } else {
           if (entry->patternStartTimeMovementCounter <= 1) {
@@ -550,14 +550,14 @@ void ProtocolEngine::HandleReceivedMessage(ProtocolMessage message, OptionalMicr
               changes << ", elapsedTime -= " << timeDeltaMs;
               shouldUpdateStartTime = true;
             } else {
-              if (is_debug_logging_enabled()) {
+              if (IsDebugLoggingEnabled()) {
                 changes << ", elapsedTime ~-= " << timeDeltaMs << " (movement "
                         << static_cast<int>(-entry->patternStartTimeMovementCounter) << ")";
               }
             }
           } else {
             entry->patternStartTimeMovementCounter = 0;
-            if (is_debug_logging_enabled()) { changes << ", elapsedTime ~-= " << timeDeltaMs << " (flip)"; }
+            if (IsDebugLoggingEnabled()) { changes << ", elapsedTime ~-= " << timeDeltaMs << " (flip)"; }
           }
         }
       } else if (entry->currentPatternStartTime < message.currentPatternStartTime) {
@@ -573,7 +573,7 @@ void ProtocolEngine::HandleReceivedMessage(ProtocolMessage message, OptionalMicr
           }
           shouldUpdateStartTime = true;
         } else if (timeDelta < kPatternStartTimeDeltaMin) {
-          if (is_debug_logging_enabled()) { changes << ", elapsedTime !+= " << timeDeltaMs; }
+          if (IsDebugLoggingEnabled()) { changes << ", elapsedTime !+= " << timeDeltaMs; }
           entry->patternStartTimeMovementCounter = 0;
         } else {
           if (entry->patternStartTimeMovementCounter >= -1) {
@@ -582,14 +582,14 @@ void ProtocolEngine::HandleReceivedMessage(ProtocolMessage message, OptionalMicr
               changes << ", elapsedTime += " << timeDeltaMs;
               shouldUpdateStartTime = true;
             } else {
-              if (is_debug_logging_enabled()) {
+              if (IsDebugLoggingEnabled()) {
                 changes << ", elapsedTime ~+= " << timeDeltaMs << " (movement "
                         << static_cast<int>(entry->patternStartTimeMovementCounter) << ")";
               }
             }
           } else {
             entry->patternStartTimeMovementCounter = 0;
-            if (is_debug_logging_enabled()) { changes << ", elapsedTime ~+= " << timeDeltaMs << " (flip)"; }
+            if (IsDebugLoggingEnabled()) { changes << ", elapsedTime ~+= " << timeDeltaMs << " (flip)"; }
           }
         }
       }
@@ -614,7 +614,7 @@ void ProtocolEngine::HandleReceivedMessage(ProtocolMessage message, OptionalMicr
                           entry->precedence, DEVICE_ID_HEX(entry->nextHopDevice),
                           NetworkTypeToString(entry->nextHopNetworkType), changesStr.c_str(),
                           message.receiptDetails.c_str());
-        if (followedUpdate) { printInstrumentationInfo(); }
+        if (followedUpdate) { PrintInstrumentationInfo(); }
       }
       UpdateOverriddenPatternWatcher(entry->precedence);
     } else {

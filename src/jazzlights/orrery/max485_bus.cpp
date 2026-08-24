@@ -162,7 +162,7 @@ void Max485BusHandler::RunTask() {
                   }
                   OptionalMicroseconds rtt;
                   if (destBusId == GetBusIdSelf() && taskLastSendTimeExpectingResponse_) {
-                    rtt = timeMicros() - *taskLastSendTimeExpectingResponse_;
+                    rtt = TimeMicros() - *taskLastSendTimeExpectingResponse_;
                     taskLastSendTimeExpectingResponse_.reset();
                   }
                   sharedReceivedMessages_.push_back(
@@ -296,7 +296,7 @@ void Max485BusHandler::CopyEncodeAndSendMessage(BusId destBusId) {
   if (!taskEncodedSendMessage.empty()) {
     SendToUart(taskEncodedSendMessage);
     if (busIdSelf == kBusIdLeader && destBusId != kBusIdBroadcast) {
-      taskLastSendTimeExpectingResponse_ = timeMicros();
+      taskLastSendTimeExpectingResponse_ = TimeMicros();
     }
   }
 }
@@ -477,7 +477,7 @@ void Max485BusLeader::HandleApplicationDataAvailableToSend(bool firstSend) {
     jll_info("Initiating first send");
     shouldSend = true;
   } else if (lastSentBusId_ != kSeparator && taskLastSendTimeExpectingResponse_ &&
-             timeMicros() - *taskLastSendTimeExpectingResponse_ > kUartResponseTimeout) {
+             TimeMicros() - *taskLastSendTimeExpectingResponse_ > kUartResponseTimeout) {
     followerStates_[lastSentBusId_].timeoutCount++;
     jll_timeout("Timed out waiting for response from %d, count is now %d", static_cast<int>(lastSentBusId_),
                 followerStates_[lastSentBusId_].timeoutCount);

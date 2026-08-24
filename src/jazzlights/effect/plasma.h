@@ -24,8 +24,8 @@ class SpinPlasma : public EffectWithPaletteAndState<SpinPlasmaState> {
  public:
   std::string effectNamePrefix(PatternBits /*pattern*/) const override { return "sp"; }
   ColorWithPalette innerColor(const Frame& /*frame*/, const Pixel& px, SpinPlasmaState* state) const override {
-    return sin8(sqrt(square((static_cast<float>(px.coord.x) - state->plasmaCenterX) * state->xMultiplier) +
-                     square((static_cast<float>(px.coord.y) - state->plasmaCenterY) * state->yMultiplier)));
+    return sin8(sqrt(Square((static_cast<float>(px.coord.x) - state->plasmaCenterX) * state->xMultiplier) +
+                     Square((static_cast<float>(px.coord.y) - state->plasmaCenterY) * state->yMultiplier)));
   }
   void innerBegin(const Frame& frame, SpinPlasmaState* state) const override {
     const float multiplier = frame.predictableRandom->GetRandomNumberBetween(100, 500);

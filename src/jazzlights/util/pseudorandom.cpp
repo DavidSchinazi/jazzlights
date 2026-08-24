@@ -64,8 +64,8 @@ void UnpredictableRandom::GetRandomBytes(void* buffer, size_t length) {
 #if __GLIBC_PREREQ(2, 25)
   (void)getrandom(buffer, length, /*flags=*/0);
 #else
-  static int randFd = open("/dev/urandom", O_RDONLY);
-  (void)read(randFd, buffer, length);
+  static int sRandFd = open("/dev/urandom", O_RDONLY);
+  (void)read(sRandFd, buffer, length);
 #endif
 #else
   uint8_t* buffer8 = reinterpret_cast<uint8_t*>(buffer);

@@ -151,7 +151,7 @@ void GpioPin::RunLoop() {
   const int closedValue = closedIsHigh_ ? 1 : 0;
   const bool liveIsClosed = gpio_get_level(static_cast<gpio_num_t>(pin_)) == closedValue;
   if (liveIsClosed != isClosedRawRunloop_) {
-    const Microseconds currentTime64 = timeMicros();
+    const Microseconds currentTime64 = TimeMicros();
     JL_GPIO_DEBUG(JL_GPIO_TIME_FMT " Pin %u is unexpectedly %s from runloop, adding event to queue",
                   JL_GPIO_TIME_VAL(currentTime64), pin_, (liveIsClosed ? "closed" : "open"));
     uint64_t state = static_cast<uint64_t>(currentTime64);
@@ -162,7 +162,7 @@ void GpioPin::RunLoop() {
     return;
   }
   if (lastChangeAwayFromDebounced_) {
-    const Microseconds currentTime64 = timeMicros();
+    const Microseconds currentTime64 = TimeMicros();
     const Microseconds timeSinceLastChange = currentTime64 - *lastChangeAwayFromDebounced_;
     if (isClosedDebouncedRunloop_ != isClosedRawRunloop_ && timeSinceLastChange > debounceDuration_) {
       // The debounce time has elapsed since the last change away from the previous debounced value.
@@ -179,7 +179,7 @@ void GpioPin::RunLoop() {
 
 void GpioButton::RunLoop() {
   gpioPin_.RunLoop();
-  const Microseconds currentTime64 = timeMicros();
+  const Microseconds currentTime64 = TimeMicros();
   if (IsPressed() && lastEvent_ && currentTime64 - *lastEvent_ >= kLongPressTime) {
     // GpioButton has been held down for kLongPressTime since last event.
     lastEvent_ = currentTime64;
@@ -203,7 +203,7 @@ template class GpioSwitch<true>;
 template class GpioSwitch<false>;
 
 bool GpioButton::HasBeenPressedLongEnoughForLongPress() {
-  return IsPressed() && (isHeld_ || (lastEvent_ && timeMicros() - *lastEvent_ >= kLongPressTime));
+  return IsPressed() && (isHeld_ || (lastEvent_ && TimeMicros() - *lastEvent_ >= kLongPressTime));
 }
 
 // static
@@ -217,7 +217,7 @@ void GpioPin::HandleInterrupt() {
   const bool newIsClosed = gpio_get_level(static_cast<gpio_num_t>(pin_)) == closedValue;
   if (newIsClosed != lastIsClosedInISR_) {
     lastIsClosedInISR_ = newIsClosed;
-    const Microseconds currentTime64 = timeMicros();
+    const Microseconds currentTime64 = TimeMicros();
     JL_GPIO_DEBUG_ISR(JL_GPIO_TIME_FMT " Pin %u switching raw to %s", JL_GPIO_TIME_VAL(currentTime64), pin_,
                       (newIsClosed ? "closed" : "open"));
     uint64_t state = static_cast<uint64_t>(currentTime64);

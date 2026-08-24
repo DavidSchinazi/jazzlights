@@ -25,12 +25,12 @@ static Box viewport = {
 
 void onResize(GLFWwindow*, int winWidth, int winHeight) {
   const Box& vp = viewport;
-  double aspect = winHeight * width(vp) / (winWidth * height(vp));
+  double aspect = winHeight * Width(vp) / (winWidth * Height(vp));
 
   glViewport(0, 0, winWidth, winHeight);
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  glOrtho(left(vp), right(vp), top(vp) + height(vp) * aspect, top(vp), -1, 1);
+  glOrtho(Left(vp), Right(vp), Top(vp) + Height(vp) * aspect, Top(vp), -1, 1);
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
 }
@@ -51,8 +51,8 @@ int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen, Opt
   player = &playerRef;
   viewport = vp;
 
-  jll_info("Running GUI, view box is (%0.3f, %0.3f) - (%0.3f, %0.3f) meters, using GLFW v.%s", left(player->bounds()),
-           top(player->bounds()), right(player->bounds()), bottom(player->bounds()), glfwGetVersionString());
+  jll_info("Running GUI, view box is (%0.3f, %0.3f) - (%0.3f, %0.3f) meters, using GLFW v.%s", Left(player->bounds()),
+           Top(player->bounds()), Right(player->bounds()), Bottom(player->bounds()), glfwGetVersionString());
 
   if (!glfwInit()) { jll_fatal("Can't initialize graphics"); }
 
@@ -85,7 +85,7 @@ int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen, Opt
 
   glClearColor(0.15, 0.15, 0.15, 1);
   while (!glfwWindowShouldClose(window)) {
-    if (killTime && timeMicros() > *killTime) {
+    if (killTime && TimeMicros() > *killTime) {
       jll_info("Kill time reached, exiting.");
       exit(0);
     }

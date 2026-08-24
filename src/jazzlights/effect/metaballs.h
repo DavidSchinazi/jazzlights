@@ -32,9 +32,9 @@ class Metaballs : public EffectWithPaletteAndState<MetaballsState> {
   std::string effectNamePrefix(PatternBits /*pattern*/) const override { return "metaballs"; }
   ColorWithPalette innerColor(const Frame& /*frame*/, const Pixel& px, MetaballsState* state) const override {
     const Point p = px.coord;
-    const Coord d1 = distance(p, state->p1);
-    const Coord d2 = distance(p, state->p2);
-    const Coord d3 = distance(p, state->p3);
+    const Coord d1 = Distance(p, state->p1);
+    const Coord d2 = Distance(p, state->p2);
+    const Coord d3 = Distance(p, state->p3);
     if (d1 < state->ballRadius || d2 < state->ballRadius || d3 < state->ballRadius) {
       return ColorWithPalette::OverrideCRGB(CRGB::White);
     }
@@ -52,7 +52,7 @@ class Metaballs : public EffectWithPaletteAndState<MetaballsState> {
 
   void innerBegin(const Frame& frame, MetaballsState* state) const override {
     state->speed = frame.predictableRandom->GetRandomDoubleBetween(0.1, 0.5);
-    state->diagonalLength = diagonal(frame);
+    state->diagonalLength = Diagonal(frame);
     state->ballRadius = state->diagonalLength / 50.0;
     state->multX1 = frame.predictableRandom->GetRandomNumberBetween(10, 30);
     state->multY1 = frame.predictableRandom->GetRandomNumberBetween(10, 30);

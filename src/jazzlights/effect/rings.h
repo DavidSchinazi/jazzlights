@@ -29,10 +29,10 @@ class Rings : public EffectWithPaletteAndState<RingsState> {
     state->origin.y =
         frame.viewport.origin.y + frame.predictableRandom->GetRandomDoubleBetween(0, frame.viewport.size.height);
     state->maxDistance = std::max({
-        distance(state->origin, lefttop(frame)),
-        distance(state->origin, righttop(frame)),
-        distance(state->origin, leftbottom(frame)),
-        distance(state->origin, rightbottom(frame)),
+        Distance(state->origin, LeftTop(frame)),
+        Distance(state->origin, RightTop(frame)),
+        Distance(state->origin, LeftBottom(frame)),
+        Distance(state->origin, RightBottom(frame)),
     });
     state->backwards = frame.predictableRandom->GetRandomByte() & 1;
   }
@@ -46,7 +46,7 @@ class Rings : public EffectWithPaletteAndState<RingsState> {
   }
 
   ColorWithPalette innerColor(const Frame& /*frame*/, const Pixel& px, RingsState* state) const override {
-    const double d = distance(px.coord, state->origin);
+    const double d = Distance(px.coord, state->origin);
     return (state->initialHue + int32_t(255 * d / state->maxDistance)) % 255;
   }
 };

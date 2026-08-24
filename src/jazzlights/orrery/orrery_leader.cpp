@@ -85,7 +85,7 @@ OrreryLeader::OrreryLeader()
       switch3_(kSwitch3Pin, *this),
       switch4_(kSwitch4Pin, *this),
       scene_(OrreryScene::Paused),
-      sceneStartTime_(timeMicros()),
+      sceneStartTime_(TimeMicros()),
       lastRandomSceneTime_(0),
       nextRandomSceneDuration_(0) {
   for (int i = 0; i < kNumPlanets; i++) {
@@ -107,7 +107,7 @@ OrreryLeader::OrreryLeader()
 
 void OrreryLeader::SetScene(OrreryScene scene) {
   scene_ = scene;
-  sceneStartTime_ = timeMicros();
+  sceneStartTime_ = TimeMicros();
   if (player_ != nullptr) { player_->SetOrrerySceneIdToSend(static_cast<OrrerySceneId>(scene_)); }
   if (scene == OrreryScene::Realistic) {
     if (!switch3_.IsClosed()) {
@@ -398,7 +398,7 @@ void OrreryLeader::SendBroadcastMessage(const OrreryMessage& msg) {
 }
 
 void OrreryLeader::RunLoop() {
-  Microseconds currentTime = timeMicros();
+  Microseconds currentTime = TimeMicros();
   switch1_.RunLoop();
   switch3_.RunLoop();
   switch4_.RunLoop();
@@ -519,7 +519,7 @@ void OrreryLeader::HandleSwitch1(bool isClosed) { SetScene(isClosed ? OrreryScen
 
 void OrreryLeader::HandleSwitch3(bool isClosed) {
   if (!isClosed && scene_ == OrreryScene::Realistic) {
-    lastRandomSceneTime_ = timeMicros();
+    lastRandomSceneTime_ = TimeMicros();
     nextRandomSceneDuration_ = (UnpredictableRandom::GetNumberBetween(2 * 60, 10 * 60)) * kMicrosecondsPerSecond;
     jll_info("OrreryLeader scheduling random scene in %llds", SecondsForLogs(nextRandomSceneDuration_));
   } else {
@@ -547,7 +547,7 @@ void OrreryLeader::OnOrrerySceneId(std::optional<OrrerySceneId> orrerySceneId) {
     // Ignoring unexpected scene.
     return;
   }
-  Microseconds currentTime = timeMicros();
+  Microseconds currentTime = TimeMicros();
   if (receivedSceneActionTime_ && currentTime - *receivedSceneActionTime_ < 2 * kMicrosecondsPerSecond &&
       *orrerySceneId == receivedOrrerySceneId_) {
     // We already acted on this scene recently, ignore this command.

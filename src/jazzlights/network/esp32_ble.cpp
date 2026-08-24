@@ -35,7 +35,7 @@
 #define ESP32_BLE_DEBUG_ENABLED() 1
 #else  // ESP32_BLE_DEBUG_OVERRIDE
 #define ESP32_BLE_DEBUG(...) jll_debug(__VA_ARGS__)
-#define ESP32_BLE_DEBUG_ENABLED() is_debug_logging_enabled()
+#define ESP32_BLE_DEBUG_ENABLED() IsDebugLoggingEnabled()
 #endif  // ESP32_BLE_DEBUG_OVERRIDE
 
 namespace jazzlights {
@@ -105,7 +105,7 @@ void Esp32BleNetwork::StopAdvertising() {
 void Esp32BleNetwork::MaybeUpdateAdvertisingState() {
   bool shouldStopAdvertising = false;
   bool shouldStopScanning = false;
-  Microseconds currentTime = timeMicros();
+  Microseconds currentTime = TimeMicros();
   {
     const std::lock_guard<std::mutex> lock(mutex_);
     if (state_ == State::kAdvertising && timeToStopAdvertising_ && currentTime >= *timeToStopAdvertising_) {
@@ -124,12 +124,12 @@ void Esp32BleNetwork::MaybeUpdateAdvertisingState() {
 
 void Esp32BleNetwork::StopAdvertisingIn(Microseconds duration) {
   const std::lock_guard<std::mutex> lock(mutex_);
-  timeToStopAdvertising_ = timeMicros() + duration;
+  timeToStopAdvertising_ = TimeMicros() + duration;
 }
 
 void Esp32BleNetwork::StopScanningIn(Microseconds duration) {
   const std::lock_guard<std::mutex> lock(mutex_);
-  timeToStopScanning_ = timeMicros() + duration;
+  timeToStopScanning_ = TimeMicros() + duration;
 }
 
 std::list<ProtocolMessage> Esp32BleNetwork::getReceivedMessagesImpl() {
@@ -308,7 +308,7 @@ size_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_t
     jll_error("Failed to write creature numHops");
     return 0;
   }
-  Microseconds currentTime = timeMicros();
+  Microseconds currentTime = TimeMicros();
   if (!writer.WriteTimeSinceMs16(messageToSend_.lastOriginationTime, currentTime)) {
     jll_error("Failed to write creature originationTimeDelta");
     return 0;
@@ -399,7 +399,7 @@ void Esp32BleNetwork::StartConfigureAdvertising() {
 }
 
 void Esp32BleNetwork::GapCallback(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param) {
-  const Microseconds callbackTime = timeMicros();
+  const Microseconds callbackTime = TimeMicros();
   get()->GapCallbackInner(event, param, callbackTime);
 }
 

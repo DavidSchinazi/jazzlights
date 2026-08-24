@@ -165,7 +165,7 @@ static const Effect* patternFromBits(PatternBits pattern, const Player& player) 
       // Reserved effects that use a palette.
       switch ((pattern >> 8) & 0xF) {
         case 0x0:  // Use the pattern bits.
-          if (patternbit(pattern, 1)) {
+          if (PatternBit(pattern, 1)) {
             return &metaballs_pattern;
           } else {
             return &colored_bursts_pattern;
@@ -191,8 +191,8 @@ static const Effect* patternFromBits(PatternBits pattern, const Player& player) 
 #else   // JL_AUDIO_VISUALIZER
     (void)player;
 #endif  // JL_AUDIO_VISUALIZER
-    if (patternbit(pattern, 1)) {
-      if (patternbit(pattern, 2) && !player.isAllLinear()) {  // 11x - spin
+    if (PatternBit(pattern, 1)) {
+      if (PatternBit(pattern, 2) && !player.isAllLinear()) {  // 11x - spin
         return &spin_pattern;
       } else {  // 10x - hiphotic
         return &hiphotic_pattern;
@@ -201,7 +201,7 @@ static const Effect* patternFromBits(PatternBits pattern, const Player& player) 
 #if JL_PLAYER_SKIP_FLAME
       return &rings_pattern;
 #else   // JL_PLAYER_SKIP_FLAME
-      if (patternbit(pattern, 2) && !player.isAllLinear()) {  // 01x - flame
+      if (PatternBit(pattern, 2) && !player.isAllLinear()) {  // 01x - flame
         return &flame_pattern;
       } else {  // 00x - rings
         return &rings_pattern;
@@ -253,7 +253,7 @@ void Player::begin() {
   frame_.viewport.size.height = 0;
   frame_.viewport.size.width = 0;
   for (const Strand& s : strands_) {
-    frame_.viewport = merge(frame_.viewport, jazzlights::bounds(s.layout));
+    frame_.viewport = Merge(frame_.viewport, jazzlights::bounds(s.layout));
     frame_.pixelCount += s.layout.pixelCount();
     xyIndexStore_.IngestLayout(&s.layout);
   }
@@ -356,13 +356,13 @@ void Player::stopSpecial() {
 #if JL_IS_CONFIG(FAIRY_WAND)
 void Player::triggerPatternOverride() {
   jll_info("Triggering pattern override");
-  overridePatternStartTime_ = timeMicros();
+  overridePatternStartTime_ = TimeMicros();
 }
 #endif  // FAIRY_WAND
 
 bool Player::render() {
   if (!ready_) { begin(); }
-  const Microseconds currentTime = timeMicros();
+  const Microseconds currentTime = TimeMicros();
 
 #if JL_AUDIO_VISUALIZER
   if (sound_reactive_mode_ == SoundReactiveMode::kAuto) {
@@ -496,7 +496,7 @@ bool Player::render() {
   KnownCreatures::Get()->ExpireOldEntries();
 #endif  // CREATURE
 
-  const Microseconds patternComputeStartTime = timeMicros();
+  const Microseconds patternComputeStartTime = TimeMicros();
   // Actually render the pixels.
   predictableRandom_.ResetWithFrameTime(frame_, effect->effectName(frame_.pattern).c_str());
   effect->rewind(frame_);
@@ -522,7 +522,7 @@ bool Player::render() {
   effect->afterColors(frame_);
 
   // Save data for measuring FPS.
-  const Microseconds patternComputeDuration = timeMicros() - patternComputeStartTime;
+  const Microseconds patternComputeDuration = TimeMicros() - patternComputeStartTime;
   timeSpentComputingEffectsThisEpoch_ += patternComputeDuration;
   framesComputedThisEpoch_++;
 
@@ -531,7 +531,7 @@ bool Player::render() {
 
 void Player::GenerateFPSReport(uint16_t* fpsCompute, uint16_t* fpsWrites, uint8_t* utilization,
                                Microseconds* timeSpentComputingThisEpoch, Microseconds* epochDuration) {
-  const Microseconds currentTime = timeMicros();
+  const Microseconds currentTime = TimeMicros();
   *epochDuration = currentTime - fpsEpochStart_;
   fpsEpochStart_ = currentTime;
   *timeSpentComputingThisEpoch = timeSpentComputingEffectsThisEpoch_;
@@ -654,7 +654,7 @@ void Player::LogFpsReport() {
   GenerateFPSReport(&fpsCompute, &fpsWrites, &utilization, &timeSpentComputingThisEpoch, &epochDuration);
   jll_protocol_info("Computed %u FPS wrote %u FPS %u%% %lld/%lldms", fpsCompute, fpsWrites, utilization,
                     MsForLogs(timeSpentComputingThisEpoch), MsForLogs(epochDuration));
-  printInstrumentationInfo();
+  PrintInstrumentationInfo();
 }
 
 #if JL_IS_CONFIG(CREATURE)

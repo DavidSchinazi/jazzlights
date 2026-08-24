@@ -67,7 +67,7 @@ class ProtocolReader {
   bool ReadTimeSinceMs32(Microseconds* out, OptionalMicroseconds receiptTime = std::nullopt) {
     uint32_t deltaMs32;
     if (!ReadUint32(&deltaMs32)) { return false; }
-    Microseconds receiptTimeUs = receiptTime.value_or(timeMicros());
+    Microseconds receiptTimeUs = receiptTime.value_or(TimeMicros());
     *out = receiptTimeUs - MillisecondsToMicroseconds(deltaMs32);
     return true;
   }
@@ -76,7 +76,7 @@ class ProtocolReader {
   bool ReadTimeSinceMs16(Microseconds* out, OptionalMicroseconds receiptTime = std::nullopt) {
     uint16_t deltaMs16;
     if (!ReadUint16(&deltaMs16)) { return false; }
-    Microseconds receiptTimeUs = receiptTime.value_or(timeMicros());
+    Microseconds receiptTimeUs = receiptTime.value_or(TimeMicros());
     *out = receiptTimeUs - MillisecondsToMicroseconds(deltaMs16);
     return true;
   }

@@ -47,7 +47,7 @@ class XYIndexStateEffect : public Effect {
   virtual CRGB innerColor(const Frame& frame, STATE* state, const Pixel& px) const = 0;
 
   size_t contextSize(const Frame& frame) const override {
-    return offsetof(XYIndexState, pixels) + sizeof(PER_PIXEL_TYPE) * width(frame) * height(frame);
+    return offsetof(XYIndexState, pixels) + sizeof(PER_PIXEL_TYPE) * Width(frame) * Height(frame);
   }
 
   CRGB color(const Frame& frame, const Pixel& px) const override {
@@ -57,7 +57,7 @@ class XYIndexStateEffect : public Effect {
 
   void begin(const Frame& frame) const override {
     new (xyindexState(frame)) XYIndexState;                            // Default-initialize the position and state.
-    new (pixels(frame)) PER_PIXEL_TYPE[width(frame) * height(frame)];  // Default-initialize the per-pixel data.
+    new (pixels(frame)) PER_PIXEL_TYPE[Width(frame) * Height(frame)];  // Default-initialize the per-pixel data.
     innerBegin(frame, state(frame));
   }
 
@@ -72,8 +72,8 @@ class XYIndexStateEffect : public Effect {
  protected:
   size_t x(const Frame& f) const { return pos(f)->xIndex; }
   size_t y(const Frame& f) const { return pos(f)->yIndex; }
-  size_t w(const Frame& f) const { return width(f); }
-  size_t h(const Frame& f) const { return height(f); }
+  size_t w(const Frame& f) const { return Width(f); }
+  size_t h(const Frame& f) const { return Height(f); }
   PER_PIXEL_TYPE& ps(const Frame& f, size_t x, size_t y) const {
 #if JL_BOUNDS_CHECKS
     if (x >= w(f) || y >= h(f)) {
@@ -95,8 +95,8 @@ class XYIndexStateEffect : public Effect {
     static_assert(alignof(XYIndexState) <= kMaxStateAlignment, "Need to increase kMaxStateAlignment");
     return static_cast<XYIndexState*>(frame.context);
   }
-  size_t width(const Frame& frame) const { return frame.xyIndexStore->xValuesCount(); }
-  size_t height(const Frame& frame) const { return frame.xyIndexStore->yValuesCount(); }
+  size_t Width(const Frame& frame) const { return frame.xyIndexStore->xValuesCount(); }
+  size_t Height(const Frame& frame) const { return frame.xyIndexStore->yValuesCount(); }
   XYIndex* pos(const Frame& frame) const { return &(xyindexState(frame)->pos); }
   PER_PIXEL_TYPE* pixels(const Frame& frame) const { return xyindexState(frame)->pixels; }
 };

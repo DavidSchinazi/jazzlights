@@ -27,7 +27,7 @@
 
 namespace jazzlights {
 
-inline bool is_debug_logging_enabled() { return false; }
+inline bool IsDebugLoggingEnabled() { return false; }
 
 // `EscapeIntoStaticBuffer()` uses a static malloc'ed buffer for the escaped string, so it is not thread-safe by
 // default. Callers need to take a mutex using `GetEscapeBufferLock()`. Use the `jll_buffer*` macros below.
@@ -72,9 +72,9 @@ void SetupLogging();
 
 #else  // JL_M5_LOGGING
 
-#define jll_debug(format, ...)                                                                            \
-  do {                                                                                                    \
-    if (is_debug_logging_enabled()) { _LOG_AT_LEVEL(_JL_LOG_LEVEL_STRING_DEBUG, format, ##__VA_ARGS__); } \
+#define jll_debug(format, ...)                                                                         \
+  do {                                                                                                 \
+    if (IsDebugLoggingEnabled()) { _LOG_AT_LEVEL(_JL_LOG_LEVEL_STRING_DEBUG, format, ##__VA_ARGS__); } \
   } while (0)
 
 #define jll_info(format, ...) _LOG_AT_LEVEL(_JL_LOG_LEVEL_STRING_INFO, format, ##__VA_ARGS__)
@@ -89,11 +89,9 @@ void SetupLogging();
 #endif  // JL_M5_LOGGING
 
 // Note that the jll_buffer_* variants use a static buffer and are therefore not thread safe.
-#define jll_buffer_debug(buffer, format, ...)                                         \
-  do {                                                                                \
-    if (is_debug_logging_enabled()) {                                                 \
-      _LOG_BUFFER_AT_LEVEL(_JL_LOG_LEVEL_STRING_INFO, buffer, format, ##__VA_ARGS__); \
-    }                                                                                 \
+#define jll_buffer_debug(buffer, format, ...)                                                                        \
+  do {                                                                                                               \
+    if (IsDebugLoggingEnabled()) { _LOG_BUFFER_AT_LEVEL(_JL_LOG_LEVEL_STRING_INFO, buffer, format, ##__VA_ARGS__); } \
   } while (0)
 #define jll_buffer_info(buffer, format, ...) \
   _LOG_BUFFER_AT_LEVEL(_JL_LOG_LEVEL_STRING_INFO, buffer, format, ##__VA_ARGS__)

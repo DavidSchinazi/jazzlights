@@ -40,8 +40,8 @@ const char* CountPointToString(CountPoint countPoint) {
 OptionalMicroseconds gLastCountPointPrint;
 uint64_t gCountPointDatas[kNumCountPoints];
 
-void printAndClearCountPoints() {
-  Microseconds curTime = timeMicros();
+void PrintAndClearCountPoints() {
+  Microseconds curTime = TimeMicros();
   if (gLastCountPointPrint) {
     const Microseconds period = curTime - *gLastCountPointPrint;
     for (size_t i = 0; i < kNumCountPoints; i++) {
@@ -57,7 +57,7 @@ void printAndClearCountPoints() {
 
 int64_t gNumLedWrites = 0;
 
-void saveCountPoint(CountPoint countPoint) { gCountPointDatas[countPoint]++; }
+void SaveCountPoint(CountPoint countPoint) { gCountPointDatas[countPoint]++; }
 
 Microseconds gLastLedStart = 0;
 Microseconds gLedTimeSum = 0;
@@ -65,10 +65,10 @@ int64_t gLedTimeCount = 0;
 Microseconds gLedTimeMin = std::numeric_limits<Microseconds>::max();
 Microseconds gLedTimeMax = std::numeric_limits<Microseconds>::min();
 
-void ledWriteStart() { gLastLedStart = timeMicros(); }
+void LedWriteStart() { gLastLedStart = TimeMicros(); }
 
-void ledWriteEnd() {
-  const Microseconds ledTime = timeMicros() - gLastLedStart;
+void LedWriteEnd() {
+  const Microseconds ledTime = TimeMicros() - gLastLedStart;
   gLedTimeSum += ledTime;
   gLedTimeCount++;
   gNumLedWrites++;
@@ -99,11 +99,11 @@ const char* TaskStateToString(eTaskState taskState) {
 
 #if JL_INSTRUMENTATION || JL_TIMING
 
-void printInstrumentationInfo() {
-  Microseconds currentTime = timeMicros();
-  static OptionalMicroseconds lastInstrumentationLog;
+void PrintInstrumentationInfo() {
+  Microseconds currentTime = TimeMicros();
+  static OptionalMicroseconds sLastInstrumentationLog;
   static constexpr Microseconds kInstrumentationPeriod = 5000000;  // 5s.
-  if (lastInstrumentationLog && currentTime - *lastInstrumentationLog < kInstrumentationPeriod) {
+  if (sLastInstrumentationLog && currentTime - *sLastInstrumentationLog < kInstrumentationPeriod) {
     // Ignore any request to print more than once every 5s.
     return;
   }
@@ -156,13 +156,13 @@ void printInstrumentationInfo() {
   ALL_TIME_POINT_ENUMS
 #undef Y
 
-  printAndClearCountPoints();
-  if (lastInstrumentationLog) {
+  PrintAndClearCountPoints();
+  if (sLastInstrumentationLog) {
     jll_info("Wrote to LEDs %f times per second",
-             static_cast<double>(gNumLedWrites) * kMicrosecondsPerSecond / (currentTime - *lastInstrumentationLog));
+             static_cast<double>(gNumLedWrites) * kMicrosecondsPerSecond / (currentTime - *sLastInstrumentationLog));
   }
   gNumLedWrites = 0;
-  lastInstrumentationLog = currentTime;
+  sLastInstrumentationLog = currentTime;
   if (gLedTimeCount > 0) {
     jll_info("LED data from %lld writes: min %lld average %lld max %lld (us)", gLedTimeCount, gLedTimeMin,
              gLedTimeSum / gLedTimeCount, gLedTimeMax);

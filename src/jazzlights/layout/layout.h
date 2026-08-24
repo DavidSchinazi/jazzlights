@@ -27,7 +27,7 @@ inline Box bounds(const Layout& layout) {
       {0.0, 0.0}
   };
   const size_t numPixels = layout.pixelCount();
-  for (size_t index = 0; index < numPixels; index++) { bb = merge(bb, layout.at(index)); }
+  for (size_t index = 0; index < numPixels; index++) { bb = Merge(bb, layout.at(index)); }
   return bb;
 }
 

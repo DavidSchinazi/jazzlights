@@ -258,7 +258,7 @@ void Esp32EthernetNetwork::RunTask() {
     const std::lock_guard<std::mutex> lock(mutex_);
     messageToSend = messageToSend_;
   }
-  Microseconds currentTime = timeMicros();
+  Microseconds currentTime = TimeMicros();
   if (hasDataToSend_ && (!lastSendTime_ || currentTime - *lastSendTime_ >= kSendInterval ||
                          messageToSend.currentPattern != lastSentPattern_)) {
     lastSendTime_ = currentTime;
@@ -294,7 +294,7 @@ void Esp32EthernetNetwork::RunTask() {
       int pollTimeoutMs = static_cast<int>(kSendInterval / kMicrosecondsPerMillisecond);
       if (lastSendTime_) {
         const Microseconds timeSinceLastSendMs =
-            static_cast<int>((timeMicros() - *lastSendTime_) / kMicrosecondsPerMillisecond);
+            static_cast<int>((TimeMicros() - *lastSendTime_) / kMicrosecondsPerMillisecond);
         if (timeSinceLastSendMs <= pollTimeoutMs) { pollTimeoutMs -= timeSinceLastSendMs; }
       }
       int pollRes = poll(&pollFd, 1, pollTimeoutMs);
@@ -321,7 +321,7 @@ void Esp32EthernetNetwork::RunTask() {
   std::string receiptDetails = s.str();
   ProtocolMessage receivedMessage;
   if (ParseUdpPayload(udpPayload_, n, receiptDetails, &receivedMessage)) {
-    lastReceiveTime_.store(timeMicros(), std::memory_order_relaxed);
+    lastReceiveTime_.store(TimeMicros(), std::memory_order_relaxed);
     const std::lock_guard<std::mutex> lock(mutex_);
     receivedMessages_.push_back(receivedMessage);
   }

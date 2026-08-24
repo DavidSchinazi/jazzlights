@@ -206,7 +206,7 @@ class ProtocolEngine {
   bool loop_ = false;
   std::optional<uint8_t> forcedPalette_;
 
-  Microseconds currentPatternStartTime_ = timeMicros();
+  Microseconds currentPatternStartTime_ = TimeMicros();
   PatternBits currentPattern_ = EnforceForcedPalette(kStartingPattern);
   PatternBits nextPattern_ = EnforceForcedPalette(computeNextPattern(currentPattern_));
 

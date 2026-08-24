@@ -27,29 +27,29 @@ static inline OurColorPalette PaletteFromPattern(PatternBits pattern) {
   constexpr uint8_t firstPaletteBit = 17;
 #if 0
   jll_info("PATTERN BITS %u%u%u",
-       patternbit(pattern, firstPaletteBit + 0),
-       patternbit(pattern, firstPaletteBit + 1),
-       patternbit(pattern, firstPaletteBit + 2));
+       PatternBit(pattern, firstPaletteBit + 0),
+       PatternBit(pattern, firstPaletteBit + 1),
+       PatternBit(pattern, firstPaletteBit + 2));
 #endif
-  if (patternbit(pattern, firstPaletteBit)) {        // nature
-    if (patternbit(pattern, firstPaletteBit + 1)) {  // rainbow
+  if (PatternBit(pattern, firstPaletteBit)) {        // nature
+    if (PatternBit(pattern, firstPaletteBit + 1)) {  // rainbow
       return OCPrainbow;
     } else {                                           // frolick
-      if (patternbit(pattern, firstPaletteBit + 2)) {  // forest
+      if (PatternBit(pattern, firstPaletteBit + 2)) {  // forest
         return OCPforest;
       } else {  // party
         return OCPparty;
       }
     }
   } else {                                             // hot&cold
-    if (patternbit(pattern, firstPaletteBit + 1)) {    // cold
-      if (patternbit(pattern, firstPaletteBit + 2)) {  // cloud
+    if (PatternBit(pattern, firstPaletteBit + 1)) {    // cold
+      if (PatternBit(pattern, firstPaletteBit + 2)) {  // cloud
         return OCPcloud;
       } else {  // ocean
         return OCPocean;
       }
     } else {                                           // hot
-      if (patternbit(pattern, firstPaletteBit + 2)) {  // lava
+      if (PatternBit(pattern, firstPaletteBit + 2)) {  // lava
         return OCPlava;
       } else {  // heat
         return OCPheat;

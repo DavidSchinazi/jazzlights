@@ -344,7 +344,7 @@ class PatternControlMenu {
 
  private:
   bool setPattern(Player& player, PatternBits patternBits) {
-    patternBits = randomizePatternBits(patternBits);
+    patternBits = RandomizePatternBits(patternBits);
     player.setPattern(patternBits);
     state_ = State::kOff;
     return true;
@@ -659,7 +659,7 @@ void lockScreen() {
 
 void patternControlButtonPressed(Player& player) {
   gScreenMode = ScreenMode::kPatternControlMenu;
-  gLastScreenInteractionTime = timeMicros();
+  gLastScreenInteractionTime = TimeMicros();
   HideMainMenuButtons();
   core2ScreenRenderer.setEnabled(false);
   TouchButtonManager::Get()->Redraw();
@@ -669,7 +669,7 @@ void patternControlButtonPressed(Player& player) {
 
 void orreryButtonPressed(Player& player) {
   gScreenMode = ScreenMode::kOrreryMenu;
-  gLastScreenInteractionTime = timeMicros();
+  gLastScreenInteractionTime = TimeMicros();
   HideMainMenuButtons();
   core2ScreenRenderer.setEnabled(false);
   TouchButtonManager::Get()->Redraw();
@@ -678,7 +678,7 @@ void orreryButtonPressed(Player& player) {
 }
 
 void confirmButtonPressed(Player& player) {
-  gLastScreenInteractionTime = timeMicros();
+  gLastScreenInteractionTime = TimeMicros();
   if (gScreenMode == ScreenMode::kPatternControlMenu) {
     if (gPatternControlMenu.confirmPressed(player)) {
       HidePatternControlMenuButtons();
@@ -761,7 +761,7 @@ void Core2AwsUi::DrawSystemTextLines() {
 }
 
 void Core2AwsUi::RunLoop() {
-  Microseconds currentTime = timeMicros();
+  Microseconds currentTime = TimeMicros();
   M5.update();
   auto touchDetail = M5.Touch.getDetail();
   if (touchDetail.isPressed()) {

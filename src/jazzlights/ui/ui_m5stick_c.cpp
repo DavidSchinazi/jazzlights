@@ -119,7 +119,7 @@ void M5StickCUi::HandleUnlockSequence(bool wasLongPress) {
   } else {
     buttonLockState_++;
     // To reject accidental presses, exit unlock sequence if four seconds without progress
-    lockButtonTime_ = timeMicros() + kButtonLockTimeoutDuringUnlockSequence;
+    lockButtonTime_ = TimeMicros() + kButtonLockTimeoutDuringUnlockSequence;
   }
 }
 
@@ -139,7 +139,7 @@ void M5StickCUi::InitialSetup() {
 void M5StickCUi::FinalSetup() {}
 
 void M5StickCUi::RunLoop() {
-  Microseconds currentTime = timeMicros();
+  Microseconds currentTime = TimeMicros();
   button_.RunLoop();
   M5.update();
 

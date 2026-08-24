@@ -105,7 +105,7 @@ KnownCreatures* KnownCreatures::Get() {
 }
 
 void KnownCreatures::ExpireOldEntries() {
-  Microseconds currentTime = timeMicros();
+  Microseconds currentTime = TimeMicros();
   creatures_.erase(
       std::remove_if(creatures_.begin(), creatures_.end(),
                      [currentTime](const Creature& creature) {
@@ -152,7 +152,7 @@ void KnownCreatures::AddCreature(uint32_t color, Microseconds lastHeard, int rss
 }
 
 void KnownCreatures::update() {
-  Microseconds currentTime = timeMicros();
+  Microseconds currentTime = TimeMicros();
   for (Creature& creature : creatures_) {
     int decayedRssi = creature.smoothedRssi;
     if (creature.lastHeard && currentTime - *creature.lastHeard > kRssiDecayDelay) {
@@ -181,13 +181,13 @@ KnownCreatures::KnownCreatures() {
 }
 
 void KnownCreatures::HandleHeardOrrery() {
-  lastHeardOrreryTime_ = timeMicros();
+  lastHeardOrreryTime_ = TimeMicros();
   jll_info("Heard the orrery");
 }
 
 bool KnownCreatures::HasRecentlyHeardOrrery() {
   static constexpr Microseconds kOrreryDuration = 60 * kMicrosecondsPerSecond;  // 1 minute.
-  return lastHeardOrreryTime_ && timeMicros() - *lastHeardOrreryTime_ <= kOrreryDuration;
+  return lastHeardOrreryTime_ && TimeMicros() - *lastHeardOrreryTime_ <= kOrreryDuration;
 }
 
 // Called once to initialize the state.
@@ -198,10 +198,10 @@ void Creatures::begin(const Frame& frame) const {
       frame.viewport.origin.y + frame.predictableRandom->GetRandomDoubleBetween(0, frame.viewport.size.height),
   };
   state(frame)->maxDistance = std::max({
-      distance(state(frame)->origin, lefttop(frame)),
-      distance(state(frame)->origin, righttop(frame)),
-      distance(state(frame)->origin, leftbottom(frame)),
-      distance(state(frame)->origin, rightbottom(frame)),
+      Distance(state(frame)->origin, LeftTop(frame)),
+      Distance(state(frame)->origin, RightTop(frame)),
+      Distance(state(frame)->origin, LeftBottom(frame)),
+      Distance(state(frame)->origin, RightBottom(frame)),
   });
 }
 
@@ -213,7 +213,7 @@ void Creatures::rewind(const Frame& frame) const {
   if (num_creatures > kMaxNumCreatureColours - 2) { num_creatures = kMaxNumCreatureColours - 2; }
   uint32_t num_close_creatures = 0;
   bool iShouldParty = false;
-  Microseconds currentTime = timeMicros();
+  Microseconds currentTime = TimeMicros();
   for (size_t i = 0; i < num_creatures; i++) {
     // Compute the color for each known creature.
     const Creature& creature = creatures[i];
@@ -260,7 +260,7 @@ CRGB Creatures::color(const Frame& frame, const Pixel& px) const {
   }
   if (state(frame)->rainbow) {
     // The rainbow effect determines the hue based on the distance from the rainbow origin point.
-    const double d = distance(px.coord, state(frame)->origin);
+    const double d = Distance(px.coord, state(frame)->origin);
     return ColorFromPalette(RainbowColors_p,
                             state(frame)->initialHue + int32_t(255 * d / state(frame)->maxDistance) % 255);
   }

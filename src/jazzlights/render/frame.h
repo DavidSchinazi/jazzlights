@@ -15,7 +15,6 @@ class PredictableRandom;
 using FrameTimeMs = int32_t;
 
 struct Frame {
- public:
   PatternBits pattern;
   PredictableRandom* predictableRandom = nullptr;
   const XYIndexStore* xyIndexStore = nullptr;
@@ -38,33 +37,33 @@ inline void SetFrameTime(Frame& frame, Microseconds currentTime, Microseconds pa
   }
 }
 
-constexpr Coord width(const Frame& frame) { return frame.viewport.size.width; }
+constexpr Coord Width(const Frame& frame) { return frame.viewport.size.width; }
 
-constexpr Coord height(const Frame& frame) { return frame.viewport.size.height; }
+constexpr Coord Height(const Frame& frame) { return frame.viewport.size.height; }
 
-constexpr Point center(const Frame& frame) { return center(frame.viewport); }
+constexpr Point Center(const Frame& frame) { return Center(frame.viewport); }
 
-constexpr Point lefttop(const Frame& frame) { return frame.viewport.origin; }
+constexpr Point LeftTop(const Frame& frame) { return frame.viewport.origin; }
 
-constexpr Point righttop(const Frame& frame) {
+constexpr Point RightTop(const Frame& frame) {
   return {frame.viewport.origin.x + frame.viewport.size.width, frame.viewport.origin.y};
 }
 
-constexpr Point leftbottom(const Frame& frame) {
+constexpr Point LeftBottom(const Frame& frame) {
   return {
       frame.viewport.origin.x,
       frame.viewport.origin.y + frame.viewport.size.height,
   };
 }
 
-constexpr Point rightbottom(const Frame& frame) {
+constexpr Point RightBottom(const Frame& frame) {
   return {
       frame.viewport.origin.x + frame.viewport.size.width,
       frame.viewport.origin.y + frame.viewport.size.height,
   };
 }
 
-inline Coord diagonal(const Frame& frame) { return distance(lefttop(frame), rightbottom(frame)); }
+inline Coord Diagonal(const Frame& frame) { return Distance(LeftTop(frame), RightBottom(frame)); }
 
 }  // namespace jazzlights
 #endif  // JL_RENDER_FRAME_H

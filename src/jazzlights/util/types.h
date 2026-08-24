@@ -28,11 +28,11 @@ using BusId = uint8_t;
 using OrrerySceneId = uint8_t;
 
 // bitNum is [1-32] starting from the highest bit.
-constexpr bool patternbit(PatternBits pattern, uint8_t bitNum) {
+constexpr bool PatternBit(PatternBits pattern, uint8_t bitNum) {
   return (pattern & (1 << (sizeof(PatternBits) * 8 - bitNum))) != 0;
 }
 
-PatternBits randomizePatternBits(PatternBits pattern);
+PatternBits RandomizePatternBits(PatternBits pattern);
 
 inline constexpr Precedence kCreatureOverridePrecedence = 10000;
 inline constexpr Precedence kDefaultOverridePrecedence = 36000;

@@ -236,7 +236,7 @@ int UnixUdpNetwork::recv(void* buf, size_t bufsize, std::string* /*details*/) {
     }
 
     char addressString[INET_ADDRSTRLEN] = {};
-    if (is_debug_logging_enabled()) {
+    if (IsDebugLoggingEnabled()) {
       if (inet_ntop(AF_INET, &(fromaddr.sin_addr), addressString, sizeof(addressString)) == nullptr) {
         jll_fatal("Printing receive address failed with error %d: %s", errno, strerror(errno));
       }

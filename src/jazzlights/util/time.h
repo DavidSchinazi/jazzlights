@@ -117,7 +117,7 @@ class OptionalMicroseconds {
 };
 
 // Get monotonically increasing time in microseconds.
-Microseconds timeMicros();
+Microseconds TimeMicros();
 
 long long MsForLogs(Microseconds duration);
 long long MsSinceBootForLogs();

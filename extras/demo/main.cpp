@@ -18,7 +18,7 @@ int runMain(int argc, char** argv) {
   while (true) {
     int ch = getopt(argc, argv, "k:p:l");
     if (ch == -1) { break; }
-    if (ch == 'k') { killTime = timeMicros() + strtol(optarg, nullptr, 10) * kMicrosecondsPerSecond; }
+    if (ch == 'k') { killTime = TimeMicros() + strtol(optarg, nullptr, 10) * kMicrosecondsPerSecond; }
     if (ch == 'p') {
       shouldSetPattern = true;
       pattern = strtoll(optarg, nullptr, 16);

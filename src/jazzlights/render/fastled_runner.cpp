@@ -75,7 +75,7 @@ void FastLedRunner::SendLedsToFastLed() {
   // better matches undocumented assumptions made inside the FastLED library, where they expect us to always write to
   // all strands. See <https://github.com/FastLED/FastLED/blob/master/src/platforms/esp/32/clockless_rmt_esp32.h>.
 
-  ledWriteStart();
+  LedWriteStart();
   SAVE_COUNT_POINT(LedPrintSend);
   for (size_t i = 0; i < renderers_.size(); i++) {
     uint8_t b = brightness;
@@ -89,7 +89,7 @@ void FastLedRunner::SendLedsToFastLed() {
   uiController_->showLeds(uiBrightness);
 #endif  // JL_FASTLED_RUNNER_HAS_UI
   numWritesThisEpoch_.fetch_add(1, std::memory_order_relaxed);
-  ledWriteEnd();
+  LedWriteEnd();
   SAVE_TIME_POINT(FastLed, WriteToLeds);
 }
 

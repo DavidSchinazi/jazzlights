@@ -119,7 +119,7 @@ void AtomS3Ui::HandleUnlockSequence(bool wasLongPress) {
   } else {
     buttonLockState_++;
     // To reject accidental presses, exit unlock sequence if four seconds without progress
-    lockButtonTime_ = timeMicros() + kButtonLockTimeoutDuringUnlockSequence;
+    lockButtonTime_ = TimeMicros() + kButtonLockTimeoutDuringUnlockSequence;
   }
 }
 
@@ -133,7 +133,7 @@ void AtomS3Ui::InitialSetup() {
 void AtomS3Ui::FinalSetup() {}
 
 void AtomS3Ui::RunLoop() {
-  Microseconds currentTime = timeMicros();
+  Microseconds currentTime = TimeMicros();
   button_.RunLoop();
   M5.update();
 

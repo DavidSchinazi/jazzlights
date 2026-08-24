@@ -67,7 +67,7 @@ std::string displayBitsAsBinary(PatternBits p) {
 }
 
 std::string networkMessageToString(const ProtocolMessage& message) {
-  Microseconds currentTime = timeMicros();
+  Microseconds currentTime = TimeMicros();
   char str[sizeof(", t=4294967296, p=65536, nh=255, ot=4294967296}")] = {};
   snprintf(str, sizeof(str), ", t=%u, p=%u, nh=%u, ot=%u}",
            static_cast<unsigned int>((currentTime - message.currentPatternStartTime) / kMicrosecondsPerMillisecond),

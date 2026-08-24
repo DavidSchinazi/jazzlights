@@ -27,7 +27,7 @@ Microseconds MicrosecondsSinceBoot() {
 
 }  // namespace
 
-Microseconds timeMicros() {
+Microseconds TimeMicros() {
   // We add 100000 here to have the time start at 100s. That allows subtracting without having the time become negative.
   // In particular, without this addition, we would not properly handle received pattern time sync messages because the
   // currentPatternStartTime could become negative and would be clamped at zero.
@@ -39,12 +39,12 @@ long long MsForLogs(Microseconds duration) { return static_cast<long long>(durat
 long long MsSinceBootForLogs() { return MsForLogs(MicrosecondsSinceBoot()); }
 
 long long MsSinceForLogs(Microseconds epoch, OptionalMicroseconds currentTime) {
-  return MsForLogs(currentTime.value_or(timeMicros()) - epoch);
+  return MsForLogs(currentTime.value_or(TimeMicros()) - epoch);
 }
 
 long long SecondsForLogs(Microseconds duration) { return static_cast<long long>(duration / kMicrosecondsPerSecond); }
 long long SecondsSinceForLogs(Microseconds epoch, OptionalMicroseconds currentTime) {
-  return SecondsForLogs(currentTime.value_or(timeMicros()) - epoch);
+  return SecondsForLogs(currentTime.value_or(TimeMicros()) - epoch);
 }
 
 }  // namespace jazzlights

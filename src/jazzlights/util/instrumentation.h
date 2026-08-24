@@ -16,9 +16,9 @@
 namespace jazzlights {
 
 #if JL_INSTRUMENTATION || JL_TIMING
-void printInstrumentationInfo();
+void PrintInstrumentationInfo();
 #else   // JL_INSTRUMENTATION || JL_TIMING
-inline void printInstrumentationInfo() {}
+inline void PrintInstrumentationInfo() {}
 #endif  // JL_INSTRUMENTATION || JL_TIMING
 
 #if JL_TIMING
@@ -102,7 +102,7 @@ class TimePointSaver {
     const TimePointData& prevTimePointData = static_cast<size_t>(timePoint) > 0
                                                  ? timePointDatas_[static_cast<size_t>(timePoint) - 1]
                                                  : timePointDatas_[static_cast<size_t>(ENUM::kNumTimePoints) - 1];
-    thisTimePointData.lastSavedTime = timeMicros();
+    thisTimePointData.lastSavedTime = TimeMicros();
     if (prevTimePointData.lastSavedTime) {
       thisTimePointData.sumTimes += *thisTimePointData.lastSavedTime - *prevTimePointData.lastSavedTime;
     }
@@ -135,20 +135,20 @@ enum CountPoint {
 #undef X
 };
 
-void saveCountPoint(CountPoint countPoint);
+void SaveCountPoint(CountPoint countPoint);
 
-#define SAVE_COUNT_POINT(v) saveCountPoint(k##v)
+#define SAVE_COUNT_POINT(v) SaveCountPoint(k##v)
 
-void ledWriteStart();
-void ledWriteEnd();
+void LedWriteStart();
+void LedWriteEnd();
 
 #else  // JL_TIMING
 
 #define SAVE_TIME_POINT(e, v) \
   do {                        \
   } while (false)
-inline void ledWriteStart() {}
-inline void ledWriteEnd() {}
+inline void LedWriteStart() {}
+inline void LedWriteEnd() {}
 
 #define SAVE_COUNT_POINT(v) \
   do {                      \

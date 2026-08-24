@@ -88,8 +88,8 @@ OrreryPlanet::OrreryPlanet()
       switch1_(kPlanetSwitchPin1, *this),
       switch2_(kPlanetSwitchPin2, *this),
       switch3_(kPlanetSwitchPin3, *this),
-      lastSpeedUpdateTime_(timeMicros()),
-      lastStepCountIncrement_(timeMicros()),
+      lastSpeedUpdateTime_(TimeMicros()),
+      lastStepCountIncrement_(TimeMicros()),
       stepsPerRev_(kStartupStepsPerRev),
       busId_(ComputeBusId()),
 #else   // !JL_ORRERY_SUN
@@ -125,7 +125,7 @@ void OrreryPlanet::StateChanged(uint8_t pin, bool isClosed) {
 }
 
 void OrreryPlanet::IncrementStepCount() {
-  Microseconds currentTime = timeMicros();
+  Microseconds currentTime = TimeMicros();
   Microseconds timeSinceLastStepCountIncrement = currentTime - lastStepCountIncrement_;
   if (timeSinceLastStepCountIncrement <= 0) { return; }
   currentSteps_ += (roundedSpeed_ * timeSinceLastStepCountIncrement) / static_cast<float>(kMicrosecondsPerSecond);
@@ -186,7 +186,7 @@ void OrreryPlanet::HandleHallSensorChange(uint8_t pin, bool isClosed, Microsecon
 
 void OrreryPlanet::RunLoop() {
 #if !JL_ORRERY_SUN
-  Microseconds currentTime = timeMicros();
+  Microseconds currentTime = TimeMicros();
   constexpr float kMaxAccelerationRate = 1000.0f;  // In steps/s^2. Also applies to deceleration.
   hallSensor_.RunLoop();
   switch0_.RunLoop();

@@ -4,7 +4,7 @@
 
 namespace jazzlights {
 
-PatternBits randomizePatternBits(PatternBits pattern) {
+PatternBits RandomizePatternBits(PatternBits pattern) {
   bool reservedWithPalette = false;
   if ((pattern & 0xF) == 0) {  // Pattern is reserved.
     if ((pattern & 0xFF) == 0x30) {

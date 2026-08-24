@@ -24,7 +24,7 @@ int runMain(int argc, char** argv) {
   while (true) {
     int ch = getopt(argc, argv, "k:n");
     if (ch == -1) { break; }
-    if (ch == 'k') { killTime = timeMicros() + strtol(optarg, nullptr, 10) * kMicrosecondsPerSecond; }
+    if (ch == 'k') { killTime = TimeMicros() + strtol(optarg, nullptr, 10) * kMicrosecondsPerSecond; }
     if (ch == 'n') { useNetwork = true; }
   }
   player.addStrand(pixels, noopRenderer);
@@ -32,7 +32,7 @@ int runMain(int argc, char** argv) {
   player.begin();
   Microseconds lastFpsEpochTime = 0;
   while (true) {
-    const Microseconds currentTime = timeMicros();
+    const Microseconds currentTime = TimeMicros();
     if (killTime && currentTime > *killTime) {
       jll_info("Kill time reached, exiting.");
       exit(0);

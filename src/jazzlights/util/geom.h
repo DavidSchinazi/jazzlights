@@ -8,7 +8,7 @@
 
 namespace jazzlights {
 
-constexpr double square(double x) { return x * x; }
+constexpr double Square(double x) { return x * x; }
 
 using Coord = double;
 using Meters = double;
@@ -46,19 +46,19 @@ struct Dimensions8 {
   uint8_t height;
 };
 
-constexpr Coord left(const Box& b) { return b.origin.x; }
+constexpr Coord Left(const Box& b) { return b.origin.x; }
 
-constexpr Coord top(const Box& b) { return b.origin.y; }
+constexpr Coord Top(const Box& b) { return b.origin.y; }
 
-constexpr Coord right(const Box& b) { return b.origin.x + b.size.width; }
+constexpr Coord Right(const Box& b) { return b.origin.x + b.size.width; }
 
-constexpr Coord bottom(const Box& b) { return b.origin.y + b.size.height; }
+constexpr Coord Bottom(const Box& b) { return b.origin.y + b.size.height; }
 
-constexpr Coord width(const Box& b) { return b.size.width; }
+constexpr Coord Width(const Box& b) { return b.size.width; }
 
-constexpr Coord height(const Box& b) { return b.size.height; }
+constexpr Coord Height(const Box& b) { return b.size.height; }
 
-constexpr Point center(Box b) { return {b.origin.x + b.size.width / 2, b.origin.y + b.size.height / 2}; }
+constexpr Point Center(Box b) { return {b.origin.x + b.size.width / 2, b.origin.y + b.size.height / 2}; }
 
 constexpr Point operator+(const Point& a, const Point& b) { return {a.x + b.x, a.y + b.y}; }
 
@@ -67,9 +67,9 @@ constexpr Point operator*(double k, const Point& v) { return {Coord(k * v.x), Co
 // The functions below are inline instead of constexpr because we need to support C++11,
 // and std::min/max became constexpr in C++14, and sqrt became constexpr in C++26.
 
-inline double distance(Point a, Point b) { return sqrt(square(a.x - b.x) + square(a.y - b.y)); }
+inline double Distance(Point a, Point b) { return sqrt(Square(a.x - b.x) + Square(a.y - b.y)); }
 
-inline Box merge(const Box& a, const Box& b) {
+inline Box Merge(const Box& a, const Box& b) {
   Coord left = std::min(a.origin.x, b.origin.x);
   Coord top = std::min(a.origin.y, b.origin.y);
   Coord right = std::max(a.origin.x + a.size.width, b.origin.x + b.size.width);
@@ -80,7 +80,7 @@ inline Box merge(const Box& a, const Box& b) {
   };
 }
 
-inline Box merge(const Box& a, const Point& p) {
+inline Box Merge(const Box& a, const Point& p) {
   Coord left = std::min(a.origin.x, p.x);
   Coord top = std::min(a.origin.y, p.y);
   Coord right = std::max(a.origin.x + a.size.width, p.x);

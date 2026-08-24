@@ -71,7 +71,7 @@ NetworkStatus Network::status() const { return status_; }
 
 void Network::reconnect() {
   if (status_ != CONNECTED) {
-    lastConnectionAttempt_ = timeMicros();
+    lastConnectionAttempt_ = TimeMicros();
     jll_info("%s Network Reconnecting", NetworkTypeToString(type()));
     status_ = update(CONNECTING);
   }
@@ -113,7 +113,7 @@ constexpr size_t kPayloadLength = kPatternTimeOffset + 2;
 
 bool Network::ParseUdpPayload(uint8_t* udpPayload, size_t udpPayloadLength, const std::string& receiptDetails,
                               ProtocolMessage* outMessage) {
-  Microseconds currentTime = timeMicros();
+  Microseconds currentTime = TimeMicros();
   if (udpPayloadLength < kPayloadLength) {
     jll_debug("%s Received packet too short, received %zd bytes, expected at least %zu bytes",
               NetworkTypeToString(type()), udpPayloadLength, kPayloadLength);
@@ -163,7 +163,7 @@ bool Network::ParseUdpPayload(uint8_t* udpPayload, size_t udpPayloadLength, cons
 std::list<ProtocolMessage> UdpNetwork::getReceivedMessagesImpl() {
   std::list<ProtocolMessage> receivedMessages;
   if (status() != CONNECTED) { return receivedMessages; }
-  Microseconds currentTime = timeMicros();
+  Microseconds currentTime = TimeMicros();
   while (true) {
     uint8_t udpPayload[2000] = {};
     std::string receiptDetails;
@@ -178,7 +178,7 @@ std::list<ProtocolMessage> UdpNetwork::getReceivedMessagesImpl() {
 }
 
 void Network::checkStatus() {
-  Microseconds currentTime = timeMicros();
+  Microseconds currentTime = TimeMicros();
   if (status_ == CONNECTION_FAILED) {
     backoffTimeout_ = std::min(MaxBackoffTimeout(), backoffTimeout_ * 2);
     if (currentTime - lastConnectionAttempt_ > backoffTimeout_) { reconnect(); }
@@ -205,7 +205,7 @@ bool Network::WriteUdpPayload(const ProtocolMessage& messageToSend, uint8_t* udp
     return false;
   }
 
-  Microseconds currentTime = timeMicros();
+  Microseconds currentTime = TimeMicros();
   uint16_t originationTimeDeltaMs16;
   if (messageToSend.lastOriginationTime >= currentTime) {
     originationTimeDeltaMs16 = 0;
@@ -240,7 +240,7 @@ void UdpNetwork::runLoopImpl() {
   if (status() != CONNECTED) { return; }
 
   // Do we need to send?
-  Microseconds currentTime = timeMicros();
+  Microseconds currentTime = TimeMicros();
   static constexpr Microseconds kMinTimeBetweenUdpSends = 100 * kMicrosecondsPerMillisecond;
   if (hasDataToSend_ && (effectLastTxTime_ < 1 || currentTime - effectLastTxTime_ > kMinTimeBetweenUdpSends ||
                          messageToSend_.currentPattern != lastSentPattern_)) {

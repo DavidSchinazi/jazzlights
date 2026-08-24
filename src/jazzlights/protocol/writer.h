@@ -18,7 +18,7 @@ inline bool DurationMs32Overflows(Microseconds durationUs) {
 }
 
 // Returns whether a time is far enough in the past that the milliseconds elapsed since would not fit in a uint32_t.
-inline bool TimeSinceMs32Overflows(Microseconds pastTime) { return DurationMs32Overflows(timeMicros() - pastTime); }
+inline bool TimeSinceMs32Overflows(Microseconds pastTime) { return DurationMs32Overflows(TimeMicros() - pastTime); }
 
 class ProtocolWriter {
  public:
@@ -75,7 +75,7 @@ class ProtocolWriter {
   // themselves before calling this. Returns false only if writing an actual value failed.
   bool WriteOptionalTimeSinceMs32(OptionalMicroseconds epoch, OptionalMicroseconds sendTime = std::nullopt) {
     if (!epoch || TimeSinceMs32Overflows(*epoch)) { return true; }
-    Microseconds sendTimeUs = sendTime.value_or(timeMicros());
+    Microseconds sendTimeUs = sendTime.value_or(TimeMicros());
     return WriteUint32(static_cast<uint32_t>((sendTimeUs - *epoch) / kMicrosecondsPerMillisecond));
   }
 
@@ -90,7 +90,7 @@ class ProtocolWriter {
 
   // Writes the time since `epoch` as a uint16_t in milliseconds. Clamps to 0x0000 or 0xFFFF if value is out of bounds.
   bool WriteTimeSinceMs16(Microseconds epoch, OptionalMicroseconds sendTime = std::nullopt) {
-    Microseconds sendTimeUs = sendTime.value_or(timeMicros());
+    Microseconds sendTimeUs = sendTime.value_or(TimeMicros());
     uint16_t durationMs16;
     if (sendTimeUs <= epoch) {
       durationMs16 = 0;
