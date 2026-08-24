@@ -98,7 +98,7 @@ CharacterPixels GetCharacterPixels(char character) {
   return GetCharacterPixels('?');
 }
 
-void writeColumn(const CharacterPixels& characterPixels, uint8_t characterColumnFromRight, uint8_t pixelColumnFromRight,
+void WriteColumn(const CharacterPixels& characterPixels, uint8_t characterColumnFromRight, uint8_t pixelColumnFromRight,
                  CRGB pixels[MATRIX_SIZE], CRGB textColor, CRGB backgroundColor) {
   for (uint8_t row = 0; row < 5; row++) {
     const size_t pixelIndex = row * 5 + 4 - pixelColumnFromRight;
@@ -110,7 +110,7 @@ void writeColumn(const CharacterPixels& characterPixels, uint8_t characterColumn
   }
 }
 
-bool displayText(const std::string& text, CRGB pixels[MATRIX_SIZE], CRGB textColor, CRGB backgroundColor,
+bool DisplayText(const std::string& text, CRGB pixels[MATRIX_SIZE], CRGB textColor, CRGB backgroundColor,
                  Microseconds offsetMicros) {
   constexpr Microseconds quantum = 150000;
   // Start at 4 to start displaying from right edge of screen.
@@ -140,7 +140,7 @@ bool displayText(const std::string& text, CRGB pixels[MATRIX_SIZE], CRGB textCol
       if (characterStartColumn <= col && col <= characterEndColumn) {
         const uint8_t characterColumnFromRight = characterEndColumn - col;
         const uint8_t pixelColumnFromRight = col4 - col;
-        writeColumn(cp, characterColumnFromRight, pixelColumnFromRight, tmpPixels, textColor, backgroundColor);
+        WriteColumn(cp, characterColumnFromRight, pixelColumnFromRight, tmpPixels, textColor, backgroundColor);
       }
     }
   }

@@ -321,7 +321,7 @@ bool AtomMatrixUi::ScreenMessage() {
 #else   // CREATURE
     static const CRGB kTextColor = CRGB::Red;
 #endif  // CREATURE
-    displayingBootMessage_ = displayText(BOOT_MESSAGE, screenLEDs_, kTextColor, CRGB::Black, offsetMicros);
+    displayingBootMessage_ = DisplayText(BOOT_MESSAGE, screenLEDs_, kTextColor, CRGB::Black, offsetMicros);
     if (!displayingBootMessage_) {
       jll_info("Done displaying boot message");
     } else {

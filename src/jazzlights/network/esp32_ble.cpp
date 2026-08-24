@@ -46,7 +46,7 @@ namespace {
 // https://www.bluetooth.com/specifications/assigned-numbers/
 constexpr uint8_t kAdvType = 0x96;
 
-void convertToHex(char* target, size_t targetLength, const uint8_t* source, size_t sourceLength) {
+void ConvertToHex(char* target, size_t targetLength, const uint8_t* source, size_t sourceLength) {
   if (targetLength == 0) { return; }
   if (targetLength <= sourceLength * 2) {
     target[0] = '\0';
@@ -357,7 +357,7 @@ size_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_t
   const size_t innerPayloadLength = writer.LengthWritten();
   if (ESP32_BLE_DEBUG_ENABLED()) {
     char advRawData[kMaxAdvDataHexStringSize] = {};
-    convertToHex(advRawData, sizeof(advRawData), innerPayload, innerPayloadLength);
+    ConvertToHex(advRawData, sizeof(advRawData), innerPayload, innerPayloadLength);
     ESP32_BLE_DEBUG("Setting inner payload to <%zu:%s>", innerPayloadLength, advRawData);
   }
   return innerPayloadLength;
@@ -392,7 +392,7 @@ void Esp32BleNetwork::StartConfigureAdvertising() {
   advPayload[1] = kAdvType;
   if (ESP32_BLE_DEBUG_ENABLED()) {
     char advRawData[kMaxAdvDataHexStringSize] = {};
-    convertToHex(advRawData, sizeof(advRawData), advPayload, 2 + innerPayloadSize);
+    ConvertToHex(advRawData, sizeof(advRawData), advPayload, 2 + innerPayloadSize);
     ESP32_BLE_DEBUG("Sending adv<%zu:%s>", 2 + innerPayloadSize, advRawData);
   }
   ESP_ERROR_CHECK(esp_ble_gap_config_adv_data_raw(advPayload, 2 + innerPayloadSize));
@@ -435,7 +435,7 @@ void Esp32BleNetwork::GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap
           }
           if (ESP32_BLE_DEBUG_ENABLED()) {
             char advRawData[kMaxAdvDataHexStringSize] = {};
-            convertToHex(advRawData, sizeof(advRawData), param->scan_rst.ble_adv, param->scan_rst.adv_data_len);
+            ConvertToHex(advRawData, sizeof(advRawData), param->scan_rst.ble_adv, param->scan_rst.adv_data_len);
             ESP32_BLE_DEBUG("Received adv<%u:%s> from " ESP_BD_ADDR_STR, param->scan_rst.adv_data_len, advRawData,
                             ESP_BD_ADDR_HEX(param->scan_rst.bda));
           }
