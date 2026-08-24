@@ -113,7 +113,7 @@ std::string Esp32WiFiNetwork::getStatusStr() {
   }
 }
 
-void Esp32WiFiNetwork::setMessageToSend(const NetworkMessage& messageToSend) {
+void Esp32WiFiNetwork::setMessageToSend(const ProtocolMessage& messageToSend) {
   const std::lock_guard<std::mutex> lock(mutex_);
   hasDataToSend_ = true;
   messageToSend_ = messageToSend;
@@ -126,8 +126,8 @@ void Esp32WiFiNetwork::disableSending() {
 
 void Esp32WiFiNetwork::triggerSendAsap() {}
 
-std::list<NetworkMessage> Esp32WiFiNetwork::getReceivedMessagesImpl() {
-  std::list<NetworkMessage> results;
+std::list<ProtocolMessage> Esp32WiFiNetwork::getReceivedMessagesImpl() {
+  std::list<ProtocolMessage> results;
   {
     const std::lock_guard<std::mutex> lock(mutex_);
     results = std::move(receivedMessages_);
@@ -304,7 +304,7 @@ void Esp32WiFiNetwork::RunTask() {
     }
     return;  // Restart loop.
   }
-  NetworkMessage messageToSend;
+  ProtocolMessage messageToSend;
   {
     const std::lock_guard<std::mutex> lock(mutex_);
     messageToSend = messageToSend_;
@@ -371,7 +371,7 @@ void Esp32WiFiNetwork::RunTask() {
   }
   s << " (from " << addressString << ":" << ntohs(sin.sin_port) << ")";
   std::string receiptDetails = s.str();
-  NetworkMessage receivedMessage;
+  ProtocolMessage receivedMessage;
   if (ParseUdpPayload(udpPayload_, n, receiptDetails, &receivedMessage)) {
     lastReceiveTime_.store(timeMicros(), std::memory_order_relaxed);
     const std::lock_guard<std::mutex> lock(mutex_);

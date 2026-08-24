@@ -41,9 +41,9 @@ NetworkDeviceId MakeDeviceId(uint8_t lastByte) {
 constexpr PatternBits kPatternA = 0x12345671;
 constexpr PatternBits kPatternB = 0x76543212;
 
-NetworkMessage MakeMessage(NetworkDeviceId originator, NetworkDeviceId sender, Precedence precedence,
-                           Microseconds time) {
-  NetworkMessage message;
+ProtocolMessage MakeMessage(NetworkDeviceId originator, NetworkDeviceId sender, Precedence precedence,
+                            Microseconds time) {
+  ProtocolMessage message;
   message.originator = originator;
   message.sender = sender;
   message.precedence = precedence;
@@ -128,7 +128,7 @@ void test_standalone_leading() {
   // Without networks we have nothing to advertise.
   engine.SetHasNetworks(false);
   engine.CheckLeaderAndPattern(t0);
-  std::optional<NetworkMessage> message = engine.GetMessageToSend();
+  std::optional<ProtocolMessage> message = engine.GetMessageToSend();
   TEST_ASSERT_FALSE(message);
 
   // With networks we advertise ourselves as the originator.
@@ -165,7 +165,7 @@ void test_follow_higher_precedence() {
   TEST_ASSERT_EQUAL_INT(1, delegate.fpsReports);
 
   // We relay the leader's pattern onwards, attributed to the original originator.
-  std::optional<NetworkMessage> message = engine.GetMessageToSend();
+  std::optional<ProtocolMessage> message = engine.GetMessageToSend();
   TEST_ASSERT(message);
   TEST_ASSERT(message->originator == other);
   TEST_ASSERT(message->sender == engine.localDeviceId());
@@ -223,13 +223,13 @@ void test_dropped_messages() {
   // A message we originated ourselves.
   engine.HandleReceivedMessage(MakeMessage(us, other, 100, t0), t0);
   // A message that already went through the maximum number of hops.
-  NetworkMessage tooManyHops = MakeMessage(other, other, 100, t0);
+  ProtocolMessage tooManyHops = MakeMessage(other, other, 100, t0);
   tooManyHops.numHops = 255;
   engine.HandleReceivedMessage(tooManyHops, t0);
   // A message whose origination time is too old.
   engine.HandleReceivedMessage(MakeMessage(other, other, 100, t0), t0 + kOriginationTimeDiscard + 1);
   // A message whose pattern started too long ago.
-  NetworkMessage staleStart = MakeMessage(other, other, 100, t0);
+  ProtocolMessage staleStart = MakeMessage(other, other, 100, t0);
   staleStart.lastOriginationTime = t0 + 2 * kEffectDuration + 1;
   engine.HandleReceivedMessage(staleStart, t0 + 2 * kEffectDuration + 1);
 
@@ -283,7 +283,7 @@ void test_next_hop_selection() {
   const NetworkDeviceId farSender = MakeDeviceId(0x21);
 
   // Start out two hops away from the originator.
-  NetworkMessage far = MakeMessage(originator, farSender, 200, t0);
+  ProtocolMessage far = MakeMessage(originator, farSender, 200, t0);
   far.numHops = 1;
   far.receiptNetworkId = 1;
   engine.HandleReceivedMessage(far, t0);
@@ -291,7 +291,7 @@ void test_next_hop_selection() {
   TEST_ASSERT_EQUAL_UINT8(2, engine.currentNumHops());
 
   // A closer path is adopted.
-  NetworkMessage near = MakeMessage(originator, nearSender, 200, t0);
+  ProtocolMessage near = MakeMessage(originator, nearSender, 200, t0);
   near.numHops = 0;
   near.receiptNetworkId = 2;
   engine.HandleReceivedMessage(near, t0);
@@ -304,7 +304,7 @@ void test_next_hop_selection() {
   TEST_ASSERT_EQUAL_UINT8(1, engine.currentNumHops());
 
   // Unless it is substantially more recent, which lets us recover when the originator moves.
-  NetworkMessage fresherFar = MakeMessage(originator, farSender, 200, t0);
+  ProtocolMessage fresherFar = MakeMessage(originator, farSender, 200, t0);
   fresherFar.numHops = 1;
   fresherFar.receiptNetworkId = 1;
   fresherFar.lastOriginationTime = t0 + kOriginationTimeOverride + 1;
@@ -325,7 +325,7 @@ void test_pattern_start_time_debounce() {
     engine.HandleReceivedMessage(MakeMessage(other, other, 100, t0), t0);
     engine.CheckLeaderAndPattern(t0);
     for (int i = 0; i < 10; i++) {
-      NetworkMessage message = MakeMessage(other, other, 100, t0);
+      ProtocolMessage message = MakeMessage(other, other, 100, t0);
       message.currentPatternStartTime = t0 + 50 * kMs;
       engine.HandleReceivedMessage(message, t0);
       engine.CheckLeaderAndPattern(t0);
@@ -340,7 +340,7 @@ void test_pattern_start_time_debounce() {
     const Microseconds t0 = StartEngine(&engine);
     engine.HandleReceivedMessage(MakeMessage(other, other, 100, t0), t0);
     engine.CheckLeaderAndPattern(t0);
-    NetworkMessage message = MakeMessage(other, other, 100, t0);
+    ProtocolMessage message = MakeMessage(other, other, 100, t0);
     message.currentPatternStartTime = t0 + 600 * kMs;
     engine.HandleReceivedMessage(message, t0);
     engine.CheckLeaderAndPattern(t0);
@@ -355,13 +355,13 @@ void test_pattern_start_time_debounce() {
     engine.HandleReceivedMessage(MakeMessage(other, other, 100, t0), t0);
     engine.CheckLeaderAndPattern(t0);
     for (int i = 0; i < 4; i++) {
-      NetworkMessage message = MakeMessage(other, other, 100, t0);
+      ProtocolMessage message = MakeMessage(other, other, 100, t0);
       message.currentPatternStartTime = t0 + 200 * kMs;
       engine.HandleReceivedMessage(message, t0);
       engine.CheckLeaderAndPattern(t0);
       TEST_ASSERT_EQUAL_INT64(t0, engine.currentPatternStartTime());
     }
-    NetworkMessage message = MakeMessage(other, other, 100, t0);
+    ProtocolMessage message = MakeMessage(other, other, 100, t0);
     message.currentPatternStartTime = t0 + 200 * kMs;
     engine.HandleReceivedMessage(message, t0);
     engine.CheckLeaderAndPattern(t0);
@@ -474,7 +474,7 @@ void test_orrery_scene_id() {
   const Microseconds t0 = StartEngine(&engine);
 
   engine.CheckLeaderAndPattern(t0);
-  std::optional<NetworkMessage> message = engine.GetMessageToSend();
+  std::optional<ProtocolMessage> message = engine.GetMessageToSend();
   TEST_ASSERT(message);
   TEST_ASSERT_FALSE(message->orrerySceneId.has_value());
 
@@ -502,7 +502,7 @@ void test_orrery_scene_id_watcher() {
   engine.SetOrrerySceneIdWatcher(&watcher);
   const NetworkDeviceId other = MakeDeviceId(0x20);
 
-  NetworkMessage message = MakeMessage(other, other, 100, t0);
+  ProtocolMessage message = MakeMessage(other, other, 100, t0);
   message.orrerySceneId = static_cast<OrrerySceneId>(4);
   engine.HandleReceivedMessage(message, t0);
 

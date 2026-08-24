@@ -82,17 +82,17 @@ void UdpNetwork::triggerSendAsap() {
   runLoop();
 }
 
-void UdpNetwork::setMessageToSend(const NetworkMessage& messageToSend) {
+void UdpNetwork::setMessageToSend(const ProtocolMessage& messageToSend) {
   hasDataToSend_ = true;
   messageToSend_ = messageToSend;
 }
 
 void UdpNetwork::disableSending() { hasDataToSend_ = false; }
 
-std::list<NetworkMessage> Network::getReceivedMessages() {
+std::list<ProtocolMessage> Network::getReceivedMessages() {
   checkStatus();
-  std::list<NetworkMessage> receivedMessages = getReceivedMessagesImpl();
-  for (NetworkMessage& message : receivedMessages) {
+  std::list<ProtocolMessage> receivedMessages = getReceivedMessagesImpl();
+  for (ProtocolMessage& message : receivedMessages) {
     message.receiptNetworkId = id();
     message.receiptNetworkType = type();
   }
@@ -112,7 +112,7 @@ constexpr uint8_t kPatternTimeOffset = kNextPatternOffset + 4;
 constexpr size_t kPayloadLength = kPatternTimeOffset + 2;
 
 bool Network::ParseUdpPayload(uint8_t* udpPayload, size_t udpPayloadLength, const std::string& receiptDetails,
-                              NetworkMessage* outMessage) {
+                              ProtocolMessage* outMessage) {
   Microseconds currentTime = timeMicros();
   if (udpPayloadLength < kPayloadLength) {
     jll_debug("%s Received packet too short, received %zd bytes, expected at least %zu bytes",
@@ -124,7 +124,7 @@ bool Network::ParseUdpPayload(uint8_t* udpPayload, size_t udpPayloadLength, cons
               udpPayload[kVersionOffset]);
     return false;
   }
-  NetworkMessage receivedMessage;
+  ProtocolMessage receivedMessage;
   receivedMessage.originator = NetworkDeviceId(&udpPayload[kOriginatorOffset]);
   receivedMessage.sender = NetworkDeviceId(&udpPayload[kSenderOffset]);
   receivedMessage.precedence = readUint16(&udpPayload[kPrecedenceOffset]);
@@ -160,8 +160,8 @@ bool Network::ParseUdpPayload(uint8_t* udpPayload, size_t udpPayloadLength, cons
   return true;
 }
 
-std::list<NetworkMessage> UdpNetwork::getReceivedMessagesImpl() {
-  std::list<NetworkMessage> receivedMessages;
+std::list<ProtocolMessage> UdpNetwork::getReceivedMessagesImpl() {
+  std::list<ProtocolMessage> receivedMessages;
   if (status() != CONNECTED) { return receivedMessages; }
   Microseconds currentTime = timeMicros();
   while (true) {
@@ -169,7 +169,7 @@ std::list<NetworkMessage> UdpNetwork::getReceivedMessagesImpl() {
     std::string receiptDetails;
     ssize_t n = recv(&udpPayload[0], sizeof(udpPayload), &receiptDetails);
     if (n <= 0) { break; }
-    NetworkMessage receivedMessage;
+    ProtocolMessage receivedMessage;
     if (!ParseUdpPayload(udpPayload, n, receiptDetails, &receivedMessage)) { continue; }
     receivedMessages.push_back(receivedMessage);
     lastReceiveTime_ = currentTime;
@@ -198,7 +198,7 @@ void Network::runLoop() {
   runLoopImpl();
 }
 
-bool Network::WriteUdpPayload(const NetworkMessage& messageToSend, uint8_t* udpPayload, size_t udpPayloadLength) {
+bool Network::WriteUdpPayload(const ProtocolMessage& messageToSend, uint8_t* udpPayload, size_t udpPayloadLength) {
   if (udpPayloadLength < kPayloadLength) {
     jll_error("%s cannot send message due to payload too short %zu < %zu", NetworkTypeToString(type()),
               udpPayloadLength, kPayloadLength);

@@ -26,7 +26,7 @@ class Esp32BleNetwork : public Network {
  public:
   static Esp32BleNetwork* get();
 
-  void setMessageToSend(const NetworkMessage& messageToSend) override;
+  void setMessageToSend(const ProtocolMessage& messageToSend) override;
   void disableSending() override;
   void triggerSendAsap() override;
 
@@ -40,7 +40,7 @@ class Esp32BleNetwork : public Network {
  protected:
   void runLoopImpl() override;
   NetworkStatus update(NetworkStatus /*status*/) override { return CONNECTED; }
-  std::list<NetworkMessage> getReceivedMessagesImpl() override;
+  std::list<ProtocolMessage> getReceivedMessagesImpl() override;
 
  private:
   // All public calls in this class are static, but internally they are backed by a
@@ -88,9 +88,9 @@ class Esp32BleNetwork : public Network {
   // All the variables below are protected by mutex_.
   State state_ = State::kIdle;
   bool hasDataToSend_ = false;
-  NetworkMessage messageToSend_;
+  ProtocolMessage messageToSend_;
   uint8_t numUrgentSends_ = 0;
-  std::list<NetworkMessage> receivedMessages_;
+  std::list<ProtocolMessage> receivedMessages_;
   OptionalMicroseconds timeToStopAdvertising_;
   OptionalMicroseconds timeToStopScanning_;
 };
@@ -105,7 +105,7 @@ class Esp32BleNetwork : public Network {
  public:
   static Esp32BleNetwork* get();
 
-  void setMessageToSend(const NetworkMessage& /*messageToSend*/) override {}
+  void setMessageToSend(const ProtocolMessage& /*messageToSend*/) override {}
   void disableSending() override {}
   void triggerSendAsap() override {}
   NetworkDeviceId getLocalDeviceId() const override { return NetworkDeviceId(); }
@@ -117,7 +117,7 @@ class Esp32BleNetwork : public Network {
  protected:
   void runLoopImpl() override {}
   NetworkStatus update(NetworkStatus /*status*/) override { return CONNECTED; }
-  std::list<NetworkMessage> getReceivedMessagesImpl() override { return {}; }
+  std::list<ProtocolMessage> getReceivedMessagesImpl() override { return {}; }
 };
 }  // namespace jazzlights
 #endif  // JL_DISABLE_BLUETOOTH

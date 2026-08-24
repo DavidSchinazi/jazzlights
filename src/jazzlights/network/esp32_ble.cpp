@@ -132,8 +132,8 @@ void Esp32BleNetwork::StopScanningIn(Microseconds duration) {
   timeToStopScanning_ = timeMicros() + duration;
 }
 
-std::list<NetworkMessage> Esp32BleNetwork::getReceivedMessagesImpl() {
-  std::list<NetworkMessage> results;
+std::list<ProtocolMessage> Esp32BleNetwork::getReceivedMessagesImpl() {
+  std::list<ProtocolMessage> results;
   {
     const std::lock_guard<std::mutex> lock(mutex_);
     results = std::move(receivedMessages_);
@@ -151,7 +151,7 @@ void Esp32BleNetwork::triggerSendAsap() {
   MaybeUpdateAdvertisingState();
 }
 
-void Esp32BleNetwork::setMessageToSend(const NetworkMessage& messageToSend) {
+void Esp32BleNetwork::setMessageToSend(const ProtocolMessage& messageToSend) {
   const std::lock_guard<std::mutex> lock(mutex_);
   if (!hasDataToSend_ || !messageToSend_.isEqualExceptOriginationTime(messageToSend)) {
     ESP32_BLE_DEBUG("Setting messageToSend %s", networkMessageToString(messageToSend).c_str());
@@ -200,7 +200,7 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
     return;
   }
   ProtocolReader reader(innerPayload, innerPayloadLength);
-  NetworkMessage message;
+  ProtocolMessage message;
 #if JL_IS_CONFIG(CREATURE)
   message.receiptRssi = rssi;
   message.receiptTime = receiptTime;

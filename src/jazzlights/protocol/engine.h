@@ -108,7 +108,7 @@ class ProtocolEngine {
   // Whether any transport is connected. While false we do not advertise at all.
   void SetHasNetworks(bool hasNetworks) { hasNetworks_ = hasNetworks; }
 
-  void HandleReceivedMessage(NetworkMessage message, OptionalMicroseconds currentTimeOpt = std::nullopt);
+  void HandleReceivedMessage(ProtocolMessage message, OptionalMicroseconds currentTimeOpt = std::nullopt);
 
   // Ages out originators, elects a leader, advances the synchronized pattern, and recomputes the message to
   // advertise. Called once per frame and after every user command.
@@ -116,7 +116,7 @@ class ProtocolEngine {
 
   // Returns the message that should currently be advertised on every transport, or std::nullopt if there is nothing to
   // advertise. This does not consume the message: it returns whatever the last CheckLeaderAndPattern() computed.
-  std::optional<NetworkMessage> GetMessageToSend() const { return messageToSend_; }
+  std::optional<ProtocolMessage> GetMessageToSend() const { return messageToSend_; }
 
   // Synchronized state, read by the renderer.
   PatternBits GetCurrentPattern() const { return currentPattern_; }
@@ -211,7 +211,7 @@ class ProtocolEngine {
   PatternBits nextPattern_ = EnforceForcedPalette(computeNextPattern(currentPattern_));
 
   bool hasNetworks_ = false;
-  std::optional<NetworkMessage> messageToSend_;
+  std::optional<ProtocolMessage> messageToSend_;
 
   OptionalMicroseconds lastUserInputTime_;
   Precedence basePrecedence_ = 0;

@@ -378,7 +378,7 @@ void ProtocolEngine::CheckLeaderAndPattern(OptionalMicroseconds currentTimeOpt) 
 
 void ProtocolEngine::ComputeMessageToSend(NetworkDeviceId originator, Precedence precedence,
                                           Microseconds lastOriginationTime, Microseconds currentTime) {
-  messageToSend_ = NetworkMessage();
+  messageToSend_ = ProtocolMessage();
   messageToSend_->originator = originator;
   messageToSend_->sender = localDeviceId_;
   messageToSend_->currentPattern = currentPattern_;
@@ -411,7 +411,7 @@ void ProtocolEngine::ComputeMessageToSend(NetworkDeviceId originator, Precedence
   }
 }
 
-void ProtocolEngine::HandleReceivedMessage(NetworkMessage message, OptionalMicroseconds currentTimeOpt) {
+void ProtocolEngine::HandleReceivedMessage(ProtocolMessage message, OptionalMicroseconds currentTimeOpt) {
   Microseconds currentTime = currentTimeOpt.value_or(timeMicros());
 #if JL_IS_CONFIG(CREATURE)
   if (message.isCreature) {

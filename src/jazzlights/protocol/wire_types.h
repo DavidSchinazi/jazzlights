@@ -68,7 +68,7 @@ class NetworkDeviceId {
   uint8_t data_[kNetworkDeviceIdSize];
 };
 
-struct NetworkMessage {
+struct ProtocolMessage {
   NetworkDeviceId sender = NetworkDeviceId();
   NetworkDeviceId originator = NetworkDeviceId();
   Precedence precedence = 0;
@@ -95,19 +95,19 @@ struct NetworkMessage {
 
   std::optional<OrrerySceneId> orrerySceneId;
 
-  bool isEqualExceptOriginationTime(const NetworkMessage& other) const {
+  bool isEqualExceptOriginationTime(const ProtocolMessage& other) const {
     return sender == other.sender && originator == other.originator && precedence == other.precedence &&
            currentPattern == other.currentPattern && nextPattern == other.nextPattern && numHops == other.numHops &&
            currentPatternStartTime == other.currentPatternStartTime && receiptNetworkId == other.receiptNetworkId &&
            receiptNetworkType == other.receiptNetworkType;
   }
-  bool operator==(const NetworkMessage& other) const {
+  bool operator==(const ProtocolMessage& other) const {
     return isEqualExceptOriginationTime(other) && lastOriginationTime == other.lastOriginationTime;
   }
-  bool operator!=(const NetworkMessage& other) const { return !(*this == other); }
+  bool operator!=(const ProtocolMessage& other) const { return !(*this == other); }
 };
 
-// Interpretation of NetworkMessage::orrerySceneId.
+// Interpretation of ProtocolMessage::orrerySceneId.
 enum class OrreryScene : uint8_t {
   Paused = 0,
   Realistic = 1,
@@ -132,7 +132,7 @@ enum class OrreryScene : uint8_t {
 const char* OrrerySceneToString(OrreryScene scene);
 
 std::string displayBitsAsBinary(PatternBits p);
-std::string networkMessageToString(const NetworkMessage& message);
+std::string networkMessageToString(const ProtocolMessage& message);
 
 }  // namespace jazzlights
 

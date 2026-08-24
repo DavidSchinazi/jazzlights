@@ -27,14 +27,14 @@ class Esp32WiFiNetwork : public Network {
   NetworkDeviceId getLocalDeviceId() const override { return localDeviceId_; }
   NetworkType type() const override { return NetworkType::kWiFi; }
   std::string getStatusStr() override;
-  void setMessageToSend(const NetworkMessage& messageToSend) override;
+  void setMessageToSend(const ProtocolMessage& messageToSend) override;
   void disableSending() override;
   void triggerSendAsap() override;
   bool shouldEcho() const override { return false; }
   OptionalMicroseconds getLastReceiveTime() const override { return lastReceiveTime_.load(std::memory_order_relaxed); }
 
  protected:
-  std::list<NetworkMessage> getReceivedMessagesImpl() override;
+  std::list<ProtocolMessage> getReceivedMessagesImpl() override;
   void runLoopImpl() override {}
 
  private:
@@ -80,10 +80,10 @@ class Esp32WiFiNetwork : public Network {
   uint32_t reconnectCount_ = 0;                     // Only used on our task.
   std::atomic<OptionalMicroseconds> lastReceiveTime_;
   std::mutex mutex_;
-  struct in_addr localAddress_ = {};            // Protected by mutex_.
-  bool hasDataToSend_ = false;                  // Protected by mutex_.
-  NetworkMessage messageToSend_;                // Protected by mutex_.
-  std::list<NetworkMessage> receivedMessages_;  // Protected by mutex_.
+  struct in_addr localAddress_ = {};             // Protected by mutex_.
+  bool hasDataToSend_ = false;                   // Protected by mutex_.
+  ProtocolMessage messageToSend_;                // Protected by mutex_.
+  std::list<ProtocolMessage> receivedMessages_;  // Protected by mutex_.
 };
 
 }  // namespace jazzlights

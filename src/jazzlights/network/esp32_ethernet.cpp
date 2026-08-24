@@ -83,7 +83,7 @@ std::string Esp32EthernetNetwork::getStatusStr() {
   }
 }
 
-void Esp32EthernetNetwork::setMessageToSend(const NetworkMessage& messageToSend) {
+void Esp32EthernetNetwork::setMessageToSend(const ProtocolMessage& messageToSend) {
   const std::lock_guard<std::mutex> lock(mutex_);
   hasDataToSend_ = true;
   messageToSend_ = messageToSend;
@@ -96,8 +96,8 @@ void Esp32EthernetNetwork::disableSending() {
 
 void Esp32EthernetNetwork::triggerSendAsap() {}
 
-std::list<NetworkMessage> Esp32EthernetNetwork::getReceivedMessagesImpl() {
-  std::list<NetworkMessage> results;
+std::list<ProtocolMessage> Esp32EthernetNetwork::getReceivedMessagesImpl() {
+  std::list<ProtocolMessage> results;
   {
     const std::lock_guard<std::mutex> lock(mutex_);
     results = std::move(receivedMessages_);
@@ -253,7 +253,7 @@ void Esp32EthernetNetwork::RunTask() {
     }
     return;  // Restart loop.
   }
-  NetworkMessage messageToSend;
+  ProtocolMessage messageToSend;
   {
     const std::lock_guard<std::mutex> lock(mutex_);
     messageToSend = messageToSend_;
@@ -319,7 +319,7 @@ void Esp32EthernetNetwork::RunTask() {
   }
   s << " (from " << addressString << ":" << ntohs(sin.sin_port) << ")";
   std::string receiptDetails = s.str();
-  NetworkMessage receivedMessage;
+  ProtocolMessage receivedMessage;
   if (ParseUdpPayload(udpPayload_, n, receiptDetails, &receivedMessage)) {
     lastReceiveTime_.store(timeMicros(), std::memory_order_relaxed);
     const std::lock_guard<std::mutex> lock(mutex_);

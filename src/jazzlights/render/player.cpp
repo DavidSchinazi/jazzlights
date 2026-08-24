@@ -314,7 +314,7 @@ void Player::updatePrecedence(Precedence basePrecedence, Precedence precedenceGa
 }
 
 void Player::SendPendingMessage(bool sendAsap) {
-  std::optional<NetworkMessage> messageToSend = engine_.GetMessageToSend();
+  std::optional<ProtocolMessage> messageToSend = engine_.GetMessageToSend();
   if (!messageToSend) { return; }
   for (Network* network : networks_) {
     if (!network->shouldEcho() && messageToSend->receiptNetworkId == network->id()) {
@@ -390,7 +390,7 @@ bool Player::render() {
 
   // First listen on all networks.
   for (Network* network : networks_) {
-    for (NetworkMessage receivedMessage : network->getReceivedMessages()) {
+    for (ProtocolMessage receivedMessage : network->getReceivedMessages()) {
       engine_.HandleReceivedMessage(receivedMessage);
     }
   }

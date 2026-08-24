@@ -37,13 +37,13 @@ class Network {
   virtual ~Network() = default;
 
   // Set message to send during next send opportunity.
-  virtual void setMessageToSend(const NetworkMessage& messageToSend) = 0;
+  virtual void setMessageToSend(const ProtocolMessage& messageToSend) = 0;
 
   // Disables sending until the next call to setMessageToSend.
   virtual void disableSending() = 0;
 
   // Gets list of received messages since last call.
-  std::list<NetworkMessage> getReceivedMessages();
+  std::list<ProtocolMessage> getReceivedMessages();
 
   // Called once per primary runloop.
   void runLoop();
@@ -77,7 +77,7 @@ class Network {
   // Perform any work necessary to switch to requested state.
   virtual NetworkStatus update(NetworkStatus status) = 0;
   // Gets list of received messages since last call.
-  virtual std::list<NetworkMessage> getReceivedMessagesImpl() = 0;
+  virtual std::list<ProtocolMessage> getReceivedMessagesImpl() = 0;
   // Called once per primary runloop.
   virtual void runLoopImpl() = 0;
   NetworkStatus getStatus() const { return status_; }
@@ -94,12 +94,12 @@ class Network {
   static constexpr const char* WiFiSsid() { return "JazzLights"; }
   static constexpr const char* WiFiPassword() { return "burningblink"; }
 
-  // Parse the UDP payload we use over IP networks into a NetworkMessage.
+  // Parse the UDP payload we use over IP networks into a ProtocolMessage.
   bool ParseUdpPayload(uint8_t* udpPayload, size_t udpPayloadLength, const std::string& receiptDetails,
-                       NetworkMessage* outMessage);
+                       ProtocolMessage* outMessage);
 
-  // Write a NetworkMessage into a buffer that can be sent over UDP/IP.
-  bool WriteUdpPayload(const NetworkMessage& messageToSend, uint8_t* udpPayload, size_t udpPayloadLength);
+  // Write a ProtocolMessage into a buffer that can be sent over UDP/IP.
+  bool WriteUdpPayload(const ProtocolMessage& messageToSend, uint8_t* udpPayload, size_t udpPayloadLength);
 
  private:
   void checkStatus();
@@ -119,21 +119,21 @@ class Network {
 
 class UdpNetwork : public Network {
  public:
-  void setMessageToSend(const NetworkMessage& messageToSend) override;
+  void setMessageToSend(const ProtocolMessage& messageToSend) override;
   void disableSending() override;
   void triggerSendAsap() override;
   bool shouldEcho() const override { return false; }
   OptionalMicroseconds getLastReceiveTime() const override { return lastReceiveTime_; }
 
  protected:
-  std::list<NetworkMessage> getReceivedMessagesImpl() override;
+  std::list<ProtocolMessage> getReceivedMessagesImpl() override;
   void runLoopImpl() override;
   virtual int recv(void* buf, size_t bufsize, std::string* details) = 0;
   virtual void send(void* buf, size_t bufsize) = 0;
 
  private:
   bool hasDataToSend_ = false;
-  NetworkMessage messageToSend_;
+  ProtocolMessage messageToSend_;
 
   PatternBits lastSentPattern_ = 0;
 
