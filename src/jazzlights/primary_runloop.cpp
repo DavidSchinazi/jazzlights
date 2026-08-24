@@ -38,8 +38,8 @@
 
 namespace jazzlights {
 
-Player player;
-FastLedRunner runner(&player);
+Player gPlayer;
+FastLedRunner gRunner(&gPlayer);
 
 #if JL_IS_CONTROLLER(ATOM_MATRIX)
 typedef AtomMatrixUi Esp32UiImpl;
@@ -66,12 +66,12 @@ typedef NoOpUi Esp32UiImpl;
 #endif
 
 static Esp32UiImpl* GetUi() {
-  static Esp32UiImpl ui(player);
-  return &ui;
+  static Esp32UiImpl sUi(gPlayer);
+  return &sUi;
 }
 
 #if JL_WEBSOCKET_SERVER
-WebSocketServer websocket_server(80, player);
+WebSocketServer gWebSocketServer(80, gPlayer);
 #endif  // JL_WEBSOCKET_SERVER
 
 void SetupPrimaryRunLoop() {
@@ -88,64 +88,64 @@ void SetupPrimaryRunLoop() {
 
   SetupLogging();
 
-  GetUi()->set_fastled_runner(&runner);
+  GetUi()->SetFastLedRunner(&gRunner);
   GetUi()->InitialSetup();
 
-  AddLedsToRunner(&runner);
+  AddLedsToRunner(&gRunner);
 
 #if JL_AUDIO_VISUALIZER
   // Ensures creatures follow the sound reactive dome.
-  player.SetBasePrecedence(kCreatureOverridePrecedence);
-  player.SetPrecedenceGain(0);
+  gPlayer.SetBasePrecedence(kCreatureOverridePrecedence);
+  gPlayer.SetPrecedenceGain(0);
 #elif JL_IS_CONFIG(CLOUDS)
 #if !JL_DEV
-  player.SetBasePrecedence(6000);
-  player.SetPrecedenceGain(100);
+  gPlayer.SetBasePrecedence(6000);
+  gPlayer.SetPrecedenceGain(100);
 #else   // JL_DEV
-  player.SetBasePrecedence(5800);
-  player.SetPrecedenceGain(100);
+  gPlayer.SetBasePrecedence(5800);
+  gPlayer.SetPrecedenceGain(100);
 #endif  // JL_DEV
 #elif JL_IS_CONFIG(WAND) || JL_IS_CONFIG(STAFF) || JL_IS_CONFIG(HAT) || JL_IS_CONFIG(SHOE) ||              \
     JL_IS_CONFIG(FAIRY_STRING) || JL_IS_CONFIG(NEW_HAT) || JL_IS_CONFIG(BOW) || JL_IS_CONFIG(RHINO_HAT) || \
     JL_IS_CONFIG(RHINO_STAFF)
-  player.SetBasePrecedence(500);
-  player.SetPrecedenceGain(100);
+  gPlayer.SetBasePrecedence(500);
+  gPlayer.SetPrecedenceGain(100);
 #elif JL_IS_CONFIG(XMAS_TREE)
-  player.SetBasePrecedence(5000);
-  player.SetPrecedenceGain(100);
+  gPlayer.SetBasePrecedence(5000);
+  gPlayer.SetPrecedenceGain(100);
 #elif JL_IS_CONFIG(CREATURE)
-  player.SetBasePrecedence(1);
-  player.SetPrecedenceGain(0);
+  gPlayer.SetBasePrecedence(1);
+  gPlayer.SetPrecedenceGain(0);
 #elif JL_IS_CONFIG(ORRERY_LEADER)
-  player.SetBasePrecedence(kOrreryLeaderBasePrecedence);
-  player.SetPrecedenceGain(0);
+  gPlayer.SetBasePrecedence(kOrreryLeaderBasePrecedence);
+  gPlayer.SetPrecedenceGain(0);
 #elif JL_IS_CONFIG(ORRERY_PLANET)
-  player.SetBasePrecedence(kDefaultPlanetBasePrecedence);
-  player.SetPrecedenceGain(kDefaultPlanetPrecedenceGain);
-  player.SetBrightness(kDefaultPlanetBrightness);
-  player.SetPlanetPattern(kPlanetPattern);
+  gPlayer.SetBasePrecedence(kDefaultPlanetBasePrecedence);
+  gPlayer.SetPrecedenceGain(kDefaultPlanetPrecedenceGain);
+  gPlayer.SetBrightness(kDefaultPlanetBrightness);
+  gPlayer.SetPlanetPattern(kPlanetPattern);
 #else
-  player.SetBasePrecedence(1000);
-  player.SetPrecedenceGain(1000);
+  gPlayer.SetBasePrecedence(1000);
+  gPlayer.SetPrecedenceGain(1000);
 #endif
 
-  player.Connect(Esp32BleNetwork::Get());
+  gPlayer.Connect(Esp32BleNetwork::Get());
 #if JL_WIFI
-  player.Connect(WiFiNetwork::Get());
+  gPlayer.Connect(WiFiNetwork::Get());
 #endif  // JL_WIFI
 #if JL_ETHERNET
-  player.Connect(EthernetNetwork::Get());
+  gPlayer.Connect(EthernetNetwork::Get());
 #endif  // JL_ETHERNET
 #if JL_IS_CONFIG(ORRERY_PLANET) && !JL_ORRERY_PLUTO
-  OrreryPlanet::Get()->Setup(player);
+  OrreryPlanet::Get()->Setup(gPlayer);
 #elif JL_IS_CONFIG(ORRERY_LEADER)
-  OrreryLeader::Get()->Setup(player);
+  OrreryLeader::Get()->Setup(gPlayer);
 #endif  // ORRERY
-  player.Begin();
+  gPlayer.Begin();
 
   GetUi()->FinalSetup();
 
-  runner.Start();
+  gRunner.Start();
 #if JL_AUDIO_VISUALIZER
   Audio::Get().Setup();
 #endif  // JL_AUDIO_VISUALIZER
@@ -164,17 +164,17 @@ void RunPrimaryRunLoop() {
   SAVE_TIME_POINT(PrimaryRunLoop, Bluetooth);
 
 #if !JL_IS_CONFIG(PHONE)
-  const bool shouldRender = player.Render();
+  const bool shouldRender = gPlayer.Render();
 #else   // PHONE
   PhonePinHandler::Get()->RunLoop();
   const bool shouldRender = true;
 #endif  // !PHONE
   SAVE_TIME_POINT(PrimaryRunLoop, PlayerCompute);
-  if (shouldRender) { runner.Render(); }
+  if (shouldRender) { gRunner.Render(); }
 #if JL_WEBSOCKET_SERVER
   if (WiFiNetwork::Get()->Status() != kInitializing) {
     // This can't be called until after the networks have been initialized.
-    websocket_server.Start();
+    gWebSocketServer.Start();
   }
 #endif  // JL_WEBSOCKET_SERVER
   SAVE_TIME_POINT(PrimaryRunLoop, LoopEnd);

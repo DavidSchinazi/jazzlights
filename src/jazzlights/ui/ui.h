@@ -19,7 +19,7 @@ class Esp32Ui {
   explicit Esp32Ui(Player& player) : player_(player) {}
   virtual ~Esp32Ui() = default;
 
-  virtual void set_fastled_runner(FastLedRunner* runner) { (void)runner; }
+  virtual void SetFastLedRunner(FastLedRunner* runner) { (void)runner; }
 
   virtual void InitialSetup() = 0;
   virtual void FinalSetup() = 0;

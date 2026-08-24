@@ -231,17 +231,17 @@ void OrreryPlanet::RunLoop() {
 
       } else {
         // Distance to stop depends on current speed and max deceleration rate.
-        const float stop_distance = (actualSpeed_ * actualSpeed_) / (2.0f * kMaxAccelerationRate);
+        const float stopDistance = (actualSpeed_ * actualSpeed_) / (2.0f * kMaxAccelerationRate);
 
         static OptionalMicroseconds lastLogTime3;
         if (!lastLogTime3 || currentTime - *lastLogTime3 > kMicrosecondsPerSecond) {
           lastLogTime3 = currentTime;
           jll_info(
-              "targetSteps %f currentSteps %f positionalSteps %f stepsToGo %f actualSpeed_ %f stop_distance %f "
+              "targetSteps %f currentSteps %f positionalSteps %f stepsToGo %f actualSpeed_ %f stopDistance %f "
               "stepsPerRev %f",
-              targetSteps, currentSteps_, positionalSteps_, stepsToGo, actualSpeed_, stop_distance, stepsPerRev_);
+              targetSteps, currentSteps_, positionalSteps_, stepsToGo, actualSpeed_, stopDistance, stepsPerRev_);
         }
-        if (stepsToGo <= stop_distance) { effectiveRequestedSpeed = 0; }
+        if (stepsToGo <= stopDistance) { effectiveRequestedSpeed = 0; }
       }
     }
 

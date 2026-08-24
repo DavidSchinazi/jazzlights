@@ -86,9 +86,9 @@ static const Matrix kCore2ScreenPixels(40, 30);
 class Core2ScreenRenderer : public Renderer {
  public:
   Core2ScreenRenderer() {}
-  void setFullScreen(bool fullScreen) { fullScreen_ = fullScreen; }
-  void toggleEnabled() { setEnabled(!enabled_); }
-  void setEnabled(bool enabled) { enabled_ = enabled; }
+  void SetFullScreen(bool fullScreen) { fullScreen_ = fullScreen; }
+  void ToggleEnabled() { SetEnabled(!enabled_); }
+  void SetEnabled(bool enabled) { enabled_ = enabled; }
   void RenderPixel(size_t index, CRGB color) override {
     if (!enabled_) { return; }
     uint16_t color16 =
@@ -118,51 +118,51 @@ class Core2ScreenRenderer : public Renderer {
 }  // namespace
 
 ScreenMode gScreenMode = kInitialScreenMode;
-Core2ScreenRenderer core2ScreenRenderer;
+Core2ScreenRenderer gCore2ScreenRenderer;
 
-TouchButton* nextButton = nullptr;
-TouchButton* loopButton = nullptr;
-TouchButton* patternControlButton = nullptr;
-TouchButton* orreryButton = nullptr;
-TouchButton* systemButton = nullptr;
-TouchButton* backButton = nullptr;
-TouchButton* downButton = nullptr;
-TouchButton* upButton = nullptr;
-TouchButton* overrideButton = nullptr;
-TouchButton* confirmButton = nullptr;
-TouchButton* lockButton = nullptr;
-TouchButton* shutdownButton = nullptr;
-TouchButton* unlock1Button = nullptr;
-TouchButton* unlock2Button = nullptr;
-TouchButton* ledMinusButton = nullptr;
-TouchButton* ledPlusButton = nullptr;
-TouchButton* screenMinusButton = nullptr;
-TouchButton* screenPlusButton = nullptr;
+TouchButton* gNextButton = nullptr;
+TouchButton* gLoopButton = nullptr;
+TouchButton* gPatternControlButton = nullptr;
+TouchButton* gOrreryButton = nullptr;
+TouchButton* gSystemButton = nullptr;
+TouchButton* gBackButton = nullptr;
+TouchButton* gDownButton = nullptr;
+TouchButton* gUpButton = nullptr;
+TouchButton* gOverrideButton = nullptr;
+TouchButton* gConfirmButton = nullptr;
+TouchButton* gLockButton = nullptr;
+TouchButton* gShutdownButton = nullptr;
+TouchButton* gUnlock1Button = nullptr;
+TouchButton* gUnlock2Button = nullptr;
+TouchButton* gLedMinusButton = nullptr;
+TouchButton* gLedPlusButton = nullptr;
+TouchButton* gScreenMinusButton = nullptr;
+TouchButton* gScreenPlusButton = nullptr;
 
 void SetupButtons() {
-  nextButton = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/0, /*w=*/160, /*h=*/60, "Next");
-  loopButton = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/60, /*w=*/160, /*h=*/60, "Loop");
+  gNextButton = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/0, /*w=*/160, /*h=*/60, "Next");
+  gLoopButton = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/60, /*w=*/160, /*h=*/60, "Loop");
 
-  patternControlButton =
+  gPatternControlButton =
       TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/120, /*w=*/160, /*h=*/120, "Pattern Control");
-  patternControlButton->SetLabelDatum(/*x_delta=*/0, /*y_delta=*/-25);
-  orreryButton = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/120, /*w=*/160, /*h=*/60, "Orrery");
-  systemButton = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/180, /*w=*/160, /*h=*/60, "System");
+  gPatternControlButton->SetLabelDatum(/*xDelta=*/0, /*yDelta=*/-25);
+  gOrreryButton = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/120, /*w=*/160, /*h=*/60, "Orrery");
+  gSystemButton = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/180, /*w=*/160, /*h=*/60, "System");
 
-  backButton = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/160, /*h=*/60, "Back");
+  gBackButton = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/0, /*w=*/160, /*h=*/60, "Back");
   // TODO split the player in half so we can render the selected pattern in the right half of the Back button.
-  downButton = TouchButtonManager::Get()->AddButton(/*x=*/80, /*y=*/60, /*w=*/80, /*h=*/60, "Down");
-  upButton = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/60, /*w=*/80, /*h=*/60, "Up");
-  overrideButton = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/120, /*w=*/160, /*h=*/60, "Override");
-  confirmButton = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/180, /*w=*/160, /*h=*/60, "Confirm");
-  lockButton = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/180, /*w=*/160, /*h=*/60, "Lock");
-  shutdownButton = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/180, /*w=*/160, /*h=*/60, "Shutdown");
-  unlock1Button = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/0, /*w=*/160, /*h=*/60, "Unlock");
-  unlock2Button = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/180, /*w=*/160, /*h=*/60, "Unlock");
-  ledMinusButton = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/0, /*w=*/80, /*h=*/60, "LED-");
-  ledPlusButton = TouchButtonManager::Get()->AddButton(/*x=*/240, /*y=*/0, /*w=*/80, /*h=*/60, "LED+");
-  screenMinusButton = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/60, /*w=*/80, /*h=*/60, "Screen-");
-  screenPlusButton = TouchButtonManager::Get()->AddButton(/*x=*/240, /*y=*/60, /*w=*/80, /*h=*/60, "Screen+");
+  gDownButton = TouchButtonManager::Get()->AddButton(/*x=*/80, /*y=*/60, /*w=*/80, /*h=*/60, "Down");
+  gUpButton = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/60, /*w=*/80, /*h=*/60, "Up");
+  gOverrideButton = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/120, /*w=*/160, /*h=*/60, "Override");
+  gConfirmButton = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/180, /*w=*/160, /*h=*/60, "Confirm");
+  gLockButton = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/180, /*w=*/160, /*h=*/60, "Lock");
+  gShutdownButton = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/180, /*w=*/160, /*h=*/60, "Shutdown");
+  gUnlock1Button = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/0, /*w=*/160, /*h=*/60, "Unlock");
+  gUnlock2Button = TouchButtonManager::Get()->AddButton(/*x=*/0, /*y=*/180, /*w=*/160, /*h=*/60, "Unlock");
+  gLedMinusButton = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/0, /*w=*/80, /*h=*/60, "LED-");
+  gLedPlusButton = TouchButtonManager::Get()->AddButton(/*x=*/240, /*y=*/0, /*w=*/80, /*h=*/60, "LED+");
+  gScreenMinusButton = TouchButtonManager::Get()->AddButton(/*x=*/160, /*y=*/60, /*w=*/80, /*h=*/60, "Screen-");
+  gScreenPlusButton = TouchButtonManager::Get()->AddButton(/*x=*/240, /*y=*/60, /*w=*/80, /*h=*/60, "Screen+");
 }
 
 std::string gCurrentPatternName;
@@ -179,9 +179,9 @@ class PatternControlMenu {
     kColor,
     kConfirmed,
   };
-  void draw() {
+  void Draw() {
     // Temporarily hide the confirm button so we can set the right string before painting it.
-    confirmButton->Hide();
+    gConfirmButton->Hide();
     TouchButtonManager::Get()->MaybePaint();
     // Reset text datum and color in case we need to draw any.
     M5.Display.setTextDatum(TL_DATUM);  // Top Left.
@@ -193,15 +193,15 @@ class PatternControlMenu {
         TouchButtonManager::Get()->RedrawRightHalf();
         if (selectedPatternIndex_ < kNumPatternsFirstPage) {
           for (uint8_t i = 0; i < kNumPatternsFirstPage; i++) {
-            drawPatternTextLine(i, kSelectablePatterns[i].name, i == selectedPatternIndex_);
+            DrawPatternTextLine(i, selectablePatterns_[i].name, i == selectedPatternIndex_);
           }
           M5.Display.setTextColor(WHITE, BLACK);
-          M5.Display.drawString("More Patterns...", x_, kNumPatternsFirstPage * dy());
+          M5.Display.drawString("More Patterns...", x_, kNumPatternsFirstPage * Dy());
         } else {
           M5.Display.setTextColor(WHITE, BLACK);
           M5.Display.drawString("Previous Patterns...", x_, /*y=*/0);
           for (uint8_t i = 0; i < kNumPatternsSecondPage; i++) {
-            drawPatternTextLine(i + 1, kSelectablePatterns[i + kNumPatternsFirstPage].name,
+            DrawPatternTextLine(i + 1, selectablePatterns_[i + kNumPatternsFirstPage].name,
                                 i + kNumPatternsFirstPage == selectedPatternIndex_);
           }
         }
@@ -209,136 +209,136 @@ class PatternControlMenu {
       case State::kPalette: {
         TouchButtonManager::Get()->RedrawRightHalf();
         for (uint8_t i = 0; i < kNumPalettes; i++) {
-          drawPatternTextLine(i, kPaletteNames[i], i == selectedPaletteIndex_);
+          DrawPatternTextLine(i, paletteNames_[i], i == selectedPaletteIndex_);
         }
       } break;
       case State::kColor: {
         TouchButtonManager::Get()->RedrawRightHalf();
-        for (uint8_t i = 0; i < kNumColors; i++) { drawPatternTextLine(i, kColorNames[i], i == selectedColorIndex_); }
+        for (uint8_t i = 0; i < kNumColors; i++) { DrawPatternTextLine(i, colorNames_[i], i == selectedColorIndex_); }
       } break;
       case State::kConfirmed: {
         // Do nothing.
       } break;
     }
-    confirmButton->Draw(/*force=*/true);
+    gConfirmButton->Draw(/*force=*/true);
   }
-  void downPressed() {
+  void DownPressed() {
     if (state_ == State::kPattern) {
       if (selectedPatternIndex_ < kNumPatternsFirstPage - 1) {
-        drawPatternTextLine(selectedPatternIndex_, kSelectablePatterns[selectedPatternIndex_].name, /*selected=*/false);
+        DrawPatternTextLine(selectedPatternIndex_, selectablePatterns_[selectedPatternIndex_].name, /*selected=*/false);
         selectedPatternIndex_++;
-        drawPatternTextLine(selectedPatternIndex_, kSelectablePatterns[selectedPatternIndex_].name, /*selected=*/true);
-        confirmButton->Draw(/*force=*/true);
+        DrawPatternTextLine(selectedPatternIndex_, selectablePatterns_[selectedPatternIndex_].name, /*selected=*/true);
+        gConfirmButton->Draw(/*force=*/true);
       } else if (selectedPatternIndex_ == kNumPatternsFirstPage - 1) {
         selectedPatternIndex_++;
-        draw();
+        Draw();
       } else if (selectedPatternIndex_ < kNumPatternsFirstPage + kNumPatternsSecondPage - 1) {
-        drawPatternTextLine(1 + selectedPatternIndex_ - kNumPatternsFirstPage,
-                            kSelectablePatterns[selectedPatternIndex_].name,
+        DrawPatternTextLine(1 + selectedPatternIndex_ - kNumPatternsFirstPage,
+                            selectablePatterns_[selectedPatternIndex_].name,
                             /*selected=*/false);
         selectedPatternIndex_++;
-        drawPatternTextLine(1 + selectedPatternIndex_ - kNumPatternsFirstPage,
-                            kSelectablePatterns[selectedPatternIndex_].name,
+        DrawPatternTextLine(1 + selectedPatternIndex_ - kNumPatternsFirstPage,
+                            selectablePatterns_[selectedPatternIndex_].name,
                             /*selected=*/true);
-        confirmButton->Draw(/*force=*/true);
+        gConfirmButton->Draw(/*force=*/true);
       }
     } else if (state_ == State::kPalette) {
       if (selectedPaletteIndex_ < kNumPalettes - 1) {
-        drawPatternTextLine(selectedPaletteIndex_, kPaletteNames[selectedPaletteIndex_], /*selected=*/false);
+        DrawPatternTextLine(selectedPaletteIndex_, paletteNames_[selectedPaletteIndex_], /*selected=*/false);
         selectedPaletteIndex_++;
-        drawPatternTextLine(selectedPaletteIndex_, kPaletteNames[selectedPaletteIndex_], /*selected=*/true);
+        DrawPatternTextLine(selectedPaletteIndex_, paletteNames_[selectedPaletteIndex_], /*selected=*/true);
       }
     } else if (state_ == State::kColor) {
       if (selectedColorIndex_ < kNumColors - 1) {
-        drawPatternTextLine(selectedColorIndex_, kColorNames[selectedColorIndex_], /*selected=*/false);
+        DrawPatternTextLine(selectedColorIndex_, colorNames_[selectedColorIndex_], /*selected=*/false);
         selectedColorIndex_++;
-        drawPatternTextLine(selectedColorIndex_, kColorNames[selectedColorIndex_], /*selected=*/true);
+        DrawPatternTextLine(selectedColorIndex_, colorNames_[selectedColorIndex_], /*selected=*/true);
       }
     }
   }
-  void upPressed() {
+  void UpPressed() {
     if (state_ == State::kPattern) {
       if (selectedPatternIndex_ == 0) {
         // Do nothing.
       } else if (selectedPatternIndex_ < kNumPatternsFirstPage) {
-        drawPatternTextLine(selectedPatternIndex_, kSelectablePatterns[selectedPatternIndex_].name,
+        DrawPatternTextLine(selectedPatternIndex_, selectablePatterns_[selectedPatternIndex_].name,
                             /*selected=*/false);
         selectedPatternIndex_--;
-        drawPatternTextLine(selectedPatternIndex_, kSelectablePatterns[selectedPatternIndex_].name,
+        DrawPatternTextLine(selectedPatternIndex_, selectablePatterns_[selectedPatternIndex_].name,
                             /*selected=*/true);
       } else if (selectedPatternIndex_ == kNumPatternsFirstPage) {
         selectedPatternIndex_--;
-        draw();
+        Draw();
       } else {
-        drawPatternTextLine(1 + selectedPatternIndex_ - kNumPatternsFirstPage,
-                            kSelectablePatterns[selectedPatternIndex_].name,
+        DrawPatternTextLine(1 + selectedPatternIndex_ - kNumPatternsFirstPage,
+                            selectablePatterns_[selectedPatternIndex_].name,
                             /*selected=*/false);
         selectedPatternIndex_--;
-        drawPatternTextLine(1 + selectedPatternIndex_ - kNumPatternsFirstPage,
-                            kSelectablePatterns[selectedPatternIndex_].name,
+        DrawPatternTextLine(1 + selectedPatternIndex_ - kNumPatternsFirstPage,
+                            selectablePatterns_[selectedPatternIndex_].name,
                             /*selected=*/true);
       }
     } else if (state_ == State::kPalette) {
       if (selectedPaletteIndex_ > 0) {
-        drawPatternTextLine(selectedPaletteIndex_, kPaletteNames[selectedPaletteIndex_], /*selected=*/false);
+        DrawPatternTextLine(selectedPaletteIndex_, paletteNames_[selectedPaletteIndex_], /*selected=*/false);
         selectedPaletteIndex_--;
-        drawPatternTextLine(selectedPaletteIndex_, kPaletteNames[selectedPaletteIndex_], /*selected=*/true);
+        DrawPatternTextLine(selectedPaletteIndex_, paletteNames_[selectedPaletteIndex_], /*selected=*/true);
       }
     } else if (state_ == State::kColor) {
       if (selectedColorIndex_ > 0) {
-        drawPatternTextLine(selectedColorIndex_, kColorNames[selectedColorIndex_], /*selected=*/false);
+        DrawPatternTextLine(selectedColorIndex_, colorNames_[selectedColorIndex_], /*selected=*/false);
         selectedColorIndex_--;
-        drawPatternTextLine(selectedColorIndex_, kColorNames[selectedColorIndex_], /*selected=*/true);
+        DrawPatternTextLine(selectedColorIndex_, colorNames_[selectedColorIndex_], /*selected=*/true);
       }
     }
-    confirmButton->Draw(/*force=*/true);
+    gConfirmButton->Draw(/*force=*/true);
   }
-  bool backPressed() {
+  bool BackPressed() {
     if (state_ == State::kPattern) {
       state_ = State::kOff;
       return true;
     }
     state_ = State::kPattern;
-    draw();
+    Draw();
     return false;
   }
-  void overridePressed(Player& player) {
+  void OverridePressed(Player& player) {
     overrideEnabled_ = !overrideEnabled_;
-    overrideButton->SetHighlight(overrideEnabled_);
-    overrideButton->SetLabelText(overrideEnabled_ ? "Override ON" : "Override");
+    gOverrideButton->SetHighlight(overrideEnabled_);
+    gOverrideButton->SetLabelText(overrideEnabled_ ? "Override ON" : "Override");
     if (overrideEnabled_) {
       SetOverridePrecedence(player);
     } else {
       SetDefaultPrecedence(player);
     }
-    overrideButton->Draw(/*force=*/true);
+    gOverrideButton->Draw(/*force=*/true);
   }
-  bool confirmPressed(Player& player) {
+  bool ConfirmPressed(Player& player) {
     if (state_ == State::kPattern) {
-      State nextState = kSelectablePatterns[selectedPatternIndex_].nextState;
+      State nextState = selectablePatterns_[selectedPatternIndex_].nextState;
       if (nextState == State::kPalette || nextState == State::kColor) {
-        jll_info("Pattern %s confirmed now asking for %s", kSelectablePatterns[selectedPatternIndex_].name,
+        jll_info("Pattern %s confirmed now asking for %s", selectablePatterns_[selectedPatternIndex_].name,
                  (nextState == State::kPalette ? "palette" : "color"));
         state_ = nextState;
-        draw();
+        Draw();
       } else {
-        jll_info("Pattern %s confirmed now playing", kSelectablePatterns[selectedPatternIndex_].name);
+        jll_info("Pattern %s confirmed now playing", selectablePatterns_[selectedPatternIndex_].name);
         player.StopForcePalette();
-        return SetPattern(player, kSelectablePatterns[selectedPatternIndex_].bits);
+        return SetPattern(player, selectablePatterns_[selectedPatternIndex_].bits);
       }
     } else if (state_ == State::kPalette) {
-      jll_info("Pattern %s and palette %s confirmed now playing", kSelectablePatterns[selectedPatternIndex_].name,
-               kPaletteNames[selectedPaletteIndex_]);
-      return setPatternWithPalette(player, kSelectablePatterns[selectedPatternIndex_].bits, selectedPaletteIndex_);
+      jll_info("Pattern %s and palette %s confirmed now playing", selectablePatterns_[selectedPatternIndex_].name,
+               paletteNames_[selectedPaletteIndex_]);
+      return SetPatternWithPalette(player, selectablePatterns_[selectedPatternIndex_].bits, selectedPaletteIndex_);
     } else if (state_ == State::kColor) {
-      jll_info("Pattern %s and color %s confirmed now playing", kSelectablePatterns[selectedPatternIndex_].name,
-               kColorNames[selectedColorIndex_]);
-      return setPatternWithColor(player, kSelectablePatterns[selectedPatternIndex_].bits, selectedColorIndex_);
+      jll_info("Pattern %s and color %s confirmed now playing", selectablePatterns_[selectedPatternIndex_].name,
+               colorNames_[selectedColorIndex_]);
+      return SetPatternWithColor(player, selectablePatterns_[selectedPatternIndex_].bits, selectedColorIndex_);
     }
     return false;
   }
   State ConfirmButtonState() const {
-    if (state_ == State::kPattern) { return kSelectablePatterns[selectedPatternIndex_].nextState; }
+    if (state_ == State::kPattern) { return selectablePatterns_[selectedPatternIndex_].nextState; }
     return State::kConfirmed;
   }
 
@@ -349,8 +349,8 @@ class PatternControlMenu {
     state_ = State::kOff;
     return true;
   }
-  bool setPatternWithPalette(Player& player, PatternBits patternBits, uint8_t palette) {
-    jll_info("setPatternWithPalette patternBits=%08x palette=%u combined=%08x", patternBits, palette,
+  bool SetPatternWithPalette(Player& player, PatternBits patternBits, uint8_t palette) {
+    jll_info("SetPatternWithPalette patternBits=%08x palette=%u combined=%08x", patternBits, palette,
              patternBits | (palette << 13));
     if (patternBits == kAllPalettePattern) {  // forced palette.
       player.ForcePalette(palette);
@@ -360,24 +360,24 @@ class PatternControlMenu {
     player.StopForcePalette();
     return SetPattern(player, patternBits | (palette << 13));
   }
-  bool setPatternWithColor(Player& player, PatternBits patternBits, uint8_t color) {
+  bool SetPatternWithColor(Player& player, PatternBits patternBits, uint8_t color) {
     player.StopForcePalette();
     if (patternBits == 0x0700 && color == 0) {  // glow-black is just solid-black.
       return SetPattern(player, 0);
     }
     return SetPattern(player, patternBits + color * 0x100);
   }
-  uint8_t dy() {
+  uint8_t Dy() {
     if (dy_ == 0) { dy_ = M5.Display.fontHeight(); }  // By default this is 22.
     return dy_;
   }
-  void drawPatternTextLine(uint8_t i, const char* text, bool selected) {
+  void DrawPatternTextLine(uint8_t i, const char* text, bool selected) {
     M5.Display.setTextDatum(TL_DATUM);  // Top Left.
-    const uint16_t y = i * dy();
+    const uint16_t y = i * Dy();
     const uint16_t textColor = selected ? BLACK : WHITE;
     const uint16_t backgroundColor = selected ? WHITE : BLACK;
     M5.Display.setTextColor(textColor, backgroundColor);
-    M5.Display.fillRect(x_, y, /*w=*/155, /*h=*/dy(), backgroundColor);
+    M5.Display.fillRect(x_, y, /*w=*/155, /*h=*/Dy(), backgroundColor);
     M5.Display.drawString(text, x_, y);
   }
   struct SelectablePattern {
@@ -390,7 +390,7 @@ class PatternControlMenu {
   static constexpr uint8_t kNumPatternsSecondPage = 3 + 3 + 2;
   // clang-format off
   // Apparently some versions of clang-format disagree on how to format this.
-  SelectablePattern kSelectablePatterns[kNumPatternsFirstPage + kNumPatternsSecondPage] = {
+  SelectablePattern selectablePatterns_[kNumPatternsFirstPage + kNumPatternsSecondPage] = {
       // Main patterns.
       {        "rings",         0x00000001,   State::kPalette},
       {        "flame",         0x40000001,   State::kPalette},
@@ -415,11 +415,11 @@ class PatternControlMenu {
   };
   // clang-format on
   static constexpr size_t kNumPalettes = 7;
-  const char* kPaletteNames[kNumPalettes] = {
+  const char* paletteNames_[kNumPalettes] = {
       "heat", "lava", "ocean", "cloud", "party", "forest", "rainbow",
   };
   static constexpr size_t kNumColors = 8;
-  const char* kColorNames[kNumColors] = {
+  const char* colorNames_[kNumColors] = {
       "black", "red", "green", "blue", "purple", "cyan", "yellow", "white",
   };
   State state_ = State::kOff;
@@ -436,7 +436,7 @@ PatternControlMenu gPatternControlMenu;
 
 class OrreryMenu {
  public:
-  void draw() {
+  void Draw() {
     // Reset text datum and color in case we need to draw any.
     M5.Display.setTextDatum(TL_DATUM);  // Top Left.
     M5.Display.setTextColor(WHITE, BLACK);
@@ -444,11 +444,11 @@ class OrreryMenu {
     if (selectedSceneIndex_ < kNumScenesFirstPage) {
       for (uint8_t i = 0; i < kNumScenesFirstPage && i < kNumScenes; i++) {
         OrreryScene scene = static_cast<OrreryScene>(i + static_cast<int>(OrreryScene::kMinScene));
-        drawSceneTextLine(i, OrrerySceneToString(scene), i == selectedSceneIndex_);
+        DrawSceneTextLine(i, OrrerySceneToString(scene), i == selectedSceneIndex_);
       }
       if (kNumScenes > kNumScenesFirstPage) {
         M5.Display.setTextColor(WHITE, BLACK);
-        M5.Display.drawString("More...", x_, kNumScenesFirstPage * dy());
+        M5.Display.drawString("More...", x_, kNumScenesFirstPage * Dy());
       }
     } else {
       M5.Display.setTextColor(WHITE, BLACK);
@@ -456,61 +456,61 @@ class OrreryMenu {
       for (uint8_t i = 0; i < kNumScenes - kNumScenesFirstPage; i++) {
         uint8_t idx = i + kNumScenesFirstPage;
         OrreryScene scene = static_cast<OrreryScene>(idx + static_cast<int>(OrreryScene::kMinScene));
-        drawSceneTextLine(i + 1, OrrerySceneToString(scene), idx == selectedSceneIndex_);
+        DrawSceneTextLine(i + 1, OrrerySceneToString(scene), idx == selectedSceneIndex_);
       }
     }
-    confirmButton->Draw(/*force=*/true);
+    gConfirmButton->Draw(/*force=*/true);
   }
-  void downPressed() {
+  void DownPressed() {
     if (selectedSceneIndex_ < kNumScenes - 1) {
       if (selectedSceneIndex_ == kNumScenesFirstPage - 1) {
         selectedSceneIndex_++;
-        draw();
+        Draw();
       } else {
         uint8_t lineIdx = selectedSceneIndex_ < kNumScenesFirstPage ? selectedSceneIndex_
                                                                     : (selectedSceneIndex_ - kNumScenesFirstPage + 1);
         OrreryScene oldScene = static_cast<OrreryScene>(selectedSceneIndex_ + static_cast<int>(OrreryScene::kMinScene));
-        drawSceneTextLine(lineIdx, OrrerySceneToString(oldScene), /*selected=*/false);
+        DrawSceneTextLine(lineIdx, OrrerySceneToString(oldScene), /*selected=*/false);
         selectedSceneIndex_++;
         OrreryScene newScene = static_cast<OrreryScene>(selectedSceneIndex_ + static_cast<int>(OrreryScene::kMinScene));
-        drawSceneTextLine(lineIdx + 1, OrrerySceneToString(newScene), /*selected=*/true);
+        DrawSceneTextLine(lineIdx + 1, OrrerySceneToString(newScene), /*selected=*/true);
       }
     }
   }
-  void upPressed() {
+  void UpPressed() {
     if (selectedSceneIndex_ > 0) {
       if (selectedSceneIndex_ == kNumScenesFirstPage) {
         selectedSceneIndex_--;
-        draw();
+        Draw();
       } else {
         uint8_t lineIdx = selectedSceneIndex_ < kNumScenesFirstPage ? selectedSceneIndex_
                                                                     : (selectedSceneIndex_ - kNumScenesFirstPage + 1);
         OrreryScene oldScene = static_cast<OrreryScene>(selectedSceneIndex_ + static_cast<int>(OrreryScene::kMinScene));
-        drawSceneTextLine(lineIdx, OrrerySceneToString(oldScene), /*selected=*/false);
+        DrawSceneTextLine(lineIdx, OrrerySceneToString(oldScene), /*selected=*/false);
         selectedSceneIndex_--;
         OrreryScene newScene = static_cast<OrreryScene>(selectedSceneIndex_ + static_cast<int>(OrreryScene::kMinScene));
-        drawSceneTextLine(lineIdx - 1, OrrerySceneToString(newScene), /*selected=*/true);
+        DrawSceneTextLine(lineIdx - 1, OrrerySceneToString(newScene), /*selected=*/true);
       }
     }
   }
-  bool confirmPressed(Player& player) {
+  bool ConfirmPressed(Player& player) {
     OrreryScene scene = static_cast<OrreryScene>(selectedSceneIndex_ + static_cast<int>(OrreryScene::kMinScene));
     player.SetOrrerySceneIdToSend(static_cast<OrrerySceneId>(scene));
     return true;
   }
 
  private:
-  uint8_t dy() {
+  uint8_t Dy() {
     if (dy_ == 0) { dy_ = M5.Display.fontHeight(); }
     return dy_;
   }
-  void drawSceneTextLine(uint8_t i, const char* text, bool selected) {
+  void DrawSceneTextLine(uint8_t i, const char* text, bool selected) {
     M5.Display.setTextDatum(TL_DATUM);  // Top Left.
-    const uint16_t y = i * dy();
+    const uint16_t y = i * Dy();
     const uint16_t textColor = selected ? BLACK : WHITE;
     const uint16_t backgroundColor = selected ? WHITE : BLACK;
     M5.Display.setTextColor(textColor, backgroundColor);
-    M5.Display.fillRect(x_, y, /*w=*/155, /*h=*/dy(), backgroundColor);
+    M5.Display.fillRect(x_, y, /*w=*/155, /*h=*/Dy(), backgroundColor);
     M5.Display.drawString(text, x_, y);
   }
   static constexpr uint8_t kNumScenes =
@@ -523,7 +523,7 @@ class OrreryMenu {
 
 OrreryMenu gOrreryMenu;
 
-void drawPatternControlButton(TouchButton* button, int outline, int fill, int textColor) {
+void DrawPatternControlButton(TouchButton* button, int outline, int fill, int textColor) {
   button->PaintRectangle(fill, outline);
   button->PaintText(textColor, fill);
   M5.Display.setTextDatum(BC_DATUM);  // Bottom Center.
@@ -531,7 +531,7 @@ void drawPatternControlButton(TouchButton* button, int outline, int fill, int te
 }
 
 OrreryScene gOrreryScene = OrreryScene::kInvalidScene;
-void drawOrreryButton(TouchButton* button, int outline, int fill, int textColor) {
+void DrawOrreryButton(TouchButton* button, int outline, int fill, int textColor) {
   button->PaintRectangle(fill, outline);
   M5.Display.setTextDatum(BC_DATUM);  // Bottom Center.
   M5.Display.setTextColor(textColor, fill);
@@ -539,7 +539,7 @@ void drawOrreryButton(TouchButton* button, int outline, int fill, int textColor)
   M5.Display.drawString(OrrerySceneToString(gOrreryScene), /*x=*/240, /*y=*/170);
 }
 
-void drawSystemButton(TouchButton* button, int outline, int fill, int textColor) {
+void DrawSystemButton(TouchButton* button, int outline, int fill, int textColor) {
   button->PaintRectangle(fill, outline);
   M5.Display.setTextDatum(BC_DATUM);  // Bottom Center.
   M5.Display.setTextColor(textColor, fill);
@@ -547,7 +547,7 @@ void drawSystemButton(TouchButton* button, int outline, int fill, int textColor)
   M5.Display.drawString(BOOT_MESSAGE, /*x=*/240, /*y=*/230);
 }
 
-void drawConfirmButton(TouchButton* button, int outline, int fill, int textColor) {
+void DrawConfirmButton(TouchButton* button, int outline, int fill, int textColor) {
   const char* confirmLabel = "Error ?";
   if (gScreenMode == ScreenMode::kOrreryMenu) {
     confirmLabel = "Confirm";
@@ -565,129 +565,129 @@ void drawConfirmButton(TouchButton* button, int outline, int fill, int textColor
 }
 
 void DrawMainMenuButtons() {
-  unlock1Button->Hide();
-  unlock2Button->Hide();
-  nextButton->Draw();
-  loopButton->Draw();
-  patternControlButton->Draw();
-  orreryButton->Draw();
-  systemButton->Draw();
+  gUnlock1Button->Hide();
+  gUnlock2Button->Hide();
+  gNextButton->Draw();
+  gLoopButton->Draw();
+  gPatternControlButton->Draw();
+  gOrreryButton->Draw();
+  gSystemButton->Draw();
 }
 
 void HideMainMenuButtons() {
-  nextButton->Hide();
-  loopButton->Hide();
-  patternControlButton->Hide();
-  orreryButton->Hide();
-  systemButton->Hide();
+  gNextButton->Hide();
+  gLoopButton->Hide();
+  gPatternControlButton->Hide();
+  gOrreryButton->Hide();
+  gSystemButton->Hide();
 }
 
 void DrawPatternControlMenuButtons() {
-  unlock1Button->Hide();
-  unlock2Button->Hide();
-  backButton->Draw();
-  downButton->Draw();
-  upButton->Draw();
-  overrideButton->Draw();
+  gUnlock1Button->Hide();
+  gUnlock2Button->Hide();
+  gBackButton->Draw();
+  gDownButton->Draw();
+  gUpButton->Draw();
+  gOverrideButton->Draw();
 }
 
 void HidePatternControlMenuButtons() {
-  backButton->Hide();
-  downButton->Hide();
-  upButton->Hide();
-  overrideButton->Hide();
-  confirmButton->Hide();
+  gBackButton->Hide();
+  gDownButton->Hide();
+  gUpButton->Hide();
+  gOverrideButton->Hide();
+  gConfirmButton->Hide();
 }
 
 void DrawOrreryMenuButtons() {
-  unlock1Button->Hide();
-  unlock2Button->Hide();
-  backButton->Draw();
-  downButton->Draw();
-  upButton->Draw();
+  gUnlock1Button->Hide();
+  gUnlock2Button->Hide();
+  gBackButton->Draw();
+  gDownButton->Draw();
+  gUpButton->Draw();
 }
 
 void HideOrreryMenuButtons() {
-  backButton->Hide();
-  downButton->Hide();
-  upButton->Hide();
-  confirmButton->Hide();
+  gBackButton->Hide();
+  gDownButton->Hide();
+  gUpButton->Hide();
+  gConfirmButton->Hide();
 }
 
 void DrawSystemMenuButtons() {
-  unlock1Button->Hide();
-  unlock2Button->Hide();
-  backButton->Draw();
-  lockButton->Draw();
-  shutdownButton->Draw();
-  ledPlusButton->Draw();
-  ledMinusButton->Draw();
-  screenPlusButton->Draw();
-  screenMinusButton->Draw();
+  gUnlock1Button->Hide();
+  gUnlock2Button->Hide();
+  gBackButton->Draw();
+  gLockButton->Draw();
+  gShutdownButton->Draw();
+  gLedPlusButton->Draw();
+  gLedMinusButton->Draw();
+  gScreenPlusButton->Draw();
+  gScreenMinusButton->Draw();
 }
 
 void HideSystemMenuButtons() {
-  backButton->Hide();
-  lockButton->Hide();
-  shutdownButton->Hide();
-  ledPlusButton->Hide();
-  ledMinusButton->Hide();
-  screenPlusButton->Hide();
-  screenMinusButton->Hide();
+  gBackButton->Hide();
+  gLockButton->Hide();
+  gShutdownButton->Hide();
+  gLedPlusButton->Hide();
+  gLedMinusButton->Hide();
+  gScreenPlusButton->Hide();
+  gScreenMinusButton->Hide();
 }
 
-void startMainMenu(Player& player) {
+void StartMainMenu(Player& player) {
   gScreenMode = ScreenMode::kMainMenu;
   TouchButtonManager::Get()->Redraw();
   DrawMainMenuButtons();
-  core2ScreenRenderer.setEnabled(true);
+  gCore2ScreenRenderer.SetEnabled(true);
 }
 
-void lockScreen() {
+void LockScreen() {
   gLastScreenInteractionTime.reset();
   gScreenMode = ScreenMode::kOff;
-  unlock1Button->Hide();
-  unlock2Button->Hide();
+  gUnlock1Button->Hide();
+  gUnlock2Button->Hide();
   HideSystemMenuButtons();
   HideMainMenuButtons();
   HidePatternControlMenuButtons();
   HideOrreryMenuButtons();
-  core2ScreenRenderer.setEnabled(false);
+  gCore2ScreenRenderer.SetEnabled(false);
   SetCore2ScreenBrightness(0);
   TouchButtonManager::Get()->Redraw();
 }
 
-void patternControlButtonPressed(Player& player) {
+void PatternControlButtonPressed(Player& player) {
   gScreenMode = ScreenMode::kPatternControlMenu;
   gLastScreenInteractionTime = TimeMicros();
   HideMainMenuButtons();
-  core2ScreenRenderer.setEnabled(false);
+  gCore2ScreenRenderer.SetEnabled(false);
   TouchButtonManager::Get()->Redraw();
   DrawPatternControlMenuButtons();
-  gPatternControlMenu.draw();
+  gPatternControlMenu.Draw();
 }
 
-void orreryButtonPressed(Player& player) {
+void OrreryButtonPressed(Player& player) {
   gScreenMode = ScreenMode::kOrreryMenu;
   gLastScreenInteractionTime = TimeMicros();
   HideMainMenuButtons();
-  core2ScreenRenderer.setEnabled(false);
+  gCore2ScreenRenderer.SetEnabled(false);
   TouchButtonManager::Get()->Redraw();
   DrawOrreryMenuButtons();
-  gOrreryMenu.draw();
+  gOrreryMenu.Draw();
 }
 
-void confirmButtonPressed(Player& player) {
+void ConfirmButtonPressed(Player& player) {
   gLastScreenInteractionTime = TimeMicros();
   if (gScreenMode == ScreenMode::kPatternControlMenu) {
-    if (gPatternControlMenu.confirmPressed(player)) {
+    if (gPatternControlMenu.ConfirmPressed(player)) {
       HidePatternControlMenuButtons();
-      startMainMenu(player);
+      StartMainMenu(player);
     }
   } else if (gScreenMode == ScreenMode::kOrreryMenu) {
-    if (gOrreryMenu.confirmPressed(player)) {
+    if (gOrreryMenu.ConfirmPressed(player)) {
       HideOrreryMenuButtons();
-      startMainMenu(player);
+      StartMainMenu(player);
     }
   }
 }
@@ -711,13 +711,13 @@ void Core2AwsUi::InitialSetup() {
   HidePatternControlMenuButtons();
   HideOrreryMenuButtons();
   HideSystemMenuButtons();
-  unlock1Button->Hide();
-  unlock2Button->Hide();
-  patternControlButton->SetCustomPaintFunction(drawPatternControlButton);
-  orreryButton->SetCustomPaintFunction(drawOrreryButton);
-  systemButton->SetCustomPaintFunction(drawSystemButton);
-  confirmButton->SetCustomPaintFunction(drawConfirmButton);
-  player_.AddStrand(kCore2ScreenPixels, core2ScreenRenderer);
+  gUnlock1Button->Hide();
+  gUnlock2Button->Hide();
+  gPatternControlButton->SetCustomPaintFunction(DrawPatternControlButton);
+  gOrreryButton->SetCustomPaintFunction(DrawOrreryButton);
+  gSystemButton->SetCustomPaintFunction(DrawSystemButton);
+  gConfirmButton->SetCustomPaintFunction(DrawConfirmButton);
+  player_.AddStrand(kCore2ScreenPixels, gCore2ScreenRenderer);
   SetDefaultPrecedence(player_);
 }
 
@@ -725,10 +725,10 @@ void Core2AwsUi::FinalSetup() {
   TouchButtonManager::Get()->MaybePaint();
   gCurrentPatternName = player_.CurrentEffectName();
   if (gScreenMode == ScreenMode::kMainMenu) {
-    startMainMenu(player_);
+    StartMainMenu(player_);
   } else {
     HideMainMenuButtons();
-    core2ScreenRenderer.setEnabled(false);
+    gCore2ScreenRenderer.SetEnabled(false);
   }
 }
 
@@ -786,11 +786,11 @@ void Core2AwsUi::RunLoop() {
 #if JL_BUTTON_LOCK
           jll_info("starting unlock sequence from button press");
           gScreenMode = ScreenMode::kLocked1;
-          unlock2Button->Hide();
-          unlock1Button->Draw();
+          gUnlock2Button->Hide();
+          gUnlock1Button->Draw();
 #else   // JL_BUTTON_LOCK
           jll_info("unlocking from button press");
-          startMainMenu(player_);
+          StartMainMenu(player_);
           gLastScreenInteractionTime = currentTime;
 #endif  // JL_BUTTON_LOCK
         } break;
@@ -800,14 +800,14 @@ void Core2AwsUi::RunLoop() {
             jll_info("pattern screen pressed");
             HideMainMenuButtons();
             TouchButtonManager::Get()->Redraw();
-            core2ScreenRenderer.setFullScreen(true);
+            gCore2ScreenRenderer.SetFullScreen(true);
             gLastScreenInteractionTime = currentTime;
           }
         } break;
         case ScreenMode::kFullScreenPattern: {
           jll_info("full screen pattern pressed");
-          core2ScreenRenderer.setFullScreen(false);
-          startMainMenu(player_);
+          gCore2ScreenRenderer.SetFullScreen(false);
+          StartMainMenu(player_);
           gLastScreenInteractionTime = currentTime;
         } break;
         case ScreenMode::kPatternControlMenu: {
@@ -821,61 +821,61 @@ void Core2AwsUi::RunLoop() {
         } break;
         case ScreenMode::kLocked2: {
           jll_info("locking screen due to background press while unlocking");
-          lockScreen();
+          LockScreen();
         } break;
       }
     }
   } else {
     TouchButtonManager::Get()->HandleIdle();
   }
-  if (nextButton->JustReleased()) {
+  if (gNextButton->JustReleased()) {
     jll_info("next pressed");
     if (gScreenMode == ScreenMode::kMainMenu) {
       gLastScreenInteractionTime = currentTime;
       player_.Next();
     }
   }
-  if (loopButton->JustReleased()) {
+  if (gLoopButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kMainMenu) {
       jll_info("loop pressed");
       gLastScreenInteractionTime = currentTime;
       if (player_.isLooping()) {
         player_.StopLooping();
-        loopButton->SetLabelText("Loop");
-        loopButton->SetHighlight(false);
+        gLoopButton->SetLabelText("Loop");
+        gLoopButton->SetHighlight(false);
       } else {
         player_.LoopOne();
-        loopButton->SetLabelText("Looping");
-        loopButton->SetHighlight(true);
+        gLoopButton->SetLabelText("Looping");
+        gLoopButton->SetHighlight(true);
       }
-      loopButton->Draw(/*force=*/true);
+      gLoopButton->Draw(/*force=*/true);
     } else {
       jll_info("ignoring loop pressed");
     }
   }
-  if (patternControlButton->JustReleased()) {
+  if (gPatternControlButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kMainMenu) {
       jll_info("pattern control button pressed");
-      patternControlButtonPressed(player_);
+      PatternControlButtonPressed(player_);
     } else {
       jll_info("ignoring pattern control button pressed");
     }
   }
-  if (orreryButton->JustReleased()) {
+  if (gOrreryButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kMainMenu) {
       jll_info("orrery button pressed");
-      orreryButtonPressed(player_);
+      OrreryButtonPressed(player_);
     } else {
       jll_info("ignoring orrery button pressed");
     }
   }
-  if (systemButton->JustReleased()) {
+  if (gSystemButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kMainMenu) {
       jll_info("system button pressed");
       gScreenMode = ScreenMode::kSystemMenu;
       gLastScreenInteractionTime = currentTime;
       HideMainMenuButtons();
-      core2ScreenRenderer.setEnabled(false);
+      gCore2ScreenRenderer.SetEnabled(false);
       TouchButtonManager::Get()->Redraw();
       DrawSystemMenuButtons();
       DrawSystemTextLines();
@@ -883,72 +883,72 @@ void Core2AwsUi::RunLoop() {
       jll_info("ignoring system button pressed");
     }
   }
-  if (backButton->JustReleased()) {
+  if (gBackButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kSystemMenu ||
-        (gScreenMode == ScreenMode::kPatternControlMenu && gPatternControlMenu.backPressed()) ||
+        (gScreenMode == ScreenMode::kPatternControlMenu && gPatternControlMenu.BackPressed()) ||
         gScreenMode == ScreenMode::kOrreryMenu) {
       jll_info("back button pressed");
       gLastScreenInteractionTime = currentTime;
       HidePatternControlMenuButtons();
       HideOrreryMenuButtons();
       HideSystemMenuButtons();
-      startMainMenu(player_);
+      StartMainMenu(player_);
     } else {
       jll_info("ignoring back button pressed");
     }
   }
-  if (downButton->JustReleased()) {
+  if (gDownButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kPatternControlMenu) {
       jll_info("down button pressed");
       gLastScreenInteractionTime = currentTime;
-      gPatternControlMenu.downPressed();
+      gPatternControlMenu.DownPressed();
     } else if (gScreenMode == ScreenMode::kOrreryMenu) {
       jll_info("orrery down button pressed");
       gLastScreenInteractionTime = currentTime;
-      gOrreryMenu.downPressed();
+      gOrreryMenu.DownPressed();
     } else {
       jll_info("ignoring down button pressed");
     }
   }
-  if (upButton->JustReleased()) {
+  if (gUpButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kPatternControlMenu) {
       jll_info("up button pressed");
       gLastScreenInteractionTime = currentTime;
-      gPatternControlMenu.upPressed();
+      gPatternControlMenu.UpPressed();
     } else if (gScreenMode == ScreenMode::kOrreryMenu) {
       jll_info("orrery up button pressed");
       gLastScreenInteractionTime = currentTime;
-      gOrreryMenu.upPressed();
+      gOrreryMenu.UpPressed();
     } else {
       jll_info("ignoring up button pressed");
     }
   }
-  if (overrideButton->JustReleased()) {
+  if (gOverrideButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kPatternControlMenu) {
       jll_info("override button pressed");
       gLastScreenInteractionTime = currentTime;
-      gPatternControlMenu.overridePressed(player_);
+      gPatternControlMenu.OverridePressed(player_);
     } else {
       jll_info("ignoring override button pressed");
     }
   }
-  if (confirmButton->JustReleased()) {
+  if (gConfirmButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kPatternControlMenu || gScreenMode == ScreenMode::kOrreryMenu) {
       jll_info("confirm button pressed");
-      confirmButtonPressed(player_);
+      ConfirmButtonPressed(player_);
     } else {
       jll_info("ignoring confirm button pressed");
     }
   }
-  if (lockButton->JustReleased()) {
+  if (gLockButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kSystemMenu) {
       jll_info("lock button pressed");
-      lockScreen();
+      LockScreen();
     } else {
       jll_info("ignoring lock button pressed");
     }
   }
-  if (shutdownButton->JustReleased()) {
+  if (gShutdownButton->JustReleased()) {
     if (gScreenMode == ScreenMode::kSystemMenu) {
       jll_info("shutdown button pressed");
       CorePowerOff();
@@ -956,18 +956,18 @@ void Core2AwsUi::RunLoop() {
       jll_info("ignoring shutdown button pressed");
     }
   }
-  if (unlock2Button->JustReleased()) {
+  if (gUnlock2Button->JustReleased()) {
     gLastScreenInteractionTime = currentTime;
     if (gScreenMode == ScreenMode::kLocked2) {
       jll_info("unlock2 button pressed");
-      unlock2Button->Hide();
-      startMainMenu(player_);
+      gUnlock2Button->Hide();
+      StartMainMenu(player_);
     } else if (gScreenMode == ScreenMode::kMainMenu) {
       jll_info("unlock2 button unexpectedly pressed in main menu, treating as pattern control button");
-      patternControlButtonPressed(player_);
+      PatternControlButtonPressed(player_);
     } else if (gScreenMode == ScreenMode::kPatternControlMenu) {
       jll_info("unlock2 button unexpectedly pressed in pattern control menu, treating as confirm button");
-      confirmButtonPressed(player_);
+      ConfirmButtonPressed(player_);
     } else if (gScreenMode == ScreenMode::kSystemMenu) {
       jll_info("unlock2 button unexpectedly pressed in system menu, treating as shutdown button");
       CorePowerOff();
@@ -975,14 +975,14 @@ void Core2AwsUi::RunLoop() {
       jll_info("ignoring unlock2 button pressed");
     }
   }
-  if (unlock1Button->JustReleased()) {
+  if (gUnlock1Button->JustReleased()) {
     gLastScreenInteractionTime = currentTime;
     if (gScreenMode == ScreenMode::kLocked1) {
       jll_info("unlock1 button pressed");
       gScreenMode = ScreenMode::kLocked2;
-      unlock1Button->Hide();
+      gUnlock1Button->Hide();
       TouchButtonManager::Get()->Redraw();
-      unlock2Button->Draw();
+      gUnlock2Button->Draw();
     } else if (gScreenMode == ScreenMode::kMainMenu) {
       jll_info("unlock1 button unexpectedly pressed in main menu, treating as next button");
       player_.Next();
@@ -990,8 +990,8 @@ void Core2AwsUi::RunLoop() {
       jll_info("ignoring unlock1 button pressed");
     }
   }
-  if (ledPlusButton->JustReleased()) {
-    jll_info("ledPlusButton button pressed");
+  if (gLedPlusButton->JustReleased()) {
+    jll_info("gLedPlusButton button pressed");
     if (ledBrightness_ < 255 && gScreenMode == ScreenMode::kSystemMenu) {
       ledBrightness_++;
       jll_info("setting LED brightness to %u", ledBrightness_);
@@ -999,8 +999,8 @@ void Core2AwsUi::RunLoop() {
       DrawSystemTextLines();
     }
   }
-  if (ledMinusButton->JustReleased()) {
-    jll_info("ledMinusButton button pressed");
+  if (gLedMinusButton->JustReleased()) {
+    jll_info("gLedMinusButton button pressed");
     if (ledBrightness_ > 0 && gScreenMode == ScreenMode::kSystemMenu) {
       ledBrightness_--;
       jll_info("setting LED brightness to %u", ledBrightness_);
@@ -1008,16 +1008,16 @@ void Core2AwsUi::RunLoop() {
       DrawSystemTextLines();
     }
   }
-  if (screenPlusButton->JustReleased()) {
-    jll_info("screenPlusButton button pressed");
+  if (gScreenPlusButton->JustReleased()) {
+    jll_info("gScreenPlusButton button pressed");
     if (onBrightness_ < kMaxOnBrightness && gScreenMode == ScreenMode::kSystemMenu) {
       onBrightness_++;
       SetCore2ScreenBrightness(onBrightness_);
       DrawSystemTextLines();
     }
   }
-  if (screenMinusButton->JustReleased()) {
-    jll_info("screenMinusButton button pressed");
+  if (gScreenMinusButton->JustReleased()) {
+    jll_info("gScreenMinusButton button pressed");
     if (onBrightness_ > kMinOnBrightness && gScreenMode == ScreenMode::kSystemMenu) {
       onBrightness_--;
       SetCore2ScreenBrightness(onBrightness_);
@@ -1030,7 +1030,7 @@ void Core2AwsUi::RunLoop() {
     gCurrentPatternName = patternName;
     if (gScreenMode == ScreenMode::kMainMenu) {
       jll_info("drawing new pattern name in pattern control button");
-      patternControlButton->Draw(/*force=*/true);
+      gPatternControlButton->Draw(/*force=*/true);
     }
   }
 #if JL_BUTTON_LOCK
@@ -1039,7 +1039,7 @@ void Core2AwsUi::RunLoop() {
     if (gScreenMode == ScreenMode::kLocked1 || gScreenMode == ScreenMode::kLocked2) { lockTime = kUnlockingTime; }
     if (currentTime - *gLastScreenInteractionTime > lockTime) {
       jll_info("Locking screen due to inactivity");
-      lockScreen();
+      LockScreen();
     }
   }
 #endif  // JL_BUTTON_LOCK
@@ -1051,7 +1051,7 @@ void Core2AwsUi::OnOrrerySceneId(std::optional<OrrerySceneId> orrerySceneId) {
   if (scene == gOrreryScene) { return; }
   jll_info("Received new orrery scene %d", static_cast<int>(scene));
   gOrreryScene = scene;
-  if (gScreenMode == ScreenMode::kMainMenu) { orreryButton->Draw(/*force=*/true); }
+  if (gScreenMode == ScreenMode::kMainMenu) { gOrreryButton->Draw(/*force=*/true); }
 }
 
 #endif  // CORE2AWS_LCD_ENABLED

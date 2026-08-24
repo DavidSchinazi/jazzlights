@@ -46,7 +46,7 @@ static_assert((kBitMaskTime | kBitMaskClosed) == ~0ULL, "bad bitmasks");
 
 GpioPin::GpioPin(uint8_t pin, PinInterface& pinInterface, Microseconds debounceDuration, bool closedIsHigh)
     : pinInterface_(pinInterface),
-      queue_(xQueueCreate(/*num_queue_items=*/16, /*queue_item_size=*/sizeof(uint64_t))),
+      queue_(xQueueCreate(/*numQueueItems=*/16, /*queueItemSize=*/sizeof(uint64_t))),
       pin_(pin),
       debounceDuration_(debounceDuration),
       closedIsHigh_(closedIsHigh) {
@@ -157,7 +157,7 @@ void GpioPin::RunLoop() {
     uint64_t state = static_cast<uint64_t>(currentTime64);
     state &= kBitMaskTime;
     if (liveIsClosed) { state |= kBitMaskClosed; }
-    xQueueSendToBack(queue_, &state, /*wait_time=*/0);
+    xQueueSendToBack(queue_, &state, /*waitTime=*/0);
     RunLoop();
     return;
   }

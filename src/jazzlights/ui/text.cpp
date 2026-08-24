@@ -89,13 +89,13 @@ constexpr size_t kCharacterMapSize = sizeof(kCharacterMap) / sizeof(kCharacterMa
 // Useful debugging string:
 // "A !B\"C#D%E'F(G)H*I+,J-K.L/M:N;O<P=Q>?R[S\\T]U^V_W`X{Y|Z}0~123456789"
 
-CharacterPixels getCharacterPixels(char character) {
-  if (character == '\t' || character == '\n') { return getCharacterPixels('\0'); }
-  if ('a' <= character && character <= 'z') { return getCharacterPixels(character - 'a' + 'A'); }
+CharacterPixels GetCharacterPixels(char character) {
+  if (character == '\t' || character == '\n') { return GetCharacterPixels('\0'); }
+  if ('a' <= character && character <= 'z') { return GetCharacterPixels(character - 'a' + 'A'); }
   for (size_t i = 0; i < kCharacterMapSize; i++) {
     if (kCharacterMap[i].character == character) { return kCharacterMap[i]; }
   }
-  return getCharacterPixels('?');
+  return GetCharacterPixels('?');
 }
 
 void writeColumn(const CharacterPixels& characterPixels, uint8_t characterColumnFromRight, uint8_t pixelColumnFromRight,
@@ -127,7 +127,7 @@ bool displayText(const std::string& text, CRGB pixels[MATRIX_SIZE], CRGB textCol
       break;
     }
     if (textIndex >= text.size()) { return false; }
-    CharacterPixels cp = getCharacterPixels(text[textIndex]);
+    CharacterPixels cp = GetCharacterPixels(text[textIndex]);
     textIndex++;
     const size_t characterEndColumn = columns + cp.width - 1;
     columns += cp.width + 1;  // +1 is for inter-character gap.

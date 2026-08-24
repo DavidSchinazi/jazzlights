@@ -29,10 +29,10 @@ void TouchButton::SetLabelText(const char* label) {
   Paint();
 }
 
-void TouchButton::SetLabelDatum(int16_t x_delta, int16_t y_delta, lgfx::textdatum::textdatum_t datum) {
-  lgfxButton_.setLabelDatum(x_delta, y_delta, datum);
-  dx_ = x_delta;
-  dy_ = y_delta;
+void TouchButton::SetLabelDatum(int16_t xDelta, int16_t yDelta, lgfx::textdatum::textdatum_t datum) {
+  lgfxButton_.setLabelDatum(xDelta, yDelta, datum);
+  dx_ = xDelta;
+  dy_ = yDelta;
   Paint();
 }
 

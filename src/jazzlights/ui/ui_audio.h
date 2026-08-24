@@ -26,18 +26,18 @@ class AudioVisualizerUi : public Esp32Ui {
   void RunLoop() override;
 
  private:
-  int screen_width_;
-  int screen_height_;
+  int screenWidth_;
+  int screenHeight_;
   enum class VisualizationMode { kMenu, kSpectrum, kWaveform, kBrightnessKeypad, kPaletteMenu };
-  VisualizationMode visualization_mode_ = VisualizationMode::kSpectrum;
-  int keypad_value_ = 0;
+  VisualizationMode visualizationMode_ = VisualizationMode::kSpectrum;
+  int keypadValue_ = 0;
   bool keypad_has_value_ = false;
-  std::vector<float> waveform_buffer_;
-  std::vector<bool> beat_buffer_;
-  int waveform_index_ = 0;
-  OptionalMicroseconds last_waveform_update_;
-  bool showing_no_audio_data_ = false;
-  bool showing_squelch_ = false;
+  std::vector<float> waveformBuffer_;
+  std::vector<bool> beatBuffer_;
+  int waveformIndex_ = 0;
+  OptionalMicroseconds lastWaveformUpdate_;
+  bool showingNoAudioData_ = false;
+  bool showingSquelch_ = false;
 };
 
 }  // namespace jazzlights

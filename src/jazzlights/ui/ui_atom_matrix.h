@@ -22,7 +22,7 @@ class AtomMatrixUi : public Esp32Ui, public GpioButton::ButtonInterface {
   void InitialSetup() override;
   void FinalSetup() override;
   void RunLoop() override;
-  void set_fastled_runner(FastLedRunner* runner) override { runner_ = runner; }
+  void SetFastLedRunner(FastLedRunner* runner) override { runner_ = runner; }
   // From GpioButton::ButtonInterface.
   void ShortPress(uint8_t pin) override;
   void LongPress(uint8_t pin) override;

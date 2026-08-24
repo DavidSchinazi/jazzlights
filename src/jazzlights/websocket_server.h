@@ -36,14 +36,14 @@ class WebSocketServer : public Player::StatusWatcher {
   void ShareStatus(AsyncWebSocketClient* client);
   class WebSocket : public AsyncWebSocket {
    public:
-    explicit WebSocket(const String& url, WebSocketServer* websocket_server)
-        : AsyncWebSocket(url), websocket_server_(websocket_server) {}
+    explicit WebSocket(const String& url, WebSocketServer* webSocketServer)
+        : AsyncWebSocket(url), webSocketServer_(webSocketServer) {}
 
     static void EventHandler(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType type, void* arg,
                              uint8_t* data, size_t len);
 
    private:
-    WebSocketServer* websocket_server_;  // Unowned.
+    WebSocketServer* webSocketServer_;  // Unowned.
   };
   // Prevent the WebSocketServer from sending any updates while this object is in scope. This avoids sending
   // repeated updates while changing multiple fields in response to a message. If any updates are attempted while the
@@ -57,7 +57,7 @@ class WebSocketServer : public Player::StatusWatcher {
     WebSocketServer* server_;
   };
   AsyncWebServer server_;
-  WebSocket web_socket_;
+  WebSocket webSocket_;
   Player& player_;
   bool started_ = false;
   enum class PausedUpdateState {
@@ -66,8 +66,8 @@ class WebSocketServer : public Player::StatusWatcher {
     kPausedUpdateOneClient = 2,
     kPausedUpdateAllClients = 3,
   };
-  PausedUpdateState paused_update_state_ = PausedUpdateState::kOpen;
-  AsyncWebSocketClient* client_to_update_ = nullptr;
+  PausedUpdateState pausedUpdateState_ = PausedUpdateState::kOpen;
+  AsyncWebSocketClient* clientToUpdate_ = nullptr;
 };
 
 }  // namespace jazzlights

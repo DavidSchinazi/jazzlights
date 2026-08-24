@@ -121,11 +121,11 @@ bool StepperMotor::Setup(std::optional<int32_t> frequencyHz) {
   };
   ESP_ERROR_CHECK(mcpwm_new_generator(oper_, &genConfig, &generator_));
 
-  mcpwm_comparator_config_t comparator_config = {
+  mcpwm_comparator_config_t comparatorConfig = {
       .intr_priority = 0,
       .flags = {.update_cmp_on_tez = true},
   };
-  ESP_ERROR_CHECK(mcpwm_new_comparator(oper_, &comparator_config, &comparator_));
+  ESP_ERROR_CHECK(mcpwm_new_comparator(oper_, &comparatorConfig, &comparator_));
   ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(comparator_, halfPeriod));
   ESP_ERROR_CHECK(mcpwm_generator_set_action_on_timer_event(
       generator_,

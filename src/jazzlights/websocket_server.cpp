@@ -15,7 +15,7 @@ static void sNotFoundHandler(AsyncWebServerRequest* request) {
   request->send(404, "text/plain", String("Not found nope for ") + request->url());
 }
 
-unsigned int id(AsyncWebSocketClient* client) {
+unsigned int Id(AsyncWebSocketClient* client) {
   if (client == nullptr) { return 0; }
   return static_cast<unsigned int>(client->id());
 }
@@ -40,45 +40,45 @@ enum WSStatusFlag : uint8_t {
 // static
 void WebSocketServer::WebSocket::EventHandler(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType type,
                                               void* arg, uint8_t* data, size_t len) {
-  WebSocket* web_socket = static_cast<WebSocket*>(server);
+  WebSocket* webSocket = static_cast<WebSocket*>(server);
   switch (type) {
     case WS_EVT_CONNECT:
-      jll_info("WebSocket client #%u connected from %s:%u", id(client), client->remoteIP().toString().c_str(),
+      jll_info("WebSocket client #%u connected from %s:%u", Id(client), client->remoteIP().toString().c_str(),
                client->remotePort());
       break;
-    case WS_EVT_DISCONNECT: jll_info("WebSocket client #%u disconnected", id(client)); break;
+    case WS_EVT_DISCONNECT: jll_info("WebSocket client #%u disconnected", Id(client)); break;
     case WS_EVT_DATA: {
       AwsFrameInfo* info = reinterpret_cast<AwsFrameInfo*>(arg);
       if (info->final && info->index == 0 && info->len == len) {
         jll_info("WebSocket received unfragmented %s message of length %llu from client #%u ",
-                 ((info->opcode == WS_TEXT) ? "text" : "binary"), info->len, id(client));
-        web_socket->websocket_server_->HandleMessage(client, data, len);
+                 ((info->opcode == WS_TEXT) ? "text" : "binary"), info->len, Id(client));
+        webSocket->webSocketServer_->HandleMessage(client, data, len);
       } else {
         jll_info("WebSocket received fragmented %s message at index %llu of length %llu with%s FIN from client #%u",
                  ((info->opcode == WS_TEXT) ? "text" : "binary"), info->index, info->len, (info->final ? "" : "out"),
-                 id(client));
+                 Id(client));
         // TODO buffer and handle fragmented messages.
       }
     } break;
     case WS_EVT_PONG:
       jll_info("WebSocket received pong of length %u: %s from  client #%u", len,
-               (len ? reinterpret_cast<char*>(data) : "<empty>"), id(client));
+               (len ? reinterpret_cast<char*>(data) : "<empty>"), Id(client));
       break;
     case WS_EVT_ERROR:
       jll_info("WebSocket received error[%u]: %s from client #%u", *reinterpret_cast<uint16_t*>(arg),
-               reinterpret_cast<char*>(data), id(client));
+               reinterpret_cast<char*>(data), Id(client));
       break;
   }
 }
 
 void WebSocketServer::HandleMessage(AsyncWebSocketClient* client, uint8_t* data, size_t len) {
   jll_info("Handling WebSocket message of length %zu first byte %u from client #%u", len, (len > 0 ? data[0] : 0),
-           id(client));
+           Id(client));
   ScopedUpdatePauser pauser(this);
   if (len == 0) { return; }
   switch (static_cast<WSType>(data[0])) {
     case WSType::kStatusRequest: {
-      jll_info("Got WebSocket status request from client #%u", id(client));
+      jll_info("Got WebSocket status request from client #%u", Id(client));
       ShareStatus(client);
     } break;
     case WSType::kStatusSetOn: {
@@ -87,7 +87,7 @@ void WebSocketServer::HandleMessage(AsyncWebSocketClient* client, uint8_t* data,
         break;
       }
       bool enabled = (data[1] & kWSStatusFlagOn) != 0;
-      jll_info("Got turn %s WebSocket request from client #%u", (enabled ? "on" : "off"), id(client));
+      jll_info("Got turn %s WebSocket request from client #%u", (enabled ? "on" : "off"), Id(client));
       player_.SetEnabled(enabled);
       if (!enabled) {
         // Reset to default parameters when turned off.
@@ -102,7 +102,7 @@ void WebSocketServer::HandleMessage(AsyncWebSocketClient* client, uint8_t* data,
         break;
       }
       uint8_t brightness = data[1];
-      jll_info("Got WebSocket brightness=%u request from client #%u", brightness, id(client));
+      jll_info("Got WebSocket brightness=%u request from client #%u", brightness, Id(client));
       player_.SetEnabled(true);
       player_.SetBrightness(brightness);
       ShareStatus(client);
@@ -115,19 +115,19 @@ void WebSocketServer::HandleMessage(AsyncWebSocketClient* client, uint8_t* data,
       uint8_t r = data[1];
       uint8_t g = data[2];
       uint8_t b = data[3];
-      jll_info("Got WebSocket color=%02x%02x%02x request from client #%u", r, g, b, id(client));
+      jll_info("Got WebSocket color=%02x%02x%02x request from client #%u", r, g, b, Id(client));
       player_.SetEnabled(true);
       player_.EnableColorOverride(CRGB(r, g, b));
       ShareStatus(client);
     } break;
     case WSType::kStatusSetEffect: {
-      jll_info("Got WebSocket effect request from client #%u", id(client));
+      jll_info("Got WebSocket effect request from client #%u", Id(client));
       player_.SetEnabled(true);
       player_.DisableColorOverride();
       ShareStatus(client);
     } break;
     case WSType::kStatusNextPattern: {
-      jll_info("Got WebSocket CloudNextPatern request from client #%u", id(client));
+      jll_info("Got WebSocket CloudNextPatern request from client #%u", Id(client));
       player_.CloudNext();
       ShareStatus(client);
     } break;
@@ -135,20 +135,20 @@ void WebSocketServer::HandleMessage(AsyncWebSocketClient* client, uint8_t* data,
 }
 
 void WebSocketServer::PauseUpdates() {
-  if (paused_update_state_ != PausedUpdateState::kOpen) { jll_fatal("Tried to double pause WebSocketServer updates"); }
-  paused_update_state_ = PausedUpdateState::kPausedNoUpdate;
+  if (pausedUpdateState_ != PausedUpdateState::kOpen) { jll_fatal("Tried to double pause WebSocketServer updates"); }
+  pausedUpdateState_ = PausedUpdateState::kPausedNoUpdate;
   jll_debug("Pausing WebSocketServer updates");
 }
 
 void WebSocketServer::ResumeUpdates() {
-  PausedUpdateState previous_state = paused_update_state_;
-  paused_update_state_ = PausedUpdateState::kOpen;
-  switch (previous_state) {
+  PausedUpdateState previousState = pausedUpdateState_;
+  pausedUpdateState_ = PausedUpdateState::kOpen;
+  switch (previousState) {
     case PausedUpdateState::kOpen: jll_fatal("Tried to resume non-paused WebSocketServer updates"); break;
     case PausedUpdateState::kPausedNoUpdate: jll_debug("Resuming WebSocketServer updates with none pending"); break;
     case PausedUpdateState::kPausedUpdateOneClient:
-      jll_debug("Resuming WebSocketServer updates with pending to client #%u", id(client_to_update_));
-      ShareStatus(client_to_update_);
+      jll_debug("Resuming WebSocketServer updates with pending to client #%u", Id(clientToUpdate_));
+      ShareStatus(clientToUpdate_);
       break;
     case PausedUpdateState::kPausedUpdateAllClients:
       jll_debug("Resuming WebSocketServer updates with pending to all clients");
@@ -156,25 +156,25 @@ void WebSocketServer::ResumeUpdates() {
       break;
     default:
       jll_fatal("Tried to resume WebSocketServer updates from unexpected state %d",
-                static_cast<int>(paused_update_state_));
+                static_cast<int>(pausedUpdateState_));
       break;
   }
-  client_to_update_ = nullptr;
+  clientToUpdate_ = nullptr;
 }
 
 void WebSocketServer::ShareStatus(AsyncWebSocketClient* client) {
-  if (paused_update_state_ != PausedUpdateState::kOpen) {
+  if (pausedUpdateState_ != PausedUpdateState::kOpen) {
     if (client == nullptr) {
-      paused_update_state_ = PausedUpdateState::kPausedUpdateAllClients;
-      client_to_update_ = nullptr;
-    } else if (paused_update_state_ == PausedUpdateState::kPausedNoUpdate) {
-      paused_update_state_ = PausedUpdateState::kPausedUpdateOneClient;
-      client_to_update_ = client;
-    } else if (paused_update_state_ == PausedUpdateState::kPausedUpdateOneClient && client_to_update_ != client) {
-      paused_update_state_ = PausedUpdateState::kPausedUpdateAllClients;
-      client_to_update_ = nullptr;
+      pausedUpdateState_ = PausedUpdateState::kPausedUpdateAllClients;
+      clientToUpdate_ = nullptr;
+    } else if (pausedUpdateState_ == PausedUpdateState::kPausedNoUpdate) {
+      pausedUpdateState_ = PausedUpdateState::kPausedUpdateOneClient;
+      clientToUpdate_ = client;
+    } else if (pausedUpdateState_ == PausedUpdateState::kPausedUpdateOneClient && clientToUpdate_ != client) {
+      pausedUpdateState_ = PausedUpdateState::kPausedUpdateAllClients;
+      clientToUpdate_ = nullptr;
     }
-    jll_debug("Skipping WebSocket update to client #%u because we are paused", id(client));
+    jll_debug("Skipping WebSocket update to client #%u because we are paused", Id(client));
     return;
   }
   if (player_.colorOverridden()) {
@@ -182,13 +182,13 @@ void WebSocketServer::ShareStatus(AsyncWebSocketClient* client) {
              (player_.enabled() ? "on" : "off"), player_.brightness(), player_.colorOverride().r,
              player_.colorOverride().g,
 
-             player_.colorOverride().b, id(client));
+             player_.colorOverride().b, Id(client));
   } else {
     jll_info("WebSocket sending status %s brightness=%u to client #%u", (player_.enabled() ? "on" : "off"),
-             player_.brightness(), id(client));
+             player_.brightness(), Id(client));
   }
   uint8_t response[6] = {};
-  size_t response_length = 3;
+  size_t responseLength = 3;
   response[0] = static_cast<uint8_t>(WSType::kStatusShare);
   if (player_.enabled()) { response[1] |= kWSStatusFlagOn; }
   response[2] = player_.brightness();
@@ -197,19 +197,19 @@ void WebSocketServer::ShareStatus(AsyncWebSocketClient* client) {
     response[3] = player_.colorOverride().r;
     response[4] = player_.colorOverride().g;
     response[5] = player_.colorOverride().b;
-    response_length += 3;
+    responseLength += 3;
   }
   if (client != nullptr) {
-    client->binary(&response[0], response_length);
+    client->binary(&response[0], responseLength);
   } else {
-    web_socket_.binaryAll(&response[0], response_length);
+    webSocket_.binaryAll(&response[0], responseLength);
   }
 }
 
 void WebSocketServer::OnStatus() { ShareStatus(nullptr); }
 
 WebSocketServer::WebSocketServer(uint16_t port, Player& player)
-    : server_(port), web_socket_("/jazzlights-websocket", this), player_(player) {}
+    : server_(port), webSocket_("/jazzlights-websocket", this), player_(player) {}
 
 void WebSocketServer::Start() {
   if (started_) { return; }
@@ -228,8 +228,8 @@ void WebSocketServer::Start() {
 
   server_.onNotFound(sNotFoundHandler);
 
-  web_socket_.onEvent(WebSocket::EventHandler);
-  server_.addHandler(&web_socket_);
+  webSocket_.onEvent(WebSocket::EventHandler);
+  server_.addHandler(&webSocket_);
 
   server_.begin();
   jll_info("Initialized WebSocketServer");

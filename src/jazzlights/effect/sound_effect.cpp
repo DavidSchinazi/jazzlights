@@ -240,11 +240,11 @@ ColorWithPalette SoundEffect::InnerColor(const Frame& frame, const Pixel& px, So
     color = ColorFromSoundReactivePalette(ocp, colorIdx);
   }
 
-  // Get magnitude for this band (expected to be roughly between agc_min and agc_max)
-  float range = state->audioData.agc_max - state->audioData.agc_min;
+  // Get magnitude for this band (expected to be roughly between agcMin and agcMax)
+  float range = state->audioData.agcMax - state->audioData.agcMin;
   if (range < 1.0f) range = 1.0f;
 
-  normalizedMag = (magnitude - state->audioData.agc_min) / range;
+  normalizedMag = (magnitude - state->audioData.agcMin) / range;
   if (normalizedMag < 0) normalizedMag = 0;
   if (normalizedMag > 1.0f) normalizedMag = 1.0f;
   // Boost smaller changes to make them more visible

@@ -25,7 +25,7 @@ void InitializeNetStack() {
 }
 
 void InstallGpioIsrService() {
-  JL_RUN_ONCE({ ESP_ERROR_CHECK(gpio_install_isr_service(/*intr_alloc_flags=*/0)); });
+  JL_RUN_ONCE({ ESP_ERROR_CHECK(gpio_install_isr_service(/*intrAllocFlags=*/0)); });
 }
 
 }  // namespace jazzlights

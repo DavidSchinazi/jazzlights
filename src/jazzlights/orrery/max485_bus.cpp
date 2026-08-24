@@ -104,16 +104,16 @@ void Max485BusHandler::TaskFunction(void* parameters) {
 }
 
 void Max485BusHandler::SendToUart(BufferViewU8 encodedData) {
-  int bytes_written = uart_write_bytes(uartPort_, reinterpret_cast<const char*>(&encodedData[0]), encodedData.size());
-  if (bytes_written > 0) {
-    if (static_cast<size_t>(bytes_written) == encodedData.size()) {
-      jll_max485_data("UART%d fully wrote %d bytes", uartPort_, bytes_written);
+  int bytesWritten = uart_write_bytes(uartPort_, reinterpret_cast<const char*>(&encodedData[0]), encodedData.size());
+  if (bytesWritten > 0) {
+    if (static_cast<size_t>(bytesWritten) == encodedData.size()) {
+      jll_max485_data("UART%d fully wrote %d bytes", uartPort_, bytesWritten);
     } else {
-      jll_buffer_error(encodedData, "UART%d partially wrote %d bytes", uartPort_, bytes_written);
+      jll_buffer_error(encodedData, "UART%d partially wrote %d bytes", uartPort_, bytesWritten);
       // If this happens in practice we'll need to handle partial writes more gracefully.
     }
   } else {
-    jll_buffer_error(encodedData, "UART%d got error %d trying to write", uartPort_, bytes_written);
+    jll_buffer_error(encodedData, "UART%d got error %d trying to write", uartPort_, bytesWritten);
   }
 }
 
@@ -212,7 +212,7 @@ void Max485BusHandler::Setup() {
   constexpr int kEventQueueSize = 16;
   constexpr int kBaudRate = 115200;
   ESP_ERROR_CHECK(uart_driver_install(uartPort_, kUartDriverBufferSize, kUartDriverBufferSize, kEventQueueSize, &queue_,
-                                      /*intr_alloc_flags=*/0));
+                                      /*intrAllocFlags=*/0));
   uart_config_t uart_config = {
       .baud_rate = kBaudRate,
       .data_bits = UART_DATA_8_BITS,

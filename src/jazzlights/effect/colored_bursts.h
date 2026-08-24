@@ -132,26 +132,26 @@ class ColoredBursts : public EffectWithPaletteXYIndexAndState<ColoredBurstsState
 
     for (int i = 1; i <= steps; i++) {
       int dx = x1 + (x2 - x1) * i / steps;
-      int dy = y1 + (y2 - y1) * i / steps;
-      Ps(f, dx, dy) += color;
-      if (state->grad) { Ps(f, dx, dy) %= (i * 255 / steps); }
+      int Dy = y1 + (y2 - y1) * i / steps;
+      Ps(f, dx, Dy) += color;
+      if (state->grad) { Ps(f, dx, Dy) %= (i * 255 / steps); }
       if (steppingX) {
         if (dx < x1 && dx < x2) {
-          Ps(f, dx + 1, dy) += color;
-          if (state->grad) { Ps(f, dx + 1, dy) %= (i * 255 / steps); }
+          Ps(f, dx + 1, Dy) += color;
+          if (state->grad) { Ps(f, dx + 1, Dy) %= (i * 255 / steps); }
         }
         if (dx > x1 && dx > x2) {
-          Ps(f, dx - 1, dy) += color;
-          if (state->grad) { Ps(f, dx - 1, dy) %= (i * 255 / steps); }
+          Ps(f, dx - 1, Dy) += color;
+          if (state->grad) { Ps(f, dx - 1, Dy) %= (i * 255 / steps); }
         }
       } else {
-        if (dy < y1 && dy < y2) {
-          Ps(f, dx, dy + 1) += color;
-          if (state->grad) { Ps(f, dx, dy + 1) %= (i * 255 / steps); }
+        if (Dy < y1 && Dy < y2) {
+          Ps(f, dx, Dy + 1) += color;
+          if (state->grad) { Ps(f, dx, Dy + 1) %= (i * 255 / steps); }
         }
-        if (dy > y1 && dy > y2) {
-          Ps(f, dx, dy - 1) += color;
-          if (state->grad) { Ps(f, dx, dy - 1) %= (i * 255 / steps); }
+        if (Dy > y1 && Dy > y2) {
+          Ps(f, dx, Dy - 1) += color;
+          if (state->grad) { Ps(f, dx, Dy - 1) %= (i * 255 / steps); }
         }
       }
     }

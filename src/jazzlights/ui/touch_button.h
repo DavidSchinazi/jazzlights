@@ -26,7 +26,7 @@ class TouchButton {
  public:
   // Modify text inside the button.
   void SetLabelText(const char* label);
-  void SetLabelDatum(int16_t x_delta, int16_t y_delta,
+  void SetLabelDatum(int16_t xDelta, int16_t yDelta,
                      lgfx::textdatum::textdatum_t datum = lgfx::textdatum::textdatum_t::middle_center);
 
   // `Draw()` unhides a button and paints it if needed. `force` ensures that paint always happens.

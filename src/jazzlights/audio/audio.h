@@ -27,18 +27,18 @@ class Audio {
   struct VisualizerData {
     float bands[kNumBands];
     float peaks[kNumBands];
-    float agc_min;
-    float agc_max;
+    float agcMin;
+    float agcMax;
     float volume;
     bool beat;
     bool squelch;
-    OptionalMicroseconds last_read_time;
+    OptionalMicroseconds lastReadTime;
   };
 
   void GetVisualizerData(VisualizerData* data);
 
-  bool IsAgcEnabled() const { return agc_enabled_; }
-  void SetAgcEnabled(bool enabled) { agc_enabled_ = enabled; }
+  bool IsAgcEnabled() const { return agcEnabled_; }
+  void SetAgcEnabled(bool enabled) { agcEnabled_ = enabled; }
 
  private:
   Audio() = default;
@@ -46,36 +46,36 @@ class Audio {
   void Initialize();
   void ReadAndProcessAudio();
 
-  std::mutex audio_data_mutex_;
-  TaskHandle_t audio_task_handle_ = nullptr;
-  i2s_chan_handle_t rx_handle_ = nullptr;
+  std::mutex audioDataMutex_;
+  TaskHandle_t audioTaskHandle_ = nullptr;
+  i2s_chan_handle_t rxHandle_ = nullptr;
 
-  float band_magnitudes_[kNumBands] = {0};
-  float peak_magnitudes_[kNumBands] = {0};
-  float agc_min_ = 40.0f;
-  float agc_max_ = 100.0f;
-  bool agc_enabled_ = false;
-  float squelch_threshold_ = 75.0f;
+  float bandMagnitudes_[kNumBands] = {0};
+  float peakMagnitudes_[kNumBands] = {0};
+  float agcMin_ = 40.0f;
+  float agcMax_ = 100.0f;
+  bool agcEnabled_ = false;
+  float squelchThreshold_ = 75.0f;
   float volume_ = 0;
   bool beat_ = false;
-  bool is_squelched_ = false;
-  Microseconds last_beat_time_ = 0;
-  float prev_bands_[8] = {0};
-  float prev_sample_ = 0;
-  OptionalMicroseconds last_read_time_;
+  bool isSquelched_ = false;
+  Microseconds lastBeatTime_ = 0;
+  float prevBands_[8] = {0};
+  float prevSample_ = 0;
+  OptionalMicroseconds lastReadTime_;
 
-  int16_t* audio_buffer_ = nullptr;
-  float* fft_input_ = nullptr;
-  float* fft_output_ = nullptr;
-  float* fft_window_ = nullptr;
+  int16_t* audioBuffer_ = nullptr;
+  float* fftInput_ = nullptr;
+  float* fftOutput_ = nullptr;
+  float* fftWindow_ = nullptr;
 
   static constexpr int kAgcWindowSize = 312;  // ~5 seconds at 16ms per sample
-  float agc_buffer_[kAgcWindowSize] = {0};
-  int agc_index_ = 0;
+  float agcBuffer_[kAgcWindowSize] = {0};
+  int agcIndex_ = 0;
 
   static constexpr int kBeatWindowSize = 60;  // ~1 second at 16ms per sample
-  float beat_buffer_[kBeatWindowSize] = {0};
-  int beat_index_ = 0;
+  float beatBuffer_[kBeatWindowSize] = {0};
+  int beatIndex_ = 0;
 };
 
 }  // namespace jazzlights
