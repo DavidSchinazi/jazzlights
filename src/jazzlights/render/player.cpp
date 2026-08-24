@@ -652,7 +652,7 @@ void Player::LogFpsReport() {
   Microseconds timeSpentComputingThisEpoch;
   Microseconds epochDuration;
   GenerateFPSReport(&fpsCompute, &fpsWrites, &utilization, &timeSpentComputingThisEpoch, &epochDuration);
-  jll_protocol_info("computed %u FPS wrote %u FPS %u%% %lld/%lldms", fpsCompute, fpsWrites, utilization,
+  jll_protocol_info("Computed %u FPS wrote %u FPS %u%% %lld/%lldms", fpsCompute, fpsWrites, utilization,
                     MsForLogs(timeSpentComputingThisEpoch), MsForLogs(epochDuration));
   printInstrumentationInfo();
 }
