@@ -36,14 +36,14 @@ class FastLedRenderer : public Renderer {
         numLeds, [](CRGB* leds, size_t num) { return &FastLED.addLeds<CHIPSET, DATA_PIN, RGB_ORDER>(leds, num); }));
   }
 
-  void renderPixel(size_t index, CRGB color) override;
+  void RenderPixel(size_t index, CRGB color) override;
 
   uint32_t GetPowerAtFullBrightness() const;
 
-  void copyLedsFromPlayerToLocked();
-  bool copyLedsFromLockedToFastLed();
+  void CopyLedsFromPlayerToLocked();
+  bool CopyLedsFromLockedToFastLed();
 
-  void sendToLeds(uint8_t brightness = 255);
+  void SendToLeds(uint8_t brightness = 255);
 
   void Setup() {
     // We use a lambda here in order to ensure that the call to FastLED.addLeds() happens on the FastLED task.

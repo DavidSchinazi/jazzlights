@@ -60,7 +60,7 @@ void AtomS3Ui::Display(const DisplayContents& contents) {
     } break;
     case DisplayContents::Mode::kNext: {
       DisplayCenteredText("Next", ::WHITE, ::BLUE);
-      M5.Display.drawCenterString(patternName(contents.c.next.currentEffect, player_).c_str(), /*x=*/64, /*y=*/80,
+      M5.Display.drawCenterString(PatternName(contents.c.next.CurrentEffect, player_).c_str(), /*x=*/64, /*y=*/80,
                                   &fonts::Font2);
     } break;
     case DisplayContents::Mode::kLoop: {
@@ -83,7 +83,7 @@ void AtomS3Ui::UpdateScreen() {
   switch (menuMode_) {
     case MenuMode::kNext: {
       contents = DisplayContents(DisplayContents::Mode::kNext);
-      contents.c.next.currentEffect = player_.currentEffect();
+      contents.c.next.CurrentEffect = player_.CurrentEffect();
     } break;
     case MenuMode::kLoop: {
       contents = DisplayContents(DisplayContents::Mode::kLoop);
@@ -181,23 +181,23 @@ void AtomS3Ui::ShortPress(uint8_t pin) {
   switch (menuMode_) {
     case MenuMode::kNext:
       jll_info("Next button has been hit");
-      player_.stopSpecial();
-      player_.stopLooping();
-      player_.next();
+      player_.StopSpecial();
+      player_.StopLooping();
+      player_.Next();
       break;
     case MenuMode::kLoop:
       jll_info("Loop button has been hit");
-      player_.stopSpecial();
-      player_.loopOne();
+      player_.StopSpecial();
+      player_.LoopOne();
       break;
     case MenuMode::kBrightness:
       brightnessCursor_ = (brightnessCursor_ + 1 < kNumBrightnesses) ? brightnessCursor_ + 1 : 0;
       jll_info("Brightness button has been hit %u", kBrightnessList[brightnessCursor_]);
-      player_.set_brightness(kBrightnessList[brightnessCursor_]);
+      player_.SetBrightness(kBrightnessList[brightnessCursor_]);
       break;
     case MenuMode::kSpecial:
       jll_info("Special button has been hit");
-      player_.handleSpecial();
+      player_.HandleSpecial();
       break;
   }
   UpdateScreen();
@@ -238,7 +238,7 @@ AtomS3Ui::DisplayContents& AtomS3Ui::DisplayContents::operator=(const DisplayCon
     case Mode::kOff: break;
     case Mode::kLockedShort: break;
     case Mode::kLockedLong: break;
-    case Mode::kNext: c.next.currentEffect = other.c.next.currentEffect; break;
+    case Mode::kNext: c.next.CurrentEffect = other.c.next.CurrentEffect; break;
     case Mode::kLoop: break;
     case Mode::kBrightness: c.brightness.brightness = other.c.brightness.brightness; break;
     case Mode::kSpecial: break;
@@ -254,7 +254,7 @@ bool AtomS3Ui::DisplayContents::operator==(const DisplayContents& other) const {
     case Mode::kLockedShort: return true;
     case Mode::kLockedLong: return true;
     case Mode::kNext:
-      if (c.next.currentEffect != other.c.next.currentEffect) { return false; }
+      if (c.next.CurrentEffect != other.c.next.CurrentEffect) { return false; }
       return true;
     case Mode::kLoop: return true;
     case Mode::kBrightness:

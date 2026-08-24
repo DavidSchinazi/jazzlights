@@ -37,10 +37,10 @@ void onResize(GLFWwindow*, int winWidth, int winHeight) {
 
 void onKey(GLFWwindow* window, int key, int /*scncode*/, int action, int mods) {
   if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
-    player->loopOne();
+    player->LoopOne();
   } else if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
-    player->stopLooping();
-    player->next();
+    player->StopLooping();
+    player->Next();
   } else if (key == GLFW_KEY_0 && action == GLFW_PRESS && (mods & GLFW_MOD_SHIFT)) {
   } else if (key == GLFW_KEY_ESCAPE || (key == GLFW_KEY_C && (mods & GLFW_MOD_CONTROL))) {
     glfwSetWindowShouldClose(window, GL_TRUE);
@@ -91,9 +91,9 @@ int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen, Opt
     }
     glClear(GL_COLOR_BUFFER_BIT);
 
-    player->render();
+    player->Render();
     std::ostringstream title;
-    title << "jazzlights-demo-" << REVISION << " " << player->currentEffectName();
+    title << "jazzlights-demo-" << REVISION << " " << player->CurrentEffectName();
     glfwSetWindowTitle(window, title.str().c_str());
 
     glfwSwapBuffers(window);

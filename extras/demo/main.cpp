@@ -29,14 +29,14 @@ int runMain(int argc, char** argv) {
   Matrix layout(/*w=*/400, /*h=*/300);
   GLRenderer renderer(layout);
   Player player;
-  player.setBasePrecedence(30000);
-  player.setPrecedenceGain(5000);
-  player.addStrand(layout, renderer);
-  player.setRandomizeLocalDeviceId(true);
-  player.connect(UnixUdpNetwork::get());
-  player.begin();
-  if (startLooping) { player.loopOne(); }
-  if (shouldSetPattern) { player.setPattern(pattern); }
+  player.SetBasePrecedence(30000);
+  player.SetPrecedenceGain(5000);
+  player.AddStrand(layout, renderer);
+  player.SetRandomizeLocalDeviceId(true);
+  player.Connect(UnixUdpNetwork::get());
+  player.Begin();
+  if (startLooping) { player.LoopOne(); }
+  if (shouldSetPattern) { player.SetPattern(pattern); }
 
   return runGui("JazzLights Demo", player, player.bounds(), /*fullscreen=*/false, killTime);
 }

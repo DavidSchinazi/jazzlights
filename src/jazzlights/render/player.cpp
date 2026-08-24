@@ -14,13 +14,13 @@
 #include "jazzlights/effect/glitter.h"
 #include "jazzlights/effect/glow.h"
 #include "jazzlights/effect/hiphotic.h"
+#include "jazzlights/effect/sound_effect.h"
 #include "jazzlights/effect/mapping.h"
 #include "jazzlights/effect/metaballs.h"
 #include "jazzlights/effect/planet.h"
 #include "jazzlights/effect/plasma.h"
 #include "jazzlights/effect/rings.h"
 #include "jazzlights/effect/solid.h"
-#include "jazzlights/effect/sound_effect.h"
 #include "jazzlights/effect/sync_test.h"
 #include "jazzlights/effect/the_matrix.h"
 #include "jazzlights/effect/threesine.h"
@@ -64,52 +64,52 @@ constexpr PatternBits kCreaturePattern = 0x0000FF00;
 #endif
 }  // namespace
 
-static constexpr CRGB warmColor() {
+static constexpr CRGB WarmColor() {
   // Based on the example values from:
   // https://www.usuallypragmatic.com/projects/Generating-Color-Temperature-Equivalent-Light-with-RGB-LEDs.html
   return CRGB(255, 67, 5);
 }
 
-static const Effect* patternFromBits(PatternBits pattern, const Player& player) {
+static const Effect* PatternFromBits(PatternBits pattern, const Player& player) {
   // Static definitions of all patterns.
-  static const SpinPlasma spin_pattern;
-  static const Hiphotic hiphotic_pattern;
-  static const Metaballs metaballs_pattern;
-  static const ColoredBursts colored_bursts_pattern;
-  static const Flame flame_pattern;
-  static const Glitter glitter_pattern;
-  static const TheMatrix thematrix_pattern;
-  static const Rings rings_pattern;
+  static const SpinPlasma kSpinPattern;
+  static const Hiphotic kHiphoticPattern;
+  static const Metaballs kMetaballsPattern;
+  static const ColoredBursts kColoredBurstsPattern;
+  static const Flame kFlamePattern;
+  static const Glitter kGlitterPattern;
+  static const TheMatrix kTheMatrixPattern;
+  static const Rings kRingsPattern;
 #if JL_AUDIO_VISUALIZER
-  static const SoundEffect sound_effect;
+  static const SoundEffect kSoundEffect;
 #endif  // JL_AUDIO_VISUALIZER
-  static const FunctionalEffect threesine_pattern = threesine();
-  static const FunctionalEffect follow_strand_effect = follow_strand();
-  static const FunctionalEffect mapping_effect = mapping();
-  static const FunctionalEffect coloring_effect = coloring();
-  static const FunctionalEffect calibration_effect = calibration();
-  static const FunctionalEffect sync_test_effect = sync_test();
-  static const FunctionalEffect black_effect = solid(CRGB::Black, "black");
-  static const FunctionalEffect red_effect = solid(CRGB::Red, "red");
-  static const FunctionalEffect green_effect = solid(CRGB::Green, "green");
-  static const FunctionalEffect blue_effect = solid(CRGB::Blue, "blue");
-  static const FunctionalEffect purple_effect = solid(CRGB::Purple, "purple");
-  static const FunctionalEffect cyan_effect = solid(CRGB::Cyan, "cyan");
-  static const FunctionalEffect yellow_effect = solid(CRGB::Yellow, "yellow");
-  static const FunctionalEffect white_effect = solid(CRGB::White, "white");
-  static const FunctionalEffect warm_effect = solid(warmColor(), "warm");
-  static const FunctionalEffect red_glow_effect = glow(CRGB::Red, "glow-red");
-  static const FunctionalEffect green_glow_effect = glow(CRGB::Green, "glow-green");
-  static const FunctionalEffect blue_glow_effect = glow(CRGB::Blue, "glow-blue");
-  static const FunctionalEffect purple_glow_effect = glow(CRGB::Purple, "glow-purple");
-  static const FunctionalEffect cyan_glow_effect = glow(CRGB::Cyan, "glow-cyan");
-  static const FunctionalEffect yellow_glow_effect = glow(CRGB::Yellow, "glow-yellow");
-  static const FunctionalEffect white_glow_effect = glow(CRGB::White, "glow-white");
-  static const FunctionalEffect warm_glow_effect = glow(warmColor(), "glow-warm");
+  static const FunctionalEffect kThreesinePattern = threesine();
+  static const FunctionalEffect kFollowStrandEffect = follow_strand();
+  static const FunctionalEffect kMappingEffect = mapping();
+  static const FunctionalEffect kColoringEffect = coloring();
+  static const FunctionalEffect kCalibrationEffect = calibration();
+  static const FunctionalEffect kSyncTestEffect = sync_test();
+  static const FunctionalEffect kBlackEffect = solid(CRGB::Black, "black");
+  static const FunctionalEffect kRedEffect = solid(CRGB::Red, "red");
+  static const FunctionalEffect kGreenEffect = solid(CRGB::Green, "green");
+  static const FunctionalEffect kBlueEffect = solid(CRGB::Blue, "blue");
+  static const FunctionalEffect kPurpleEffect = solid(CRGB::Purple, "purple");
+  static const FunctionalEffect kCyanEffect = solid(CRGB::Cyan, "cyan");
+  static const FunctionalEffect kYellowEffect = solid(CRGB::Yellow, "yellow");
+  static const FunctionalEffect kWhiteEffect = solid(CRGB::White, "white");
+  static const FunctionalEffect kWarmEffect = solid(WarmColor(), "warm");
+  static const FunctionalEffect kRedGlowEffect = glow(CRGB::Red, "glow-red");
+  static const FunctionalEffect kGreenGlowEffect = glow(CRGB::Green, "glow-green");
+  static const FunctionalEffect kBlueGlowEffect = glow(CRGB::Blue, "glow-blue");
+  static const FunctionalEffect kPurpleGlowEffect = glow(CRGB::Purple, "glow-purple");
+  static const FunctionalEffect kCyanGlowEffect = glow(CRGB::Cyan, "glow-cyan");
+  static const FunctionalEffect kYellowGlowEffect = glow(CRGB::Yellow, "glow-yellow");
+  static const FunctionalEffect kWhiteGlowEffect = glow(CRGB::White, "glow-white");
+  static const FunctionalEffect kWarmGlowEffect = glow(WarmColor(), "glow-warm");
 #if JL_IS_CONFIG(CLOUDS)
-  static const Clouds clouds_effect = Clouds();
+  static const Clouds kCloudsEffect = Clouds();
 #elif JL_IS_CONFIG(CREATURE)
-  static const Creatures creatures_effect = Creatures();
+  static const Creatures kCreaturesEffect = Creatures();
 #endif
 
   // Pattern selection from bits.
@@ -124,51 +124,51 @@ static const Effect* patternFromBits(PatternBits pattern, const Player& player) 
     const uint8_t reserved_type = (pattern >> 4) & 0xF;
     if (reserved_type == 0x0) {
       switch ((pattern >> 8) & 0xFF) {
-        case 0x00: return &black_effect;
-        case 0x01: return &red_effect;
-        case 0x02: return &green_effect;
-        case 0x03: return &blue_effect;
-        case 0x04: return &purple_effect;
-        case 0x05: return &cyan_effect;
-        case 0x06: return &yellow_effect;
-        case 0x07: return &white_effect;
-        case 0x08: return &red_glow_effect;
-        case 0x09: return &green_glow_effect;
-        case 0x0A: return &blue_glow_effect;
-        case 0x0B: return &purple_glow_effect;
-        case 0x0C: return &cyan_glow_effect;
-        case 0x0D: return &yellow_glow_effect;
-        case 0x0E: return &white_glow_effect;
-        case 0x0F: return &sync_test_effect;
-        case 0x10: return &calibration_effect;
-        case 0x11: return &follow_strand_effect;
-        case 0x12: return &glitter_pattern;
-        case 0x13: return &thematrix_pattern;
-        case 0x14: return &threesine_pattern;
-        case 0x15: return &warm_effect;
-        case 0x16: return &warm_glow_effect;
+        case 0x00: return &kBlackEffect;
+        case 0x01: return &kRedEffect;
+        case 0x02: return &kGreenEffect;
+        case 0x03: return &kBlueEffect;
+        case 0x04: return &kPurpleEffect;
+        case 0x05: return &kCyanEffect;
+        case 0x06: return &kYellowEffect;
+        case 0x07: return &kWhiteEffect;
+        case 0x08: return &kRedGlowEffect;
+        case 0x09: return &kGreenGlowEffect;
+        case 0x0A: return &kBlueGlowEffect;
+        case 0x0B: return &kPurpleGlowEffect;
+        case 0x0C: return &kCyanGlowEffect;
+        case 0x0D: return &kYellowGlowEffect;
+        case 0x0E: return &kWhiteGlowEffect;
+        case 0x0F: return &kSyncTestEffect;
+        case 0x10: return &kCalibrationEffect;
+        case 0x11: return &kFollowStrandEffect;
+        case 0x12: return &kGlitterPattern;
+        case 0x13: return &kTheMatrixPattern;
+        case 0x14: return &kThreesinePattern;
+        case 0x15: return &kWarmEffect;
+        case 0x16: return &kWarmGlowEffect;
 #if JL_IS_CONFIG(ORRERY_PLANET)
         case 0xFE: return PlanetEffect::Get();
 #endif  // ORRERY_PLANET
         case 0xFF:
 #if JL_IS_CONFIG(CREATURE)
-          return &creatures_effect;
+          return &kCreaturesEffect;
 #else   // CREATURE
-          return &white_glow_effect;
+          return &kWhiteGlowEffect;
 #endif  // CREATURE
       }
     } else if (reserved_type == 0x1) {
-      return &mapping_effect;
+      return &kMappingEffect;
     } else if (reserved_type == 0x2) {
-      return &coloring_effect;
+      return &kColoringEffect;
     } else if (reserved_type == 0x3) {
       // Reserved effects that use a palette.
       switch ((pattern >> 8) & 0xF) {
         case 0x0:  // Use the pattern bits.
           if (PatternBit(pattern, 1)) {
-            return &metaballs_pattern;
+            return &kMetaballsPattern;
           } else {
-            return &colored_bursts_pattern;
+            return &kColoredBurstsPattern;
           }
           break;
         case 0xF:
@@ -181,30 +181,30 @@ static const Effect* patternFromBits(PatternBits pattern, const Player& player) 
     }
 #if JL_IS_CONFIG(CLOUDS)
     else if (reserved_type == 0xF) {
-      return &clouds_effect;
+      return &kCloudsEffect;
     }
 #endif  // CLOUDS
-    return &red_effect;
+    return &kRedEffect;
   } else {
 #if JL_AUDIO_VISUALIZER
-    if (player.sound_reactive_enabled()) { return &sound_effect; }
+    if (player.SoundReactiveEnabled()) { return &kSoundEffect; }
 #else   // JL_AUDIO_VISUALIZER
     (void)player;
 #endif  // JL_AUDIO_VISUALIZER
     if (PatternBit(pattern, 1)) {
       if (PatternBit(pattern, 2) && !player.isAllLinear()) {  // 11x - spin
-        return &spin_pattern;
+        return &kSpinPattern;
       } else {  // 10x - hiphotic
-        return &hiphotic_pattern;
+        return &kHiphoticPattern;
       }
     } else {
 #if JL_PLAYER_SKIP_FLAME
-      return &rings_pattern;
+      return &kRingsPattern;
 #else   // JL_PLAYER_SKIP_FLAME
       if (PatternBit(pattern, 2) && !player.isAllLinear()) {  // 01x - flame
-        return &flame_pattern;
+        return &kFlamePattern;
       } else {  // 00x - rings
-        return &rings_pattern;
+        return &kRingsPattern;
       }
 #endif  // JL_PLAYER_SKIP_FLAME
     }
@@ -212,8 +212,8 @@ static const Effect* patternFromBits(PatternBits pattern, const Player& player) 
   jll_fatal("Failed to pick an effect %s", DisplayBitsAsBinary(pattern).c_str());
 }
 
-std::string patternName(PatternBits pattern, const Player& player) {
-  return patternFromBits(pattern, player)->effectName(pattern);
+std::string PatternName(PatternBits pattern, const Player& player) {
+  return PatternFromBits(pattern, player)->effectName(pattern);
 }
 
 Player::Player() {
@@ -232,12 +232,12 @@ Player::~Player() {
   effectContextSize_ = 0;
 }
 
-Player& Player::addStrand(const Layout& l, Renderer& r) {
+Player& Player::AddStrand(const Layout& l, Renderer& r) {
   strands_.push_back({l, r, strands_.size()});
   return *this;
 }
 
-Player& Player::connect(Network* n) {
+Player& Player::Connect(Network* n) {
   jll_info("Connecting network %s", NetworkTypeToString(n->type()));
   networks_.push_back(n);
   engine_.SetHasNetworks(true);
@@ -245,7 +245,7 @@ Player& Player::connect(Network* n) {
   return *this;
 }
 
-void Player::begin() {
+void Player::Begin() {
   xyIndexStore_.Reset();
   frame_.pixelCount = 0;
   frame_.viewport.origin.x = 0;
@@ -285,11 +285,11 @@ void Player::begin() {
 
 #if JL_IS_CONFIG(RHINO_HAT) || JL_IS_CONFIG(RHINO_STAFF)
   static constexpr uint8_t kForestPalette = 5;
-  forcePalette(kForestPalette);
+  ForcePalette(kForestPalette);
 #endif  // RHINO_HAT || RHINO_STAFF
 
 #if defined(JL_START_SPECIAL) && JL_START_SPECIAL
-  handleSpecial();
+  HandleSpecial();
 #elif JL_IS_CONFIG(XMAS_TREE)
   engine_.SetPatternAndLoop(kWarmPattern);
 #elif JL_IS_CONFIG(HAMMER)
@@ -305,7 +305,7 @@ void Player::begin() {
 #endif  // JL_START_LOOP
 }
 
-void Player::updatePrecedence(Precedence basePrecedence, Precedence precedenceGain) {
+void Player::UpdatePrecedence(Precedence basePrecedence, Precedence precedenceGain) {
   if (!engine_.UpdatePrecedence(basePrecedence, precedenceGain)) { return; }
   if (!ready_) { return; }
   engine_.CheckLeaderAndPattern();
@@ -331,7 +331,7 @@ void Player::SendPendingMessage(bool sendAsap) {
   }
 }
 
-void Player::handleSpecial() {
+void Player::HandleSpecial() {
   static constexpr PatternBits kSpecialPatternBits[] = {
       0x00001000,  // calibration.
       0x00000000,  // black.
@@ -346,7 +346,7 @@ void Player::handleSpecial() {
   jll_info("Starting special mode %zu", specialMode_);
 }
 
-void Player::stopSpecial() {
+void Player::StopSpecial() {
   if (specialMode_ == 0) { return; }
   jll_info("Stopping special mode");
   specialMode_ = 0;
@@ -354,35 +354,35 @@ void Player::stopSpecial() {
 }
 
 #if JL_IS_CONFIG(FAIRY_WAND)
-void Player::triggerPatternOverride() {
+void Player::TriggerPatternOverride() {
   jll_info("Triggering pattern override");
   overridePatternStartTime_ = TimeMicros();
 }
 #endif  // FAIRY_WAND
 
-bool Player::render() {
-  if (!ready_) { begin(); }
+bool Player::Render() {
+  if (!ready_) { Begin(); }
   const Microseconds currentTime = TimeMicros();
 
 #if JL_AUDIO_VISUALIZER
-  if (sound_reactive_mode_ == SoundReactiveMode::kAuto) {
+  if (soundReactiveMode_ == SoundReactiveMode::kAuto) {
     Audio::VisualizerData data;
     Audio::Get().GetVisualizerData(&data);
     if (data.squelch) {
-      if (!squelch_start_time_) {
-        squelch_start_time_ = currentTime;
-      } else if (!sound_reactive_suppressed_ && currentTime - *squelch_start_time_ > 30 * kMicrosecondsPerSecond) {
-        sound_reactive_suppressed_ = true;
+      if (!squelchStartTime_) {
+        squelchStartTime_ = currentTime;
+      } else if (!soundReactiveSuppressed_ && currentTime - *squelchStartTime_ > 30 * kMicrosecondsPerSecond) {
+        soundReactiveSuppressed_ = true;
         shouldBeginPattern_ = true;
         jll_info("Auto sound reactive suppressed due to 30s squelch");
       }
     } else {
-      if (sound_reactive_suppressed_) {
-        sound_reactive_suppressed_ = false;
+      if (soundReactiveSuppressed_) {
+        soundReactiveSuppressed_ = false;
         shouldBeginPattern_ = true;
         jll_info("Auto sound reactive resumed");
       }
-      squelch_start_time_.reset();
+      squelchStartTime_.reset();
     }
   }
 #endif  // JL_AUDIO_VISUALIZER
@@ -417,9 +417,9 @@ bool Player::render() {
   }
 #if JL_IS_CONFIG(CLOUDS)
   else if (engine_.followedNextHopNetworkId() == 0) {
-    if (color_overridden_) {
-      frame_.pattern = color_override_.r << 24 | color_override_.g << 16 | color_override_.b << 8 | 0x20;
-    } else if (force_clouds_) {
+    if (colorOverridden_) {
+      frame_.pattern = colorOverride_.r << 24 | colorOverride_.g << 16 | colorOverride_.b << 8 | 0x20;
+    } else if (forceClouds_) {
       frame_.pattern &= 0xFFFFFFF0;
       frame_.pattern |= 0x000000F0;
     }
@@ -430,7 +430,7 @@ bool Player::render() {
   if (!engine_.creatureIsFollowingNonCreature()) { frame_.pattern = planetPattern_; }
 #endif  // ORRERY_PLANET
 
-  const Effect* effect = patternFromBits(frame_.pattern, *this);
+  const Effect* effect = PatternFromBits(frame_.pattern, *this);
 #if JL_IS_CONFIG(FAIRY_WAND)
   constexpr Microseconds kOverridePatternDuration = 8 * kMicrosecondsPerSecond;  // 8s.
   static const FunctionalEffect fairy_wand_effect = fairy_wand();
@@ -441,9 +441,9 @@ bool Player::render() {
     }
   }
 #elif JL_IS_CONFIG(CREATURE)
-  if (!engine_.creatureIsFollowingNonCreature()) { effect = patternFromBits(kCreaturePattern, *this); }
+  if (!engine_.creatureIsFollowingNonCreature()) { effect = PatternFromBits(kCreaturePattern, *this); }
 #elif JL_IS_CONFIG(ORRERY_PLANET)
-  if (!engine_.creatureIsFollowingNonCreature()) { effect = patternFromBits(planetPattern_, *this); }
+  if (!engine_.creatureIsFollowingNonCreature()) { effect = PatternFromBits(planetPattern_, *this); }
 #endif  // FAIRY_WAND
 
   // Ensure effectContext_ is big enough for this effect.
@@ -516,7 +516,7 @@ bool Player::render() {
         color = CRGB::Black;
       }
       cumulativeIndex++;
-      s.renderer.renderPixel(index, color);
+      s.renderer.RenderPixel(index, color);
     }
   }
   effect->afterColors(frame_);
@@ -550,15 +550,15 @@ void Player::GenerateFPSReport(uint16_t* fpsCompute, uint16_t* fpsWrites, uint8_
   framesComputedThisEpoch_ = 0;
 }
 
-PatternBits Player::currentEffect() const { return lastBegunPattern_; }
-std::string Player::currentEffectName() const { return patternName(lastBegunPattern_, *this); }
+PatternBits Player::CurrentEffect() const { return lastBegunPattern_; }
+std::string Player::CurrentEffectName() const { return jazzlights::PatternName(lastBegunPattern_, *this); }
 
-void Player::set_enabled(bool enabled) {
+void Player::SetEnabled(bool enabled) {
   if (enabled_ == enabled) { return; }
 #if JL_IS_CONFIG(CLOUDS)
   engine_.ClearUserInputTime();
   if (!enabled) {
-    force_clouds_ = true;
+    forceClouds_ = true;
     engine_.ReapplyForcedPalette();
   }
 #endif  // CLOUDS
@@ -567,22 +567,22 @@ void Player::set_enabled(bool enabled) {
 }
 
 #if JL_AUDIO_VISUALIZER
-bool Player::sound_reactive_enabled() const {
-  if (sound_reactive_mode_ == SoundReactiveMode::kOff) { return false; }
-  if (sound_reactive_mode_ == SoundReactiveMode::kOn) { return true; }
-  return !sound_reactive_suppressed_;
+bool Player::SoundReactiveEnabled() const {
+  if (soundReactiveMode_ == SoundReactiveMode::kOff) { return false; }
+  if (soundReactiveMode_ == SoundReactiveMode::kOn) { return true; }
+  return !soundReactiveSuppressed_;
 }
 
-void Player::set_sound_reactive_mode(SoundReactiveMode mode) {
-  if (sound_reactive_mode_ == mode) { return; }
-  sound_reactive_mode_ = mode;
-  sound_reactive_suppressed_ = false;
-  squelch_start_time_.reset();
+void Player::SetSoundReactiveMode(SoundReactiveMode mode) {
+  if (soundReactiveMode_ == mode) { return; }
+  soundReactiveMode_ = mode;
+  soundReactiveSuppressed_ = false;
+  squelchStartTime_.reset();
   shouldBeginPattern_ = true;
 }
 #endif  // JL_AUDIO_VISUALIZER
 
-void Player::set_brightness(uint8_t brightness) {
+void Player::SetBrightness(uint8_t brightness) {
   if (brightness_ == brightness) { return; }
   brightness_ = brightness;
   UpdateStatusWatcher();
@@ -590,41 +590,41 @@ void Player::set_brightness(uint8_t brightness) {
 
 void Player::UpdateStatusWatcher() {
 #if JL_IS_CONFIG(CLOUDS)
-  if (status_watcher_ != nullptr) { status_watcher_->OnStatus(); }
+  if (statusWatcher_ != nullptr) { statusWatcher_->OnStatus(); }
 #endif  // CLOUDS
 }
 
 #if JL_IS_CONFIG(CLOUDS)
 void Player::CloudNext() {
-  set_enabled(true);
-  disable_color_override();
-  const bool extraAdvance = force_clouds_;
-  force_clouds_ = false;
+  SetEnabled(true);
+  DisableColorOverride();
+  const bool extraAdvance = forceClouds_;
+  forceClouds_ = false;
   engine_.CloudNext(extraAdvance);
   SendPendingMessage(/*sendAsap=*/true);
-  if (status_watcher_ != nullptr) { status_watcher_->OnStatus(); }
+  if (statusWatcher_ != nullptr) { statusWatcher_->OnStatus(); }
 }
 #endif  // CLOUDS
 
-void Player::next() {
+void Player::Next() {
 #if JL_IS_CONFIG(CLOUDS)
-  set_enabled(!enabled());
+  SetEnabled(!enabled());
 #endif  // CLOUDS
   engine_.GoToNextPattern();
   SendPendingMessage(/*sendAsap=*/true);
 }
 
-void Player::setPattern(PatternBits pattern) {
+void Player::SetPattern(PatternBits pattern) {
   engine_.SetPattern(pattern);
   SendPendingMessage(/*sendAsap=*/true);
 }
 
-void Player::forcePalette(uint8_t palette) {
+void Player::ForcePalette(uint8_t palette) {
   engine_.ForcePalette(palette);
   SendPendingMessage(/*sendAsap=*/true);
 }
 
-std::string Player::PatternName(PatternBits pattern) const { return patternName(pattern, *this); }
+std::string Player::PatternName(PatternBits pattern) const { return jazzlights::PatternName(pattern, *this); }
 
 std::optional<PatternBits> Player::ForcedLeadingPattern() const {
 #if JL_IS_CONFIG(XMAS_TREE)
@@ -669,7 +669,7 @@ void Player::OnCreatureHeard(uint32_t creatureColor, Microseconds heardTime, int
 void Player::OnOrreryHeard() { KnownCreatures::Get()->HandleHeardOrrery(); }
 #endif  // CREATURE
 
-const char* Player::command(const char* req) {
+const char* Player::Command(const char* req) {
   static char res[256];
   const size_t MAX_CMD_LEN = 16;
   bool responded = false;
@@ -677,17 +677,17 @@ const char* Player::command(const char* req) {
   if (!strncmp(req, "status?", MAX_CMD_LEN)) {
     // do nothing
   } else if (!strncmp(req, "next", MAX_CMD_LEN)) {
-    stopLooping();
-    next();
+    StopLooping();
+    Next();
   } else if (!strncmp(req, "prev", MAX_CMD_LEN)) {
-    loopOne();
+    LoopOne();
   } else {
     snprintf(res, sizeof(res), "! unknown command");
     responded = true;
   }
   if (!responded) {
     // This is used by the WebUI to display the current pattern name.
-    snprintf(res, sizeof(res), "playing %s", patternName(lastBegunPattern_, *this).c_str());
+    snprintf(res, sizeof(res), "playing %s", jazzlights::PatternName(lastBegunPattern_, *this).c_str());
   }
   jll_debug("[%s] -> [%s]", req, res);
   return res;

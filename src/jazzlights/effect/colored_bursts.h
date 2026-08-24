@@ -61,8 +61,8 @@ class ColoredBursts : public EffectWithPaletteXYIndexAndState<ColoredBurstsState
       for (size_t y = 0; y < h(f); y++) { ps(f, x, y).nscale8(state->fadeScale); }
     }
 
-    int x1 = jlbeatsin(2 + state->speed, f.time, 0, (w(f) - 1));
-    int y1 = jlbeatsin(5 + state->speed, f.time, 0, (h(f) - 1));
+    int x1 = JlBeatSin(2 + state->speed, f.time, 0, (w(f) - 1));
+    int y1 = JlBeatSin(5 + state->speed, f.time, 0, (h(f) - 1));
     int& curX1 = state->curX1;
     int& curY1 = state->curY1;
     if (!state->curInit1) {
@@ -86,8 +86,8 @@ class ColoredBursts : public EffectWithPaletteXYIndexAndState<ColoredBurstsState
     }
 
     for (uint8_t i = 0; i < state->numLines; i++) {
-      int x2 = jlbeatsin(1 + state->speed, f.time, 0, (w(f) - 1), i * 24);
-      int y2 = jlbeatsin(3 + state->speed, f.time, 0, (h(f) - 1), i * 48 + 64);
+      int x2 = JlBeatSin(1 + state->speed, f.time, 0, (w(f) - 1), i * 24);
+      int y2 = JlBeatSin(3 + state->speed, f.time, 0, (h(f) - 1), i * 48 + 64);
       CRGB color = colorFromPalette(f, i * 255 / state->numLines + state->hue);
       int& curX2 = state->curX2[i];
       int& curY2 = state->curY2[i];

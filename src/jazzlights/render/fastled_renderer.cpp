@@ -22,17 +22,17 @@ FastLedRenderer::~FastLedRenderer() {
   free(ledsFastLed_);
 }
 
-void FastLedRenderer::renderPixel(size_t index, CRGB color) { ledsPlayer_[index] = color; }
+void FastLedRenderer::RenderPixel(size_t index, CRGB color) { ledsPlayer_[index] = color; }
 
 uint32_t FastLedRenderer::GetPowerAtFullBrightness() const {
   return calculate_unscaled_power_mW(ledsPlayer_, numLeds_);
 }
 
-void FastLedRenderer::copyLedsFromPlayerToLocked() {
+void FastLedRenderer::CopyLedsFromPlayerToLocked() {
   freshLedLockedDataAvailable_ = true;
   memcpy(ledsLocked_, ledsPlayer_, ledMemorySize_);
 }
-bool FastLedRenderer::copyLedsFromLockedToFastLed() {
+bool FastLedRenderer::CopyLedsFromLockedToFastLed() {
   const bool freshData = freshLedLockedDataAvailable_;
   if (freshData) {
     memcpy(ledsFastLed_, ledsLocked_, ledMemorySize_);
@@ -41,7 +41,7 @@ bool FastLedRenderer::copyLedsFromLockedToFastLed() {
   return freshData;
 }
 
-void FastLedRenderer::sendToLeds(uint8_t brightness) { ledController_->showLeds(brightness); }
+void FastLedRenderer::SendToLeds(uint8_t brightness) { ledController_->showLeds(brightness); }
 
 }  // namespace jazzlights
 

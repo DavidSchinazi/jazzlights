@@ -95,53 +95,53 @@ void SetupPrimaryRunLoop() {
 
 #if JL_AUDIO_VISUALIZER
   // Ensures creatures follow the sound reactive dome.
-  player.setBasePrecedence(kCreatureOverridePrecedence);
-  player.setPrecedenceGain(0);
+  player.SetBasePrecedence(kCreatureOverridePrecedence);
+  player.SetPrecedenceGain(0);
 #elif JL_IS_CONFIG(CLOUDS)
 #if !JL_DEV
-  player.setBasePrecedence(6000);
-  player.setPrecedenceGain(100);
+  player.SetBasePrecedence(6000);
+  player.SetPrecedenceGain(100);
 #else   // JL_DEV
-  player.setBasePrecedence(5800);
-  player.setPrecedenceGain(100);
+  player.SetBasePrecedence(5800);
+  player.SetPrecedenceGain(100);
 #endif  // JL_DEV
 #elif JL_IS_CONFIG(WAND) || JL_IS_CONFIG(STAFF) || JL_IS_CONFIG(HAT) || JL_IS_CONFIG(SHOE) ||              \
     JL_IS_CONFIG(FAIRY_STRING) || JL_IS_CONFIG(NEW_HAT) || JL_IS_CONFIG(BOW) || JL_IS_CONFIG(RHINO_HAT) || \
     JL_IS_CONFIG(RHINO_STAFF)
-  player.setBasePrecedence(500);
-  player.setPrecedenceGain(100);
+  player.SetBasePrecedence(500);
+  player.SetPrecedenceGain(100);
 #elif JL_IS_CONFIG(XMAS_TREE)
-  player.setBasePrecedence(5000);
-  player.setPrecedenceGain(100);
+  player.SetBasePrecedence(5000);
+  player.SetPrecedenceGain(100);
 #elif JL_IS_CONFIG(CREATURE)
-  player.setBasePrecedence(1);
-  player.setPrecedenceGain(0);
+  player.SetBasePrecedence(1);
+  player.SetPrecedenceGain(0);
 #elif JL_IS_CONFIG(ORRERY_LEADER)
-  player.setBasePrecedence(kOrreryLeaderBasePrecedence);
-  player.setPrecedenceGain(0);
+  player.SetBasePrecedence(kOrreryLeaderBasePrecedence);
+  player.SetPrecedenceGain(0);
 #elif JL_IS_CONFIG(ORRERY_PLANET)
-  player.setBasePrecedence(kDefaultPlanetBasePrecedence);
-  player.setPrecedenceGain(kDefaultPlanetPrecedenceGain);
-  player.set_brightness(kDefaultPlanetBrightness);
+  player.SetBasePrecedence(kDefaultPlanetBasePrecedence);
+  player.SetPrecedenceGain(kDefaultPlanetPrecedenceGain);
+  player.SetBrightness(kDefaultPlanetBrightness);
   player.SetPlanetPattern(kPlanetPattern);
 #else
-  player.setBasePrecedence(1000);
-  player.setPrecedenceGain(1000);
+  player.SetBasePrecedence(1000);
+  player.SetPrecedenceGain(1000);
 #endif
 
-  player.connect(Esp32BleNetwork::get());
+  player.Connect(Esp32BleNetwork::get());
 #if JL_WIFI
-  player.connect(WiFiNetwork::get());
+  player.Connect(WiFiNetwork::get());
 #endif  // JL_WIFI
 #if JL_ETHERNET
-  player.connect(EthernetNetwork::get());
+  player.Connect(EthernetNetwork::get());
 #endif  // JL_ETHERNET
 #if JL_IS_CONFIG(ORRERY_PLANET) && !JL_ORRERY_PLUTO
   OrreryPlanet::Get()->Setup(player);
 #elif JL_IS_CONFIG(ORRERY_LEADER)
   OrreryLeader::Get()->Setup(player);
 #endif  // ORRERY
-  player.begin();
+  player.Begin();
 
   GetUi()->FinalSetup();
 
@@ -164,7 +164,7 @@ void RunPrimaryRunLoop() {
   SAVE_TIME_POINT(PrimaryRunLoop, Bluetooth);
 
 #if !JL_IS_CONFIG(PHONE)
-  const bool shouldRender = player.render();
+  const bool shouldRender = player.Render();
 #else   // PHONE
   PhonePinHandler::Get()->RunLoop();
   const bool shouldRender = true;

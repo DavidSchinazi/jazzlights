@@ -65,9 +65,9 @@ static void SetCore2ScreenBrightness(uint8_t brightness) {
   M5.Display.wakeup();
 }
 
-void SetDefaultPrecedence(Player& player) { player.updatePrecedence(4000, 1000); }
+void SetDefaultPrecedence(Player& player) { player.UpdatePrecedence(4000, 1000); }
 
-void SetOverridePrecedence(Player& player) { player.updatePrecedence(kDefaultOverridePrecedence, 5000); }
+void SetOverridePrecedence(Player& player) { player.UpdatePrecedence(kDefaultOverridePrecedence, 5000); }
 
 void DrawSystemTextLine(uint8_t i, const char* text) {
   constexpr uint8_t kSytemLineHeight = 22;
@@ -89,7 +89,7 @@ class Core2ScreenRenderer : public Renderer {
   void setFullScreen(bool fullScreen) { fullScreen_ = fullScreen; }
   void toggleEnabled() { setEnabled(!enabled_); }
   void setEnabled(bool enabled) { enabled_ = enabled; }
-  void renderPixel(size_t index, CRGB color) override {
+  void RenderPixel(size_t index, CRGB color) override {
     if (!enabled_) { return; }
     uint16_t color16 =
         ((uint16_t)(color.red & 0xF8) << 8) | ((uint16_t)(color.green & 0xFC) << 3) | ((color.blue & 0xF8) >> 3);
@@ -323,8 +323,8 @@ class PatternControlMenu {
         draw();
       } else {
         jll_info("Pattern %s confirmed now playing", kSelectablePatterns[selectedPatternIndex_].name);
-        player.stopForcePalette();
-        return setPattern(player, kSelectablePatterns[selectedPatternIndex_].bits);
+        player.StopForcePalette();
+        return SetPattern(player, kSelectablePatterns[selectedPatternIndex_].bits);
       }
     } else if (state_ == State::kPalette) {
       jll_info("Pattern %s and palette %s confirmed now playing", kSelectablePatterns[selectedPatternIndex_].name,
@@ -343,9 +343,9 @@ class PatternControlMenu {
   }
 
  private:
-  bool setPattern(Player& player, PatternBits patternBits) {
+  bool SetPattern(Player& player, PatternBits patternBits) {
     patternBits = RandomizePatternBits(patternBits);
-    player.setPattern(patternBits);
+    player.SetPattern(patternBits);
     state_ = State::kOff;
     return true;
   }
@@ -353,19 +353,19 @@ class PatternControlMenu {
     jll_info("setPatternWithPalette patternBits=%08x palette=%u combined=%08x", patternBits, palette,
              patternBits | (palette << 13));
     if (patternBits == kAllPalettePattern) {  // forced palette.
-      player.forcePalette(palette);
+      player.ForcePalette(palette);
       state_ = State::kOff;
       return true;
     }
-    player.stopForcePalette();
-    return setPattern(player, patternBits | (palette << 13));
+    player.StopForcePalette();
+    return SetPattern(player, patternBits | (palette << 13));
   }
   bool setPatternWithColor(Player& player, PatternBits patternBits, uint8_t color) {
-    player.stopForcePalette();
+    player.StopForcePalette();
     if (patternBits == 0x0700 && color == 0) {  // glow-black is just solid-black.
-      return setPattern(player, 0);
+      return SetPattern(player, 0);
     }
-    return setPattern(player, patternBits + color * 0x100);
+    return SetPattern(player, patternBits + color * 0x100);
   }
   uint8_t dy() {
     if (dy_ == 0) { dy_ = M5.Display.fontHeight(); }  // By default this is 22.
@@ -696,7 +696,7 @@ Core2AwsUi::Core2AwsUi(Player& player)
     : Esp32Ui(player), ledBrightness_(kInitialLedBrightness), onBrightness_(kDefaultOnBrightness) {}
 
 void Core2AwsUi::InitialSetup() {
-  player_.set_brightness(ledBrightness_);
+  player_.SetBrightness(ledBrightness_);
   player_.SetOrrerySceneIdWatcher(this);
   auto cfg = M5.config();
   cfg.serial_baudrate = 0;
@@ -717,13 +717,13 @@ void Core2AwsUi::InitialSetup() {
   orreryButton->SetCustomPaintFunction(drawOrreryButton);
   systemButton->SetCustomPaintFunction(drawSystemButton);
   confirmButton->SetCustomPaintFunction(drawConfirmButton);
-  player_.addStrand(kCore2ScreenPixels, core2ScreenRenderer);
+  player_.AddStrand(kCore2ScreenPixels, core2ScreenRenderer);
   SetDefaultPrecedence(player_);
 }
 
 void Core2AwsUi::FinalSetup() {
   TouchButtonManager::Get()->MaybePaint();
-  gCurrentPatternName = player_.currentEffectName();
+  gCurrentPatternName = player_.CurrentEffectName();
   if (gScreenMode == ScreenMode::kMainMenu) {
     startMainMenu(player_);
   } else {
@@ -832,7 +832,7 @@ void Core2AwsUi::RunLoop() {
     jll_info("next pressed");
     if (gScreenMode == ScreenMode::kMainMenu) {
       gLastScreenInteractionTime = currentTime;
-      player_.next();
+      player_.Next();
     }
   }
   if (loopButton->JustReleased()) {
@@ -840,11 +840,11 @@ void Core2AwsUi::RunLoop() {
       jll_info("loop pressed");
       gLastScreenInteractionTime = currentTime;
       if (player_.isLooping()) {
-        player_.stopLooping();
+        player_.StopLooping();
         loopButton->SetLabelText("Loop");
         loopButton->SetHighlight(false);
       } else {
-        player_.loopOne();
+        player_.LoopOne();
         loopButton->SetLabelText("Looping");
         loopButton->SetHighlight(true);
       }
@@ -985,7 +985,7 @@ void Core2AwsUi::RunLoop() {
       unlock2Button->Draw();
     } else if (gScreenMode == ScreenMode::kMainMenu) {
       jll_info("unlock1 button unexpectedly pressed in main menu, treating as next button");
-      player_.next();
+      player_.Next();
     } else {
       jll_info("ignoring unlock1 button pressed");
     }
@@ -995,7 +995,7 @@ void Core2AwsUi::RunLoop() {
     if (ledBrightness_ < 255 && gScreenMode == ScreenMode::kSystemMenu) {
       ledBrightness_++;
       jll_info("setting LED brightness to %u", ledBrightness_);
-      player_.set_brightness(ledBrightness_);
+      player_.SetBrightness(ledBrightness_);
       DrawSystemTextLines();
     }
   }
@@ -1004,7 +1004,7 @@ void Core2AwsUi::RunLoop() {
     if (ledBrightness_ > 0 && gScreenMode == ScreenMode::kSystemMenu) {
       ledBrightness_--;
       jll_info("setting LED brightness to %u", ledBrightness_);
-      player_.set_brightness(ledBrightness_);
+      player_.SetBrightness(ledBrightness_);
       DrawSystemTextLines();
     }
   }
@@ -1025,7 +1025,7 @@ void Core2AwsUi::RunLoop() {
     }
   }
 
-  std::string patternName = player_.currentEffectName();
+  std::string patternName = player_.CurrentEffectName();
   if (patternName != gCurrentPatternName) {
     gCurrentPatternName = patternName;
     if (gScreenMode == ScreenMode::kMainMenu) {

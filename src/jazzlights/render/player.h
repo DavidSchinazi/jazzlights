@@ -27,8 +27,8 @@ class Player : private ProtocolEngine::Delegate {
   Player& operator=(const Player&) = delete;
 
   // Constructing the player
-  Player& addStrand(const Layout& l, Renderer& r);
-  Player& connect(Network* n);
+  Player& AddStrand(const Layout& l, Renderer& r);
+  Player& Connect(Network* n);
 
   /**
    * Prepare for rendering
@@ -36,28 +36,28 @@ class Player : private ProtocolEngine::Delegate {
    * Call this when you're done adding strands, setting up
    * player configuration and connecting networks.
    */
-  void begin();
+  void Begin();
 
   /**
    *  Render current frame to all strands.
    *  Returns whether the caller should send data to the LEDs.
    */
-  bool render();
+  bool Render();
 
   /**
    *  Play next effect in the playlist
    */
-  void next();
+  void Next();
 
   /**
    *  Loop current effect forever.
    */
-  void loopOne() { engine_.LoopOne(); }
+  void LoopOne() { engine_.LoopOne(); }
 
   /**
    *  Stop looping current effect forever.
    */
-  void stopLooping() { engine_.StopLooping(); }
+  void StopLooping() { engine_.StopLooping(); }
 
   /**
    *  Returns whether we are looping current effect forever.
@@ -67,17 +67,17 @@ class Player : private ProtocolEngine::Delegate {
   /**
    *  Sets the current pattern and correspondingly resets the next pattern.
    */
-  void setPattern(PatternBits pattern);
+  void SetPattern(PatternBits pattern);
 
   /**
    *  Forces the rotation to always use this palette.
    */
-  void forcePalette(uint8_t palette);
+  void ForcePalette(uint8_t palette);
 
   /**
-   *  Cancels previous call to forcePalette.
+   *  Cancels previous call to ForcePalette.
    */
-  void stopForcePalette() { engine_.StopForcePalette(); }
+  void StopForcePalette() { engine_.StopForcePalette(); }
 
   /**
    * Returns the currently forced palette.
@@ -87,7 +87,7 @@ class Player : private ProtocolEngine::Delegate {
   /**
    * Run text command
    */
-  const char* command(const char* cmd);
+  const char* Command(const char* cmd);
 
   /**
    * Computes FPS information and resets counters.
@@ -100,31 +100,31 @@ class Player : private ProtocolEngine::Delegate {
    */
   const Box& bounds() const { return frame_.viewport; }
 
-  void handleSpecial();
-  void stopSpecial();
-  size_t getSpecial() const { return specialMode_; }
+  void HandleSpecial();
+  void StopSpecial();
+  size_t GetSpecial() const { return specialMode_; }
 #if JL_IS_CONFIG(FAIRY_WAND)
-  void triggerPatternOverride();
+  void TriggerPatternOverride();
 #endif  // FAIRY_WAND
 
-  bool is_power_limited() const { return powerLimited_; }
-  void set_power_limited(bool powerLimited) { powerLimited_ = powerLimited; }
+  bool isPowerLimited() const { return powerLimited_; }
+  void SetPowerLimited(bool powerLimited) { powerLimited_ = powerLimited; }
   uint8_t brightness() const { return brightness_; }
-  void set_brightness(uint8_t brightness);
+  void SetBrightness(uint8_t brightness);
 
-  void setBasePrecedence(Precedence basePrecedence) { engine_.SetBasePrecedence(basePrecedence); }
-  void setPrecedenceGain(Precedence precedenceGain) { engine_.SetPrecedenceGain(precedenceGain); }
-  void updatePrecedence(Precedence basePrecedence, Precedence precedenceGain);
-  void setRandomizeLocalDeviceId(bool val) { engine_.SetRandomizeLocalDeviceId(val); }
+  void SetBasePrecedence(Precedence basePrecedence) { engine_.SetBasePrecedence(basePrecedence); }
+  void SetPrecedenceGain(Precedence precedenceGain) { engine_.SetPrecedenceGain(precedenceGain); }
+  void UpdatePrecedence(Precedence basePrecedence, Precedence precedenceGain);
+  void SetRandomizeLocalDeviceId(bool val) { engine_.SetRandomizeLocalDeviceId(val); }
 
   PredictableRandom* predictableRandom() { return &predictableRandom_; }
-  PatternBits currentEffect() const;
-  std::string currentEffectName() const;
+  PatternBits CurrentEffect() const;
+  std::string CurrentEffectName() const;
   NetworkType following() const { return engine_.following(); }
   NumHops currentNumHops() const { return engine_.currentNumHops(); }
 
   bool enabled() const { return enabled_; }
-  void set_enabled(bool enabled);
+  void SetEnabled(bool enabled);
 
 #if JL_AUDIO_VISUALIZER
   // Work around clang-format disagreement between CI and local copy.
@@ -135,9 +135,9 @@ class Player : private ProtocolEngine::Delegate {
     kAuto,
   };
   // clang-format on
-  SoundReactiveMode sound_reactive_mode() const { return sound_reactive_mode_; }
-  void set_sound_reactive_mode(SoundReactiveMode mode);
-  bool sound_reactive_enabled() const;
+  SoundReactiveMode soundReactiveMode() const { return soundReactiveMode_; }
+  void SetSoundReactiveMode(SoundReactiveMode mode);
+  bool SoundReactiveEnabled() const;
 #endif  // JL_AUDIO_VISUALIZER
 
 #if JL_IS_CONFIG(CLOUDS)
@@ -146,14 +146,14 @@ class Player : private ProtocolEngine::Delegate {
     virtual ~StatusWatcher() = default;
     virtual void OnStatus() = 0;
   };
-  void set_status_watcher(StatusWatcher* status_watcher) { status_watcher_ = status_watcher; }
-  void enable_color_override(CRGB color_override) {
-    color_overridden_ = true;
-    color_override_ = color_override;
+  void SetStatusWatcher(StatusWatcher* statusWatcher) { statusWatcher_ = statusWatcher; }
+  void EnableColorOverride(CRGB colorOverride) {
+    colorOverridden_ = true;
+    colorOverride_ = colorOverride;
   }
-  void disable_color_override() { color_overridden_ = false; }
-  bool color_overridden() const { return color_overridden_; }
-  CRGB color_override() const { return color_override_; }
+  void DisableColorOverride() { colorOverridden_ = false; }
+  bool colorOverridden() const { return colorOverridden_; }
+  CRGB colorOverride() const { return colorOverride_; }
   void CloudNext();
 #elif JL_IS_CONFIG(ORRERY_PLANET)
   void SetPlanetPattern(PatternBits planetPattern) { planetPattern_ = planetPattern; }
@@ -207,9 +207,9 @@ class Player : private ProtocolEngine::Delegate {
 #endif  // JL_IS_CONFIG(CLOUDS) && !JL_DEV
 
 #if JL_AUDIO_VISUALIZER
-  SoundReactiveMode sound_reactive_mode_ = SoundReactiveMode::kAuto;
-  bool sound_reactive_suppressed_ = false;
-  OptionalMicroseconds squelch_start_time_;
+  SoundReactiveMode soundReactiveMode_ = SoundReactiveMode::kAuto;
+  bool soundReactiveSuppressed_ = false;
+  OptionalMicroseconds squelchStartTime_;
 #endif  // JL_AUDIO_VISUALIZER
 
   bool ready_ = false;
@@ -228,10 +228,10 @@ class Player : private ProtocolEngine::Delegate {
 #if JL_IS_CONFIG(FAIRY_WAND)
   OptionalMicroseconds overridePatternStartTime_;
 #elif JL_IS_CONFIG(CLOUDS)
-  StatusWatcher* status_watcher_ = nullptr;  // Unowned.
-  bool color_overridden_ = false;
-  bool force_clouds_ = true;
-  CRGB color_override_;
+  StatusWatcher* statusWatcher_ = nullptr;  // Unowned.
+  bool colorOverridden_ = false;
+  bool forceClouds_ = true;
+  CRGB colorOverride_;
 #endif
 
 #if JL_IS_CONFIG(ORRERY_PLANET)
@@ -256,7 +256,7 @@ class Player : private ProtocolEngine::Delegate {
   ProtocolEngine engine_{this};
 };
 
-std::string patternName(PatternBits pattern, const Player& player);
+std::string PatternName(PatternBits pattern, const Player& player);
 
 }  // namespace jazzlights
 #endif  // JL_RENDER_PLAYER_H

@@ -13,7 +13,7 @@ Matrix pixels(100, 100);
 class NoopRenderer : public Renderer {
  public:
   NoopRenderer() = default;
-  void renderPixel(size_t /*index*/, CRGB /*color*/) override {}
+  void RenderPixel(size_t /*index*/, CRGB /*color*/) override {}
 };
 
 NoopRenderer noopRenderer;
@@ -27,9 +27,9 @@ int runMain(int argc, char** argv) {
     if (ch == 'k') { killTime = TimeMicros() + strtol(optarg, nullptr, 10) * kMicrosecondsPerSecond; }
     if (ch == 'n') { useNetwork = true; }
   }
-  player.addStrand(pixels, noopRenderer);
-  if (useNetwork) { player.connect(UnixUdpNetwork::get()); }
-  player.begin();
+  player.AddStrand(pixels, noopRenderer);
+  if (useNetwork) { player.Connect(UnixUdpNetwork::get()); }
+  player.Begin();
   Microseconds lastFpsEpochTime = 0;
   while (true) {
     const Microseconds currentTime = TimeMicros();
@@ -48,7 +48,7 @@ int runMain(int argc, char** argv) {
                MsForLogs(epochDuration));
       lastFpsEpochTime = currentTime;
     }
-    player.render();
+    player.Render();
   }
   return 0;
 }

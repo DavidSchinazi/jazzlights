@@ -54,7 +54,7 @@ void FastLedRunner::SendLedsToFastLed() {
     }
 #endif  // JL_FASTLED_RUNNER_HAS_UI
     for (size_t i = 0; i < renderers_.size(); i++) {
-      if (renderers_[i]->copyLedsFromLockedToFastLed()) { shouldWrite = true; }
+      if (renderers_[i]->CopyLedsFromLockedToFastLed()) { shouldWrite = true; }
     }
   }
   SAVE_TIME_POINT(FastLed, Copy);
@@ -83,7 +83,7 @@ void FastLedRunner::SendLedsToFastLed() {
     // Make the second strand of LEDs (the top piece of the staff) brighter.
     if (i > 0) { b += (255 - b) / 2; }
 #endif  // STAFF
-    renderers_[i]->sendToLeds(b);
+    renderers_[i]->SendToLeds(b);
   }
 #if JL_FASTLED_RUNNER_HAS_UI
   uiController_->showLeds(uiBrightness);
@@ -102,8 +102,8 @@ void FastLedRunner::Render() {
   for (auto& renderer : renderers_) { powerAtFullBrightness += renderer->GetPowerAtFullBrightness(); }
   const uint32_t powerAtDesiredBrightness =
       powerAtFullBrightness * brightness / 256;  // Forecast power at our current desired brightness.
-  player_->set_power_limited(powerAtDesiredBrightness > JL_MAX_MILLIWATTS);
-  if (player_->is_power_limited()) { brightness = brightness * JL_MAX_MILLIWATTS / powerAtDesiredBrightness; }
+  player_->SetPowerLimited(powerAtDesiredBrightness > JL_MAX_MILLIWATTS);
+  if (player_->isPowerLimited()) { brightness = brightness * JL_MAX_MILLIWATTS / powerAtDesiredBrightness; }
 
   jll_debug("pf%6lld    pd%5lld    bu%4u    bs%4lld    mW%5lld    mA%5lld%s",
             static_cast<long long>(powerAtFullBrightness),
@@ -111,7 +111,7 @@ void FastLedRunner::Render() {
             player_->brightness(), static_cast<long long>(brightness),  // Desired and selected brightness.
             static_cast<long long>(powerAtFullBrightness) * brightness / 256,
             static_cast<long long>(powerAtFullBrightness) * brightness / 256 / 5,  // Selected power & current.
-            player_->is_power_limited() ? " (limited)" : "");
+            player_->isPowerLimited() ? " (limited)" : "");
 #endif  // JL_MAX_MILLIWATTS
 
   SAVE_TIME_POINT(PrimaryRunLoop, Brightness);
@@ -119,7 +119,7 @@ void FastLedRunner::Render() {
     const std::lock_guard<std::mutex> lock(lockedLedMutex_);
     SAVE_TIME_POINT(PrimaryRunLoop, GetLock);
     brightnessLocked_ = brightness;
-    for (auto& renderer : renderers_) { renderer->copyLedsFromPlayerToLocked(); }
+    for (auto& renderer : renderers_) { renderer->CopyLedsFromPlayerToLocked(); }
 #if JL_FASTLED_RUNNER_HAS_UI
     uiFreshLocked_ = uiFreshPlayer_;
     if (uiFreshLocked_) {

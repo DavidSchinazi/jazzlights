@@ -88,11 +88,11 @@ void WebSocketServer::HandleMessage(AsyncWebSocketClient* client, uint8_t* data,
       }
       bool enabled = (data[1] & kWSStatusFlagOn) != 0;
       jll_info("Got turn %s WebSocket request from client #%u", (enabled ? "on" : "off"), id(client));
-      player_.set_enabled(enabled);
+      player_.SetEnabled(enabled);
       if (!enabled) {
         // Reset to default parameters when turned off.
-        player_.set_brightness(255);
-        player_.disable_color_override();
+        player_.SetBrightness(255);
+        player_.DisableColorOverride();
       }
       ShareStatus(client);
     } break;
@@ -103,8 +103,8 @@ void WebSocketServer::HandleMessage(AsyncWebSocketClient* client, uint8_t* data,
       }
       uint8_t brightness = data[1];
       jll_info("Got WebSocket brightness=%u request from client #%u", brightness, id(client));
-      player_.set_enabled(true);
-      player_.set_brightness(brightness);
+      player_.SetEnabled(true);
+      player_.SetBrightness(brightness);
       ShareStatus(client);
     } break;
     case WSType::kStatusSetColor: {
@@ -116,14 +116,14 @@ void WebSocketServer::HandleMessage(AsyncWebSocketClient* client, uint8_t* data,
       uint8_t g = data[2];
       uint8_t b = data[3];
       jll_info("Got WebSocket color=%02x%02x%02x request from client #%u", r, g, b, id(client));
-      player_.set_enabled(true);
-      player_.enable_color_override(CRGB(r, g, b));
+      player_.SetEnabled(true);
+      player_.EnableColorOverride(CRGB(r, g, b));
       ShareStatus(client);
     } break;
     case WSType::kStatusSetEffect: {
       jll_info("Got WebSocket effect request from client #%u", id(client));
-      player_.set_enabled(true);
-      player_.disable_color_override();
+      player_.SetEnabled(true);
+      player_.DisableColorOverride();
       ShareStatus(client);
     } break;
     case WSType::kStatusNextPattern: {
@@ -177,12 +177,12 @@ void WebSocketServer::ShareStatus(AsyncWebSocketClient* client) {
     jll_debug("Skipping WebSocket update to client #%u because we are paused", id(client));
     return;
   }
-  if (player_.color_overridden()) {
+  if (player_.colorOverridden()) {
     jll_info("WebSocket sending status %s brightness=%u color=%02x%02x%02x to client #%u",
-             (player_.enabled() ? "on" : "off"), player_.brightness(), player_.color_override().r,
-             player_.color_override().g,
+             (player_.enabled() ? "on" : "off"), player_.brightness(), player_.colorOverride().r,
+             player_.colorOverride().g,
 
-             player_.color_override().b, id(client));
+             player_.colorOverride().b, id(client));
   } else {
     jll_info("WebSocket sending status %s brightness=%u to client #%u", (player_.enabled() ? "on" : "off"),
              player_.brightness(), id(client));
@@ -192,11 +192,11 @@ void WebSocketServer::ShareStatus(AsyncWebSocketClient* client) {
   response[0] = static_cast<uint8_t>(WSType::kStatusShare);
   if (player_.enabled()) { response[1] |= kWSStatusFlagOn; }
   response[2] = player_.brightness();
-  if (player_.color_overridden()) {
+  if (player_.colorOverridden()) {
     response[1] |= kWSStatusFlagColorOverride;
-    response[3] = player_.color_override().r;
-    response[4] = player_.color_override().g;
-    response[5] = player_.color_override().b;
+    response[3] = player_.colorOverride().r;
+    response[4] = player_.colorOverride().g;
+    response[5] = player_.colorOverride().b;
     response_length += 3;
   }
   if (client != nullptr) {
@@ -224,7 +224,7 @@ void WebSocketServer::Start() {
   jll_info("Initialized mDNS, initializing WebSocketServer");
 
   Player* player = &player_;
-  player->set_status_watcher(this);
+  player->SetStatusWatcher(this);
 
   server_.onNotFound(sNotFoundHandler);
 

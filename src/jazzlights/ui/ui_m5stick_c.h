@@ -49,7 +49,7 @@ class M5StickCUi : public Esp32Ui, public GpioButton::ButtonInterface {
         uint8_t brightness;
       } brightness;
       struct {
-        PatternBits currentEffect;
+        PatternBits CurrentEffect;
       } next;
     } c;
   };

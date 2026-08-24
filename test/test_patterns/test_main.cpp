@@ -25,7 +25,7 @@ namespace jazzlights {
 
 class NoOpRenderer : public Renderer {
  public:
-  void renderPixel(size_t /*index*/, CRGB /*color*/) override {}
+  void RenderPixel(size_t /*index*/, CRGB /*color*/) override {}
 };
 
 void test_pattern(const Effect& effect) {
@@ -67,120 +67,120 @@ void test_pattern(const Effect& effect) {
 }
 
 void test_spin_pattern() {
-  static const SpinPlasma spin_pattern;
-  test_pattern(spin_pattern);
+  static const SpinPlasma kSpinPattern;
+  test_pattern(kSpinPattern);
 }
 void test_hiphotic_pattern() {
-  static const Hiphotic hiphotic_pattern;
-  test_pattern(hiphotic_pattern);
+  static const Hiphotic kHiphoticPattern;
+  test_pattern(kHiphoticPattern);
 }
 void test_metaballs_pattern() {
-  static const Metaballs metaballs_pattern;
-  test_pattern(metaballs_pattern);
+  static const Metaballs kMetaballsPattern;
+  test_pattern(kMetaballsPattern);
 }
 void test_colored_bursts_pattern() {
-  static const ColoredBursts colored_bursts_pattern;
-  test_pattern(colored_bursts_pattern);
+  static const ColoredBursts kColoredBurstsPattern;
+  test_pattern(kColoredBurstsPattern);
 }
 void test_flame_pattern() {
-  static const Flame flame_pattern;
-  test_pattern(flame_pattern);
+  static const Flame kFlamePattern;
+  test_pattern(kFlamePattern);
 }
 void test_glitter_pattern() {
-  static const Glitter glitter_pattern;
-  test_pattern(glitter_pattern);
+  static const Glitter kGlitterPattern;
+  test_pattern(kGlitterPattern);
 }
 void test_thematrix_pattern() {
-  static const TheMatrix thematrix_pattern;
-  test_pattern(thematrix_pattern);
+  static const TheMatrix kTheMatrixPattern;
+  test_pattern(kTheMatrixPattern);
 }
 void test_rings_pattern() {
-  static const Rings rings_pattern;
-  test_pattern(rings_pattern);
+  static const Rings kRingsPattern;
+  test_pattern(kRingsPattern);
 }
 void test_threesine_pattern() {
-  static const FunctionalEffect threesine_pattern = threesine();
-  test_pattern(threesine_pattern);
+  static const FunctionalEffect kThreesinePattern = threesine();
+  test_pattern(kThreesinePattern);
 }
 void test_follow_strand_effect() {
-  static const FunctionalEffect follow_strand_effect = follow_strand();
-  test_pattern(follow_strand_effect);
+  static const FunctionalEffect kFollowStrandEffect = follow_strand();
+  test_pattern(kFollowStrandEffect);
 }
 void test_mapping_effect() {
-  static const FunctionalEffect mapping_effect = mapping();
-  test_pattern(mapping_effect);
+  static const FunctionalEffect kMappingEffect = mapping();
+  test_pattern(kMappingEffect);
 }
 void test_coloring_effect() {
-  static const FunctionalEffect coloring_effect = coloring();
-  test_pattern(coloring_effect);
+  static const FunctionalEffect kColoringEffect = coloring();
+  test_pattern(kColoringEffect);
 }
 void test_calibration_effect() {
-  static const FunctionalEffect calibration_effect = calibration();
-  test_pattern(calibration_effect);
+  static const FunctionalEffect kCalibrationEffect = calibration();
+  test_pattern(kCalibrationEffect);
 }
 void test_sync_test_effect() {
-  static const FunctionalEffect sync_test_effect = sync_test();
-  test_pattern(sync_test_effect);
+  static const FunctionalEffect kSyncTestEffect = sync_test();
+  test_pattern(kSyncTestEffect);
 }
 void test_black_effect() {
-  static const FunctionalEffect black_effect = solid(CRGB::Black, "black");
-  test_pattern(black_effect);
+  static const FunctionalEffect kBlackEffect = solid(CRGB::Black, "black");
+  test_pattern(kBlackEffect);
 }
 void test_red_effect() {
-  static const FunctionalEffect red_effect = solid(CRGB::Black, "red");
-  test_pattern(red_effect);
+  static const FunctionalEffect kRedEffect = solid(CRGB::Black, "red");
+  test_pattern(kRedEffect);
 }
 void test_green_effect() {
-  static const FunctionalEffect green_effect = solid(CRGB::Green, "green");
-  test_pattern(green_effect);
+  static const FunctionalEffect kGreenEffect = solid(CRGB::Green, "green");
+  test_pattern(kGreenEffect);
 }
 void test_blue_effect() {
-  static const FunctionalEffect blue_effect = solid(CRGB::Blue, "blue");
-  test_pattern(blue_effect);
+  static const FunctionalEffect kBlueEffect = solid(CRGB::Blue, "blue");
+  test_pattern(kBlueEffect);
 }
 void test_purple_effect() {
-  static const FunctionalEffect purple_effect = solid(CRGB::Purple, "purple");
-  test_pattern(purple_effect);
+  static const FunctionalEffect kPurpleEffect = solid(CRGB::Purple, "purple");
+  test_pattern(kPurpleEffect);
 }
 void test_cyan_effect() {
-  static const FunctionalEffect cyan_effect = solid(CRGB::Cyan, "cyan");
-  test_pattern(cyan_effect);
+  static const FunctionalEffect kCyanEffect = solid(CRGB::Cyan, "cyan");
+  test_pattern(kCyanEffect);
 }
 void test_yellow_effect() {
-  static const FunctionalEffect yellow_effect = solid(CRGB::Yellow, "yellow");
-  test_pattern(yellow_effect);
+  static const FunctionalEffect kYellowEffect = solid(CRGB::Yellow, "yellow");
+  test_pattern(kYellowEffect);
 }
 void test_white_effect() {
-  static const FunctionalEffect white_effect = solid(CRGB::White, "white");
-  test_pattern(white_effect);
+  static const FunctionalEffect kWhiteEffect = solid(CRGB::White, "white");
+  test_pattern(kWhiteEffect);
 }
 void testred_glow_effect() {
-  static const FunctionalEffect red_glow_effect = glow(CRGB::Black, "glow-red");
-  test_pattern(red_glow_effect);
+  static const FunctionalEffect kRedGlowEffect = glow(CRGB::Black, "glow-red");
+  test_pattern(kRedGlowEffect);
 }
 void test_green_glow_effect() {
-  static const FunctionalEffect green_glow_effect = glow(CRGB::Green, "glow-green");
-  test_pattern(green_glow_effect);
+  static const FunctionalEffect kGreenGlowEffect = glow(CRGB::Green, "glow-green");
+  test_pattern(kGreenGlowEffect);
 }
 void test_blue_glow_effect() {
-  static const FunctionalEffect blue_glow_effect = glow(CRGB::Blue, "glow-blue");
-  test_pattern(blue_glow_effect);
+  static const FunctionalEffect kBlueGlowEffect = glow(CRGB::Blue, "glow-blue");
+  test_pattern(kBlueGlowEffect);
 }
 void test_purple_glow_effect() {
-  static const FunctionalEffect purple_glow_effect = glow(CRGB::Purple, "glow-purple");
-  test_pattern(purple_glow_effect);
+  static const FunctionalEffect kPurpleGlowEffect = glow(CRGB::Purple, "glow-purple");
+  test_pattern(kPurpleGlowEffect);
 }
 void test_cyan_glow_effect() {
-  static const FunctionalEffect cyan_glow_effect = glow(CRGB::Cyan, "glow-cyan");
-  test_pattern(cyan_glow_effect);
+  static const FunctionalEffect kCyanGlowEffect = glow(CRGB::Cyan, "glow-cyan");
+  test_pattern(kCyanGlowEffect);
 }
 void test_yellow_glow_effect() {
-  static const FunctionalEffect yellow_glow_effect = glow(CRGB::Yellow, "glow-yellow");
-  test_pattern(yellow_glow_effect);
+  static const FunctionalEffect kYellowGlowEffect = glow(CRGB::Yellow, "glow-yellow");
+  test_pattern(kYellowGlowEffect);
 }
 void test_white_glow_effect() {
-  static const FunctionalEffect white_glow_effect = glow(CRGB::White, "glow-white");
-  test_pattern(white_glow_effect);
+  static const FunctionalEffect kWhiteGlowEffect = glow(CRGB::White, "glow-white");
+  test_pattern(kWhiteGlowEffect);
 }
 
 void run_unity_tests() {

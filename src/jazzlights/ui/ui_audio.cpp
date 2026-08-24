@@ -59,12 +59,12 @@ void AudioVisualizerUi::RunLoop() {
         M5.Display.fillScreen(BLACK);
       } else if (detail.y >= 96 && detail.y <= 134 && detail.x >= 20 && detail.x <= 300) {
         Player::SoundReactiveMode next_mode;
-        switch (player_.sound_reactive_mode()) {
+        switch (player_.soundReactiveMode()) {
           case Player::SoundReactiveMode::kAuto: next_mode = Player::SoundReactiveMode::kOn; break;
           case Player::SoundReactiveMode::kOn: next_mode = Player::SoundReactiveMode::kOff; break;
           case Player::SoundReactiveMode::kOff: next_mode = Player::SoundReactiveMode::kAuto; break;
         }
-        player_.set_sound_reactive_mode(next_mode);
+        player_.SetSoundReactiveMode(next_mode);
         const char* mode_str = "UNKNOWN";
         switch (next_mode) {
           case Player::SoundReactiveMode::kAuto: mode_str = "AUTO"; break;
@@ -110,7 +110,7 @@ void AudioVisualizerUi::RunLoop() {
         } else if (col == 2) {
           if (keypad_has_value_) {
             if (keypad_value_ > 255) keypad_value_ = 255;
-            player_.set_brightness(keypad_value_);
+            player_.SetBrightness(keypad_value_);
             jll_info("Set brightness to %d", keypad_value_);
           }
           visualization_mode_ = VisualizationMode::kMenu;
@@ -126,7 +126,7 @@ void AudioVisualizerUi::RunLoop() {
         visualization_mode_ = VisualizationMode::kMenu;
         M5.Display.fillScreen(BLACK);
       } else if (row == 0 && col == 1) {
-        player_.stopForcePalette();
+        player_.StopForcePalette();
         visualization_mode_ = VisualizationMode::kMenu;
         M5.Display.fillScreen(BLACK);
       } else {
@@ -147,7 +147,7 @@ void AudioVisualizerUi::RunLoop() {
           palette_idx = 0;  // Heat
 
         if (palette_idx >= 0) {
-          player_.forcePalette(static_cast<uint8_t>(palette_idx));
+          player_.ForcePalette(static_cast<uint8_t>(palette_idx));
           visualization_mode_ = VisualizationMode::kMenu;
           M5.Display.fillScreen(BLACK);
         }
@@ -206,7 +206,7 @@ void AudioVisualizerUi::RunLoop() {
 
     M5.Display.drawRect(20, 96, 280, 38, WHITE);
     const char* mode_label = "UNKNOWN";
-    switch (player_.sound_reactive_mode()) {
+    switch (player_.soundReactiveMode()) {
       case Player::SoundReactiveMode::kAuto: mode_label = "Auto"; break;
       case Player::SoundReactiveMode::kOn: mode_label = "On"; break;
       case Player::SoundReactiveMode::kOff: mode_label = "Off"; break;

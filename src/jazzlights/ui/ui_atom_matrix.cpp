@@ -177,7 +177,7 @@ void AtomMatrixUi::ScreenUnlocked() {
     case MenuMode::kPrevious: icon = menuIconPrevious; break;
     case MenuMode::kBrightness: icon = menuIconBrightness; break;
     case MenuMode::kSpecial: {
-      switch (player_.getSpecial()) {
+      switch (player_.GetSpecial()) {
         case 1: icon = menuIconSpecialCalibration; break;
         case 2: icon = menuIconSpecialBlack; break;
         case 3: icon = menuIconSpecialRed; break;
@@ -194,7 +194,7 @@ void AtomMatrixUi::ScreenUnlocked() {
       static const uint8_t brightnessDial[] = {06, 07, 12, 17, 16, 15, 10, 05};
       if (brightnessCursor_ < i) {
         screenLEDs_[brightnessDial[i]] = CRGB::Black;
-      } else if (player_.is_power_limited()) {
+      } else if (player_.isPowerLimited()) {
         screenLEDs_[brightnessDial[i]] = CRGB::Red;
       }
     }
@@ -252,23 +252,23 @@ void AtomMatrixUi::ShortPress(uint8_t pin) {
   switch (menuMode_) {
     case MenuMode::kNext:
       jll_info("Next button has been hit");
-      player_.stopSpecial();
-      player_.stopLooping();
-      player_.next();
+      player_.StopSpecial();
+      player_.StopLooping();
+      player_.Next();
       break;
     case MenuMode::kPrevious:
       jll_info("Back button has been hit");
-      player_.stopSpecial();
-      player_.loopOne();
+      player_.StopSpecial();
+      player_.LoopOne();
       break;
     case MenuMode::kBrightness:
       brightnessCursor_ = (brightnessCursor_ + 1 < kNumBrightnesses) ? brightnessCursor_ + 1 : 0;
       jll_info("Brightness button has been hit %u", kBrightnessList[brightnessCursor_]);
-      player_.set_brightness(kBrightnessList[brightnessCursor_]);
+      player_.SetBrightness(kBrightnessList[brightnessCursor_]);
       break;
     case MenuMode::kSpecial:
       jll_info("Special button has been hit");
-      player_.handleSpecial();
+      player_.HandleSpecial();
       break;
   }
 }
@@ -340,7 +340,7 @@ void AtomMatrixUi::RunLoop() {
 #if JL_IS_CONFIG(FAIRY_WAND)
   ScreenClear();
   ScreenDisplay();
-  if (button_.IsPressed()) { player_.triggerPatternOverride(); }
+  if (button_.IsPressed()) { player_.TriggerPatternOverride(); }
   return;
 #endif  // FAIRY_WAND
 
@@ -385,7 +385,7 @@ void AtomMatrixUi::RunLoop() {
 void AtomMatrixUi::InitialSetup() {
   runner_->ConfigureUi<WS2812, /*DATA_PIN=*/27, GRB>(ATOM_SCREEN_NUM_LEDS);
   ScreenClear();
-  player_.set_brightness(kBrightnessList[brightnessCursor_]);
+  player_.SetBrightness(kBrightnessList[brightnessCursor_]);
 }
 
 void AtomMatrixUi::FinalSetup() {}

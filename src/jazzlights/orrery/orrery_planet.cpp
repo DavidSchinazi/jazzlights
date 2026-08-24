@@ -70,13 +70,13 @@ OrreryPlanet* OrreryPlanet::Get() {
 
 void OrreryPlanet::Setup(Player& player) {
   player_ = &player;
-  player_->set_brightness(kDefaultPlanetBrightness);
+  player_->SetBrightness(kDefaultPlanetBrightness);
   currentState_.ledBrightness = kDefaultPlanetBrightness;
   player_->SetPlanetPattern(kPlanetPattern);
   currentState_.ledPattern = kPlanetPattern;
-  player_->setBasePrecedence(kDefaultPlanetBasePrecedence);
+  player_->SetBasePrecedence(kDefaultPlanetBasePrecedence);
   currentState_.ledBasePrecedence = kDefaultPlanetBasePrecedence;
-  player_->setPrecedenceGain(kDefaultPlanetPrecedenceGain);
+  player_->SetPrecedenceGain(kDefaultPlanetPrecedenceGain);
   currentState_.ledPrecedenceGain = kDefaultPlanetPrecedenceGain;
 }
 
@@ -350,7 +350,7 @@ void OrreryPlanet::RunLoop() {
 
       if (msg.ledBrightness && msg.ledBrightness != currentState_.ledBrightness) {
         jll_info("Planet %s applying brightness %u", ourPlanetName, *msg.ledBrightness);
-        if (player_ != nullptr) { player_->set_brightness(*msg.ledBrightness); }
+        if (player_ != nullptr) { player_->SetBrightness(*msg.ledBrightness); }
         currentState_.ledBrightness = *msg.ledBrightness;
       }
       if (msg.ledPattern && msg.ledPattern != currentState_.ledPattern) {
@@ -362,12 +362,12 @@ void OrreryPlanet::RunLoop() {
       }
       if (msg.ledBasePrecedence && msg.ledBasePrecedence != currentState_.ledBasePrecedence) {
         jll_info("Planet %s applying base precedence %u", ourPlanetName, *msg.ledBasePrecedence);
-        if (player_ != nullptr) { player_->setBasePrecedence(*msg.ledBasePrecedence); }
+        if (player_ != nullptr) { player_->SetBasePrecedence(*msg.ledBasePrecedence); }
         currentState_.ledBasePrecedence = *msg.ledBasePrecedence;
       }
       if (msg.ledPrecedenceGain && msg.ledPrecedenceGain != currentState_.ledPrecedenceGain) {
         jll_info("Planet %s applying precedence gain %u", ourPlanetName, *msg.ledPrecedenceGain);
-        if (player_ != nullptr) { player_->setPrecedenceGain(*msg.ledPrecedenceGain); }
+        if (player_ != nullptr) { player_->SetPrecedenceGain(*msg.ledPrecedenceGain); }
         currentState_.ledPrecedenceGain = *msg.ledPrecedenceGain;
       }
       max485BusFollower_.SetMessageToSend(currentState_);
