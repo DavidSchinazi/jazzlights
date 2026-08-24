@@ -3,6 +3,7 @@
 
 #include <string>
 
+#include "jazzlights/protocol/wire_types.h"
 #include "jazzlights/render/fastled_wrapper.h"
 #include "jazzlights/render/frame.h"
 #include "jazzlights/render/pixel.h"

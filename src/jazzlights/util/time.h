@@ -129,10 +129,6 @@ long long SecondsSinceForLogs(Microseconds epoch, OptionalMicroseconds currentTi
 inline constexpr Microseconds kMicrosecondsPerMillisecond = 1000;
 inline constexpr Microseconds kMicrosecondsPerSecond = 1000000;
 
-// How long each pattern is displayed before the rotation advances. Lives here rather than next to
-// the effects because the synchronization protocol needs it too.
-inline constexpr Microseconds kEffectDuration = 10 * kMicrosecondsPerSecond;  // 10s.
-
 // Convert time from milliseconds to microseconds.
 constexpr Microseconds MillisecondsToMicroseconds(int64_t timeMillis) {
   return kMicrosecondsPerMillisecond * timeMillis;

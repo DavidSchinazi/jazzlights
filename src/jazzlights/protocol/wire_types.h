@@ -13,6 +13,8 @@
 
 namespace jazzlights {
 
+inline constexpr Microseconds kEffectDuration = 10 * kMicrosecondsPerSecond;  // 10s.
+
 enum class NetworkType {
   kLeading,
   kBLE,
