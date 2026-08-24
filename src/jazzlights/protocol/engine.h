@@ -15,10 +15,7 @@ namespace jazzlights {
 // This value was intentionally selected by brute-forcing all possible values that start with rings-rainbow followed by
 // flame-heat and then sp-cloud, and then picking the one that will loop after the most iterations. This one loops after
 // 118284 iterations, which is more than 13 days.
-#ifndef JL_START_PATTERN
-#define JL_START_PATTERN 0x00b3db69
-#endif  // JL_START_PATTERN
-inline constexpr PatternBits kStartingPattern = JL_START_PATTERN;
+inline constexpr PatternBits kStartingPattern = 0x00b3db69;
 
 inline constexpr Microseconds kInputDuration = 10 * 60 * kMicrosecondsPerSecond;  // 10min.
 
