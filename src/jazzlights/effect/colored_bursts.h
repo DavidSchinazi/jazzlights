@@ -88,7 +88,7 @@ class ColoredBursts : public EffectWithPaletteXYIndexAndState<ColoredBurstsState
     for (uint8_t i = 0; i < state->numLines; i++) {
       int x2 = JlBeatSin(1 + state->speed, f.time, 0, (W(f) - 1), i * 24);
       int y2 = JlBeatSin(3 + state->speed, f.time, 0, (H(f) - 1), i * 48 + 64);
-      CRGB color = colorFromPalette(f, i * 255 / state->numLines + state->hue);
+      CRGB color = ColorFromPalette(f, i * 255 / state->numLines + state->hue);
       int& curX2 = state->curX2[i];
       int& curY2 = state->curY2[i];
       if (!state->curInit2[i]) {

@@ -17,8 +17,8 @@ constexpr uint8_t kIgnitionMax = 255;
 
 void Flame::InnerBegin(const Frame& f, FlameState* state) const {
   OurColorPalette p = palette(f);
-  if (p == OCPlava) {  // Lava is similar to heat, but for this pattern heat looks much better.
-    p = OCPheat;
+  if (p == kLava) {  // Lava is similar to heat, but for this pattern heat looks much better.
+    p = kHeat;
   }
   memcpy(state->palette, FastLEDPaletteFromOurColorPalette(p), sizeof(state->palette));
   state->palette[0] = CRGB::Black;
@@ -54,8 +54,8 @@ void Flame::InnerRewind(const Frame& f, FlameState* state) const {
 
 ColorWithPalette Flame::InnerColor(const Frame& f, FlameState* state, const Pixel& /*px*/) const {
   const uint8_t temperature = Ps(f, X(f), H(f) - 1 - Y(f));
-  return ColorWithPalette::OverrideColor(ColorFromPalette(state->palette, temperature,
-                                                          /*brightness=*/255, LINEARBLEND_NOWRAP));
+  return ColorWithPalette::OverrideColor(::ColorFromPalette(state->palette, temperature,
+                                                            /*brightness=*/255, LINEARBLEND_NOWRAP));
 }
 
 }  // namespace jazzlights

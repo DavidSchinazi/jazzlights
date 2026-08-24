@@ -9,16 +9,16 @@
 namespace jazzlights {
 
 #define ALL_COLORS \
-  X(cloud)         \
-  X(lava)          \
-  X(ocean)         \
-  X(forest)        \
-  X(rainbow)       \
-  X(party)         \
-  X(heat)
+  X(Cloud)         \
+  X(Lava)          \
+  X(Ocean)         \
+  X(Forest)        \
+  X(Rainbow)       \
+  X(Party)         \
+  X(Heat)
 
 enum OurColorPalette {
-#define X(c) OCP##c,
+#define X(c) k##c,
   ALL_COLORS
 #undef X
 };
@@ -33,26 +33,26 @@ static inline OurColorPalette PaletteFromPattern(PatternBits pattern) {
 #endif
   if (PatternBit(pattern, firstPaletteBit)) {        // nature
     if (PatternBit(pattern, firstPaletteBit + 1)) {  // rainbow
-      return OCPrainbow;
+      return kRainbow;
     } else {                                           // frolick
       if (PatternBit(pattern, firstPaletteBit + 2)) {  // forest
-        return OCPforest;
+        return kForest;
       } else {  // party
-        return OCPparty;
+        return kParty;
       }
     }
   } else {                                             // hot&cold
     if (PatternBit(pattern, firstPaletteBit + 1)) {    // cold
       if (PatternBit(pattern, firstPaletteBit + 2)) {  // cloud
-        return OCPcloud;
+        return kCloud;
       } else {  // ocean
-        return OCPocean;
+        return kOcean;
       }
     } else {                                           // hot
       if (PatternBit(pattern, firstPaletteBit + 2)) {  // lava
-        return OCPlava;
+        return kLava;
       } else {  // heat
-        return OCPheat;
+        return kHeat;
       }
     }
   }
@@ -60,18 +60,18 @@ static inline OurColorPalette PaletteFromPattern(PatternBits pattern) {
 
 static inline const TProgmemRGBPalette16* FastLEDPaletteFromOurColorPalette(OurColorPalette ocp) {
   switch (ocp) {
-    case OCPcloud: return &CloudColors_p;
-    case OCPlava: return &LavaColors_p;
-    case OCPocean: return &OceanColors_p;
-    case OCPforest: return &ForestColors_p;
-    case OCPrainbow: return &RainbowColors_p;
-    case OCPparty: return &PartyColors_p;
-    case OCPheat: return &HeatColors_p;
+    case kCloud: return &CloudColors_p;
+    case kLava: return &LavaColors_p;
+    case kOcean: return &OceanColors_p;
+    case kForest: return &ForestColors_p;
+    case kRainbow: return &RainbowColors_p;
+    case kParty: return &PartyColors_p;
+    case kHeat: return &HeatColors_p;
   }
-  return FastLEDPaletteFromOurColorPalette(OCPrainbow);
+  return FastLEDPaletteFromOurColorPalette(kRainbow);
 }
 
-static inline CRGB colorFromOurPalette(OurColorPalette ocp, uint8_t color) {
+static inline CRGB ColorFromOurPalette(OurColorPalette ocp, uint8_t color) {
   return ColorFromPalette(*FastLEDPaletteFromOurColorPalette(ocp), color);
 }
 
@@ -84,9 +84,9 @@ class ColorWithPalette {
     return col;
   }
   static ColorWithPalette OverrideCRGB(CRGB overrideColor) { return OverrideColor(overrideColor); }
-  CRGB colorFromPalette(OurColorPalette ocp) const {
+  CRGB ColorFromPalette(OurColorPalette ocp) const {
     if (colorOverridden_) { return overrideColor_; }
-    return colorFromOurPalette(ocp, innerColor_);
+    return ColorFromOurPalette(ocp, innerColor_);
   }
 
  private:
@@ -107,7 +107,7 @@ inline std::string OurColorPaletteName(uint8_t forcedPalette) {
 inline std::string PaletteNameFromPattern(PatternBits pattern) {
   switch (PaletteFromPattern(pattern)) {
 #define X(c) \
-  case OCP##c: return #c;
+  case k##c: return #c;
     ALL_COLORS
 #undef X
   }
@@ -138,7 +138,7 @@ class EffectWithPaletteAndState : public Effect {
 
   CRGB Color(const Frame& frame, const Pixel& px) const override {
     const ColorWithPalette colorWithPalette = InnerColor(frame, px, &State(frame)->innerState);
-    return colorWithPalette.colorFromPalette(State(frame)->ocp);
+    return colorWithPalette.ColorFromPalette(State(frame)->ocp);
   }
 
   size_t ContextSize(const Frame& frame) const override {
@@ -182,9 +182,9 @@ struct EffectWithPaletteState {
 template <typename STATE, typename PER_PIXEL_TYPE>
 class EffectWithPaletteXYIndexAndState : public XYIndexStateEffect<EffectWithPaletteState<STATE>, PER_PIXEL_TYPE> {
  protected:
-  CRGB colorFromPalette(const Frame& frame, uint8_t innerColor) const {
+  CRGB ColorFromPalette(const Frame& frame, uint8_t innerColor) const {
     EffectWithPaletteState<STATE>* s = XYIndexStateEffect<EffectWithPaletteState<STATE>, PER_PIXEL_TYPE>::State(frame);
-    return colorFromOurPalette(s->ocp, innerColor);
+    return ColorFromOurPalette(s->ocp, innerColor);
   }
   OurColorPalette palette(const Frame& frame) const {
     EffectWithPaletteState<STATE>* s = XYIndexStateEffect<EffectWithPaletteState<STATE>, PER_PIXEL_TYPE>::State(frame);
@@ -203,7 +203,7 @@ class EffectWithPaletteXYIndexAndState : public XYIndexStateEffect<EffectWithPal
 
   CRGB InnerColor(const Frame& frame, EffectWithPaletteState<STATE>* state, const Pixel& px) const override {
     const ColorWithPalette colorWithPalette = InnerColor(frame, &state->innerState, px);
-    return colorWithPalette.colorFromPalette(state->ocp);
+    return colorWithPalette.ColorFromPalette(state->ocp);
   }
 
   void InnerBegin(const Frame& frame, EffectWithPaletteState<STATE>* state) const override {
