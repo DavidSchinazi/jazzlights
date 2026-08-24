@@ -132,7 +132,11 @@ class Player : private ProtocolEngine::Delegate {
   void set_enabled(bool enabled);
 
 #if JL_AUDIO_VISUALIZER
-  enum class SoundReactiveMode { kOff, kOn, kAuto };
+  enum class SoundReactiveMode {
+    kOff,
+    kOn,
+    kAuto,
+  };
   SoundReactiveMode sound_reactive_mode() const { return sound_reactive_mode_; }
   void set_sound_reactive_mode(SoundReactiveMode mode);
   bool sound_reactive_enabled() const;
