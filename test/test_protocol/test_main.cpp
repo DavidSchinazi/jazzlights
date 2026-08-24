@@ -60,7 +60,7 @@ NetworkMessage MakeMessage(NetworkDeviceId originator, NetworkDeviceId sender, P
 // Starts an engine that is leading, and reports the time its pattern rotation started.
 Microseconds StartEngine(ProtocolEngine* engine, uint8_t localDeviceIdLastByte = 0x10) {
   engine->SetHasNetworks(true);
-  engine->Begin(MakeDeviceId(localDeviceIdLastByte));
+  engine->SetupDeviceId(MakeDeviceId(localDeviceIdLastByte));
   engine->StartPatterns();
   return engine->currentPatternStartTime();
 }
@@ -121,7 +121,7 @@ void test_precedence_gain() {
 void test_standalone_leading() {
   FakeDelegate delegate;
   ProtocolEngine engine(&delegate);
-  engine.Begin(MakeDeviceId(0x10));
+  engine.SetupDeviceId(MakeDeviceId(0x10));
   engine.StartPatterns();
   const Microseconds t0 = engine.currentPatternStartTime();
 

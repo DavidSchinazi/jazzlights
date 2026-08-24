@@ -81,7 +81,7 @@ Precedence addPrecedenceGain(Precedence startPrecedence, Precedence gain) {
   return startPrecedence + gain;
 }
 
-void ProtocolEngine::Begin(NetworkDeviceId localDeviceIdFromNetworks) {
+void ProtocolEngine::SetupDeviceId(NetworkDeviceId localDeviceIdFromNetworks) {
   if (!randomizeLocalDeviceId_ && localDeviceIdFromNetworks != NetworkDeviceId()) {
     localDeviceId_ = localDeviceIdFromNetworks;
   }

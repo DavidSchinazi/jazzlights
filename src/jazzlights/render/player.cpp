@@ -272,7 +272,7 @@ void Player::begin() {
       break;
     }
   }
-  engine_.Begin(localDeviceIdFromNetworks);
+  engine_.SetupDeviceId(localDeviceIdFromNetworks);
   jll_info(
       "Starting JazzLights player %s; "
       "basePrecedence %u precedenceGain %u strands: %zu%s, "
