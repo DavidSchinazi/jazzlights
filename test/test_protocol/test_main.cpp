@@ -127,14 +127,14 @@ void test_standalone_leading() {
 
   // Without networks we have nothing to advertise.
   engine.SetHasNetworks(false);
-  engine.RunLoop(t0);
+  engine.CheckLeaderAndPattern(t0);
   NetworkMessage message;
   TEST_ASSERT_FALSE(engine.GetMessageToSend(&message));
 
   // With networks we advertise ourselves as the originator.
   engine.SetHasNetworks(true);
   engine.SetBasePrecedence(1000);
-  engine.RunLoop(t0);
+  engine.CheckLeaderAndPattern(t0);
   TEST_ASSERT(engine.GetMessageToSend(&message));
   TEST_ASSERT(message.originator == engine.localDeviceId());
   TEST_ASSERT(message.sender == engine.localDeviceId());
@@ -153,7 +153,7 @@ void test_follow_higher_precedence() {
 
   engine.HandleReceivedMessage(MakeMessage(other, other, 100, t0), t0);
   TEST_ASSERT_EQUAL_INT(1, delegate.acceptedUpdates);
-  engine.RunLoop(t0);
+  engine.CheckLeaderAndPattern(t0);
 
   TEST_ASSERT(engine.currentLeader() == other);
   TEST_ASSERT_EQUAL_UINT32(kPatternA, engine.GetCurrentPattern());
@@ -180,7 +180,7 @@ void test_ignore_lower_precedence() {
   const PatternBits ourPattern = engine.GetCurrentPattern();
 
   engine.HandleReceivedMessage(MakeMessage(other, other, 100, t0), t0);
-  engine.RunLoop(t0);
+  engine.CheckLeaderAndPattern(t0);
 
   TEST_ASSERT(engine.currentLeader() == engine.localDeviceId());
   TEST_ASSERT_EQUAL_UINT32(ourPattern, engine.GetCurrentPattern());
@@ -195,7 +195,7 @@ void test_equal_precedence_uses_device_id() {
     const Microseconds t0 = StartEngine(&engine, 0x10);
     const NetworkDeviceId higher = MakeDeviceId(0x20);
     engine.HandleReceivedMessage(MakeMessage(higher, higher, 0, t0), t0);
-    engine.RunLoop(t0);
+    engine.CheckLeaderAndPattern(t0);
     TEST_ASSERT(engine.currentLeader() == higher);
   }
   // A lower device ID loses it.
@@ -205,7 +205,7 @@ void test_equal_precedence_uses_device_id() {
     const Microseconds t0 = StartEngine(&engine, 0x30);
     const NetworkDeviceId lower = MakeDeviceId(0x20);
     engine.HandleReceivedMessage(MakeMessage(lower, lower, 0, t0), t0);
-    engine.RunLoop(t0);
+    engine.CheckLeaderAndPattern(t0);
     TEST_ASSERT(engine.currentLeader() == engine.localDeviceId());
   }
 }
@@ -233,7 +233,7 @@ void test_dropped_messages() {
   engine.HandleReceivedMessage(staleStart, t0 + 2 * kEffectDuration + 1);
 
   TEST_ASSERT_EQUAL_INT(0, delegate.acceptedUpdates);
-  engine.RunLoop(t0);
+  engine.CheckLeaderAndPattern(t0);
   TEST_ASSERT(engine.currentLeader() == us);
 }
 
@@ -244,11 +244,11 @@ void test_originator_ages_out() {
   const NetworkDeviceId other = MakeDeviceId(0x20);
 
   engine.HandleReceivedMessage(MakeMessage(other, other, 100, t0), t0);
-  engine.RunLoop(t0);
+  engine.CheckLeaderAndPattern(t0);
   TEST_ASSERT(engine.currentLeader() == other);
 
   // Once nothing refreshes it, the entry is discarded and we lead again.
-  engine.RunLoop(t0 + kOriginationTimeDiscard + 1);
+  engine.CheckLeaderAndPattern(t0 + kOriginationTimeDiscard + 1);
   TEST_ASSERT(engine.currentLeader() == engine.localDeviceId());
   TEST_ASSERT(engine.following() == NetworkType::kLeading);
   TEST_ASSERT_EQUAL_UINT8(0, engine.currentNumHops());
@@ -264,12 +264,12 @@ void test_retraction() {
 
   // Our single neighbor first tells us about a high-precedence originator.
   engine.HandleReceivedMessage(MakeMessage(originatorA, sender, 200, t0), t0);
-  engine.RunLoop(t0);
+  engine.CheckLeaderAndPattern(t0);
   TEST_ASSERT(engine.currentLeader() == originatorA);
 
   // Then it switches to a lower-precedence one, which retracts the first.
   engine.HandleReceivedMessage(MakeMessage(originatorB, sender, 100, t0), t0);
-  engine.RunLoop(t0);
+  engine.CheckLeaderAndPattern(t0);
   TEST_ASSERT(engine.currentLeader() == originatorB);
 }
 
@@ -286,7 +286,7 @@ void test_next_hop_selection() {
   far.numHops = 1;
   far.receiptNetworkId = 1;
   engine.HandleReceivedMessage(far, t0);
-  engine.RunLoop(t0);
+  engine.CheckLeaderAndPattern(t0);
   TEST_ASSERT_EQUAL_UINT8(2, engine.currentNumHops());
 
   // A closer path is adopted.
@@ -294,12 +294,12 @@ void test_next_hop_selection() {
   near.numHops = 0;
   near.receiptNetworkId = 2;
   engine.HandleReceivedMessage(near, t0);
-  engine.RunLoop(t0);
+  engine.CheckLeaderAndPattern(t0);
   TEST_ASSERT_EQUAL_UINT8(1, engine.currentNumHops());
 
   // A longer path is not, since it would risk a routing loop.
   engine.HandleReceivedMessage(far, t0);
-  engine.RunLoop(t0);
+  engine.CheckLeaderAndPattern(t0);
   TEST_ASSERT_EQUAL_UINT8(1, engine.currentNumHops());
 
   // Unless it is substantially more recent, which lets us recover when the originator moves.
@@ -308,7 +308,7 @@ void test_next_hop_selection() {
   fresherFar.receiptNetworkId = 1;
   fresherFar.lastOriginationTime = t0 + kOriginationTimeOverride + 1;
   engine.HandleReceivedMessage(fresherFar, t0 + kOriginationTimeOverride + 1);
-  engine.RunLoop(t0 + kOriginationTimeOverride + 1);
+  engine.CheckLeaderAndPattern(t0 + kOriginationTimeOverride + 1);
   TEST_ASSERT_EQUAL_UINT8(2, engine.currentNumHops());
 }
 
@@ -322,12 +322,12 @@ void test_pattern_start_time_debounce() {
     ProtocolEngine engine(&delegate);
     const Microseconds t0 = StartEngine(&engine);
     engine.HandleReceivedMessage(MakeMessage(other, other, 100, t0), t0);
-    engine.RunLoop(t0);
+    engine.CheckLeaderAndPattern(t0);
     for (int i = 0; i < 10; i++) {
       NetworkMessage message = MakeMessage(other, other, 100, t0);
       message.currentPatternStartTime = t0 + 50 * kMs;
       engine.HandleReceivedMessage(message, t0);
-      engine.RunLoop(t0);
+      engine.CheckLeaderAndPattern(t0);
     }
     TEST_ASSERT_EQUAL_INT64(t0, engine.currentPatternStartTime());
   }
@@ -338,11 +338,11 @@ void test_pattern_start_time_debounce() {
     ProtocolEngine engine(&delegate);
     const Microseconds t0 = StartEngine(&engine);
     engine.HandleReceivedMessage(MakeMessage(other, other, 100, t0), t0);
-    engine.RunLoop(t0);
+    engine.CheckLeaderAndPattern(t0);
     NetworkMessage message = MakeMessage(other, other, 100, t0);
     message.currentPatternStartTime = t0 + 600 * kMs;
     engine.HandleReceivedMessage(message, t0);
-    engine.RunLoop(t0);
+    engine.CheckLeaderAndPattern(t0);
     TEST_ASSERT_EQUAL_INT64(t0 + 600 * kMs, engine.currentPatternStartTime());
   }
 
@@ -352,18 +352,18 @@ void test_pattern_start_time_debounce() {
     ProtocolEngine engine(&delegate);
     const Microseconds t0 = StartEngine(&engine);
     engine.HandleReceivedMessage(MakeMessage(other, other, 100, t0), t0);
-    engine.RunLoop(t0);
+    engine.CheckLeaderAndPattern(t0);
     for (int i = 0; i < 4; i++) {
       NetworkMessage message = MakeMessage(other, other, 100, t0);
       message.currentPatternStartTime = t0 + 200 * kMs;
       engine.HandleReceivedMessage(message, t0);
-      engine.RunLoop(t0);
+      engine.CheckLeaderAndPattern(t0);
       TEST_ASSERT_EQUAL_INT64(t0, engine.currentPatternStartTime());
     }
     NetworkMessage message = MakeMessage(other, other, 100, t0);
     message.currentPatternStartTime = t0 + 200 * kMs;
     engine.HandleReceivedMessage(message, t0);
-    engine.RunLoop(t0);
+    engine.CheckLeaderAndPattern(t0);
     TEST_ASSERT_EQUAL_INT64(t0 + 200 * kMs, engine.currentPatternStartTime());
   }
 }
@@ -376,19 +376,19 @@ void test_leading_pattern_advance() {
   const PatternBits secondPattern = engine.GetNextPattern();
 
   // Not yet time to advance.
-  engine.RunLoop(t0 + kEffectDuration);
+  engine.CheckLeaderAndPattern(t0 + kEffectDuration);
   TEST_ASSERT_EQUAL_UINT32(firstPattern, engine.GetCurrentPattern());
   TEST_ASSERT_EQUAL_INT(0, delegate.patternRestarts);
 
   // One effect duration later the rotation advances by exactly one step.
-  engine.RunLoop(t0 + kEffectDuration + 1);
+  engine.CheckLeaderAndPattern(t0 + kEffectDuration + 1);
   TEST_ASSERT_EQUAL_UINT32(secondPattern, engine.GetCurrentPattern());
   TEST_ASSERT_EQUAL_INT64(t0 + kEffectDuration, engine.currentPatternStartTime());
   TEST_ASSERT_EQUAL_INT(1, delegate.patternRestarts);
   TEST_ASSERT_EQUAL_INT(1, delegate.fpsReports);
 
   // Skipping ahead catches up one step at a time.
-  engine.RunLoop(t0 + 4 * kEffectDuration + 1);
+  engine.CheckLeaderAndPattern(t0 + 4 * kEffectDuration + 1);
   TEST_ASSERT_EQUAL_INT(4, delegate.patternRestarts);
   TEST_ASSERT_EQUAL_INT64(t0 + 4 * kEffectDuration, engine.currentPatternStartTime());
 }
@@ -403,7 +403,7 @@ void test_looping_pins_the_pattern() {
   const PatternBits pinned = engine.GetCurrentPattern();
   TEST_ASSERT_EQUAL_UINT32(pinned, engine.GetNextPattern());
 
-  engine.RunLoop(t0 + 3 * kEffectDuration + 1);
+  engine.CheckLeaderAndPattern(t0 + 3 * kEffectDuration + 1);
   TEST_ASSERT_EQUAL_UINT32(pinned, engine.GetCurrentPattern());
   TEST_ASSERT_EQUAL_UINT32(pinned, engine.GetNextPattern());
 
@@ -427,7 +427,7 @@ void test_forced_palette_survives_rotation() {
   // Every pattern the rotation produces keeps the forced palette.
   const Microseconds t1 = engine.currentPatternStartTime();
   for (int i = 1; i <= 5; i++) {
-    engine.RunLoop(t1 + i * kEffectDuration + 1);
+    engine.CheckLeaderAndPattern(t1 + i * kEffectDuration + 1);
     TEST_ASSERT_EQUAL_UINT8(kPalette, (engine.GetCurrentPattern() >> 13) & 0x7);
   }
 
@@ -442,7 +442,7 @@ void test_forced_leading_pattern() {
   const Microseconds t0 = StartEngine(&engine);
 
   // While leading, the delegate's pinned pattern wins and looping is forced on.
-  engine.RunLoop(t0);
+  engine.CheckLeaderAndPattern(t0);
   TEST_ASSERT_EQUAL_UINT32(kPatternA, engine.GetCurrentPattern());
   TEST_ASSERT_EQUAL_UINT32(kPatternA, engine.GetNextPattern());
   TEST_ASSERT(engine.isLooping());
@@ -458,12 +458,12 @@ void test_recent_user_input_keeps_us_leading() {
   engine.GoToNextPattern();
   const Microseconds t1 = engine.currentPatternStartTime();
   engine.HandleReceivedMessage(MakeMessage(other, other, kAdminPrecedence - 1, t1), t1);
-  engine.RunLoop(t1);
+  engine.CheckLeaderAndPattern(t1);
   TEST_ASSERT(engine.currentLeader() == engine.localDeviceId());
 
   // But not against an admin-level one.
   engine.HandleReceivedMessage(MakeMessage(other, other, kAdminPrecedence, t1), t1);
-  engine.RunLoop(t1);
+  engine.CheckLeaderAndPattern(t1);
   TEST_ASSERT(engine.currentLeader() == other);
 }
 
@@ -473,20 +473,20 @@ void test_orrery_scene_id() {
   const Microseconds t0 = StartEngine(&engine);
 
   NetworkMessage message;
-  engine.RunLoop(t0);
+  engine.CheckLeaderAndPattern(t0);
   TEST_ASSERT(engine.GetMessageToSend(&message));
   TEST_ASSERT_FALSE(message.orrerySceneId.has_value());
 
   // Once set, the scene ID rides along on what we advertise.
   engine.SetOrrerySceneIdToSend(static_cast<OrrerySceneId>(7));
-  engine.RunLoop(t0);
+  engine.CheckLeaderAndPattern(t0);
   TEST_ASSERT(engine.GetMessageToSend(&message));
   TEST_ASSERT(message.orrerySceneId.has_value());
   TEST_ASSERT_EQUAL_UINT8(7, *message.orrerySceneId);
 
   // Clearing it takes it back off.
   engine.SetOrrerySceneIdToSend(std::nullopt);
-  engine.RunLoop(t0);
+  engine.CheckLeaderAndPattern(t0);
   TEST_ASSERT(engine.GetMessageToSend(&message));
   TEST_ASSERT_FALSE(message.orrerySceneId.has_value());
 }

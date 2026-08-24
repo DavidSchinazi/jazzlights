@@ -113,11 +113,10 @@ class ProtocolEngine {
 
   // Ages out originators, elects a leader, advances the synchronized pattern, and recomputes the message to
   // advertise. Called once per frame and after every user command.
-  void RunLoop() { RunLoop(timeMicros()); }
-  void RunLoop(Microseconds currentTime);
+  void CheckLeaderAndPattern(OptionalMicroseconds currentTimeOpt = std::nullopt);
 
   // Returns the message that should currently be advertised on every transport, or false if there is nothing to
-  // advertise. This does not consume the message: it returns whatever the last RunLoop() computed.
+  // advertise. This does not consume the message: it returns whatever the last CheckLeaderAndPattern() computed.
   bool GetMessageToSend(NetworkMessage* messageToSend) const;
 
   // Synchronized state, read by the renderer.
@@ -137,16 +136,16 @@ class ProtocolEngine {
   bool creatureIsFollowingNonCreature() const { return creatureIsFollowingNonCreature_; }
 #endif  // CREATURE || ORRERY_PLANET
 
-  // Play the next pattern in the rotation. Counts as user input, and runs RunLoop() internally.
+  // Play the next pattern in the rotation. Counts as user input, and runs CheckLeaderAndPattern() internally.
   void GoToNextPattern();
-  // Jump to this pattern. Counts as user input, and runs RunLoop() internally.
+  // Jump to this pattern. Counts as user input, and runs CheckLeaderAndPattern() internally.
   void SetPattern(PatternBits pattern);
   void LoopOne();
   void StopLooping();
   // Sets the loop flag without touching the patterns. Only intended for startup configuration.
   void SetLooping(bool loop) { loop_ = loop; }
   // Pins both the current and next pattern and enables looping. Does not count as user input and does not run
-  // RunLoop(). Used for special modes and for startup pattern seeding.
+  // CheckLeaderAndPattern(). Used for special modes and for startup pattern seeding.
   void SetPatternAndLoop(PatternBits pattern);
   // Leaves a pinned pattern and resumes the regular rotation.
   void ResumeRotation();
@@ -174,7 +173,7 @@ class ProtocolEngine {
   // Re-applies the forced palette to the current pattern and recomputes the next one.
   void ReapplyForcedPalette();
   // Advances the rotation. `extraAdvance` skips one extra pattern, used when leaving forced-clouds mode. Counts as
-  // user input, and runs RunLoop() internally.
+  // user input, and runs CheckLeaderAndPattern() internally.
   void CloudNext(bool extraAdvance);
 #endif  // CLOUDS
 

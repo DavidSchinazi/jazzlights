@@ -309,7 +309,7 @@ void Player::begin() {
 void Player::updatePrecedence(Precedence basePrecedence, Precedence precedenceGain) {
   if (!engine_.UpdatePrecedence(basePrecedence, precedenceGain)) { return; }
   if (!ready_) { return; }
-  engine_.RunLoop();
+  engine_.CheckLeaderAndPattern();
   SendPendingMessage();
   TriggerSendAsap();
 }
@@ -398,7 +398,7 @@ bool Player::render() {
   }
 
   // Then react to any received packets.
-  engine_.RunLoop();
+  engine_.CheckLeaderAndPattern();
   SendPendingMessage();
 
   // Then give all networks the opportunity to send.

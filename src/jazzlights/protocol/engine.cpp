@@ -122,7 +122,7 @@ void ProtocolEngine::GoToNextPattern() {
     currentPattern_ = nextPattern_;
     nextPattern_ = EnforceForcedPalette(computeNextPattern(nextPattern_));
   }
-  RunLoop(currentTime);
+  CheckLeaderAndPattern(currentTime);
   jll_info("next command processed: now current %s (%08x) next %s (%08x), currentLeader=" DEVICE_ID_FMT,
            delegate_->PatternName(currentPattern_).c_str(), currentPattern_,
            delegate_->PatternName(nextPattern_).c_str(), nextPattern_, DEVICE_ID_HEX(currentLeader_));
@@ -141,7 +141,7 @@ void ProtocolEngine::SetPattern(PatternBits pattern) {
   } else {
     nextPattern_ = EnforceForcedPalette(computeNextPattern(pattern));
   }
-  RunLoop(currentTime);
+  CheckLeaderAndPattern(currentTime);
   jll_info("set pattern command processed: now current %s (%08x) next %s (%08x), currentLeader=" DEVICE_ID_FMT,
            delegate_->PatternName(currentPattern_).c_str(), currentPattern_,
            delegate_->PatternName(nextPattern_).c_str(), nextPattern_, DEVICE_ID_HEX(currentLeader_));
@@ -204,7 +204,7 @@ void ProtocolEngine::CloudNext(bool extraAdvance) {
   }
   currentPattern_ = nextPattern_;
   nextPattern_ = EnforceForcedPalette(computeNextPattern(nextPattern_));
-  RunLoop(currentTime);
+  CheckLeaderAndPattern(currentTime);
   jll_info("next command processed: now current %s (%08x) next %s (%08x), currentLeader=" DEVICE_ID_FMT,
            delegate_->PatternName(currentPattern_).c_str(), currentPattern_,
            delegate_->PatternName(nextPattern_).c_str(), nextPattern_, DEVICE_ID_HEX(currentLeader_));
@@ -248,7 +248,8 @@ void ProtocolEngine::SetOrrerySceneIdToSend(std::optional<OrrerySceneId> orreryS
   }
 }
 
-void ProtocolEngine::RunLoop(Microseconds currentTime) {
+void ProtocolEngine::CheckLeaderAndPattern(OptionalMicroseconds currentTimeOpt) {
+  Microseconds currentTime = currentTimeOpt.value_or(timeMicros());
   // Remove elements that have aged out.
   originatorEntries_.remove_if([currentTime](const OriginatorEntry& e) {
     if (currentTime > e.lastOriginationTime + kOriginationTimeDiscard) {
