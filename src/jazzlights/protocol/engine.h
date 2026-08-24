@@ -105,8 +105,6 @@ class ProtocolEngine {
   // Sets up our local device ID. `localDeviceIdFromNetworks` is the device ID reported by the transports, or a
   // default-constructed NetworkDeviceId if none of them has one, in which case we generate one randomly.
   void SetupDeviceId(NetworkDeviceId localDeviceIdFromNetworks);
-  // Seeds the pattern rotation. Called after SetupDeviceId() and after any startup palette forcing.
-  void StartPatterns();
   // Whether any transport is connected. While false we do not advertise at all.
   void SetHasNetworks(bool hasNetworks) { hasNetworks_ = hasNetworks; }
 

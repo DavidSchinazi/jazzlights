@@ -289,7 +289,6 @@ void Player::begin() {
   forcePalette(kForestPalette);
 #endif  // RHINO_HAT || RHINO_STAFF
 
-  engine_.StartPatterns();
 #if defined(JL_START_SPECIAL) && JL_START_SPECIAL
   handleSpecial();
 #elif JL_IS_CONFIG(XMAS_TREE)

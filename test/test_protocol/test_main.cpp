@@ -61,7 +61,6 @@ NetworkMessage MakeMessage(NetworkDeviceId originator, NetworkDeviceId sender, P
 Microseconds StartEngine(ProtocolEngine* engine, uint8_t localDeviceIdLastByte = 0x10) {
   engine->SetHasNetworks(true);
   engine->SetupDeviceId(MakeDeviceId(localDeviceIdLastByte));
-  engine->StartPatterns();
   return engine->currentPatternStartTime();
 }
 
@@ -124,7 +123,6 @@ void test_standalone_leading() {
   FakeDelegate delegate;
   ProtocolEngine engine(&delegate);
   engine.SetupDeviceId(MakeDeviceId(0x10));
-  engine.StartPatterns();
   const Microseconds t0 = engine.currentPatternStartTime();
 
   // Without networks we have nothing to advertise.

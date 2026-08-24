@@ -94,12 +94,6 @@ void ProtocolEngine::SetupDeviceId(NetworkDeviceId localDeviceIdFromNetworks) {
   currentLeader_ = localDeviceId_;
 }
 
-void ProtocolEngine::StartPatterns() {
-  currentPatternStartTime_ = timeMicros();
-  currentPattern_ = EnforceForcedPalette(kStartingPattern);
-  nextPattern_ = EnforceForcedPalette(computeNextPattern(currentPattern_));
-}
-
 bool ProtocolEngine::GetMessageToSend(NetworkMessage* messageToSend) const {
   if (!hasMessageToSend_) { return false; }
   *messageToSend = messageToSend_;
