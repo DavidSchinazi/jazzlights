@@ -310,11 +310,10 @@ void Player::updatePrecedence(Precedence basePrecedence, Precedence precedenceGa
   if (!engine_.UpdatePrecedence(basePrecedence, precedenceGain)) { return; }
   if (!ready_) { return; }
   engine_.CheckLeaderAndPattern();
-  SendPendingMessage();
-  TriggerSendAsap();
+  SendPendingMessage(/*sendAsap=*/true);
 }
 
-void Player::SendPendingMessage() {
+void Player::SendPendingMessage(bool sendAsap) {
   NetworkMessage messageToSend;
   if (!engine_.GetMessageToSend(&messageToSend)) { return; }
   for (Network* network : networks_) {
@@ -328,10 +327,9 @@ void Player::SendPendingMessage() {
                        networkMessageToString(messageToSend).c_str());
     network->setMessageToSend(messageToSend);
   }
-}
-
-void Player::TriggerSendAsap() {
-  for (Network* network : networks_) { network->triggerSendAsap(); }
+  if (sendAsap) {
+    for (Network* network : networks_) { network->triggerSendAsap(); }
+  }
 }
 
 void Player::handleSpecial() {
@@ -604,8 +602,7 @@ void Player::CloudNext() {
   const bool extraAdvance = force_clouds_;
   force_clouds_ = false;
   engine_.CloudNext(extraAdvance);
-  SendPendingMessage();
-  TriggerSendAsap();
+  SendPendingMessage(/*sendAsap=*/true);
   if (status_watcher_ != nullptr) { status_watcher_->OnStatus(); }
 }
 #endif  // CLOUDS
@@ -615,20 +612,17 @@ void Player::next() {
   set_enabled(!enabled());
 #endif  // CLOUDS
   engine_.GoToNextPattern();
-  SendPendingMessage();
-  TriggerSendAsap();
+  SendPendingMessage(/*sendAsap=*/true);
 }
 
 void Player::setPattern(PatternBits pattern) {
   engine_.SetPattern(pattern);
-  SendPendingMessage();
-  TriggerSendAsap();
+  SendPendingMessage(/*sendAsap=*/true);
 }
 
 void Player::forcePalette(uint8_t palette) {
   engine_.ForcePalette(palette);
-  SendPendingMessage();
-  TriggerSendAsap();
+  SendPendingMessage(/*sendAsap=*/true);
 }
 
 std::string Player::PatternName(PatternBits pattern) const { return patternName(pattern, *this); }

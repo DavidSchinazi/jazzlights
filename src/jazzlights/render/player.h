@@ -198,9 +198,7 @@ class Player : private ProtocolEngine::Delegate {
   void OnOrreryHeard() override;
 #endif  // CREATURE
 
-  // Hands the message the engine wants to advertise to every network, skipping the one we heard it from.
-  void SendPendingMessage();
-  void TriggerSendAsap();
+  void SendPendingMessage(bool sendAsap = false);
 
 #if JL_IS_CONFIG(CLOUDS) && !JL_DEV
   bool enabled_ = false;
