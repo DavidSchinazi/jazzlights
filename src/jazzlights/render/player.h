@@ -132,11 +132,14 @@ class Player : private ProtocolEngine::Delegate {
   void set_enabled(bool enabled);
 
 #if JL_AUDIO_VISUALIZER
+  // Work around clang-format disagreement between CI and local copy.
+  // clang-format off
   enum class SoundReactiveMode {
     kOff,
     kOn,
     kAuto,
   };
+  // clang-format on
   SoundReactiveMode sound_reactive_mode() const { return sound_reactive_mode_; }
   void set_sound_reactive_mode(SoundReactiveMode mode);
   bool sound_reactive_enabled() const;
