@@ -418,7 +418,8 @@ void ProtocolEngine::ComputeMessageToSend(NetworkDeviceId originator, Precedence
   hasMessageToSend_ = true;
 }
 
-void ProtocolEngine::HandleReceivedMessage(NetworkMessage message, Microseconds currentTime) {
+void ProtocolEngine::HandleReceivedMessage(NetworkMessage message, OptionalMicroseconds currentTimeOpt) {
+  Microseconds currentTime = currentTimeOpt.value_or(timeMicros());
 #if JL_IS_CONFIG(CREATURE)
   if (message.isCreature) {
     jll_info("creature recv %s", networkMessageToString(message).c_str());

@@ -108,8 +108,7 @@ class ProtocolEngine {
   // Whether any transport is connected. While false we do not advertise at all.
   void SetHasNetworks(bool hasNetworks) { hasNetworks_ = hasNetworks; }
 
-  void HandleReceivedMessage(NetworkMessage message) { HandleReceivedMessage(message, timeMicros()); }
-  void HandleReceivedMessage(NetworkMessage message, Microseconds currentTime);
+  void HandleReceivedMessage(NetworkMessage message, OptionalMicroseconds currentTimeOpt = std::nullopt);
 
   // Ages out originators, elects a leader, advances the synchronized pattern, and recomputes the message to
   // advertise. Called once per frame and after every user command.
