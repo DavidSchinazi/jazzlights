@@ -625,7 +625,7 @@ void Player::next() {
 #if JL_IS_CONFIG(CLOUDS)
   set_enabled(!enabled());
 #endif  // CLOUDS
-  engine_.Next();
+  engine_.GoToNextPattern();
   SendPendingMessage();
   TriggerSendAsap();
 }

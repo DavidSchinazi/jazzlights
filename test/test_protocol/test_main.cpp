@@ -455,7 +455,7 @@ void test_recent_user_input_keeps_us_leading() {
   const NetworkDeviceId other = MakeDeviceId(0x20);
 
   // Pressing the button makes us sticky against ordinary originators.
-  engine.Next();
+  engine.GoToNextPattern();
   const Microseconds t1 = engine.currentPatternStartTime();
   engine.HandleReceivedMessage(MakeMessage(other, other, kAdminPrecedence - 1, t1), t1);
   engine.RunLoop(t1);

@@ -143,7 +143,7 @@ class ProtocolEngine {
 #endif  // CREATURE || ORRERY_PLANET
 
   // Play the next pattern in the rotation. Counts as user input, and runs RunLoop() internally.
-  void Next();
+  void GoToNextPattern();
   // Jump to this pattern. Counts as user input, and runs RunLoop() internally.
   void SetPattern(PatternBits pattern);
   void LoopOne();

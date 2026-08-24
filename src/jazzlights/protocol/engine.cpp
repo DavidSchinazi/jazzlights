@@ -124,7 +124,7 @@ bool ProtocolEngine::UpdatePrecedence(Precedence basePrecedence, Precedence prec
   return true;
 }
 
-void ProtocolEngine::Next() {
+void ProtocolEngine::GoToNextPattern() {
   jll_info("next command received: switching from %s (%08x) to %s (%08x), currentLeader=" DEVICE_ID_FMT,
            delegate_->PatternName(currentPattern_).c_str(), currentPattern_,
            delegate_->PatternName(nextPattern_).c_str(), nextPattern_, DEVICE_ID_HEX(currentLeader_));
