@@ -16,6 +16,7 @@ namespace jazzlights {
 // flame-heat and then sp-cloud, and then picking the one that will loop after the most iterations. This one loops after
 // 118284 iterations, which is more than 13 days.
 inline constexpr PatternBits kStartingPattern = 0x00b3db69;
+inline constexpr PatternBits kStartingSecondPattern = 0x7d000629;
 
 inline constexpr Microseconds kInputDuration = 10 * 60 * kMicrosecondsPerSecond;  // 10min.
 
@@ -207,9 +208,9 @@ class ProtocolEngine {
 
   std::list<OriginatorEntry> originatorEntries_;
 
-  Microseconds currentPatternStartTime_ = 0;
-  PatternBits currentPattern_ = 0;
-  PatternBits nextPattern_ = 0;
+  Microseconds currentPatternStartTime_ = timeMicros();
+  PatternBits currentPattern_ = kStartingPattern;
+  PatternBits nextPattern_ = kStartingSecondPattern;
   bool loop_ = false;
   bool paletteIsForced_ = false;
   uint8_t forcedPalette_ = 0;

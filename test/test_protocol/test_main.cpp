@@ -68,6 +68,8 @@ Microseconds StartEngine(ProtocolEngine* engine, uint8_t localDeviceIdLastByte =
 }  // namespace
 
 void test_compute_next_pattern() {
+  // Make sure kStartingSecondPattern is correct.
+  TEST_ASSERT_EQUAL_UINT32(computeNextPattern(kStartingPattern), kStartingSecondPattern);
   // The rotation never lands on a reserved pattern and never returns zero.
   PatternBits pattern = kStartingPattern;
   for (int i = 0; i < 1000; i++) {
