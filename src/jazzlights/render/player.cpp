@@ -46,16 +46,6 @@
 #endif  // JL_MOTOR
 #endif  // JL_PLAYER_SKIP_FLAME
 
-#ifndef JL_SILENCE_PLAYER_LOGS
-#define JL_SILENCE_PLAYER_LOGS 0
-#endif  // JL_SILENCE_PLAYER_LOGS
-
-#if JL_SILENCE_PLAYER_LOGS
-#define jll_player_info(...) jll_debug(__VA_ARGS__)
-#else  // JL_SILENCE_PLAYER_LOGS
-#define jll_player_info(...) jll_info(__VA_ARGS__)
-#endif  // JL_SILENCE_PLAYER_LOGS
-
 #ifndef JL_PLAYER_LOG_MESSAGES
 #define JL_PLAYER_LOG_MESSAGES 0
 #endif  // JL_PLAYER_LOG_MESSAGES
@@ -670,8 +660,8 @@ void Player::LogFpsReport() {
   Microseconds timeSpentComputingThisEpoch;
   Microseconds epochDuration;
   GenerateFPSReport(&fpsCompute, &fpsWrites, &utilization, &timeSpentComputingThisEpoch, &epochDuration);
-  jll_player_info("computed %u FPS wrote %u FPS %u%% %lld/%lldms", fpsCompute, fpsWrites, utilization,
-                  MsForLogs(timeSpentComputingThisEpoch), MsForLogs(epochDuration));
+  jll_protocol_info("computed %u FPS wrote %u FPS %u%% %lld/%lldms", fpsCompute, fpsWrites, utilization,
+                    MsForLogs(timeSpentComputingThisEpoch), MsForLogs(epochDuration));
   printInstrumentationInfo();
 }
 

@@ -107,4 +107,14 @@ void SetupLogging();
 
 #define jll_buffer_debug2(bufferClass, ...) jll_buffer_debug(&(bufferClass)[0], (bufferClass).size(), ##__VA_ARGS__)
 
+#ifndef JL_SILENCE_PROTOCOL_LOGS
+#define JL_SILENCE_PROTOCOL_LOGS 0
+#endif  // JL_SILENCE_PROTOCOL_LOGS
+
+#if JL_SILENCE_PROTOCOL_LOGS
+#define jll_protocol_info(...) jll_debug(__VA_ARGS__)
+#else  // JL_SILENCE_PROTOCOL_LOGS
+#define jll_protocol_info(...) jll_info(__VA_ARGS__)
+#endif  // JL_SILENCE_PROTOCOL_LOGS
+
 #endif  // JL_UTIL_LOG_H
