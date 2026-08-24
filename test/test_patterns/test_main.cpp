@@ -28,7 +28,7 @@ class NoOpRenderer : public Renderer {
   void RenderPixel(size_t /*index*/, CRGB /*color*/) override {}
 };
 
-void test_pattern(const Effect& effect) {
+void TestPattern(const Effect& effect) {
   Matrix layout(1, 1);
   NoOpRenderer renderer;
   Strand strand = {layout, renderer, 0};
@@ -66,153 +66,153 @@ void test_pattern(const Effect& effect) {
   frame.context = nullptr;
 }
 
-void test_spin_pattern() {
+void TestSpinPattern() {
   static const SpinPlasma kSpinPattern;
-  test_pattern(kSpinPattern);
+  TestPattern(kSpinPattern);
 }
-void test_hiphotic_pattern() {
+void TestHiphoticPattern() {
   static const Hiphotic kHiphoticPattern;
-  test_pattern(kHiphoticPattern);
+  TestPattern(kHiphoticPattern);
 }
-void test_metaballs_pattern() {
+void TestMetaballsPattern() {
   static const Metaballs kMetaballsPattern;
-  test_pattern(kMetaballsPattern);
+  TestPattern(kMetaballsPattern);
 }
-void test_colored_bursts_pattern() {
+void TestColoredBurstsPattern() {
   static const ColoredBursts kColoredBurstsPattern;
-  test_pattern(kColoredBurstsPattern);
+  TestPattern(kColoredBurstsPattern);
 }
-void test_flame_pattern() {
+void TestFlamePattern() {
   static const Flame kFlamePattern;
-  test_pattern(kFlamePattern);
+  TestPattern(kFlamePattern);
 }
-void test_glitter_pattern() {
+void TestGlitterPattern() {
   static const Glitter kGlitterPattern;
-  test_pattern(kGlitterPattern);
+  TestPattern(kGlitterPattern);
 }
-void test_thematrix_pattern() {
+void TestThematrixPattern() {
   static const TheMatrix kTheMatrixPattern;
-  test_pattern(kTheMatrixPattern);
+  TestPattern(kTheMatrixPattern);
 }
-void test_rings_pattern() {
+void TestRingsPattern() {
   static const Rings kRingsPattern;
-  test_pattern(kRingsPattern);
+  TestPattern(kRingsPattern);
 }
-void test_threesine_pattern() {
+void TestThreesinePattern() {
   static const FunctionalEffect kThreesinePattern = Threesine();
-  test_pattern(kThreesinePattern);
+  TestPattern(kThreesinePattern);
 }
-void test_follow_strand_effect() {
+void TestFollowStrandEffect() {
   static const FunctionalEffect kFollowStrandEffect = FollowStrand();
-  test_pattern(kFollowStrandEffect);
+  TestPattern(kFollowStrandEffect);
 }
-void test_mapping_effect() {
+void TestMappingEffect() {
   static const FunctionalEffect kMappingEffect = Mapping();
-  test_pattern(kMappingEffect);
+  TestPattern(kMappingEffect);
 }
-void test_coloring_effect() {
+void TestColoringEffect() {
   static const FunctionalEffect kColoringEffect = Coloring();
-  test_pattern(kColoringEffect);
+  TestPattern(kColoringEffect);
 }
-void test_calibration_effect() {
+void TestCalibrationEffect() {
   static const FunctionalEffect kCalibrationEffect = Calibration();
-  test_pattern(kCalibrationEffect);
+  TestPattern(kCalibrationEffect);
 }
-void test_sync_test_effect() {
+void TestSyncTestEffect() {
   static const FunctionalEffect kSyncTestEffect = SyncTest();
-  test_pattern(kSyncTestEffect);
+  TestPattern(kSyncTestEffect);
 }
-void test_black_effect() {
+void TestBlackEffect() {
   static const FunctionalEffect kBlackEffect = Solid(CRGB::Black, "black");
-  test_pattern(kBlackEffect);
+  TestPattern(kBlackEffect);
 }
-void test_red_effect() {
+void TestRedEffect() {
   static const FunctionalEffect kRedEffect = Solid(CRGB::Black, "red");
-  test_pattern(kRedEffect);
+  TestPattern(kRedEffect);
 }
-void test_green_effect() {
+void TestGreenEffect() {
   static const FunctionalEffect kGreenEffect = Solid(CRGB::Green, "green");
-  test_pattern(kGreenEffect);
+  TestPattern(kGreenEffect);
 }
-void test_blue_effect() {
+void TestBlueEffect() {
   static const FunctionalEffect kBlueEffect = Solid(CRGB::Blue, "blue");
-  test_pattern(kBlueEffect);
+  TestPattern(kBlueEffect);
 }
-void test_purple_effect() {
+void TestPurpleEffect() {
   static const FunctionalEffect kPurpleEffect = Solid(CRGB::Purple, "purple");
-  test_pattern(kPurpleEffect);
+  TestPattern(kPurpleEffect);
 }
-void test_cyan_effect() {
+void TestCyanEffect() {
   static const FunctionalEffect kCyanEffect = Solid(CRGB::Cyan, "cyan");
-  test_pattern(kCyanEffect);
+  TestPattern(kCyanEffect);
 }
-void test_yellow_effect() {
+void TestYellowEffect() {
   static const FunctionalEffect kYellowEffect = Solid(CRGB::Yellow, "yellow");
-  test_pattern(kYellowEffect);
+  TestPattern(kYellowEffect);
 }
-void test_white_effect() {
+void TestWhiteEffect() {
   static const FunctionalEffect kWhiteEffect = Solid(CRGB::White, "white");
-  test_pattern(kWhiteEffect);
+  TestPattern(kWhiteEffect);
 }
-void testred_glow_effect() {
+void TestredGlowEffect() {
   static const FunctionalEffect kRedGlowEffect = Glow(CRGB::Black, "glow-red");
-  test_pattern(kRedGlowEffect);
+  TestPattern(kRedGlowEffect);
 }
-void test_green_glow_effect() {
+void TestGreenGlowEffect() {
   static const FunctionalEffect kGreenGlowEffect = Glow(CRGB::Green, "glow-green");
-  test_pattern(kGreenGlowEffect);
+  TestPattern(kGreenGlowEffect);
 }
-void test_blue_glow_effect() {
+void TestBlueGlowEffect() {
   static const FunctionalEffect kBlueGlowEffect = Glow(CRGB::Blue, "glow-blue");
-  test_pattern(kBlueGlowEffect);
+  TestPattern(kBlueGlowEffect);
 }
-void test_purple_glow_effect() {
+void TestPurpleGlowEffect() {
   static const FunctionalEffect kPurpleGlowEffect = Glow(CRGB::Purple, "glow-purple");
-  test_pattern(kPurpleGlowEffect);
+  TestPattern(kPurpleGlowEffect);
 }
-void test_cyan_glow_effect() {
+void TestCyanGlowEffect() {
   static const FunctionalEffect kCyanGlowEffect = Glow(CRGB::Cyan, "glow-cyan");
-  test_pattern(kCyanGlowEffect);
+  TestPattern(kCyanGlowEffect);
 }
-void test_yellow_glow_effect() {
+void TestYellowGlowEffect() {
   static const FunctionalEffect kYellowGlowEffect = Glow(CRGB::Yellow, "glow-yellow");
-  test_pattern(kYellowGlowEffect);
+  TestPattern(kYellowGlowEffect);
 }
-void test_white_glow_effect() {
+void TestWhiteGlowEffect() {
   static const FunctionalEffect kWhiteGlowEffect = Glow(CRGB::White, "glow-white");
-  test_pattern(kWhiteGlowEffect);
+  TestPattern(kWhiteGlowEffect);
 }
 
-void run_unity_tests() {
+void RunUnityTests() {
   UNITY_BEGIN();
-  RUN_TEST(test_spin_pattern);
-  RUN_TEST(test_hiphotic_pattern);
-  RUN_TEST(test_metaballs_pattern);
-  RUN_TEST(test_colored_bursts_pattern);
-  RUN_TEST(test_flame_pattern);
-  RUN_TEST(test_glitter_pattern);
-  RUN_TEST(test_thematrix_pattern);
-  RUN_TEST(test_rings_pattern);
-  RUN_TEST(test_threesine_pattern);
-  RUN_TEST(test_follow_strand_effect);
-  RUN_TEST(test_mapping_effect);
-  RUN_TEST(test_coloring_effect);
-  RUN_TEST(test_calibration_effect);
-  RUN_TEST(test_sync_test_effect);
-  RUN_TEST(test_black_effect);
-  RUN_TEST(test_red_effect);
-  RUN_TEST(test_green_effect);
-  RUN_TEST(test_blue_effect);
-  RUN_TEST(test_purple_effect);
-  RUN_TEST(test_cyan_effect);
-  RUN_TEST(test_yellow_effect);
-  RUN_TEST(test_white_effect);
-  RUN_TEST(test_green_glow_effect);
-  RUN_TEST(test_blue_glow_effect);
-  RUN_TEST(test_purple_glow_effect);
-  RUN_TEST(test_cyan_glow_effect);
-  RUN_TEST(test_yellow_glow_effect);
-  RUN_TEST(test_white_glow_effect);
+  RUN_TEST(TestSpinPattern);
+  RUN_TEST(TestHiphoticPattern);
+  RUN_TEST(TestMetaballsPattern);
+  RUN_TEST(TestColoredBurstsPattern);
+  RUN_TEST(TestFlamePattern);
+  RUN_TEST(TestGlitterPattern);
+  RUN_TEST(TestThematrixPattern);
+  RUN_TEST(TestRingsPattern);
+  RUN_TEST(TestThreesinePattern);
+  RUN_TEST(TestFollowStrandEffect);
+  RUN_TEST(TestMappingEffect);
+  RUN_TEST(TestColoringEffect);
+  RUN_TEST(TestCalibrationEffect);
+  RUN_TEST(TestSyncTestEffect);
+  RUN_TEST(TestBlackEffect);
+  RUN_TEST(TestRedEffect);
+  RUN_TEST(TestGreenEffect);
+  RUN_TEST(TestBlueEffect);
+  RUN_TEST(TestPurpleEffect);
+  RUN_TEST(TestCyanEffect);
+  RUN_TEST(TestYellowEffect);
+  RUN_TEST(TestWhiteEffect);
+  RUN_TEST(TestGreenGlowEffect);
+  RUN_TEST(TestBlueGlowEffect);
+  RUN_TEST(TestPurpleGlowEffect);
+  RUN_TEST(TestCyanGlowEffect);
+  RUN_TEST(TestYellowGlowEffect);
+  RUN_TEST(TestWhiteGlowEffect);
   UNITY_END();
 }
 
@@ -224,14 +224,14 @@ void tearDown() {}
 
 #ifdef ESP32
 
-void setup() { jazzlights::run_unity_tests(); }
+void setup() { jazzlights::RunUnityTests(); }
 
 void loop() {}
 
 #else  // ESP32
 
 int main(int /*argc*/, char** /*argv*/) {
-  jazzlights::run_unity_tests();
+  jazzlights::RunUnityTests();
   return 0;
 }
 

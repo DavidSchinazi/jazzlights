@@ -8,8 +8,7 @@
 namespace jazzlights {
 namespace {
 
-class FakeDelegate : public ProtocolEngine::Delegate {
- public:
+struct FakeDelegate : public ProtocolEngine::Delegate {
   std::string PatternName(PatternBits pattern) const override { return std::to_string(pattern); }
   std::optional<PatternBits> ForcedLeadingPattern() const override { return forcedLeadingPattern; }
   void OnPatternRestart() override { patternRestarts++; }
@@ -22,8 +21,7 @@ class FakeDelegate : public ProtocolEngine::Delegate {
   int fpsReports = 0;
 };
 
-class FakeSceneWatcher : public ProtocolEngine::OrrerySceneIdWatcher {
- public:
+struct FakeSceneWatcher : public ProtocolEngine::OrrerySceneIdWatcher {
   void OnOrrerySceneId(std::optional<OrrerySceneId> orrerySceneId) override {
     lastScene = orrerySceneId;
     numCalls++;
@@ -66,7 +64,7 @@ Microseconds StartEngine(ProtocolEngine* engine, uint8_t localDeviceIdLastByte =
 
 }  // namespace
 
-void test_compute_next_pattern() {
+void TestComputeNextPattern() {
   // Make sure kStartingSecondPattern is correct.
   TEST_ASSERT_EQUAL_UINT32(ComputeNextPattern(kStartingPattern), kStartingSecondPattern);
   // The rotation never lands on a reserved pattern and never returns zero.
@@ -80,7 +78,7 @@ void test_compute_next_pattern() {
   TEST_ASSERT_EQUAL_UINT32(ComputeNextPattern(kStartingPattern), ComputeNextPattern(kStartingPattern));
 }
 
-void test_apply_palette() {
+void TestApplyPalette() {
   for (uint8_t palette = 0; palette < 8; palette++) {
     const PatternBits pattern = ApplyPalette(kPatternA, palette);
     TEST_ASSERT_EQUAL_UINT8(palette, (pattern >> 13) & 0x7);
@@ -90,7 +88,7 @@ void test_apply_palette() {
   }
 }
 
-void test_compare_precedence() {
+void TestComparePrecedence() {
   const NetworkDeviceId low = MakeDeviceId(0x01);
   const NetworkDeviceId high = MakeDeviceId(0x02);
   // Precedence dominates the device ID.
@@ -102,7 +100,7 @@ void test_compare_precedence() {
   TEST_ASSERT_EQUAL_INT(0, ComparePrecedence(100, low, 100, low));
 }
 
-void test_precedence_gain() {
+void TestPrecedenceGain() {
   constexpr Microseconds kDuration = 1000;
   // No epoch means no gain at all.
   TEST_ASSERT_EQUAL_UINT16(0, GetPrecedenceGain(std::nullopt, 500, kDuration, 100));
@@ -119,7 +117,7 @@ void test_precedence_gain() {
   TEST_ASSERT_EQUAL_UINT16(65535, AddPrecedenceGain(65500, 100));
 }
 
-void test_standalone_leading() {
+void TestStandaloneLeading() {
   FakeDelegate delegate;
   ProtocolEngine engine(&delegate);
   engine.SetupDeviceId(MakeDeviceId(0x10));
@@ -146,7 +144,7 @@ void test_standalone_leading() {
   TEST_ASSERT(engine.currentLeader() == engine.localDeviceId());
 }
 
-void test_follow_higher_precedence() {
+void TestFollowHigherPrecedence() {
   FakeDelegate delegate;
   ProtocolEngine engine(&delegate);
   const Microseconds t0 = StartEngine(&engine);
@@ -172,7 +170,7 @@ void test_follow_higher_precedence() {
   TEST_ASSERT_EQUAL_UINT8(1, message->numHops);
 }
 
-void test_ignore_lower_precedence() {
+void TestIgnoreLowerPrecedence() {
   FakeDelegate delegate;
   ProtocolEngine engine(&delegate);
   const Microseconds t0 = StartEngine(&engine);
@@ -188,7 +186,7 @@ void test_ignore_lower_precedence() {
   TEST_ASSERT_EQUAL_INT(0, delegate.patternRestarts);
 }
 
-void test_equal_precedence_uses_device_id() {
+void TestEqualPrecedenceUsesDeviceId() {
   // A higher device ID wins a precedence tie.
   {
     FakeDelegate delegate;
@@ -211,7 +209,7 @@ void test_equal_precedence_uses_device_id() {
   }
 }
 
-void test_dropped_messages() {
+void TestDroppedMessages() {
   FakeDelegate delegate;
   ProtocolEngine engine(&delegate);
   const Microseconds t0 = StartEngine(&engine);
@@ -238,7 +236,7 @@ void test_dropped_messages() {
   TEST_ASSERT(engine.currentLeader() == us);
 }
 
-void test_originator_ages_out() {
+void TestOriginatorAgesOut() {
   FakeDelegate delegate;
   ProtocolEngine engine(&delegate);
   const Microseconds t0 = StartEngine(&engine);
@@ -255,7 +253,7 @@ void test_originator_ages_out() {
   TEST_ASSERT_EQUAL_UINT8(0, engine.currentNumHops());
 }
 
-void test_retraction() {
+void TestRetraction() {
   FakeDelegate delegate;
   ProtocolEngine engine(&delegate);
   const Microseconds t0 = StartEngine(&engine);
@@ -274,7 +272,7 @@ void test_retraction() {
   TEST_ASSERT(engine.currentLeader() == originatorB);
 }
 
-void test_next_hop_selection() {
+void TestNextHopSelection() {
   FakeDelegate delegate;
   ProtocolEngine engine(&delegate);
   const Microseconds t0 = StartEngine(&engine);
@@ -313,7 +311,7 @@ void test_next_hop_selection() {
   TEST_ASSERT_EQUAL_UINT8(2, engine.currentNumHops());
 }
 
-void test_pattern_start_time_debounce() {
+void TestPatternStartTimeDebounce() {
   constexpr Microseconds kMs = kMicrosecondsPerMillisecond;
   const NetworkDeviceId other = MakeDeviceId(0x20);
 
@@ -369,7 +367,7 @@ void test_pattern_start_time_debounce() {
   }
 }
 
-void test_leading_pattern_advance() {
+void TestLeadingPatternAdvance() {
   FakeDelegate delegate;
   ProtocolEngine engine(&delegate);
   const Microseconds t0 = StartEngine(&engine);
@@ -394,7 +392,7 @@ void test_leading_pattern_advance() {
   TEST_ASSERT_EQUAL_INT64(t0 + 4 * kEffectDuration, engine.currentPatternStartTime());
 }
 
-void test_looping_pins_the_pattern() {
+void TestLoopingPinsThePattern() {
   FakeDelegate delegate;
   ProtocolEngine engine(&delegate);
   const Microseconds t0 = StartEngine(&engine);
@@ -413,7 +411,7 @@ void test_looping_pins_the_pattern() {
   TEST_ASSERT_NOT_EQUAL(pinned, engine.GetNextPattern());
 }
 
-void test_forced_palette_survives_rotation() {
+void TestForcedPaletteSurvivesRotation() {
   FakeDelegate delegate;
   ProtocolEngine engine(&delegate);
   StartEngine(&engine);
@@ -436,7 +434,7 @@ void test_forced_palette_survives_rotation() {
   TEST_ASSERT_FALSE(engine.forcedPalette());
 }
 
-void test_forced_leading_pattern() {
+void TestForcedLeadingPattern() {
   FakeDelegate delegate;
   delegate.forcedLeadingPattern = kPatternA;
   ProtocolEngine engine(&delegate);
@@ -449,7 +447,7 @@ void test_forced_leading_pattern() {
   TEST_ASSERT(engine.isLooping());
 }
 
-void test_recent_user_input_keeps_us_leading() {
+void TestRecentUserInputKeepsUsLeading() {
   FakeDelegate delegate;
   ProtocolEngine engine(&delegate);
   StartEngine(&engine);
@@ -468,7 +466,7 @@ void test_recent_user_input_keeps_us_leading() {
   TEST_ASSERT(engine.currentLeader() == other);
 }
 
-void test_orrery_scene_id() {
+void TestOrrerySceneId() {
   FakeDelegate delegate;
   ProtocolEngine engine(&delegate);
   const Microseconds t0 = StartEngine(&engine);
@@ -494,7 +492,7 @@ void test_orrery_scene_id() {
   TEST_ASSERT_FALSE(message->orrerySceneId.has_value());
 }
 
-void test_orrery_scene_id_watcher() {
+void TestOrrerySceneIdWatcher() {
   FakeDelegate delegate;
   FakeSceneWatcher watcher;
   ProtocolEngine engine(&delegate);
@@ -511,28 +509,28 @@ void test_orrery_scene_id_watcher() {
   TEST_ASSERT_EQUAL_UINT8(4, *watcher.lastScene);
 }
 
-void run_unity_tests() {
+void RunUnityTests() {
   UNITY_BEGIN();
-  RUN_TEST(test_compute_next_pattern);
-  RUN_TEST(test_apply_palette);
-  RUN_TEST(test_compare_precedence);
-  RUN_TEST(test_precedence_gain);
-  RUN_TEST(test_standalone_leading);
-  RUN_TEST(test_follow_higher_precedence);
-  RUN_TEST(test_ignore_lower_precedence);
-  RUN_TEST(test_equal_precedence_uses_device_id);
-  RUN_TEST(test_dropped_messages);
-  RUN_TEST(test_originator_ages_out);
-  RUN_TEST(test_retraction);
-  RUN_TEST(test_next_hop_selection);
-  RUN_TEST(test_pattern_start_time_debounce);
-  RUN_TEST(test_leading_pattern_advance);
-  RUN_TEST(test_looping_pins_the_pattern);
-  RUN_TEST(test_forced_palette_survives_rotation);
-  RUN_TEST(test_forced_leading_pattern);
-  RUN_TEST(test_recent_user_input_keeps_us_leading);
-  RUN_TEST(test_orrery_scene_id);
-  RUN_TEST(test_orrery_scene_id_watcher);
+  RUN_TEST(TestComputeNextPattern);
+  RUN_TEST(TestApplyPalette);
+  RUN_TEST(TestComparePrecedence);
+  RUN_TEST(TestPrecedenceGain);
+  RUN_TEST(TestStandaloneLeading);
+  RUN_TEST(TestFollowHigherPrecedence);
+  RUN_TEST(TestIgnoreLowerPrecedence);
+  RUN_TEST(TestEqualPrecedenceUsesDeviceId);
+  RUN_TEST(TestDroppedMessages);
+  RUN_TEST(TestOriginatorAgesOut);
+  RUN_TEST(TestRetraction);
+  RUN_TEST(TestNextHopSelection);
+  RUN_TEST(TestPatternStartTimeDebounce);
+  RUN_TEST(TestLeadingPatternAdvance);
+  RUN_TEST(TestLoopingPinsThePattern);
+  RUN_TEST(TestForcedPaletteSurvivesRotation);
+  RUN_TEST(TestForcedLeadingPattern);
+  RUN_TEST(TestRecentUserInputKeepsUsLeading);
+  RUN_TEST(TestOrrerySceneId);
+  RUN_TEST(TestOrrerySceneIdWatcher);
   UNITY_END();
 }
 
@@ -544,14 +542,14 @@ void tearDown() {}
 
 #ifdef ESP32
 
-void setup() { jazzlights::run_unity_tests(); }
+void setup() { jazzlights::RunUnityTests(); }
 
 void loop() {}
 
 #else  // ESP32
 
 int main(int /*argc*/, char** /*argv*/) {
-  jazzlights::run_unity_tests();
+  jazzlights::RunUnityTests();
   return 0;
 }
 

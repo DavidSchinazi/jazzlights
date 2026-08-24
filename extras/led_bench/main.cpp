@@ -34,9 +34,9 @@
   CLEDController* c##n = nullptr;    \
   CRGB leds##n[numLeds##n] = {};
 
-uint8_t brightness = 10;
+uint8_t gBrightness = 10;
 
-void setLEDs(uint32_t milli, CRGB* leds, size_t numLeds, CRGB colorA, CRGB colorB) {
+void SetLeds(uint32_t milli, CRGB* leds, size_t numLeds, CRGB colorA, CRGB colorB) {
   for (size_t i = 0; i < numLeds; i++) {
     if (((i % 2) == 0) ^ (milli % 1000 < 500)) {
       leds[i] = colorA;
@@ -59,9 +59,9 @@ void setLEDs(uint32_t milli, CRGB* leds, size_t numLeds, CRGB colorA, CRGB color
   ::printf(#s ": %d\n", milli2 - milli); \
   milli = milli2;
 
-#define SET_LEDS(n, ca, cb) setLEDs(milli, leds##n, numLeds##n, ca, cb);
-#define SHOW_LEDS(n)          \
-  c##n->showLeds(brightness); \
+#define SET_LEDS(n, ca, cb) SetLeds(milli, leds##n, numLeds##n, ca, cb);
+#define SHOW_LEDS(n)           \
+  c##n->showLeds(gBrightness); \
   LOG_TIME(show##n)
 
 #define LED_SIZE 360

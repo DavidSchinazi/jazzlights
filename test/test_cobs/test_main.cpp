@@ -9,7 +9,7 @@
 
 namespace jazzlights {
 
-void test_cobs_buffers(const BufferViewU8 inputBuffers[], size_t numInputBuffers) {
+void TestCobsBuffers(const BufferViewU8 inputBuffers[], size_t numInputBuffers) {
   size_t inputBufferLength = 0;
   for (size_t i = 0; i < numInputBuffers; ++i) { inputBufferLength += inputBuffers[i].size(); }
   size_t encodeBufferLength = CobsMaxEncodedSize(inputBufferLength);
@@ -29,14 +29,14 @@ void test_cobs_buffers(const BufferViewU8 inputBuffers[], size_t numInputBuffers
       TEST_FAIL_MESSAGE("encode failure");
       break;
     }
-    bool bad_encoding = false;
+    bool badEncoding = false;
     for (size_t i = 0; i < encodedBuffer.size(); ++i) {
       if (encodeBuffer[i] == 0x00) {
-        bad_encoding = true;
+        badEncoding = true;
         break;
       }
     }
-    if (bad_encoding) {
+    if (badEncoding) {
       TEST_FAIL_MESSAGE("zero found in encoding");
       break;
     }
@@ -58,15 +58,15 @@ void test_cobs_buffers(const BufferViewU8 inputBuffers[], size_t numInputBuffers
   } while (false);
 }
 
-void test_cobs_buffer(const BufferViewU8 inputBuffer) { test_cobs_buffers(&inputBuffer, 1); }
+void TestCobsBuffer(const BufferViewU8 inputBuffer) { TestCobsBuffers(&inputBuffer, 1); }
 
-void test_cobs(size_t inputLength) {
+void TestCobs(size_t inputLength) {
   OwnedBufferU8 inputBuffer(inputLength);
   for (size_t i = 0; i < inputBuffer.size(); ++i) { inputBuffer[i] = UnpredictableRandom::GetByte(); }
-  test_cobs_buffer(inputBuffer);
+  TestCobsBuffer(inputBuffer);
 }
 
-void test_cobs_split(size_t inputLength) {
+void TestCobsSplit(size_t inputLength) {
   size_t inputLength1 = UnpredictableRandom::GetNumberBetween(0, inputLength);
   size_t inputLength2 = inputLength - inputLength1;
   OwnedBufferU8 inputBuffer1(inputLength1);
@@ -74,23 +74,23 @@ void test_cobs_split(size_t inputLength) {
   for (size_t i = 0; i < inputBuffer1.size(); ++i) { inputBuffer1[i] = UnpredictableRandom::GetByte(); }
   for (size_t i = 0; i < inputBuffer2.size(); ++i) { inputBuffer2[i] = UnpredictableRandom::GetByte(); }
   BufferViewU8 inputs[] = {inputBuffer1, inputBuffer2};
-  test_cobs_buffers(inputs, 2);
+  TestCobsBuffers(inputs, 2);
 }
 
-void test_short() { test_cobs(10); }
-void test_big() { test_cobs(1000); }
-void test_multiple() {
-  for (size_t i = 1; i < 10000; i += 10) { test_cobs(i); }
+void TestShort() { TestCobs(10); }
+void TestBig() { TestCobs(1000); }
+void TestMultiple() {
+  for (size_t i = 1; i < 10000; i += 10) { TestCobs(i); }
 }
-void test_multiple_split() {
-  for (size_t i = 1; i < 10000; i += 10) { test_cobs_split(i); }
+void TestMultipleSplit() {
+  for (size_t i = 1; i < 10000; i += 10) { TestCobsSplit(i); }
 }
 
-void run_unity_tests() {
+void RunUnityTests() {
   UNITY_BEGIN();
-  RUN_TEST(test_short);
-  RUN_TEST(test_big);
-  RUN_TEST(test_multiple);
+  RUN_TEST(TestShort);
+  RUN_TEST(TestBig);
+  RUN_TEST(TestMultiple);
   UNITY_END();
 }
 
@@ -102,14 +102,14 @@ void tearDown() {}
 
 #ifdef ESP32
 
-void setup() { jazzlights::run_unity_tests(); }
+void setup() { jazzlights::RunUnityTests(); }
 
 void loop() {}
 
 #else  // ESP32
 
 int main(int /*argc*/, char** /*argv*/) {
-  jazzlights::run_unity_tests();
+  jazzlights::RunUnityTests();
   return 0;
 }
 

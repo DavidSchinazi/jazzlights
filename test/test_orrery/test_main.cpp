@@ -7,7 +7,7 @@
 
 namespace jazzlights {
 
-void test_orrery_message_serialization() {
+void TestOrreryMessageSerialization() {
   OrreryMessage msg1;
   msg1.type = OrreryMessageType::LeaderCommand;
   msg1.leaderBootId = 0x12345678;
@@ -48,7 +48,7 @@ void test_orrery_message_serialization() {
   TEST_ASSERT(reader.Done());
 }
 
-void test_orrery_message_hall_sensor_serialization() {
+void TestOrreryMessageHallSensorSerialization() {
   OrreryMessage msg1;
   msg1.type = OrreryMessageType::FollowerResponse;
   msg1.leaderBootId = 0xDEADBEEF;
@@ -83,7 +83,7 @@ void test_orrery_message_hall_sensor_serialization() {
   TEST_ASSERT(reader.Done());
 }
 
-void test_orrery_message_sparse_serialization() {
+void TestOrreryMessageSparseSerialization() {
   OrreryMessage msg1;
   msg1.type = OrreryMessageType::FollowerResponse;
   msg1.leaderBootId = 0x11223344;
@@ -119,7 +119,7 @@ void test_orrery_message_sparse_serialization() {
   TEST_ASSERT(reader.Done());
 }
 
-void test_orrery_message_disable_serialization() {
+void TestOrreryMessageDisableSerialization() {
   OrreryMessage msg1;
   msg1.type = OrreryMessageType::LeaderCommand;
   msg1.leaderBootId = 0x12345678;
@@ -139,12 +139,12 @@ void test_orrery_message_disable_serialization() {
   TEST_ASSERT(reader.Done());
 }
 
-void run_unity_tests() {
+void RunUnityTests() {
   UNITY_BEGIN();
-  RUN_TEST(test_orrery_message_serialization);
-  RUN_TEST(test_orrery_message_hall_sensor_serialization);
-  RUN_TEST(test_orrery_message_sparse_serialization);
-  RUN_TEST(test_orrery_message_disable_serialization);
+  RUN_TEST(TestOrreryMessageSerialization);
+  RUN_TEST(TestOrreryMessageHallSensorSerialization);
+  RUN_TEST(TestOrreryMessageSparseSerialization);
+  RUN_TEST(TestOrreryMessageDisableSerialization);
   UNITY_END();
 }
 
@@ -156,14 +156,14 @@ void tearDown() {}
 
 #ifdef ESP32
 
-void setup() { jazzlights::run_unity_tests(); }
+void setup() { jazzlights::RunUnityTests(); }
 
 void loop() {}
 
 #else  // ESP32
 
 int main(int /*argc*/, char** /*argv*/) {
-  jazzlights::run_unity_tests();
+  jazzlights::RunUnityTests();
   return 0;
 }
 

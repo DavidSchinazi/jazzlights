@@ -14,17 +14,17 @@
 
 namespace jazzlights {
 
-const int WIN_W = 960;
-const int WIN_H = 720;
+const int kWinWidth = 960;
+const int kWinHeight = 720;
 
-static Player* player = nullptr;
-static Box viewport = {
+static Player* sPlayer = nullptr;
+static Box sViewport = {
     {0.0, 0.0},
     {0.0, 0.0}
 };
 
-void onResize(GLFWwindow*, int winWidth, int winHeight) {
-  const Box& vp = viewport;
+void OnResize(GLFWwindow*, int winWidth, int winHeight) {
+  const Box& vp = sViewport;
   double aspect = winHeight * Width(vp) / (winWidth * Height(vp));
 
   glViewport(0, 0, winWidth, winHeight);
@@ -35,29 +35,29 @@ void onResize(GLFWwindow*, int winWidth, int winHeight) {
   glLoadIdentity();
 }
 
-void onKey(GLFWwindow* window, int key, int /*scncode*/, int action, int mods) {
+void OnKey(GLFWwindow* window, int key, int /*scncode*/, int action, int mods) {
   if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
-    player->LoopOne();
+    sPlayer->LoopOne();
   } else if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
-    player->StopLooping();
-    player->Next();
+    sPlayer->StopLooping();
+    sPlayer->Next();
   } else if (key == GLFW_KEY_0 && action == GLFW_PRESS && (mods & GLFW_MOD_SHIFT)) {
   } else if (key == GLFW_KEY_ESCAPE || (key == GLFW_KEY_C && (mods & GLFW_MOD_CONTROL))) {
     glfwSetWindowShouldClose(window, GL_TRUE);
   }
 };
 
-int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen, OptionalMicroseconds killTime) {
-  player = &playerRef;
-  viewport = vp;
+int RunGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen, OptionalMicroseconds killTime) {
+  sPlayer = &playerRef;
+  sViewport = vp;
 
-  jll_info("Running GUI, view box is (%0.3f, %0.3f) - (%0.3f, %0.3f) meters, using GLFW v.%s", Left(player->bounds()),
-           Top(player->bounds()), Right(player->bounds()), Bottom(player->bounds()), glfwGetVersionString());
+  jll_info("Running GUI, view box is (%0.3f, %0.3f) - (%0.3f, %0.3f) meters, using GLFW v.%s", Left(sPlayer->bounds()),
+           Top(sPlayer->bounds()), Right(sPlayer->bounds()), Bottom(sPlayer->bounds()), glfwGetVersionString());
 
   if (!glfwInit()) { jll_fatal("Can't initialize graphics"); }
 
-  int winWidth = WIN_W;
-  int winHeight = WIN_H;
+  int winWidth = kWinWidth;
+  int winHeight = kWinHeight;
   GLFWmonitor* monitor = nullptr;
 
   if (fullscreen) {
@@ -75,13 +75,13 @@ int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen, Opt
       glfwCreateWindow(winWidth, winHeight, winTitle, fullscreen ? glfwGetPrimaryMonitor() : nullptr, nullptr);
   if (!window) { jll_fatal("Can't create window"); }
 
-  glfwSetFramebufferSizeCallback(window, onResize);
+  glfwSetFramebufferSizeCallback(window, OnResize);
   glfwMakeContextCurrent(window);
-  glfwSetKeyCallback(window, onKey);
+  glfwSetKeyCallback(window, OnKey);
 
   int fbWidth, fbHeight;
   glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
-  onResize(window, fbWidth, fbHeight);
+  OnResize(window, fbWidth, fbHeight);
 
   glClearColor(0.15, 0.15, 0.15, 1);
   while (!glfwWindowShouldClose(window)) {
@@ -91,9 +91,9 @@ int runGui(const char* winTitle, Player& playerRef, Box vp, bool fullscreen, Opt
     }
     glClear(GL_COLOR_BUFFER_BIT);
 
-    player->Render();
+    sPlayer->Render();
     std::ostringstream title;
-    title << "jazzlights-demo-" << REVISION << " " << player->CurrentEffectName();
+    title << "jazzlights-demo-" << REVISION << " " << sPlayer->CurrentEffectName();
     glfwSetWindowTitle(window, title.str().c_str());
 
     glfwSwapBuffers(window);

@@ -6,7 +6,7 @@
 
 namespace jazzlights {
 
-void test_network_reader() {
+void TestNetworkReader() {
   uint8_t buffer[7] = {1, 2, 3, 4, 5, 6, 7};
   ProtocolReader reader(buffer, sizeof(buffer));
   uint8_t u8;
@@ -20,7 +20,7 @@ void test_network_reader() {
   TEST_ASSERT_EQUAL(u32, 0x04050607);
   TEST_ASSERT_FALSE(reader.ReadUint8(&u8));
 }
-void test_network_writer() {
+void TestNetworkWriter() {
   uint8_t buffer[7] = {};
   ProtocolWriter writer(buffer, sizeof(buffer));
   uint8_t u8 = 1;
@@ -39,9 +39,9 @@ void test_network_writer() {
   TEST_ASSERT_FALSE(writer.WriteUint8(u8));
 }
 
-void test_network_int32() {
+void TestNetworkInt32() {
   int32_t values[] = {0, -1, 2147483647, -2147483648};
-  uint8_t expected_bytes[][4] = {
+  uint8_t expectedBytes[][4] = {
       {0x00, 0x00, 0x00, 0x00},
       {0xFF, 0xFF, 0xFF, 0xFF},
       {0x7F, 0xFF, 0xFF, 0xFF},
@@ -52,7 +52,7 @@ void test_network_int32() {
     uint8_t buffer[4];
     ProtocolWriter writer(buffer, sizeof(buffer));
     TEST_ASSERT(writer.WriteInt32(values[i]));
-    for (size_t j = 0; j < 4; ++j) { TEST_ASSERT_EQUAL_HEX8(expected_bytes[i][j], buffer[j]); }
+    for (size_t j = 0; j < 4; ++j) { TEST_ASSERT_EQUAL_HEX8(expectedBytes[i][j], buffer[j]); }
 
     ProtocolReader reader(buffer, sizeof(buffer));
     int32_t out;
@@ -61,11 +61,11 @@ void test_network_int32() {
   }
 }
 
-void run_unity_tests() {
+void RunUnityTests() {
   UNITY_BEGIN();
-  RUN_TEST(test_network_reader);
-  RUN_TEST(test_network_writer);
-  RUN_TEST(test_network_int32);
+  RUN_TEST(TestNetworkReader);
+  RUN_TEST(TestNetworkWriter);
+  RUN_TEST(TestNetworkInt32);
   UNITY_END();
 }
 
@@ -77,14 +77,14 @@ void tearDown() {}
 
 #ifdef ESP32
 
-void setup() { jazzlights::run_unity_tests(); }
+void setup() { jazzlights::RunUnityTests(); }
 
 void loop() {}
 
 #else  // ESP32
 
 int main(int /*argc*/, char** /*argv*/) {
-  jazzlights::run_unity_tests();
+  jazzlights::RunUnityTests();
   return 0;
 }
 

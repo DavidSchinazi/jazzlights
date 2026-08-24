@@ -10,7 +10,7 @@
 
 namespace jazzlights {
 
-int runMain(int argc, char** argv) {
+int RunMain(int argc, char** argv) {
   OptionalMicroseconds killTime;
   bool startLooping = false;
   bool shouldSetPattern = false;
@@ -38,9 +38,9 @@ int runMain(int argc, char** argv) {
   if (startLooping) { player.LoopOne(); }
   if (shouldSetPattern) { player.SetPattern(pattern); }
 
-  return runGui("JazzLights Demo", player, player.bounds(), /*fullscreen=*/false, killTime);
+  return RunGui("JazzLights Demo", player, player.bounds(), /*fullscreen=*/false, killTime);
 }
 
 }  // namespace jazzlights
 
-int main(int argc, char** argv) { return jazzlights::runMain(argc, argv); }
+int main(int argc, char** argv) { return jazzlights::RunMain(argc, argv); }

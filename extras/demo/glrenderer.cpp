@@ -4,23 +4,23 @@
 #include <math.h>
 namespace jazzlights {
 
-static constexpr double TWO_PI = 2 * 3.1415926;
+static constexpr double kTwoPi = 2 * 3.1415926;
 
-static void renderLed(double cx, double cy, double r, CRGB color, int segments = 6) {
+static void RenderLed(double cx, double cy, double r, CRGB color, int segments = 6) {
   glColor3f(color.red / 255.f, color.green / 255.f, color.blue / 255.f);
   glBegin(GL_TRIANGLE_FAN);
   glVertex2f(cx, cy);
   for (int i = 0; i <= segments; i++) {
-    glVertex2f(cx + (r * cos(i * TWO_PI / segments)), cy + (r * sin(i * TWO_PI / segments)));
+    glVertex2f(cx + (r * cos(i * kTwoPi / segments)), cy + (r * sin(i * kTwoPi / segments)));
   }
   glEnd();
 }
 
-GLRenderer::GLRenderer(const Layout& l, Meters r) : layout_(l), ledRadius_(r) {}
+GLRenderer::GLRenderer(const Layout& layout, Meters ledRadius) : layout_(layout), ledRadius_(ledRadius) {}
 
 void GLRenderer::RenderPixel(size_t index, CRGB color) {
   Point pos = layout_.At(index);
-  renderLed(pos.x, pos.y, ledRadius_, color);
+  RenderLed(pos.x, pos.y, ledRadius_, color);
 }
 
 }  // namespace jazzlights

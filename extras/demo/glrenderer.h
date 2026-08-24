@@ -8,7 +8,7 @@ namespace jazzlights {
 
 class GLRenderer : public Renderer {
  public:
-  explicit GLRenderer(const Layout& l, Meters ledRadius = 1.0 / 60.0);
+  explicit GLRenderer(const Layout& layout, Meters ledRadius = 1.0 / 60.0);
 
   void RenderPixel(size_t index, CRGB color) override;
 

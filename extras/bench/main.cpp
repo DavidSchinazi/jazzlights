@@ -7,7 +7,7 @@
 
 namespace jazzlights {
 
-Player player;
+Player gPlayer;
 Matrix gPixels(100, 100);
 
 class NoopRenderer : public Renderer {
@@ -16,9 +16,9 @@ class NoopRenderer : public Renderer {
   void RenderPixel(size_t /*index*/, CRGB /*color*/) override {}
 };
 
-NoopRenderer noopRenderer;
+NoopRenderer gNoopRenderer;
 
-int runMain(int argc, char** argv) {
+int RunMain(int argc, char** argv) {
   OptionalMicroseconds killTime;
   bool useNetwork = false;
   while (true) {
@@ -27,9 +27,9 @@ int runMain(int argc, char** argv) {
     if (ch == 'k') { killTime = TimeMicros() + strtol(optarg, nullptr, 10) * kMicrosecondsPerSecond; }
     if (ch == 'n') { useNetwork = true; }
   }
-  player.AddStrand(gPixels, noopRenderer);
-  if (useNetwork) { player.Connect(UnixUdpNetwork::Get()); }
-  player.Begin();
+  gPlayer.AddStrand(gPixels, gNoopRenderer);
+  if (useNetwork) { gPlayer.Connect(UnixUdpNetwork::Get()); }
+  gPlayer.Begin();
   Microseconds lastFpsEpochTime = 0;
   while (true) {
     const Microseconds currentTime = TimeMicros();
@@ -43,16 +43,16 @@ int runMain(int argc, char** argv) {
       uint8_t utilization = 0;
       Microseconds timeSpentComputingThisEpoch;
       Microseconds epochDuration;
-      player.GenerateFPSReport(&fpsCompute, &fpsWrites, &utilization, &timeSpentComputingThisEpoch, &epochDuration);
+      gPlayer.GenerateFPSReport(&fpsCompute, &fpsWrites, &utilization, &timeSpentComputingThisEpoch, &epochDuration);
       jll_info("%u FPS %u%% %lld/%lldms", fpsCompute, utilization, MsForLogs(timeSpentComputingThisEpoch),
                MsForLogs(epochDuration));
       lastFpsEpochTime = currentTime;
     }
-    player.Render();
+    gPlayer.Render();
   }
   return 0;
 }
 
 }  // namespace jazzlights
 
-int main(int argc, char** argv) { return jazzlights::runMain(argc, argv); }
+int main(int argc, char** argv) { return jazzlights::RunMain(argc, argv); }
