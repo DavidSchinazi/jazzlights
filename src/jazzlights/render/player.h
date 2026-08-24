@@ -6,6 +6,7 @@
 #include "jazzlights/effect/effect.h"
 #include "jazzlights/layout/layout.h"
 #include "jazzlights/network/network.h"
+#include "jazzlights/protocol/engine.h"
 #include "jazzlights/render/predictable_random.h"
 #include "jazzlights/render/renderer.h"
 #include "jazzlights/render/xy_index.h"
@@ -13,7 +14,10 @@
 
 namespace jazzlights {
 
-class Player {
+// Player renders patterns onto strands. The mechanics of the synchronization protocol - leader election, the
+// originator table, and which pattern everyone agrees to display - live in ProtocolEngine, which Player owns and
+// feeds with the messages it receives from its networks.
+class Player : private ProtocolEngine::Delegate {
  public:
   Player();
   ~Player();
@@ -48,17 +52,17 @@ class Player {
   /**
    *  Loop current effect forever.
    */
-  void loopOne();
+  void loopOne() { engine_.LoopOne(); }
 
   /**
    *  Stop looping current effect forever.
    */
-  void stopLooping();
+  void stopLooping() { engine_.StopLooping(); }
 
   /**
    *  Returns whether we are looping current effect forever.
    */
-  bool isLooping() const { return loop_; }
+  bool isLooping() const { return engine_.isLooping(); }
 
   /**
    *  Sets the current pattern and correspondingly resets the next pattern.
@@ -73,17 +77,17 @@ class Player {
   /**
    *  Cancels previous call to forcePalette.
    */
-  void stopForcePalette();
+  void stopForcePalette() { engine_.StopForcePalette(); }
 
   /**
    * Returns whether the palette is currently forced.
    */
-  bool paletteIsForced() const { return paletteIsForced_; }
+  bool paletteIsForced() const { return engine_.paletteIsForced(); }
 
   /**
    * Returns the currently forced palette.
    */
-  uint8_t forcedPalette() const { return forcedPalette_; }
+  uint8_t forcedPalette() const { return engine_.forcedPalette(); }
 
   /**
    * Run text command
@@ -113,16 +117,16 @@ class Player {
   uint8_t brightness() const { return brightness_; }
   void set_brightness(uint8_t brightness);
 
-  void setBasePrecedence(Precedence basePrecedence) { basePrecedence_ = basePrecedence; }
-  void setPrecedenceGain(Precedence precedenceGain) { precedenceGain_ = precedenceGain; }
+  void setBasePrecedence(Precedence basePrecedence) { engine_.SetBasePrecedence(basePrecedence); }
+  void setPrecedenceGain(Precedence precedenceGain) { engine_.SetPrecedenceGain(precedenceGain); }
   void updatePrecedence(Precedence basePrecedence, Precedence precedenceGain);
-  void setRandomizeLocalDeviceId(bool val) { randomizeLocalDeviceId_ = val; }
+  void setRandomizeLocalDeviceId(bool val) { engine_.SetRandomizeLocalDeviceId(val); }
 
   PredictableRandom* predictableRandom() { return &predictableRandom_; }
   PatternBits currentEffect() const;
   std::string currentEffectName() const;
-  NetworkType following() const { return followedNextHopNetworkType_; }
-  NumHops currentNumHops() const { return currentNumHops_; }
+  NetworkType following() const { return engine_.following(); }
+  NumHops currentNumHops() const { return engine_.currentNumHops(); }
 
   bool enabled() const { return enabled_; }
   void set_enabled(bool enabled);
@@ -153,22 +157,14 @@ class Player {
   void SetPlanetPattern(PatternBits planetPattern) { planetPattern_ = planetPattern; }
   PatternBits GetPlanetPattern() const { return planetPattern_; }
 #elif JL_IS_CONFIG(ORRERY_LEADER)
-  class OverriddenPatternWatcher {
-   public:
-    virtual ~OverriddenPatternWatcher() = default;
-    virtual void OnOverriddenPattern(std::optional<PatternBits> pattern) = 0;
-  };
+  using OverriddenPatternWatcher = ProtocolEngine::OverriddenPatternWatcher;
   void SetOverriddenPatternWatcher(OverriddenPatternWatcher* overriddenPatternWatcher) {
-    overriddenPatternWatcher_ = overriddenPatternWatcher;
+    engine_.SetOverriddenPatternWatcher(overriddenPatternWatcher);
   }
 #endif
-  class OrrerySceneIdWatcher {
-   public:
-    virtual ~OrrerySceneIdWatcher() = default;
-    virtual void OnOrrerySceneId(std::optional<OrrerySceneId> orrerySceneId) = 0;
-  };
+  using OrrerySceneIdWatcher = ProtocolEngine::OrrerySceneIdWatcher;
   void SetOrrerySceneIdWatcher(OrrerySceneIdWatcher* orrerySceneIdWatcher) {
-    orrerySceneIdWatcher_ = orrerySceneIdWatcher;
+    engine_.SetOrrerySceneIdWatcher(orrerySceneIdWatcher);
   }
 
   class NumLedWritesGetter {
@@ -178,35 +174,31 @@ class Player {
   };
   void SetNumLedWritesGetter(NumLedWritesGetter* numLedWritesGetter) { numLedWritesGetter_ = numLedWritesGetter; }
 
-  void SetOrrerySceneIdToSend(std::optional<OrrerySceneId> orrerySceneIdToSend);
+  void SetOrrerySceneIdToSend(std::optional<OrrerySceneId> orrerySceneIdToSend) {
+    engine_.SetOrrerySceneIdToSend(orrerySceneIdToSend);
+  }
 
   bool isAllLinear() const { return isAllLinear_; }
 
  private:
   void UpdateStatusWatcher();
-  void UpdateOverriddenPatternWatcher(Precedence precedence);
-  void handleReceivedMessage(NetworkMessage message);
 
-  Precedence getLocalPrecedence(Microseconds currentTime);
+  // From ProtocolEngine::Delegate.
+  std::string PatternName(PatternBits pattern) const override;
+  std::optional<PatternBits> ForcedLeadingPattern() const override;
+  void OnPatternRestart() override;
+  void OnAcceptedUpdate() override;
+  void LogFpsReport() override;
+#if JL_IS_CONFIG(CREATURE)
+  bool IsPartying() const override;
+  uint32_t CreatureColor() const override;
+  void OnCreatureHeard(uint32_t creatureColor, Microseconds heardTime, int rssi, bool isPartying) override;
+  void OnOrreryHeard() override;
+#endif  // CREATURE
 
-  struct OriginatorEntry {
-    NetworkDeviceId originator = NetworkDeviceId();
-    Precedence precedence = 0;
-    PatternBits currentPattern = 0;
-    PatternBits nextPattern = 0;
-    Microseconds currentPatternStartTime = 0;
-    Microseconds lastOriginationTime = 0;
-    NetworkDeviceId nextHopDevice = NetworkDeviceId();
-    NetworkId nextHopNetworkId = 0;
-    NetworkType nextHopNetworkType = NetworkType::kLeading;
-    NumHops numHops = 0;
-    bool retracted = false;
-    int8_t patternStartTimeMovementCounter = 0;
-  };
-
-  OriginatorEntry* getOriginatorEntry(NetworkDeviceId originator);
-  void checkLeaderAndPattern();
-  PatternBits enforceForcedPalette(PatternBits pattern);
+  // Hands the message the engine wants to advertise to every network, skipping the one we heard it from.
+  void SendPendingMessage();
+  void TriggerSendAsap();
 
 #if JL_IS_CONFIG(CLOUDS) && !JL_DEV
   bool enabled_ = false;
@@ -229,13 +221,9 @@ class Player {
   void* effectContext_ = nullptr;
   size_t effectContextSize_ = 0;
 
-  Microseconds currentPatternStartTime_ = 0;
-  PatternBits currentPattern_;
-  PatternBits nextPattern_;
   PatternBits lastBegunPattern_ = 0;
   bool shouldBeginPattern_ = true;
 
-  bool loop_ = false;
   size_t specialMode_ = 0;
 #if JL_IS_CONFIG(FAIRY_WAND)
   OptionalMicroseconds overridePatternStartTime_;
@@ -244,12 +232,7 @@ class Player {
   bool color_overridden_ = false;
   bool force_clouds_ = true;
   CRGB color_override_;
-#elif JL_IS_CONFIG(CREATURE) || JL_IS_CONFIG(ORRERY_PLANET)
-  bool creatureIsFollowingNonCreature_ = false;
-#elif JL_IS_CONFIG(ORRERY_LEADER)
-  OverriddenPatternWatcher* overriddenPatternWatcher_ = nullptr;
 #endif
-  OrrerySceneIdWatcher* orrerySceneIdWatcher_ = nullptr;
 
 #if JL_IS_CONFIG(ORRERY_PLANET)
   PatternBits planetPattern_ = 0;
@@ -257,33 +240,20 @@ class Player {
 
   NumLedWritesGetter* numLedWritesGetter_ = nullptr;
   std::vector<Network*> networks_;
-  std::list<OriginatorEntry> originatorEntries_;
 
   OptionalMicroseconds lastLEDWriteTime_;
-  OptionalMicroseconds lastUserInputTime_;
-  Precedence basePrecedence_ = 0;
-  Precedence precedenceGain_ = 0;
-  bool randomizeLocalDeviceId_ = false;
-  NetworkDeviceId localDeviceId_ = NetworkDeviceId();
-  NetworkDeviceId currentLeader_ = NetworkDeviceId();
-  NetworkId followedNextHopNetworkId_ = 0;
-  NetworkType followedNextHopNetworkType_ = NetworkType::kLeading;
-  NumHops currentNumHops_ = 0;
 
   Frame frame_;
   PredictableRandom predictableRandom_;
   XYIndexStore xyIndexStore_;
 
-  bool paletteIsForced_ = false;
-  uint8_t forcedPalette_ = 0;
-
   Microseconds fpsEpochStart_ = 0;
   Microseconds timeSpentComputingEffectsThisEpoch_ = 0;
   uint32_t framesComputedThisEpoch_ = 0;
 
-  std::optional<OrrerySceneId> orrerySceneIdToSend_;
-  OptionalMicroseconds lastOrrerySceneIdSetTime_;
   bool isAllLinear_ = false;
+
+  ProtocolEngine engine_{this};
 };
 
 std::string patternName(PatternBits pattern, const Player& player);

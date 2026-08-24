@@ -4,9 +4,6 @@
 #include <stdlib.h>
 
 #include <cstdio>
-#include <limits>
-#include <set>
-#include <sstream>
 
 #include "jazzlights/effect/calibration.h"
 #include "jazzlights/effect/clouds.h"
@@ -28,9 +25,9 @@
 #include "jazzlights/effect/sync_test.h"
 #include "jazzlights/effect/the_matrix.h"
 #include "jazzlights/effect/threesine.h"
+#include "jazzlights/protocol/engine.h"
 #include "jazzlights/util/instrumentation.h"
 #include "jazzlights/util/log.h"
-#include "jazzlights/util/pseudorandom.h"
 #include "jazzlights/util/time.h"
 
 #if !defined(ESP32) || (JL_WIFI && !JL_ESP32_WIFI) || (JL_ETHERNET && !JL_ESP32_ETHERNET)
@@ -71,66 +68,12 @@
 
 namespace jazzlights {
 namespace {
-// This value was intentionally selected by brute-forcing all possible values that start with rings-rainbow followed by
-// flame-heat and then sp-cloud, and then picking the one that will loop after the most iterations. This one loops after
-// 118284 iterations, which is more than 13 days.
-#ifndef JL_START_PATTERN
-#define JL_START_PATTERN 0x00b3db69
-#endif  // JL_START_PATTERN
-constexpr PatternBits kStartingPattern = JL_START_PATTERN;
-
 #if JL_IS_CONFIG(XMAS_TREE)
 constexpr PatternBits kWarmPattern = 0x00001500;
 #elif JL_IS_CONFIG(CREATURE)
 constexpr PatternBits kCreaturePattern = 0x0000FF00;
 #endif
 }  // namespace
-
-int comparePrecedence(Precedence leftPrecedence, const NetworkDeviceId& leftDeviceId, Precedence rightPrecedence,
-                      const NetworkDeviceId& rightDeviceId) {
-  if (leftPrecedence < rightPrecedence) {
-    return -1;
-  } else if (leftPrecedence > rightPrecedence) {
-    return 1;
-  }
-  return leftDeviceId.compare(rightDeviceId);
-}
-
-constexpr bool patternIsReserved(PatternBits pattern) {
-  // Patterns with lowest 4 bits set to zero are reserved.
-  return (pattern & 0xF) == 0;
-}
-
-PatternBits computeNextPattern(PatternBits pattern) {
-  static_assert(sizeof(PatternBits) == 4, "32bits");
-  // This code is inspired by xorshift, amended to only require 32 bits of
-  // state. This algorithm was informed by 10 minutes of Googling and a half
-  // bottle of Malbec. It is guaranteed to produce numbers.
-  pattern ^= pattern << 13;
-  pattern ^= pattern >> 17;
-  pattern ^= pattern << 5;
-  pattern += 0x1337;
-  // Apparently xorshift doesn't have great entropy in the lower bits, so let's
-  // move those around just because we can.
-  const uint8_t shift_offset = (pattern / 16384) % 32;
-  pattern = (pattern << shift_offset) | (pattern >> (32 - shift_offset));
-  if (pattern == 0) { pattern = kStartingPattern; }
-  while (patternIsReserved(pattern)) {
-    // Skip reserved patterns.
-    pattern = computeNextPattern(pattern);
-  }
-  return pattern;
-}
-
-PatternBits applyPalette(PatternBits pattern, uint8_t palette) {
-  // Avoid any reserved patterns.
-  while (patternIsReserved(pattern)) { pattern = computeNextPattern(pattern); }
-  // Clear palette.
-  pattern &= 0xFFFF1FFF;
-  // Set palette.
-  pattern |= palette << 13;
-  return pattern;
-}
 
 static constexpr CRGB warmColor() {
   // Based on the example values from:
@@ -308,6 +251,7 @@ Player& Player::addStrand(const Layout& l, Renderer& r) {
 Player& Player::connect(Network* n) {
   jll_info("Connecting network %s", NetworkTypeToString(n->type()));
   networks_.push_back(n);
+  engine_.SetHasNetworks(true);
   ready_ = false;
   return *this;
 }
@@ -328,31 +272,25 @@ void Player::begin() {
   xyIndexStore_.Finalize(frame_.viewport);
   frame_.xyIndexStore = &xyIndexStore_;
 
-  // Figure out localDeviceId_.
-  if (!randomizeLocalDeviceId_) {
-    for (const Network* network : networks_) {
-      NetworkDeviceId localDeviceId = network->getLocalDeviceId();
-      if (localDeviceId != NetworkDeviceId()) {
-        localDeviceId_ = localDeviceId;
-        break;
-      }
+  // Figure out our local device ID by asking the transports; the engine falls back to a random one.
+  engine_.SetHasNetworks(!networks_.empty());
+  NetworkDeviceId localDeviceIdFromNetworks;
+  for (const Network* network : networks_) {
+    NetworkDeviceId localDeviceId = network->getLocalDeviceId();
+    if (localDeviceId != NetworkDeviceId()) {
+      localDeviceIdFromNetworks = localDeviceId;
+      break;
     }
   }
-  while (localDeviceId_ == NetworkDeviceId()) {
-    // If no interfaces have a localDeviceId, generate one randomly.
-    uint8_t deviceIdBytes[6] = {};
-    UnpredictableRandom::GetBytes(&deviceIdBytes[0], sizeof(deviceIdBytes));
-    localDeviceId_ = NetworkDeviceId(deviceIdBytes);
-  }
-  currentLeader_ = localDeviceId_;
+  engine_.Begin(localDeviceIdFromNetworks);
   jll_info(
       "Starting JazzLights player %s; "
       "basePrecedence %u precedenceGain %u strands: %zu%s, "
       "pixels: %zu, %s " DEVICE_ID_FMT " w %f h %f ox %f oy %f xv %zu yv %zu",
-      BOOT_MESSAGE, basePrecedence_, precedenceGain_, strands_.size(), strands_.empty() ? " (CONTROLLER ONLY!)" : "",
-      frame_.pixelCount, !networks_.empty() ? "networked" : "standalone", DEVICE_ID_HEX(localDeviceId_),
-      frame_.viewport.size.width, frame_.viewport.size.height, frame_.viewport.origin.x, frame_.viewport.origin.y,
-      xyIndexStore_.xValuesCount(), xyIndexStore_.yValuesCount());
+      BOOT_MESSAGE, engine_.basePrecedence(), engine_.precedenceGain(), strands_.size(),
+      strands_.empty() ? " (CONTROLLER ONLY!)" : "", frame_.pixelCount, !networks_.empty() ? "networked" : "standalone",
+      DEVICE_ID_HEX(engine_.localDeviceId()), frame_.viewport.size.width, frame_.viewport.size.height,
+      frame_.viewport.origin.x, frame_.viewport.origin.y, xyIndexStore_.xValuesCount(), xyIndexStore_.yValuesCount());
 
   ready_ = true;
 
@@ -361,41 +299,49 @@ void Player::begin() {
   forcePalette(kForestPalette);
 #endif  // RHINO_HAT || RHINO_STAFF
 
-  currentPatternStartTime_ = timeMicros();
-  currentPattern_ = enforceForcedPalette(kStartingPattern);
-  nextPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
+  engine_.StartPatterns();
 #if defined(JL_START_SPECIAL) && JL_START_SPECIAL
   handleSpecial();
 #elif JL_IS_CONFIG(XMAS_TREE)
-  currentPattern_ = kWarmPattern;
-  nextPattern_ = currentPattern_;
-  loop_ = true;
+  engine_.SetPatternAndLoop(kWarmPattern);
 #elif JL_IS_CONFIG(HAMMER)
   // Hammer defaults to looping glow-red pattern.
-  currentPattern_ = 0x00080000;
-  nextPattern_ = currentPattern_;
-  loop_ = true;
+  engine_.SetPatternAndLoop(0x00080000);
 #elif JL_IS_CONFIG(CREATURE)
-  currentPattern_ = kCreaturePattern;
-  nextPattern_ = currentPattern_;
-  loop_ = true;
+  engine_.SetPatternAndLoop(kCreaturePattern);
 #elif JL_IS_CONFIG(ORRERY_PLANET)
-  currentPattern_ = planetPattern_;
-  nextPattern_ = currentPattern_;
-  loop_ = true;
+  engine_.SetPatternAndLoop(planetPattern_);
 #endif
 #if defined(JL_START_LOOP) && JL_START_LOOP
-  loop_ = true;
+  engine_.SetLooping(true);
 #endif  // JL_START_LOOP
 }
 
 void Player::updatePrecedence(Precedence basePrecedence, Precedence precedenceGain) {
-  if (basePrecedence == basePrecedence_ && precedenceGain == precedenceGain_) { return; }
-  basePrecedence_ = basePrecedence;
-  precedenceGain_ = precedenceGain;
-  jll_info("updating precedence to base %u gain %u", basePrecedence, precedenceGain);
+  if (!engine_.UpdatePrecedence(basePrecedence, precedenceGain)) { return; }
   if (!ready_) { return; }
-  checkLeaderAndPattern();
+  engine_.RunLoop();
+  SendPendingMessage();
+  TriggerSendAsap();
+}
+
+void Player::SendPendingMessage() {
+  NetworkMessage messageToSend;
+  if (!engine_.GetMessageToSend(&messageToSend)) { return; }
+  for (Network* network : networks_) {
+    if (!network->shouldEcho() && messageToSend.receiptNetworkId == network->id()) {
+      jll_debug("Not echoing for %s to %s ", NetworkTypeToString(network->type()),
+                networkMessageToString(messageToSend).c_str());
+      network->disableSending();
+      continue;
+    }
+    jll_player_message("Setting messageToSend for %s to %s ", NetworkTypeToString(network->type()),
+                       networkMessageToString(messageToSend).c_str());
+    network->setMessageToSend(messageToSend);
+  }
+}
+
+void Player::TriggerSendAsap() {
   for (Network* network : networks_) { network->triggerSendAsap(); }
 }
 
@@ -410,9 +356,7 @@ void Player::handleSpecial() {
   };
   specialMode_++;
   if (specialMode_ > sizeof(kSpecialPatternBits) / sizeof(kSpecialPatternBits[0])) { specialMode_ = 1; }
-  currentPattern_ = kSpecialPatternBits[specialMode_ - 1];
-  nextPattern_ = currentPattern_;
-  loop_ = true;
+  engine_.SetPatternAndLoop(kSpecialPatternBits[specialMode_ - 1]);
   jll_info("Starting special mode %zu", specialMode_);
 }
 
@@ -420,8 +364,7 @@ void Player::stopSpecial() {
   if (specialMode_ == 0) { return; }
   jll_info("Stopping special mode");
   specialMode_ = 0;
-  currentPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
-  nextPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
+  engine_.ResumeRotation();
 }
 
 #if JL_IS_CONFIG(FAIRY_WAND)
@@ -460,22 +403,26 @@ bool Player::render() {
 
   // First listen on all networks.
   for (Network* network : networks_) {
-    for (NetworkMessage receivedMessage : network->getReceivedMessages()) { handleReceivedMessage(receivedMessage); }
+    for (NetworkMessage receivedMessage : network->getReceivedMessages()) {
+      engine_.HandleReceivedMessage(receivedMessage);
+    }
   }
 
   // Then react to any received packets.
-  checkLeaderAndPattern();
+  engine_.RunLoop();
+  SendPendingMessage();
 
   // Then give all networks the opportunity to send.
   for (Network* network : networks_) { network->runLoop(); }
 
   frame_.context = nullptr;
-  if (currentTime - currentPatternStartTime_ > kEffectDuration) {
-    frame_.pattern = nextPattern_;
-    SetFrameTime(frame_, currentTime, currentPatternStartTime_ + kEffectDuration);
+  const Microseconds currentPatternStartTime = engine_.currentPatternStartTime();
+  if (currentTime - currentPatternStartTime > kEffectDuration) {
+    frame_.pattern = engine_.nextPattern();
+    SetFrameTime(frame_, currentTime, currentPatternStartTime + kEffectDuration);
   } else {
-    frame_.pattern = currentPattern_;
-    SetFrameTime(frame_, currentTime, currentPatternStartTime_);
+    frame_.pattern = engine_.currentPattern();
+    SetFrameTime(frame_, currentTime, currentPatternStartTime);
   }
 
   if (!enabled()) {
@@ -483,7 +430,7 @@ bool Player::render() {
     frame_.pattern = 0;
   }
 #if JL_IS_CONFIG(CLOUDS)
-  else if (followedNextHopNetworkId_ == 0) {
+  else if (engine_.followedNextHopNetworkId() == 0) {
     if (color_overridden_) {
       frame_.pattern = color_override_.r << 24 | color_override_.g << 16 | color_override_.b << 8 | 0x20;
     } else if (force_clouds_) {
@@ -494,7 +441,7 @@ bool Player::render() {
 #endif  // CLOUDS
 
 #if JL_IS_CONFIG(ORRERY_PLANET)
-  if (!creatureIsFollowingNonCreature_) { frame_.pattern = planetPattern_; }
+  if (!engine_.creatureIsFollowingNonCreature()) { frame_.pattern = planetPattern_; }
 #endif  // ORRERY_PLANET
 
   const Effect* effect = patternFromBits(frame_.pattern, *this);
@@ -508,9 +455,9 @@ bool Player::render() {
     }
   }
 #elif JL_IS_CONFIG(CREATURE)
-  if (!creatureIsFollowingNonCreature_) { effect = patternFromBits(kCreaturePattern, *this); }
+  if (!engine_.creatureIsFollowingNonCreature()) { effect = patternFromBits(kCreaturePattern, *this); }
 #elif JL_IS_CONFIG(ORRERY_PLANET)
-  if (!creatureIsFollowingNonCreature_) { effect = patternFromBits(planetPattern_, *this); }
+  if (!engine_.creatureIsFollowingNonCreature()) { effect = patternFromBits(planetPattern_, *this); }
 #endif  // FAIRY_WAND
 
   // Ensure effectContext_ is big enough for this effect.
@@ -623,11 +570,10 @@ std::string Player::currentEffectName() const { return patternName(lastBegunPatt
 void Player::set_enabled(bool enabled) {
   if (enabled_ == enabled) { return; }
 #if JL_IS_CONFIG(CLOUDS)
-  lastUserInputTime_.reset();
+  engine_.ClearUserInputTime();
   if (!enabled) {
     force_clouds_ = true;
-    currentPattern_ = enforceForcedPalette(currentPattern_);
-    nextPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
+    engine_.ReapplyForcedPalette();
   }
 #endif  // CLOUDS
   enabled_ = enabled;
@@ -662,38 +608,15 @@ void Player::UpdateStatusWatcher() {
 #endif  // CLOUDS
 }
 
-void Player::UpdateOverriddenPatternWatcher(Precedence precedence) {
-#if JL_IS_CONFIG(ORRERY_LEADER)
-  if (overriddenPatternWatcher_ != nullptr) {
-    if (precedence >= kDefaultOverridePrecedence) {
-      overriddenPatternWatcher_->OnOverriddenPattern(currentPattern_);
-    } else {
-      overriddenPatternWatcher_->OnOverriddenPattern(std::nullopt);
-    }
-  }
-#else   // JL_IS_CONFIG(ORRERY_LEADER)
-  (void)precedence;
-#endif  // JL_IS_CONFIG(ORRERY_LEADER)
-}
-
 #if JL_IS_CONFIG(CLOUDS)
 void Player::CloudNext() {
   set_enabled(true);
-  lastUserInputTime_ = timeMicros();
   disable_color_override();
-  if (force_clouds_) {
-    force_clouds_ = false;
-    currentPattern_ = nextPattern_;
-    nextPattern_ = enforceForcedPalette(computeNextPattern(nextPattern_));
-  }
-  currentPattern_ = nextPattern_;
-  nextPattern_ = enforceForcedPalette(computeNextPattern(nextPattern_));
-  checkLeaderAndPattern();
-  jll_info("next command processed: now current %s (%08x) next %s (%08x), currentLeader=" DEVICE_ID_FMT,
-           patternName(currentPattern_, *this).c_str(), currentPattern_, patternName(nextPattern_, *this).c_str(),
-           nextPattern_, DEVICE_ID_HEX(currentLeader_));
-
-  for (Network* network : networks_) { network->triggerSendAsap(); }
+  const bool extraAdvance = force_clouds_;
+  force_clouds_ = false;
+  engine_.CloudNext(extraAdvance);
+  SendPendingMessage();
+  TriggerSendAsap();
   if (status_watcher_ != nullptr) { status_watcher_->OnStatus(); }
 }
 #endif  // CLOUDS
@@ -702,555 +625,67 @@ void Player::next() {
 #if JL_IS_CONFIG(CLOUDS)
   set_enabled(!enabled());
 #endif  // CLOUDS
-  jll_info("next command received: switching from %s (%08x) to %s (%08x), currentLeader=" DEVICE_ID_FMT,
-           patternName(currentPattern_, *this).c_str(), currentPattern_, patternName(nextPattern_, *this).c_str(),
-           nextPattern_, DEVICE_ID_HEX(currentLeader_));
-  Microseconds currentTime = timeMicros();
-  lastUserInputTime_ = currentTime;
-  currentPatternStartTime_ = currentTime;
-  if (loop_ && currentPattern_ == nextPattern_) {
-    currentPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
-    nextPattern_ = currentPattern_;
-  } else {
-    currentPattern_ = nextPattern_;
-    nextPattern_ = enforceForcedPalette(computeNextPattern(nextPattern_));
-  }
-  checkLeaderAndPattern();
-  jll_info("next command processed: now current %s (%08x) next %s (%08x), currentLeader=" DEVICE_ID_FMT,
-           patternName(currentPattern_, *this).c_str(), currentPattern_, patternName(nextPattern_, *this).c_str(),
-           nextPattern_, DEVICE_ID_HEX(currentLeader_));
-
-  for (Network* network : networks_) { network->triggerSendAsap(); }
+  engine_.Next();
+  SendPendingMessage();
+  TriggerSendAsap();
 }
 
 void Player::setPattern(PatternBits pattern) {
-  jll_info("set pattern command received: switching from %s (%08x) to %s (%08x), currentLeader=" DEVICE_ID_FMT,
-           patternName(currentPattern_, *this).c_str(), currentPattern_, patternName(pattern, *this).c_str(), pattern,
-           DEVICE_ID_HEX(currentLeader_));
-  Microseconds currentTime = timeMicros();
-  lastUserInputTime_ = currentTime;
-  currentPatternStartTime_ = currentTime;
-  currentPattern_ = pattern;
-  if (loop_ && currentPattern_ == nextPattern_) {
-    nextPattern_ = currentPattern_;
-  } else {
-    nextPattern_ = enforceForcedPalette(computeNextPattern(pattern));
-  }
-  checkLeaderAndPattern();
-  jll_info("set pattern command processed: now current %s (%08x) next %s (%08x), currentLeader=" DEVICE_ID_FMT,
-           patternName(currentPattern_, *this).c_str(), currentPattern_, patternName(nextPattern_, *this).c_str(),
-           nextPattern_, DEVICE_ID_HEX(currentLeader_));
-
-  for (Network* network : networks_) { network->triggerSendAsap(); }
+  engine_.SetPattern(pattern);
+  SendPendingMessage();
+  TriggerSendAsap();
 }
 
 void Player::forcePalette(uint8_t palette) {
-  jll_info("Forcing palette %u", palette);
-  paletteIsForced_ = true;
-  forcedPalette_ = palette;
-  setPattern(enforceForcedPalette(currentPattern_));
+  engine_.ForcePalette(palette);
+  SendPendingMessage();
+  TriggerSendAsap();
 }
 
-void Player::stopForcePalette() {
-  if (!paletteIsForced_) { return; }
-  jll_info("Stop forcing palette %u", forcedPalette_);
-  paletteIsForced_ = false;
-  forcedPalette_ = 0;
-}
+std::string Player::PatternName(PatternBits pattern) const { return patternName(pattern, *this); }
 
-PatternBits Player::enforceForcedPalette(PatternBits pattern) {
-  if (paletteIsForced_) { pattern = applyPalette(pattern, forcedPalette_); }
-  return pattern;
-}
-
-Precedence getPrecedenceGain(OptionalMicroseconds epochTime, Microseconds currentTime, Microseconds duration,
-                             Precedence maxGain) {
-  if (!epochTime) {
-    return 0;
-  } else if (currentTime < *epochTime) {
-    return maxGain;
-  } else if (currentTime - *epochTime > duration) {
-    return 0;
-  }
-  const Microseconds timeDelta = currentTime - *epochTime;
-  if (timeDelta < duration / 10) { return maxGain; }
-  return static_cast<uint64_t>(duration - timeDelta) * maxGain / duration;
-}
-
-Precedence addPrecedenceGain(Precedence startPrecedence, Precedence gain) {
-  if (startPrecedence >= std::numeric_limits<Precedence>::max() - gain) {
-    return std::numeric_limits<Precedence>::max();
-  }
-  return startPrecedence + gain;
-}
-
-static constexpr Microseconds kInputDuration = 10 * 60 * kMicrosecondsPerSecond;  // 10min.
+std::optional<PatternBits> Player::ForcedLeadingPattern() const {
 #if JL_IS_CONFIG(XMAS_TREE)
-static constexpr Precedence kAdminPrecedence = 6001;
-#else   // XMAS_TREE
-static constexpr Precedence kAdminPrecedence = 60000;
-#endif  // XMAS_TREE
-
-Precedence Player::getLocalPrecedence(Microseconds currentTime) {
-  return addPrecedenceGain(basePrecedence_,
-                           getPrecedenceGain(lastUserInputTime_, currentTime, kInputDuration, precedenceGain_));
-}
-
-Player::OriginatorEntry* Player::getOriginatorEntry(NetworkDeviceId originator) {
-  OriginatorEntry* entry = nullptr;
-  for (OriginatorEntry& e : originatorEntries_) {
-    if (e.originator == originator) { return &e; }
-  }
-  return entry;
-}
-
-static constexpr Microseconds kOriginationTimeOverride = 6 * kMicrosecondsPerSecond;
-static constexpr Microseconds kOriginationTimeDiscard = 9 * kMicrosecondsPerSecond;
-
-static_assert(kOriginationTimeOverride < kOriginationTimeDiscard,
-              "Inverting these can lead to retracting an originator "
-              "while disallowing picking a replacement.");
-static_assert(kOriginationTimeDiscard < kEffectDuration,
-              "Inverting these can lead to keeping an originator "
-              "past the end of its intended next pattern.");
-
-void Player::checkLeaderAndPattern() {
-  Microseconds currentTime = timeMicros();
-  // Remove elements that have aged out.
-  originatorEntries_.remove_if([currentTime](const OriginatorEntry& e) {
-    if (currentTime > e.lastOriginationTime + kOriginationTimeDiscard) {
-      jll_info("Removing " DEVICE_ID_FMT ".p%u entry due to origination time", DEVICE_ID_HEX(e.originator),
-               e.precedence);
-      return true;
-    }
-    if (currentTime > e.currentPatternStartTime + 2 * kEffectDuration) {
-      jll_info("Removing " DEVICE_ID_FMT ".p%u entry due to effect duration", DEVICE_ID_HEX(e.originator),
-               e.precedence);
-      return true;
-    }
-    return false;
-  });
-  Precedence precedence = getLocalPrecedence(currentTime);
-  NetworkDeviceId originator = localDeviceId_;
-  const OriginatorEntry* entry = nullptr;
-  const bool hadRecentUserInput =
-      (lastUserInputTime_ && *lastUserInputTime_ <= currentTime && currentTime - *lastUserInputTime_ < kInputDuration);
-  for (const OriginatorEntry& e : originatorEntries_) {
-#if !JL_IS_CONFIG(CREATURE) && !JL_IS_CONFIG(ORRERY_PLANET)
-    // Keep ourselves as leader if there was recent user button input or if we are looping, unless the originator has
-    // admin-level precedence.
-    if ((hadRecentUserInput || loop_) && e.precedence < kAdminPrecedence) { continue; }
-#endif  // CREATURE
-    if (e.retracted) {
-      jll_debug("ignoring " DEVICE_ID_FMT " due to retracted", DEVICE_ID_HEX(e.originator));
-      continue;
-    }
-    if (currentTime > e.lastOriginationTime + kOriginationTimeDiscard) {
-      jll_debug("ignoring " DEVICE_ID_FMT " due to origination time", DEVICE_ID_HEX(e.originator));
-      continue;
-    }
-    if (currentTime > e.currentPatternStartTime + 2 * kEffectDuration) {
-      jll_debug("ignoring " DEVICE_ID_FMT " due to effect duration", DEVICE_ID_HEX(e.originator));
-      continue;
-    }
-    if (comparePrecedence(e.precedence, e.originator, precedence, originator) <= 0) {
-      jll_debug("ignoring " DEVICE_ID_FMT ".p%u due to better " DEVICE_ID_FMT ".p%u", DEVICE_ID_HEX(e.originator),
-                e.precedence, DEVICE_ID_HEX(originator), precedence);
-      continue;
-    }
-    precedence = e.precedence;
-    originator = e.originator;
-    entry = &e;
-  }
-
-  if (currentLeader_ != originator) {
-    jll_player_info("Switching leader from " DEVICE_ID_FMT " to " DEVICE_ID_FMT, DEVICE_ID_HEX(currentLeader_),
-                    DEVICE_ID_HEX(originator));
-    currentLeader_ = originator;
-    UpdateOverriddenPatternWatcher(precedence);
-  }
-
-  Microseconds lastOriginationTime;
-  if (entry != nullptr) {
-    // Update our state based on entry from leader.
-#if JL_IS_CONFIG(CREATURE) || JL_IS_CONFIG(ORRERY_PLANET)
-    // Creatures only follow non-creatures if they have override enabled.
-    const bool newCreatureIsFollowingNonCreature = precedence >= OverridePrecedence();
-    if (creatureIsFollowingNonCreature_ != newCreatureIsFollowingNonCreature) {
-      jll_info("now %s because " DEVICE_ID_FMT " has precedence %u %s override limit %u",
-               (creatureIsFollowingNonCreature_ ? "creatureFollowing" : "creatureIgnoring"), DEVICE_ID_HEX(originator),
-               precedence, (creatureIsFollowingNonCreature_ ? "below" : "above"), OverridePrecedence());
-    }
-    creatureIsFollowingNonCreature_ = newCreatureIsFollowingNonCreature;
-#endif  // CREATURE
-    nextPattern_ = entry->nextPattern;
-    currentPatternStartTime_ = entry->currentPatternStartTime;
-    followedNextHopNetworkId_ = entry->nextHopNetworkId;
-    followedNextHopNetworkType_ = entry->nextHopNetworkType;
-    currentNumHops_ = entry->numHops;
-    lastOriginationTime = entry->lastOriginationTime;
-    if (currentPattern_ != entry->currentPattern) {
-      currentPattern_ = entry->currentPattern;
-      uint16_t fpsCompute;
-      uint16_t fpsWrites;
-      uint8_t utilization;
-      Microseconds timeSpentComputingThisEpoch;
-      Microseconds epochDuration;
-      GenerateFPSReport(&fpsCompute, &fpsWrites, &utilization, &timeSpentComputingThisEpoch, &epochDuration);
-      jll_player_info(
-          "Following " DEVICE_ID_FMT
-          ".p%u nh=%u %s new currentPattern %s (%08x)%s computed %u FPS wrote %u FPS %u%% %lld/%lldms",
-          DEVICE_ID_HEX(originator), precedence, currentNumHops_, NetworkTypeToString(followedNextHopNetworkType_),
-          patternName(currentPattern_, *this).c_str(), currentPattern_,
-#if JL_IS_CONFIG(CREATURE) || JL_IS_CONFIG(ORRERY_PLANET)
-          (creatureIsFollowingNonCreature_ ? " creatureFollowing" : " creatureIgnoring"),
-#else   // CREATURE
-          "",
-#endif  // CREATURE
-          fpsCompute, fpsWrites, utilization, MsForLogs(timeSpentComputingThisEpoch), MsForLogs(epochDuration));
-      printInstrumentationInfo();
-      lastLEDWriteTime_.reset();
-      shouldBeginPattern_ = true;
-      UpdateOverriddenPatternWatcher(precedence);
-    }
-  } else {
-    // We are currently leading.
-#if JL_IS_CONFIG(XMAS_TREE)
-    currentPattern_ = kWarmPattern;
-    nextPattern_ = currentPattern_;
-    loop_ = true;
-#elif JL_IS_CONFIG(CREATURE) || JL_IS_CONFIG(ORRERY_PLANET)
-    if (creatureIsFollowingNonCreature_) { jll_info("now creatureIgnoring because we are leading"); }
-    creatureIsFollowingNonCreature_ = false;
-#if JL_IS_CONFIG(CREATURE)
-    currentPattern_ = kCreaturePattern;
+  return kWarmPattern;
+#elif JL_IS_CONFIG(CREATURE)
+  return kCreaturePattern;
 #elif JL_IS_CONFIG(ORRERY_PLANET)
-    currentPattern_ = planetPattern_;
-#endif  // CREATURE
-    nextPattern_ = currentPattern_;
-    loop_ = true;
+  return planetPattern_;
+#else
+  return std::nullopt;
 #endif
-    followedNextHopNetworkId_ = 0;
-    followedNextHopNetworkType_ = NetworkType::kLeading;
-    currentNumHops_ = 0;
-    lastOriginationTime = currentTime;
-    while (currentTime - currentPatternStartTime_ > kEffectDuration) {
-      currentPatternStartTime_ += kEffectDuration;
-      if (loop_) {
-        nextPattern_ = currentPattern_;
-      } else {
-        currentPattern_ = nextPattern_;
-        nextPattern_ = enforceForcedPalette(computeNextPattern(nextPattern_));
-      }
-      uint16_t fpsCompute;
-      uint16_t fpsWrites;
-      uint8_t utilization;
-      Microseconds timeSpentComputingThisEpoch;
-      Microseconds epochDuration;
-      GenerateFPSReport(&fpsCompute, &fpsWrites, &utilization, &timeSpentComputingThisEpoch, &epochDuration);
-      jll_player_info("We (" DEVICE_ID_FMT
-                      ".p%u) are leading, new currentPattern %s (%08x) computed %u FPS wrote %u FPS %u%% %lld/%lldms",
-                      DEVICE_ID_HEX(localDeviceId_), precedence, patternName(currentPattern_, *this).c_str(),
-                      currentPattern_, fpsCompute, fpsWrites, utilization, MsForLogs(timeSpentComputingThisEpoch),
-                      MsForLogs(epochDuration));
-      printInstrumentationInfo();
-      lastLEDWriteTime_.reset();
-      shouldBeginPattern_ = true;
-    }
-  }
-
-  if (networks_.empty()) {
-    jll_debug("not setting messageToSend without networks");
-    return;
-  }
-  NetworkMessage messageToSend;
-  messageToSend.originator = originator;
-  messageToSend.sender = localDeviceId_;
-  messageToSend.currentPattern = currentPattern_;
-  messageToSend.nextPattern = nextPattern_;
-  messageToSend.currentPatternStartTime = currentPatternStartTime_;
-  messageToSend.precedence = precedence;
-  messageToSend.lastOriginationTime = lastOriginationTime;
-  messageToSend.numHops = currentNumHops_;
-  messageToSend.receiptNetworkId = followedNextHopNetworkId_;
-  messageToSend.receiptNetworkType = followedNextHopNetworkType_;
-#if JL_IS_CONFIG(CREATURE)
-  messageToSend.isCreature = true;
-  messageToSend.isPartying = KnownCreatures::Get()->IsPartying();
-  messageToSend.creatureColor = ThisCreatureColor();
-#endif  // CREATURE
-  if (orrerySceneIdToSend_) {
-#if JL_IS_CONFIG(ORRERY_LEADER)
-    messageToSend.orrerySceneId = orrerySceneIdToSend_;
-#else   // ORRERY_LEADER
-    static constexpr Microseconds kOrrerySceneMaxSendDuration = 59 * kMicrosecondsPerSecond;
-    if (!lastOrrerySceneIdSetTime_ || currentTime - *lastOrrerySceneIdSetTime_ > kOrrerySceneMaxSendDuration) {
-      jll_info("No longer sending orrery scene ID %d", static_cast<int>(*orrerySceneIdToSend_));
-      orrerySceneIdToSend_ = std::nullopt;
-    } else {
-      jll_info("Sending orrery scene ID %d", static_cast<int>(*orrerySceneIdToSend_));
-      messageToSend.orrerySceneId = orrerySceneIdToSend_;
-    }
-#endif  // ORRERY_LEADER
-  }
-  for (Network* network : networks_) {
-    if (!network->shouldEcho() && messageToSend.receiptNetworkId == network->id()) {
-      jll_debug("Not echoing for %s to %s ", NetworkTypeToString(network->type()),
-                networkMessageToString(messageToSend).c_str());
-      network->disableSending();
-      continue;
-    }
-    jll_player_message("Setting messageToSend for %s to %s ", NetworkTypeToString(network->type()),
-                       networkMessageToString(messageToSend).c_str());
-    network->setMessageToSend(messageToSend);
-  }
 }
 
-void Player::handleReceivedMessage(NetworkMessage message) {
-  Microseconds currentTime = timeMicros();
-#if JL_IS_CONFIG(CREATURE)
-  if (message.isCreature) {
-    jll_info("creature recv %s", networkMessageToString(message).c_str());
-    KnownCreatures::Get()->AddCreature(message.creatureColor, message.receiptTime.value_or(timeMicros()),
-                                       message.receiptRssi, message.isPartying);
-  }
-  if (message.orrerySceneId) { KnownCreatures::Get()->HandleHeardOrrery(); }
-#endif  // CREATURE
-  jll_player_message("handleReceivedMessage %s", networkMessageToString(message).c_str());
-  if (message.sender == localDeviceId_) {
-    jll_debug("Ignoring received message that we sent %s", networkMessageToString(message).c_str());
-    return;
-  }
-  if (message.originator == localDeviceId_) {
-    jll_debug("Ignoring received message that we originated %s", networkMessageToString(message).c_str());
-    return;
-  }
-  if (orrerySceneIdWatcher_ != nullptr) { orrerySceneIdWatcher_->OnOrrerySceneId(message.orrerySceneId); }
-  if (message.numHops == std::numeric_limits<NumHops>::max()) {
-    // This avoids overflow when incrementing below.
-    jll_player_info("Ignoring received message with high numHops %s", networkMessageToString(message).c_str());
-    return;
-  }
-  NumHops receiptNumHops = message.numHops + 1;
-  if (currentTime > message.lastOriginationTime + kOriginationTimeDiscard) {
-    jll_player_info("Ignoring received message due to origination time %s", networkMessageToString(message).c_str());
-    return;
-  }
-  if (currentTime > message.currentPatternStartTime + 2 * kEffectDuration) {
-    jll_player_info("Ignoring received message due to effect duration %s", networkMessageToString(message).c_str());
-    return;
-  }
-  OriginatorEntry* entry = getOriginatorEntry(message.originator);
-  if (entry == nullptr) {
-    originatorEntries_.push_back(OriginatorEntry());
-    entry = &originatorEntries_.back();
-    entry->originator = message.originator;
-    entry->precedence = message.precedence;
-    entry->currentPattern = message.currentPattern;
-    entry->nextPattern = message.nextPattern;
-    entry->currentPatternStartTime = message.currentPatternStartTime;
-    entry->lastOriginationTime = message.lastOriginationTime;
-    entry->nextHopDevice = message.sender;
-    entry->nextHopNetworkId = message.receiptNetworkId;
-    entry->nextHopNetworkType = message.receiptNetworkType;
-    entry->numHops = receiptNumHops;
-    entry->retracted = false;
-    entry->patternStartTimeMovementCounter = 0;
-    jll_player_info("Adding " DEVICE_ID_FMT ".p%u entry via " DEVICE_ID_FMT
-                    ".%s"
-                    " nh %u ot %lldms current %s (%08x) next %s (%08x) elapsed %lldms",
-                    DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(entry->nextHopDevice),
-                    NetworkTypeToString(entry->nextHopNetworkType), entry->numHops,
-                    MsSinceForLogs(entry->lastOriginationTime, currentTime),
-                    patternName(entry->currentPattern, *this).c_str(), entry->currentPattern,
-                    patternName(entry->nextPattern, *this).c_str(), entry->nextPattern,
-                    MsSinceForLogs(entry->currentPatternStartTime, currentTime));
-  } else {
-    // The concept behind this is that we build a tree rooted at each originator
-    // using a variant of the Bellman-Ford algorithm. We then only ever listen
-    // to our next hop on the way to the originator to avoid oscillating between
-    // neighbors. To avoid loops in this tree, we ignore any update that has same
-    // or more hops than our currently saved one. To allow us to recover from
-    // situations where the originator has moved further away in the network, we
-    // accept those updates if they're more recent by kOriginationTimeOverride
-    // than what we've seen so far. This is based on the theoretical points made
-    // in Section 2 of RFC 8966 - we can say that while much simpler and less
-    // powerful, this is inspired by the Babel Routing Protocol.
-    if (entry->nextHopDevice != message.sender || entry->nextHopNetworkId != message.receiptNetworkId) {
-      bool changeNextHop = false;
-      if (receiptNumHops < entry->numHops) {
-        jll_player_info("Switching " DEVICE_ID_FMT ".p%u entry via " DEVICE_ID_FMT
-                        ".%s "
-                        "nh %u ot %lldms to better nextHop " DEVICE_ID_FMT ".%s nh %u ot %lldms due to nextHops",
-                        DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(entry->nextHopDevice),
-                        NetworkTypeToString(entry->nextHopNetworkType), entry->numHops,
-                        MsSinceForLogs(entry->lastOriginationTime, currentTime), DEVICE_ID_HEX(message.sender),
-                        NetworkTypeToString(message.receiptNetworkType), receiptNumHops,
-                        MsSinceForLogs(message.lastOriginationTime, currentTime));
-        changeNextHop = true;
-      } else if (message.lastOriginationTime > entry->lastOriginationTime + kOriginationTimeOverride) {
-        jll_player_info("Switching " DEVICE_ID_FMT ".p%u entry via " DEVICE_ID_FMT
-                        ".%s "
-                        "nh %u ot %lldms to better nextHop " DEVICE_ID_FMT ".%s nh %u ot %lldms due to originationTime",
-                        DEVICE_ID_HEX(entry->originator), entry->precedence, DEVICE_ID_HEX(entry->nextHopDevice),
-                        NetworkTypeToString(entry->nextHopNetworkType), entry->numHops,
-                        MsSinceForLogs(entry->lastOriginationTime, currentTime), DEVICE_ID_HEX(message.sender),
-                        NetworkTypeToString(message.receiptNetworkType), receiptNumHops,
-                        MsSinceForLogs(message.lastOriginationTime, currentTime));
-        changeNextHop = true;
-      }
-      if (changeNextHop) {
-        entry->nextHopDevice = message.sender;
-        entry->nextHopNetworkId = message.receiptNetworkId;
-        entry->nextHopNetworkType = message.receiptNetworkType;
-        entry->numHops = receiptNumHops;
-      }
-    }
-
-    if (entry->nextHopDevice == message.sender && entry->nextHopNetworkId == message.receiptNetworkId) {
-      bool shouldUpdateStartTime = false;
-      std::ostringstream changes;
-      if (entry->precedence != message.precedence) {
-        changes << ", precedence " << entry->precedence << " to " << message.precedence;
-      }
-      if (entry->currentPattern != message.currentPattern) {
-        shouldUpdateStartTime = true;
-        changes << ", currentPattern " << patternName(entry->currentPattern, *this) << " to "
-                << patternName(message.currentPattern, *this);
-      }
-      if (entry->nextPattern != message.nextPattern) {
-        shouldUpdateStartTime = true;
-        changes << ", nextPattern " << patternName(entry->nextPattern, *this) << " to "
-                << patternName(message.nextPattern, *this);
-      }
-      // Debounce incoming updates to currentPatternStartTime to avoid visual jitter in the presence
-      // of network jitter.
-      static constexpr Microseconds kPatternStartTimeDeltaMin = 100 * kMicrosecondsPerMillisecond;
-      static constexpr Microseconds kPatternStartTimeDeltaMax = 500 * kMicrosecondsPerMillisecond;
-      static constexpr int8_t kPatternStartTimeMovementThreshold = 5;
-      if (entry->currentPatternStartTime > message.currentPatternStartTime) {
-        const Microseconds timeDelta = entry->currentPatternStartTime - message.currentPatternStartTime;
-        const long long timeDeltaMs = MsForLogs(timeDelta);
-        if (shouldUpdateStartTime || timeDelta >= kPatternStartTimeDeltaMax) {
-          changes << ", elapsedTime -= " << timeDeltaMs;
-          shouldUpdateStartTime = true;
-        } else if (timeDelta < kPatternStartTimeDeltaMin) {
-          if (is_debug_logging_enabled()) { changes << ", elapsedTime !-= " << timeDeltaMs; }
-          entry->patternStartTimeMovementCounter = 0;
-        } else {
-          if (entry->patternStartTimeMovementCounter <= 1) {
-            entry->patternStartTimeMovementCounter--;
-            if (entry->patternStartTimeMovementCounter <= -kPatternStartTimeMovementThreshold) {
-              changes << ", elapsedTime -= " << timeDeltaMs;
-              shouldUpdateStartTime = true;
-            } else {
-              if (is_debug_logging_enabled()) {
-                changes << ", elapsedTime ~-= " << timeDeltaMs << " (movement "
-                        << static_cast<int>(-entry->patternStartTimeMovementCounter) << ")";
-              }
-            }
-          } else {
-            entry->patternStartTimeMovementCounter = 0;
-            if (is_debug_logging_enabled()) { changes << ", elapsedTime ~-= " << timeDeltaMs << " (flip)"; }
-          }
-        }
-      } else if (entry->currentPatternStartTime < message.currentPatternStartTime) {
-        const Microseconds timeDelta = message.currentPatternStartTime - entry->currentPatternStartTime;
-        const long long timeDeltaMs = MsForLogs(timeDelta);
-        if (timeDelta > kEffectDuration - kEffectDuration / 10 && entry->originator == currentLeader_) {
-          shouldBeginPattern_ = true;
-        }
-        if (shouldUpdateStartTime || timeDelta >= kPatternStartTimeDeltaMax) {
-          changes << ", elapsedTime += " << timeDeltaMs;
-          if (entry->currentPattern == message.currentPattern && timeDelta >= kEffectDuration / 2) {
-            changes << " (keeping currentPattern " << patternName(entry->currentPattern, *this) << ")";
-          }
-          shouldUpdateStartTime = true;
-        } else if (timeDelta < kPatternStartTimeDeltaMin) {
-          if (is_debug_logging_enabled()) { changes << ", elapsedTime !+= " << timeDeltaMs; }
-          entry->patternStartTimeMovementCounter = 0;
-        } else {
-          if (entry->patternStartTimeMovementCounter >= -1) {
-            entry->patternStartTimeMovementCounter++;
-            if (entry->patternStartTimeMovementCounter >= kPatternStartTimeMovementThreshold) {
-              changes << ", elapsedTime += " << timeDeltaMs;
-              shouldUpdateStartTime = true;
-            } else {
-              if (is_debug_logging_enabled()) {
-                changes << ", elapsedTime ~+= " << timeDeltaMs << " (movement "
-                        << static_cast<int>(entry->patternStartTimeMovementCounter) << ")";
-              }
-            }
-          } else {
-            entry->patternStartTimeMovementCounter = 0;
-            if (is_debug_logging_enabled()) { changes << ", elapsedTime ~+= " << timeDeltaMs << " (flip)"; }
-          }
-        }
-      }
-      if (entry->lastOriginationTime > message.lastOriginationTime) {
-        changes << ", originationTime -= " << MsSinceForLogs(message.lastOriginationTime, entry->lastOriginationTime);
-      }  // Do not log increases to origination time since all originated messages cause it.
-      if (entry->retracted) { changes << ", unretracted"; }
-      entry->precedence = message.precedence;
-      entry->currentPattern = message.currentPattern;
-      entry->nextPattern = message.nextPattern;
-      entry->lastOriginationTime = message.lastOriginationTime;
-      entry->retracted = false;
-      if (shouldUpdateStartTime) {
-        entry->currentPatternStartTime = message.currentPatternStartTime;
-        entry->patternStartTimeMovementCounter = 0;
-      }
-      std::string changesStr = changes.str();
-      if (!changesStr.empty()) {
-        const bool followedUpdate = entry->originator == currentLeader_;
-        jll_player_info("Accepting %s update from " DEVICE_ID_FMT ".p%u via " DEVICE_ID_FMT ".%s%s%s",
-                        (followedUpdate ? "followed" : "ignored"), DEVICE_ID_HEX(entry->originator), entry->precedence,
-                        DEVICE_ID_HEX(entry->nextHopDevice), NetworkTypeToString(entry->nextHopNetworkType),
-                        changesStr.c_str(), message.receiptDetails.c_str());
-        if (followedUpdate) { printInstrumentationInfo(); }
-      }
-      UpdateOverriddenPatternWatcher(entry->precedence);
-    } else {
-      jll_debug("Rejecting %s update from " DEVICE_ID_FMT ".p%u via " DEVICE_ID_FMT
-                ".%s because we are following " DEVICE_ID_FMT ".%s",
-                (entry->originator == currentLeader_ ? "followed" : "ignored"), DEVICE_ID_HEX(entry->originator),
-                entry->precedence, DEVICE_ID_HEX(message.sender), NetworkTypeToString(message.receiptNetworkType),
-                DEVICE_ID_HEX(entry->nextHopDevice), NetworkTypeToString(entry->nextHopNetworkType));
-    }
-  }
-  // If this sender is following another originator from what we previously heard,
-  // retract any previous entries from them.
-  for (OriginatorEntry& e : originatorEntries_) {
-    if (e.nextHopDevice == message.sender && e.nextHopNetworkId == message.receiptNetworkId &&
-        e.originator != message.originator && !e.retracted) {
-      e.retracted = true;
-      jll_player_info("Retracting entry for originator " DEVICE_ID_FMT
-                      ".p%u"
-                      " due to abandonment from " DEVICE_ID_FMT
-                      ".%s"
-                      " in favor of " DEVICE_ID_FMT ".p%u",
-                      DEVICE_ID_HEX(e.originator), e.precedence, DEVICE_ID_HEX(message.sender),
-                      NetworkTypeToString(message.receiptNetworkType), DEVICE_ID_HEX(message.originator),
-                      message.precedence);
-    }
-  }
-
+void Player::OnPatternRestart() {
   lastLEDWriteTime_.reset();
+  shouldBeginPattern_ = true;
 }
 
-void Player::loopOne() {
-  if (loop_) { return; }
-  jll_info("Looping");
-  loop_ = true;
-  nextPattern_ = currentPattern_;
+void Player::OnAcceptedUpdate() { lastLEDWriteTime_.reset(); }
+
+void Player::LogFpsReport() {
+  uint16_t fpsCompute;
+  uint16_t fpsWrites;
+  uint8_t utilization;
+  Microseconds timeSpentComputingThisEpoch;
+  Microseconds epochDuration;
+  GenerateFPSReport(&fpsCompute, &fpsWrites, &utilization, &timeSpentComputingThisEpoch, &epochDuration);
+  jll_player_info("computed %u FPS wrote %u FPS %u%% %lld/%lldms", fpsCompute, fpsWrites, utilization,
+                  MsForLogs(timeSpentComputingThisEpoch), MsForLogs(epochDuration));
+  printInstrumentationInfo();
 }
 
-void Player::stopLooping() {
-  if (!loop_) { return; }
-  jll_info("Stopping loop");
-  loop_ = false;
-  nextPattern_ = enforceForcedPalette(computeNextPattern(currentPattern_));
+#if JL_IS_CONFIG(CREATURE)
+bool Player::IsPartying() const { return KnownCreatures::Get()->IsPartying(); }
+
+uint32_t Player::CreatureColor() const { return ThisCreatureColor(); }
+
+void Player::OnCreatureHeard(uint32_t creatureColor, Microseconds heardTime, int rssi, bool isPartying) {
+  KnownCreatures::Get()->AddCreature(creatureColor, heardTime, rssi, isPartying);
 }
+
+void Player::OnOrreryHeard() { KnownCreatures::Get()->HandleHeardOrrery(); }
+#endif  // CREATURE
 
 const char* Player::command(const char* req) {
   static char res[256];
@@ -1274,16 +709,6 @@ const char* Player::command(const char* req) {
   }
   jll_debug("[%s] -> [%s]", req, res);
   return res;
-}
-
-void Player::SetOrrerySceneIdToSend(std::optional<OrrerySceneId> orrerySceneIdToSend) {
-  orrerySceneIdToSend_ = orrerySceneIdToSend;
-  if (orrerySceneIdToSend_) {
-    lastOrrerySceneIdSetTime_ = timeMicros();
-    jll_info("Start sending orrery scene ID %d", static_cast<int>(*orrerySceneIdToSend_));
-  } else {
-    lastOrrerySceneIdSetTime_.reset();
-  }
 }
 
 }  // namespace jazzlights

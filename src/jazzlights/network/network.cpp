@@ -60,47 +60,6 @@ std::string NetworkStatusToString(NetworkStatus status) {
   return "UNKNOWN";
 }
 
-std::string displayBitsAsBinary(PatternBits p) {
-  static_assert(sizeof(p) == 4, "32bits");
-  char bits[33] = {};
-  for (uint8_t b = 0; b < 32; b++) {
-    if ((p >> b) & 1) {
-      bits[b] = '.';
-    } else {
-      bits[b] = '_';
-    }
-  }
-  return std::string(bits);
-}
-
-std::string networkMessageToString(const NetworkMessage& message) {
-  Microseconds currentTime = timeMicros();
-  char str[sizeof(", t=4294967296, p=65536, nh=255, ot=4294967296}")] = {};
-  snprintf(str, sizeof(str), ", t=%u, p=%u, nh=%u, ot=%u}",
-           static_cast<unsigned int>((currentTime - message.currentPatternStartTime) / kMicrosecondsPerMillisecond),
-           message.precedence, message.numHops,
-           static_cast<unsigned int>((currentTime - message.lastOriginationTime) / kMicrosecondsPerMillisecond));
-  std::string rv = "{o=" + message.originator.toString() + ", s=" + message.sender.toString();
-#if !JL_IS_CONFIG(CREATURE)
-  rv += ", c=" + displayBitsAsBinary(message.currentPattern);
-  rv += ", n=" + displayBitsAsBinary(message.nextPattern);
-#endif  // !CREATURE
-  if (message.receiptNetworkType != NetworkType::kLeading) {
-    rv += ", ";
-    rv += NetworkTypeToString(message.receiptNetworkType);
-  }
-#if JL_IS_CONFIG(CREATURE)
-  char str2[sizeof(", rssi=-2147483648, rgb=010203")] = {};
-  snprintf(str2, sizeof(str2), ", rssi=%d, rgb=%06x", message.receiptRssi, static_cast<int>(message.creatureColor));
-  rv += str2;
-#endif  // CREATURE
-  if (message.orrerySceneId) {
-    rv += ", os=" + std::string(OrrerySceneToString(static_cast<OrreryScene>(*message.orrerySceneId)));
-  }
-  rv += str;
-  return rv;
-}
-
 NetworkId Network::NextAvailableId() {
   static std::atomic<NetworkId> nextId{1};
   NetworkId res = nextId.fetch_add(1, std::memory_order_relaxed);

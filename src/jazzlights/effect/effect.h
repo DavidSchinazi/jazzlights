@@ -13,8 +13,8 @@
 
 namespace jazzlights {
 
-inline constexpr FrameTimeMs kEffectDurationMs = 10000;  // 10s.
-static constexpr Microseconds kEffectDuration = kEffectDurationMs * kMicrosecondsPerMillisecond;
+inline constexpr FrameTimeMs kEffectDurationMs =
+    static_cast<FrameTimeMs>(kEffectDuration / kMicrosecondsPerMillisecond);
 
 inline constexpr size_t kMaxStateAlignment = 8;
 static_assert((kMaxStateAlignment & (kMaxStateAlignment - 1)) == 0, "kMaxStateAlignment must be a power of 2");

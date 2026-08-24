@@ -129,6 +129,9 @@ enum class OrreryScene : uint8_t {
 
 const char* OrrerySceneToString(OrreryScene scene);
 
+std::string displayBitsAsBinary(PatternBits p);
+std::string networkMessageToString(const NetworkMessage& message);
+
 }  // namespace jazzlights
 
 #endif  // JL_PROTOCOL_WIRE_TYPES_H

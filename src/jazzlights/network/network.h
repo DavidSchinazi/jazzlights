@@ -26,9 +26,6 @@ enum NetworkStatus {
 
 std::string NetworkStatusToString(NetworkStatus status);
 
-std::string displayBitsAsBinary(PatternBits p);
-std::string networkMessageToString(const NetworkMessage& message);
-
 class Network {
  public:
   // Disallow copy and move.
