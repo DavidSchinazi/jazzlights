@@ -11,7 +11,7 @@ namespace jazzlights {
 namespace {
 const TProgmemRGBPalette16* SoundReactivePaletteFromOurColorPalette(OurColorPalette ocp) {
   switch (ocp) {
-    case kCloud: {
+    case OCPcloud: {
       static const TProgmemRGBPalette16 SRCloudColors_p FL_PROGMEM = {CRGB::Blue,
                                                                       CRGB::DarkBlue,
                                                                       CRGB::DarkBlue,
@@ -30,7 +30,7 @@ const TProgmemRGBPalette16* SoundReactivePaletteFromOurColorPalette(OurColorPale
                                                                       /*CRGB::SkyBlue*/ CRGB::Blue};
       return &SRCloudColors_p;
     }
-    case kLava: {
+    case OCPlava: {
       static const TProgmemRGBPalette16 SRLavaColors_p FL_PROGMEM = {CRGB::Black,
                                                                      CRGB::Maroon,
                                                                      CRGB::Black,
@@ -49,7 +49,7 @@ const TProgmemRGBPalette16* SoundReactivePaletteFromOurColorPalette(OurColorPale
                                                                      CRGB::DarkRed};
       return &SRLavaColors_p;
     }
-    case kOcean: {
+    case OCPocean: {
       static const TProgmemRGBPalette16 SROceanColors_p FL_PROGMEM = {CRGB::MidnightBlue,
                                                                       CRGB::DarkBlue,
                                                                       CRGB::MidnightBlue,
@@ -68,7 +68,7 @@ const TProgmemRGBPalette16* SoundReactivePaletteFromOurColorPalette(OurColorPale
                                                                       /*CRGB::LightSkyBlue*/ CRGB::Blue};
       return &SROceanColors_p;
     }
-    case kForest: {
+    case OCPforest: {
       static const TProgmemRGBPalette16 SRForestColors_p FL_PROGMEM = {CRGB::DarkGreen,
                                                                        CRGB::DarkGreen,
                                                                        CRGB::DarkOliveGreen,
@@ -87,19 +87,19 @@ const TProgmemRGBPalette16* SoundReactivePaletteFromOurColorPalette(OurColorPale
                                                                        CRGB::ForestGreen};
       return &SRForestColors_p;
     }
-    case kRainbow: {
+    case OCPrainbow: {
       static const TProgmemRGBPalette16 SRRainbowColors_p FL_PROGMEM = {
           0xFF0000, 0xD52A00, 0xAB5500, 0xAB7F00, 0xABAB00, 0x56D500, 0x00FF00, 0x00D52A,
           0x00AB55, 0x0056AA, 0x0000FF, 0x2A00D5, 0x5500AB, 0x7F0081, 0xAB0055, 0xD5002B};
       return &SRRainbowColors_p;
     }
-    case kParty: {
+    case OCPparty: {
       static const TProgmemRGBPalette16 SRPartyColors_p FL_PROGMEM = {
           0x5500AB, 0x84007C, 0xB5004B, 0xE5001B, 0xE81700, 0xB84700, 0xAB7700, 0xABAB00,
           0xAB5500, 0xDD2200, 0xF2000E, 0xC2003E, 0x8F0071, 0x5F00A1, 0x2F00D0, 0x0007F9};
       return &SRPartyColors_p;
     }
-    case kHeat: {
+    case OCPheat: {
       static const TProgmemRGBPalette16 SRHeatColors_p FL_PROGMEM = {
           // 0x000000, 0x330000, 0x660000, 0x990000, 0xCC0000, 0xFF0000, 0xFF3300, 0xFF6600,
           // 0xFF9900, 0xFFCC00, 0xFFFF00, 0xFFFF33, 0xFFFF66, 0xFFFF99, 0xFFFFCC, 0xFFFFFF
@@ -108,7 +108,7 @@ const TProgmemRGBPalette16* SoundReactivePaletteFromOurColorPalette(OurColorPale
       return &SRHeatColors_p;
     }
   }
-  return FastLEDPaletteFromOurColorPalette(kRainbow);
+  return FastLEDPaletteFromOurColorPalette(OCPrainbow);
 }
 
 CRGB ColorFromSoundReactivePalette(OurColorPalette ocp, uint8_t color) {

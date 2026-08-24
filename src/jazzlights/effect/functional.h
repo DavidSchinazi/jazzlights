@@ -51,7 +51,7 @@ class FunctionalEffect : public Effect {
   const FrameToPixelColorFuncFunc frameFunc_;
 };
 
-inline FunctionalEffect effect(const std::string& name, const FrameToPixelColorFuncFunc& f) {
+inline FunctionalEffect FunctionalEffectFrom(const std::string& name, const FrameToPixelColorFuncFunc& f) {
   return FunctionalEffect(name, f);
 }
 

@@ -6,7 +6,7 @@
 namespace jazzlights {
 
 inline FunctionalEffect Calibration() {
-  return effect("calibration", [](const Frame& frame) {
+  return FunctionalEffectFrom("calibration", [](const Frame& frame) {
     const bool blink = ((frame.time % 1000) < 500);
     return [&frame, blink](const Pixel& pt) -> CRGB {
       XYIndex xyIndex = frame.xyIndexStore->FromPixel(pt);

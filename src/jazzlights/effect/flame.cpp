@@ -17,8 +17,8 @@ constexpr uint8_t kIgnitionMax = 255;
 
 void Flame::InnerBegin(const Frame& f, FlameState* state) const {
   OurColorPalette p = palette(f);
-  if (p == kLava) {  // Lava is similar to heat, but for this pattern heat looks much better.
-    p = kHeat;
+  if (p == OCPlava) {  // Lava is similar to heat, but for this pattern heat looks much better.
+    p = OCPheat;
   }
   memcpy(state->palette, FastLEDPaletteFromOurColorPalette(p), sizeof(state->palette));
   state->palette[0] = CRGB::Black;

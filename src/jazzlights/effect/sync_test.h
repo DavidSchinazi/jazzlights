@@ -6,7 +6,7 @@
 namespace jazzlights {
 
 inline FunctionalEffect SyncTest() {
-  return effect("synctest", [](const Frame& frame) {
+  return FunctionalEffectFrom("synctest", [](const Frame& frame) {
     static const CRGB colors[] = {CRGB::Black, CRGB::Green, CRGB::Blue, CRGB::White};
     const size_t index = static_cast<size_t>(frame.time / 1000) % (sizeof(colors) / sizeof(colors[0]));
     const CRGB color = colors[index];

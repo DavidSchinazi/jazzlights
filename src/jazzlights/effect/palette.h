@@ -8,17 +8,19 @@
 
 namespace jazzlights {
 
+// Note: OurColorPalette deliberately keeps its OCP-prefixed lowercase enumerators. The ALL_COLORS X-macro
+// stringifies them directly, so renaming these would change the palette names shown to users.
 #define ALL_COLORS \
-  X(Cloud)         \
-  X(Lava)          \
-  X(Ocean)         \
-  X(Forest)        \
-  X(Rainbow)       \
-  X(Party)         \
-  X(Heat)
+  X(cloud)         \
+  X(lava)          \
+  X(ocean)         \
+  X(forest)        \
+  X(rainbow)       \
+  X(party)         \
+  X(heat)
 
 enum OurColorPalette {
-#define X(c) k##c,
+#define X(c) OCP##c,
   ALL_COLORS
 #undef X
 };
@@ -33,26 +35,26 @@ static inline OurColorPalette PaletteFromPattern(PatternBits pattern) {
 #endif
   if (PatternBit(pattern, firstPaletteBit)) {        // nature
     if (PatternBit(pattern, firstPaletteBit + 1)) {  // rainbow
-      return kRainbow;
+      return OCPrainbow;
     } else {                                           // frolick
       if (PatternBit(pattern, firstPaletteBit + 2)) {  // forest
-        return kForest;
+        return OCPforest;
       } else {  // party
-        return kParty;
+        return OCPparty;
       }
     }
   } else {                                             // hot&cold
     if (PatternBit(pattern, firstPaletteBit + 1)) {    // cold
       if (PatternBit(pattern, firstPaletteBit + 2)) {  // cloud
-        return kCloud;
+        return OCPcloud;
       } else {  // ocean
-        return kOcean;
+        return OCPocean;
       }
     } else {                                           // hot
       if (PatternBit(pattern, firstPaletteBit + 2)) {  // lava
-        return kLava;
+        return OCPlava;
       } else {  // heat
-        return kHeat;
+        return OCPheat;
       }
     }
   }
@@ -60,15 +62,15 @@ static inline OurColorPalette PaletteFromPattern(PatternBits pattern) {
 
 static inline const TProgmemRGBPalette16* FastLEDPaletteFromOurColorPalette(OurColorPalette ocp) {
   switch (ocp) {
-    case kCloud: return &CloudColors_p;
-    case kLava: return &LavaColors_p;
-    case kOcean: return &OceanColors_p;
-    case kForest: return &ForestColors_p;
-    case kRainbow: return &RainbowColors_p;
-    case kParty: return &PartyColors_p;
-    case kHeat: return &HeatColors_p;
+    case OCPcloud: return &CloudColors_p;
+    case OCPlava: return &LavaColors_p;
+    case OCPocean: return &OceanColors_p;
+    case OCPforest: return &ForestColors_p;
+    case OCPrainbow: return &RainbowColors_p;
+    case OCPparty: return &PartyColors_p;
+    case OCPheat: return &HeatColors_p;
   }
-  return FastLEDPaletteFromOurColorPalette(kRainbow);
+  return FastLEDPaletteFromOurColorPalette(OCPrainbow);
 }
 
 static inline CRGB ColorFromOurPalette(OurColorPalette ocp, uint8_t color) {
@@ -107,7 +109,7 @@ inline std::string OurColorPaletteName(uint8_t forcedPalette) {
 inline std::string PaletteNameFromPattern(PatternBits pattern) {
   switch (PaletteFromPattern(pattern)) {
 #define X(c) \
-  case k##c: return #c;
+  case OCP##c: return #c;
     ALL_COLORS
 #undef X
   }

@@ -5,7 +5,7 @@
 namespace jazzlights {
 
 inline FunctionalEffect Glow(CRGB color, const std::string& name) {
-  return effect(name, [color](const Frame& frame) {
+  return FunctionalEffectFrom(name, [color](const Frame& frame) {
     constexpr uint32_t period = 2500;
     constexpr uint32_t half_low_time = 10;
     constexpr uint32_t half_high_time = 400;

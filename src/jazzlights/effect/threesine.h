@@ -6,7 +6,7 @@
 namespace jazzlights {
 
 inline FunctionalEffect Threesine() {
-  return effect("threesine", [](const Frame& frame) {
+  return FunctionalEffectFrom("threesine", [](const Frame& frame) {
     const Coord w = Width(frame);
     const Coord h = Height(frame);
     const uint8_t sineOffset = 256 * frame.time / kEffectDurationMs;

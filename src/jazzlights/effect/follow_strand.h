@@ -7,7 +7,7 @@
 namespace jazzlights {
 
 inline FunctionalEffect FollowStrand() {
-  return effect("follow-strand", [](const Frame& frame) {
+  return FunctionalEffectFrom("follow-strand", [](const Frame& frame) {
     const size_t offset = frame.time / 100;
     const bool blink = ((frame.time % 1000) < 500);
     return [offset, blink](const Pixel& pt) -> CRGB {
