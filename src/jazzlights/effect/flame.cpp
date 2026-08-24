@@ -1,7 +1,5 @@
 #include "jazzlights/effect/flame.h"
 
-#include <assert.h>
-
 #include "jazzlights/render/player.h"
 #include "jazzlights/util/config.h"
 
