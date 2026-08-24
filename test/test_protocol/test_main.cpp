@@ -141,7 +141,7 @@ void test_standalone_leading() {
   TEST_ASSERT_EQUAL_UINT8(0, message.numHops);
   TEST_ASSERT(message.receiptNetworkType == NetworkType::kLeading);
   TEST_ASSERT_EQUAL_UINT16(1000, message.precedence);
-  TEST_ASSERT_EQUAL_UINT32(engine.currentPattern(), message.currentPattern);
+  TEST_ASSERT_EQUAL_UINT32(engine.GetCurrentPattern(), message.currentPattern);
   TEST_ASSERT(engine.currentLeader() == engine.localDeviceId());
 }
 
@@ -156,8 +156,8 @@ void test_follow_higher_precedence() {
   engine.RunLoop(t0);
 
   TEST_ASSERT(engine.currentLeader() == other);
-  TEST_ASSERT_EQUAL_UINT32(kPatternA, engine.currentPattern());
-  TEST_ASSERT_EQUAL_UINT32(kPatternB, engine.nextPattern());
+  TEST_ASSERT_EQUAL_UINT32(kPatternA, engine.GetCurrentPattern());
+  TEST_ASSERT_EQUAL_UINT32(kPatternB, engine.GetNextPattern());
   TEST_ASSERT(engine.following() == NetworkType::kWiFi);
   TEST_ASSERT_EQUAL_UINT8(1, engine.currentNumHops());
   TEST_ASSERT_EQUAL_INT(1, delegate.patternRestarts);
@@ -177,13 +177,13 @@ void test_ignore_lower_precedence() {
   const Microseconds t0 = StartEngine(&engine);
   engine.SetBasePrecedence(1000);
   const NetworkDeviceId other = MakeDeviceId(0x20);
-  const PatternBits ourPattern = engine.currentPattern();
+  const PatternBits ourPattern = engine.GetCurrentPattern();
 
   engine.HandleReceivedMessage(MakeMessage(other, other, 100, t0), t0);
   engine.RunLoop(t0);
 
   TEST_ASSERT(engine.currentLeader() == engine.localDeviceId());
-  TEST_ASSERT_EQUAL_UINT32(ourPattern, engine.currentPattern());
+  TEST_ASSERT_EQUAL_UINT32(ourPattern, engine.GetCurrentPattern());
   TEST_ASSERT_EQUAL_INT(0, delegate.patternRestarts);
 }
 
@@ -372,17 +372,17 @@ void test_leading_pattern_advance() {
   FakeDelegate delegate;
   ProtocolEngine engine(&delegate);
   const Microseconds t0 = StartEngine(&engine);
-  const PatternBits firstPattern = engine.currentPattern();
-  const PatternBits secondPattern = engine.nextPattern();
+  const PatternBits firstPattern = engine.GetCurrentPattern();
+  const PatternBits secondPattern = engine.GetNextPattern();
 
   // Not yet time to advance.
   engine.RunLoop(t0 + kEffectDuration);
-  TEST_ASSERT_EQUAL_UINT32(firstPattern, engine.currentPattern());
+  TEST_ASSERT_EQUAL_UINT32(firstPattern, engine.GetCurrentPattern());
   TEST_ASSERT_EQUAL_INT(0, delegate.patternRestarts);
 
   // One effect duration later the rotation advances by exactly one step.
   engine.RunLoop(t0 + kEffectDuration + 1);
-  TEST_ASSERT_EQUAL_UINT32(secondPattern, engine.currentPattern());
+  TEST_ASSERT_EQUAL_UINT32(secondPattern, engine.GetCurrentPattern());
   TEST_ASSERT_EQUAL_INT64(t0 + kEffectDuration, engine.currentPatternStartTime());
   TEST_ASSERT_EQUAL_INT(1, delegate.patternRestarts);
   TEST_ASSERT_EQUAL_INT(1, delegate.fpsReports);
@@ -400,16 +400,16 @@ void test_looping_pins_the_pattern() {
 
   engine.LoopOne();
   TEST_ASSERT(engine.isLooping());
-  const PatternBits pinned = engine.currentPattern();
-  TEST_ASSERT_EQUAL_UINT32(pinned, engine.nextPattern());
+  const PatternBits pinned = engine.GetCurrentPattern();
+  TEST_ASSERT_EQUAL_UINT32(pinned, engine.GetNextPattern());
 
   engine.RunLoop(t0 + 3 * kEffectDuration + 1);
-  TEST_ASSERT_EQUAL_UINT32(pinned, engine.currentPattern());
-  TEST_ASSERT_EQUAL_UINT32(pinned, engine.nextPattern());
+  TEST_ASSERT_EQUAL_UINT32(pinned, engine.GetCurrentPattern());
+  TEST_ASSERT_EQUAL_UINT32(pinned, engine.GetNextPattern());
 
   engine.StopLooping();
   TEST_ASSERT_FALSE(engine.isLooping());
-  TEST_ASSERT_NOT_EQUAL(pinned, engine.nextPattern());
+  TEST_ASSERT_NOT_EQUAL(pinned, engine.GetNextPattern());
 }
 
 void test_forced_palette_survives_rotation() {
@@ -421,14 +421,14 @@ void test_forced_palette_survives_rotation() {
   engine.ForcePalette(kPalette);
   TEST_ASSERT(engine.paletteIsForced());
   TEST_ASSERT_EQUAL_UINT8(kPalette, engine.forcedPalette());
-  TEST_ASSERT_EQUAL_UINT8(kPalette, (engine.currentPattern() >> 13) & 0x7);
-  TEST_ASSERT_EQUAL_UINT8(kPalette, (engine.nextPattern() >> 13) & 0x7);
+  TEST_ASSERT_EQUAL_UINT8(kPalette, (engine.GetCurrentPattern() >> 13) & 0x7);
+  TEST_ASSERT_EQUAL_UINT8(kPalette, (engine.GetNextPattern() >> 13) & 0x7);
 
   // Every pattern the rotation produces keeps the forced palette.
   const Microseconds t1 = engine.currentPatternStartTime();
   for (int i = 1; i <= 5; i++) {
     engine.RunLoop(t1 + i * kEffectDuration + 1);
-    TEST_ASSERT_EQUAL_UINT8(kPalette, (engine.currentPattern() >> 13) & 0x7);
+    TEST_ASSERT_EQUAL_UINT8(kPalette, (engine.GetCurrentPattern() >> 13) & 0x7);
   }
 
   engine.StopForcePalette();
@@ -443,8 +443,8 @@ void test_forced_leading_pattern() {
 
   // While leading, the delegate's pinned pattern wins and looping is forced on.
   engine.RunLoop(t0);
-  TEST_ASSERT_EQUAL_UINT32(kPatternA, engine.currentPattern());
-  TEST_ASSERT_EQUAL_UINT32(kPatternA, engine.nextPattern());
+  TEST_ASSERT_EQUAL_UINT32(kPatternA, engine.GetCurrentPattern());
+  TEST_ASSERT_EQUAL_UINT32(kPatternA, engine.GetNextPattern());
   TEST_ASSERT(engine.isLooping());
 }
 

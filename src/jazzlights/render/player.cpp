@@ -418,10 +418,10 @@ bool Player::render() {
   frame_.context = nullptr;
   const Microseconds currentPatternStartTime = engine_.currentPatternStartTime();
   if (currentTime - currentPatternStartTime > kEffectDuration) {
-    frame_.pattern = engine_.nextPattern();
+    frame_.pattern = engine_.GetNextPattern();
     SetFrameTime(frame_, currentTime, currentPatternStartTime + kEffectDuration);
   } else {
-    frame_.pattern = engine_.currentPattern();
+    frame_.pattern = engine_.GetCurrentPattern();
     SetFrameTime(frame_, currentTime, currentPatternStartTime);
   }
 

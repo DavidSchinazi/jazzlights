@@ -125,8 +125,8 @@ class ProtocolEngine {
   bool GetMessageToSend(NetworkMessage* messageToSend) const;
 
   // Synchronized state, read by the renderer.
-  PatternBits currentPattern() const { return currentPattern_; }
-  PatternBits nextPattern() const { return nextPattern_; }
+  PatternBits GetCurrentPattern() const { return currentPattern_; }
+  PatternBits GetNextPattern() const { return nextPattern_; }
   Microseconds currentPatternStartTime() const { return currentPatternStartTime_; }
   bool isLooping() const { return loop_; }
   bool paletteIsForced() const { return paletteIsForced_; }
