@@ -5,7 +5,7 @@
 
 namespace jazzlights {
 
-inline FunctionalEffect threesine() {
+inline FunctionalEffect Threesine() {
   return effect("threesine", [](const Frame& frame) {
     const Coord w = Width(frame);
     const Coord h = Height(frame);

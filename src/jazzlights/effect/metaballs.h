@@ -29,8 +29,8 @@ struct MetaballsState {
 
 class Metaballs : public EffectWithPaletteAndState<MetaballsState> {
  public:
-  std::string effectNamePrefix(PatternBits /*pattern*/) const override { return "metaballs"; }
-  ColorWithPalette innerColor(const Frame& /*frame*/, const Pixel& px, MetaballsState* state) const override {
+  std::string EffectNamePrefix(PatternBits /*pattern*/) const override { return "metaballs"; }
+  ColorWithPalette InnerColor(const Frame& /*frame*/, const Pixel& px, MetaballsState* state) const override {
     const Point p = px.coord;
     const Coord d1 = Distance(p, state->p1);
     const Coord d2 = Distance(p, state->p2);
@@ -50,7 +50,7 @@ class Metaballs : public EffectWithPaletteAndState<MetaballsState> {
     }
   }
 
-  void innerBegin(const Frame& frame, MetaballsState* state) const override {
+  void InnerBegin(const Frame& frame, MetaballsState* state) const override {
     state->speed = frame.predictableRandom->GetRandomDoubleBetween(0.1, 0.5);
     state->diagonalLength = Diagonal(frame);
     state->ballRadius = state->diagonalLength / 50.0;
@@ -62,7 +62,7 @@ class Metaballs : public EffectWithPaletteAndState<MetaballsState> {
     state->multY3 = frame.predictableRandom->GetRandomNumberBetween(10, 30);
   }
 
-  void innerRewind(const Frame& frame, MetaballsState* state) const override {
+  void InnerRewind(const Frame& frame, MetaballsState* state) const override {
     const Coord ox = frame.viewport.origin.x;
     const Coord oy = frame.viewport.origin.y;
     const Coord w = frame.viewport.size.width / 256.0;

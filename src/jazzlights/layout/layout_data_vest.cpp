@@ -371,11 +371,11 @@ constexpr Point pixelMap[] = {
 };
 
 static_assert(JL_LENGTH(pixelMap) == 360, "bad size");
-PixelMap pixels(JL_LENGTH(pixelMap), pixelMap);
+PixelMap sPixels(JL_LENGTH(pixelMap), pixelMap);
 
 }  // namespace
 
-void AddLedsToRunner(FastLedRunner* runner) { runner->AddLeds<WS2812B, LED_PIN, GRB>(pixels); }
+void AddLedsToRunner(FastLedRunner* runner) { runner->AddLeds<WS2812B, LED_PIN, GRB>(sPixels); }
 
 }  // namespace jazzlights
 

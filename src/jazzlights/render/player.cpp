@@ -14,13 +14,13 @@
 #include "jazzlights/effect/glitter.h"
 #include "jazzlights/effect/glow.h"
 #include "jazzlights/effect/hiphotic.h"
-#include "jazzlights/effect/sound_effect.h"
 #include "jazzlights/effect/mapping.h"
 #include "jazzlights/effect/metaballs.h"
 #include "jazzlights/effect/planet.h"
 #include "jazzlights/effect/plasma.h"
 #include "jazzlights/effect/rings.h"
 #include "jazzlights/effect/solid.h"
+#include "jazzlights/effect/sound_effect.h"
 #include "jazzlights/effect/sync_test.h"
 #include "jazzlights/effect/the_matrix.h"
 #include "jazzlights/effect/threesine.h"
@@ -83,29 +83,29 @@ static const Effect* PatternFromBits(PatternBits pattern, const Player& player) 
 #if JL_AUDIO_VISUALIZER
   static const SoundEffect kSoundEffect;
 #endif  // JL_AUDIO_VISUALIZER
-  static const FunctionalEffect kThreesinePattern = threesine();
-  static const FunctionalEffect kFollowStrandEffect = follow_strand();
-  static const FunctionalEffect kMappingEffect = mapping();
-  static const FunctionalEffect kColoringEffect = coloring();
-  static const FunctionalEffect kCalibrationEffect = calibration();
-  static const FunctionalEffect kSyncTestEffect = sync_test();
-  static const FunctionalEffect kBlackEffect = solid(CRGB::Black, "black");
-  static const FunctionalEffect kRedEffect = solid(CRGB::Red, "red");
-  static const FunctionalEffect kGreenEffect = solid(CRGB::Green, "green");
-  static const FunctionalEffect kBlueEffect = solid(CRGB::Blue, "blue");
-  static const FunctionalEffect kPurpleEffect = solid(CRGB::Purple, "purple");
-  static const FunctionalEffect kCyanEffect = solid(CRGB::Cyan, "cyan");
-  static const FunctionalEffect kYellowEffect = solid(CRGB::Yellow, "yellow");
-  static const FunctionalEffect kWhiteEffect = solid(CRGB::White, "white");
-  static const FunctionalEffect kWarmEffect = solid(WarmColor(), "warm");
-  static const FunctionalEffect kRedGlowEffect = glow(CRGB::Red, "glow-red");
-  static const FunctionalEffect kGreenGlowEffect = glow(CRGB::Green, "glow-green");
-  static const FunctionalEffect kBlueGlowEffect = glow(CRGB::Blue, "glow-blue");
-  static const FunctionalEffect kPurpleGlowEffect = glow(CRGB::Purple, "glow-purple");
-  static const FunctionalEffect kCyanGlowEffect = glow(CRGB::Cyan, "glow-cyan");
-  static const FunctionalEffect kYellowGlowEffect = glow(CRGB::Yellow, "glow-yellow");
-  static const FunctionalEffect kWhiteGlowEffect = glow(CRGB::White, "glow-white");
-  static const FunctionalEffect kWarmGlowEffect = glow(WarmColor(), "glow-warm");
+  static const FunctionalEffect kThreesinePattern = Threesine();
+  static const FunctionalEffect kFollowStrandEffect = FollowStrand();
+  static const FunctionalEffect kMappingEffect = Mapping();
+  static const FunctionalEffect kColoringEffect = Coloring();
+  static const FunctionalEffect kCalibrationEffect = Calibration();
+  static const FunctionalEffect kSyncTestEffect = SyncTest();
+  static const FunctionalEffect kBlackEffect = Solid(CRGB::Black, "black");
+  static const FunctionalEffect kRedEffect = Solid(CRGB::Red, "red");
+  static const FunctionalEffect kGreenEffect = Solid(CRGB::Green, "green");
+  static const FunctionalEffect kBlueEffect = Solid(CRGB::Blue, "blue");
+  static const FunctionalEffect kPurpleEffect = Solid(CRGB::Purple, "purple");
+  static const FunctionalEffect kCyanEffect = Solid(CRGB::Cyan, "cyan");
+  static const FunctionalEffect kYellowEffect = Solid(CRGB::Yellow, "yellow");
+  static const FunctionalEffect kWhiteEffect = Solid(CRGB::White, "white");
+  static const FunctionalEffect kWarmEffect = Solid(WarmColor(), "warm");
+  static const FunctionalEffect kRedGlowEffect = Glow(CRGB::Red, "glow-red");
+  static const FunctionalEffect kGreenGlowEffect = Glow(CRGB::Green, "glow-green");
+  static const FunctionalEffect kBlueGlowEffect = Glow(CRGB::Blue, "glow-blue");
+  static const FunctionalEffect kPurpleGlowEffect = Glow(CRGB::Purple, "glow-purple");
+  static const FunctionalEffect kCyanGlowEffect = Glow(CRGB::Cyan, "glow-cyan");
+  static const FunctionalEffect kYellowGlowEffect = Glow(CRGB::Yellow, "glow-yellow");
+  static const FunctionalEffect kWhiteGlowEffect = Glow(CRGB::White, "glow-white");
+  static const FunctionalEffect kWarmGlowEffect = Glow(WarmColor(), "glow-warm");
 #if JL_IS_CONFIG(CLOUDS)
   static const Clouds kCloudsEffect = Clouds();
 #elif JL_IS_CONFIG(CREATURE)
@@ -213,7 +213,7 @@ static const Effect* PatternFromBits(PatternBits pattern, const Player& player) 
 }
 
 std::string PatternName(PatternBits pattern, const Player& player) {
-  return PatternFromBits(pattern, player)->effectName(pattern);
+  return PatternFromBits(pattern, player)->EffectName(pattern);
 }
 
 Player::Player() {
@@ -247,14 +247,14 @@ Player& Player::Connect(Network* n) {
 
 void Player::Begin() {
   xyIndexStore_.Reset();
-  frame_.pixelCount = 0;
+  frame_.PixelCount = 0;
   frame_.viewport.origin.x = 0;
   frame_.viewport.origin.y = 0;
   frame_.viewport.size.height = 0;
   frame_.viewport.size.width = 0;
   for (const Strand& s : strands_) {
-    frame_.viewport = Merge(frame_.viewport, jazzlights::bounds(s.layout));
-    frame_.pixelCount += s.layout.pixelCount();
+    frame_.viewport = Merge(frame_.viewport, jazzlights::Bounds(s.layout));
+    frame_.PixelCount += s.layout.PixelCount();
     xyIndexStore_.IngestLayout(&s.layout);
   }
   if (frame_.viewport.size.width == 0 || frame_.viewport.size.height == 0) { isAllLinear_ = true; }
@@ -277,7 +277,7 @@ void Player::Begin() {
       "basePrecedence %u precedenceGain %u strands: %zu%s, "
       "pixels: %zu, %s " DEVICE_ID_FMT " w %f h %f ox %f oy %f xv %zu yv %zu",
       BOOT_MESSAGE, engine_.basePrecedence(), engine_.precedenceGain(), strands_.size(),
-      strands_.empty() ? " (CONTROLLER ONLY!)" : "", frame_.pixelCount, !networks_.empty() ? "networked" : "standalone",
+      strands_.empty() ? " (CONTROLLER ONLY!)" : "", frame_.PixelCount, !networks_.empty() ? "networked" : "standalone",
       DEVICE_ID_HEX(engine_.localDeviceId()), frame_.viewport.size.width, frame_.viewport.size.height,
       frame_.viewport.origin.x, frame_.viewport.origin.y, xyIndexStore_.xValuesCount(), xyIndexStore_.yValuesCount());
 
@@ -433,7 +433,7 @@ bool Player::Render() {
   const Effect* effect = PatternFromBits(frame_.pattern, *this);
 #if JL_IS_CONFIG(FAIRY_WAND)
   constexpr Microseconds kOverridePatternDuration = 8 * kMicrosecondsPerSecond;  // 8s.
-  static const FunctionalEffect fairy_wand_effect = fairy_wand();
+  static const FunctionalEffect fairy_wand_effect = FairyWand();
   if (overridePatternStartTime_) {
     if (currentTime - *overridePatternStartTime_ < kOverridePatternDuration) {
       SetFrameTime(frame_, currentTime, *overridePatternStartTime_);
@@ -447,14 +447,14 @@ bool Player::Render() {
 #endif  // FAIRY_WAND
 
   // Ensure effectContext_ is big enough for this effect.
-  size_t effectContextSize = effect->contextSize(frame_);
+  size_t effectContextSize = effect->ContextSize(frame_);
   if (effectContextSize > effectContextSize_) {
     if ((effectContextSize % kMaxStateAlignment) != 0) {
       // aligned_alloc required the allocation size to be a multiple of the alignment.
       effectContextSize += kMaxStateAlignment - (effectContextSize % kMaxStateAlignment);
     }
     jll_info("realloc context size from %zu to %zu (%s w %f h %f xv %zu yv %zu)", effectContextSize_, effectContextSize,
-             effect->effectName(frame_.pattern).c_str(), frame_.viewport.size.width, frame_.viewport.size.height,
+             effect->EffectName(frame_.pattern).c_str(), frame_.viewport.size.width, frame_.viewport.size.height,
              xyIndexStore_.xValuesCount(), xyIndexStore_.yValuesCount());
     // realloc doesn't support alignment requirements, so we need to use aligned_alloc and copy the data ourselves.
     size_t previousContextSize = effectContextSize_;
@@ -472,8 +472,8 @@ bool Player::Render() {
   if (frame_.pattern != lastBegunPattern_ || shouldBeginPattern_) {
     lastBegunPattern_ = frame_.pattern;
     shouldBeginPattern_ = false;
-    predictableRandom_.ResetWithFrameStart(frame_, effect->effectName(frame_.pattern).c_str());
-    effect->begin(frame_);
+    predictableRandom_.ResetWithFrameStart(frame_, effect->EffectName(frame_.pattern).c_str());
+    effect->Begin(frame_);
     lastLEDWriteTime_.reset();
   }
 
@@ -498,20 +498,20 @@ bool Player::Render() {
 
   const Microseconds patternComputeStartTime = TimeMicros();
   // Actually render the pixels.
-  predictableRandom_.ResetWithFrameTime(frame_, effect->effectName(frame_.pattern).c_str());
-  effect->rewind(frame_);
+  predictableRandom_.ResetWithFrameTime(frame_, effect->EffectName(frame_.pattern).c_str());
+  effect->Rewind(frame_);
   Pixel px;
   size_t cumulativeIndex = 0;
   for (const Strand& s : strands_) {
     px.strand = &s;
-    const size_t numPixels = s.layout.pixelCount();
+    const size_t numPixels = s.layout.PixelCount();
     for (size_t index = 0; index < numPixels; index++) {
       CRGB color;
-      px.coord = s.layout.at(index);
+      px.coord = s.layout.At(index);
       if (!IsEmpty(px.coord)) {
         px.strandIndex = index;
         px.cumulativeIndex = cumulativeIndex;
-        color = effect->color(frame_, px);
+        color = effect->Color(frame_, px);
       } else {
         color = CRGB::Black;
       }
@@ -519,7 +519,7 @@ bool Player::Render() {
       s.renderer.RenderPixel(index, color);
     }
   }
-  effect->afterColors(frame_);
+  effect->AfterColors(frame_);
 
   // Save data for measuring FPS.
   const Microseconds patternComputeDuration = TimeMicros() - patternComputeStartTime;

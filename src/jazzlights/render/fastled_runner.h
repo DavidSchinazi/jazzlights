@@ -40,21 +40,21 @@ class FastLedRunner : public Player::NumLedWritesGetter {
   template <ESPIChipsets CHIPSET, uint8_t DATA_PIN, uint8_t CLOCK_PIN, EOrder RGB_ORDER, uint32_t SPI_DATA_RATE>
   void AddLeds(const Layout& layout) {
     renderers_.emplace_back(
-        FastLedRenderer::Create<CHIPSET, DATA_PIN, CLOCK_PIN, RGB_ORDER, SPI_DATA_RATE>(layout.pixelCount()));
+        FastLedRenderer::Create<CHIPSET, DATA_PIN, CLOCK_PIN, RGB_ORDER, SPI_DATA_RATE>(layout.PixelCount()));
     player_->AddStrand(layout, *renderers_.back());
   }
 
   // 4 wires with default data rate.
   template <ESPIChipsets CHIPSET, uint8_t DATA_PIN, uint8_t CLOCK_PIN, EOrder RGB_ORDER>
   void AddLeds(const Layout& layout) {
-    renderers_.emplace_back(FastLedRenderer::Create<CHIPSET, DATA_PIN, CLOCK_PIN, RGB_ORDER>(layout.pixelCount()));
+    renderers_.emplace_back(FastLedRenderer::Create<CHIPSET, DATA_PIN, CLOCK_PIN, RGB_ORDER>(layout.PixelCount()));
     player_->AddStrand(layout, *renderers_.back());
   }
 
   // 3 wires.
   template <template <uint8_t DATA_PIN, EOrder RGB_ORDER> class CHIPSET, uint8_t DATA_PIN, EOrder RGB_ORDER>
   void AddLeds(const Layout& layout) {
-    renderers_.emplace_back(FastLedRenderer::Create<CHIPSET, DATA_PIN, RGB_ORDER>(layout.pixelCount()));
+    renderers_.emplace_back(FastLedRenderer::Create<CHIPSET, DATA_PIN, RGB_ORDER>(layout.PixelCount()));
     player_->AddStrand(layout, *renderers_.back());
   }
 

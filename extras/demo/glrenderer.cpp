@@ -19,7 +19,7 @@ static void renderLed(double cx, double cy, double r, CRGB color, int segments =
 GLRenderer::GLRenderer(const Layout& l, Meters r) : layout_(l), ledRadius_(r) {}
 
 void GLRenderer::RenderPixel(size_t index, CRGB color) {
-  Point pos = layout_.at(index);
+  Point pos = layout_.At(index);
   renderLed(pos.x, pos.y, ledRadius_, color);
 }
 

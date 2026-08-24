@@ -117,55 +117,55 @@ inline std::string PaletteNameFromPattern(PatternBits pattern) {
 template <typename STATE>
 class EffectWithPaletteAndState : public Effect {
  public:
-  virtual std::string effectNamePrefix(PatternBits pattern) const = 0;
-  virtual size_t extraContextSize(const Frame& frame) const {
+  virtual std::string EffectNamePrefix(PatternBits pattern) const = 0;
+  virtual size_t ExtraContextSize(const Frame& frame) const {
     (void)frame;
     return 0;
   }
-  virtual ColorWithPalette innerColor(const Frame& frame, const Pixel& px, STATE* state) const = 0;
-  virtual void innerBegin(const Frame& frame, STATE* state) const {
+  virtual ColorWithPalette InnerColor(const Frame& frame, const Pixel& px, STATE* state) const = 0;
+  virtual void InnerBegin(const Frame& frame, STATE* state) const {
     (void)frame;
     (void)state;
   }
-  virtual void innerRewind(const Frame& frame, STATE* state) const {
+  virtual void InnerRewind(const Frame& frame, STATE* state) const {
     (void)frame;
     (void)state;
   }
 
-  std::string effectName(PatternBits pattern) const override {
-    return effectNamePrefix(pattern) + "-" + PaletteNameFromPattern(pattern);
+  std::string EffectName(PatternBits pattern) const override {
+    return EffectNamePrefix(pattern) + "-" + PaletteNameFromPattern(pattern);
   }
 
-  CRGB color(const Frame& frame, const Pixel& px) const override {
-    const ColorWithPalette colorWithPalette = innerColor(frame, px, &state(frame)->innerState);
-    return colorWithPalette.colorFromPalette(state(frame)->ocp);
+  CRGB Color(const Frame& frame, const Pixel& px) const override {
+    const ColorWithPalette colorWithPalette = InnerColor(frame, px, &State(frame)->innerState);
+    return colorWithPalette.colorFromPalette(State(frame)->ocp);
   }
 
-  size_t contextSize(const Frame& frame) const override {
-    return sizeof(EffectWithPaletteState) + extraContextSize(frame);
+  size_t ContextSize(const Frame& frame) const override {
+    return sizeof(EffectWithPaletteState) + ExtraContextSize(frame);
   }
 
-  void begin(const Frame& frame) const override {
-    new (state(frame)) EffectWithPaletteState;  // Default-initialize the state.
-    state(frame)->ocp = PaletteFromPattern(frame.pattern);
-    innerBegin(frame, &state(frame)->innerState);
+  void Begin(const Frame& frame) const override {
+    new (State(frame)) EffectWithPaletteState;  // Default-initialize the state.
+    State(frame)->ocp = PaletteFromPattern(frame.pattern);
+    InnerBegin(frame, &State(frame)->innerState);
   }
 
-  void rewind(const Frame& frame) const override { innerRewind(frame, &state(frame)->innerState); }
+  void Rewind(const Frame& frame) const override { InnerRewind(frame, &State(frame)->innerState); }
 
-  void afterColors(const Frame& /*frame*/) const override {
+  void AfterColors(const Frame& /*frame*/) const override {
     static_assert(std::is_trivially_destructible<STATE>::value, "STATE must be trivially destructible");
   }
 
  protected:
-  OurColorPalette palette(const Frame& frame) const { return state(frame)->ocp; }
+  OurColorPalette palette(const Frame& frame) const { return State(frame)->ocp; }
 
  private:
   struct EffectWithPaletteState {
     OurColorPalette ocp;
     STATE innerState;
   };
-  EffectWithPaletteState* state(const Frame& frame) const {
+  EffectWithPaletteState* State(const Frame& frame) const {
     static_assert(alignof(EffectWithPaletteState) <= kMaxStateAlignment, "Need to increase kMaxStateAlignment");
     return static_cast<EffectWithPaletteState*>(frame.context);
   }
@@ -183,36 +183,36 @@ template <typename STATE, typename PER_PIXEL_TYPE>
 class EffectWithPaletteXYIndexAndState : public XYIndexStateEffect<EffectWithPaletteState<STATE>, PER_PIXEL_TYPE> {
  protected:
   CRGB colorFromPalette(const Frame& frame, uint8_t innerColor) const {
-    EffectWithPaletteState<STATE>* s = XYIndexStateEffect<EffectWithPaletteState<STATE>, PER_PIXEL_TYPE>::state(frame);
+    EffectWithPaletteState<STATE>* s = XYIndexStateEffect<EffectWithPaletteState<STATE>, PER_PIXEL_TYPE>::State(frame);
     return colorFromOurPalette(s->ocp, innerColor);
   }
   OurColorPalette palette(const Frame& frame) const {
-    EffectWithPaletteState<STATE>* s = XYIndexStateEffect<EffectWithPaletteState<STATE>, PER_PIXEL_TYPE>::state(frame);
+    EffectWithPaletteState<STATE>* s = XYIndexStateEffect<EffectWithPaletteState<STATE>, PER_PIXEL_TYPE>::State(frame);
     return s->ocp;
   }
 
  public:
-  virtual std::string effectNamePrefix(PatternBits pattern) const = 0;
-  virtual ColorWithPalette innerColor(const Frame& frame, STATE* state, const Pixel& px) const = 0;
-  virtual void innerBegin(const Frame& frame, STATE* state) const = 0;
-  virtual void innerRewind(const Frame& frame, STATE* state) const = 0;
+  virtual std::string EffectNamePrefix(PatternBits pattern) const = 0;
+  virtual ColorWithPalette InnerColor(const Frame& frame, STATE* state, const Pixel& px) const = 0;
+  virtual void InnerBegin(const Frame& frame, STATE* state) const = 0;
+  virtual void InnerRewind(const Frame& frame, STATE* state) const = 0;
 
-  std::string effectName(PatternBits pattern) const override {
-    return effectNamePrefix(pattern) + "-" + PaletteNameFromPattern(pattern);
+  std::string EffectName(PatternBits pattern) const override {
+    return EffectNamePrefix(pattern) + "-" + PaletteNameFromPattern(pattern);
   }
 
-  CRGB innerColor(const Frame& frame, EffectWithPaletteState<STATE>* state, const Pixel& px) const override {
-    const ColorWithPalette colorWithPalette = innerColor(frame, &state->innerState, px);
+  CRGB InnerColor(const Frame& frame, EffectWithPaletteState<STATE>* state, const Pixel& px) const override {
+    const ColorWithPalette colorWithPalette = InnerColor(frame, &state->innerState, px);
     return colorWithPalette.colorFromPalette(state->ocp);
   }
 
-  void innerBegin(const Frame& frame, EffectWithPaletteState<STATE>* state) const override {
+  void InnerBegin(const Frame& frame, EffectWithPaletteState<STATE>* state) const override {
     state->ocp = PaletteFromPattern(frame.pattern);
-    innerBegin(frame, &state->innerState);
+    InnerBegin(frame, &state->innerState);
   }
 
-  void innerRewind(const Frame& frame, EffectWithPaletteState<STATE>* state) const override {
-    innerRewind(frame, &state->innerState);
+  void InnerRewind(const Frame& frame, EffectWithPaletteState<STATE>* state) const override {
+    InnerRewind(frame, &state->innerState);
   }
 };
 

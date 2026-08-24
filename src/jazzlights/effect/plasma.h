@@ -22,12 +22,12 @@ struct SpinPlasmaState {
 
 class SpinPlasma : public EffectWithPaletteAndState<SpinPlasmaState> {
  public:
-  std::string effectNamePrefix(PatternBits /*pattern*/) const override { return "sp"; }
-  ColorWithPalette innerColor(const Frame& /*frame*/, const Pixel& px, SpinPlasmaState* state) const override {
+  std::string EffectNamePrefix(PatternBits /*pattern*/) const override { return "sp"; }
+  ColorWithPalette InnerColor(const Frame& /*frame*/, const Pixel& px, SpinPlasmaState* state) const override {
     return sin8(sqrt(Square((static_cast<float>(px.coord.x) - state->plasmaCenterX) * state->xMultiplier) +
                      Square((static_cast<float>(px.coord.y) - state->plasmaCenterY) * state->yMultiplier)));
   }
-  void innerBegin(const Frame& frame, SpinPlasmaState* state) const override {
+  void InnerBegin(const Frame& frame, SpinPlasmaState* state) const override {
     const float multiplier = frame.predictableRandom->GetRandomNumberBetween(100, 500);
     state->xMultiplier = multiplier / frame.viewport.size.width;
     state->yMultiplier = multiplier / frame.viewport.size.height;
@@ -36,7 +36,7 @@ class SpinPlasma : public EffectWithPaletteAndState<SpinPlasmaState> {
     state->rotationCenterY =
         frame.viewport.origin.y + frame.predictableRandom->GetRandomDoubleBetween(0, frame.viewport.size.height);
   }
-  void innerRewind(const Frame& frame, SpinPlasmaState* state) const override {
+  void InnerRewind(const Frame& frame, SpinPlasmaState* state) const override {
     const uint8_t offset = 30 * frame.time / 255;
     state->plasmaCenterX =
         state->rotationCenterX + (static_cast<float>(cos8(offset)) - 127.0) / (state->xMultiplier * 2.0);

@@ -124,11 +124,11 @@ void PlanetEffect::SetPlanet(Planet planet) {
 
 void PlanetEffect::SetHallSensorClosed(bool isClosed) { hallSensorClosed_ = isClosed; }
 
-size_t PlanetEffect::contextSize(const Frame& /*frame*/) const { return sizeof(State); }
+size_t PlanetEffect::ContextSize(const Frame& /*frame*/) const { return sizeof(State); }
 
-void PlanetEffect::begin(const Frame& /*frame*/) const {}
+void PlanetEffect::Begin(const Frame& /*frame*/) const {}
 
-void PlanetEffect::rewind(const Frame& frame) const {
+void PlanetEffect::Rewind(const Frame& frame) const {
   State* state = static_cast<State*>(frame.context);
   state->half = (frame.pattern & kPlanetPatternHalfBit) != 0;
   state->hall = (frame.pattern & kPlanetPatternHallSensorBit) != 0;
@@ -136,9 +136,9 @@ void PlanetEffect::rewind(const Frame& frame) const {
   state->hallSensorClosed = hallSensorClosed_;
 }
 
-void PlanetEffect::afterColors(const Frame& /*frame*/) const {}
+void PlanetEffect::AfterColors(const Frame& /*frame*/) const {}
 
-CRGB PlanetEffect::color(const Frame& frame, const Pixel& px) const {
+CRGB PlanetEffect::Color(const Frame& frame, const Pixel& px) const {
   if (px.cumulativeIndex >= numPixels_) { return CRGB::Black; }
 #if !JL_ORRERY_SUN && !JL_ORRERY_PLUTO
   State* state = static_cast<State*>(frame.context);
@@ -155,7 +155,7 @@ CRGB PlanetEffect::color(const Frame& frame, const Pixel& px) const {
   return ColorFromPalette(*palette, colorIndex);
 }
 
-std::string PlanetEffect::effectName(PatternBits /*pattern*/) const {
+std::string PlanetEffect::EffectName(PatternBits /*pattern*/) const {
   return std::string("planet-") + GetPlanetName(currentPlanet_);
 }
 

@@ -30,28 +30,28 @@ class Matrix : public Layout {
   }
 
   Matrix& progressive() {
-    flags_ |= PROGRESSIVE;
+    flags_ |= kProgressive;
     return *this;
   }
 
   Matrix& zigzag() {
-    flags_ |= ZIGZAG;
+    flags_ |= kZigzag;
     return *this;
   }
 
   Dimensions size() const { return {width_ / resolution_, height_ / resolution_}; }
 
-  size_t pixelCount() const override { return width_ * height_; }
+  size_t PixelCount() const override { return width_ * height_; }
 
-  Point at(size_t index) const override {
+  Point At(size_t index) const override {
     size_t x = (index % width_);
     size_t y = (index / width_);
-    if ((flags_ & ZIGZAG) && y % 2 == 0) { x = width_ - x - 1; }
+    if ((flags_ & kZigzag) && y % 2 == 0) { x = width_ - x - 1; }
     return {origin_.x + x / resolution_, origin_.y + y / resolution_};
   }
 
  private:
-  enum { PROGRESSIVE = 0, ZIGZAG = 1 };
+  enum { kProgressive = 0, kZigzag = 1 };
 
   size_t width_;
   size_t height_;

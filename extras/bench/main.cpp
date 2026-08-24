@@ -8,7 +8,7 @@
 namespace jazzlights {
 
 Player player;
-Matrix pixels(100, 100);
+Matrix gPixels(100, 100);
 
 class NoopRenderer : public Renderer {
  public:
@@ -27,7 +27,7 @@ int runMain(int argc, char** argv) {
     if (ch == 'k') { killTime = TimeMicros() + strtol(optarg, nullptr, 10) * kMicrosecondsPerSecond; }
     if (ch == 'n') { useNetwork = true; }
   }
-  player.AddStrand(pixels, noopRenderer);
+  player.AddStrand(gPixels, noopRenderer);
   if (useNetwork) { player.Connect(UnixUdpNetwork::get()); }
   player.Begin();
   Microseconds lastFpsEpochTime = 0;

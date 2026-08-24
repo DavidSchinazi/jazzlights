@@ -55,14 +55,14 @@ class Creatures : public Effect {
  public:
   Creatures() = default;
 
-  std::string effectName(PatternBits /*pattern*/) const override { return "creatures"; }
+  std::string EffectName(PatternBits /*pattern*/) const override { return "creatures"; }
 
-  size_t contextSize(const Frame& /*frame*/) const override { return sizeof(CreaturesState); }
+  size_t ContextSize(const Frame& /*frame*/) const override { return sizeof(CreaturesState); }
 
-  void begin(const Frame& frame) const override;
-  void rewind(const Frame& frame) const override;
-  void afterColors(const Frame& /*frame*/) const override;
-  CRGB color(const Frame& frame, const Pixel& px) const override;
+  void Begin(const Frame& frame) const override;
+  void Rewind(const Frame& frame) const override;
+  void AfterColors(const Frame& /*frame*/) const override;
+  CRGB Color(const Frame& frame, const Pixel& px) const override;
 
  private:
   struct CreaturesState {
@@ -75,7 +75,7 @@ class Creatures : public Effect {
     bool orrery;
     CRGB colors[kMaxNumCreatureColours];
   };
-  CreaturesState* state(const Frame& frame) const {
+  CreaturesState* State(const Frame& frame) const {
     static_assert(alignof(CreaturesState) <= kMaxStateAlignment, "Need to increase kMaxStateAlignment");
     return static_cast<CreaturesState*>(frame.context);
   }

@@ -35,13 +35,13 @@ struct ColoredBurstsState {
 
 class ColoredBursts : public EffectWithPaletteXYIndexAndState<ColoredBurstsState, CRGB> {
  public:
-  std::string effectNamePrefix(PatternBits /*pattern*/) const override { return "bursts"; }
+  std::string EffectNamePrefix(PatternBits /*pattern*/) const override { return "bursts"; }
 
-  ColorWithPalette innerColor(const Frame& f, ColoredBurstsState* /*state*/, const Pixel& /*px*/) const override {
-    return ColorWithPalette::OverrideColor(ps(f));
+  ColorWithPalette InnerColor(const Frame& f, ColoredBurstsState* /*state*/, const Pixel& /*px*/) const override {
+    return ColorWithPalette::OverrideColor(Ps(f));
   }
 
-  void innerBegin(const Frame& f, ColoredBurstsState* state) const override {
+  void InnerBegin(const Frame& f, ColoredBurstsState* state) const override {
     state->dot = false;
     state->grad = true;
     state->hue = 0;
@@ -54,15 +54,15 @@ class ColoredBursts : public EffectWithPaletteXYIndexAndState<ColoredBurstsState
     // All pixels are default-initialized to black using CRGB's default constructor.
   }
 
-  void innerRewind(const Frame& f, ColoredBurstsState* state) const override {
+  void InnerRewind(const Frame& f, ColoredBurstsState* state) const override {
     state->hue++;
     // Slightly fade all pixels.
-    for (size_t x = 0; x < w(f); x++) {
-      for (size_t y = 0; y < h(f); y++) { ps(f, x, y).nscale8(state->fadeScale); }
+    for (size_t x = 0; x < W(f); x++) {
+      for (size_t y = 0; y < H(f); y++) { Ps(f, x, y).nscale8(state->fadeScale); }
     }
 
-    int x1 = JlBeatSin(2 + state->speed, f.time, 0, (w(f) - 1));
-    int y1 = JlBeatSin(5 + state->speed, f.time, 0, (h(f) - 1));
+    int x1 = JlBeatSin(2 + state->speed, f.time, 0, (W(f) - 1));
+    int y1 = JlBeatSin(5 + state->speed, f.time, 0, (H(f) - 1));
     int& curX1 = state->curX1;
     int& curY1 = state->curY1;
     if (!state->curInit1) {
@@ -86,8 +86,8 @@ class ColoredBursts : public EffectWithPaletteXYIndexAndState<ColoredBurstsState
     }
 
     for (uint8_t i = 0; i < state->numLines; i++) {
-      int x2 = JlBeatSin(1 + state->speed, f.time, 0, (w(f) - 1), i * 24);
-      int y2 = JlBeatSin(3 + state->speed, f.time, 0, (h(f) - 1), i * 48 + 64);
+      int x2 = JlBeatSin(1 + state->speed, f.time, 0, (W(f) - 1), i * 24);
+      int y2 = JlBeatSin(3 + state->speed, f.time, 0, (H(f) - 1), i * 48 + 64);
       CRGB color = colorFromPalette(f, i * 255 / state->numLines + state->hue);
       int& curX2 = state->curX2[i];
       int& curY2 = state->curY2[i];
@@ -133,32 +133,32 @@ class ColoredBursts : public EffectWithPaletteXYIndexAndState<ColoredBurstsState
     for (int i = 1; i <= steps; i++) {
       int dx = x1 + (x2 - x1) * i / steps;
       int dy = y1 + (y2 - y1) * i / steps;
-      ps(f, dx, dy) += color;
-      if (state->grad) { ps(f, dx, dy) %= (i * 255 / steps); }
+      Ps(f, dx, dy) += color;
+      if (state->grad) { Ps(f, dx, dy) %= (i * 255 / steps); }
       if (steppingX) {
         if (dx < x1 && dx < x2) {
-          ps(f, dx + 1, dy) += color;
-          if (state->grad) { ps(f, dx + 1, dy) %= (i * 255 / steps); }
+          Ps(f, dx + 1, dy) += color;
+          if (state->grad) { Ps(f, dx + 1, dy) %= (i * 255 / steps); }
         }
         if (dx > x1 && dx > x2) {
-          ps(f, dx - 1, dy) += color;
-          if (state->grad) { ps(f, dx - 1, dy) %= (i * 255 / steps); }
+          Ps(f, dx - 1, dy) += color;
+          if (state->grad) { Ps(f, dx - 1, dy) %= (i * 255 / steps); }
         }
       } else {
         if (dy < y1 && dy < y2) {
-          ps(f, dx, dy + 1) += color;
-          if (state->grad) { ps(f, dx, dy + 1) %= (i * 255 / steps); }
+          Ps(f, dx, dy + 1) += color;
+          if (state->grad) { Ps(f, dx, dy + 1) %= (i * 255 / steps); }
         }
         if (dy > y1 && dy > y2) {
-          ps(f, dx, dy - 1) += color;
-          if (state->grad) { ps(f, dx, dy - 1) %= (i * 255 / steps); }
+          Ps(f, dx, dy - 1) += color;
+          if (state->grad) { Ps(f, dx, dy - 1) %= (i * 255 / steps); }
         }
       }
     }
 
     if (state->dot) {  // add white point at the ends of line
-      ps(f, x1, y1) += CRGB::White;
-      ps(f, x2, y2) += CRGB::White;
+      Ps(f, x1, y1) += CRGB::White;
+      Ps(f, x2, y2) += CRGB::White;
     }
   }
 };

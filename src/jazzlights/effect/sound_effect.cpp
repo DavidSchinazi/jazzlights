@@ -116,9 +116,9 @@ CRGB ColorFromSoundReactivePalette(OurColorPalette ocp, uint8_t color) {
 }
 }  // namespace
 
-size_t SoundEffect::extraContextSize(const Frame& frame) const { return sizeof(CRGB) * frame.pixelCount; }
+size_t SoundEffect::ExtraContextSize(const Frame& frame) const { return sizeof(CRGB) * frame.PixelCount; }
 
-void SoundEffect::innerBegin(const Frame& frame, SoundState* state) const {
+void SoundEffect::InnerBegin(const Frame& frame, SoundState* state) const {
   Audio::Get().GetVisualizerData(&state->audioData);
   memcpy(state->prevBands, state->audioData.bands, sizeof(state->prevBands));
 
@@ -163,10 +163,10 @@ void SoundEffect::innerBegin(const Frame& frame, SoundState* state) const {
 #endif
 
   // Initialize per-pixel state
-  memset(lastColors(state), 0, sizeof(CRGB) * frame.pixelCount);
+  memset(lastColors(state), 0, sizeof(CRGB) * frame.PixelCount);
 }
 
-void SoundEffect::innerRewind(const Frame& /*frame*/, SoundState* state) const {
+void SoundEffect::InnerRewind(const Frame& /*frame*/, SoundState* state) const {
   memcpy(state->prevBands, state->audioData.bands, sizeof(state->prevBands));
   Audio::Get().GetVisualizerData(&state->audioData);
   bool wasSquelched = state->isSquelched;
@@ -178,7 +178,7 @@ void SoundEffect::innerRewind(const Frame& /*frame*/, SoundState* state) const {
   }
 }
 
-ColorWithPalette SoundEffect::innerColor(const Frame& frame, const Pixel& px, SoundState* state) const {
+ColorWithPalette SoundEffect::InnerColor(const Frame& frame, const Pixel& px, SoundState* state) const {
   // Squelch: Turn off LEDs if the overall volume is very low
   if (state->isSquelched) {
     CRGB* prevColors = lastColors(state);

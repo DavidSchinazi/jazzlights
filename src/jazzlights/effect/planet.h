@@ -17,12 +17,12 @@ class PlanetEffect : public Effect {
   void SetHallSensorClosed(bool isClosed);
 
   // From Effect.
-  size_t contextSize(const Frame& frame) const override;
-  void begin(const Frame& frame) const override;
-  void rewind(const Frame& frame) const override;
-  void afterColors(const Frame& frame) const override;
-  CRGB color(const Frame& frame, const Pixel& px) const override;
-  std::string effectName(PatternBits pattern) const override;
+  size_t ContextSize(const Frame& frame) const override;
+  void Begin(const Frame& frame) const override;
+  void Rewind(const Frame& frame) const override;
+  void AfterColors(const Frame& frame) const override;
+  CRGB Color(const Frame& frame, const Pixel& px) const override;
+  std::string EffectName(PatternBits pattern) const override;
 
  private:
   struct State {

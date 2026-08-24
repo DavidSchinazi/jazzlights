@@ -5,7 +5,7 @@
 
 namespace jazzlights {
 
-inline FunctionalEffect mapping() {
+inline FunctionalEffect Mapping() {
   return effect("mapping", [](const Frame& frame) {
     const size_t pixelNum = (frame.pattern >> 8) & 0xFFFF;
     const bool blink = ((frame.time % 1000) < 500);
@@ -25,7 +25,7 @@ inline FunctionalEffect mapping() {
   });
 };
 
-inline FunctionalEffect coloring() {
+inline FunctionalEffect Coloring() {
   return effect("coloring", [](const Frame& frame) {
     const uint8_t red = (frame.pattern >> 24) & 0xFF;
     const uint8_t green = (frame.pattern >> 16) & 0xFF;

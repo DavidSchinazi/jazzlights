@@ -6,7 +6,7 @@
 
 namespace jazzlights {
 
-inline FunctionalEffect follow_strand() {
+inline FunctionalEffect FollowStrand() {
   return effect("follow-strand", [](const Frame& frame) {
     const size_t offset = frame.time / 100;
     const bool blink = ((frame.time % 1000) < 500);
@@ -19,12 +19,12 @@ inline FunctionalEffect follow_strand() {
       constexpr size_t numColors = sizeof(colors) / sizeof(colors[0]);
       const size_t reverseIndex = (-pt.strandIndex % numColors) + numColors - 1;
       int32_t col = colors[(offset + reverseIndex) % numColors];
-      if (pt.strandIndex == 0 || (fabs(pt.coord.x - pt.strand->layout.at(0).x) < 0.001 &&
-                                  fabs(pt.coord.y - pt.strand->layout.at(0).y) < 0.001)) {
+      if (pt.strandIndex == 0 || (fabs(pt.coord.x - pt.strand->layout.At(0).x) < 0.001 &&
+                                  fabs(pt.coord.y - pt.strand->layout.At(0).y) < 0.001)) {
         col = blink ? 0xffffff : 0;
-      } else if (pt.strandIndex == pt.strand->layout.pixelCount() - 1 ||
-                 (fabs(pt.coord.x - pt.strand->layout.at(pt.strand->layout.pixelCount() - 1).x) < 0.001 &&
-                  fabs(pt.coord.y - pt.strand->layout.at(pt.strand->layout.pixelCount() - 1).y) < 0.001)) {
+      } else if (pt.strandIndex == pt.strand->layout.PixelCount() - 1 ||
+                 (fabs(pt.coord.x - pt.strand->layout.At(pt.strand->layout.PixelCount() - 1).x) < 0.001 &&
+                  fabs(pt.coord.y - pt.strand->layout.At(pt.strand->layout.PixelCount() - 1).y) < 0.001)) {
         col = blink ? 0xff00ff : 0;
       }
       return CRGB(col);

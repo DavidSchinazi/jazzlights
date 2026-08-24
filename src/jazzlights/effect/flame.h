@@ -12,10 +12,10 @@ struct FlameState {
 
 class Flame : public EffectWithPaletteXYIndexAndState<FlameState, uint8_t> {
  public:
-  void innerBegin(const Frame& frame, FlameState* state) const override;
-  void innerRewind(const Frame& frame, FlameState* state) const override;
-  ColorWithPalette innerColor(const Frame& frame, FlameState* state, const Pixel& px) const override;
-  std::string effectNamePrefix(PatternBits /*pattern*/) const override { return "flame"; }
+  void InnerBegin(const Frame& frame, FlameState* state) const override;
+  void InnerRewind(const Frame& frame, FlameState* state) const override;
+  ColorWithPalette InnerColor(const Frame& frame, FlameState* state, const Pixel& px) const override;
+  std::string EffectNamePrefix(PatternBits /*pattern*/) const override { return "flame"; }
 };
 
 }  // namespace jazzlights

@@ -15,7 +15,7 @@ void XYIndexStore::IngestLayout(const Layout* layout) {
   layoutInfos_.push_back(LayoutInfo());
   LayoutInfo& li = layoutInfos_.back();
   li.layout = layout;
-  li.xyIndices.resize(layout->pixelCount());
+  li.xyIndices.resize(layout->PixelCount());
 }
 
 void XYIndexStore::Finalize(const Box& viewport) {
@@ -26,9 +26,9 @@ void XYIndexStore::Finalize(const Box& viewport) {
     std::set<Coord, decltype(almostLess)> xSet(almostLess);
     std::set<Coord, decltype(almostLess)> ySet(almostLess);
     for (LayoutInfo& li : layoutInfos_) {
-      const size_t pixelCount = li.layout->pixelCount();
-      for (size_t i = 0; i < pixelCount; i++) {
-        const Point pt = li.layout->at(i);
+      const size_t PixelCount = li.layout->PixelCount();
+      for (size_t i = 0; i < PixelCount; i++) {
+        const Point pt = li.layout->At(i);
         xSet.insert(pt.x);
         ySet.insert(pt.y);
       }
@@ -49,9 +49,9 @@ void XYIndexStore::Finalize(const Box& viewport) {
     yValuesCount_ = yValues.size();
   }
   for (LayoutInfo& li : layoutInfos_) {
-    const size_t pixelCount = li.layout->pixelCount();
-    for (size_t i = 0; i < pixelCount; i++) {
-      const Point pt = li.layout->at(i);
+    const size_t PixelCount = li.layout->PixelCount();
+    for (size_t i = 0; i < PixelCount; i++) {
+      const Point pt = li.layout->At(i);
       XYIndex xyIndex;
       if (useSmallerXGrid_) {
         xyIndex.xIndex = (pt.x - viewport.origin.x) * kSmallerGridSize / viewport.size.width;

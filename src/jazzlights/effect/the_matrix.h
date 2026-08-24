@@ -21,16 +21,16 @@ enum : uint8_t {
 
 class TheMatrix : public XYIndexStateEffect<MatrixState, uint8_t> {
  public:
-  void innerBegin(const Frame& f, MatrixState* state) const override {
+  void InnerBegin(const Frame& f, MatrixState* state) const override {
     state->fallInterval = f.predictableRandom->GetRandomNumberBetween(20, 40);
     state->spawnRate = f.predictableRandom->GetRandomNumberBetween(192, 255);
     state->fadeRate = f.predictableRandom->GetRandomNumberBetween(10, 40);
     state->maxTicks = f.predictableRandom->GetRandomNumberBetween(1, 5);
     state->currentTicks = 0;
     // Progress the effect 2*h times to get pixels on all rows.
-    for (size_t y = 0; y < 2 * h(f); y++) { progressEffect(f, state); }
+    for (size_t y = 0; y < 2 * H(f); y++) { progressEffect(f, state); }
   }
-  void innerRewind(const Frame& frame, MatrixState* state) const override {
+  void InnerRewind(const Frame& frame, MatrixState* state) const override {
     // Only act every maxTicks ticks.
     state->currentTicks++;
     if (state->currentTicks < state->maxTicks) { return; }
@@ -38,8 +38,8 @@ class TheMatrix : public XYIndexStateEffect<MatrixState, uint8_t> {
     progressEffect(frame, state);
   }
 
-  CRGB innerColor(const Frame& f, MatrixState* /*state*/, const Pixel& /*px*/) const override {
-    const uint8_t p = ps(f, x(f), y(f));
+  CRGB InnerColor(const Frame& f, MatrixState* /*state*/, const Pixel& /*px*/) const override {
+    const uint8_t p = Ps(f, X(f), Y(f));
     if (p == kMatrixSpawn) {
       return CRGB(175, 255, 175);
     } else if (p == 0) {
@@ -48,16 +48,16 @@ class TheMatrix : public XYIndexStateEffect<MatrixState, uint8_t> {
       return CRGB(27, 130, 39).nscale8(p);
     }
   }
-  std::string effectName(PatternBits /*pattern*/) const override { return "the-matrix"; }
+  std::string EffectName(PatternBits /*pattern*/) const override { return "the-matrix"; }
 
  private:
   void progressEffect(const Frame& f, MatrixState* state) const {
-    for (size_t y = h(f) - 1;; y--) {
-      for (size_t x = 0; x < w(f); x++) {
-        if (ps(f, x, y) == kMatrixSpawn) {
-          ps(f, x, y) = kMatrixTrail;  // Create trail pixel.
-          if (y < h(f) - 1) {
-            ps(f, x, y + 1) = kMatrixSpawn;  // Move spawn down.
+    for (size_t y = H(f) - 1;; y--) {
+      for (size_t x = 0; x < W(f); x++) {
+        if (Ps(f, x, y) == kMatrixSpawn) {
+          Ps(f, x, y) = kMatrixTrail;  // Create trail pixel.
+          if (y < H(f) - 1) {
+            Ps(f, x, y + 1) = kMatrixSpawn;  // Move spawn down.
           }
         }
       }
@@ -65,13 +65,13 @@ class TheMatrix : public XYIndexStateEffect<MatrixState, uint8_t> {
     }
 
     // Fade all trail pixels.
-    for (size_t x = 0; x < w(f); x++) {
-      for (size_t y = 0; y < h(f); y++) {
-        if (ps(f, x, y) != kMatrixSpawn) {
-          if (ps(f, x, y) > state->fadeRate) {
-            ps(f, x, y) -= state->fadeRate;
+    for (size_t x = 0; x < W(f); x++) {
+      for (size_t y = 0; y < H(f); y++) {
+        if (Ps(f, x, y) != kMatrixSpawn) {
+          if (Ps(f, x, y) > state->fadeRate) {
+            Ps(f, x, y) -= state->fadeRate;
           } else {
-            ps(f, x, y) = 0;
+            Ps(f, x, y) = 0;
           }
         }
       }
@@ -79,8 +79,8 @@ class TheMatrix : public XYIndexStateEffect<MatrixState, uint8_t> {
 
     // Spawn new pixel.
     if (f.predictableRandom->GetRandomByte() < state->spawnRate) {
-      size_t spawnX = f.predictableRandom->GetRandomNumberBetween(0, w(f) - 1);
-      ps(f, spawnX, 0) = kMatrixSpawn;
+      size_t spawnX = f.predictableRandom->GetRandomNumberBetween(0, W(f) - 1);
+      Ps(f, spawnX, 0) = kMatrixSpawn;
     }
   }
 };

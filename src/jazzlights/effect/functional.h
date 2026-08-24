@@ -23,24 +23,24 @@ class FunctionalEffect : public Effect {
   // But allow move constructor.
   FunctionalEffect(FunctionalEffect&&) = default;
 
-  size_t contextSize(const Frame& /*frame*/) const override { return sizeof(PixelColorFunc); }
+  size_t ContextSize(const Frame& /*frame*/) const override { return sizeof(PixelColorFunc); }
 
-  void begin(const Frame& /*frame*/) const override {}
+  void Begin(const Frame& /*frame*/) const override {}
 
-  void rewind(const Frame& frame) const override {
+  void Rewind(const Frame& frame) const override {
     // Note that this call to new does not allocate heap memory.
     // It calls frameFunc_(frame) and places the result in the frame context.
     new (GetPixelColorFuncMemory(frame)) PixelColorFunc(frameFunc_(frame));
   }
 
-  void afterColors(const Frame& frame) const override {
+  void AfterColors(const Frame& frame) const override {
     // Call the destructor for the PixelColorFunc currently saved in the frame context.
     GetPixelColorFuncMemory(frame)->~PixelColorFunc();
   }
 
-  CRGB color(const Frame& frame, const Pixel& px) const override { return (*GetPixelColorFuncMemory(frame))(px); }
+  CRGB Color(const Frame& frame, const Pixel& px) const override { return (*GetPixelColorFuncMemory(frame))(px); }
 
-  std::string effectName(PatternBits /*pattern*/) const override { return name_; }
+  std::string EffectName(PatternBits /*pattern*/) const override { return name_; }
 
  private:
   PixelColorFunc* GetPixelColorFuncMemory(const Frame& frame) const {

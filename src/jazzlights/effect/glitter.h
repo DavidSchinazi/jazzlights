@@ -9,28 +9,28 @@ class Glitter : public Effect {
  public:
   Glitter() = default;
 
-  std::string effectName(PatternBits /*pattern*/) const override { return "glitter"; }
+  std::string EffectName(PatternBits /*pattern*/) const override { return "glitter"; }
 
-  size_t contextSize(const Frame& /*frame*/) const override { return sizeof(GlitterState); }
+  size_t ContextSize(const Frame& /*frame*/) const override { return sizeof(GlitterState); }
 
-  void begin(const Frame& frame) const override {
-    new (state(frame)) GlitterState;  // Default-initialize the state.
-    state(frame)->startHue = frame.predictableRandom->GetRandomByte();
-    state(frame)->backwards = frame.predictableRandom->GetRandomByte() & 1;
+  void Begin(const Frame& frame) const override {
+    new (State(frame)) GlitterState;  // Default-initialize the state.
+    State(frame)->startHue = frame.predictableRandom->GetRandomByte();
+    State(frame)->backwards = frame.predictableRandom->GetRandomByte() & 1;
   }
 
-  void rewind(const Frame& frame) const override {
+  void Rewind(const Frame& frame) const override {
     uint8_t hueOffset = 256 * frame.time / kEffectDurationMs;
-    if (state(frame)->backwards) { hueOffset = 255 - hueOffset; }
-    state(frame)->hue = state(frame)->startHue + hueOffset;
+    if (State(frame)->backwards) { hueOffset = 255 - hueOffset; }
+    State(frame)->hue = State(frame)->startHue + hueOffset;
   }
 
-  void afterColors(const Frame& /*frame*/) const override {
+  void AfterColors(const Frame& /*frame*/) const override {
     static_assert(std::is_trivially_destructible<GlitterState>::value, "GlitterState must be trivially destructible");
   }
 
-  CRGB color(const Frame& frame, const Pixel& /*px*/) const override {
-    return CHSV(state(frame)->hue, 255, frame.predictableRandom->GetRandomByte());
+  CRGB Color(const Frame& frame, const Pixel& /*px*/) const override {
+    return CHSV(State(frame)->hue, 255, frame.predictableRandom->GetRandomByte());
   }
 
  private:
@@ -39,7 +39,7 @@ class Glitter : public Effect {
     bool backwards;
     uint8_t hue;
   };
-  GlitterState* state(const Frame& frame) const {
+  GlitterState* State(const Frame& frame) const {
     static_assert(alignof(GlitterState) <= kMaxStateAlignment, "Need to increase kMaxStateAlignment");
     return static_cast<GlitterState*>(frame.context);
   }

@@ -47,7 +47,7 @@ constexpr Point pixelMap[] = {
 };
 
 static_assert(JL_LENGTH(pixelMap) == 36, "bad size");
-PixelMap pixels(JL_LENGTH(pixelMap), pixelMap);
+PixelMap sPixels(JL_LENGTH(pixelMap), pixelMap);
 
 constexpr Point pixelMap2[] = {
     {0.00,  0.00},
@@ -91,7 +91,7 @@ PixelMap pixels2(JL_LENGTH(pixelMap2), pixelMap2);
 }  // namespace
 
 void AddLedsToRunner(FastLedRunner* runner) {
-  runner->AddLeds<WS2811, LED_PIN, RGB>(pixels);
+  runner->AddLeds<WS2811, LED_PIN, RGB>(sPixels);
   runner->AddLeds<WS2812B, LED_PIN2, GRB>(pixels2);
 }
 

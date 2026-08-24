@@ -5,7 +5,7 @@
 
 namespace jazzlights {
 
-inline FunctionalEffect fairy_wand() {
+inline FunctionalEffect FairyWand() {
   return effect("fairy-wand", [](const Frame& frame) {
     bool blink;
     if (frame.time < 1000) {

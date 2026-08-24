@@ -17,17 +17,17 @@ class Layout {
   Layout& operator=(const Layout& other) = delete;
   Layout& operator=(Layout&& other) = delete;
 
-  virtual size_t pixelCount() const = 0;
-  virtual Point at(size_t i) const = 0;
+  virtual size_t PixelCount() const = 0;
+  virtual Point At(size_t i) const = 0;
 };
 
-inline Box bounds(const Layout& layout) {
+inline Box Bounds(const Layout& layout) {
   Box bb = {
       {0.0, 0.0},
       {0.0, 0.0}
   };
-  const size_t numPixels = layout.pixelCount();
-  for (size_t index = 0; index < numPixels; index++) { bb = Merge(bb, layout.at(index)); }
+  const size_t numPixels = layout.PixelCount();
+  for (size_t index = 0; index < numPixels; index++) { bb = Merge(bb, layout.At(index)); }
   return bb;
 }
 

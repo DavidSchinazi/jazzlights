@@ -11,9 +11,9 @@ class PixelMap : public Layout {
 
   PixelMap(const PixelMap& other) : Layout(), count_(other.count_), points_(other.points_) {}
 
-  size_t pixelCount() const override { return count_; }
+  size_t PixelCount() const override { return count_; }
 
-  Point at(size_t i) const override { return points_[i]; }
+  Point At(size_t i) const override { return points_[i]; }
 
  private:
   size_t count_;

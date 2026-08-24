@@ -21,19 +21,19 @@ struct HiphoticState {
 
 class Hiphotic : public EffectWithPaletteAndState<HiphoticState> {
  public:
-  std::string effectNamePrefix(PatternBits /*pattern*/) const override { return "hiphotic"; }
-  ColorWithPalette innerColor(const Frame& frame, const Pixel& px, HiphoticState* state) const override {
+  std::string EffectNamePrefix(PatternBits /*pattern*/) const override { return "hiphotic"; }
+  ColorWithPalette InnerColor(const Frame& frame, const Pixel& px, HiphoticState* state) const override {
     const float x = (px.coord.x - frame.viewport.origin.x) / frame.viewport.size.width;
     const float y = (px.coord.y - frame.viewport.origin.y) / frame.viewport.size.height;
     return sin8(cos8(x * state->xScale + state->offset / 3) + sin8(y * state->yScale + state->offset / 4) +
                 state->offset);
   }
-  void innerBegin(const Frame& frame, HiphoticState* state) const override {
+  void InnerBegin(const Frame& frame, HiphoticState* state) const override {
     state->offsetScale = frame.predictableRandom->GetRandomNumberBetween(6, 10);
     state->xScale = frame.predictableRandom->GetRandomDoubleBetween(100.0, 200.0);
     state->yScale = frame.predictableRandom->GetRandomDoubleBetween(100.0, 200.0);
   }
-  void innerRewind(const Frame& frame, HiphoticState* state) const override {
+  void InnerRewind(const Frame& frame, HiphoticState* state) const override {
     state->offset = frame.time / state->offsetScale;
   }
 };

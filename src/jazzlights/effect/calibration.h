@@ -5,7 +5,7 @@
 
 namespace jazzlights {
 
-inline FunctionalEffect calibration() {
+inline FunctionalEffect Calibration() {
   return effect("calibration", [](const Frame& frame) {
     const bool blink = ((frame.time % 1000) < 500);
     return [&frame, blink](const Pixel& pt) -> CRGB {

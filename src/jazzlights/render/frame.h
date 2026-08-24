@@ -21,7 +21,7 @@ struct Frame {
   Box viewport;
   void* context = nullptr;
   FrameTimeMs time;
-  size_t pixelCount;
+  size_t PixelCount;
 };
 
 inline void SetFrameTime(Frame& frame, Microseconds currentTime, Microseconds patternStartTime) {

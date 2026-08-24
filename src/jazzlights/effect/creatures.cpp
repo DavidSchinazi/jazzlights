@@ -191,22 +191,22 @@ bool KnownCreatures::HasRecentlyHeardOrrery() {
 }
 
 // Called once to initialize the state.
-void Creatures::begin(const Frame& frame) const {
-  new (state(frame)) CreaturesState;  // Default-initialize the state.
-  state(frame)->origin = {
+void Creatures::Begin(const Frame& frame) const {
+  new (State(frame)) CreaturesState;  // Default-initialize the state.
+  State(frame)->origin = {
       frame.viewport.origin.x + frame.predictableRandom->GetRandomDoubleBetween(0, frame.viewport.size.width),
       frame.viewport.origin.y + frame.predictableRandom->GetRandomDoubleBetween(0, frame.viewport.size.height),
   };
-  state(frame)->maxDistance = std::max({
-      Distance(state(frame)->origin, LeftTop(frame)),
-      Distance(state(frame)->origin, RightTop(frame)),
-      Distance(state(frame)->origin, LeftBottom(frame)),
-      Distance(state(frame)->origin, RightBottom(frame)),
+  State(frame)->maxDistance = std::max({
+      Distance(State(frame)->origin, LeftTop(frame)),
+      Distance(State(frame)->origin, RightTop(frame)),
+      Distance(State(frame)->origin, LeftBottom(frame)),
+      Distance(State(frame)->origin, RightBottom(frame)),
   });
 }
 
-// Called once for each point in time to prepare the state before calling color() for each pixel.
-void Creatures::rewind(const Frame& frame) const {
+// Called once for each point in time to prepare the state before calling Color() for each pixel.
+void Creatures::Rewind(const Frame& frame) const {
   KnownCreatures::Get()->update();
   const std::vector<Creature>& creatures = KnownCreatures::Get()->creatures();
   size_t num_creatures = creatures.size();
@@ -218,34 +218,34 @@ void Creatures::rewind(const Frame& frame) const {
     // Compute the color for each known creature.
     const Creature& creature = creatures[i];
     uint8_t intensity = CreatureIntensity(creature);
-    state(frame)->colors[i] = FadeColor(CRGB(creature.color), intensity);
+    State(frame)->colors[i] = FadeColor(CRGB(creature.color), intensity);
     if (creature.isNearby) { num_close_creatures++; }
     if (creature.lastHeardPartying && currentTime - *creature.lastHeardPartying < kNearbyCreatureTimeout) {
       iShouldParty = true;
     }
   }
-  state(frame)->colors[num_creatures] = CRGB::Black;
-  state(frame)->colors[num_creatures + 1] = CRGB::Black;
-  state(frame)->num_colors = num_creatures + 2;
+  State(frame)->colors[num_creatures] = CRGB::Black;
+  State(frame)->colors[num_creatures + 1] = CRGB::Black;
+  State(frame)->num_colors = num_creatures + 2;
   // The offset increases over time and makes the pixels scroll.
-  state(frame)->offset = frame.time / 100;
+  State(frame)->offset = frame.time / 100;
   // TODO the rainbow mode sometimes only triggers on some creatures but not others. To fix it, we need to make the
   // metric bidirectional. We can do that by having every node broadcast its list of known creatures and decayed RSSI
   // (or intensity) then we use a symmetric function (such as min or average) to decide when to put it in
   // num_close_creatures.
   KnownCreatures::Get()->SetIsPartying(num_close_creatures >= kMinCreaturesForAParty);
-  state(frame)->rainbow = iShouldParty || KnownCreatures::Get()->IsPartying();
-  state(frame)->initialHue = 256 * frame.time / 1667;
-  state(frame)->orrery = KnownCreatures::Get()->HasRecentlyHeardOrrery();
+  State(frame)->rainbow = iShouldParty || KnownCreatures::Get()->IsPartying();
+  State(frame)->initialHue = 256 * frame.time / 1667;
+  State(frame)->orrery = KnownCreatures::Get()->HasRecentlyHeardOrrery();
 }
 
 // Called for each pixel to compute its color.
-CRGB Creatures::color(const Frame& frame, const Pixel& px) const {
-  if (state(frame)->orrery) {
+CRGB Creatures::Color(const Frame& frame, const Pixel& px) const {
+  if (State(frame)->orrery) {
     // Background: dark blue.
     CRGB color = CRGB(0x000020);
     // Use a time-adjusted index to make stars move down the strip.
-    uint32_t movingIndex = static_cast<uint32_t>(px.strandIndex - state(frame)->offset);
+    uint32_t movingIndex = static_cast<uint32_t>(px.strandIndex - State(frame)->offset);
     uint32_t hash = ColorHash(movingIndex);
     // Stars: ~3% of pixels are stars (1/32).
     if ((hash & 0x1F) == 0) {
@@ -258,26 +258,26 @@ CRGB Creatures::color(const Frame& frame, const Pixel& px) const {
     }
     return color;
   }
-  if (state(frame)->rainbow) {
+  if (State(frame)->rainbow) {
     // The rainbow effect determines the hue based on the distance from the rainbow origin point.
-    const double d = Distance(px.coord, state(frame)->origin);
+    const double d = Distance(px.coord, State(frame)->origin);
     return ColorFromPalette(RainbowColors_p,
-                            state(frame)->initialHue + int32_t(255 * d / state(frame)->maxDistance) % 255);
+                            State(frame)->initialHue + int32_t(255 * d / State(frame)->maxDistance) % 255);
   }
 #if JL_CREATURE_CYBERPUNK
   static const CRGBPalette16* kCyberPunkPalette = GetCyberPunkPalette();
   uint8_t paletteIndex = static_cast<uint8_t>(px.strandIndex * 8 + 256 * frame.time / 10000);
   return ColorFromPalette(*kCyberPunkPalette, paletteIndex);
 #else   // JL_CREATURE_CYBERPUNK
-  size_t num_colors = state(frame)->num_colors;
+  size_t num_colors = State(frame)->num_colors;
   // Display the colors in order based on the current offset.
   const size_t reverseIndex = (-px.strandIndex % num_colors) + num_colors - 1;
-  return state(frame)->colors[(state(frame)->offset + reverseIndex) % num_colors];
+  return State(frame)->colors[(State(frame)->offset + reverseIndex) % num_colors];
 #endif  // JL_CREATURE_CYBERPUNK
 }
 
 // Called once for each point in time after all pixels have been computed.
-void Creatures::afterColors(const Frame& /*frame*/) const {
+void Creatures::AfterColors(const Frame& /*frame*/) const {
   static_assert(std::is_trivially_destructible<CreaturesState>::value, "CreaturesState must be trivially destructible");
 }
 

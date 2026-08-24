@@ -25,65 +25,65 @@ class Effect {
  public:
   virtual ~Effect() = default;
 
-  // The Player will first call contextSize() before any other calls.
-  virtual size_t contextSize(const Frame& frame) const = 0;
+  // The Player will first call ContextSize() before any other calls.
+  virtual size_t ContextSize(const Frame& frame) const = 0;
   // Then the Player ensures that frame.context can hold that much memory and calls begin().
-  virtual void begin(const Frame& frame) const = 0;
-  // Then, for each separate point in time to render, the Player calls rewind().
-  virtual void rewind(const Frame& frame) const = 0;
-  // Then, for each pixel, the player calls color().
-  virtual CRGB color(const Frame& frame, const Pixel& px) const = 0;
-  // After the calls to color(), and only once per time period to render, the Player calls afterColors().
-  // Every call to rewind() is matched with exactly one call to afterColors().
-  virtual void afterColors(const Frame& frame) const = 0;
-  virtual std::string effectName(PatternBits pattern) const = 0;
+  virtual void Begin(const Frame& frame) const = 0;
+  // Then, for each separate point in time to render, the Player calls Rewind().
+  virtual void Rewind(const Frame& frame) const = 0;
+  // Then, for each pixel, the player calls Color().
+  virtual CRGB Color(const Frame& frame, const Pixel& px) const = 0;
+  // After the calls to Color(), and only once per time period to render, the Player calls AfterColors().
+  // Every call to Rewind() is matched with exactly one call to AfterColors().
+  virtual void AfterColors(const Frame& frame) const = 0;
+  virtual std::string EffectName(PatternBits pattern) const = 0;
 };
 
 template <typename STATE, typename PER_PIXEL_TYPE>
 class XYIndexStateEffect : public Effect {
  public:
-  virtual void innerBegin(const Frame& frame, STATE* state) const = 0;
-  virtual void innerRewind(const Frame& frame, STATE* state) const = 0;
-  virtual CRGB innerColor(const Frame& frame, STATE* state, const Pixel& px) const = 0;
+  virtual void InnerBegin(const Frame& frame, STATE* state) const = 0;
+  virtual void InnerRewind(const Frame& frame, STATE* state) const = 0;
+  virtual CRGB InnerColor(const Frame& frame, STATE* state, const Pixel& px) const = 0;
 
-  size_t contextSize(const Frame& frame) const override {
+  size_t ContextSize(const Frame& frame) const override {
     return offsetof(XYIndexState, pixels) + sizeof(PER_PIXEL_TYPE) * Width(frame) * Height(frame);
   }
 
-  CRGB color(const Frame& frame, const Pixel& px) const override {
-    *pos(frame) = frame.xyIndexStore->FromPixel(px);
-    return innerColor(frame, state(frame), px);
+  CRGB Color(const Frame& frame, const Pixel& px) const override {
+    *Pos(frame) = frame.xyIndexStore->FromPixel(px);
+    return InnerColor(frame, State(frame), px);
   }
 
-  void begin(const Frame& frame) const override {
-    new (xyindexState(frame)) XYIndexState;                            // Default-initialize the position and state.
-    new (pixels(frame)) PER_PIXEL_TYPE[Width(frame) * Height(frame)];  // Default-initialize the per-pixel data.
-    innerBegin(frame, state(frame));
+  void Begin(const Frame& frame) const override {
+    new (XyIndexState(frame)) XYIndexState;                            // Default-initialize the position and state.
+    new (Pixels(frame)) PER_PIXEL_TYPE[Width(frame) * Height(frame)];  // Default-initialize the per-pixel data.
+    InnerBegin(frame, State(frame));
   }
 
-  void rewind(const Frame& frame) const override { innerRewind(frame, state(frame)); }
+  void Rewind(const Frame& frame) const override { InnerRewind(frame, State(frame)); }
 
-  void afterColors(const Frame& /*frame*/) const override {
+  void AfterColors(const Frame& /*frame*/) const override {
     static_assert(std::is_trivially_destructible<STATE>::value, "STATE must be trivially destructible");
     static_assert(std::is_trivially_destructible<PER_PIXEL_TYPE>::value,
                   "PER_PIXEL_TYPE must be trivially destructible");
   }
 
  protected:
-  size_t x(const Frame& f) const { return pos(f)->xIndex; }
-  size_t y(const Frame& f) const { return pos(f)->yIndex; }
-  size_t w(const Frame& f) const { return Width(f); }
-  size_t h(const Frame& f) const { return Height(f); }
-  PER_PIXEL_TYPE& ps(const Frame& f, size_t x, size_t y) const {
+  size_t X(const Frame& f) const { return Pos(f)->xIndex; }
+  size_t Y(const Frame& f) const { return Pos(f)->yIndex; }
+  size_t W(const Frame& f) const { return Width(f); }
+  size_t H(const Frame& f) const { return Height(f); }
+  PER_PIXEL_TYPE& Ps(const Frame& f, size_t x, size_t y) const {
 #if JL_BOUNDS_CHECKS
-    if (x >= w(f) || y >= h(f)) {
-      jll_fatal("ATTEMPTING TO ACCESS BAD MEMORY x=%zu w=%zu y=%zu h=%zu", x, w(f), y, h(f));
+    if (x >= W(f) || y >= H(f)) {
+      jll_fatal("ATTEMPTING TO ACCESS BAD MEMORY x=%zu w=%zu y=%zu h=%zu", x, W(f), y, H(f));
     }
 #endif  // JL_BOUNDS_CHECKS
-    return pixels(f)[y * w(f) + x];
+    return Pixels(f)[y * W(f) + x];
   }
-  PER_PIXEL_TYPE& ps(const Frame& f) const { return ps(f, x(f), y(f)); }
-  STATE* state(const Frame& frame) const { return &xyindexState(frame)->state; }
+  PER_PIXEL_TYPE& Ps(const Frame& f) const { return Ps(f, X(f), Y(f)); }
+  STATE* State(const Frame& frame) const { return &XyIndexState(frame)->state; }
 
  private:
   struct XYIndexState {
@@ -91,14 +91,14 @@ class XYIndexStateEffect : public Effect {
     STATE state;
     PER_PIXEL_TYPE pixels[];
   };
-  XYIndexState* xyindexState(const Frame& frame) const {
+  XYIndexState* XyIndexState(const Frame& frame) const {
     static_assert(alignof(XYIndexState) <= kMaxStateAlignment, "Need to increase kMaxStateAlignment");
     return static_cast<XYIndexState*>(frame.context);
   }
   size_t Width(const Frame& frame) const { return frame.xyIndexStore->xValuesCount(); }
   size_t Height(const Frame& frame) const { return frame.xyIndexStore->yValuesCount(); }
-  XYIndex* pos(const Frame& frame) const { return &(xyindexState(frame)->pos); }
-  PER_PIXEL_TYPE* pixels(const Frame& frame) const { return xyindexState(frame)->pixels; }
+  XYIndex* Pos(const Frame& frame) const { return &(XyIndexState(frame)->pos); }
+  PER_PIXEL_TYPE* Pixels(const Frame& frame) const { return XyIndexState(frame)->pixels; }
 };
 
 struct EmptyState {};
@@ -106,13 +106,13 @@ struct EmptyState {};
 template <typename PER_PIXEL_TYPE>
 class XYIndexEffect : public XYIndexStateEffect<EmptyState, PER_PIXEL_TYPE> {
  public:
-  virtual void innerBegin(const Frame& frame) const = 0;
-  virtual void innerRewind(const Frame& frame) const = 0;
-  virtual CRGB innerColor(const Frame& frame, const Pixel& px) const = 0;
-  void innerBegin(const Frame& frame, EmptyState* /*state*/) const override { innerBegin(frame); }
-  void innerRewind(const Frame& frame, EmptyState* /*state*/) const override { innerRewind(frame); }
-  CRGB innerColor(const Frame& frame, EmptyState* /*state*/, const Pixel& px) const override {
-    return innerColor(frame, px);
+  virtual void InnerBegin(const Frame& frame) const = 0;
+  virtual void InnerRewind(const Frame& frame) const = 0;
+  virtual CRGB InnerColor(const Frame& frame, const Pixel& px) const = 0;
+  void InnerBegin(const Frame& frame, EmptyState* /*state*/) const override { InnerBegin(frame); }
+  void InnerRewind(const Frame& frame, EmptyState* /*state*/) const override { InnerRewind(frame); }
+  CRGB InnerColor(const Frame& frame, EmptyState* /*state*/, const Pixel& px) const override {
+    return InnerColor(frame, px);
   }
 };
 

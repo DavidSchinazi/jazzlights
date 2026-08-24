@@ -19,9 +19,9 @@ class Rings : public EffectWithPaletteAndState<RingsState> {
  public:
   Rings() = default;
 
-  std::string effectNamePrefix(PatternBits /*pattern*/) const override { return "rings"; }
+  std::string EffectNamePrefix(PatternBits /*pattern*/) const override { return "rings"; }
 
-  void innerBegin(const Frame& frame, RingsState* state) const override {
+  void InnerBegin(const Frame& frame, RingsState* state) const override {
     new (state) RingsState;  // Default-initialize the state.
     state->startHue = frame.predictableRandom->GetRandomByte();
     state->origin.x =
@@ -37,7 +37,7 @@ class Rings : public EffectWithPaletteAndState<RingsState> {
     state->backwards = frame.predictableRandom->GetRandomByte() & 1;
   }
 
-  void innerRewind(const Frame& frame, RingsState* state) const override {
+  void InnerRewind(const Frame& frame, RingsState* state) const override {
     // kPeriod needs to (almost) cleanly divide kEffectDurationMs to avoid visible resets when looping.
     static constexpr FrameTimeMs kPeriodMs = 1667;
     uint8_t hueOffset = 256 * frame.time / kPeriodMs;
@@ -45,7 +45,7 @@ class Rings : public EffectWithPaletteAndState<RingsState> {
     state->initialHue = state->startHue + hueOffset;
   }
 
-  ColorWithPalette innerColor(const Frame& /*frame*/, const Pixel& px, RingsState* state) const override {
+  ColorWithPalette InnerColor(const Frame& /*frame*/, const Pixel& px, RingsState* state) const override {
     const double d = Distance(px.coord, state->origin);
     return (state->initialHue + int32_t(255 * d / state->maxDistance)) % 255;
   }
