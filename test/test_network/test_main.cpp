@@ -1,7 +1,10 @@
 #include <unity.h>
 
+#include <optional>
+
 #include "jazzlights/network/network.h"
 #include "jazzlights/protocol/reader.h"
+#include "jazzlights/protocol/wire.h"
 #include "jazzlights/protocol/writer.h"
 
 namespace jazzlights {
@@ -61,11 +64,86 @@ void TestNetworkInt32() {
   }
 }
 
+namespace {
+
+// Arbitrary point in time used as both send and receipt time so that the durations on the wire round-trip exactly.
+constexpr Microseconds kSendTime = 1000 * kMicrosecondsPerSecond;
+
+ProtocolMessage MakeMessageToSend() {
+  uint8_t originatorBytes[6] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab};
+  ProtocolMessage message;
+  message.originator = NetworkDeviceId(originatorBytes);
+  message.precedence = 0x1234;
+  message.currentPattern = 0x89abcdef;
+  message.nextPattern = 0x76543210;
+  message.numHops = 3;
+  message.currentPatternStartTime = kSendTime - 4000 * kMicrosecondsPerMillisecond;
+  message.lastOriginationTime = kSendTime - 250 * kMicrosecondsPerMillisecond;
+  return message;
+}
+
+// Compares the fields that are sent over the wire. ProtocolMessage::operator==() is not sufficient here because it
+// ignores orrerySceneId, and because it compares the sender which is not sent over the wire.
+void AssertWireFieldsEqual(const ProtocolMessage& expected, const ProtocolMessage& actual) {
+  TEST_ASSERT(expected.originator == actual.originator);
+  TEST_ASSERT_EQUAL(expected.precedence, actual.precedence);
+  TEST_ASSERT_EQUAL(expected.currentPattern, actual.currentPattern);
+  TEST_ASSERT_EQUAL(expected.nextPattern, actual.nextPattern);
+  TEST_ASSERT_EQUAL(expected.numHops, actual.numHops);
+  TEST_ASSERT_EQUAL(expected.currentPatternStartTime, actual.currentPatternStartTime);
+  TEST_ASSERT_EQUAL(expected.lastOriginationTime, actual.lastOriginationTime);
+  TEST_ASSERT_EQUAL(expected.orrerySceneId.has_value(), actual.orrerySceneId.has_value());
+  if (expected.orrerySceneId) { TEST_ASSERT_EQUAL(*expected.orrerySceneId, *actual.orrerySceneId); }
+}
+
+}  // namespace
+
+void TestProtocolMessageRoundTrip() {
+  const ProtocolMessage sent = MakeMessageToSend();
+  uint8_t payload[kMaxProtocolPayloadLength] = {};
+  const size_t payloadLength = WriteProtocolMessage(sent, payload, sizeof(payload), kSendTime);
+  TEST_ASSERT_EQUAL(kMinProtocolPayloadLength, payloadLength);
+
+  const std::optional<ProtocolMessage> received = ParseProtocolMessage(payload, payloadLength, kSendTime);
+  TEST_ASSERT(received.has_value());
+  AssertWireFieldsEqual(sent, *received);
+}
+
+void TestProtocolMessageRoundTripWithOrreryScene() {
+  ProtocolMessage sent = MakeMessageToSend();
+  sent.orrerySceneId = static_cast<OrrerySceneId>(OrreryScene::kSilly);
+  uint8_t payload[kMaxProtocolPayloadLength] = {};
+  const size_t payloadLength = WriteProtocolMessage(sent, payload, sizeof(payload), kSendTime);
+  TEST_ASSERT_EQUAL(kMinProtocolPayloadLength + 2, payloadLength);
+
+  const std::optional<ProtocolMessage> received = ParseProtocolMessage(payload, payloadLength, kSendTime);
+  TEST_ASSERT(received.has_value());
+  AssertWireFieldsEqual(sent, *received);
+}
+
+void TestProtocolMessageParseRejectsShortPayload() {
+  const ProtocolMessage sent = MakeMessageToSend();
+  uint8_t payload[kMaxProtocolPayloadLength] = {};
+  const size_t payloadLength = WriteProtocolMessage(sent, payload, sizeof(payload), kSendTime);
+  TEST_ASSERT_GREATER_THAN(0, payloadLength);
+  TEST_ASSERT_FALSE(ParseProtocolMessage(payload, payloadLength - 1, kSendTime).has_value());
+}
+
+void TestProtocolMessageWriteRejectsSmallBuffer() {
+  const ProtocolMessage sent = MakeMessageToSend();
+  uint8_t payload[kMinProtocolPayloadLength - 1] = {};
+  TEST_ASSERT_EQUAL(0, WriteProtocolMessage(sent, payload, sizeof(payload), kSendTime));
+}
+
 void RunUnityTests() {
   UNITY_BEGIN();
   RUN_TEST(TestNetworkReader);
   RUN_TEST(TestNetworkWriter);
   RUN_TEST(TestNetworkInt32);
+  RUN_TEST(TestProtocolMessageRoundTrip);
+  RUN_TEST(TestProtocolMessageRoundTripWithOrreryScene);
+  RUN_TEST(TestProtocolMessageParseRejectsShortPayload);
+  RUN_TEST(TestProtocolMessageWriteRejectsSmallBuffer);
   UNITY_END();
 }
 

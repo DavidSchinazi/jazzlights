@@ -9,11 +9,12 @@
 #include <esp_random.h>
 
 #include <cmath>
+#include <limits>
+#include <optional>
 #include <string>
 #include <unordered_map>
 
-#include "jazzlights/protocol/reader.h"
-#include "jazzlights/protocol/writer.h"
+#include "jazzlights/protocol/wire.h"
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/pseudorandom.h"
 
@@ -166,24 +167,6 @@ void Esp32BleNetwork::DisableSending() {
   hasDataToSend_ = false;
 }
 
-// originator: 6
-// precedence: 2
-// numHops: 1
-// originationTime: 2
-// currentPattern: 4
-// nextPattern: 4
-// patternTime: 2
-// [extensionByte: 1 (0x80 = isCreature, 0x40 = isPartying, 0x20 = orreryScene)]
-// [creatureRGB: 3]
-// [orreryScene: 1]
-
-constexpr uint8_t kMinPayloadLength = 6 + 2 + 1 + 2 + 4 + 4 + 2;
-constexpr uint8_t kMaxPayloadLength = kMinPayloadLength + 1 + 3 + 1;
-
-constexpr uint8_t kExtensionByteFlagIsCreature = 0x80;
-constexpr uint8_t kExtensionByteFlagIsPartying = 0x40;
-constexpr uint8_t kExtensionByteFlagHasOrreryScene = 0x20;
-
 void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifier, uint8_t innerPayloadLength,
                                            const uint8_t* innerPayload, int rssi, Microseconds callbackTime) {
   if (innerPayloadLength > kMaxInnerPayloadLength) {
@@ -194,13 +177,9 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
   // so we offset the one way transmission time by half that.
   static constexpr Microseconds kTransmissionOffset = 25 * kMicrosecondsPerMillisecond;
   const Microseconds receiptTime = callbackTime - kTransmissionOffset;
-  // #if JL_IS_CONFIG(CREATURE)
-  if (innerPayloadLength < kMinPayloadLength) {
-    jll_error("Ignoring received BLE with unexpected length %u", innerPayloadLength);
-    return;
-  }
-  ProtocolReader reader(innerPayload, innerPayloadLength);
-  ProtocolMessage message;
+  std::optional<ProtocolMessage> parsedMessage = ParseProtocolMessage(innerPayload, innerPayloadLength, receiptTime);
+  if (!parsedMessage) { return; }
+  ProtocolMessage& message = *parsedMessage;
 #if JL_IS_CONFIG(CREATURE)
   message.receiptRssi = rssi;
   message.receiptTime = receiptTime;
@@ -208,66 +187,6 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
   (void)rssi;
 #endif  // CREATURE
   message.sender = deviceIdentifier;
-  if (!reader.ReadNetworkDeviceId(&message.originator)) {
-    jll_error("Failed to parse BLE originator");
-    return;
-  }
-  if (!reader.ReadUint16(&message.precedence)) {
-    jll_error("Failed to parse BLE precedence");
-    return;
-  }
-  if (!reader.ReadUint8(&message.numHops)) {
-    jll_error("Failed to parse BLE numHops");
-    return;
-  }
-  if (!reader.ReadTimeSinceMs16(&message.lastOriginationTime, receiptTime)) {
-    jll_error("Failed to parse BLE originationTimeDelta");
-    return;
-  }
-  if (!reader.ReadPatternBits(&message.currentPattern)) {
-    jll_error("Failed to parse BLE currentPattern");
-    return;
-  }
-  if (!reader.ReadPatternBits(&message.nextPattern)) {
-    jll_error("Failed to parse BLE nextPattern");
-    return;
-  }
-  if (!reader.ReadTimeSinceMs16(&message.currentPatternStartTime, receiptTime)) {
-    jll_error("Failed to parse BLE patternTimeDelta");
-    return;
-  }
-  uint8_t extensionByte = 0x00;
-  if (!reader.Done()) {
-    if (!reader.ReadUint8(&extensionByte)) {
-      jll_error("Failed to parse BLE extensionByte");
-      return;
-    }
-  }
-  bool isCreature = (extensionByte & kExtensionByteFlagIsCreature) != 0;
-  bool isPartying = false;
-  uint32_t creatureColor = 0;
-  if (isCreature) {
-    isPartying = (extensionByte & kExtensionByteFlagIsPartying) != 0;
-    uint8_t creatureRed, creatureGreen, creatureBlue;
-    if (!reader.ReadUint8(&creatureRed) || !reader.ReadUint8(&creatureGreen) || !reader.ReadUint8(&creatureBlue)) {
-      jll_error("Failed to parse creature RGB");
-      return;
-    }
-    creatureColor = (creatureRed << 16) | (creatureGreen << 8) | creatureBlue;
-  }
-#if JL_IS_CONFIG(CREATURE)
-  message.isCreature = isCreature;
-  message.isPartying = isPartying;
-  message.creatureColor = creatureColor;
-#endif  // CREATURE
-  if ((extensionByte & kExtensionByteFlagHasOrreryScene) != 0) {
-    uint8_t orrerySceneId;
-    if (!reader.ReadUint8(&orrerySceneId)) {
-      jll_error("Failed to parse orrerySceneId");
-      return;
-    }
-    message.orrerySceneId = orrerySceneId;
-  }
 
   ESP32_BLE_DEBUG("Received %s", NetworkMessageToString(message).c_str());
   lastReceiveTime_.store(receiptTime, std::memory_order_relaxed);
@@ -285,76 +204,14 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
 
 size_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_t maxInnerPayloadLength) {
   const std::lock_guard<std::mutex> lock(mutex_);
-  static_assert(kMaxPayloadLength <= kMaxInnerPayloadLength, "bad size");
-  if (kMaxPayloadLength > maxInnerPayloadLength) {
-    jll_error("GetNextInnerPayloadToSend nonsense %u > %u", kMaxPayloadLength, maxInnerPayloadLength);
+  static_assert(kMaxProtocolPayloadLength <= kMaxInnerPayloadLength, "bad size");
+  if (kMaxProtocolPayloadLength > maxInnerPayloadLength) {
+    jll_error("GetNextInnerPayloadToSend nonsense %zu > %u", kMaxProtocolPayloadLength, maxInnerPayloadLength);
     return 0;
   }
 
-  ProtocolWriter writer(innerPayload, maxInnerPayloadLength);
-  if (!writer.WriteNetworkDeviceId(messageToSend_.originator)) {
-    jll_error("Failed to write creature originator");
-    return 0;
-  }
-  if (!writer.WriteUint16(messageToSend_.precedence)) {
-    jll_error("Failed to write creature precedence");
-    return 0;
-  }
-
-  // extensionByte: 1 (0x80 = isCreature, 0x40 = isPartying)
-  // creatureRGB: 3
-
-  if (!writer.WriteUint8(messageToSend_.numHops)) {
-    jll_error("Failed to write creature numHops");
-    return 0;
-  }
-  Microseconds currentTime = TimeMicros();
-  if (!writer.WriteTimeSinceMs16(messageToSend_.lastOriginationTime, currentTime)) {
-    jll_error("Failed to write creature originationTimeDelta");
-    return 0;
-  }
-  if (!writer.WriteUint32(messageToSend_.currentPattern)) {
-    jll_error("Failed to write creature currentPattern");
-    return 0;
-  }
-  if (!writer.WriteUint32(messageToSend_.nextPattern)) {
-    jll_error("Failed to write creature nextPattern");
-    return 0;
-  }
-  if (!writer.WriteTimeSinceMs16(messageToSend_.currentPatternStartTime, currentTime)) {
-    jll_error("Failed to write creature patternTimeDelta");
-    return 0;
-  }
-#if JL_IS_CONFIG(CREATURE)
-  if (messageToSend_.isCreature) {
-    uint8_t extensionByte = kExtensionByteFlagIsCreature;
-    if (messageToSend_.isPartying) { extensionByte |= kExtensionByteFlagIsPartying; }
-    if (!writer.WriteUint8(extensionByte)) {
-      jll_error("Failed to write creature extensionByte");
-      return 0;
-    }
-    uint8_t creatureRed = (messageToSend_.creatureColor >> 16) & 0xFF;
-    uint8_t creatureGreen = (messageToSend_.creatureColor >> 8) & 0xFF;
-    uint8_t creatureBlue = messageToSend_.creatureColor & 0xFF;
-    if (!writer.WriteUint8(creatureRed) || !writer.WriteUint8(creatureGreen) || !writer.WriteUint8(creatureBlue)) {
-      jll_error("Failed to write creature RGB");
-      return 0;
-    }
-  }
-#else   // CREATURE
-  if (messageToSend_.orrerySceneId) {
-    uint8_t extensionByte = kExtensionByteFlagHasOrreryScene;
-    if (!writer.WriteUint8(extensionByte)) {
-      jll_error("Failed to write extensionByte");
-      return 0;
-    }
-    if (!writer.WriteUint8(*messageToSend_.orrerySceneId)) {
-      jll_error("Failed to write orrerySceneId");
-      return 0;
-    }
-  }
-#endif  // CREATURE
-  const size_t innerPayloadLength = writer.LengthWritten();
+  const size_t innerPayloadLength = WriteProtocolMessage(messageToSend_, innerPayload, maxInnerPayloadLength);
+  if (innerPayloadLength == 0) { return 0; }
   if (ESP32_BLE_DEBUG_ENABLED()) {
     char advRawData[kMaxAdvDataHexStringSize] = {};
     ConvertToHex(advRawData, sizeof(advRawData), innerPayload, innerPayloadLength);
