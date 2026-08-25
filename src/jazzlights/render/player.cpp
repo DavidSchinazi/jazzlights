@@ -24,6 +24,7 @@
 #include "jazzlights/effect/sync_test.h"
 #include "jazzlights/effect/the_matrix.h"
 #include "jazzlights/effect/threesine.h"
+#include "jazzlights/network/manager.h"
 #include "jazzlights/protocol/engine.h"
 #include "jazzlights/util/instrumentation.h"
 #include "jazzlights/util/log.h"
@@ -44,16 +45,6 @@
 #define JL_PLAYER_SKIP_FLAME 0
 #endif  // JL_MOTOR
 #endif  // JL_PLAYER_SKIP_FLAME
-
-#ifndef JL_PLAYER_LOG_MESSAGES
-#define JL_PLAYER_LOG_MESSAGES 0
-#endif  // JL_PLAYER_LOG_MESSAGES
-
-#if JL_PLAYER_LOG_MESSAGES
-#define jll_player_message(...) jll_info(__VA_ARGS__)
-#else  // JL_PLAYER_LOG_MESSAGES
-#define jll_player_message(...) jll_debug(__VA_ARGS__)
-#endif  // JL_PLAYER_LOG_MESSAGES
 
 namespace jazzlights {
 namespace {
@@ -216,7 +207,7 @@ std::string PatternName(PatternBits pattern, const Player& player) {
   return PatternFromBits(pattern, player)->EffectName(pattern);
 }
 
-Player::Player() {
+Player::Player(NetworkManager& networkManager) : networkManager_(networkManager) {
   frame_.predictableRandom = &predictableRandom_;
   // Work around a heap corruption issue that causes an abort when increasing the size of the memory.
   effectContextSize_ = 1024;
@@ -237,14 +228,6 @@ Player& Player::AddStrand(const Layout& l, Renderer& r) {
   return *this;
 }
 
-Player& Player::Connect(Network* n) {
-  jll_info("Connecting network %s", NetworkTypeToString(n->Type()));
-  networks_.push_back(n);
-  engine_.SetHasNetworks(true);
-  ready_ = false;
-  return *this;
-}
-
 void Player::Begin() {
   xyIndexStore_.Reset();
   frame_.pixelCount = 0;
@@ -262,24 +245,17 @@ void Player::Begin() {
   frame_.xyIndexStore = &xyIndexStore_;
 
   // Figure out our local device ID by asking the transports; the engine falls back to a random one.
-  engine_.SetHasNetworks(!networks_.empty());
-  NetworkDeviceId localDeviceIdFromNetworks;
-  for (const Network* network : networks_) {
-    NetworkDeviceId localDeviceId = network->GetLocalDeviceId();
-    if (localDeviceId != NetworkDeviceId()) {
-      localDeviceIdFromNetworks = localDeviceId;
-      break;
-    }
-  }
-  engine_.SetupDeviceId(localDeviceIdFromNetworks);
+  engine_.SetHasNetworks(networkManager_.HasNetworks());
+  engine_.SetupDeviceId(networkManager_.GetLocalDeviceId());
   jll_info(
       "Starting JazzLights player %s; "
       "basePrecedence %u precedenceGain %u strands: %zu%s, "
       "pixels: %zu, %s " DEVICE_ID_FMT " w %f h %f ox %f oy %f xv %zu yv %zu",
       BOOT_MESSAGE, engine_.basePrecedence(), engine_.precedenceGain(), strands_.size(),
-      strands_.empty() ? " (CONTROLLER ONLY!)" : "", frame_.pixelCount, !networks_.empty() ? "networked" : "standalone",
-      DEVICE_ID_HEX(engine_.localDeviceId()), frame_.viewport.size.width, frame_.viewport.size.height,
-      frame_.viewport.origin.x, frame_.viewport.origin.y, xyIndexStore_.xValuesCount(), xyIndexStore_.yValuesCount());
+      strands_.empty() ? " (CONTROLLER ONLY!)" : "", frame_.pixelCount,
+      networkManager_.HasNetworks() ? "networked" : "standalone", DEVICE_ID_HEX(engine_.localDeviceId()),
+      frame_.viewport.size.width, frame_.viewport.size.height, frame_.viewport.origin.x, frame_.viewport.origin.y,
+      xyIndexStore_.xValuesCount(), xyIndexStore_.yValuesCount());
 
   ready_ = true;
 
@@ -313,22 +289,7 @@ void Player::UpdatePrecedence(Precedence basePrecedence, Precedence precedenceGa
 }
 
 void Player::SendPendingMessage(bool sendAsap) {
-  std::optional<ProtocolMessage> messageToSend = engine_.GetMessageToSend();
-  if (!messageToSend) { return; }
-  for (Network* network : networks_) {
-    if (!network->ShouldEcho() && messageToSend->receiptNetworkId == network->id()) {
-      jll_debug("Not echoing for %s to %s ", NetworkTypeToString(network->Type()),
-                NetworkMessageToString(*messageToSend).c_str());
-      network->DisableSending();
-      continue;
-    }
-    jll_player_message("Setting messageToSend for %s to %s ", NetworkTypeToString(network->Type()),
-                       NetworkMessageToString(*messageToSend).c_str());
-    network->SetMessageToSend(*messageToSend);
-  }
-  if (sendAsap) {
-    for (Network* network : networks_) { network->TriggerSendAsap(); }
-  }
+  networkManager_.SetMessageToSend(engine_.GetMessageToSend(), sendAsap);
 }
 
 void Player::HandleSpecial() {
@@ -388,10 +349,8 @@ bool Player::Render() {
 #endif  // JL_AUDIO_VISUALIZER
 
   // First listen on all networks.
-  for (Network* network : networks_) {
-    for (ProtocolMessage receivedMessage : network->GetReceivedMessages()) {
-      engine_.HandleReceivedMessage(receivedMessage);
-    }
+  for (const ProtocolMessage& receivedMessage : networkManager_.GetReceivedMessages()) {
+    engine_.HandleReceivedMessage(receivedMessage);
   }
 
   // Then react to any received packets.
@@ -399,7 +358,7 @@ bool Player::Render() {
   SendPendingMessage();
 
   // Then give all networks the opportunity to send.
-  for (Network* network : networks_) { network->RunLoop(); }
+  networkManager_.RunLoop();
 
   frame_.context = nullptr;
   const Microseconds currentPatternStartTime = engine_.currentPatternStartTime();

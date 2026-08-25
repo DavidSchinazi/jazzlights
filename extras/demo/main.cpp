@@ -6,6 +6,7 @@
 #include "glrenderer.h"
 #include "gui.h"
 #include "jazzlights/layout/matrix.h"
+#include "jazzlights/network/manager.h"
 #include "jazzlights/network/unix_udp.h"
 
 namespace jazzlights {
@@ -28,12 +29,13 @@ int RunMain(int argc, char** argv) {
   }
   Matrix layout(/*w=*/400, /*h=*/300);
   GLRenderer renderer(layout);
-  Player player;
+  NetworkManager networkManager;
+  Player player(networkManager);
   player.SetBasePrecedence(30000);
   player.SetPrecedenceGain(5000);
   player.AddStrand(layout, renderer);
   player.SetRandomizeLocalDeviceId(true);
-  player.Connect(UnixUdpNetwork::Get());
+  networkManager.Connect(UnixUdpNetwork::Get());
   player.Begin();
   if (startLooping) { player.LoopOne(); }
   if (shouldSetPattern) { player.SetPattern(pattern); }

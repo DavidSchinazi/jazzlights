@@ -11,6 +11,7 @@
 #include "jazzlights/motor/motor.h"
 #include "jazzlights/network/esp32_ble.h"
 #include "jazzlights/network/ethernet.h"
+#include "jazzlights/network/manager.h"
 #include "jazzlights/network/wifi.h"
 #include "jazzlights/orrery/max485_bus.h"
 #include "jazzlights/orrery/orrery_common.h"
@@ -38,7 +39,8 @@
 
 namespace jazzlights {
 
-Player gPlayer;
+NetworkManager gNetworkManager;
+Player gPlayer(gNetworkManager);
 FastLedRunner gRunner(&gPlayer);
 
 #if JL_IS_CONTROLLER(ATOM_MATRIX)
@@ -129,12 +131,12 @@ void SetupPrimaryRunLoop() {
   gPlayer.SetPrecedenceGain(1000);
 #endif
 
-  gPlayer.Connect(Esp32BleNetwork::Get());
+  gNetworkManager.Connect(Esp32BleNetwork::Get());
 #if JL_WIFI
-  gPlayer.Connect(WiFiNetwork::Get());
+  gNetworkManager.Connect(WiFiNetwork::Get());
 #endif  // JL_WIFI
 #if JL_ETHERNET
-  gPlayer.Connect(EthernetNetwork::Get());
+  gNetworkManager.Connect(EthernetNetwork::Get());
 #endif  // JL_ETHERNET
 #if JL_IS_CONFIG(ORRERY_PLANET) && !JL_ORRERY_PLUTO
   OrreryPlanet::Get()->Setup(gPlayer);

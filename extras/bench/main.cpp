@@ -1,13 +1,15 @@
 #include <getopt.h>
 
 #include "jazzlights/layout/matrix.h"
+#include "jazzlights/network/manager.h"
 #include "jazzlights/network/unix_udp.h"
 #include "jazzlights/render/player.h"
 #include "jazzlights/util/log.h"
 
 namespace jazzlights {
 
-Player gPlayer;
+NetworkManager gNetworkManager;
+Player gPlayer(gNetworkManager);
 Matrix gPixels(100, 100);
 
 class NoopRenderer : public Renderer {
@@ -28,7 +30,7 @@ int RunMain(int argc, char** argv) {
     if (ch == 'n') { useNetwork = true; }
   }
   gPlayer.AddStrand(gPixels, gNoopRenderer);
-  if (useNetwork) { gPlayer.Connect(UnixUdpNetwork::Get()); }
+  if (useNetwork) { gNetworkManager.Connect(UnixUdpNetwork::Get()); }
   gPlayer.Begin();
   Microseconds lastFpsEpochTime = 0;
   while (true) {

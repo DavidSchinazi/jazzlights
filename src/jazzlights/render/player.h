@@ -5,7 +5,7 @@
 
 #include "jazzlights/effect/effect.h"
 #include "jazzlights/layout/layout.h"
-#include "jazzlights/network/network.h"
+#include "jazzlights/network/manager.h"
 #include "jazzlights/protocol/engine.h"
 #include "jazzlights/render/predictable_random.h"
 #include "jazzlights/render/renderer.h"
@@ -16,10 +16,11 @@ namespace jazzlights {
 
 // Player renders patterns onto strands. The mechanics of the synchronization protocol - leader election, the
 // originator table, and which pattern everyone agrees to display - live in ProtocolEngine, which Player owns and
-// feeds with the messages it receives from its networks.
+// feeds with the messages it gets from the NetworkManager. The transports themselves belong to that NetworkManager,
+// which Player does not own and which must outlive it.
 class Player : private ProtocolEngine::Delegate {
  public:
-  Player();
+  explicit Player(NetworkManager& networkManager);
   ~Player();
 
   // Disallow copy, allow move
@@ -28,7 +29,6 @@ class Player : private ProtocolEngine::Delegate {
 
   // Constructing the player
   Player& AddStrand(const Layout& l, Renderer& r);
-  Player& Connect(Network* n);
 
   /**
    * Prepare for rendering
@@ -239,7 +239,7 @@ class Player : private ProtocolEngine::Delegate {
 #endif  // ORRERY_PLANET
 
   NumLedWritesGetter* numLedWritesGetter_ = nullptr;
-  std::vector<Network*> networks_;
+  NetworkManager& networkManager_;  // Unowned.
 
   OptionalMicroseconds lastLEDWriteTime_;
 
