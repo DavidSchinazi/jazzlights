@@ -127,7 +127,7 @@ void TestBlackEffect() {
   TestPattern(kBlackEffect);
 }
 void TestRedEffect() {
-  static const FunctionalEffect kRedEffect = Solid(CRGB::Black, "red");
+  static const FunctionalEffect kRedEffect = Solid(CRGB::Red, "red");
   TestPattern(kRedEffect);
 }
 void TestGreenEffect() {
@@ -155,7 +155,7 @@ void TestWhiteEffect() {
   TestPattern(kWhiteEffect);
 }
 void TestRedGlowEffect() {
-  static const FunctionalEffect kRedGlowEffect = Glow(CRGB::Black, "glow-red");
+  static const FunctionalEffect kRedGlowEffect = Glow(CRGB::Red, "glow-red");
   TestPattern(kRedGlowEffect);
 }
 void TestGreenGlowEffect() {
