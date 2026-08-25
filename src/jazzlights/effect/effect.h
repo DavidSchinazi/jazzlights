@@ -56,7 +56,7 @@ class XYIndexStateEffect : public Effect {
   }
 
   void Begin(const Frame& frame) const override {
-    new (XyIndexState(frame)) XYIndexState;                            // Default-initialize the position and state.
+    new (GetXYIndexState(frame)) XYIndexState;                         // Default-initialize the position and state.
     new (Pixels(frame)) PER_PIXEL_TYPE[Width(frame) * Height(frame)];  // Default-initialize the per-pixel data.
     InnerBegin(frame, State(frame));
   }
@@ -83,7 +83,7 @@ class XYIndexStateEffect : public Effect {
     return Pixels(f)[y * W(f) + x];
   }
   PER_PIXEL_TYPE& Ps(const Frame& f) const { return Ps(f, X(f), Y(f)); }
-  STATE* State(const Frame& frame) const { return &XyIndexState(frame)->state; }
+  STATE* State(const Frame& frame) const { return &GetXYIndexState(frame)->state; }
 
  private:
   struct XYIndexState {
@@ -91,14 +91,14 @@ class XYIndexStateEffect : public Effect {
     STATE state;
     PER_PIXEL_TYPE pixels[];
   };
-  XYIndexState* XyIndexState(const Frame& frame) const {
+  XYIndexState* GetXYIndexState(const Frame& frame) const {
     static_assert(alignof(XYIndexState) <= kMaxStateAlignment, "Need to increase kMaxStateAlignment");
     return static_cast<XYIndexState*>(frame.context);
   }
   size_t Width(const Frame& frame) const { return frame.xyIndexStore->xValuesCount(); }
   size_t Height(const Frame& frame) const { return frame.xyIndexStore->yValuesCount(); }
-  XYIndex* Pos(const Frame& frame) const { return &(XyIndexState(frame)->pos); }
-  PER_PIXEL_TYPE* Pixels(const Frame& frame) const { return XyIndexState(frame)->pixels; }
+  XYIndex* Pos(const Frame& frame) const { return &(GetXYIndexState(frame)->pos); }
+  PER_PIXEL_TYPE* Pixels(const Frame& frame) const { return GetXYIndexState(frame)->pixels; }
 };
 
 struct EmptyState {};

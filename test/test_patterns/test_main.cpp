@@ -43,7 +43,7 @@ void TestPattern(const Effect& effect) {
   frame.viewport = {};
   frame.context = nullptr;
   frame.time = 33;
-  frame.PixelCount = layout.PixelCount();
+  frame.pixelCount = layout.PixelCount();
   TEST_ASSERT_NOT_EQUAL("", effect.EffectName(frame.pattern));
   size_t effectContextSize = effect.ContextSize(frame);
   if ((effectContextSize % kMaxStateAlignment) != 0) {
@@ -154,7 +154,7 @@ void TestWhiteEffect() {
   static const FunctionalEffect kWhiteEffect = Solid(CRGB::White, "white");
   TestPattern(kWhiteEffect);
 }
-void TestredGlowEffect() {
+void TestRedGlowEffect() {
   static const FunctionalEffect kRedGlowEffect = Glow(CRGB::Black, "glow-red");
   TestPattern(kRedGlowEffect);
 }
@@ -207,6 +207,7 @@ void RunUnityTests() {
   RUN_TEST(TestCyanEffect);
   RUN_TEST(TestYellowEffect);
   RUN_TEST(TestWhiteEffect);
+  RUN_TEST(TestRedGlowEffect);
   RUN_TEST(TestGreenGlowEffect);
   RUN_TEST(TestBlueGlowEffect);
   RUN_TEST(TestPurpleGlowEffect);

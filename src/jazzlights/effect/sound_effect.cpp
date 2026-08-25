@@ -116,7 +116,7 @@ CRGB ColorFromSoundReactivePalette(OurColorPalette ocp, uint8_t color) {
 }
 }  // namespace
 
-size_t SoundEffect::ExtraContextSize(const Frame& frame) const { return sizeof(CRGB) * frame.PixelCount; }
+size_t SoundEffect::ExtraContextSize(const Frame& frame) const { return sizeof(CRGB) * frame.pixelCount; }
 
 void SoundEffect::InnerBegin(const Frame& frame, SoundState* state) const {
   Audio::Get().GetVisualizerData(&state->audioData);
@@ -163,7 +163,7 @@ void SoundEffect::InnerBegin(const Frame& frame, SoundState* state) const {
 #endif
 
   // Initialize per-pixel state
-  memset(lastColors(state), 0, sizeof(CRGB) * frame.PixelCount);
+  memset(lastColors(state), 0, sizeof(CRGB) * frame.pixelCount);
 }
 
 void SoundEffect::InnerRewind(const Frame& /*frame*/, SoundState* state) const {

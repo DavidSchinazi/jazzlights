@@ -91,6 +91,7 @@ void RunUnityTests() {
   RUN_TEST(TestShort);
   RUN_TEST(TestBig);
   RUN_TEST(TestMultiple);
+  RUN_TEST(TestMultipleSplit);
   UNITY_END();
 }
 

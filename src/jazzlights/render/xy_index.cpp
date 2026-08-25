@@ -26,8 +26,8 @@ void XYIndexStore::Finalize(const Box& viewport) {
     std::set<Coord, decltype(almostLess)> xSet(almostLess);
     std::set<Coord, decltype(almostLess)> ySet(almostLess);
     for (LayoutInfo& li : layoutInfos_) {
-      const size_t PixelCount = li.layout->PixelCount();
-      for (size_t i = 0; i < PixelCount; i++) {
+      const size_t pixelCount = li.layout->PixelCount();
+      for (size_t i = 0; i < pixelCount; i++) {
         const Point pt = li.layout->At(i);
         xSet.insert(pt.x);
         ySet.insert(pt.y);
@@ -49,8 +49,8 @@ void XYIndexStore::Finalize(const Box& viewport) {
     yValuesCount_ = yValues.size();
   }
   for (LayoutInfo& li : layoutInfos_) {
-    const size_t PixelCount = li.layout->PixelCount();
-    for (size_t i = 0; i < PixelCount; i++) {
+    const size_t pixelCount = li.layout->PixelCount();
+    for (size_t i = 0; i < pixelCount; i++) {
       const Point pt = li.layout->At(i);
       XYIndex xyIndex;
       if (useSmallerXGrid_) {

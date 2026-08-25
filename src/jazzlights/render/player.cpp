@@ -247,14 +247,14 @@ Player& Player::Connect(Network* n) {
 
 void Player::Begin() {
   xyIndexStore_.Reset();
-  frame_.PixelCount = 0;
+  frame_.pixelCount = 0;
   frame_.viewport.origin.x = 0;
   frame_.viewport.origin.y = 0;
   frame_.viewport.size.height = 0;
   frame_.viewport.size.width = 0;
   for (const Strand& s : strands_) {
     frame_.viewport = Merge(frame_.viewport, jazzlights::Bounds(s.layout));
-    frame_.PixelCount += s.layout.PixelCount();
+    frame_.pixelCount += s.layout.PixelCount();
     xyIndexStore_.IngestLayout(&s.layout);
   }
   if (frame_.viewport.size.width == 0 || frame_.viewport.size.height == 0) { isAllLinear_ = true; }
@@ -277,7 +277,7 @@ void Player::Begin() {
       "basePrecedence %u precedenceGain %u strands: %zu%s, "
       "pixels: %zu, %s " DEVICE_ID_FMT " w %f h %f ox %f oy %f xv %zu yv %zu",
       BOOT_MESSAGE, engine_.basePrecedence(), engine_.precedenceGain(), strands_.size(),
-      strands_.empty() ? " (CONTROLLER ONLY!)" : "", frame_.PixelCount, !networks_.empty() ? "networked" : "standalone",
+      strands_.empty() ? " (CONTROLLER ONLY!)" : "", frame_.pixelCount, !networks_.empty() ? "networked" : "standalone",
       DEVICE_ID_HEX(engine_.localDeviceId()), frame_.viewport.size.width, frame_.viewport.size.height,
       frame_.viewport.origin.x, frame_.viewport.origin.y, xyIndexStore_.xValuesCount(), xyIndexStore_.yValuesCount());
 
