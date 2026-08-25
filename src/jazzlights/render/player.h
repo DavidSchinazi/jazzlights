@@ -1,6 +1,7 @@
 #ifndef JL_RENDER_PLAYER_H
 #define JL_RENDER_PLAYER_H
 
+#include <optional>
 #include <vector>
 
 #include "jazzlights/effect/effect.h"
@@ -147,13 +148,9 @@ class Player : private ProtocolEngine::Delegate {
     virtual void OnStatus() = 0;
   };
   void SetStatusWatcher(StatusWatcher* statusWatcher) { statusWatcher_ = statusWatcher; }
-  void EnableColorOverride(CRGB colorOverride) {
-    colorOverridden_ = true;
-    colorOverride_ = colorOverride;
-  }
-  void DisableColorOverride() { colorOverridden_ = false; }
-  bool colorOverridden() const { return colorOverridden_; }
-  CRGB colorOverride() const { return colorOverride_; }
+  void EnableColorOverride(CRGB colorOverride) { colorOverride_ = colorOverride; }
+  void DisableColorOverride() { colorOverride_.reset(); }
+  const std::optional<CRGB>& colorOverride() const { return colorOverride_; }
   void CloudNext();
 #elif JL_IS_CONFIG(ORRERY_PLANET)
   void SetPlanetPattern(PatternBits planetPattern) { planetPattern_ = planetPattern; }
@@ -229,9 +226,8 @@ class Player : private ProtocolEngine::Delegate {
   OptionalMicroseconds overridePatternStartTime_;
 #elif JL_IS_CONFIG(CLOUDS)
   StatusWatcher* statusWatcher_ = nullptr;  // Unowned.
-  bool colorOverridden_ = false;
   bool forceClouds_ = true;
-  CRGB colorOverride_;
+  std::optional<CRGB> colorOverride_;
 #endif
 
 #if JL_IS_CONFIG(ORRERY_PLANET)

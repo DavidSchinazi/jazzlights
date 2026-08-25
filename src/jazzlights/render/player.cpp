@@ -376,8 +376,8 @@ bool Player::Render() {
   }
 #if JL_IS_CONFIG(CLOUDS)
   else if (engine_.followedNextHopNetworkId() == 0) {
-    if (colorOverridden_) {
-      frame_.pattern = colorOverride_.r << 24 | colorOverride_.g << 16 | colorOverride_.b << 8 | 0x20;
+    if (colorOverride_) {
+      frame_.pattern = colorOverride_->r << 24 | colorOverride_->g << 16 | colorOverride_->b << 8 | 0x20;
     } else if (forceClouds_) {
       frame_.pattern &= 0xFFFFFFF0;
       frame_.pattern |= 0x000000F0;

@@ -5,6 +5,8 @@
 #include <ESPAsyncWebServer.h>
 #include <mdns.h>
 
+#include <optional>
+
 #include "jazzlights/util/log.h"
 
 namespace jazzlights {
@@ -177,12 +179,11 @@ void WebSocketServer::ShareStatus(AsyncWebSocketClient* client) {
     jll_debug("Skipping WebSocket update to client #%u because we are paused", Id(client));
     return;
   }
-  if (player_.colorOverridden()) {
+  const std::optional<CRGB>& colorOverride = player_.colorOverride();
+  if (colorOverride) {
     jll_info("WebSocket sending status %s brightness=%u color=%02x%02x%02x to client #%u",
-             (player_.enabled() ? "on" : "off"), player_.brightness(), player_.colorOverride().r,
-             player_.colorOverride().g,
-
-             player_.colorOverride().b, Id(client));
+             (player_.enabled() ? "on" : "off"), player_.brightness(), colorOverride->r, colorOverride->g,
+             colorOverride->b, Id(client));
   } else {
     jll_info("WebSocket sending status %s brightness=%u to client #%u", (player_.enabled() ? "on" : "off"),
              player_.brightness(), Id(client));
@@ -192,11 +193,11 @@ void WebSocketServer::ShareStatus(AsyncWebSocketClient* client) {
   response[0] = static_cast<uint8_t>(WSType::kStatusShare);
   if (player_.enabled()) { response[1] |= kWSStatusFlagOn; }
   response[2] = player_.brightness();
-  if (player_.colorOverridden()) {
+  if (colorOverride) {
     response[1] |= kWSStatusFlagColorOverride;
-    response[3] = player_.colorOverride().r;
-    response[4] = player_.colorOverride().g;
-    response[5] = player_.colorOverride().b;
+    response[3] = colorOverride->r;
+    response[4] = colorOverride->g;
+    response[5] = colorOverride->b;
     responseLength += 3;
   }
   if (client != nullptr) {
