@@ -7,17 +7,23 @@
 namespace jazzlights {
 namespace {
 
-// Wire format of a ProtocolMessage:
+// Wire format of a ProtocolMessage. Fields marked "UDP only" are absent when `isBle` is true, and fields marked
+// "BLE only" are absent when it is false.
+// version: 1 (UDP only, high nibble must be kUdpVersion)
 // originator: 6
+// sender: 6 (UDP only, BLE learns the sender from the advertisement instead)
 // precedence: 2
 // numHops: 1
 // originationTime: 2
 // currentPattern: 4
 // nextPattern: 4
 // patternTime: 2
-// [extensionByte: 1 (0x80 = isCreature, 0x40 = isPartying, 0x20 = orreryScene)]
-// [creatureRGB: 3]
-// [orreryScene: 1]
+// [extensionByte: 1 (BLE only, 0x80 = isCreature, 0x40 = isPartying, 0x20 = orreryScene)]
+// [creatureRGB: 3 (BLE only)]
+// [orreryScene: 1 (BLE only)]
+
+constexpr uint8_t kUdpVersion = 0x10;
+constexpr uint8_t kUdpVersionMask = 0xF0;
 
 enum ExtensionByteFlag : uint8_t {
   kExtensionByteFlagIsCreature = 0x80,
@@ -27,13 +33,25 @@ enum ExtensionByteFlag : uint8_t {
 
 }  // namespace
 
-size_t WriteProtocolMessage(const ProtocolMessage& msg, uint8_t* payload, size_t maxPayloadLength,
+size_t WriteProtocolMessage(const ProtocolMessage& msg, bool isBle, uint8_t* payload, size_t maxPayloadLength,
                             OptionalMicroseconds sendTime) {
   const Microseconds sendTimeUs = sendTime.value_or(TimeMicros());
   ProtocolWriter writer(payload, maxPayloadLength);
+  if (!isBle) {
+    if (!writer.WriteUint8(kUdpVersion)) {
+      jll_error("Failed to write version");
+      return 0;
+    }
+  }
   if (!writer.WriteNetworkDeviceId(msg.originator)) {
     jll_error("Failed to write originator");
     return 0;
+  }
+  if (!isBle) {
+    if (!writer.WriteNetworkDeviceId(msg.sender)) {
+      jll_error("Failed to write sender");
+      return 0;
+    }
   }
   if (!writer.WriteUint16(msg.precedence)) {
     jll_error("Failed to write precedence");
@@ -59,6 +77,8 @@ size_t WriteProtocolMessage(const ProtocolMessage& msg, uint8_t* payload, size_t
     jll_error("Failed to write patternTimeDelta");
     return 0;
   }
+  // The extension byte is only sent over BLE.
+  if (!isBle) { return writer.LengthWritten(); }
 #if JL_IS_CONFIG(CREATURE)
   if (msg.isCreature) {
     uint8_t extensionByte = kExtensionByteFlagIsCreature;
@@ -91,18 +111,42 @@ size_t WriteProtocolMessage(const ProtocolMessage& msg, uint8_t* payload, size_t
   return writer.LengthWritten();
 }
 
-std::optional<ProtocolMessage> ParseProtocolMessage(const uint8_t* payload, size_t payloadLength,
+std::optional<ProtocolMessage> ParseProtocolMessage(const uint8_t* payload, size_t payloadLength, bool isBle,
                                                     OptionalMicroseconds receiptTime) {
-  if (payloadLength < kMinProtocolPayloadLength) {
-    jll_error("Ignoring received message with unexpected length %zu", payloadLength);
+  const size_t minPayloadLength = isBle ? kMinBleProtocolPayloadLength : kUdpProtocolPayloadLength;
+  if (payloadLength < minPayloadLength) {
+    // Over UDP we can receive packets that aren't ours at all, so we only log those at debug level.
+    if (isBle) {
+      jll_error("Ignoring received message with unexpected length %zu", payloadLength);
+    } else {
+      jll_debug("Ignoring received message with unexpected length %zu, expected at least %zu bytes", payloadLength,
+                minPayloadLength);
+    }
     return std::nullopt;
   }
   const Microseconds receiptTimeUs = receiptTime.value_or(TimeMicros());
   ProtocolReader reader(payload, payloadLength);
   ProtocolMessage msg;
+  if (!isBle) {
+    uint8_t version;
+    if (!reader.ReadUint8(&version)) {
+      jll_error("Failed to parse version");
+      return std::nullopt;
+    }
+    if ((version & kUdpVersionMask) != kUdpVersion) {
+      jll_debug("Ignoring received message with unexpected prefix %02x", version);
+      return std::nullopt;
+    }
+  }
   if (!reader.ReadNetworkDeviceId(&msg.originator)) {
     jll_error("Failed to parse originator");
     return std::nullopt;
+  }
+  if (!isBle) {
+    if (!reader.ReadNetworkDeviceId(&msg.sender)) {
+      jll_error("Failed to parse sender");
+      return std::nullopt;
+    }
   }
   if (!reader.ReadUint16(&msg.precedence)) {
     jll_error("Failed to parse precedence");
@@ -128,6 +172,8 @@ std::optional<ProtocolMessage> ParseProtocolMessage(const uint8_t* payload, size
     jll_error("Failed to parse patternTimeDelta");
     return std::nullopt;
   }
+  // The extension byte is only sent over BLE. Over UDP we ignore any trailing bytes.
+  if (!isBle) { return msg; }
   uint8_t extensionByte = 0x00;
   if (!reader.Done()) {
     if (!reader.ReadUint8(&extensionByte)) {

@@ -177,7 +177,8 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
   // so we offset the one way transmission time by half that.
   static constexpr Microseconds kTransmissionOffset = 25 * kMicrosecondsPerMillisecond;
   const Microseconds receiptTime = callbackTime - kTransmissionOffset;
-  std::optional<ProtocolMessage> parsedMessage = ParseProtocolMessage(innerPayload, innerPayloadLength, receiptTime);
+  std::optional<ProtocolMessage> parsedMessage =
+      ParseProtocolMessage(innerPayload, innerPayloadLength, /*isBle=*/true, receiptTime);
   if (!parsedMessage) { return; }
   ProtocolMessage& message = *parsedMessage;
 #if JL_IS_CONFIG(CREATURE)
@@ -204,13 +205,14 @@ void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifi
 
 size_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_t maxInnerPayloadLength) {
   const std::lock_guard<std::mutex> lock(mutex_);
-  static_assert(kMaxProtocolPayloadLength <= kMaxInnerPayloadLength, "bad size");
-  if (kMaxProtocolPayloadLength > maxInnerPayloadLength) {
-    jll_error("GetNextInnerPayloadToSend nonsense %zu > %u", kMaxProtocolPayloadLength, maxInnerPayloadLength);
+  static_assert(kMaxBleProtocolPayloadLength <= kMaxInnerPayloadLength, "bad size");
+  if (kMaxBleProtocolPayloadLength > maxInnerPayloadLength) {
+    jll_error("GetNextInnerPayloadToSend nonsense %zu > %u", kMaxBleProtocolPayloadLength, maxInnerPayloadLength);
     return 0;
   }
 
-  const size_t innerPayloadLength = WriteProtocolMessage(messageToSend_, innerPayload, maxInnerPayloadLength);
+  const size_t innerPayloadLength =
+      WriteProtocolMessage(messageToSend_, /*isBle=*/true, innerPayload, maxInnerPayloadLength);
   if (innerPayloadLength == 0) { return 0; }
   if (ESP32_BLE_DEBUG_ENABLED()) {
     char advRawData[kMaxAdvDataHexStringSize] = {};

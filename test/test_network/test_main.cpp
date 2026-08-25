@@ -71,8 +71,10 @@ constexpr Microseconds kSendTime = 1000 * kMicrosecondsPerSecond;
 
 ProtocolMessage MakeMessageToSend() {
   uint8_t originatorBytes[6] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab};
+  uint8_t senderBytes[6] = {0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54};
   ProtocolMessage message;
   message.originator = NetworkDeviceId(originatorBytes);
+  message.sender = NetworkDeviceId(senderBytes);
   message.precedence = 0x1234;
   message.currentPattern = 0x89abcdef;
   message.nextPattern = 0x76543210;
@@ -83,8 +85,8 @@ ProtocolMessage MakeMessageToSend() {
 }
 
 // Compares the fields that are sent over the wire. ProtocolMessage::operator==() is not sufficient here because it
-// ignores orrerySceneId, and because it compares the sender which is not sent over the wire.
-void AssertWireFieldsEqual(const ProtocolMessage& expected, const ProtocolMessage& actual) {
+// ignores orrerySceneId, and because it compares the sender which is not sent over the wire over BLE.
+void AssertWireFieldsEqual(const ProtocolMessage& expected, const ProtocolMessage& actual, bool isBle) {
   TEST_ASSERT(expected.originator == actual.originator);
   TEST_ASSERT_EQUAL(expected.precedence, actual.precedence);
   TEST_ASSERT_EQUAL(expected.currentPattern, actual.currentPattern);
@@ -92,47 +94,225 @@ void AssertWireFieldsEqual(const ProtocolMessage& expected, const ProtocolMessag
   TEST_ASSERT_EQUAL(expected.numHops, actual.numHops);
   TEST_ASSERT_EQUAL(expected.currentPatternStartTime, actual.currentPatternStartTime);
   TEST_ASSERT_EQUAL(expected.lastOriginationTime, actual.lastOriginationTime);
-  TEST_ASSERT_EQUAL(expected.orrerySceneId.has_value(), actual.orrerySceneId.has_value());
-  if (expected.orrerySceneId) { TEST_ASSERT_EQUAL(*expected.orrerySceneId, *actual.orrerySceneId); }
+  if (isBle) {
+    // The sender is only sent over the wire over UDP, and the extension byte is only sent over BLE.
+    TEST_ASSERT_EQUAL(expected.orrerySceneId.has_value(), actual.orrerySceneId.has_value());
+    if (expected.orrerySceneId) { TEST_ASSERT_EQUAL(*expected.orrerySceneId, *actual.orrerySceneId); }
+  } else {
+    TEST_ASSERT(expected.sender == actual.sender);
+    TEST_ASSERT_FALSE(actual.orrerySceneId.has_value());
+  }
 }
+
+// The wire representation of the durations that MakeMessageToSend() produces when sent at kSendTime.
+constexpr uint8_t kOriginationTimeDeltaBytes[2] = {0x00, 0xfa};  // 250ms.
+constexpr uint8_t kPatternTimeDeltaBytes[2] = {0x0f, 0xa0};      // 4000ms.
 
 }  // namespace
 
 void TestProtocolMessageRoundTrip() {
   const ProtocolMessage sent = MakeMessageToSend();
-  uint8_t payload[kMaxProtocolPayloadLength] = {};
-  const size_t payloadLength = WriteProtocolMessage(sent, payload, sizeof(payload), kSendTime);
-  TEST_ASSERT_EQUAL(kMinProtocolPayloadLength, payloadLength);
+  uint8_t payload[kMaxBleProtocolPayloadLength] = {};
+  const size_t payloadLength = WriteProtocolMessage(sent, /*isBle=*/true, payload, sizeof(payload), kSendTime);
+  TEST_ASSERT_EQUAL(kMinBleProtocolPayloadLength, payloadLength);
 
-  const std::optional<ProtocolMessage> received = ParseProtocolMessage(payload, payloadLength, kSendTime);
+  const std::optional<ProtocolMessage> received =
+      ParseProtocolMessage(payload, payloadLength, /*isBle=*/true, kSendTime);
   TEST_ASSERT(received.has_value());
-  AssertWireFieldsEqual(sent, *received);
+  AssertWireFieldsEqual(sent, *received, /*isBle=*/true);
 }
 
 void TestProtocolMessageRoundTripWithOrreryScene() {
   ProtocolMessage sent = MakeMessageToSend();
   sent.orrerySceneId = static_cast<OrrerySceneId>(OrreryScene::kSilly);
-  uint8_t payload[kMaxProtocolPayloadLength] = {};
-  const size_t payloadLength = WriteProtocolMessage(sent, payload, sizeof(payload), kSendTime);
-  TEST_ASSERT_EQUAL(kMinProtocolPayloadLength + 2, payloadLength);
+  uint8_t payload[kMaxBleProtocolPayloadLength] = {};
+  const size_t payloadLength = WriteProtocolMessage(sent, /*isBle=*/true, payload, sizeof(payload), kSendTime);
+  TEST_ASSERT_EQUAL(kMinBleProtocolPayloadLength + 2, payloadLength);
 
-  const std::optional<ProtocolMessage> received = ParseProtocolMessage(payload, payloadLength, kSendTime);
+  const std::optional<ProtocolMessage> received =
+      ParseProtocolMessage(payload, payloadLength, /*isBle=*/true, kSendTime);
   TEST_ASSERT(received.has_value());
-  AssertWireFieldsEqual(sent, *received);
+  AssertWireFieldsEqual(sent, *received, /*isBle=*/true);
 }
 
 void TestProtocolMessageParseRejectsShortPayload() {
   const ProtocolMessage sent = MakeMessageToSend();
-  uint8_t payload[kMaxProtocolPayloadLength] = {};
-  const size_t payloadLength = WriteProtocolMessage(sent, payload, sizeof(payload), kSendTime);
+  uint8_t payload[kMaxBleProtocolPayloadLength] = {};
+  const size_t payloadLength = WriteProtocolMessage(sent, /*isBle=*/true, payload, sizeof(payload), kSendTime);
   TEST_ASSERT_GREATER_THAN(0, payloadLength);
-  TEST_ASSERT_FALSE(ParseProtocolMessage(payload, payloadLength - 1, kSendTime).has_value());
+  TEST_ASSERT_FALSE(ParseProtocolMessage(payload, payloadLength - 1, /*isBle=*/true, kSendTime).has_value());
 }
 
 void TestProtocolMessageWriteRejectsSmallBuffer() {
   const ProtocolMessage sent = MakeMessageToSend();
-  uint8_t payload[kMinProtocolPayloadLength - 1] = {};
-  TEST_ASSERT_EQUAL(0, WriteProtocolMessage(sent, payload, sizeof(payload), kSendTime));
+  uint8_t payload[kMinBleProtocolPayloadLength - 1] = {};
+  TEST_ASSERT_EQUAL(0, WriteProtocolMessage(sent, /*isBle=*/true, payload, sizeof(payload), kSendTime));
+}
+
+void TestBleProtocolMessageWireBytes() {
+  const ProtocolMessage sent = MakeMessageToSend();
+  uint8_t payload[kMaxBleProtocolPayloadLength] = {};
+  const size_t payloadLength = WriteProtocolMessage(sent, /*isBle=*/true, payload, sizeof(payload), kSendTime);
+  TEST_ASSERT_EQUAL(kMinBleProtocolPayloadLength, payloadLength);
+  const uint8_t expected[kMinBleProtocolPayloadLength] = {
+      0x01,
+      0x23,
+      0x45,
+      0x67,
+      0x89,
+      0xab,  // originator
+      0x12,
+      0x34,  // precedence
+      0x03,  // numHops
+      kOriginationTimeDeltaBytes[0],
+      kOriginationTimeDeltaBytes[1],  // originationTime
+      0x89,
+      0xab,
+      0xcd,
+      0xef,  // currentPattern
+      0x76,
+      0x54,
+      0x32,
+      0x10,  // nextPattern
+      kPatternTimeDeltaBytes[0],
+      kPatternTimeDeltaBytes[1],  // patternTime
+  };
+  TEST_ASSERT_EQUAL_HEX8_ARRAY(expected, payload, sizeof(expected));
+}
+
+void TestUdpProtocolMessageWireBytes() {
+  const ProtocolMessage sent = MakeMessageToSend();
+  uint8_t payload[kUdpProtocolPayloadLength] = {};
+  const size_t payloadLength = WriteProtocolMessage(sent, /*isBle=*/false, payload, sizeof(payload), kSendTime);
+  TEST_ASSERT_EQUAL(kUdpProtocolPayloadLength, payloadLength);
+  const uint8_t expected[kUdpProtocolPayloadLength] = {
+      0x10,  // version
+      0x01,
+      0x23,
+      0x45,
+      0x67,
+      0x89,
+      0xab,  // originator
+      0xfe,
+      0xdc,
+      0xba,
+      0x98,
+      0x76,
+      0x54,  // sender
+      0x12,
+      0x34,  // precedence
+      0x03,  // numHops
+      kOriginationTimeDeltaBytes[0],
+      kOriginationTimeDeltaBytes[1],  // originationTime
+      0x89,
+      0xab,
+      0xcd,
+      0xef,  // currentPattern
+      0x76,
+      0x54,
+      0x32,
+      0x10,  // nextPattern
+      kPatternTimeDeltaBytes[0],
+      kPatternTimeDeltaBytes[1],  // patternTime
+  };
+  TEST_ASSERT_EQUAL_HEX8_ARRAY(expected, payload, sizeof(expected));
+}
+
+void TestUdpProtocolMessageRoundTrip() {
+  const ProtocolMessage sent = MakeMessageToSend();
+  uint8_t payload[kUdpProtocolPayloadLength] = {};
+  const size_t payloadLength = WriteProtocolMessage(sent, /*isBle=*/false, payload, sizeof(payload), kSendTime);
+  TEST_ASSERT_EQUAL(kUdpProtocolPayloadLength, payloadLength);
+
+  const std::optional<ProtocolMessage> received =
+      ParseProtocolMessage(payload, payloadLength, /*isBle=*/false, kSendTime);
+  TEST_ASSERT(received.has_value());
+  AssertWireFieldsEqual(sent, *received, /*isBle=*/false);
+}
+
+void TestUdpProtocolMessageParseRejectsBadVersion() {
+  const ProtocolMessage sent = MakeMessageToSend();
+  uint8_t payload[kUdpProtocolPayloadLength] = {};
+  const size_t payloadLength = WriteProtocolMessage(sent, /*isBle=*/false, payload, sizeof(payload), kSendTime);
+  TEST_ASSERT_EQUAL(kUdpProtocolPayloadLength, payloadLength);
+
+  payload[0] = 0x20;
+  TEST_ASSERT_FALSE(ParseProtocolMessage(payload, payloadLength, /*isBle=*/false, kSendTime).has_value());
+  // Only the high nibble of the version byte is checked.
+  payload[0] = 0x1f;
+  TEST_ASSERT(ParseProtocolMessage(payload, payloadLength, /*isBle=*/false, kSendTime).has_value());
+}
+
+void TestUdpProtocolMessageParseRejectsShortPayload() {
+  const ProtocolMessage sent = MakeMessageToSend();
+  uint8_t payload[kUdpProtocolPayloadLength] = {};
+  const size_t payloadLength = WriteProtocolMessage(sent, /*isBle=*/false, payload, sizeof(payload), kSendTime);
+  TEST_ASSERT_EQUAL(kUdpProtocolPayloadLength, payloadLength);
+  TEST_ASSERT_FALSE(ParseProtocolMessage(payload, payloadLength - 1, /*isBle=*/false, kSendTime).has_value());
+
+  // A payload that is long enough over BLE is too short over UDP.
+  uint8_t blePayload[kMaxBleProtocolPayloadLength] = {};
+  const size_t bleLength = WriteProtocolMessage(sent, /*isBle=*/true, blePayload, sizeof(blePayload), kSendTime);
+  TEST_ASSERT_EQUAL(kMinBleProtocolPayloadLength, bleLength);
+  TEST_ASSERT_FALSE(ParseProtocolMessage(blePayload, bleLength, /*isBle=*/false, kSendTime).has_value());
+}
+
+void TestUdpProtocolMessageWriteRejectsSmallBuffer() {
+  const ProtocolMessage sent = MakeMessageToSend();
+  uint8_t payload[kUdpProtocolPayloadLength - 1] = {};
+  TEST_ASSERT_EQUAL(0, WriteProtocolMessage(sent, /*isBle=*/false, payload, sizeof(payload), kSendTime));
+}
+
+void TestUdpProtocolMessageParseIgnoresTrailingBytes() {
+  const ProtocolMessage sent = MakeMessageToSend();
+  uint8_t payload[kUdpProtocolPayloadLength + 4] = {};
+  const size_t payloadLength =
+      WriteProtocolMessage(sent, /*isBle=*/false, payload, kUdpProtocolPayloadLength, kSendTime);
+  TEST_ASSERT_EQUAL(kUdpProtocolPayloadLength, payloadLength);
+  for (size_t i = kUdpProtocolPayloadLength; i < sizeof(payload); i++) { payload[i] = 0xA5; }
+
+  const std::optional<ProtocolMessage> received =
+      ParseProtocolMessage(payload, sizeof(payload), /*isBle=*/false, kSendTime);
+  TEST_ASSERT(received.has_value());
+  AssertWireFieldsEqual(sent, *received, /*isBle=*/false);
+}
+
+void TestUdpProtocolMessageIgnoresOrreryScene() {
+  ProtocolMessage sent = MakeMessageToSend();
+  sent.orrerySceneId = static_cast<OrrerySceneId>(OrreryScene::kSilly);
+  uint8_t payload[kUdpProtocolPayloadLength + 2] = {};
+  const size_t payloadLength = WriteProtocolMessage(sent, /*isBle=*/false, payload, sizeof(payload), kSendTime);
+  // The orrery scene is not sent over UDP, so the payload length is unchanged.
+  TEST_ASSERT_EQUAL(kUdpProtocolPayloadLength, payloadLength);
+
+  const std::optional<ProtocolMessage> received =
+      ParseProtocolMessage(payload, payloadLength, /*isBle=*/false, kSendTime);
+  TEST_ASSERT(received.has_value());
+  TEST_ASSERT_FALSE(received->orrerySceneId.has_value());
+}
+
+// Times that were sent longer ago than the receiver has been up parse to negative times rather than being clamped to
+// zero, and they do so identically over BLE and UDP.
+void TestProtocolMessageParseDoesNotClampTimes() {
+  const ProtocolMessage sent = MakeMessageToSend();
+  constexpr Microseconds kEarlyReceiptTime = 100 * kMicrosecondsPerMillisecond;
+
+  uint8_t blePayload[kMaxBleProtocolPayloadLength] = {};
+  const size_t bleLength = WriteProtocolMessage(sent, /*isBle=*/true, blePayload, sizeof(blePayload), kSendTime);
+  const std::optional<ProtocolMessage> bleReceived =
+      ParseProtocolMessage(blePayload, bleLength, /*isBle=*/true, kEarlyReceiptTime);
+  TEST_ASSERT(bleReceived.has_value());
+
+  uint8_t udpPayload[kUdpProtocolPayloadLength] = {};
+  const size_t udpLength = WriteProtocolMessage(sent, /*isBle=*/false, udpPayload, sizeof(udpPayload), kSendTime);
+  const std::optional<ProtocolMessage> udpReceived =
+      ParseProtocolMessage(udpPayload, udpLength, /*isBle=*/false, kEarlyReceiptTime);
+  TEST_ASSERT(udpReceived.has_value());
+
+  TEST_ASSERT_EQUAL(kEarlyReceiptTime - 250 * kMicrosecondsPerMillisecond, bleReceived->lastOriginationTime);
+  TEST_ASSERT_EQUAL(kEarlyReceiptTime - 4000 * kMicrosecondsPerMillisecond, bleReceived->currentPatternStartTime);
+  TEST_ASSERT_EQUAL(bleReceived->lastOriginationTime, udpReceived->lastOriginationTime);
+  TEST_ASSERT_EQUAL(bleReceived->currentPatternStartTime, udpReceived->currentPatternStartTime);
 }
 
 void RunUnityTests() {
@@ -144,6 +324,15 @@ void RunUnityTests() {
   RUN_TEST(TestProtocolMessageRoundTripWithOrreryScene);
   RUN_TEST(TestProtocolMessageParseRejectsShortPayload);
   RUN_TEST(TestProtocolMessageWriteRejectsSmallBuffer);
+  RUN_TEST(TestBleProtocolMessageWireBytes);
+  RUN_TEST(TestUdpProtocolMessageWireBytes);
+  RUN_TEST(TestUdpProtocolMessageRoundTrip);
+  RUN_TEST(TestUdpProtocolMessageParseRejectsBadVersion);
+  RUN_TEST(TestUdpProtocolMessageParseRejectsShortPayload);
+  RUN_TEST(TestUdpProtocolMessageWriteRejectsSmallBuffer);
+  RUN_TEST(TestUdpProtocolMessageParseIgnoresTrailingBytes);
+  RUN_TEST(TestUdpProtocolMessageIgnoresOrreryScene);
+  RUN_TEST(TestProtocolMessageParseDoesNotClampTimes);
   UNITY_END();
 }
 

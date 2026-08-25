@@ -141,11 +141,6 @@ class UdpNetwork : public Network {
   OptionalMicroseconds lastReceiveTime_;
 };
 
-void WriteUint32(uint8_t* data, uint32_t number);
-void WriteUint16(uint8_t* data, uint16_t number);
-uint32_t ReadUint32(const uint8_t* data);
-uint16_t ReadUint16(const uint8_t* data);
-
 }  // namespace jazzlights
 
 #endif  // JL_NETWORK_NETWORK_H
