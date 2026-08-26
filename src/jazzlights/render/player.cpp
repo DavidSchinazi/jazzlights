@@ -228,6 +228,26 @@ Player& Player::AddStrand(const Layout& l, Renderer& r) {
   return *this;
 }
 
+void Player::StartupLog(OptionalMicroseconds currentTimeOpt) {
+  static constexpr Microseconds kSecondLogTime = 30 * kMicrosecondsPerSecond;  // 30s.
+  if (!currentTimeOpt) {
+    secondLogStartupTime_ = TimeMicros();  // First log.
+  } else if (secondLogStartupTime_ && *currentTimeOpt - *secondLogStartupTime_ > kSecondLogTime) {
+    secondLogStartupTime_.reset();  // Second log after `kSecondLogTime`.
+  } else {
+    return;
+  }
+  jll_info(
+      "Starting%s JazzLights player %s; "
+      "basePrecedence %u precedenceGain %u strands: %zu%s, "
+      "pixels: %zu, %s " DEVICE_ID_FMT " w %f h %f ox %f oy %f xv %zu yv %zu",
+      (currentTimeOpt ? "2" : ""), BOOT_MESSAGE, engine_.basePrecedence(), engine_.precedenceGain(), strands_.size(),
+      strands_.empty() ? " (CONTROLLER ONLY!)" : "", frame_.pixelCount,
+      networkManager_.HasNetworks() ? "networked" : "standalone", DEVICE_ID_HEX(engine_.localDeviceId()),
+      frame_.viewport.size.width, frame_.viewport.size.height, frame_.viewport.origin.x, frame_.viewport.origin.y,
+      xyIndexStore_.xValuesCount(), xyIndexStore_.yValuesCount());
+}
+
 void Player::Begin() {
   xyIndexStore_.Reset();
   frame_.pixelCount = 0;
@@ -247,15 +267,7 @@ void Player::Begin() {
   // Figure out our local device ID by asking the transports; the engine falls back to a random one.
   engine_.SetHasNetworks(networkManager_.HasNetworks());
   engine_.SetupDeviceId(networkManager_.GetLocalDeviceId());
-  jll_info(
-      "Starting JazzLights player %s; "
-      "basePrecedence %u precedenceGain %u strands: %zu%s, "
-      "pixels: %zu, %s " DEVICE_ID_FMT " w %f h %f ox %f oy %f xv %zu yv %zu",
-      BOOT_MESSAGE, engine_.basePrecedence(), engine_.precedenceGain(), strands_.size(),
-      strands_.empty() ? " (CONTROLLER ONLY!)" : "", frame_.pixelCount,
-      networkManager_.HasNetworks() ? "networked" : "standalone", DEVICE_ID_HEX(engine_.localDeviceId()),
-      frame_.viewport.size.width, frame_.viewport.size.height, frame_.viewport.origin.x, frame_.viewport.origin.y,
-      xyIndexStore_.xValuesCount(), xyIndexStore_.yValuesCount());
+  StartupLog(std::nullopt);
 
   ready_ = true;
 
@@ -324,6 +336,7 @@ void Player::TriggerPatternOverride() {
 bool Player::Render() {
   if (!ready_) { Begin(); }
   const Microseconds currentTime = TimeMicros();
+  StartupLog(currentTime);
 
 #if JL_AUDIO_VISUALIZER
   if (soundReactiveMode_ == SoundReactiveMode::kAuto) {

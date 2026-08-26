@@ -197,6 +197,8 @@ class Player : private ProtocolEngine::Delegate {
 
   void SendPendingMessage(bool sendAsap = false);
 
+  void StartupLog(OptionalMicroseconds currentTimeOpt);
+
 #if JL_IS_CONFIG(CLOUDS) && !JL_DEV
   bool enabled_ = false;
 #else   // JL_IS_CONFIG(CLOUDS) && !JL_DEV
@@ -248,6 +250,7 @@ class Player : private ProtocolEngine::Delegate {
   uint32_t framesComputedThisEpoch_ = 0;
 
   bool isAllLinear_ = false;
+  OptionalMicroseconds secondLogStartupTime_;
 
   ProtocolEngine engine_{this};
 };
