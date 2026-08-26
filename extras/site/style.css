@@ -1,5 +1,18 @@
+:root {
+    /* The site is dark by design. Declaring that stops browsers from force-inverting it:
+       Chrome's Auto Dark Theme treats a page with no color-scheme as a light page, which
+       turned the white text black over the gray panel backgrounds. It also gives us dark
+       scrollbars and form controls. */
+    color-scheme: dark;
+}
+
 body {
     background-color: #3b383f;
+    /* Set the inherited text color once, the way dependency-map.py's stylesheet does, rather
+       than relying on the list of element types below to cover everything. Without this,
+       anything not in that list (div, table, thead, tr, tbody) inherits black from the UA. */
+    color: #ffffff;
+    font-family: Verdana, Helvetica, sans-serif;
 }
 
 code {
