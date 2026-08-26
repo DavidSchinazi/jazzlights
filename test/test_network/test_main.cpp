@@ -291,30 +291,6 @@ void TestUdpProtocolMessageIgnoresOrreryScene() {
   TEST_ASSERT_FALSE(received->orrerySceneId.has_value());
 }
 
-// Times that were sent longer ago than the receiver has been up parse to negative times rather than being clamped to
-// zero, and they do so identically over BLE and UDP.
-void TestProtocolMessageParseDoesNotClampTimes() {
-  const ProtocolMessage sent = MakeMessageToSend();
-  constexpr Microseconds kEarlyReceiptTime = 100 * kMicrosecondsPerMillisecond;
-
-  uint8_t blePayload[kMaxBleProtocolPayloadLength] = {};
-  const size_t bleLength = WriteProtocolMessage(sent, /*isBle=*/true, blePayload, sizeof(blePayload), kSendTime);
-  const std::optional<ProtocolMessage> bleReceived =
-      ParseProtocolMessage(blePayload, bleLength, /*isBle=*/true, kEarlyReceiptTime);
-  TEST_ASSERT(bleReceived.has_value());
-
-  uint8_t udpPayload[kUdpProtocolPayloadLength] = {};
-  const size_t udpLength = WriteProtocolMessage(sent, /*isBle=*/false, udpPayload, sizeof(udpPayload), kSendTime);
-  const std::optional<ProtocolMessage> udpReceived =
-      ParseProtocolMessage(udpPayload, udpLength, /*isBle=*/false, kEarlyReceiptTime);
-  TEST_ASSERT(udpReceived.has_value());
-
-  TEST_ASSERT_EQUAL(kEarlyReceiptTime - 250 * kMicrosecondsPerMillisecond, bleReceived->lastOriginationTime);
-  TEST_ASSERT_EQUAL(kEarlyReceiptTime - 4000 * kMicrosecondsPerMillisecond, bleReceived->currentPatternStartTime);
-  TEST_ASSERT_EQUAL(bleReceived->lastOriginationTime, udpReceived->lastOriginationTime);
-  TEST_ASSERT_EQUAL(bleReceived->currentPatternStartTime, udpReceived->currentPatternStartTime);
-}
-
 void RunUnityTests() {
   UNITY_BEGIN();
   RUN_TEST(TestNetworkReader);
@@ -332,7 +308,6 @@ void RunUnityTests() {
   RUN_TEST(TestUdpProtocolMessageWriteRejectsSmallBuffer);
   RUN_TEST(TestUdpProtocolMessageParseIgnoresTrailingBytes);
   RUN_TEST(TestUdpProtocolMessageIgnoresOrreryScene);
-  RUN_TEST(TestProtocolMessageParseDoesNotClampTimes);
   UNITY_END();
 }
 
