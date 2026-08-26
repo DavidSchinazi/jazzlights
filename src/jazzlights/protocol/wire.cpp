@@ -115,13 +115,7 @@ std::optional<ProtocolMessage> ParseProtocolMessage(const uint8_t* payload, size
                                                     OptionalMicroseconds receiptTime) {
   const size_t minPayloadLength = isBle ? kMinBleProtocolPayloadLength : kUdpProtocolPayloadLength;
   if (payloadLength < minPayloadLength) {
-    // Over UDP we can receive packets that aren't ours at all, so we only log those at debug level.
-    if (isBle) {
-      jll_error("Ignoring received message with unexpected length %zu", payloadLength);
-    } else {
-      jll_debug("Ignoring received message with unexpected length %zu, expected at least %zu bytes", payloadLength,
-                minPayloadLength);
-    }
+    jll_debug("Ignoring received message with unexpected length %zu < %zu", payloadLength, minPayloadLength);
     return std::nullopt;
   }
   const Microseconds receiptTimeUs = receiptTime.value_or(TimeMicros());
