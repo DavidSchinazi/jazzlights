@@ -314,8 +314,10 @@ void Esp32WiFiNetwork::RunTask() {
                          messageToSend.currentPattern != lastSentPattern_)) {
     lastSendTime_ = currentTime;
     lastSentPattern_ = messageToSend.currentPattern;
-    if (!WriteUdpPayload(messageToSend, udpPayload_, kReceiveBufferLength)) {
-      jll_fatal("Esp32WiFiNetwork unexpected payload length issue");
+    size_t payloadLength = WriteUdpPayload(messageToSend, udpPayload_, kReceiveBufferLength);
+    if (payloadLength == 0) {
+      jll_error("Esp32WiFiNetwork failed to write");
+      return;
     }
     struct sockaddr_in sin = {
         .sin_len = sizeof(struct sockaddr_in),
@@ -325,7 +327,7 @@ void Esp32WiFiNetwork::RunTask() {
         .sin_zero = {},
     };
     ssize_t writeRes =
-        sendto(socket_, udpPayload_, kReceiveBufferLength, /*flags=*/0, reinterpret_cast<sockaddr*>(&sin), sizeof(sin));
+        sendto(socket_, udpPayload_, payloadLength, /*flags=*/0, reinterpret_cast<sockaddr*>(&sin), sizeof(sin));
     (void)writeRes;
   }
 

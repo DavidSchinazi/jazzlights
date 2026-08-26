@@ -138,11 +138,11 @@ void Network::RunLoop() {
   RunLoopImpl();
 }
 
-bool Network::WriteUdpPayload(const ProtocolMessage& messageToSend, uint8_t* udpPayload, size_t udpPayloadLength) {
+size_t Network::WriteUdpPayload(const ProtocolMessage& messageToSend, uint8_t* udpPayload, size_t udpPayloadLength) {
   if (udpPayloadLength < kUdpProtocolPayloadLength) {
     jll_error("%s cannot send message due to payload too short %zu < %zu", NetworkTypeToString(Type()),
               udpPayloadLength, kUdpProtocolPayloadLength);
-    return false;
+    return 0;
   }
   jll_debug("%s sending %s", NetworkTypeToString(Type()), NetworkMessageToString(messageToSend).c_str());
   return WriteProtocolMessage(messageToSend, /*isBle=*/false, udpPayload, udpPayloadLength) != 0;
@@ -160,10 +160,12 @@ void UdpNetwork::RunLoopImpl() {
     lastSentPattern_ = messageToSend_.currentPattern;
 
     uint8_t udpPayload[kUdpProtocolPayloadLength] = {};
-    if (!WriteUdpPayload(messageToSend_, udpPayload, sizeof(udpPayload))) {
-      jll_fatal("%s unexpected payload length issue", NetworkTypeToString(Type()));
+    size_t payloadLength = WriteUdpPayload(messageToSend_, udpPayload, sizeof(udpPayload));
+    if (payloadLength == 0) {
+      jll_error("%s failed to write", NetworkTypeToString(Type()));
+      return;
     }
-    Send(&udpPayload[0], sizeof(udpPayload));
+    Send(&udpPayload[0], payloadLength);
   }
 }
 

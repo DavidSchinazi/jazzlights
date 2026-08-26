@@ -98,8 +98,8 @@ class Network {
   bool ParseUdpPayload(uint8_t* udpPayload, size_t udpPayloadLength, const std::string& receiptDetails,
                        ProtocolMessage* outMessage);
 
-  // Write a ProtocolMessage into a buffer that can be sent over UDP/IP.
-  bool WriteUdpPayload(const ProtocolMessage& messageToSend, uint8_t* udpPayload, size_t udpPayloadLength);
+  // Write a ProtocolMessage into a buffer that can be sent over UDP/IP. Returns length written, or zero on failure.
+  size_t WriteUdpPayload(const ProtocolMessage& messageToSend, uint8_t* udpPayload, size_t udpPayloadLength);
 
  private:
   void CheckStatus();
