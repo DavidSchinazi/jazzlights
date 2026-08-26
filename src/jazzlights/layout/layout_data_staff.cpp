@@ -91,7 +91,15 @@ PixelMap sPixels2(JL_LENGTH(pixelMap2), pixelMap2);
 }  // namespace
 
 void AddLedsToRunner(FastLedRunner* runner) {
-  runner->AddLeds<WS2811, LED_PIN, RGB>(sPixels);
+  // The LEDs in the shaft of the staff are physically 24V WS2811 pixels, but we deliberately clock them with WS2812B
+  // timings. FastLED 3.7.6 and earlier routed ESP-IDF 5 through the legacy RMT4 driver, which drove the pins off the
+  // 80MHz APB clock and emitted WS2811's intended 320/960/640/640ns pulses. FastLED 3.9.0 switched to the RMT5 backend,
+  // whose encoder runs at 10MHz and truncates every pulse onto a 100ns grid, so those become 300/900/600/600ns and
+  // leave only 300ns separating a zero-bit high from a one-bit high. That was too little margin for this strip and it
+  // stayed completely dark on every version from 3.9.5 on. WS2812B timings quantize to 200/1000/800/300ns, which
+  // doubles the margin to 600ns and these WS2811 driver ICs decode it fine.
+  runner->AddLeds<WS2812B, LED_PIN, RGB>(sPixels);
+  // The LEDs in the battery compartment at the top of the staff are regular WS2812B pixels.
   runner->AddLeds<WS2812B, LED_PIN2, GRB>(sPixels2);
 }
 
