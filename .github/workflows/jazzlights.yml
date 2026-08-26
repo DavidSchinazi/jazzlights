@@ -137,6 +137,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     needs:
       - check-format
+      - check-dependency-graph
       - extras
       - pio-build
       - pio-native-test
