@@ -70,7 +70,10 @@ if replacement_point:
 else:
     soup.body.replace_with(kramdown_soup.body)
 
-output_str = soup.prettify()
+# Serialize without prettify(): it indents inline elements onto their own lines, and the
+# newline it inserts between </code> and a following comma renders as a space, so a list like
+# `a`, `b` came out as "a , b". kramdown's own output is already readable.
+output_str = str(soup)
 
 if args.output != "-":
     with open(args.output, "w", encoding="utf-8") as f:
