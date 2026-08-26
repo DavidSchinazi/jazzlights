@@ -48,6 +48,13 @@ button {
     border-radius: 25px;
 }
 
+/* Now that the pages declare width=device-width, the layout viewport on a phone is ~375px
+   rather than 980px, so the full-size screenshots on the vest page would overflow it. */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
 table {
     border-collapse: collapse;
     margin: 16px 0;
