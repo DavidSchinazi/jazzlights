@@ -175,11 +175,11 @@ void AddLedsToRunner(FastLedRunner* runner) {
   runner->AddLeds<WS2812B, kPinA1, RGB>(sPixels);
   runner->AddLeds<WS2812B, kPinB2, RGB>(sPixels);
 #elif JL_IS_CONFIG(ROPELIGHT)
-  runner->AddLeds<WS2812, LED_PIN, BRG>(sPixels);
+  runner->AddLeds<WS2812B, LED_PIN, BRG>(sPixels);
 #elif JL_IS_CONFIG(NEW_HAT)
-  runner->AddLeds<WS2812, 2, GRB>(sPixels);
+  runner->AddLeds<WS2812B, 2, GRB>(sPixels);
 #elif JL_IS_CONFIG(BOW)
-  runner->AddLeds<WS2812, 2, RGB>(sPixels);
+  runner->AddLeds<WS2812B, 2, RGB>(sPixels);
 #elif JL_IS_CONFIG(XMAS_TREE) || JL_IS_CONFIG(FAIRY_STRING)
   runner->AddLeds<WS2812B, LED_PIN, RGB>(sPixels);
 #else

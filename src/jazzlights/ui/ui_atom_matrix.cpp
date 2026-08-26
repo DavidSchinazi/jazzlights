@@ -383,7 +383,7 @@ void AtomMatrixUi::RunLoop() {
 }
 
 void AtomMatrixUi::InitialSetup() {
-  runner_->ConfigureUi<WS2812, /*DATA_PIN=*/27, GRB>(ATOM_SCREEN_NUM_LEDS);
+  runner_->ConfigureUi<WS2812B, /*DATA_PIN=*/27, GRB>(ATOM_SCREEN_NUM_LEDS);
   ScreenClear();
   player_.SetBrightness(kBrightnessList[brightnessCursor_]);
 }
