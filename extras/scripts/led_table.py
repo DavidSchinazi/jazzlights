@@ -364,7 +364,7 @@ def collect_rows(ini_path, config_header, layout_dir):
     return rows
 
 
-def print_table(table):
+def format_table(table):
     # Pads every cell so that the column separators line up in a monospaced font. The last
     # column is sized from its header alone so that long cells are not followed by hundreds
     # of trailing spaces; it has no separator after it to line up with anyway.
@@ -375,10 +375,17 @@ def print_table(table):
         cells = (cell.ljust(width) for cell, width in zip(row, widths, strict=True))
         return "| {} |".format(" | ".join(cells))
 
-    print(format_row(table[0]))
-    print("|{}|".format("|".join("-" * (width + 2) for width in widths)))
-    for row in table[1:]:
-        print(format_row(row))
+    lines = [
+        format_row(table[0]),
+        "|{}|".format("|".join("-" * (width + 2) for width in widths)),
+    ]
+    lines.extend(format_row(row) for row in table[1:])
+    return "\n".join(lines)
+
+
+def code(text, backticks):
+    # Identifiers read better as Markdown code spans once the table is rendered as HTML.
+    return "`{}`".format(text) if backticks else text
 
 
 def main():
@@ -398,6 +405,20 @@ def main():
         default=os.path.join(REPO_ROOT, "src", "jazzlights", "layout"),
         help="directory holding the layout sources (default: the one in this repository)",
     )
+    argument_parser.add_argument(
+        "--backticks",
+        action="store_true",
+        help="wrap board, LED type and environment names in Markdown backticks",
+    )
+    argument_parser.add_argument(
+        "--title",
+        help="if set, emit this as a level-one Markdown heading above the table",
+    )
+    argument_parser.add_argument(
+        "--output",
+        default="-",
+        help="file to write to (default: - for stdout)",
+    )
     arguments = argument_parser.parse_args()
 
     rows = collect_rows(
@@ -408,9 +429,28 @@ def main():
     for controller, chipset, framework in sorted(
         rows, key=lambda row: (board_key(row[0]), row[1], row[2])
     ):
-        environments = ", ".join(sorted(rows[(controller, chipset, framework)]))
-        table.append([controller, chipset, framework, environments])
-    print_table(table)
+        environments = ", ".join(
+            code(env, arguments.backticks)
+            for env in sorted(rows[(controller, chipset, framework)])
+        )
+        # Framework is prose rather than an identifier, so it never gets backticks.
+        table.append(
+            [
+                code(controller, arguments.backticks),
+                code(chipset, arguments.backticks),
+                framework,
+                environments,
+            ]
+        )
+
+    output_str = format_table(table)
+    if arguments.title:
+        output_str = "# {}\n\n{}".format(arguments.title, output_str)
+    if arguments.output != "-":
+        with open(arguments.output, "w", encoding="utf-8") as output_file:
+            output_file.write(output_str + "\n")
+    else:
+        print(output_str)
 
 
 if __name__ == "__main__":

@@ -19,6 +19,13 @@ jobs:
       - name: Check Dependency Invariants
         run: extras/site/dependency-map.py --check
 
+  check-led-table:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check LED Table
+        run: extras/scripts/led_table.py
+
   extras:
     runs-on: ubuntu-latest
     steps:
@@ -138,6 +145,7 @@ jobs:
     needs:
       - check-format
       - check-dependency-graph
+      - check-led-table
       - extras
       - pio-build
       - pio-native-test
@@ -187,6 +195,8 @@ jobs:
           url=$(gh api "repos/$GITHUB_REPOSITORY/pages" --jq '.html_url')
           extras/site/create-html.py --template extras/site/template.html --markdown README.md --url $url --output "${upload_dir}/index.html"
           extras/site/create-html.py --template extras/site/template.html --markdown extras/docs/VEST.md --url $url --title "JazzLights Vest" --output "${upload_dir}/vest.html"
+          extras/scripts/led_table.py --backticks --title "JazzLights LED Types" --output "${{ runner.temp }}/leds.md"
+          extras/site/create-html.py --template extras/site/template.html --markdown "${{ runner.temp }}/leds.md" --url $url --title "JazzLights LED Types" --output "${upload_dir}/leds.html"
       - name: Create Dependency Map
         run: extras/site/dependency-map.py --require-graphviz --version "$(git rev-parse --short "$GITHUB_SHA")" --output "${upload_dir}/dependencies.html"
       - name: Copy Images

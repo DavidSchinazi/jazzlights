@@ -47,3 +47,46 @@ button {
     border: 0px solid white;
     border-radius: 25px;
 }
+
+table {
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+}
+
+th,
+td {
+    color: #ffffff;
+    font-family: Verdana, Helvetica, sans-serif;
+    border: 1px solid #5c5663;
+    padding: 6px 10px;
+    text-align: left;
+    vertical-align: top;
+    /* The Environments column holds hundreds of characters, so cells must wrap. Use
+       break-word rather than anywhere: anywhere also shrinks a column's min-content width,
+       which makes the table layout collapse the short columns to one character per line. */
+    overflow-wrap: break-word;
+}
+
+th {
+    background-color: #5c5663;
+    font-weight: bold;
+}
+
+/* Wide tables cannot shrink below the width of their longest identifier, so on narrow
+   screens let the table scroll inside itself rather than scrolling the whole page. Tables
+   that already sit in a .scroll wrapper bring their own, so leave those alone. */
+@media (max-width: 800px) {
+    table {
+        display: block;
+        overflow-x: auto;
+    }
+
+    .scroll table {
+        display: table;
+    }
+}
+
+code {
+    color: #ffffff;
+}
