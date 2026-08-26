@@ -43,6 +43,10 @@ ago, make sure to update your tools by running: `pio pkg update`.
 To install JazzLights for a furry vest on an M5Stack ATOM Matrix, you can run:
 `pio run -e vest -t upload`.
 
+## Misc
+
+[Dependency graph](https://davidschinazi.github.io/jazzlights/dependencies.html).
+
 <!-- website-skip-start -->
 
 ## Development and Debugging

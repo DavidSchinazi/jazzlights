@@ -12,6 +12,13 @@ jobs:
       - name: Check format
         run: ./check_format.sh
 
+  check-dependency-graph:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Dependency Invariants
+        run: extras/site/dependency-map.py --check
+
   extras:
     runs-on: ubuntu-latest
     steps:
@@ -19,7 +26,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev wayland-protocols libwayland-dev libxkbcommon-dev libglu1-mesa-dev freeglut3-dev mesa-common-dev jq
+          sudo apt install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev wayland-protocols libwayland-dev libxkbcommon-dev libglu1-mesa-dev freeglut3-dev mesa-common-dev jq -y
       - name: Download and Install GLFW3 Dependency
         run: |
           GLFW_VERSION=$(curl -Ls https://api.github.com/repos/glfw/glfw/releases/latest | jq -r '.tag_name')
@@ -157,6 +164,10 @@ jobs:
           python-version: "3.12"
       - name: Install Python Dependencies
         run: pip install --upgrade beautifulsoup4 lxml
+      - name: Install Graphviz
+        run: |
+          sudo apt update
+          sudo apt install graphviz -y
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
@@ -175,6 +186,8 @@ jobs:
           url=$(gh api "repos/$GITHUB_REPOSITORY/pages" --jq '.html_url')
           extras/site/create-html.py --template extras/site/template.html --markdown README.md --url $url --output "${upload_dir}/index.html"
           extras/site/create-html.py --template extras/site/template.html --markdown extras/docs/VEST.md --url $url --title "JazzLights Vest" --output "${upload_dir}/vest.html"
+      - name: Create Dependency Map
+        run: extras/site/dependency-map.py --require-graphviz --version "$(git rev-parse --short "$GITHUB_SHA")" --output "${upload_dir}/dependencies.html"
       - name: Copy Images
         run: cp -R extras/docs/images "${upload_dir}/"
       - name: Copy Static Files to Flash Folder

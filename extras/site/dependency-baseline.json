@@ -1,0 +1,100 @@
+{
+  "_comment": [
+    "Architectural invariants for src/jazzlights, enforced on every push by",
+    "extras/site/dependency-map.py --check in the check-format CI job.",
+    "Edit this file deliberately: every change here is an architecture decision.",
+    "Regenerate with: extras/site/dependency-map.py --update-baseline"
+  ],
+  "_comment_file_graph_is_acyclic": [
+    "The file-level include graph has no cycles at all. This is the strongest invariant",
+    "here and the one most worth defending."
+  ],
+  "_comment_module_cycles": [
+    "Non-trivial strongly-connected components of the module graph. There is exactly one,",
+    "and it should shrink over time, never grow."
+  ],
+  "_comment_module_dependencies": [
+    "Allow-list of module -> module edges. A module is a directory under src/jazzlights/;",
+    "files directly in src/jazzlights/ form the module 'jazzlights', and src/main.cpp forms",
+    "the module 'main'. Include counts are deliberately NOT recorded here, so ordinary code",
+    "churn produces no diff and every diff that does appear is worth reading.",
+    "util MUST stay empty: it is the leaf layer.",
+    "protocol MUST stay ['util']: the wire format depends on nothing else."
+  ],
+  "file_graph_is_acyclic": true,
+  "module_cycles": [
+    [
+      "effect",
+      "layout",
+      "orrery",
+      "render",
+      "ui"
+    ]
+  ],
+  "module_dependencies": {
+    "audio": [
+      "util"
+    ],
+    "effect": [
+      "audio",
+      "layout",
+      "orrery",
+      "protocol",
+      "render",
+      "util"
+    ],
+    "jazzlights": [
+      "layout",
+      "motor",
+      "network",
+      "orrery",
+      "render",
+      "ui",
+      "util"
+    ],
+    "layout": [
+      "render",
+      "util"
+    ],
+    "main": [
+      "jazzlights",
+      "util"
+    ],
+    "motor": [
+      "util"
+    ],
+    "network": [
+      "protocol",
+      "util"
+    ],
+    "orrery": [
+      "effect",
+      "motor",
+      "protocol",
+      "render",
+      "ui",
+      "util"
+    ],
+    "protocol": [
+      "util"
+    ],
+    "render": [
+      "effect",
+      "layout",
+      "network",
+      "protocol",
+      "util"
+    ],
+    "ui": [
+      "audio",
+      "effect",
+      "layout",
+      "motor",
+      "network",
+      "orrery",
+      "render",
+      "util"
+    ],
+    "util": []
+  }
+}
