@@ -5,7 +5,9 @@
 
 #ifdef ESP32
 
-// Fixes flickering <https://github.com/FastLED/FastLED/issues/306>.
+// We added this way back when to fix flickering on FastLED controllers that use bit-banging. Most modern platforms like
+// ESP32 use RMT-based controllers where FASTLED_ALLOW_INTERRUPTS has no effect, but this does't hurt so we keep it.
+// https://github.com/FastLED/FastLED/issues/306
 #define FASTLED_ALLOW_INTERRUPTS 0
 
 // Silences FastLED pragmas <https://github.com/FastLED/FastLED/issues/363>.
