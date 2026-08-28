@@ -767,15 +767,10 @@ void Core2AwsUi::RunLoop() {
   if (touchDetail.isPressed()) {
     uint32_t freeHeap = ESP.getFreeHeap();
     uint32_t totalHeap = ESP.getHeapSize();
-    // TODO enable PSRAM by adding "-DBOARD_HAS_PSRAM" and "-mfix-esp32-psram-cache-issue" to build_flags in
-    // platformio.ini https://thingpulse.com/esp32-how-to-use-psram/
-    uint32_t freePSRAM = ESP.getFreePsram();
-    uint32_t totalPSRAM = ESP.getPsramSize();
     int16_t px = touchDetail.x;
     int16_t py = touchDetail.y;
-    jll_info("background pressed x=%d y=%d, free RAM %u/%u free PSRAM %u/%u", px, py,
-             static_cast<unsigned int>(freeHeap), static_cast<unsigned int>(totalHeap),
-             static_cast<unsigned int>(freePSRAM), static_cast<unsigned int>(totalPSRAM));
+    jll_info("background pressed x=%d y=%d, free RAM %u/%u", px, py, static_cast<unsigned int>(freeHeap),
+             static_cast<unsigned int>(totalHeap));
     bool buttonPressed = TouchButtonManager::Get()->HandlePress(px, py);
     if (!buttonPressed) {
       switch (gScreenMode) {

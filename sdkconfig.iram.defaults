@@ -1,9 +1,7 @@
 # https://docs.espressif.com/projects/esp-idf/en/v5.3.2/esp32/api-guides/performance/ram-usage.html#optimizing-iram-usage
-CONFIG_SPIRAM_CACHE_LIBNUMPARSER_IN_IRAM=n
-CONFIG_SPIRAM_CACHE_LIBTIME_IN_IRAM=n
-CONFIG_SPIRAM_CACHE_LIBRAND_IN_IRAM=n
-CONFIG_SPIRAM_CACHE_LIBFILE_IN_IRAM=n
-
-# Note that this harms Wi-Fi performance.
-CONFIG_ESP32_WIFI_IRAM_OPT=n
-CONFIG_ESP32_WIFI_RX_IRAM_OPT=n
+# On platforms where IRAM is limited, we need to move some components to flash. Note that on
+# Core2Aws, moving Wi-Fi RX via CONFIG_ESP32_WIFI_RX_IRAM_OPT caused LED flickering because
+# the interrupt handler was delayed too much, so any addition to this file needs to be
+# thoroughly tested. Moving Wi-Fi TX to flash seems to be fine though. This supposedly harms
+# performance, but not in a way we care about.
+CONFIG_ESP_WIFI_IRAM_OPT=n
