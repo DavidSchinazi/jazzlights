@@ -195,7 +195,10 @@ class JazzLightsWebSocketClient:
 
     def close(self) -> None:
         """Close the client."""
-        asyncio.run_coroutine_threadsafe(self._close(disable_restart=True), self._loop)
+        # _close() is a plain function, not a coroutine, so it cannot go through
+        # run_coroutine_threadsafe(). Schedule it on the loop instead, which also
+        # ensures it runs on the loop thread as its create_task() call requires.
+        self._loop.call_soon_threadsafe(self._close, True)
 
     @property
     def assumed_state(self) -> bool:
