@@ -145,7 +145,7 @@ size_t Network::WriteUdpPayload(const ProtocolMessage& messageToSend, uint8_t* u
     return 0;
   }
   jll_debug("%s sending %s", NetworkTypeToString(Type()), NetworkMessageToString(messageToSend).c_str());
-  return WriteProtocolMessage(messageToSend, /*isBle=*/false, udpPayload, udpPayloadLength) != 0;
+  return WriteProtocolMessage(messageToSend, /*isBle=*/false, udpPayload, udpPayloadLength);
 }
 
 void UdpNetwork::RunLoopImpl() {
