@@ -65,7 +65,17 @@ static void SetCore2ScreenBrightness(uint8_t brightness) {
   M5.Display.wakeup();
 }
 
-void SetDefaultPrecedence(Player& player) { player.UpdatePrecedence(4000, 1000); }
+// The precedence this device was configured with at startup, saved before the "Override" button can
+// change it so that turning the override back off restores the right values for this config.
+Precedence gDefaultBasePrecedence = 0;
+Precedence gDefaultPrecedenceGain = 0;
+
+void SaveDefaultPrecedence(Player& player) {
+  gDefaultBasePrecedence = player.basePrecedence();
+  gDefaultPrecedenceGain = player.precedenceGain();
+}
+
+void SetDefaultPrecedence(Player& player) { player.UpdatePrecedence(gDefaultBasePrecedence, gDefaultPrecedenceGain); }
 
 void SetOverridePrecedence(Player& player) { player.UpdatePrecedence(kDefaultOverridePrecedence, 5000); }
 
@@ -718,10 +728,10 @@ void Core2AwsUi::InitialSetup() {
   gSystemButton->SetCustomPaintFunction(DrawSystemButton);
   gConfirmButton->SetCustomPaintFunction(DrawConfirmButton);
   player_.AddStrand(kCore2ScreenPixels, gCore2ScreenRenderer);
-  SetDefaultPrecedence(player_);
 }
 
 void Core2AwsUi::FinalSetup() {
+  SaveDefaultPrecedence(player_);
   TouchButtonManager::Get()->MaybePaint();
   gCurrentPatternName = player_.CurrentEffectName();
   if (gScreenMode == ScreenMode::kMainMenu) {

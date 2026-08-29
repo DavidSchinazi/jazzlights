@@ -113,6 +113,8 @@ class Player : private ProtocolEngine::Delegate {
   uint8_t brightness() const { return brightness_; }
   void SetBrightness(uint8_t brightness);
 
+  Precedence basePrecedence() const { return engine_.basePrecedence(); }
+  Precedence precedenceGain() const { return engine_.precedenceGain(); }
   void SetBasePrecedence(Precedence basePrecedence) { engine_.SetBasePrecedence(basePrecedence); }
   void SetPrecedenceGain(Precedence precedenceGain) { engine_.SetPrecedenceGain(precedenceGain); }
   void UpdatePrecedence(Precedence basePrecedence, Precedence precedenceGain);

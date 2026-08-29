@@ -126,6 +126,9 @@ void SetupPrimaryRunLoop() {
   gPlayer.SetPrecedenceGain(kDefaultPlanetPrecedenceGain);
   gPlayer.SetBrightness(kDefaultPlanetBrightness);
   gPlayer.SetPlanetPattern(kPlanetPattern);
+#elif JL_IS_CONFIG(GAUNTLET)
+  gPlayer.SetBasePrecedence(4000);
+  gPlayer.SetPrecedenceGain(1000);
 #else
   gPlayer.SetBasePrecedence(1000);
   gPlayer.SetPrecedenceGain(1000);
