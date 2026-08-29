@@ -3,9 +3,9 @@
 
 import asyncio
 import binascii
+from collections.abc import Callable
 import logging
 import struct
-from collections.abc import Callable
 
 import websockets
 
@@ -195,9 +195,6 @@ class JazzLightsWebSocketClient:
 
     def close(self) -> None:
         """Close the client."""
-        # _close() is a plain function, not a coroutine, so it cannot go through
-        # run_coroutine_threadsafe(). Schedule it on the loop instead, which also
-        # ensures it runs on the loop thread as its create_task() call requires.
         self._loop.call_soon_threadsafe(self._close, True)
 
     @property
