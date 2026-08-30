@@ -1,0 +1,5 @@
+--artifact-server-path /tmp/jazzlights-nektos-act-artifacts
+--cache-server-path /tmp/jazzlights-nektos-act-cache
+--container-architecture linux/amd64
+--bind=false
+--use-gitignore=false
