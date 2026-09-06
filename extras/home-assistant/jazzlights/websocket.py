@@ -56,7 +56,7 @@ class JazzLightsWebSocketClient:
         if self._ws is not None:
             try:
                 await self._ws.send(message)
-            except websockets.exceptions.WebSocketException as e:
+            except (websockets.exceptions.WebSocketException, OSError) as e:
                 self._handle_failure(log_str, e)
                 return
 
@@ -138,7 +138,7 @@ class JazzLightsWebSocketClient:
         assert self._ws is None
         try:
             ws = await websockets.connect(uri)
-        except websockets.exceptions.WebSocketException as e:
+        except (websockets.exceptions.WebSocketException, OSError) as e:
             self._handle_failure("connect", e)
             return
         assert self._ws is None
@@ -148,13 +148,13 @@ class JazzLightsWebSocketClient:
         self._notify_callbacks()
         try:
             await self._ws.send(struct.pack("!B", _TYPE_STATUS_REQUEST))
-        except websockets.exceptions.WebSocketException as e:
+        except (websockets.exceptions.WebSocketException, OSError) as e:
             self._handle_failure("send_status_request", e)
             return
         while True:
             try:
                 response = await self._ws.recv()
-            except websockets.exceptions.WebSocketException as e:
+            except (websockets.exceptions.WebSocketException, OSError) as e:
                 self._handle_failure("recv", e)
                 return
             LOGGER.debug("Received %s", binascii.hexlify(response))
