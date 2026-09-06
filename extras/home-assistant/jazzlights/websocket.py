@@ -51,18 +51,18 @@ class JazzLightsWebSocketClient:
         """Remove previously registered callback."""
         self._callbacks.discard(callback)
 
-    async def _send(self, message) -> None:
+    async def _send(self, log_str: str, message) -> None:
         LOGGER.debug("Sending %s", binascii.hexlify(message))
         if self._ws is not None:
             try:
                 await self._ws.send(message)
             except websockets.exceptions.WebSocketException as e:
-                self._handle_failure(e)
+                self._handle_failure(log_str, e)
                 return
 
-    def send(self, message) -> None:
+    def send(self, log_str: str, message) -> None:
         """Send message over WebSockets."""
-        asyncio.run_coroutine_threadsafe(self._send(message), self._loop)
+        asyncio.run_coroutine_threadsafe(self._send(log_str, message), self._loop)
 
     def turn_on(
         self,
@@ -73,23 +73,32 @@ class JazzLightsWebSocketClient:
         """Turn on the light."""
         if effect is not None:
             if effect == "next":
-                self.send(struct.pack("!B", _TYPE_STATUS_NEXT_PATTERN))
+                self.send("turn_on_next", struct.pack("!B", _TYPE_STATUS_NEXT_PATTERN))
             else:
-                self.send(struct.pack("!B", _TYPE_STATUS_SET_EFFECT))
+                self.send(
+                    "turn_on_set_effect", struct.pack("!B", _TYPE_STATUS_SET_EFFECT)
+                )
         elif color is not None:
             self.send(
+                "turn_on_set_color",
                 struct.pack(
                     "!BBBB", _TYPE_STATUS_SET_COLOR, color[0], color[1], color[2]
-                )
+                ),
             )
         elif brightness is not None:
-            self.send(struct.pack("!BB", _TYPE_STATUS_SET_BRIGHTNESS, brightness))
+            self.send(
+                "turn_on_set_brightness",
+                struct.pack("!BB", _TYPE_STATUS_SET_BRIGHTNESS, brightness),
+            )
         else:
-            self.send(struct.pack("!BB", _TYPE_STATUS_SET_ON, _STATUS_FLAG_ON))
+            self.send(
+                "turn_on_set_on",
+                struct.pack("!BB", _TYPE_STATUS_SET_ON, _STATUS_FLAG_ON),
+            )
 
     def turn_off(self) -> None:
         """Turn off the light."""
-        self.send(struct.pack("!BB", _TYPE_STATUS_SET_ON, 0))
+        self.send("turn_on_set_off", struct.pack("!BB", _TYPE_STATUS_SET_ON, 0))
 
     def toggle(self) -> None:
         """Toggle the light."""
@@ -100,7 +109,7 @@ class JazzLightsWebSocketClient:
 
     def request_status(self) -> None:
         """Request a status update."""
-        self.send(struct.pack("!B", _TYPE_STATUS_REQUEST))
+        self.send("request_status", struct.pack("!B", _TYPE_STATUS_REQUEST))
 
     @property
     def brightness(self) -> int | None:
@@ -130,7 +139,7 @@ class JazzLightsWebSocketClient:
         try:
             ws = await websockets.connect(uri)
         except websockets.exceptions.WebSocketException as e:
-            self._handle_failure(e)
+            self._handle_failure("connect", e)
             return
         assert self._ws is None
         self._ws = ws
@@ -140,13 +149,13 @@ class JazzLightsWebSocketClient:
         try:
             await self._ws.send(struct.pack("!B", _TYPE_STATUS_REQUEST))
         except websockets.exceptions.WebSocketException as e:
-            self._handle_failure(e)
+            self._handle_failure("send_status_request", e)
             return
         while True:
             try:
                 response = await self._ws.recv()
             except websockets.exceptions.WebSocketException as e:
-                self._handle_failure(e)
+                self._handle_failure("recv", e)
                 return
             LOGGER.debug("Received %s", binascii.hexlify(response))
             if len(response) >= 2 and response[0] == _TYPE_STATUS_SHARE:
@@ -185,8 +194,8 @@ class JazzLightsWebSocketClient:
             self._ws = None
             self._loop.create_task(ws.close())
 
-    def _handle_failure(self, e) -> None:
-        LOGGER.error("Websocket failed: %s", e)
+    def _handle_failure(self, log_str: str, e) -> None:
+        LOGGER.error("Websocket %s failed: %s", log_str, e)
         self._close(disable_restart=False)
         if self._should_restart:
             LOGGER.info("Restarting Websocket")
