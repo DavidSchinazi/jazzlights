@@ -78,6 +78,8 @@ CRGB ColorFromPalette(const TProgmemRGBPalette16& pal, uint8_t index, uint8_t br
   return CRGB(red1, green1, blue1);
 }
 
+// Work around clang-format disagreement between versions.
+// clang-format off
 extern const TProgmemRGBPalette16 CloudColors_p FL_PROGMEM = {                             //
     CRGB::Blue,      CRGB::DarkBlue, CRGB::DarkBlue,  CRGB::DarkBlue,                      //
     CRGB::DarkBlue,  CRGB::DarkBlue, CRGB::DarkBlue,  CRGB::DarkBlue,                      //
@@ -113,5 +115,6 @@ extern const TProgmemRGBPalette16 HeatColors_p FL_PROGMEM = {                   
     0xCC0000, 0xFF0000, 0xFF3300, 0xFF6600,                                                //
     0xFF9900, 0xFFCC00, 0xFFFF00, 0xFFFF33,                                                //
     0xFFFF66, 0xFFFF99, 0xFFFFCC, 0xFFFFFF};                                               //
+// clang-format on
 
 #endif  // !ESP32
