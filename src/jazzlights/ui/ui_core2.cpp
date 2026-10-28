@@ -7,7 +7,7 @@
 #include <M5Unified.h>
 
 #include "jazzlights/layout/matrix.h"
-#include "jazzlights/network/esp32_ble.h"
+#include "jazzlights/network/ble.h"
 #include "jazzlights/network/wifi.h"
 #include "jazzlights/orrery/orrery_common.h"
 #include "jazzlights/ui/touch_button.h"
@@ -753,7 +753,7 @@ void Core2AwsUi::DrawSystemTextLines() {
   snprintf(line, sizeof(line) - 1, "Scrn Brgt %u/%u", onBrightness_, kMaxOnBrightness);
   DrawSystemTextLine(i++, line);
   // BLE.
-  snprintf(line, sizeof(line) - 1, "BLE: %s", Esp32BleNetwork::Get()->GetStatusStr().c_str());
+  snprintf(line, sizeof(line) - 1, "BLE: %s", BleNetwork::Get()->GetStatusStr().c_str());
   DrawSystemTextLine(i++, line);
 #if JL_WIFI
   // Wi-Fi.

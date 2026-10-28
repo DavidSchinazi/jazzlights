@@ -9,7 +9,7 @@
 #include <optional>
 
 #include "jazzlights/effect/creatures.h"
-#include "jazzlights/network/esp32_ble.h"
+#include "jazzlights/network/ble.h"
 #include "jazzlights/network/wifi.h"
 #include "jazzlights/render/fastled_runner.h"
 #include "jazzlights/render/fastled_wrapper.h"
@@ -149,7 +149,7 @@ void AtomMatrixUi::ScreenNetwork() {
 #else   // JL_WIFI
   const uint8_t wifiBrightness = 0;
 #endif  // JL_WIFI
-  const uint8_t bleBrightness = GetReceiveTimeBrightness(Esp32BleNetwork::Get()->GetLastReceiveTime());
+  const uint8_t bleBrightness = GetReceiveTimeBrightness(BleNetwork::Get()->GetLastReceiveTime());
   if (player_.following() == NetworkType::kBLE) {
     switch (player_.currentNumHops()) {
       case 1: followedNetworkColor = CRGB(0, 0, 255); break;

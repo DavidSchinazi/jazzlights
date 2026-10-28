@@ -9,7 +9,7 @@
 
 #include "jazzlights/layout/layout_data.h"
 #include "jazzlights/motor/motor.h"
-#include "jazzlights/network/esp32_ble.h"
+#include "jazzlights/network/ble.h"
 #include "jazzlights/network/ethernet.h"
 #include "jazzlights/network/manager.h"
 #include "jazzlights/network/wifi.h"
@@ -134,7 +134,7 @@ void SetupPrimaryRunLoop() {
   gPlayer.SetPrecedenceGain(1000);
 #endif
 
-  gNetworkManager.Connect(Esp32BleNetwork::Get());
+  gNetworkManager.Connect(BleNetwork::Get());
 #if JL_WIFI
   gNetworkManager.Connect(WiFiNetwork::Get());
 #endif  // JL_WIFI
@@ -165,7 +165,7 @@ void RunPrimaryRunLoop() {
   OrreryPlanet::Get()->RunLoop();
 #endif  // ORRERY
   SAVE_TIME_POINT(PrimaryRunLoop, UserInterface);
-  Esp32BleNetwork::Get()->RunLoop();
+  BleNetwork::Get()->RunLoop();
   SAVE_TIME_POINT(PrimaryRunLoop, Bluetooth);
 
 #if !JL_IS_CONFIG(PHONE)

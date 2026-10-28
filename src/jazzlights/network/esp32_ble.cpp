@@ -1,20 +1,17 @@
 #include "esp32_ble.h"
 
 #ifdef ESP32
-#if !JL_DISABLE_BLUETOOTH
+#if !JL_DISABLE_BLUETOOTH && !JL_ESP32_NIMBLE
 
 #include <esp_bt.h>
 #include <esp_bt_main.h>
 #include <esp_gap_ble_api.h>
 #include <esp_random.h>
 
-#include <cmath>
-#include <limits>
-#include <optional>
+#include <cstring>
+#include <mutex>
 #include <string>
-#include <unordered_map>
 
-#include "jazzlights/protocol/wire.h"
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/pseudorandom.h"
 
@@ -27,37 +24,7 @@
 #define JL_BLE4 0
 #endif
 
-#ifndef ESP32_BLE_DEBUG_OVERRIDE
-#define ESP32_BLE_DEBUG_OVERRIDE 0
-#endif  // ESP32_BLE_DEBUG_OVERRIDE
-
-#if ESP32_BLE_DEBUG_OVERRIDE
-#define ESP32_BLE_DEBUG(...) jll_info(__VA_ARGS__)
-#define ESP32_BLE_DEBUG_ENABLED() 1
-#else  // ESP32_BLE_DEBUG_OVERRIDE
-#define ESP32_BLE_DEBUG(...) jll_debug(__VA_ARGS__)
-#define ESP32_BLE_DEBUG_ENABLED() IsDebugLoggingEnabled()
-#endif  // ESP32_BLE_DEBUG_OVERRIDE
-
 namespace jazzlights {
-namespace {
-
-// Squat on an unused Bluetooth Advertising Data Type.
-// https://bitbucket.org/bluetooth-SIG/public/src/main/assigned_numbers/core/adTypes.yaml
-// https://www.bluetooth.com/specifications/assigned-numbers/
-constexpr uint8_t kAdvType = 0x96;
-
-void ConvertToHex(char* target, size_t targetLength, const uint8_t* source, size_t sourceLength) {
-  if (targetLength == 0) { return; }
-  if (targetLength <= sourceLength * 2) {
-    target[0] = '\0';
-    return;
-  }
-  for (size_t i = 0; i < sourceLength; i++) { sprintf(&target[2 * i], "%.2x", static_cast<char>(source[i])); }
-  target[sourceLength * 2] = '\0';
-}
-
-}  // namespace
 
 void Esp32BleNetwork::UpdateState(Esp32BleNetwork::State expectedCurrentState, Esp32BleNetwork::State newState) {
   const std::lock_guard<std::mutex> lock(mutex_);
@@ -123,138 +90,12 @@ void Esp32BleNetwork::MaybeUpdateAdvertisingState() {
   if (shouldStopScanning) { StopScanning(); }
 }
 
-void Esp32BleNetwork::StopAdvertisingIn(Microseconds duration) {
-  const std::lock_guard<std::mutex> lock(mutex_);
-  timeToStopAdvertising_ = TimeMicros() + duration;
-}
-
-void Esp32BleNetwork::StopScanningIn(Microseconds duration) {
-  const std::lock_guard<std::mutex> lock(mutex_);
-  timeToStopScanning_ = TimeMicros() + duration;
-}
-
-std::list<ProtocolMessage> Esp32BleNetwork::GetReceivedMessagesImpl() {
-  std::list<ProtocolMessage> results;
-  {
-    const std::lock_guard<std::mutex> lock(mutex_);
-    results = std::move(receivedMessages_);
-    receivedMessages_.clear();
-  }
-  return results;
-}
-
-void Esp32BleNetwork::TriggerSendAsap() {
-  ESP32_BLE_DEBUG("TriggerSendAsap");
-  {
-    const std::lock_guard<std::mutex> lock(mutex_);
-    numUrgentSends_ = 10;
-  }
-  MaybeUpdateAdvertisingState();
-}
-
-void Esp32BleNetwork::SetMessageToSend(const ProtocolMessage& messageToSend) {
-  const std::lock_guard<std::mutex> lock(mutex_);
-  if (!hasDataToSend_ || !messageToSend_.IsEqualExceptOriginationTime(messageToSend)) {
-    ESP32_BLE_DEBUG("Setting messageToSend %s", NetworkMessageToString(messageToSend).c_str());
-    ESP32_BLE_DEBUG("Old messageToSend was %s", NetworkMessageToString(messageToSend_).c_str());
-  }
-  hasDataToSend_ = true;
-  messageToSend_ = messageToSend;
-}
-
-void Esp32BleNetwork::DisableSending() {
-  const std::lock_guard<std::mutex> lock(mutex_);
-  hasDataToSend_ = false;
-}
-
-void Esp32BleNetwork::ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifier, uint8_t innerPayloadLength,
-                                           const uint8_t* innerPayload, int rssi, Microseconds callbackTime) {
-  if (innerPayloadLength > kMaxInnerPayloadLength) {
-    jll_error("Received advertisement with unexpected length %u", innerPayloadLength);
-    return;
-  }
-  // Empirical measurements with the ATOM Matrix show a RTT of 50ms,
-  // so we offset the one way transmission time by half that.
-  static constexpr Microseconds kTransmissionOffset = 25 * kMicrosecondsPerMillisecond;
-  const Microseconds receiptTime = callbackTime - kTransmissionOffset;
-  std::optional<ProtocolMessage> parsedMessage =
-      ParseProtocolMessage(innerPayload, innerPayloadLength, /*isBle=*/true, receiptTime);
-  if (!parsedMessage) { return; }
-  ProtocolMessage& message = *parsedMessage;
-#if JL_IS_CONFIG(CREATURE)
-  message.receiptRssi = rssi;
-  message.receiptTime = receiptTime;
-#else   // CREATURE
-  (void)rssi;
-#endif  // CREATURE
-  message.sender = deviceIdentifier;
-
-  ESP32_BLE_DEBUG("Received %s", NetworkMessageToString(message).c_str());
-  lastReceiveTime_.store(receiptTime, std::memory_order_relaxed);
-
-  {
-    const std::lock_guard<std::mutex> lock(mutex_);
-    if (receivedMessages_.size() > 100) {
-      // Make sure we do not run out of memory if no one is
-      // periodically calling GetScanResults().
-      receivedMessages_.clear();
-    }
-    receivedMessages_.push_back(message);
-  }
-}
-
-size_t Esp32BleNetwork::GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_t maxInnerPayloadLength) {
-  const std::lock_guard<std::mutex> lock(mutex_);
-  static_assert(kMaxBleProtocolPayloadLength <= kMaxInnerPayloadLength, "bad size");
-  if (kMaxBleProtocolPayloadLength > maxInnerPayloadLength) {
-    jll_error("GetNextInnerPayloadToSend nonsense %zu > %u", kMaxBleProtocolPayloadLength, maxInnerPayloadLength);
-    return 0;
-  }
-
-  const size_t innerPayloadLength =
-      WriteProtocolMessage(messageToSend_, /*isBle=*/true, innerPayload, maxInnerPayloadLength);
-  if (innerPayloadLength == 0) { return 0; }
-  if (ESP32_BLE_DEBUG_ENABLED()) {
-    char advRawData[kMaxAdvDataHexStringSize] = {};
-    ConvertToHex(advRawData, sizeof(advRawData), innerPayload, innerPayloadLength);
-    ESP32_BLE_DEBUG("Setting inner payload to <%zu:%s>", innerPayloadLength, advRawData);
-  }
-  return innerPayloadLength;
-}
-
-bool Esp32BleNetwork::ExtractShouldTriggerSendAsap() {
-  bool shouldTriggerSendAsap;
-  {
-    const std::lock_guard<std::mutex> lock(mutex_);
-    if (numUrgentSends_ > 0) {
-      numUrgentSends_--;
-      shouldTriggerSendAsap = true;
-    } else {
-      shouldTriggerSendAsap = false;
-    }
-  }
-  return shouldTriggerSendAsap;
-}
-
 void Esp32BleNetwork::StartConfigureAdvertising() {
   ESP32_BLE_DEBUG("StartConfigureAdvertising");
   UpdateState(State::kIdle, State::kConfiguringAdvertising);
-  uint8_t advPayload[kMaxInnerPayloadLength + 2];
-  size_t innerPayloadSize = GetNextInnerPayloadToSend(&advPayload[2], kMaxInnerPayloadLength);
-  if (innerPayloadSize > kMaxInnerPayloadLength) {
-    jll_error("getNextAdvertisementToSend returned nonsense %zu", innerPayloadSize);
-    innerPayloadSize = kMaxInnerPayloadLength;
-    memset(advPayload, 0, sizeof(advPayload));
-  }
-  static_assert(kMaxInnerPayloadLength <= static_cast<size_t>(std::numeric_limits<uint8_t>::max() - 1), "bad size");
-  advPayload[0] = 1 + innerPayloadSize;
-  advPayload[1] = kAdvType;
-  if (ESP32_BLE_DEBUG_ENABLED()) {
-    char advRawData[kMaxAdvDataHexStringSize] = {};
-    ConvertToHex(advRawData, sizeof(advRawData), advPayload, 2 + innerPayloadSize);
-    ESP32_BLE_DEBUG("Sending adv<%zu:%s>", 2 + innerPayloadSize, advRawData);
-  }
-  ESP_ERROR_CHECK(esp_ble_gap_config_adv_data_raw(advPayload, 2 + innerPayloadSize));
+  uint8_t advPayload[kMaxAdvPayloadLength];
+  const size_t advPayloadLength = GetNextAdvPayloadToSend(advPayload);
+  ESP_ERROR_CHECK(esp_ble_gap_config_adv_data_raw(advPayload, advPayloadLength));
 }
 
 void Esp32BleNetwork::GapCallback(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param) {
@@ -394,8 +235,6 @@ NetworkDeviceId Esp32BleNetwork::InitBluetoothStackAndQueryLocalDeviceId() {
   return NetworkDeviceId(localAddress);
 }
 
-void Esp32BleNetwork::RunLoopImpl() { MaybeUpdateAdvertisingState(); }
-
 std::string Esp32BleNetwork::StateToString(Esp32BleNetwork::State state) {
 #define CASE_STATE_RETURN_STRING(_case) \
   case State::k##_case: return #_case
@@ -414,19 +253,6 @@ std::string Esp32BleNetwork::StateToString(Esp32BleNetwork::State state) {
 #undef CASE_STATE_RETURN_STRING
 }
 
-std::string Esp32BleNetwork::GetStatusStr() {
-  char statStr[100] = {};
-  const OptionalMicroseconds lastRcv = GetLastReceiveTime();
-  snprintf(statStr, sizeof(statStr) - 1, "%lldms", lastRcv ? MsSinceForLogs(*lastRcv) : -1);
-  return std::string(statStr);
-}
-
-}  // namespace jazzlights
-
-#endif  // !JL_DISABLE_BLUETOOTH
-
-namespace jazzlights {
-
 // static
 Esp32BleNetwork* Esp32BleNetwork::Get() {
   static Esp32BleNetwork sStaticInstance;
@@ -434,5 +260,7 @@ Esp32BleNetwork* Esp32BleNetwork::Get() {
 }
 
 }  // namespace jazzlights
+
+#endif  // !JL_DISABLE_BLUETOOTH && !JL_ESP32_NIMBLE
 
 #endif  // ESP32

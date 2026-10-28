@@ -3,44 +3,25 @@
 
 #ifdef ESP32
 
-#ifndef JL_DISABLE_BLUETOOTH
-#define JL_DISABLE_BLUETOOTH 0
-#endif  // JL_DISABLE_BLUETOOTH
+#include "jazzlights/util/config.h"
 
-#include "jazzlights/network/network.h"
-
-#if !JL_DISABLE_BLUETOOTH
+#if !JL_DISABLE_BLUETOOTH && !JL_ESP32_NIMBLE
 
 #include <esp_gap_ble_api.h>
 
-#include <atomic>
-#include <list>
-#include <mutex>
+#include "jazzlights/network/esp32_ble_common.h"
 
 namespace jazzlights {
 
-// This class interfaces with the ESP32 Bluetooth Low Energy module. It is
+// This class interfaces with the ESP32 Bluetooth Low Energy module using the Bluedroid stack. It is
 // designed to allow both sending and receiving by alternating between the two.
 // All calls are thread-safe.
-class Esp32BleNetwork : public Network {
+class Esp32BleNetwork : public Esp32BleCommonNetwork {
  public:
   static Esp32BleNetwork* Get();
 
-  void SetMessageToSend(const ProtocolMessage& messageToSend) override;
-  void DisableSending() override;
-  void TriggerSendAsap() override;
-
-  // Get this device's BLE MAC address.
-  NetworkDeviceId GetLocalDeviceId() const override { return localDeviceId_; }
-  NetworkType Type() const override { return NetworkType::kBLE; }
-  bool ShouldEcho() const override { return true; }
-  OptionalMicroseconds GetLastReceiveTime() const override { return lastReceiveTime_.load(std::memory_order_relaxed); }
-  std::string GetStatusStr() override;
-
  protected:
-  void RunLoopImpl() override;
-  NetworkStatus Update(NetworkStatus /*status*/) override { return kConnected; }
-  std::list<ProtocolMessage> GetReceivedMessagesImpl() override;
+  void MaybeUpdateAdvertisingState() override;
 
  private:
   // All public calls in this class are static, but internally they are backed by a
@@ -58,68 +39,25 @@ class Esp32BleNetwork : public Network {
     kStoppingAdvertising,
   };
   std::string StateToString(State state);
-  // 29 is dictated by the BLE standard.
-  static inline constexpr size_t kMaxInnerPayloadLength = 29;
-  static inline constexpr size_t kMaxAdvDataHexStringSize = (2 + kMaxInnerPayloadLength) * 2 + 1;
 
-  explicit Esp32BleNetwork() {}
+  explicit Esp32BleNetwork() : Esp32BleCommonNetwork(InitBluetoothStackAndQueryLocalDeviceId()) {}
   void StartScanning();
   void StopScanning();
   void StartAdvertising();
   void StopAdvertising();
   void StartConfigureAdvertising();
-  void MaybeUpdateAdvertisingState();
-  void StopAdvertisingIn(Microseconds duration);
-  void StopScanningIn(Microseconds duration);
-  void ReceiveAdvertisement(const NetworkDeviceId& deviceIdentifier, uint8_t innerPayloadLength,
-                            const uint8_t* innerPayload, int rssi, Microseconds callbackTime);
-  size_t GetNextInnerPayloadToSend(uint8_t* innerPayload, uint8_t maxInnerPayloadLength);
   void UpdateState(State expectedCurrentState, State newState);
-  bool ExtractShouldTriggerSendAsap();
   void GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param, Microseconds callbackTime);
 
   static void GapCallback(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param);
 
   static NetworkDeviceId InitBluetoothStackAndQueryLocalDeviceId();
 
-  const NetworkDeviceId localDeviceId_ = InitBluetoothStackAndQueryLocalDeviceId();
-  std::atomic<OptionalMicroseconds> lastReceiveTime_;
-  std::mutex mutex_;
-  // All the variables below are protected by mutex_.
-  State state_ = State::kIdle;
-  bool hasDataToSend_ = false;
-  ProtocolMessage messageToSend_;
-  uint8_t numUrgentSends_ = 0;
-  std::list<ProtocolMessage> receivedMessages_;
-  OptionalMicroseconds timeToStopAdvertising_;
-  OptionalMicroseconds timeToStopScanning_;
+  State state_ = State::kIdle;  // Protected by mutex_.
 };
 
 }  // namespace jazzlights
-#else   // JL_DISABLE_BLUETOOTH
 
-namespace jazzlights {
-// This version of Esp32BleNetwork is a no-op designed to allow disabling all Bluetooth support without having to modify
-// the rest of the codebase.
-class Esp32BleNetwork : public Network {
- public:
-  static Esp32BleNetwork* Get();
-
-  void SetMessageToSend(const ProtocolMessage& /*messageToSend*/) override {}
-  void DisableSending() override {}
-  void TriggerSendAsap() override {}
-  NetworkDeviceId GetLocalDeviceId() const override { return NetworkDeviceId(); }
-  NetworkType Type() const override { return NetworkType::kBLE; }
-  bool ShouldEcho() const override { return false; }
-  OptionalMicroseconds GetLastReceiveTime() const override { return std::nullopt; }
-  std::string GetStatusStr() override { return "Compiled Out"; }
-
- protected:
-  void RunLoopImpl() override {}
-  NetworkStatus Update(NetworkStatus /*status*/) override { return kConnected; }
-  std::list<ProtocolMessage> GetReceivedMessagesImpl() override { return {}; }
-};
-}  // namespace jazzlights
-#endif  // JL_DISABLE_BLUETOOTH
+#endif  // !JL_DISABLE_BLUETOOTH && !JL_ESP32_NIMBLE
 #endif  // ESP32
 #endif  // JL_NETWORK_ESP32_BLE_H

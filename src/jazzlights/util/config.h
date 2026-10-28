@@ -140,6 +140,15 @@
 #define JL_ESP32_WIFI 0
 #endif  // JL_ESP32_WIFI
 
+#ifndef JL_DISABLE_BLUETOOTH
+#define JL_DISABLE_BLUETOOTH 0
+#endif  // JL_DISABLE_BLUETOOTH
+
+#ifndef JL_ESP32_NIMBLE
+// Use the NimBLE Bluetooth stack instead of Bluedroid. Not supported yet.
+#define JL_ESP32_NIMBLE 0
+#endif  // JL_ESP32_NIMBLE
+
 #ifndef JL_CORE2AWS_ETHERNET
 #define JL_CORE2AWS_ETHERNET 0
 #endif  // JL_CORE2AWS_ETHERNET
