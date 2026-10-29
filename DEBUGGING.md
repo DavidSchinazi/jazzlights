@@ -14,7 +14,7 @@ Otherwise the location of `xtensa-esp32-elf-addr2line` can be found by running `
 Run from `jazzlights`:
 
 ```
-pio run -e vest_dev -t upload && pio device monitor -e vest_dev
+pio run -t upload -t monitor -e vest_dev
 ```
 
 # To build all available PlatformIO environments
@@ -59,33 +59,35 @@ pio run -e vest_instrumentation -t menuconfig
 
 # DS33 dual devices
 
-```
-JLENV=orrery_leader ; pio run -e $JLENV -t upload && pio device monitor -e $JLENV
-JLENV=orrery_mercury ; pio run -e $JLENV -t upload && pio device monitor -e $JLENV
-```
-
 ## Vests
 
 ```
-pio run -e ds33_dev_a -t upload && pio device monitor -e ds33_dev_a
-pio run -e ds33_dev_b -t upload && pio device monitor -e ds33_dev_b
-pio run -e ds33_dev_c -t upload && pio device monitor -e ds33_dev_c
+pio run -t upload -t monitor -e ds33_dev_a
+pio run -t upload -t monitor -e ds33_dev_b
+pio run -t upload -t monitor -e ds33_dev_c
 ```
 
 ## Creatures
 
 ```
-pio run -e ds33_creature_r -t upload && pio device monitor -e ds33_creature_r
-pio run -e ds33_creature_g -t upload && pio device monitor -e ds33_creature_g
-pio run -e ds33_creature_b -t upload && pio device monitor -e ds33_creature_b
+pio run -t upload -t monitor -e ds33_creature_r
+pio run -t upload -t monitor -e ds33_creature_g
+pio run -t upload -t monitor -e ds33_creature_b
 ```
 
 ## Orrery
 
 ```
-pio run -e orrery_a -t upload && pio device monitor -e orrery_a
-pio run -e orrery_b -t upload && pio device monitor -e orrery_b
-pio run -e orrery_c -t upload && pio device monitor -e orrery_c
+pio run -t upload -t monitor -e orrery_leader
+pio run -t upload -t monitor -e orrery_mercury
+```
+
+## Other
+
+```
+JL_PORT=/dev/cu.usbserial-755264D6FA ; pio run -t upload -t monitor --upload-port $JL_PORT --monitor-port $JL_PORT -e vest
+JL_PORT=/dev/cu.usbserial-4DD27D246D ; pio run -t upload -t monitor --upload-port $JL_PORT --monitor-port $JL_PORT -e vest
+JL_PORT=/dev/cu.usbserial-89529B03AC ; pio run -t upload -t monitor --upload-port $JL_PORT --monitor-port $JL_PORT -e vest
 ```
 
 # Instrumentation
