@@ -51,6 +51,9 @@ To install JazzLights for a furry vest on an M5Stack ATOM Matrix, you can run:
 
 [Binary sizes by environment](https://davidschinazi.github.io/jazzlights/sizes.html).
 
+Every other branch whose CI passes gets its own copy of this site at
+`https://davidschinazi.github.io/jazzlights/branch/<branch-name>/`.
+
 <!-- website-skip-start -->
 
 ## Development and Debugging

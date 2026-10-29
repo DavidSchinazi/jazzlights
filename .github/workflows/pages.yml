@@ -1,0 +1,61 @@
+name: "Jazzlights: Deploy Pages"
+
+# The github-pages environment only allows deploying from main, and workflow_run workflows always run on main, so this
+# can deploy the sites that jazzlights.yml builds on every branch.
+on:
+  workflow_run:
+    workflows: ["Jazzlights: Build and Test Code; Build Pages"]
+    types: [completed]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    permissions:
+      actions: read
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: "pages"
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Latest Site of Every Branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          site_dir="${{ runner.temp }}/site-upload"
+          mkdir -p "${site_dir}"
+          gh api "repos/${GH_REPO}/branches" --paginate --jq '.[].name' | while read -r branch; do
+            run_id=$(gh run list --workflow jazzlights.yml --branch "${branch}" --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+            if [ -z "${run_id}" ]; then
+              continue
+            fi
+            if [ "${branch}" = "main" ]; then
+              dest="${site_dir}"
+            else
+              dest="${site_dir}/branch/${branch}"
+            fi
+            # Runs from before the site artifact existed, or whose artifacts have expired, are skipped.
+            if gh run download "${run_id}" --name site --dir "${dest}"; then
+              echo "Added ${branch} from run ${run_id}"
+            else
+              echo "Skipped ${branch}: no site artifact in run ${run_id}"
+            fi
+          done
+          if [ ! -f "${site_dir}/index.html" ]; then
+            echo "Missing site for main"
+            exit 1
+          fi
+      - name: Upload Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "${{ runner.temp }}/site-upload"
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
