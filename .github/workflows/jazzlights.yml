@@ -68,13 +68,15 @@ jobs:
         pioenv:
           - vest_dev
           - vest_instrumentation
-          - clouds_s3_debug
-          - gauntlet
+          - vest_m5_logging
           - vest_espidf
           - vest_nimble
           - vest_s3_nimble
-          - creature_c6_nimble
           - vest_espidf_nimble
+          - creature_c6_nimble
+          - clouds
+          - clouds_s3_debug
+          - gauntlet
           - gauntlet_nimble
     runs-on: ubuntu-latest
     steps:
