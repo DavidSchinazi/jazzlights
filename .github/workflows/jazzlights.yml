@@ -71,6 +71,11 @@ jobs:
           - clouds_s3_debug
           - gauntlet
           - vest_espidf
+          - vest_nimble
+          - vest_s3_nimble
+          - creature_c6_nimble
+          - vest_espidf_nimble
+          - gauntlet_nimble
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -87,6 +92,15 @@ jobs:
         run: pip install --upgrade platformio
       - name: PlatformIO Build
         run: pio run -e ${{ matrix.pioenv }}
+      - name: Check Binary Size
+        # Explicitly specifying bash enables pipefail, so a failure isn't hidden by tee.
+        shell: bash
+        run: pio run -e ${{ matrix.pioenv }} -t checkprogsize | tee "${{ runner.temp }}/${{ matrix.pioenv }}.txt"
+      - name: Upload Binary Size as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-size-${{ matrix.pioenv }}
+          path: "${{ runner.temp }}/${{ matrix.pioenv }}.txt"
 
   pio-native-test:
     runs-on: ubuntu-latest
@@ -143,6 +157,15 @@ jobs:
         with:
           name: merged-binary-${{ matrix.pioenv }}
           path: "${{ runner.temp }}/${{ matrix.pioenv }}.bin"
+      - name: Check Binary Size
+        # Explicitly specifying bash enables pipefail, so a failure isn't hidden by tee.
+        shell: bash
+        run: pio run -e ${{ matrix.pioenv }} -t checkprogsize | tee "${{ runner.temp }}/${{ matrix.pioenv }}.txt"
+      - name: Upload Binary Size as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-size-${{ matrix.pioenv }}
+          path: "${{ runner.temp }}/${{ matrix.pioenv }}.txt"
 
   pages:
     if: github.ref == 'refs/heads/main'
@@ -192,6 +215,18 @@ jobs:
         run: |
           mkdir -p "${{ runner.temp }}/site-upload"
           echo "upload_dir=${{ runner.temp }}/site-upload" >> "$GITHUB_ENV"
+      - name: Download Binaries to Site Directory
+        uses: actions/download-artifact@v4
+        with:
+          pattern: merged-binary-*
+          path: "${{ runner.temp }}/site-upload/flash/"
+          merge-multiple: true
+      - name: Download Binary Sizes
+        uses: actions/download-artifact@v4
+        with:
+          pattern: binary-size-*
+          path: "${{ runner.temp }}/binary-sizes/"
+          merge-multiple: true
       - name: Create HTML from Markdown
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -201,6 +236,8 @@ jobs:
           extras/site/create-html.py --template extras/site/template.html --markdown extras/docs/VEST.md --url $url --title "JazzLights Vest" --output "${upload_dir}/vest.html"
           extras/scripts/led_table.py --backticks --title "JazzLights LED Types" --output "${{ runner.temp }}/leds.md"
           extras/site/create-html.py --template extras/site/template.html --markdown "${{ runner.temp }}/leds.md" --url $url --title "JazzLights LED Types" --output "${upload_dir}/leds.html"
+          extras/site/binary-sizes.py --sizes-dir "${{ runner.temp }}/binary-sizes" --merged-dir "${upload_dir}/flash" --version "$(git rev-parse --short "$GITHUB_SHA")" --title "JazzLights Binary Sizes" --output "${{ runner.temp }}/sizes.md"
+          extras/site/create-html.py --template extras/site/template.html --markdown "${{ runner.temp }}/sizes.md" --url $url --title "JazzLights Binary Sizes" --output "${upload_dir}/sizes.html"
       - name: Create Dependency Map
         run: extras/site/dependency-map.py --require-graphviz --version "$(git rev-parse --short "$GITHUB_SHA")" --output "${upload_dir}/dependencies.html"
       - name: Copy Images
@@ -220,12 +257,6 @@ jobs:
           extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-orrery-planet.json" --name "Orrery Planet" --version $(git rev-parse --short "$GITHUB_SHA") --firmware-s3 orrery_planet.bin
           extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-orrery-sun.json" --name "Orrery Sun" --version $(git rev-parse --short "$GITHUB_SHA") --firmware orrery_sun.bin
           extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-motor-test.json" --name "Orrery Motor Test" --version $(git rev-parse --short "$GITHUB_SHA") --firmware-s3 orrery_motor_test_m5stamp_s3.bin
-      - name: Download Binaries to Site Directory
-        uses: actions/download-artifact@v4
-        with:
-          pattern: merged-binary-*
-          path: "${{ runner.temp }}/site-upload/flash/"
-          merge-multiple: true
       - run: ls -l "${upload_dir}/flash/"
       - run: find "${upload_dir}/flash/"
       - name: Upload Pages
