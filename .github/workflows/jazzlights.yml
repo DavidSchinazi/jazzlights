@@ -68,9 +68,9 @@ jobs:
         pioenv:
           - vest_dev
           - vest_instrumentation
-          - vest_m5_logging
           - vest_espidf
           - vest_nimble
+          - vest_nimble_m5_logging
           - vest_s3_nimble
           - vest_espidf_nimble
           - creature_c6_nimble
