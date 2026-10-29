@@ -1,4 +1,4 @@
-name: "Jazzlights: Build and Test Code; Deploy Pages"
+name: "Jazzlights: Build and Test Code; Build Pages"
 
 on:
   push:
@@ -167,8 +167,9 @@ jobs:
           name: binary-size-${{ matrix.pioenv }}
           path: "${{ runner.temp }}/${{ matrix.pioenv }}.txt"
 
-  pages:
-    if: github.ref == 'refs/heads/main'
+  # Builds the site for every branch. The pages.yml workflow then deploys main's site at the root and every other
+  # branch's site under branch/<name>/.
+  site:
     needs:
       - check-format
       - check-dependency-graph
@@ -179,14 +180,7 @@ jobs:
       - pio-merge
     permissions:
       contents: read
-      pages: write
-      id-token: write
-    concurrency:
-      group: "pages"
-      cancel-in-progress: false
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      pages: read
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -209,8 +203,6 @@ jobs:
           ruby-version: "3.3"
       - name: Install Kramdown
         run: gem install kramdown
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
       - name: Create Temporary Site Directory
         run: |
           mkdir -p "${{ runner.temp }}/site-upload"
@@ -259,10 +251,8 @@ jobs:
           extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-motor-test.json" --name "Orrery Motor Test" --version $(git rev-parse --short "$GITHUB_SHA") --firmware-s3 orrery_motor_test_m5stamp_s3.bin
       - run: ls -l "${upload_dir}/flash/"
       - run: find "${upload_dir}/flash/"
-      - name: Upload Pages
-        uses: actions/upload-pages-artifact@v3
+      - name: Upload Site as Artifact
+        uses: actions/upload-artifact@v4
         with:
+          name: site
           path: "${{ runner.temp }}/site-upload"
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
