@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <mutex>
+#include <string>
 
 #include "jazzlights/util/config.h"
 
@@ -35,6 +36,10 @@ BufferViewU8 EscapeIntoStaticBuffer(const BufferViewU8 input);
 std::unique_lock<std::mutex> GetEscapeBufferLock();
 
 void SetupLogging();
+
+// Appends printf-style formatted text to `str`. Prefer this over std::ostringstream, which pulls in iostreams and
+// locales and adds over 150KB to ESP32 binaries.
+void AppendPrintf(std::string* str, const char* format, ...) __attribute__((format(printf, 2, 3)));
 
 }  // namespace jazzlights
 

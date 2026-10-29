@@ -3,8 +3,6 @@
 #if JL_WIFI
 #if JL_ESP_WIFI
 
-#include <sstream>
-
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/pseudorandom.h"
 #include "jazzlights/util/time.h"
@@ -22,9 +20,9 @@ std::string ArduinoEspWiFiNetwork::WiFiStatusToString(wl_status_t status) {
     case WL_CONNECTION_LOST: return "WL_CONNECTION_LOST";
     case WL_DISCONNECTED: return "WL_DISCONNECTED";
   }
-  std::ostringstream s;
-  s << "UNKNOWN(" << static_cast<int>(status) << ")";
-  return s.str();
+  char unknownStr[sizeof("UNKNOWN(-2147483648)")] = {};
+  snprintf(unknownStr, sizeof(unknownStr), "UNKNOWN(%d)", static_cast<int>(status));
+  return std::string(unknownStr);
 }
 
 namespace {
@@ -91,9 +89,9 @@ std::string WiFiReasonToString(uint8_t reason) {
     JL_WIFI_REASON_CASE_RETURN(SA_QUERY_TIMEOUT)
 #undef JL_WIFI_REASON_CASE_RETURN
   }
-  std::ostringstream s;
-  s << "UNKNOWN(" << static_cast<int>(reason) << ")";
-  return s.str();
+  char unknownStr[sizeof("UNKNOWN(-2147483648)")] = {};
+  snprintf(unknownStr, sizeof(unknownStr), "UNKNOWN(%d)", static_cast<int>(reason));
+  return std::string(unknownStr);
 }
 }  // namespace
 
@@ -235,9 +233,8 @@ int ArduinoEspWiFiNetwork::Recv(void* buf, size_t bufsize, std::string* details)
     jll_debug("ArduinoEspWiFiNetwork::recv returned %d", cb);
     return 0;
   }
-  std::ostringstream s;
-  s << " (from " << udp_.remoteIP().toString().c_str() << ":" << udp_.remotePort() << ")";
-  *details = s.str();
+  details->clear();
+  AppendPrintf(details, " (from %s:%u)", udp_.remoteIP().toString().c_str(), udp_.remotePort());
   return udp_.read((unsigned char*)buf, bufsize);
 }
 

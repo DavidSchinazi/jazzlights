@@ -2,8 +2,6 @@
 
 #if JL_ETHERNET && !JL_ESP32_ETHERNET
 
-#include <sstream>
-
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/time.h"
 
@@ -16,9 +14,9 @@ std::string EthernetLinkStatusToString(EthernetLinkStatus linkStatus) {
     case LinkON: return "ON";
     case LinkOFF: return "OFF";
   }
-  std::ostringstream s;
-  s << "UNKNOWN(" << static_cast<int>(linkStatus) << ")";
-  return s.str();
+  char unknownStr[sizeof("UNKNOWN(-2147483648)")] = {};
+  snprintf(unknownStr, sizeof(unknownStr), "UNKNOWN(%d)", static_cast<int>(linkStatus));
+  return std::string(unknownStr);
 }
 
 std::string EthernetHardwareStatusToString(EthernetHardwareStatus hwStatus) {
@@ -28,9 +26,9 @@ std::string EthernetHardwareStatusToString(EthernetHardwareStatus hwStatus) {
     case EthernetW5200: return "W5200";
     case EthernetW5500: return "W5500";
   }
-  std::ostringstream s;
-  s << "UNKNOWN(" << static_cast<int>(hwStatus) << ")";
-  return s.str();
+  char unknownStr[sizeof("UNKNOWN(-2147483648)")] = {};
+  snprintf(unknownStr, sizeof(unknownStr), "UNKNOWN(%d)", static_cast<int>(hwStatus));
+  return std::string(unknownStr);
 }
 
 }  // namespace

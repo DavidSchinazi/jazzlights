@@ -15,8 +15,6 @@
 #include <lwip/sockets.h>
 #include <string.h>
 
-#include <sstream>
-
 #include "jazzlights/util/config.h"
 #include "jazzlights/util/esp32_shared.h"
 #include "jazzlights/util/log.h"
@@ -314,13 +312,12 @@ void Esp32EthernetNetwork::RunTask() {
     CreateSocket();
     return;
   }
-  std::ostringstream s;
   char addressString[INET_ADDRSTRLEN] = {};
   if (inet_ntop(AF_INET, &(sin.sin_addr), addressString, sizeof(addressString)) == nullptr) {
     jll_fatal("Esp32EthernetNetwork printing receive address failed with error %d: %s", errno, strerror(errno));
   }
-  s << " (from " << addressString << ":" << ntohs(sin.sin_port) << ")";
-  std::string receiptDetails = s.str();
+  std::string receiptDetails;
+  AppendPrintf(&receiptDetails, " (from %s:%u)", addressString, ntohs(sin.sin_port));
   ProtocolMessage receivedMessage;
   if (ParseUdpPayload(udpPayload_, n, receiptDetails, &receivedMessage)) {
     lastReceiveTime_.store(TimeMicros(), std::memory_order_relaxed);

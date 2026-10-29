@@ -2,6 +2,8 @@
 
 #include <ctype.h>
 
+#include <cstdarg>
+
 namespace jazzlights {
 
 namespace {
@@ -45,6 +47,21 @@ BufferViewU8 EscapeIntoStaticBuffer(const BufferViewU8 input) {
   BufferViewU8 output(sEscapedBuffer);
   EscapeRawBuffer(input, &output);
   return output;
+}
+
+void AppendPrintf(std::string* str, const char* format, ...) {
+  va_list args;
+  va_start(args, format);
+  va_list argsCopy;
+  va_copy(argsCopy, args);
+  const int length = vsnprintf(nullptr, 0, format, argsCopy);
+  va_end(argsCopy);
+  if (length > 0) {
+    const size_t oldSize = str->size();
+    str->resize(oldSize + static_cast<size_t>(length));
+    vsnprintf(&(*str)[oldSize], static_cast<size_t>(length) + 1, format, args);
+  }
+  va_end(args);
 }
 
 void SetupLogging() {

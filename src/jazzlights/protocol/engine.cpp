@@ -1,7 +1,6 @@
 #include "jazzlights/protocol/engine.h"
 
 #include <limits>
-#include <sstream>
 
 #include "jazzlights/util/instrumentation.h"
 #include "jazzlights/util/log.h"
@@ -515,19 +514,19 @@ void ProtocolEngine::HandleReceivedMessage(ProtocolMessage message, OptionalMicr
 
     if (entry->nextHopDevice == message.sender && entry->nextHopNetworkId == message.receiptNetworkId) {
       bool shouldUpdateStartTime = false;
-      std::ostringstream changes;
+      std::string changes;
       if (entry->precedence != message.precedence) {
-        changes << ", precedence " << entry->precedence << " to " << message.precedence;
+        AppendPrintf(&changes, ", precedence %u to %u", entry->precedence, message.precedence);
       }
       if (entry->currentPattern != message.currentPattern) {
         shouldUpdateStartTime = true;
-        changes << ", currentPattern " << delegate_->PatternName(entry->currentPattern) << " to "
-                << delegate_->PatternName(message.currentPattern);
+        AppendPrintf(&changes, ", currentPattern %s to %s", delegate_->PatternName(entry->currentPattern).c_str(),
+                     delegate_->PatternName(message.currentPattern).c_str());
       }
       if (entry->nextPattern != message.nextPattern) {
         shouldUpdateStartTime = true;
-        changes << ", nextPattern " << delegate_->PatternName(entry->nextPattern) << " to "
-                << delegate_->PatternName(message.nextPattern);
+        AppendPrintf(&changes, ", nextPattern %s to %s", delegate_->PatternName(entry->nextPattern).c_str(),
+                     delegate_->PatternName(message.nextPattern).c_str());
       }
       // Debounce incoming updates to currentPatternStartTime to avoid visual jitter in the presence
       // of network jitter.
@@ -538,26 +537,26 @@ void ProtocolEngine::HandleReceivedMessage(ProtocolMessage message, OptionalMicr
         const Microseconds timeDelta = entry->currentPatternStartTime - message.currentPatternStartTime;
         const long long timeDeltaMs = MsForLogs(timeDelta);
         if (shouldUpdateStartTime || timeDelta >= kPatternStartTimeDeltaMax) {
-          changes << ", elapsedTime -= " << timeDeltaMs;
+          AppendPrintf(&changes, ", elapsedTime -= %lld", timeDeltaMs);
           shouldUpdateStartTime = true;
         } else if (timeDelta < kPatternStartTimeDeltaMin) {
-          if (IsDebugLoggingEnabled()) { changes << ", elapsedTime !-= " << timeDeltaMs; }
+          if (IsDebugLoggingEnabled()) { AppendPrintf(&changes, ", elapsedTime !-= %lld", timeDeltaMs); }
           entry->patternStartTimeMovementCounter = 0;
         } else {
           if (entry->patternStartTimeMovementCounter <= 1) {
             entry->patternStartTimeMovementCounter--;
             if (entry->patternStartTimeMovementCounter <= -kPatternStartTimeMovementThreshold) {
-              changes << ", elapsedTime -= " << timeDeltaMs;
+              AppendPrintf(&changes, ", elapsedTime -= %lld", timeDeltaMs);
               shouldUpdateStartTime = true;
             } else {
               if (IsDebugLoggingEnabled()) {
-                changes << ", elapsedTime ~-= " << timeDeltaMs << " (movement "
-                        << static_cast<int>(-entry->patternStartTimeMovementCounter) << ")";
+                AppendPrintf(&changes, ", elapsedTime ~-= %lld (movement %d)", timeDeltaMs,
+                             static_cast<int>(-entry->patternStartTimeMovementCounter));
               }
             }
           } else {
             entry->patternStartTimeMovementCounter = 0;
-            if (IsDebugLoggingEnabled()) { changes << ", elapsedTime ~-= " << timeDeltaMs << " (flip)"; }
+            if (IsDebugLoggingEnabled()) { AppendPrintf(&changes, ", elapsedTime ~-= %lld (flip)", timeDeltaMs); }
           }
         }
       } else if (entry->currentPatternStartTime < message.currentPatternStartTime) {
@@ -567,36 +566,38 @@ void ProtocolEngine::HandleReceivedMessage(ProtocolMessage message, OptionalMicr
           delegate_->OnPatternRestart();
         }
         if (shouldUpdateStartTime || timeDelta >= kPatternStartTimeDeltaMax) {
-          changes << ", elapsedTime += " << timeDeltaMs;
+          AppendPrintf(&changes, ", elapsedTime += %lld", timeDeltaMs);
           if (entry->currentPattern == message.currentPattern && timeDelta >= kEffectDuration / 2) {
-            changes << " (keeping currentPattern " << delegate_->PatternName(entry->currentPattern) << ")";
+            AppendPrintf(&changes, " (keeping currentPattern %s)",
+                         delegate_->PatternName(entry->currentPattern).c_str());
           }
           shouldUpdateStartTime = true;
         } else if (timeDelta < kPatternStartTimeDeltaMin) {
-          if (IsDebugLoggingEnabled()) { changes << ", elapsedTime !+= " << timeDeltaMs; }
+          if (IsDebugLoggingEnabled()) { AppendPrintf(&changes, ", elapsedTime !+= %lld", timeDeltaMs); }
           entry->patternStartTimeMovementCounter = 0;
         } else {
           if (entry->patternStartTimeMovementCounter >= -1) {
             entry->patternStartTimeMovementCounter++;
             if (entry->patternStartTimeMovementCounter >= kPatternStartTimeMovementThreshold) {
-              changes << ", elapsedTime += " << timeDeltaMs;
+              AppendPrintf(&changes, ", elapsedTime += %lld", timeDeltaMs);
               shouldUpdateStartTime = true;
             } else {
               if (IsDebugLoggingEnabled()) {
-                changes << ", elapsedTime ~+= " << timeDeltaMs << " (movement "
-                        << static_cast<int>(entry->patternStartTimeMovementCounter) << ")";
+                AppendPrintf(&changes, ", elapsedTime ~+= %lld (movement %d)", timeDeltaMs,
+                             static_cast<int>(entry->patternStartTimeMovementCounter));
               }
             }
           } else {
             entry->patternStartTimeMovementCounter = 0;
-            if (IsDebugLoggingEnabled()) { changes << ", elapsedTime ~+= " << timeDeltaMs << " (flip)"; }
+            if (IsDebugLoggingEnabled()) { AppendPrintf(&changes, ", elapsedTime ~+= %lld (flip)", timeDeltaMs); }
           }
         }
       }
       if (entry->lastOriginationTime > message.lastOriginationTime) {
-        changes << ", originationTime -= " << MsSinceForLogs(message.lastOriginationTime, entry->lastOriginationTime);
+        AppendPrintf(&changes, ", originationTime -= %lld",
+                     MsSinceForLogs(message.lastOriginationTime, entry->lastOriginationTime));
       }  // Do not log increases to origination time since all originated messages cause it.
-      if (entry->retracted) { changes << ", unretracted"; }
+      if (entry->retracted) { changes += ", unretracted"; }
       entry->precedence = message.precedence;
       entry->currentPattern = message.currentPattern;
       entry->nextPattern = message.nextPattern;
@@ -606,13 +607,12 @@ void ProtocolEngine::HandleReceivedMessage(ProtocolMessage message, OptionalMicr
         entry->currentPatternStartTime = message.currentPatternStartTime;
         entry->patternStartTimeMovementCounter = 0;
       }
-      std::string changesStr = changes.str();
-      if (!changesStr.empty()) {
+      if (!changes.empty()) {
         const bool followedUpdate = entry->originator == currentLeader_;
         jll_protocol_info("Accepting %s update from " DEVICE_ID_FMT ".p%u via " DEVICE_ID_FMT ".%s%s%s",
                           (followedUpdate ? "followed" : "ignored"), DEVICE_ID_HEX(entry->originator),
                           entry->precedence, DEVICE_ID_HEX(entry->nextHopDevice),
-                          NetworkTypeToString(entry->nextHopNetworkType), changesStr.c_str(),
+                          NetworkTypeToString(entry->nextHopNetworkType), changes.c_str(),
                           message.receiptDetails.c_str());
         if (followedUpdate) { PrintInstrumentationInfo(); }
       }

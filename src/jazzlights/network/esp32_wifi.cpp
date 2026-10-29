@@ -9,8 +9,6 @@
 #include <lwip/sockets.h>
 #include <string.h>
 
-#include <sstream>
-
 #include "jazzlights/util/esp32_shared.h"
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/pseudorandom.h"
@@ -85,9 +83,9 @@ std::string WiFiReasonToString(uint8_t reason) {
     JL_WIFI_REASON_CASE_RETURN(SA_QUERY_TIMEOUT)
 #undef JL_WIFI_REASON_CASE_RETURN
   }
-  std::ostringstream s;
-  s << "UNKNOWN(" << static_cast<int>(reason) << ")";
-  return s.str();
+  char unknownStr[sizeof("UNKNOWN(-2147483648)")] = {};
+  snprintf(unknownStr, sizeof(unknownStr), "UNKNOWN(%d)", static_cast<int>(reason));
+  return std::string(unknownStr);
 }
 }  // namespace
 
@@ -366,13 +364,12 @@ void Esp32WiFiNetwork::RunTask() {
     CreateSocket();
     return;
   }
-  std::ostringstream s;
   char addressString[INET_ADDRSTRLEN] = {};
   if (inet_ntop(AF_INET, &(sin.sin_addr), addressString, sizeof(addressString)) == nullptr) {
     jll_fatal("Esp32WiFiNetwork printing receive address failed with error %d: %s", errno, strerror(errno));
   }
-  s << " (from " << addressString << ":" << ntohs(sin.sin_port) << ")";
-  std::string receiptDetails = s.str();
+  std::string receiptDetails;
+  AppendPrintf(&receiptDetails, " (from %s:%u)", addressString, ntohs(sin.sin_port));
   ProtocolMessage receivedMessage;
   if (ParseUdpPayload(udpPayload_, n, receiptDetails, &receivedMessage)) {
     lastReceiveTime_.store(TimeMicros(), std::memory_order_relaxed);
