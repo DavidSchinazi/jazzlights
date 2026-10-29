@@ -145,7 +145,9 @@
 #endif  // JL_DISABLE_BLUETOOTH
 
 #ifndef JL_ESP32_NIMBLE
-// Use the NimBLE Bluetooth stack instead of Bluedroid. Not supported yet.
+// Use the NimBLE Bluetooth stack instead of Bluedroid, which results in a smaller binary. With `framework = arduino`
+// this requires the NimBLE-Arduino library, and with `framework = espidf, arduino` this requires
+// sdkconfig.nimble.defaults.
 #define JL_ESP32_NIMBLE 0
 #endif  // JL_ESP32_NIMBLE
 

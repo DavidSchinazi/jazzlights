@@ -1,0 +1,16 @@
+# Replaces Bluedroid with NimBLE for environments that use Esp32NimBleNetwork with `framework = espidf, arduino`.
+# This must be listed after sdkconfig.defaults in SDKCONFIG_DEFAULTS so it overrides the Bluetooth settings there.
+# The Classic Bluetooth settings from sdkconfig.defaults depend on Bluedroid, so they no longer apply.
+CONFIG_BT_ENABLED=y
+# CONFIG_BT_BLUEDROID_ENABLED is not set
+CONFIG_BT_NIMBLE_ENABLED=y
+CONFIG_BTDM_CTRL_MODE_BLE_ONLY=y
+# CONFIG_BTDM_CTRL_MODE_BTDM is not set
+# We only scan and advertise, so we never need the central role, security, or more than one connection.
+# CONFIG_BT_NIMBLE_ROLE_CENTRAL is not set
+CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1
+# CONFIG_BT_NIMBLE_SECURITY_ENABLE is not set
+# CONFIG_BT_NIMBLE_NVS_PERSIST is not set
+CONFIG_BT_NIMBLE_LOG_LEVEL_NONE=y
+# Match the stack size of the Bluedroid task that runs Esp32BleNetwork callbacks.
+CONFIG_BT_NIMBLE_HOST_TASK_STACK_SIZE=8192
