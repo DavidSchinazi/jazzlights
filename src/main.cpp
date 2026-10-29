@@ -65,6 +65,17 @@ void loop() {
 #endif  // JL_PRIMARY_RUNLOOP_ON_OTHER_CORE
 }
 
+#include <chip-debug-report.h>
+#include <esp32-hal-log.h>
+
+#if ARDUHAL_LOG_LEVEL < ARDUHAL_LOG_LEVEL_DEBUG
+// Below the debug log level, the Arduino core only prints its chip debug report if shouldPrintChipDebugReport() is
+// overridden to return true, which we never do. Providing empty implementations here prevents the linker from pulling
+// in the report code, which saves about 4KB of flash.
+void printBeforeSetupInfo() {}
+void printAfterSetupInfo() {}
+#endif  // ARDUHAL_LOG_LEVEL < ARDUHAL_LOG_LEVEL_DEBUG
+
 #else  // ESP32
 
 int main(int /*argc*/, char** /*argv*/) { return 0; }
