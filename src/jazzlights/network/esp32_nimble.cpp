@@ -13,8 +13,10 @@
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/pseudorandom.h"
 
+#if JL_ARDUINO
 // This is an Arduino header and in theory we shouldn't need it, but see comment near btStarted() below.
 #include <esp32-hal-bt.h>
+#endif  // JL_ARDUINO
 
 #if !JL_ESP32S3 && !JL_ESP32C3 && !JL_ESP32C6
 #define JL_BLE4 1
@@ -241,7 +243,7 @@ NetworkDeviceId Esp32NimBleNetwork::InitBluetoothStackAndQueryLocalDeviceId() {
 #endif  // JL_NIMBLE_ARDUINO
   ESP_ERROR_CHECK(nimble_port_init());
 
-#if JL_BLE4
+#if JL_BLE4 && JL_ARDUINO
   // If we remove the next line, or if we replace the condition with `if (false)`, then the call to
   // esp_bt_controller_init() above fails and returns ESP_ERR_INVALID_STATE. This call to btStarted() ensures that
   // arduino uses the right btInUse(). In theory, all btStarted() does is checking esp_bt_controller_get_status(),
@@ -249,7 +251,7 @@ NetworkDeviceId Esp32NimBleNetwork::InitBluetoothStackAndQueryLocalDeviceId() {
   // what's currently releasing Bluetooth memory from under us when it thinks btInUse() is false.
   // https://github.com/espressif/arduino-esp32/issues/3436#issuecomment-927341016
   if (esp_random() == 0xdeadbeef) { (void)btStarted(); }
-#endif  // JL_BLE4
+#endif  // JL_BLE4 && JL_ARDUINO
 
   ble_hs_cfg.sync_cb = &HostSyncCallback;
   ble_hs_cfg.reset_cb = &HostResetCallback;

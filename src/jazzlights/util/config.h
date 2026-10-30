@@ -82,6 +82,15 @@
 #define JL_ESP32C6 0
 #endif  // CONFIG_IDF_TARGET_ESP32C3
 
+#ifndef JL_ARDUINO
+// Whether we're building with the Arduino core, either via `framework = arduino` or `framework = espidf, arduino`.
+#ifdef ARDUINO
+#define JL_ARDUINO 1
+#else  // ARDUINO
+#define JL_ARDUINO 0
+#endif  // ARDUINO
+#endif  // JL_ARDUINO
+
 #ifndef JL_DEV
 #define JL_DEV 0
 #endif  // JL_DEV

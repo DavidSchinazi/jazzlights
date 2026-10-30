@@ -38,9 +38,8 @@ void PrimaryRunLoopTaskFunction(void* parameters) {
 }
 
 void SetupPrimaryRunLoopTask() {
-  BaseType_t ret =
-      xTaskCreatePinnedToCore(PrimaryRunLoopTaskFunction, "PrimaryRunLoopJL", CONFIG_ARDUINO_LOOP_STACK_SIZE,
-                              /*parameters=*/nullptr, kHighestTaskPriority, &gTaskHandle, /*coreID=*/0);
+  BaseType_t ret = xTaskCreatePinnedToCore(PrimaryRunLoopTaskFunction, "PrimaryRunLoopJL", kPrimaryRunLoopStackSize,
+                                           /*parameters=*/nullptr, kHighestTaskPriority, &gTaskHandle, /*coreID=*/0);
   if (ret != pdPASS) { jll_fatal("Failed to create PrimaryRunLoopJL task"); }
 }
 

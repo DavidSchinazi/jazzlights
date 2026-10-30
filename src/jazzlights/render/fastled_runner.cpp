@@ -168,7 +168,7 @@ void FastLedRunner::Start() {
   // written to, so we instead pin FastLED to core 1.
   BaseType_t ret = xTaskCreatePinnedToCore(TaskFunction, "FastLED", configMINIMAL_STACK_SIZE + 2000,
                                            /*parameters=*/this, kHighestTaskPriority, &taskHandle_,
-                                           /*coreID=*/CONFIG_ARDUINO_RUNNING_CORE);
+                                           /*coreID=*/kPrimaryRunLoopCore);
   if (ret != pdPASS) { jll_fatal("Failed to create FastLED task"); }
 }
 

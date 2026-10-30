@@ -23,6 +23,16 @@ enum : UBaseType_t {
 #endif
 };
 
+#if JL_ARDUINO
+// The Arduino core runs setup() and loop() from its loopTask, using these settings.
+inline constexpr BaseType_t kPrimaryRunLoopCore = CONFIG_ARDUINO_RUNNING_CORE;
+inline constexpr uint32_t kPrimaryRunLoopStackSize = CONFIG_ARDUINO_LOOP_STACK_SIZE;
+#else   // JL_ARDUINO
+// Without the Arduino core, main.cpp creates the primary runloop task itself. These match the Arduino defaults.
+inline constexpr BaseType_t kPrimaryRunLoopCore = portNUM_PROCESSORS > 1 ? 1 : 0;
+inline constexpr uint32_t kPrimaryRunLoopStackSize = 8192;
+#endif  // JL_ARDUINO
+
 }  // namespace jazzlights
 
 #endif  // ESP32
