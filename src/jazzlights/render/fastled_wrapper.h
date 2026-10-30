@@ -13,6 +13,11 @@
 // Silences FastLED pragmas <https://github.com/FastLED/FastLED/issues/363>.
 #define FASTLED_INTERNAL 1
 
+#if !JL_ARDUINO
+// Provides the parts of the Arduino core that FastLED needs, see extras/scripts/fastled_idf_shim.py.
+#include "fastled_idf_shim.h"
+#endif  // !JL_ARDUINO
+
 #include <FastLED.h>
 
 #else  // ESP32

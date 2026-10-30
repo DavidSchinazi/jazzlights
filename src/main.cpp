@@ -64,6 +64,8 @@ void loop() {
 #endif  // JL_PRIMARY_RUNLOOP_ON_OTHER_CORE
 }
 
+#if JL_ARDUINO
+
 #include <chip-debug-report.h>
 #include <esp32-hal-log.h>
 
@@ -74,6 +76,56 @@ void loop() {
 void printBeforeSetupInfo() {}
 void printAfterSetupInfo() {}
 #endif  // ARDUHAL_LOG_LEVEL < ARDUHAL_LOG_LEVEL_DEBUG
+
+#else  // JL_ARDUINO
+
+#include <esp_ota_ops.h>
+#include <nvs_flash.h>
+
+#include "jazzlights/util/log.h"
+
+// The Arduino core switches the CPU to the board's f_cpu at startup. Without it, the CPU frequency comes from
+// sdkconfig, see sdkconfig.idf.defaults.<target>. F_CPU is defined by extras/scripts/fastled_idf_shim.py.
+static_assert(F_CPU == CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ * 1000000, "sdkconfig CPU frequency does not match board f_cpu");
+
+namespace jazzlights {
+namespace {
+
+// Replaces the Arduino core's loopTask, which calls setup() once and then loop() forever.
+void LoopTaskFunction(void* /*parameters*/) {
+  setup();
+  while (true) { loop(); }
+}
+
+// Performs the parts of the Arduino core's app_main() and initArduino() that we rely on.
+void StartLoopTask() {
+#if CONFIG_APP_ROLLBACK_ENABLE
+  // Confirm that this image works, otherwise the bootloader would roll back to the previous one after an OTA update.
+  esp_ota_img_states_t otaState;
+  if (esp_ota_get_state_partition(esp_ota_get_running_partition(), &otaState) == ESP_OK &&
+      otaState == ESP_OTA_IMG_PENDING_VERIFY) {
+    ESP_ERROR_CHECK(esp_ota_mark_app_valid_cancel_rollback());
+  }
+#endif  // CONFIG_APP_ROLLBACK_ENABLE
+  // NVS is required by the Bluetooth and Wi-Fi stacks to store PHY calibration data.
+  esp_err_t err = nvs_flash_init();
+  if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+    ESP_ERROR_CHECK(nvs_flash_erase());
+    err = nvs_flash_init();
+  }
+  ESP_ERROR_CHECK(err);
+  BaseType_t ret =
+      xTaskCreatePinnedToCore(LoopTaskFunction, "loopTask", kPrimaryRunLoopStackSize,
+                              /*parameters=*/nullptr, /*priority=*/1, /*taskHandle=*/nullptr, kPrimaryRunLoopCore);
+  if (ret != pdPASS) { jll_fatal("Failed to create loopTask"); }
+}
+
+}  // namespace
+}  // namespace jazzlights
+
+extern "C" void app_main() { jazzlights::StartLoopTask(); }
+
+#endif  // JL_ARDUINO
 
 #else  // ESP32
 

@@ -1,0 +1,2 @@
+# Settings for environments that use `framework = espidf` without the Arduino core.
+# ESP-IDF also loads sdkconfig.idf.defaults.<target> after this file, which holds target-specific settings.

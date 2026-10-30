@@ -13,6 +13,7 @@ dependencies.lock
 managed_components/*
 sdkconfig.*
 !sdkconfig.*.defaults
+!sdkconfig.*.defaults.*
 SCRATCH.txt
 __pycache__/
 .gemini/

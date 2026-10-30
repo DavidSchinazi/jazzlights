@@ -1,0 +1,4 @@
+# The Arduino core switches the CPU to the board's f_cpu at startup, so without it we need to configure it here.
+# ESP32-C3 and ESP32-C6 don't need this since their default of 160 MHz is already their maximum.
+# main.cpp checks that this matches the board's f_cpu.
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
