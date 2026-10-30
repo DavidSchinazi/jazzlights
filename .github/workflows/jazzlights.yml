@@ -73,6 +73,7 @@ jobs:
           - vest_nimble_m5_logging
           - vest_s3_nimble
           - vest_espidf_nimble
+          - vest_espidf_nimble_no_wifi
           - creature_c6_nimble
           - clouds
           - clouds_s3_debug
