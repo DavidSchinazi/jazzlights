@@ -85,9 +85,9 @@ pio run -t upload -t monitor -e orrery_mercury
 ## Other
 
 ```
-JL_PORT=/dev/cu.usbserial-755264D6FA ; pio run -t upload -t monitor --upload-port $JL_PORT --monitor-port $JL_PORT -e vest
-JL_PORT=/dev/cu.usbserial-4DD27D246D ; pio run -t upload -t monitor --upload-port $JL_PORT --monitor-port $JL_PORT -e vest
-JL_PORT=/dev/cu.usbserial-89529B03AC ; pio run -t upload -t monitor --upload-port $JL_PORT --monitor-port $JL_PORT -e vest
+JL_PORT_A=/dev/cu.usbserial-755264D6FA ; pio run -t upload -t monitor --upload-port $JL_PORT_A --monitor-port $JL_PORT_A -e vest
+JL_PORT_B=/dev/cu.usbserial-4DD27D246D ; pio run -t upload -t monitor --upload-port $JL_PORT_B --monitor-port $JL_PORT_B -e vest
+JL_PORT_C=/dev/cu.usbserial-89529B03AC ; pio run -t upload -t monitor --upload-port $JL_PORT_C --monitor-port $JL_PORT_C -e vest
 ```
 
 # Instrumentation
