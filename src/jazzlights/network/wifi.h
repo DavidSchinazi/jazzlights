@@ -10,8 +10,10 @@ namespace jazzlights {
 
 #if JL_ESP32_WIFI
 using WiFiNetwork = Esp32WiFiNetwork;
-#else   // JL_ESP32_WIFI
+#elif JL_ESP_WIFI
 using WiFiNetwork = ArduinoEspWiFiNetwork;
+#else
+#error "Without the Arduino core, Wi-Fi requires JL_ESP32_WIFI"
 #endif  // JL_ESP32_WIFI
 
 }  // namespace jazzlights

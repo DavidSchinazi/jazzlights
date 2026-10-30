@@ -8,7 +8,12 @@
 #include "jazzlights/network/network.h"
 
 #ifndef JL_ESP_WIFI
+// ArduinoEspWiFiNetwork requires the Arduino core's Wi-Fi library.
+#if JL_ARDUINO
 #define JL_ESP_WIFI 1
+#else  // JL_ARDUINO
+#define JL_ESP_WIFI 0
+#endif  // JL_ARDUINO
 #endif  // JL_ESP_WIFI
 
 #if JL_ESP_WIFI
