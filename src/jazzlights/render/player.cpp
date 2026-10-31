@@ -462,6 +462,9 @@ bool Player::Render() {
       return false;
     }
   }
+  if (lastLEDWriteTime_ && currentTime - *lastLEDWriteTime_ > longestFrameGapThisEpoch_) {
+    longestFrameGapThisEpoch_ = currentTime - *lastLEDWriteTime_;
+  }
   lastLEDWriteTime_ = currentTime;
 
 #if JL_IS_CONFIG(CREATURE)
@@ -624,8 +627,12 @@ void Player::LogFpsReport() {
   Microseconds timeSpentComputingThisEpoch;
   Microseconds epochDuration;
   GenerateFPSReport(&fpsCompute, &fpsWrites, &utilization, &timeSpentComputingThisEpoch, &epochDuration);
-  jll_protocol_info("Computed %u FPS wrote %u FPS %u%% %lld/%lldms", fpsCompute, fpsWrites, utilization,
-                    MsForLogs(timeSpentComputingThisEpoch), MsForLogs(epochDuration));
+  // Uneven frame timing makes moving patterns look like they flicker, even when the average FPS is fine.
+  const Microseconds longestFrameGap = longestFrameGapThisEpoch_;
+  longestFrameGapThisEpoch_ = 0;
+  jll_protocol_info("Computed %u FPS wrote %u FPS %u%% %lld/%lldms longest gap %lldms", fpsCompute, fpsWrites,
+                    utilization, MsForLogs(timeSpentComputingThisEpoch), MsForLogs(epochDuration),
+                    MsForLogs(longestFrameGap));
   PrintInstrumentationInfo();
 }
 

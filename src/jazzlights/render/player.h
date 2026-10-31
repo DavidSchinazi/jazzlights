@@ -250,6 +250,8 @@ class Player : private ProtocolEngine::Delegate {
   Microseconds fpsEpochStart_ = 0;
   Microseconds timeSpentComputingEffectsThisEpoch_ = 0;
   uint32_t framesComputedThisEpoch_ = 0;
+  // Longest time between two consecutive frames, reset by LogFpsReport().
+  Microseconds longestFrameGapThisEpoch_ = 0;
 
   bool isAllLinear_ = false;
   OptionalMicroseconds secondLogStartupTime_;
