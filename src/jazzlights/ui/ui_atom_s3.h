@@ -4,7 +4,8 @@
 #include "jazzlights/ui/ui.h"
 
 #ifdef ESP32
-#if JL_IS_CONTROLLER(ATOM_S3)
+// The clouds use NoOpUi instead (see primary_runloop.cpp).
+#if JL_IS_CONTROLLER(ATOM_S3) && !JL_IS_CONFIG(CLOUDS)
 
 #include "jazzlights/ui/gpio_button.h"
 
@@ -83,6 +84,6 @@ class AtomS3Ui : public Esp32Ui, public GpioButton::ButtonInterface {
 
 }  // namespace jazzlights
 
-#endif  // JL_IS_CONTROLLER(ATOM_S3)
+#endif  // JL_IS_CONTROLLER(ATOM_S3) && !JL_IS_CONFIG(CLOUDS)
 #endif  // ESP32
 #endif  // JL_UI_UI_ATOM_S3_H

@@ -4,8 +4,8 @@
 #include "jazzlights/ui/ui.h"
 
 #ifdef ESP32
-// The ESPHome build uses NoOpUi instead (see primary_runloop.cpp).
-#if JL_IS_CONTROLLER(ATOM_MATRIX) && !JL_ESPHOME
+// The clouds use NoOpUi instead (see primary_runloop.cpp).
+#if JL_IS_CONTROLLER(ATOM_MATRIX) && !JL_IS_CONFIG(CLOUDS)
 
 #define ATOM_SCREEN_NUM_LEDS 25
 
@@ -70,6 +70,6 @@ class AtomMatrixUi : public Esp32Ui, public GpioButton::ButtonInterface {
 
 }  // namespace jazzlights
 
-#endif  // JL_IS_CONTROLLER(ATOM_MATRIX) && !JL_ESPHOME
+#endif  // JL_IS_CONTROLLER(ATOM_MATRIX) && !JL_IS_CONFIG(CLOUDS)
 #endif  // ESP32
 #endif  // JL_UI_UI_ATOM_MATRIX_H
