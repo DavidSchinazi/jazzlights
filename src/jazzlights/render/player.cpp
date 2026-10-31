@@ -269,6 +269,7 @@ void Player::Begin() {
   engine_.SetupDeviceId(networkManager_.GetLocalDeviceId());
   StartupLog(std::nullopt);
 
+  fpsEpochStart_ = TimeMicros();
   ready_ = true;
 
 #if JL_IS_CONFIG(RHINO_HAT) || JL_IS_CONFIG(RHINO_STAFF)
