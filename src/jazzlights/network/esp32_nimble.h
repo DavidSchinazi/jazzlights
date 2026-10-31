@@ -29,8 +29,11 @@
 #error "JL_ESP32_NIMBLE requires Bluetooth to be enabled in sdkconfig, see sdkconfig.nimble.defaults"
 #endif
 
+#include <esp_timer.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
 #include <atomic>
-#include <mutex>
 
 #include "jazzlights/network/esp32_ble_common.h"
 
@@ -41,13 +44,19 @@ namespace jazzlights {
 // identically to Esp32BleNetwork but results in a significantly smaller binary.
 // When built with `framework = espidf, arduino` it uses the NimBLE stack from ESP-IDF, which needs
 // to be enabled in sdkconfig. When built with `framework = arduino` it uses the NimBLE-Arduino library.
+// NimBLE calls to start and stop scanning or advertising block until the controller responds, which can take hundreds
+// of milliseconds while Wi-Fi is connecting. So we make them from a dedicated radio task instead of the primary
+// runloop, and that task uses a timer to know when to switch between scanning and advertising.
 // All calls are thread-safe.
 class Esp32NimBleNetwork : public Esp32BleCommonNetwork {
  public:
   static Esp32NimBleNetwork* Get();
 
  protected:
+  // Wakes up the radio task, which then calls UpdateRadioState().
   void MaybeUpdateAdvertisingState() override;
+  // The radio task schedules its own updates, so it doesn't need the primary runloop.
+  void RunLoopImpl() override {}
 
  private:
   // Unlike with Bluedroid, NimBLE calls to start and stop scanning or advertising are synchronous,
@@ -59,8 +68,11 @@ class Esp32NimBleNetwork : public Esp32BleCommonNetwork {
   };
   std::string StateToString(State state);
 
-  explicit Esp32NimBleNetwork() : Esp32BleCommonNetwork(InitBluetoothStackAndQueryLocalDeviceId()) {}
-  // The functions below must be called with radioMutex_ held.
+  explicit Esp32NimBleNetwork();
+  // The functions below must only be called from the radio task.
+  void UpdateRadioState();
+  // Arms radioTimer_ for the next time UpdateRadioState() has something to do.
+  void ScheduleNextUpdate();
   void StartScanning();
   void StopScanning();
   void StartAdvertising();
@@ -69,23 +81,21 @@ class Esp32NimBleNetwork : public Esp32BleCommonNetwork {
   void HandleGapEvent(struct ble_gap_event* event, Microseconds callbackTime);
 
   static int GapEventCallback(struct ble_gap_event* event, void* arg);
+  static void RadioTaskFunction(void* parameters);
+  static void RadioTimerCallback(void* arg);
   static void HostTask(void* parameters);
   static void HostSyncCallback();
   static void HostResetCallback(int reason);
 
   static NetworkDeviceId InitBluetoothStackAndQueryLocalDeviceId();
 
-  // Set when the NimBLE host resets, which cancels any ongoing scanning or advertising. This is static because the host
-  // could theoretically reset before our constructor returns.
-  static std::atomic<bool> sHostResetPending_;
+  static constexpr Microseconds kRetryDelay = 100 * kMicrosecondsPerMillisecond;
 
-  // Serializes changes to the radio state. MaybeUpdateAdvertisingState() holds radioMutex_ for its entire duration
-  // and takes the parent class's mutex_ inside it, so the lock order is always radioMutex_ then mutex_. Code that holds
-  // mutex_ must never acquire radioMutex_, otherwise we could deadlock. This is why GapEventCallback(), which takes
-  // mutex_ via ReceiveAdvertisement(), never acquires radioMutex_. Note that the parent class's TriggerSendAsap()
-  // releases mutex_ before calling MaybeUpdateAdvertisingState().
-  std::mutex radioMutex_;
-  State state_ = State::kIdle;  // Protected by radioMutex_.
+  // Set when the NimBLE host resets, which cancels any ongoing scanning or advertising.
+  std::atomic<bool> hostResetPending_{false};
+  TaskHandle_t radioTaskHandle_ = nullptr;
+  esp_timer_handle_t radioTimer_ = nullptr;
+  State state_ = State::kIdle;  // Only accessed from the radio task.
 };
 
 }  // namespace jazzlights

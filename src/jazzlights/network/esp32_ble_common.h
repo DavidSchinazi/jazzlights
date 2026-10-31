@@ -62,7 +62,8 @@ class Esp32BleCommonNetwork : public Network {
   NetworkStatus Update(NetworkStatus /*status*/) override { return kConnected; }
   std::list<ProtocolMessage> GetReceivedMessagesImpl() override;
 
-  // Starts or stops scanning and advertising as needed. Called from RunLoop() and TriggerSendAsap().
+  // Starts or stops scanning and advertising as needed. Called from RunLoop(), TriggerSendAsap(), and from
+  // SetMessageToSend() when there was nothing to send before.
   virtual void MaybeUpdateAdvertisingState() = 0;
 
   void StopAdvertisingIn(Microseconds duration);

@@ -54,13 +54,19 @@ void Esp32BleCommonNetwork::TriggerSendAsap() {
 }
 
 void Esp32BleCommonNetwork::SetMessageToSend(const ProtocolMessage& messageToSend) {
-  const std::lock_guard<std::mutex> lock(mutex_);
-  if (!hasDataToSend_ || !messageToSend_.IsEqualExceptOriginationTime(messageToSend)) {
-    ESP32_BLE_DEBUG("Setting messageToSend %s", NetworkMessageToString(messageToSend).c_str());
-    ESP32_BLE_DEBUG("Old messageToSend was %s", NetworkMessageToString(messageToSend_).c_str());
+  bool startedSending;
+  {
+    const std::lock_guard<std::mutex> lock(mutex_);
+    if (!hasDataToSend_ || !messageToSend_.IsEqualExceptOriginationTime(messageToSend)) {
+      ESP32_BLE_DEBUG("Setting messageToSend %s", NetworkMessageToString(messageToSend).c_str());
+      ESP32_BLE_DEBUG("Old messageToSend was %s", NetworkMessageToString(messageToSend_).c_str());
+    }
+    startedSending = !hasDataToSend_;
+    hasDataToSend_ = true;
+    messageToSend_ = messageToSend;
   }
-  hasDataToSend_ = true;
-  messageToSend_ = messageToSend;
+  // If the scan timeout already expired while we had nothing to send, we can stop scanning now.
+  if (startedSending) { MaybeUpdateAdvertisingState(); }
 }
 
 void Esp32BleCommonNetwork::DisableSending() {

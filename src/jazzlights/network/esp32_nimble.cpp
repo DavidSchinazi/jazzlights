@@ -5,11 +5,13 @@
 
 #include <esp_bt.h>
 #include <esp_random.h>
+#include <esp_timer.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
 #include <string>
 
+#include "jazzlights/util/esp32_shared.h"
 #include "jazzlights/util/instrumentation.h"
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/pseudorandom.h"
@@ -37,9 +39,6 @@ NetworkDeviceId DeviceIdFromNimBleAddress(const uint8_t* nimbleAddress) {
 }
 
 }  // namespace
-
-// static
-std::atomic<bool> Esp32NimBleNetwork::sHostResetPending_(false);
 
 void Esp32NimBleNetwork::StartScanning() {
   ESP32_BLE_DEBUG("Starting scan...");
@@ -127,49 +126,84 @@ void Esp32NimBleNetwork::StopAdvertising() {
   state_ = State::kIdle;
 }
 
-void Esp32NimBleNetwork::MaybeUpdateAdvertisingState() {
-  std::unique_lock<std::mutex> radioLock(radioMutex_, std::defer_lock);
-  {
-    JL_LOG_IF_SLOW("NimBLE radioMutex_ wait");
-    radioLock.lock();
+void Esp32NimBleNetwork::MaybeUpdateAdvertisingState() { xTaskNotifyGive(radioTaskHandle_); }
+
+// static
+void Esp32NimBleNetwork::RadioTaskFunction(void* parameters) {
+  Esp32NimBleNetwork* network = reinterpret_cast<Esp32NimBleNetwork*>(parameters);
+  while (true) {
+    network->UpdateRadioState();
+    // We get woken up by radioTimer_, by a host sync, or by MaybeUpdateAdvertisingState().
+    (void)ulTaskNotifyTake(/*xClearCountOnExit=*/pdTRUE, portMAX_DELAY);
   }
+}
+
+// static
+void Esp32NimBleNetwork::RadioTimerCallback(void* arg) {
+  xTaskNotifyGive(static_cast<Esp32NimBleNetwork*>(arg)->radioTaskHandle_);
+}
+
+void Esp32NimBleNetwork::UpdateRadioState() {
+  // If the host isn't synced, HostSyncCallback() will wake us up once it is.
   if (!ble_hs_synced()) { return; }
-  if (sHostResetPending_.exchange(false, std::memory_order_relaxed)) {
+  if (hostResetPending_.exchange(false, std::memory_order_relaxed)) {
     // The host reset cancelled any ongoing scanning or advertising.
     state_ = State::kIdle;
   }
   if (state_ == State::kIdle) {
     // This happens on startup, after a host reset, or if starting to scan or advertise failed.
     StartScanning();
-    return;
-  }
-  bool shouldStopAdvertising = false;
-  bool shouldStopScanning = false;
-  Microseconds currentTime = TimeMicros();
-  {
-    const std::lock_guard<std::mutex> lock(mutex_);
-    if (state_ == State::kAdvertising && timeToStopAdvertising_ && currentTime >= *timeToStopAdvertising_) {
-      timeToStopAdvertising_.reset();
-      shouldStopAdvertising = true;
-    } else if (state_ == State::kScanning && hasDataToSend_ &&
-               (numUrgentSends_ > 0 || (timeToStopScanning_ && currentTime >= *timeToStopScanning_))) {
-      if (numUrgentSends_ > 0) { numUrgentSends_--; }
-      timeToStopScanning_.reset();
-      shouldStopScanning = true;
+  } else {
+    bool shouldStopAdvertising = false;
+    bool shouldStopScanning = false;
+    Microseconds currentTime = TimeMicros();
+    {
+      const std::lock_guard<std::mutex> lock(mutex_);
+      if (state_ == State::kAdvertising && timeToStopAdvertising_ && currentTime >= *timeToStopAdvertising_) {
+        timeToStopAdvertising_.reset();
+        shouldStopAdvertising = true;
+      } else if (state_ == State::kScanning && hasDataToSend_ &&
+                 (numUrgentSends_ > 0 || (timeToStopScanning_ && currentTime >= *timeToStopScanning_))) {
+        if (numUrgentSends_ > 0) { numUrgentSends_--; }
+        timeToStopScanning_.reset();
+        shouldStopScanning = true;
+      }
     }
-  }
-  if (shouldStopAdvertising) {
-    StopAdvertising();
-    if (ExtractShouldTriggerSendAsap()) {
+    if (shouldStopAdvertising) {
+      StopAdvertising();
+      if (ExtractShouldTriggerSendAsap()) {
+        StartAdvertising();
+      } else {
+        StartScanning();
+      }
+    }
+    if (shouldStopScanning) {
+      StopScanning();
       StartAdvertising();
-    } else {
-      StartScanning();
     }
   }
-  if (shouldStopScanning) {
-    StopScanning();
-    StartAdvertising();
+  ScheduleNextUpdate();
+}
+
+void Esp32NimBleNetwork::ScheduleNextUpdate() {
+  OptionalMicroseconds deadline;
+  if (state_ == State::kIdle) {
+    // Starting to scan or advertise failed, try again soon.
+    deadline = TimeMicros() + kRetryDelay;
+  } else {
+    const std::lock_guard<std::mutex> lock(mutex_);
+    if (state_ == State::kAdvertising) {
+      deadline = timeToStopAdvertising_;
+    } else if (hasDataToSend_) {
+      // While we have nothing to send, we keep scanning until SetMessageToSend() wakes us up.
+      deadline = timeToStopScanning_;
+    }
   }
+  // This fails if the timer isn't running, which is fine.
+  (void)esp_timer_stop(radioTimer_);
+  if (!deadline) { return; }
+  const Microseconds delay = *deadline - TimeMicros();
+  ESP_ERROR_CHECK(esp_timer_start_once(radioTimer_, delay > 0 ? delay : 0));
 }
 
 // static
@@ -212,7 +246,7 @@ void Esp32NimBleNetwork::HandleGapEvent(struct ble_gap_event* event, Microsecond
     } break;
     case BLE_GAP_EVENT_CONNECT: {
       // Someone connected to us since we advertise as connectable. We don't support connections so disconnect
-      // right away. The connection stopped advertising, MaybeUpdateAdvertisingState() will move on to scanning.
+      // right away. The connection stopped advertising, UpdateRadioState() will move on to scanning.
       if (event->connect.status != 0) { break; }
       jll_info("Terminating unexpected BLE connection");
       const int rc = ble_gap_terminate(event->connect.conn_handle, BLE_ERR_REM_USER_CONN_TERM);
@@ -232,12 +266,15 @@ void Esp32NimBleNetwork::HostTask(void* /*parameters*/) {
 }
 
 // static
-void Esp32NimBleNetwork::HostSyncCallback() { ESP32_BLE_DEBUG("NimBLE host synced"); }
+void Esp32NimBleNetwork::HostSyncCallback() {
+  ESP32_BLE_DEBUG("NimBLE host synced");
+  Get()->MaybeUpdateAdvertisingState();
+}
 
 // static
 void Esp32NimBleNetwork::HostResetCallback(int reason) {
   jll_error("NimBLE host reset, reason=%d", reason);
-  sHostResetPending_.store(true, std::memory_order_relaxed);
+  Get()->hostResetPending_.store(true, std::memory_order_relaxed);
 }
 
 // static
@@ -268,12 +305,10 @@ NetworkDeviceId Esp32NimBleNetwork::InitBluetoothStackAndQueryLocalDeviceId() {
   if (esp_random() == 0xdeadbeef) { (void)btStarted(); }
 #endif  // JL_BLE4 && JL_ARDUINO
 
-  ble_hs_cfg.sync_cb = &HostSyncCallback;
-  ble_hs_cfg.reset_cb = &HostResetCallback;
   nimble_port_freertos_init(&HostTask);
 
-  // Wait for the host and controller to sync before we can query the address. Scanning will then start from the first
-  // call to RunLoop().
+  // Wait for the host and controller to sync before we can query the address. Scanning will then start once the radio
+  // task starts.
   while (!ble_hs_synced()) { vTaskDelay(1); }
 
   // Initialize localDeviceId_.
@@ -295,6 +330,26 @@ std::string Esp32NimBleNetwork::StateToString(Esp32NimBleNetwork::State state) {
   }
   return "Unknown";
 #undef CASE_STATE_RETURN_STRING
+}
+
+Esp32NimBleNetwork::Esp32NimBleNetwork() : Esp32BleCommonNetwork(InitBluetoothStackAndQueryLocalDeviceId()) {
+  // These callbacks use Get(), so we register them after the initial sync. If one fires before this constructor
+  // returns, Get() blocks it until then.
+  ble_hs_cfg.sync_cb = &HostSyncCallback;
+  ble_hs_cfg.reset_cb = &HostResetCallback;
+  const esp_timer_create_args_t radioTimerArgs = {
+      .callback = &RadioTimerCallback,
+      .arg = this,
+      .dispatch_method = ESP_TIMER_TASK,
+      .name = "JL_NimBLE",
+      .skip_unhandled_events = true,
+  };
+  ESP_ERROR_CHECK(esp_timer_create(&radioTimerArgs, &radioTimer_));
+  // This task is pinned to core 0 to keep it away from the primary runloop and the LED writes on core 1.
+  if (xTaskCreatePinnedToCore(RadioTaskFunction, "JL_NimBLE", configMINIMAL_STACK_SIZE + 2000,
+                              /*parameters=*/this, kHighestTaskPriority, &radioTaskHandle_, /*coreID=*/0) != pdPASS) {
+    jll_fatal("Failed to create NimBLE radio task");
+  }
 }
 
 // static
