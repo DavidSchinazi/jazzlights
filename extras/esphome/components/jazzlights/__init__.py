@@ -79,6 +79,10 @@ async def to_code(config):
     cg.add_build_flag("-DJL_ESP32_WIFI_LINK=1")
     # TODO: remove once we know what blocks ESPHome's loop while Wi-Fi connects.
     cg.add_build_flag("-DJL_SLOW_SCOPE_LOGS=1")
+    # FastLED's RMT interrupt refills each LED channel's RMT memory while it sends a frame, and the LEDs flicker if a
+    # refill runs late. Doubling each channel's memory from 64 to 128 symbols gives refills twice as much time. The
+    # clouds' 4 strands then use all 8 RMT memory blocks of the ESP32.
+    cg.add_build_flag("-DLED_STRIP_RMT_DEFAULT_MEM_BLOCK_SYMBOLS_MULTIPLIER=2")
 
     esp32.add_idf_component(name="jazzlights", path=str(_IDF_COMPONENT_PATH))
     # ESPHome excludes these by default, but FastLED needs them.
