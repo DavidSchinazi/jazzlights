@@ -136,6 +136,10 @@ void SetupPrimaryRunLoop() {
 
   gNetworkManager.Connect(BleNetwork::Get());
 #if JL_WIFI
+#if JL_ESP32_WIFI_LINK
+  Esp32SocketManager::Get()->AddInterface(Esp32WiFiLink::Get()->GetNetif(), NetworkType::kWiFi,
+                                          Esp32WiFiLink::Get()->GetLocalDeviceId());
+#endif  // JL_ESP32_WIFI_LINK
   gNetworkManager.Connect(WiFiNetwork::Get());
 #endif  // JL_WIFI
 #if JL_ETHERNET

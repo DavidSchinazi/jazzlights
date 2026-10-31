@@ -149,6 +149,11 @@
 #define JL_ESP32_WIFI 0
 #endif  // JL_ESP32_WIFI
 
+#ifndef JL_ESP32_WIFI_LINK
+// Use Esp32WiFiLink and Esp32SocketManager instead of Esp32WiFiNetwork. This is currently work-in-progress.
+#define JL_ESP32_WIFI_LINK 0
+#endif  // JL_ESP32_WIFI_LINK
+
 #ifndef JL_DISABLE_BLUETOOTH
 #define JL_DISABLE_BLUETOOTH 0
 #endif  // JL_DISABLE_BLUETOOTH

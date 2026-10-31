@@ -76,6 +76,7 @@ jobs:
           - vest_espidf_nimble_no_wifi
           - vest_idf
           - vest_idf_no_wifi
+          - vest_idf_link
           - creature_c6_nimble
           - clouds
           - clouds_s3_debug
