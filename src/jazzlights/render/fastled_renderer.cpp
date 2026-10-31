@@ -6,6 +6,22 @@
 
 namespace jazzlights {
 
+// These mirror what CFastLED::show() does.
+void BeginFastLedFrame() { fl::EngineEvents::onBeginFrame(); }
+
+void AddToFastLedFrame(CLEDController* controller, uint8_t brightness) {
+  void* data = controller->beginShowLeds(controller->size());
+  controller->showLedsInternal(brightness);
+  controller->endShowLeds(data);
+}
+
+void EndFastLedFrame() {
+  fl::EngineEvents::onEndFrame();
+#if FASTLED_HAS_ENGINE_EVENTS
+  fl::EngineEvents::onEndShowLeds();
+#endif  // FASTLED_HAS_ENGINE_EVENTS
+}
+
 FastLedRenderer::FastLedRenderer(size_t numLeds, SetupFunction setupFunction)
     : numLeds_(numLeds), ledMemorySize_(numLeds_ * sizeof(CRGB)), setupFunction_(setupFunction) {
   ledsPlayer_ = reinterpret_cast<CRGB*>(calloc(ledMemorySize_, 1));
@@ -40,8 +56,6 @@ bool FastLedRenderer::CopyLedsFromLockedToFastLed() {
   }
   return freshData;
 }
-
-void FastLedRenderer::SendToLeds(uint8_t brightness) { ledController_->showLeds(brightness); }
 
 }  // namespace jazzlights
 

@@ -11,6 +11,15 @@
 
 namespace jazzlights {
 
+// FastLED.show() sends all controllers in a single frame, but uses the same brightness for all of them. These let us do
+// the same with a different brightness per controller: call BeginFastLedFrame(), then AddToFastLedFrame() for each
+// controller, then EndFastLedFrame(). Calling CLEDController::showLeds() on each controller instead would make each one
+// its own frame, which makes FastLED 3.10.8's RMT driver keep moving a single RMT channel between pins, and leak memory
+// every time it does.
+void BeginFastLedFrame();
+void AddToFastLedFrame(CLEDController* controller, uint8_t brightness);
+void EndFastLedFrame();
+
 class FastLedRenderer : public Renderer {
  public:
   // 4 wires with specified data rate.
@@ -43,7 +52,8 @@ class FastLedRenderer : public Renderer {
   void CopyLedsFromPlayerToLocked();
   bool CopyLedsFromLockedToFastLed();
 
-  void SendToLeds(uint8_t brightness = 255);
+  // Adds our LEDs to the current FastLED frame, see BeginFastLedFrame().
+  void AddToFrame(uint8_t brightness) { AddToFastLedFrame(ledController_, brightness); }
 
   void Setup() {
     // We use a lambda here in order to ensure that the call to FastLED.addLeds() happens on the FastLED task.

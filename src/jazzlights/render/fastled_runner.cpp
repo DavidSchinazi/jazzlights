@@ -77,17 +77,19 @@ void FastLedRunner::SendLedsToFastLed() {
 
   LedWriteStart();
   SAVE_COUNT_POINT(LedPrintSend);
+  BeginFastLedFrame();
   for (size_t i = 0; i < renderers_.size(); i++) {
     uint8_t b = brightness;
 #if JL_IS_CONFIG(STAFF)
     // Make the second strand of LEDs (the top piece of the staff) brighter.
     if (i > 0) { b += (255 - b) / 2; }
 #endif  // STAFF
-    renderers_[i]->SendToLeds(b);
+    renderers_[i]->AddToFrame(b);
   }
 #if JL_FASTLED_RUNNER_HAS_UI
-  uiController_->showLeds(uiBrightness);
+  AddToFastLedFrame(uiController_, uiBrightness);
 #endif  // JL_FASTLED_RUNNER_HAS_UI
+  EndFastLedFrame();
   numWritesThisEpoch_.fetch_add(1, std::memory_order_relaxed);
   LedWriteEnd();
   SAVE_TIME_POINT(FastLed, WriteToLeds);
