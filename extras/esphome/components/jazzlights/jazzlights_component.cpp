@@ -6,12 +6,31 @@
 #include "esphome/core/log.h"
 #include "jazzlights/network/esp32_socket_manager.h"
 #include "jazzlights/util/instrumentation.h"
+#include "jazzlights/util/log.h"
 
 namespace esphome::jazzlights_esphome {
 
 static const char* const TAG = "jazzlights";
 
+namespace {
+
+// Forwards JazzLights logs to ESPHome's logger, so they also show up over Wi-Fi. The tag is the source file name.
+void LogToEsphome(char level, const char* file, int line, const char* format, va_list args) {
+  int esphomeLevel;
+  switch (level) {
+    case 'D': esphomeLevel = ESPHOME_LOG_LEVEL_DEBUG; break;
+    case 'E':
+    case 'F': esphomeLevel = ESPHOME_LOG_LEVEL_ERROR; break;
+    default: esphomeLevel = ESPHOME_LOG_LEVEL_INFO; break;
+  }
+  ::esphome::esp_log_vprintf_(esphomeLevel, file, line, format, args);
+}
+
+}  // namespace
+
 void JazzLightsComponent::setup() {
+  // This needs to happen before SetupPrimaryRunLoop() starts our other tasks.
+  ::jazzlights::SetLogHandler(&LogToEsphome);
   ::jazzlights::SetupPrimaryRunLoop();
   // JazzLights renders as fast as it can, so we don't want ESPHome to sleep between loop iterations.
   this->high_frequency_loop_requester_.start();

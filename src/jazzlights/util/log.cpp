@@ -2,6 +2,7 @@
 
 #include <ctype.h>
 
+#include <atomic>
 #include <cstdarg>
 
 namespace jazzlights {
@@ -63,6 +64,35 @@ void AppendPrintf(std::string* str, const char* format, ...) {
   }
   va_end(args);
 }
+
+#if JL_ESPHOME
+namespace {
+std::atomic<LogHandler> gLogHandler(nullptr);
+}  // namespace
+
+void SetLogHandler(LogHandler handler) { gLogHandler.store(handler, std::memory_order_relaxed); }
+
+void LogAtLevel(char level, const char* file, int line, const char* format, ...) {
+  va_list args;
+  va_start(args, format);
+  const LogHandler handler = gLogHandler.load(std::memory_order_relaxed);
+  const bool isFatal = level == _JL_LOG_LEVEL_STRING_FATAL[0];
+  if (handler != nullptr) {
+    va_list handlerArgs;
+    va_copy(handlerArgs, args);
+    handler(level, file, line, format, handlerArgs);
+    va_end(handlerArgs);
+  }
+  // Fatal logs are followed by abort(), which could happen before the handler gets to send them, so we also print those
+  // directly.
+  if (handler == nullptr || isFatal) {
+    ::printf("[%6lld][%c] ", MsSinceBootForLogs(), level);
+    ::vprintf(format, args);
+    ::printf("\n");
+  }
+  va_end(args);
+}
+#endif  // JL_ESPHOME
 
 void SetupLogging() {
 #if JL_M5_LOGGING
