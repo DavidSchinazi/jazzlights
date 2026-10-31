@@ -72,6 +72,10 @@ class Network {
   // Get a human-readable status string that can be displayed to the user. Not const to allow taking locks.
   virtual std::string GetStatusStr() = 0;
 
+  // Credentials for the Wi-Fi network we join.
+  static constexpr const char* WiFiSsid() { return "JazzLights"; }
+  static constexpr const char* WiFiPassword() { return "burningblink"; }
+
  protected:
   Network() = default;
   // Perform any work necessary to switch to requested state.
@@ -91,8 +95,6 @@ class Network {
     // https://www.iana.org/assignments/multicast-addresses/multicast-addresses.xhtml#multicast-addresses-1
     return "224.0.0.169";
   }
-  static constexpr const char* WiFiSsid() { return "JazzLights"; }
-  static constexpr const char* WiFiPassword() { return "burningblink"; }
 
   // Parse the UDP payload we use over IP networks into a ProtocolMessage.
   bool ParseUdpPayload(uint8_t* udpPayload, size_t udpPayloadLength, const std::string& receiptDetails,
