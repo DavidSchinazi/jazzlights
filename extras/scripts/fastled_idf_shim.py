@@ -7,8 +7,9 @@ import os
 
 shim_dir = os.path.join(env.subst("$PROJECT_DIR"), "extras", "fastled_idf_shim")
 # The Arduino core defines ESP32, which both FastLED and our sources use to detect the platform. FastLED also uses
-# F_CPU, which the Arduino core gets from the board definition.
-cppdefines = ["ESP32", ("F_CPU", env.BoardConfig().get("build.f_cpu"))]
+# F_CPU, which the Arduino core gets from the board definition. The shim provides <Arduino.h>, which would otherwise make
+# FastLED use the Arduino Serial.
+cppdefines = ["ESP32", ("F_CPU", env.BoardConfig().get("build.f_cpu")), ("FL_ESP_USE_IDF_SERIAL", 1)]
 
 env.Append(SRC_BUILD_FLAGS=["-D%s" % d if isinstance(d, str) else "-D%s=%s" % d for d in cppdefines] + ["-I" + shim_dir])
 

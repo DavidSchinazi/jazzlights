@@ -1,7 +1,6 @@
 description: JazzLights, built for the ESPHome external component in extras/esphome/components/jazzlights.
 dependencies:
-  # FastLED is not on the ESP Component Registry. This is ahead of the 3.10.3 in platformio.ini while we check whether
-  # FastLED's newer RMT driver fixes the clouds flickering.
+  # FastLED is not on the ESP Component Registry. Keep this in sync with the version in platformio.ini.
   fastled/fastled:
     git: https://github.com/FastLED/FastLED.git
     version: "3.10.8"

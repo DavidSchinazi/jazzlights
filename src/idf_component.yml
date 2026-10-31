@@ -1,0 +1,5 @@
+dependencies:
+  # FastLED's OTA support includes <mdns.h>, which ESP-IDF 5 moved to a managed component. The Arduino core already
+  # depends on it with this version, so this is only needed by environments that use `framework = espidf` without it.
+  espressif/mdns:
+    version: "^1.2.3"
