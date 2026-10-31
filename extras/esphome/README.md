@@ -47,6 +47,10 @@ light:
 button:
   - platform: jazzlights
     name: Next pattern
+
+number:
+  - platform: jazzlights
+    name: Max brightness
 ```
 
 To sync with other JazzLights devices over Wi-Fi, the clouds need to be on the
@@ -60,6 +64,8 @@ PlatformIO. Bluetooth syncing works regardless of the Wi-Fi network.
   instead. Turning it off hands the clouds back to their default patterns at
   full brightness, like the WebSocket server does.
 - **Next pattern button**: switches to the next JazzLights pattern.
+- **Max brightness number**: caps the brightness of the clouds as a
+  percentage, whether the light is on or off. It's saved across reboots.
 
 ## How it works
 

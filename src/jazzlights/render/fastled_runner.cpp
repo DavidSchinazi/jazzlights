@@ -4,6 +4,8 @@
 
 #ifdef ESP32
 
+#include <algorithm>
+
 #include "jazzlights/util/esp32_shared.h"
 #include "jazzlights/util/instrumentation.h"
 #include "jazzlights/util/log.h"
@@ -106,7 +108,7 @@ void FastLedRunner::SendLedsToFastLed() {
 }
 
 void FastLedRunner::Render() {
-  uint32_t brightness = player_->brightness();
+  uint32_t brightness = std::min(player_->brightness(), player_->maxBrightness());
   // Brightness may be reduced if this exceeds our power budget with the current pattern.
 
 #if JL_MAX_MILLIWATTS > 0

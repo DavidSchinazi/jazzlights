@@ -112,6 +112,9 @@ class Player : private ProtocolEngine::Delegate {
   void SetPowerLimited(bool powerLimited) { powerLimited_ = powerLimited; }
   uint8_t brightness() const { return brightness_; }
   void SetBrightness(uint8_t brightness);
+  // Caps the brightness that we send to the LEDs, regardless of brightness().
+  uint8_t maxBrightness() const { return maxBrightness_; }
+  void SetMaxBrightness(uint8_t maxBrightness) { maxBrightness_ = maxBrightness; }
 
   Precedence basePrecedence() const { return engine_.basePrecedence(); }
   Precedence precedenceGain() const { return engine_.precedenceGain(); }
@@ -216,6 +219,7 @@ class Player : private ProtocolEngine::Delegate {
   bool ready_ = false;
   bool powerLimited_ = false;
   uint8_t brightness_ = 255;
+  uint8_t maxBrightness_ = 255;
 
   std::vector<Strand> strands_;
 

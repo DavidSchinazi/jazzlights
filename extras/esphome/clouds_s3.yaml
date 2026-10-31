@@ -40,3 +40,7 @@ light:
 button:
   - platform: jazzlights
     name: Next pattern
+
+number:
+  - platform: jazzlights
+    name: Max brightness
