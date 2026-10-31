@@ -101,3 +101,6 @@ async def to_code(config):
     esp32.add_idf_sdkconfig_option("CONFIG_ESP_WIFI_IRAM_OPT", False)
     # This mirrors sdkconfig.idf.defaults.esp32, FastLED and our sources assume the board's f_cpu.
     esp32.add_idf_sdkconfig_option("CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240", True)
+    # The FastLED task and its RMT interrupt run on core 1. Keep lwIP's task on core 0 like the Arduino core does, so its
+    # critical sections don't delay the RMT interrupt and make the LEDs flicker.
+    esp32.add_idf_sdkconfig_option("CONFIG_LWIP_TCPIP_TASK_AFFINITY_CPU0", True)
