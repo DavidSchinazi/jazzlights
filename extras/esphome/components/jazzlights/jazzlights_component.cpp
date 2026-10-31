@@ -1,6 +1,11 @@
 #include "esphome/components/jazzlights/jazzlights_component.h"
 
+#include <esp_intr_alloc.h>
 #include <esp_wifi.h>
+
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "esphome/components/wifi/wifi_component.h"
 #include "esphome/core/log.h"
@@ -24,6 +29,35 @@ void LogToEsphome(char level, const char* file, int line, const char* format, va
     default: esphomeLevel = ESPHOME_LOG_LEVEL_INFO; break;
   }
   ::esphome::esp_log_vprintf_(esphomeLevel, file, line, format, args);
+}
+
+// Logs which interrupts are allocated on each CPU, and at which priority. This helps find what could delay the RMT
+// interrupt that FastLED uses to write to the LEDs.
+void LogInterrupts() {
+  char* dump = nullptr;
+  size_t dumpSize = 0;
+  FILE* stream = open_memstream(&dump, &dumpSize);
+  if (stream == nullptr) {
+    ESP_LOGE(TAG, "Failed to open a stream for the interrupt dump");
+    return;
+  }
+  const esp_err_t err = esp_intr_dump(stream);
+  fclose(stream);
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "Failed to dump interrupts: %s", esp_err_to_name(err));
+  } else {
+    // The dump is too long for a single log message, so we log it one line at a time.
+    ESP_LOGCONFIG(TAG, "  Interrupts:");
+    const char* line = dump;
+    while (*line != '\0') {
+      const char* newline = strchr(line, '\n');
+      const int lineLength = newline != nullptr ? newline - line : strlen(line);
+      ESP_LOGCONFIG(TAG, "    %.*s", lineLength, line);
+      if (newline == nullptr) { break; }
+      line = newline + 1;
+    }
+  }
+  free(dump);
 }
 
 }  // namespace
@@ -62,6 +96,8 @@ void JazzLightsComponent::dump_config() {
                 "  Boot message: %s\n"
                 "  Wi-Fi: %s",
                 BOOT_MESSAGE, ::jazzlights::Esp32SocketManager::Get()->GetStatusStr().c_str());
+  // TODO: remove once we know what is making the LEDs flicker.
+  LogInterrupts();
 }
 
 }  // namespace esphome::jazzlights_esphome
