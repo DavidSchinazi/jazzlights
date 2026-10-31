@@ -10,6 +10,7 @@
 
 #include <string>
 
+#include "jazzlights/util/instrumentation.h"
 #include "jazzlights/util/log.h"
 #include "jazzlights/util/pseudorandom.h"
 
@@ -51,6 +52,7 @@ void Esp32NimBleNetwork::StartScanning() {
   discParams.passive = 1;
   discParams.filter_duplicates = 0;
   // Scan forever, we stop scanning when we need to send.
+  JL_LOG_IF_SLOW("ble_gap_disc");
   const int rc = ble_gap_disc(BLE_OWN_ADDR_PUBLIC, BLE_HS_FOREVER, &discParams, &GapEventCallback, this);
   if (rc != 0) {
     jll_error("Failed to start scanning: %d", rc);
@@ -65,6 +67,7 @@ void Esp32NimBleNetwork::StartScanning() {
 void Esp32NimBleNetwork::StopScanning() {
   ESP32_BLE_DEBUG("Stopping scan...");
   if (state_ != State::kScanning) { jll_error("Unexpected state %s stopping scan", StateToString(state_).c_str()); }
+  JL_LOG_IF_SLOW("ble_gap_disc_cancel");
   const int rc = ble_gap_disc_cancel();
   // BLE_HS_EALREADY means that scanning had already stopped, for example due to a host reset.
   if (rc != 0 && rc != BLE_HS_EALREADY) { jll_error("Failed to stop scanning: %d", rc); }
@@ -77,7 +80,11 @@ void Esp32NimBleNetwork::StartAdvertising() {
   if (state_ != State::kIdle) { jll_error("Unexpected state %s starting advertising", StateToString(state_).c_str()); }
   uint8_t advPayload[kMaxAdvPayloadLength];
   const size_t advPayloadLength = GetNextAdvPayloadToSend(advPayload);
-  int rc = ble_gap_adv_set_data(advPayload, advPayloadLength);
+  int rc;
+  {
+    JL_LOG_IF_SLOW("ble_gap_adv_set_data");
+    rc = ble_gap_adv_set_data(advPayload, advPayloadLength);
+  }
   if (rc != 0) {
     jll_error("Failed to set advertising data: %d", rc);
     state_ = State::kIdle;
@@ -92,8 +99,11 @@ void Esp32NimBleNetwork::StartAdvertising() {
   advParams.itvl_max = 0x40;
   advParams.channel_map = 0x07;  // All three advertising channels.
   advParams.filter_policy = BLE_HCI_ADV_FILT_NONE;
-  rc = ble_gap_adv_start(BLE_OWN_ADDR_PUBLIC, /*direct_addr=*/nullptr, BLE_HS_FOREVER, &advParams, &GapEventCallback,
-                         this);
+  {
+    JL_LOG_IF_SLOW("ble_gap_adv_start");
+    rc = ble_gap_adv_start(BLE_OWN_ADDR_PUBLIC, /*direct_addr=*/nullptr, BLE_HS_FOREVER, &advParams, &GapEventCallback,
+                           this);
+  }
   if (rc != 0) {
     jll_error("Failed to start advertising: %d", rc);
     state_ = State::kIdle;
@@ -109,6 +119,7 @@ void Esp32NimBleNetwork::StopAdvertising() {
   if (state_ != State::kAdvertising) {
     jll_error("Unexpected state %s stopping advertising", StateToString(state_).c_str());
   }
+  JL_LOG_IF_SLOW("ble_gap_adv_stop");
   const int rc = ble_gap_adv_stop();
   // BLE_HS_EALREADY means that advertising had already stopped, for example because someone connected to us.
   if (rc != 0 && rc != BLE_HS_EALREADY) { jll_error("Failed to stop advertising: %d", rc); }
@@ -117,7 +128,11 @@ void Esp32NimBleNetwork::StopAdvertising() {
 }
 
 void Esp32NimBleNetwork::MaybeUpdateAdvertisingState() {
-  const std::lock_guard<std::mutex> radioLock(radioMutex_);
+  std::unique_lock<std::mutex> radioLock(radioMutex_, std::defer_lock);
+  {
+    JL_LOG_IF_SLOW("NimBLE radioMutex_ wait");
+    radioLock.lock();
+  }
   if (!ble_hs_synced()) { return; }
   if (sHostResetPending_.exchange(false, std::memory_order_relaxed)) {
     // The host reset cancelled any ongoing scanning or advertising.

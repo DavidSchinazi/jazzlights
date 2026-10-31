@@ -9,9 +9,11 @@
 
 #if JL_TIMING
 #include <freertos/FreeRTOS.h>
-
-#include "jazzlights/util/log.h"
 #endif  // JL_TIMING
+
+#if JL_TIMING || JL_SLOW_SCOPE_LOGS
+#include "jazzlights/util/log.h"
+#endif  // JL_TIMING || JL_SLOW_SCOPE_LOGS
 
 namespace jazzlights {
 
@@ -155,6 +157,33 @@ inline void LedWriteEnd() {}
   } while (false)
 
 #endif  // JL_TIMING
+
+#if JL_SLOW_SCOPE_LOGS
+
+// Logs when the enclosing scope takes longer than kThreshold.
+class SlowScopeLogger {
+ public:
+  explicit SlowScopeLogger(const char* name) : name_(name), start_(TimeMicros()) {}
+  ~SlowScopeLogger() {
+    const Microseconds duration = TimeMicros() - start_;
+    if (duration >= kThreshold) { jll_info("SLOW %s took %lldms", name_, MsForLogs(duration)); }
+  }
+
+ private:
+  static constexpr Microseconds kThreshold = 20000;  // 20ms.
+  const char* name_;
+  const Microseconds start_;
+};
+
+#define JL_LOG_IF_SLOW(name) ::jazzlights::SlowScopeLogger JL_MERGE_TOKENS(slowScopeLogger, __LINE__)(name)
+
+#else  // JL_SLOW_SCOPE_LOGS
+
+#define JL_LOG_IF_SLOW(name) \
+  do {                       \
+  } while (false)
+
+#endif  // JL_SLOW_SCOPE_LOGS
 
 }  // namespace jazzlights
 

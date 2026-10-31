@@ -123,6 +123,12 @@
 #define JL_INSTRUMENTATION 0
 #endif  // JL_INSTRUMENTATION
 
+#ifndef JL_SLOW_SCOPE_LOGS
+// Logs any operation wrapped in JL_LOG_IF_SLOW() that takes longer than 20ms. Useful to find what blocks the primary
+// runloop.
+#define JL_SLOW_SCOPE_LOGS 0
+#endif  // JL_SLOW_SCOPE_LOGS
+
 #ifndef JL_BOUNDS_CHECKS
 #ifdef ESP32
 #ifdef PIO_UNIT_TESTING

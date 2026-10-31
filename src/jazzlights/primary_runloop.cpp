@@ -167,6 +167,7 @@ void SetupPrimaryRunLoop() {
 }
 
 void RunPrimaryRunLoop() {
+  JL_LOG_IF_SLOW("Primary runloop");
   SAVE_TIME_POINT(PrimaryRunLoop, LoopStart);
   GetUi()->RunLoop();
 #if JL_IS_CONFIG(ORRERY_LEADER)
@@ -175,17 +176,27 @@ void RunPrimaryRunLoop() {
   OrreryPlanet::Get()->RunLoop();
 #endif  // ORRERY
   SAVE_TIME_POINT(PrimaryRunLoop, UserInterface);
-  BleNetwork::Get()->RunLoop();
+  {
+    JL_LOG_IF_SLOW("BLE RunLoop");
+    BleNetwork::Get()->RunLoop();
+  }
   SAVE_TIME_POINT(PrimaryRunLoop, Bluetooth);
 
 #if !JL_IS_CONFIG(PHONE)
-  const bool shouldRender = gPlayer.Render();
+  bool shouldRender;
+  {
+    JL_LOG_IF_SLOW("Player Render");
+    shouldRender = gPlayer.Render();
+  }
 #else   // PHONE
   PhonePinHandler::Get()->RunLoop();
   const bool shouldRender = true;
 #endif  // !PHONE
   SAVE_TIME_POINT(PrimaryRunLoop, PlayerCompute);
-  if (shouldRender) { gRunner.Render(); }
+  if (shouldRender) {
+    JL_LOG_IF_SLOW("FastLedRunner Render");
+    gRunner.Render();
+  }
 #if JL_WEBSOCKET_SERVER
   if (WiFiNetwork::Get()->Status() != kInitializing) {
     // This can't be called until after the networks have been initialized.

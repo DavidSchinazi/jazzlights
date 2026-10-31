@@ -5,6 +5,7 @@
 #include "esphome/components/wifi/wifi_component.h"
 #include "esphome/core/log.h"
 #include "jazzlights/network/esp32_socket_manager.h"
+#include "jazzlights/util/instrumentation.h"
 
 namespace esphome::jazzlights_esphome {
 
@@ -17,7 +18,10 @@ void JazzLightsComponent::setup() {
 }
 
 void JazzLightsComponent::loop() {
-  this->maybe_add_wifi_interface_();
+  {
+    JL_LOG_IF_SLOW("Adding Wi-Fi interface");
+    this->maybe_add_wifi_interface_();
+  }
   ::jazzlights::RunPrimaryRunLoop();
 }
 
