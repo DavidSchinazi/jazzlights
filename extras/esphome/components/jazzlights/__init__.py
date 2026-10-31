@@ -82,8 +82,6 @@ async def to_code(config):
     cg.add_build_flag("-DJL_ESPHOME=1")
     cg.add_build_flag("-DJL_ESP32_NIMBLE=1")
     cg.add_build_flag("-DJL_ESP32_WIFI_LINK=1")
-    # TODO: remove once we know what blocks ESPHome's loop while Wi-Fi connects.
-    cg.add_build_flag("-DJL_SLOW_SCOPE_LOGS=1")
     if not is_esp32s3:
         # FastLED refills each LED channel's RMT memory while it sends a frame, and the LEDs flicker if a refill runs
         # late. FastLED gives each channel 2 RMT memory blocks, or 3 while Wi-Fi or Bluetooth is active. The ESP32 only
