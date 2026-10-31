@@ -10,7 +10,9 @@ in the `clouds` PlatformIO environments.
 The component runs the full JazzLights stack: rendering, the protocol engine,
 Bluetooth via NimBLE, and UDP multicast via `Esp32SocketManager`. ESPHome
 manages the Wi-Fi connection itself. It uses the ESP-IDF framework without the
-Arduino core, and currently only supports the clouds on an ATOM Matrix.
+Arduino core, and currently only supports the clouds on an ATOM Matrix. The
+ATOM Matrix's own screen and button aren't used, since Home Assistant controls
+the clouds.
 
 ## Usage
 

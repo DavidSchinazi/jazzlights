@@ -43,7 +43,10 @@ NetworkManager gNetworkManager;
 Player gPlayer(gNetworkManager);
 FastLedRunner gRunner(&gPlayer);
 
-#if JL_IS_CONTROLLER(ATOM_MATRIX)
+#if JL_ESPHOME
+// Home Assistant controls the device through ESPHome, so it doesn't use the on-device UI.
+typedef NoOpUi Esp32UiImpl;
+#elif JL_IS_CONTROLLER(ATOM_MATRIX)
 typedef AtomMatrixUi Esp32UiImpl;
 #elif JL_IS_CONTROLLER(ATOM_S3)
 typedef AtomS3Ui Esp32UiImpl;

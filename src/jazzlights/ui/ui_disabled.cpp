@@ -12,7 +12,7 @@ static constexpr uint8_t kBrightness = JL_BRIGHTNESS_CUSTOM;
 static constexpr uint8_t kBrightness = 2;
 #elif JL_IS_CONFIG(STAFF)
 static constexpr uint8_t kBrightness = 16;
-#elif JL_IS_CONFIG(HAMMER)
+#elif JL_IS_CONFIG(HAMMER) || JL_IS_CONFIG(CLOUDS)
 static constexpr uint8_t kBrightness = 255;
 #else
 static constexpr uint8_t kBrightness = 32;
