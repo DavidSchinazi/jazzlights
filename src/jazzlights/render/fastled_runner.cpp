@@ -8,6 +8,16 @@
 #include "jazzlights/util/instrumentation.h"
 #include "jazzlights/util/log.h"
 
+#if JL_ESP32S3 && FASTLED_VERSION >= 3010008
+// Since FastLED 3.10.8, the ESP32-S3 can drive all our strands in parallel through its LCD_CAM peripheral using DMA.
+// Unlike RMT, it doesn't depend on an interrupt refilling a small buffer while it sends, which made the LEDs flicker
+// while Wi-Fi and Bluetooth were active.
+#define JL_FASTLED_USE_LCD_CAM 1
+#include "platforms/esp/32/drivers/lcd_spi/bus_traits.h"
+#else  // JL_ESP32S3 && FASTLED_VERSION >= 3010008
+#define JL_FASTLED_USE_LCD_CAM 0
+#endif  // JL_ESP32S3 && FASTLED_VERSION >= 3010008
+
 namespace jazzlights {
 
 #if JL_IS_CONFIG(STAFF)
@@ -151,6 +161,10 @@ void FastLedRunner::TaskFunction(void* parameters) {
 }
 
 void FastLedRunner::Setup() {
+#if JL_FASTLED_USE_LCD_CAM
+  // This needs to happen before our renderers call FastLED.addLeds().
+  FastLED.setExclusiveDriver<fl::Bus::FLEX_IO, 0>();
+#endif  // JL_FASTLED_USE_LCD_CAM
   for (auto& renderer : renderers_) { renderer->Setup(); }
 #if JL_FASTLED_RUNNER_HAS_UI
   SetupUi();

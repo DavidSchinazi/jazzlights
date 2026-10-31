@@ -129,6 +129,7 @@ jobs:
         run: |
           cp secrets.example.yaml secrets.yaml
           esphome compile clouds.yaml
+          esphome compile clouds_s3.yaml
 
   pio-native-test:
     runs-on: ubuntu-latest

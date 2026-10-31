@@ -10,17 +10,21 @@ in the `clouds` PlatformIO environments.
 The component runs the full JazzLights stack: rendering, the protocol engine,
 Bluetooth via NimBLE, and UDP multicast via `Esp32SocketManager`. ESPHome
 manages the Wi-Fi connection itself. It uses the ESP-IDF framework without the
-Arduino core, and currently only supports the clouds on an ATOM Matrix. The
-ATOM Matrix's own screen and button aren't used, since Home Assistant controls
-the clouds.
+Arduino core, and currently only supports the clouds on an ATOM Matrix (ESP32)
+or an ATOM S3 Lite (ESP32-S3). The controller's own screen and button aren't
+used, since Home Assistant controls the clouds.
 
 ## Usage
 
 ```sh
 cd extras/esphome
 cp secrets.example.yaml secrets.yaml  # Then fill in real values.
-esphome run clouds.yaml
+esphome run clouds.yaml  # Or clouds_s3.yaml for the ATOM S3 Lite.
 ```
+
+On the ATOM S3 Lite, FastLED drives the LED strips through the ESP32-S3's
+LCD_CAM peripheral using DMA. On the ATOM Matrix it uses RMT, which can flicker
+while Wi-Fi and Bluetooth are active.
 
 To use the component from another ESPHome configuration, add:
 
