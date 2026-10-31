@@ -78,6 +78,8 @@ std::list<ProtocolMessage> Network::GetReceivedMessages() {
   CheckStatus();
   std::list<ProtocolMessage> receivedMessages = GetReceivedMessagesImpl();
   for (ProtocolMessage& message : receivedMessages) {
+    // Networks that manage multiple interfaces stamp each message with the interface it was received on.
+    if (message.receiptNetworkId != 0) { continue; }
     message.receiptNetworkId = id();
     message.receiptNetworkType = Type();
   }

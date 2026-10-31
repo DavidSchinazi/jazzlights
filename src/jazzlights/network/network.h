@@ -103,11 +103,12 @@ class Network {
   // Write a ProtocolMessage into a buffer that can be sent over UDP/IP. Returns length written, or zero on failure.
   size_t WriteUdpPayload(const ProtocolMessage& messageToSend, uint8_t* udpPayload, size_t udpPayloadLength);
 
+  // Allocates a NetworkId that is unique across all networks.
+  static NetworkId NextAvailableId();
+
  private:
   void CheckStatus();
   void Reconnect();
-
-  static NetworkId NextAvailableId();
 
   const NetworkId id_ = NextAvailableId();
 
