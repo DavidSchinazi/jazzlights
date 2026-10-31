@@ -79,14 +79,26 @@ async def to_code(config):
     cg.add_build_flag("-DJL_ESP32_WIFI_LINK=1")
     # TODO: remove once we know what blocks ESPHome's loop while Wi-Fi connects.
     cg.add_build_flag("-DJL_SLOW_SCOPE_LOGS=1")
-    # FastLED's RMT interrupt refills each LED channel's RMT memory while it sends a frame, and the LEDs flicker if a
-    # refill runs late. Doubling each channel's memory from 64 to 128 symbols gives refills twice as much time. The
-    # clouds' 4 strands then use all 8 RMT memory blocks of the ESP32.
-    cg.add_build_flag("-DLED_STRIP_RMT_DEFAULT_MEM_BLOCK_SYMBOLS_MULTIPLIER=2")
+    # FastLED refills each LED channel's RMT memory while it sends a frame, and the LEDs flicker if a refill runs late.
+    # FastLED gives each channel 2 RMT memory blocks, or 3 while Wi-Fi or Bluetooth is active. The ESP32 only has 8, so
+    # we keep it at 2 so that the clouds' 4 strands can all send at the same time.
+    cg.add_build_flag("-DFASTLED_RMT_MEM_BLOCKS_NETWORK_MODE=2")
+    # Our Arduino stub provides <Arduino.h>, which would otherwise make FastLED use the Arduino Serial.
+    cg.add_build_flag("-DFL_ESP_USE_IDF_SERIAL=1")
 
     esp32.add_idf_component(name="jazzlights", path=str(_IDF_COMPONENT_PATH))
     # ESPHome excludes these by default, but FastLED needs them.
-    for idf_component in ("driver", "esp_driver_rmt", "esp_lcd"):
+    for idf_component in (
+        "app_update",
+        "driver",
+        "esp_adc",
+        "esp_driver_i2s",
+        "esp_driver_mcpwm",
+        "esp_driver_rmt",
+        "esp_http_server",
+        "esp_lcd",
+        "esp_mm",
+    ):
         esp32.include_builtin_idf_component(idf_component)
 
     esp32.request_bluetooth()
