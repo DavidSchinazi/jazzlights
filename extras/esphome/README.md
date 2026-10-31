@@ -24,7 +24,12 @@ To use the component from another ESPHome configuration, add:
 
 ```yaml
 external_components:
-  - source: github://DavidSchinazi/jazzlights@main
+  # The github:// shorthand only finds components at the root of the repository, so this needs the long form.
+  - source:
+      type: git
+      url: https://github.com/DavidSchinazi/jazzlights
+      ref: main
+      path: extras/esphome/components
     components: [jazzlights]
 
 jazzlights:
