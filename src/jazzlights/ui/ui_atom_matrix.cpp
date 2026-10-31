@@ -2,7 +2,7 @@
 
 #include "jazzlights/util/config.h"
 
-#if JL_IS_CONTROLLER(ATOM_MATRIX)
+#if JL_IS_CONTROLLER(ATOM_MATRIX) && !JL_ESPHOME
 
 #include <cstdint>
 #include <memory>
@@ -392,4 +392,4 @@ void AtomMatrixUi::FinalSetup() {}
 
 }  // namespace jazzlights
 
-#endif
+#endif  // JL_IS_CONTROLLER(ATOM_MATRIX) && !JL_ESPHOME

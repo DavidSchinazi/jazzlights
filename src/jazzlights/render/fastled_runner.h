@@ -16,11 +16,12 @@
 #include "jazzlights/render/player.h"
 #include "jazzlights/render/renderer.h"
 
-#if JL_IS_CONTROLLER(ATOM_MATRIX)
+// The ESPHome build uses NoOpUi, which doesn't drive the ATOM Matrix screen (see primary_runloop.cpp).
+#if JL_IS_CONTROLLER(ATOM_MATRIX) && !JL_ESPHOME
 #define JL_FASTLED_RUNNER_HAS_UI 1
-#else  // ATOM_MATRIX
+#else  // ATOM_MATRIX && !JL_ESPHOME
 #define JL_FASTLED_RUNNER_HAS_UI 0
-#endif  // ATOM_MATRIX
+#endif  // ATOM_MATRIX && !JL_ESPHOME
 
 #define JL_FASTLED_INIT_ON_OUR_TASK 1
 
