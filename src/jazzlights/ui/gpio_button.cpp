@@ -71,11 +71,15 @@ GpioSwitch<closedIsHigh>::GpioSwitch(uint8_t pin, SwitchInterface& switchInterfa
 // static
 void GpioPin::ConfigurePin(void* arg) {
   GpioPin* gpioPin = reinterpret_cast<GpioPin*>(arg);
+  // Input-only pads (such as GPIO 34-39 on ESP32) have no internal pull resistors. Since ESP-IDF 5.5, asking for one
+  // logs an error, and logging from the small IPC task stack can overflow it, especially under ESPHome which routes
+  // ESP-IDF logs through its own logger.
+  const bool hasPulls = GPIO_IS_VALID_OUTPUT_GPIO(gpioPin->pin_);
   const gpio_config_t config = {
       .pin_bit_mask = (1ULL << gpioPin->pin_),
       .mode = GPIO_MODE_INPUT,
-      .pull_up_en = gpioPin->closedIsHigh_ ? GPIO_PULLUP_DISABLE : GPIO_PULLUP_ENABLE,
-      .pull_down_en = gpioPin->closedIsHigh_ ? GPIO_PULLDOWN_ENABLE : GPIO_PULLDOWN_DISABLE,
+      .pull_up_en = (hasPulls && !gpioPin->closedIsHigh_) ? GPIO_PULLUP_ENABLE : GPIO_PULLUP_DISABLE,
+      .pull_down_en = (hasPulls && gpioPin->closedIsHigh_) ? GPIO_PULLDOWN_ENABLE : GPIO_PULLDOWN_DISABLE,
       .intr_type = GPIO_INTR_ANYEDGE,
   };
   ESP_ERROR_CHECK(gpio_config(&config));
