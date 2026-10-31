@@ -1,0 +1,10 @@
+description: JazzLights, built for the ESPHome external component in extras/esphome/components/jazzlights.
+dependencies:
+  # FastLED is not on the ESP Component Registry. Keep this in sync with the version in platformio.ini.
+  fastled/fastled:
+    git: https://github.com/FastLED/FastLED.git
+    version: "3.10.3"
+  # FastLED requires the Arduino core. This stub provides the parts it uses on top of ESP-IDF instead. Local
+  # components are named after their directory, which matches what FastLED requires.
+  espressif/arduino-esp32:
+    override_path: ../arduino-esp32

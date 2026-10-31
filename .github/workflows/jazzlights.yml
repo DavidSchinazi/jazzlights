@@ -108,6 +108,28 @@ jobs:
           name: binary-size-${{ matrix.pioenv }}
           path: "${{ runner.temp }}/${{ matrix.pioenv }}.txt"
 
+  esphome:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.esphome
+            extras/esphome/.esphome
+          key: ${{ runner.os }}-esphome
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install ESPHome
+        run: pip install esphome==2026.8.1
+      - name: ESPHome Build
+        working-directory: extras/esphome
+        run: |
+          cp secrets.example.yaml secrets.yaml
+          esphome compile clouds.yaml
+
   pio-native-test:
     runs-on: ubuntu-latest
     steps:
@@ -181,6 +203,7 @@ jobs:
       - check-dependency-graph
       - check-led-table
       - extras
+      - esphome
       - pio-build
       - pio-native-test
       - pio-merge

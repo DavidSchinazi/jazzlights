@@ -1,0 +1,2 @@
+description: Minimal stand-in for the Arduino core, providing what FastLED needs on top of ESP-IDF.
+version: "0.0.0"

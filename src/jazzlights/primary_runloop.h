@@ -5,8 +5,11 @@
 
 #ifdef ESP32
 
+#include "jazzlights/render/player.h"
+
 namespace jazzlights {
 
+Player* GetPrimaryPlayer();
 void SetupPrimaryRunLoop();
 void RunPrimaryRunLoop();
 

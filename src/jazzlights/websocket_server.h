@@ -4,11 +4,12 @@
 #include "jazzlights/util/config.h"
 
 #ifndef JL_WEBSOCKET_SERVER
-#if JL_IS_CONFIG(CLOUDS)
+// ESPHome builds talk to Home Assistant through the ESPHome API instead.
+#if JL_IS_CONFIG(CLOUDS) && !JL_ESPHOME
 #define JL_WEBSOCKET_SERVER 1
-#else  // CLOUDS
+#else  // CLOUDS && !JL_ESPHOME
 #define JL_WEBSOCKET_SERVER 0
-#endif  // CLOUDS
+#endif  // CLOUDS && !JL_ESPHOME
 #endif  // JL_WEBSOCKET_SERVER
 
 #if JL_WEBSOCKET_SERVER

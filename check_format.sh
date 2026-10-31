@@ -6,7 +6,7 @@ cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null
 FIX="$([ "$#" -ge "1" ] && [ "$1" == "--fix" ] && echo 1 || echo 0)"
 
 RET_VAL=0
-for f in $(echo "$(find . -name '*.h' ; find . -name '*.cpp')" | grep -v /.pio/ | grep -v /build/) ; do
+for f in $(echo "$(find . -name '*.h' ; find . -name '*.cpp')" | grep -v /.pio/ | grep -v /build/ | grep -v /.esphome/ | grep -v /managed_components/) ; do
   if [ "$FIX" == "1" ] ; then
     clang-format -i "$f"
   else

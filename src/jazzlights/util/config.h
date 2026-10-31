@@ -154,6 +154,12 @@
 #define JL_ESP32_WIFI_LINK 0
 #endif  // JL_ESP32_WIFI_LINK
 
+#ifndef JL_ESPHOME
+// Set when building as an ESPHome external component (see extras/esphome). ESPHome then manages the Wi-Fi link and
+// runs the primary runloop from its own loop.
+#define JL_ESPHOME 0
+#endif  // JL_ESPHOME
+
 #ifndef JL_DISABLE_BLUETOOTH
 #define JL_DISABLE_BLUETOOTH 0
 #endif  // JL_DISABLE_BLUETOOTH

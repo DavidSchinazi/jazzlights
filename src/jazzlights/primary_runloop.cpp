@@ -76,6 +76,8 @@ static Esp32UiImpl* GetUi() {
 WebSocketServer gWebSocketServer(80, gPlayer);
 #endif  // JL_WEBSOCKET_SERVER
 
+Player* GetPrimaryPlayer() { return &gPlayer; }
+
 void SetupPrimaryRunLoop() {
 #if JL_DEBUG
   // Sometimes the UART monitor takes a couple seconds to connect when JTAG is involved.
@@ -136,10 +138,11 @@ void SetupPrimaryRunLoop() {
 
   gNetworkManager.Connect(BleNetwork::Get());
 #if JL_WIFI
-#if JL_ESP32_WIFI_LINK
+#if JL_ESP32_WIFI_LINK && !JL_ESPHOME
+  // With ESPHome, the ESPHome component registers ESPHome's Wi-Fi interface instead.
   Esp32SocketManager::Get()->AddInterface(Esp32WiFiLink::Get()->GetNetif(), NetworkType::kWiFi,
                                           Esp32WiFiLink::Get()->GetLocalDeviceId());
-#endif  // JL_ESP32_WIFI_LINK
+#endif  // JL_ESP32_WIFI_LINK && !JL_ESPHOME
   gNetworkManager.Connect(WiFiNetwork::Get());
 #endif  // JL_WIFI
 #if JL_ETHERNET

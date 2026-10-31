@@ -11,7 +11,9 @@ JazzLights was the basis for large art cars and dozens of individual vests and
 other accessories. It's worked well out in the desert for several years.
 Instructions for building your own vest are [here](extras/docs/VEST.md).
 JazzLights is also integrated with
-[Home Assistant](https://github.com/DavidSchinazi/jazzlights/tree/main/extras/home-assistant).
+[Home Assistant](https://github.com/DavidSchinazi/jazzlights/tree/main/extras/home-assistant),
+either through a custom integration or through
+[ESPHome](https://github.com/DavidSchinazi/jazzlights/tree/main/extras/esphome).
 
 As such, JazzLights is not designed as a general-purpose LED library suitable
 for all projects. Adding new patterns or device layouts requires modifying the
