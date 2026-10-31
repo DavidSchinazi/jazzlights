@@ -23,8 +23,8 @@ esphome run clouds.yaml  # Or clouds_s3.yaml for the ATOM S3 Lite.
 ```
 
 On the ATOM S3 Lite, FastLED drives the LED strips through the ESP32-S3's
-LCD_CAM peripheral using DMA. On the ATOM Matrix it uses RMT, which can flicker
-while Wi-Fi and Bluetooth are active.
+LCD_CAM peripheral using DMA. On the ATOM Matrix it uses RMT, which flickers
+while Wi-Fi and Bluetooth are active, so we recommend the ATOM S3 Lite.
 
 To use the component from another ESPHome configuration, add:
 
