@@ -1,0 +1,45 @@
+esphome:
+  name: jazzlights-esphome-clouds
+  friendly_name: Clouds
+  min_version: 2026.9.0
+  name_add_mac_suffix: false
+
+esp32:
+  variant: esp32
+  board: m5stack-atom
+  framework:
+    type: esp-idf
+
+logger:
+
+api:
+  encryption:
+    key: !secret jazzlights_esphome_clouds__encryption_key
+
+ota:
+  - platform: esphome
+    encryption:
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap: !remove
+
+external_components:
+  - source:
+      type: local
+      path: components
+
+jazzlights:
+
+light:
+  - platform: jazzlights
+    name: Clouds
+
+button:
+  - platform: jazzlights
+    name: Next pattern
+
+number:
+  - platform: jazzlights
+    name: Max brightness
