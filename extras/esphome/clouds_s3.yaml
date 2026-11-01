@@ -1,35 +1,40 @@
-# ESPHome configuration for the clouds on an ATOM S3 Lite (ESP32-S3), using the JazzLights external component in
-# components/jazzlights. See README.md for details. Wi-Fi credentials come from secrets.yaml.
 esphome:
-  name: jazzlights-clouds-s3
-  friendly_name: Clouds
+  name: jazzlights-esphome-clouds-s3
+  friendly_name: Clouds S3
+  min_version: 2026.9.0
+  name_add_mac_suffix: false
 
 esp32:
+  variant: esp32s3
   board: m5stack-atoms3
   flash_size: 8MB
   framework:
     type: esp-idf
 
-external_components:
-  - source:
-      type: local
-      path: components
-
 logger:
-  # The ATOM S3 Lite's USB port is connected to the ESP32-S3's USB Serial/JTAG controller.
   hardware_uart: USB_SERIAL_JTAG
 
 api:
   encryption:
-    key: !secret api_encryption_key
+    key: !secret jazzlights_esphome_clouds_s3__encryption_key
 
 ota:
   - platform: esphome
-    password: !secret ota_password
+    encryption:
 
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
+  ap: !remove
+
+external_components:
+  - source:
+      type: git
+      url: https://github.com/DavidSchinazi/jazzlights
+      ref: main
+      path: extras/esphome/components
+    components: [jazzlights]
+    refresh: 0s # Re-fetch the latest commit on every build.
 
 jazzlights:
 

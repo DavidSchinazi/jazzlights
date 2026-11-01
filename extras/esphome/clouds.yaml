@@ -1,32 +1,38 @@
-# ESPHome configuration for the clouds, using the JazzLights external component in components/jazzlights.
-# See README.md for details. Wi-Fi credentials come from secrets.yaml.
 esphome:
-  name: jazzlights-clouds
+  name: jazzlights-esphome-clouds
   friendly_name: Clouds
+  min_version: 2026.9.0
+  name_add_mac_suffix: false
 
 esp32:
+  variant: esp32
   board: m5stack-atom
   framework:
     type: esp-idf
-
-external_components:
-  - source:
-      type: local
-      path: components
 
 logger:
 
 api:
   encryption:
-    key: !secret api_encryption_key
+    key: !secret jazzlights_esphome_clouds__encryption_key
 
 ota:
   - platform: esphome
-    password: !secret ota_password
+    encryption:
 
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
+  ap: !remove
+
+external_components:
+  - source:
+      type: git
+      url: https://github.com/DavidSchinazi/jazzlights
+      ref: main
+      path: extras/esphome/components
+    components: [jazzlights]
+    refresh: 0s # Re-fetch the latest commit on every build.
 
 jazzlights:
 
