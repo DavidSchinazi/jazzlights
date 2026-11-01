@@ -102,8 +102,6 @@ constexpr Point cloudPixelMap[] = {
 static_assert(JL_LENGTH(cloudPixelMap) == 100, "bad size");
 PixelMap sCloudPixels(JL_LENGTH(cloudPixelMap), cloudPixelMap);
 
-// The ceiling strands flicker from their 18th LED onwards, even at low brightness, so we only send data to their first
-// 17 LEDs for now. The LEDs after that keep whatever they last displayed until they lose power.
 constexpr Point ceiling1PixelMap[] = {
     {1.00,  -1.00},
     {1.00,  -2.00},
@@ -123,6 +121,9 @@ constexpr Point ceiling1PixelMap[] = {
     {1.00, -16.00},
     {1.00, -17.00},
 };
+
+// This strand flickers from its 18th LED onwards, even at low brightness, so we only send data to their first 17 LEDs
+// for now even though there are 46 wired in.
 
 static_assert(JL_LENGTH(ceiling1PixelMap) == 17, "bad size");
 PixelMap sCeiling1Pixels(JL_LENGTH(ceiling1PixelMap), ceiling1PixelMap);
@@ -147,6 +148,9 @@ constexpr Point ceiling2PixelMap[] = {
     {2.00, -17.00},
 };
 
+// This strand flickers from its 18th LED onwards, even at low brightness, so we only send data to their first 17 LEDs
+// for now even though there are 42 wired in.
+
 static_assert(JL_LENGTH(ceiling2PixelMap) == 17, "bad size");
 PixelMap sCeiling2Pixels(JL_LENGTH(ceiling2PixelMap), ceiling2PixelMap);
 
@@ -161,16 +165,12 @@ constexpr Point ceiling3PixelMap[] = {
     {3.00,  -8.00},
     {3.00,  -9.00},
     {3.00, -10.00},
-    {3.00, -11.00},
-    {3.00, -12.00},
-    {3.00, -13.00},
-    {3.00, -14.00},
-    {3.00, -15.00},
-    {3.00, -16.00},
-    {3.00, -17.00},
 };
 
-static_assert(JL_LENGTH(ceiling3PixelMap) == 17, "bad size");
+// The end of this strand reflects on the trim paint from its 10th LED onwards, so we only send data to their first 10
+// LEDs for now even though there are 32 wired in.
+
+static_assert(JL_LENGTH(ceiling3PixelMap) == 10, "bad size");
 PixelMap sCeiling3Pixels(JL_LENGTH(ceiling3PixelMap), ceiling3PixelMap);
 
 }  // namespace
