@@ -280,17 +280,18 @@ first release defines no features.
 - `src/CMakeLists.txt` requires the `mbedtls` component, because without it our sources would
   compile against mbedTLS's default configuration instead of ESP-IDF's, which has a different ABI.
 - It uses the classic mbedTLS 3.6 API: `mbedtls_ecp_*`, `mbedtls_ecdh_*`, `mbedtls_ecdsa_verify`,
-  `mbedtls_md_hmac_*`, `mbedtls_gcm_*` and `mbedtls_sha256_*`. HKDF is built on HMAC rather than
-  `mbedtls_hkdf`, which our sdkconfig doesn't enable, and which would need `info` in one piece.
-  Randomness comes from `esp_fill_random()`.
+  `mbedtls_hkdf`, `mbedtls_gcm_*` and `mbedtls_sha256_*`. Randomness comes from `esp_fill_random()`.
+  `sdkconfig.defaults` enables `CONFIG_MBEDTLS_HKDF_C`, which the prebuilt Arduino libraries already
+  have.
 - Memory, allocated per connection:
   - A receive buffer, created when the first bytes arrive. It starts at 256 bytes and grows as
     needed to hold a hello, a record and any partial TLV, so up to about 32KB. If it can't grow,
     the connection closes. TLVs that get skipped are never stored, however long they are.
   - Two GCM contexts, once the keys are derived, and a running SHA-256 of `signed_data`, which
     means the hellos needn't be kept after that.
-- The task also has one shared 4KB send buffer, and a few KB of temporary mbedTLS heap during
-  each handshake.
+- The task also has one shared 4KB send buffer. Each handshake also uses a few KB of temporary
+  mbedTLS heap, and a temporary buffer for the HKDF `info`, which is about the size of both hellos.
+  If that can't be allocated, the connection closes.
 
 ### Client implementation
 
@@ -419,8 +420,17 @@ our `sdkconfig.defaults`.
   for 30s without interruption, `OTARollbackGuard` calls
   `esp_ota_mark_app_valid_cancel_rollback()` from the primary runloop. Until then `esp_ota_begin()`
   fails, so `OtaBegin` gets a failed `OtaResult`.
-- Only the bootloader rolls back, at boot. So firmware that keeps running without ever marking
-  itself valid stays in place until the device next reboots, and then rolls back.
+- If the new firmware hasn't done that within 10 minutes of booting, `OTARollbackGuard` calls
+  `esp_ota_mark_app_invalid_rollback_and_reboot()`. So firmware that's broken in a way that keeps it
+  running can still be replaced, and a device that's simply out of reach of its network for those
+  10 minutes also goes back to its previous firmware. Clients see their sessions fail, with no
+  `Close`.
+- That timer has its own small task, so a stuck primary runloop can't stop it. The task only exists
+  until the firmware is confirmed.
+- If there's no other firmware to roll back to, the firmware carries on, and can still be confirmed
+  later.
+- The bootloader also rolls back if the firmware reboots for any other reason before it's confirmed,
+  such as by crashing.
 
 The prebuilt bootloaders (`framework-arduinoespressif32-libs/*/bin/bootloader_*.elf`) have rollback
 support on ESP32, ESP32-S3, ESP32-C3 and ESP32-C6. Other builds compile their own bootloader from
@@ -461,15 +471,15 @@ Flash and static RAM added to each environment:
 
 | Environment | Channel flash | Channel RAM | OTA flash | OTA RAM | Total flash |
 |---|---|---|---|---|---|
-| `vest` | 16,440 | 152 | 5,064 | 216 | 21,504 |
-| `vest_c6` | 17,614 | 160 | 5,862 | 216 | 23,476 |
-| `vest_espidf` | 14,488 | 168 | 4,992 | 216 | 19,480 |
+| `vest` | 16,580 | 152 | 5,632 | 248 | 22,212 |
+| `vest_c6` | 17,988 | 160 | 6,520 | 248 | 24,508 |
+| `vest_espidf` | 14,640 | 168 | 5,576 | 248 | 20,216 |
 
 On `vest`, about 10KB of the channel is its own code. The rest is what it newly pulls in, mainly
 AES-GCM, and lwIP's and the VFS's code for `listen()`, `accept()` and `poll()`. mbedTLS's ECP,
 bignum, ECDH, ECDSA and SHA-256 are already linked for Wi-Fi WPA3, and `app_update` already is. At
-run time, the task adds its 8KB stack and 4KB send buffer, which firmware with no keys doesn't
-allocate.
+run time, the channel's task adds its 8KB stack and 4KB send buffer, which firmware with no keys
+doesn't allocate. The rollback task adds a 4KB stack, only until new firmware is confirmed.
 
 ## Testing
 
@@ -531,6 +541,10 @@ allocate.
   - a client failing mid-update, after which another client can update
   - a reboot, which must send `Close` to the other clients
   - too little or too much data, a wrong SHA-256, an image for the wrong chip or project
+- Rollback, with fake flash and shorter times:
+  - firmware that works, which must get confirmed and must not roll back
+  - no network, no rendering and a stuck primary runloop, which must each roll back on time
+  - nothing to roll back to, which must carry on, and can still get confirmed later
 
 ### Still to do on hardware
 
@@ -545,7 +559,9 @@ No device has run this code yet, so all of these remain:
 - A power cut during the transfer.
 - LEDs showing their normal patterns throughout an update.
 - An image for the wrong chip, which `esp_ota_end()` must reject.
-- An image that crashes at boot, or never marks itself valid, which must roll back at its next boot.
+- An image that crashes at boot, which must roll back when it reboots.
+- An image that never marks itself valid, which must roll back after 10 minutes.
+- A device that loses its network for the first 10 minutes after an update, which must roll back.
 - Measure the transfer time for a full 1.7MB image, how long a handshake takes on classic ESP32,
   how much handshakes and flash writes delay other sessions and LED rendering, how much memory
-  each connection costs, and how much of its 8KB stack the task uses.
+  each connection costs, and how much of their stacks the channel and rollback tasks use.

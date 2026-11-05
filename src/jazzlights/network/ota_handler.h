@@ -8,6 +8,8 @@
 #include <esp_ota_ops.h>
 #include <mbedtls/sha256.h>
 
+#include <atomic>
+
 #include "jazzlights/network/secure_channel_server.h"
 #include "jazzlights/util/time.h"
 
@@ -48,18 +50,40 @@ class OTAHandler : public SecureChannelHandler {
   bool rebootWhenDone_ = false;
 };
 
-// Decides when a newly updated firmware is working, so the bootloader doesn't roll it back on the next boot. Only used
-// on the primary runloop.
+// Decides whether a newly updated firmware is working. If it does, the firmware stays. If it doesn't decide in time,
+// including because the primary runloop is stuck, this rolls back to the previous firmware by rebooting.
 class OTARollbackGuard {
  public:
+  static constexpr Microseconds kDefaultConnectedTime = 30 * kMicrosecondsPerSecond;
+  static constexpr Microseconds kDefaultTimeout = 10 * 60 * kMicrosecondsPerSecond;
+
+  explicit OTARollbackGuard(Microseconds connectedTime = kDefaultConnectedTime, Microseconds timeout = kDefaultTimeout)
+      : connectedTime_(connectedTime), timeout_(timeout) {}
+
+  // Must be called once at startup, before anything that could get stuck.
+  void Start();
+
   // Called once per primary runloop, saying whether that runloop rendered LEDs and whether the network is connected.
   void RunLoop(bool rendered, bool networkConnected);
 
  private:
-  bool checkedState_ = false;
-  bool done_ = false;
-  bool hasRendered_ = false;
-  OptionalMicroseconds connectedSince_;
+  enum class State {
+    kInactive,  // The running firmware doesn't need confirming, or we haven't started.
+    kPending,
+    kConfirmed,
+    kRollingBack,
+  };
+
+  static void TimeoutTaskFunction(void* parameters);
+  void RunTimeoutTask();
+
+  const Microseconds connectedTime_;
+  const Microseconds timeout_;
+  // Whichever of the primary runloop and the timeout task moves this out of kPending gets to act on it.
+  std::atomic<State> state_{State::kInactive};
+  Microseconds deadline_ = 0;            // Only modified before the timeout task starts.
+  bool hasRendered_ = false;             // Only used on the primary runloop.
+  OptionalMicroseconds connectedSince_;  // Only used on the primary runloop.
 };
 
 }  // namespace jazzlights

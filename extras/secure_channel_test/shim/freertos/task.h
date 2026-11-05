@@ -1,10 +1,15 @@
 #ifndef JL_SHIM_FREERTOS_TASK_H
 #define JL_SHIM_FREERTOS_TASK_H
 
+#include <pthread.h>
+
 #include <chrono>
 #include <thread>
 
 #include "freertos/FreeRTOS.h"
+
+// Only supports a task deleting itself, which ends its thread.
+inline void vTaskDelete(TaskHandle_t /*task*/) { pthread_exit(nullptr); }
 
 inline void vTaskDelay(TickType_t ticks) { std::this_thread::sleep_for(std::chrono::milliseconds(ticks)); }
 

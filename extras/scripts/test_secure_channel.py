@@ -34,6 +34,7 @@ HOST = TEST_HOST or "127.0.0.1"
 ECHO = 1000
 UNKNOWN_TYPE = 2000
 RESTART_EXIT_CODE = 42
+ROLLBACK_EXIT_CODE = 43
 # Faster than the server's timeouts, slow enough for anything to arrive.
 CLOSE_TIMEOUT_SECONDS = 5 if NATIVE else 15
 NATIVE_SOFTWARE_VERSION = bytes(range(20))
@@ -62,6 +63,7 @@ class ServerTestCase(unittest.TestCase):
         self.clients = []
         self.image_out = None
         self.expect_restart = False
+        self.restart_exit_code = RESTART_EXIT_CODE
         self.server = None
         if not NATIVE:
             return
@@ -102,7 +104,7 @@ class ServerTestCase(unittest.TestCase):
         if self.expect_restart:
             self.server.wait(timeout=5)
         code = self.server.poll()
-        if code is not None and not (self.expect_restart and code == RESTART_EXIT_CODE):
+        if code is not None and not (self.expect_restart and code == self.restart_exit_code):
             with open(self.log_path, encoding="utf-8") as f:
                 self.fail("server exited with code %s:\n%s" % (code, f.read()))
 
@@ -961,6 +963,72 @@ class OtaPendingVerifyTest(ServerTestCase):
         tlv_type, value = client.receive()
         self.assertEqual(tlv_type, ota_upload.OTA_RESULT)
         self.assertEqual(ota_upload.result_status(value), 5)
+
+
+def rollback_guard_test(*args):
+    """Makes a base class whose server reports this to OTARollbackGuard, which confirms after 1s and times out at 3s."""
+
+    @unittest.skipUnless(NATIVE, "needs the fake flash")
+    class RollbackGuardTestBase(ServerTestCase):
+        server_args = ("--pending-verify", "--rollback-guard", *args)
+
+        def update_status_after_seconds(self, seconds):
+            """Waits and returns the status from an OtaBegin, or None if it was allowed to start."""
+            time.sleep(seconds)
+            client = self.connected_client()
+            begin_update(client, make_image())
+            tlv_type, value = client.receive()
+            return ota_upload.result_status(value) if tlv_type == ota_upload.OTA_RESULT else None
+
+        def assert_rolls_back(self):
+            self.assertEqual(self.update_status_after_seconds(0), 5)
+            self.expect_restart = True
+            self.restart_exit_code = ROLLBACK_EXIT_CODE
+            start = time.monotonic()
+            self.server.wait(timeout=6)
+            # We've already used a little of the 3s. The timeout task checks once per second.
+            self.assertLess(time.monotonic() - start, 5)
+            self.assertEqual(self.server.returncode, ROLLBACK_EXIT_CODE)
+
+    return RollbackGuardTestBase
+
+
+class RollbackGuardWorkingTest(rollback_guard_test("working")):
+    def test_confirms_and_never_rolls_back(self):
+        self.assertEqual(self.update_status_after_seconds(0), 5)
+        self.assertIsNone(self.update_status_after_seconds(1.5))
+        # Still running long after the timeout would have fired, and updates can carry on.
+        time.sleep(3)
+        self.assertIsNone(self.server.poll())
+        self.assert_echo_works(self.connected_client())
+
+
+class RollbackGuardNoNetworkTest(rollback_guard_test("no-network")):
+    def test_rolls_back(self):
+        self.assert_rolls_back()
+
+
+class RollbackGuardNoRenderTest(rollback_guard_test("no-render")):
+    def test_rolls_back(self):
+        self.assert_rolls_back()
+
+
+class RollbackGuardHungTest(rollback_guard_test("hung")):
+    def test_rolls_back_without_the_primary_runloop(self):
+        self.assert_rolls_back()
+
+
+class RollbackGuardImpossibleTest(rollback_guard_test("no-network", "--rollback-impossible")):
+    def test_keeps_running_unconfirmed(self):
+        time.sleep(5)
+        self.assertIsNone(self.server.poll())
+        self.assertEqual(self.update_status_after_seconds(0), 5)
+
+
+class RollbackGuardImpossibleThenConfirmedTest(rollback_guard_test("late-network", "--rollback-impossible")):
+    def test_can_still_confirm_after_failing_to_roll_back(self):
+        self.assertEqual(self.update_status_after_seconds(0), 5)
+        self.assertIsNone(self.update_status_after_seconds(6))
 
 
 class OtaClientTestBase(unittest.TestCase):

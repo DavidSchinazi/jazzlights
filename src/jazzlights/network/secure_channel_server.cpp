@@ -12,6 +12,7 @@
 #include <mbedtls/ecdsa.h>
 #include <mbedtls/ecp.h>
 #include <mbedtls/gcm.h>
+#include <mbedtls/hkdf.h>
 #include <mbedtls/md.h>
 #include <mbedtls/platform_util.h>
 #include <mbedtls/sha256.h>
@@ -100,33 +101,19 @@ bool ReadPublicKey(const ScopedP256& p256, const uint8_t* encoded, mbedtls_ecp_p
          mbedtls_ecp_check_pubkey(&p256.group, point) == 0;
 }
 
-// HKDF-SHA256 with an empty salt, whose info is the label and both hellos. This uses HMAC directly rather than
-// mbedtls_hkdf because that isn't enabled in our sdkconfig, and because it would need info to be contiguous.
+// HKDF-SHA256 with an empty salt, whose info is the label and both hellos.
 bool DeriveKeyMaterial(const uint8_t* sharedSecret, const uint8_t* clientHello, size_t clientHelloLength,
                        const uint8_t* serverHello, size_t serverHelloLength, uint8_t* keyMaterial) {
-  const mbedtls_md_info_t* sha256 = mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
-  const uint8_t salt[kHashSize] = {};
-  uint8_t prk[kHashSize];
-  uint8_t block[kHashSize];
-  bool success = mbedtls_md_hmac(sha256, salt, sizeof(salt), sharedSecret, kCoordinateSize, prk) == 0;
-  mbedtls_md_context_t context;
-  mbedtls_md_init(&context);
-  success = success && mbedtls_md_setup(&context, sha256, /*hmac=*/1) == 0;
-  uint8_t counter = 1;
-  for (size_t offset = 0; success && offset < kKeyMaterialSize; offset += kHashSize, counter++) {
-    success = mbedtls_md_hmac_starts(&context, prk, sizeof(prk)) == 0 &&
-              (counter == 1 || mbedtls_md_hmac_update(&context, block, sizeof(block)) == 0) &&
-              mbedtls_md_hmac_update(&context, reinterpret_cast<const uint8_t*>(kKeysLabel), sizeof(kKeysLabel)) == 0 &&
-              mbedtls_md_hmac_update(&context, clientHello, clientHelloLength) == 0 &&
-              mbedtls_md_hmac_update(&context, serverHello, serverHelloLength) == 0 &&
-              mbedtls_md_hmac_update(&context, &counter, sizeof(counter)) == 0 &&
-              mbedtls_md_hmac_finish(&context, block) == 0;
-    if (success) { memcpy(keyMaterial + offset, block, std::min(kHashSize, kKeyMaterialSize - offset)); }
-  }
-  mbedtls_md_free(&context);
-  mbedtls_platform_zeroize(prk, sizeof(prk));
-  mbedtls_platform_zeroize(block, sizeof(block));
-  return success;
+  const size_t infoLength = sizeof(kKeysLabel) + clientHelloLength + serverHelloLength;
+  uint8_t* info = static_cast<uint8_t*>(malloc(infoLength));
+  if (info == nullptr) { return false; }
+  memcpy(info, kKeysLabel, sizeof(kKeysLabel));
+  memcpy(info + sizeof(kKeysLabel), clientHello, clientHelloLength);
+  memcpy(info + sizeof(kKeysLabel) + clientHelloLength, serverHello, serverHelloLength);
+  const int result = mbedtls_hkdf(mbedtls_md_info_from_type(MBEDTLS_MD_SHA256), /*salt=*/nullptr, /*salt_len=*/0,
+                                  sharedSecret, kCoordinateSize, info, infoLength, keyMaterial, kKeyMaterialSize);
+  free(info);
+  return result == 0;
 }
 
 // One direction of a session's record protection.

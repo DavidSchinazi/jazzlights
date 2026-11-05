@@ -5,6 +5,8 @@
 #include <esp_app_desc.h>
 #include <esp_chip_info.h>
 #include <esp_system.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 #include <string.h>
 
 #include <algorithm>
@@ -47,7 +49,11 @@ constexpr uint8_t kSoftwareVersion[] = {JL_SOFTWARE_VERSION_BYTES};
 static_assert(sizeof(kSoftwareVersion) == 20 || sizeof(kSoftwareVersion) == 52);
 constexpr char kBuildEnvironment[] = JL_BUILD_ENVIRONMENT;
 constexpr size_t kSha256Size = 32;
-constexpr Microseconds kRollbackConnectedTime = 30 * kMicrosecondsPerSecond;
+// Rolling back writes to flash then reboots, which is all this task does. It only exists until the firmware is
+// confirmed.
+constexpr uint32_t kRollbackTaskStackSize = 4096;
+constexpr UBaseType_t kRollbackTaskPriority = tskIDLE_PRIORITY + 1;
+constexpr BaseType_t kRollbackTaskCore = 0;
 
 uint64_t ChipModel() {
   esp_chip_info_t chipInfo;
@@ -240,18 +246,23 @@ void OTAHandler::FailUpdate(uint64_t status) {
   SendResult(*session, status);
 }
 
-void OTARollbackGuard::RunLoop(bool rendered, bool networkConnected) {
-  if (done_) { return; }
-  if (!checkedState_) {
-    checkedState_ = true;
-    esp_ota_img_states_t state;
-    if (esp_ota_get_state_partition(esp_ota_get_running_partition(), &state) != ESP_OK ||
-        state != ESP_OTA_IMG_PENDING_VERIFY) {
-      done_ = true;
-      return;
-    }
-    jll_info("OTA waiting to confirm that this new firmware works");
+void OTARollbackGuard::Start() {
+  esp_ota_img_states_t state;
+  if (esp_ota_get_state_partition(esp_ota_get_running_partition(), &state) != ESP_OK ||
+      state != ESP_OTA_IMG_PENDING_VERIFY) {
+    return;
   }
+  jll_info("OTA waiting to confirm that this new firmware works");
+  deadline_ = TimeMicros() + timeout_;
+  state_.store(State::kPending);
+  if (xTaskCreatePinnedToCore(TimeoutTaskFunction, "JL_OTARollback", kRollbackTaskStackSize, /*parameters=*/this,
+                              kRollbackTaskPriority, /*taskHandle=*/nullptr, kRollbackTaskCore) != pdPASS) {
+    jll_error("OTA failed to create rollback task, so this firmware will only roll back if it gets rebooted");
+  }
+}
+
+void OTARollbackGuard::RunLoop(bool rendered, bool networkConnected) {
+  if (state_.load() != State::kPending) { return; }
   hasRendered_ = hasRendered_ || rendered;
   if (!networkConnected) {
     connectedSince_ = std::nullopt;
@@ -259,14 +270,33 @@ void OTARollbackGuard::RunLoop(bool rendered, bool networkConnected) {
   }
   const Microseconds now = TimeMicros();
   if (!connectedSince_) { connectedSince_ = now; }
-  if (!hasRendered_ || now - *connectedSince_ < kRollbackConnectedTime) { return; }
+  if (!hasRendered_ || now - *connectedSince_ < connectedTime_) { return; }
+  State expected = State::kPending;
+  if (!state_.compare_exchange_strong(expected, State::kConfirmed)) { return; }
   const esp_err_t err = esp_ota_mark_app_valid_cancel_rollback();
   if (err != ESP_OK) {
     jll_error("OTA failed to mark this firmware valid with error %s", esp_err_to_name(err));
   } else {
     jll_info("OTA marked this firmware valid");
   }
-  done_ = true;
+}
+
+// static
+void OTARollbackGuard::TimeoutTaskFunction(void* parameters) {
+  reinterpret_cast<OTARollbackGuard*>(parameters)->RunTimeoutTask();
+  vTaskDelete(nullptr);
+}
+
+void OTARollbackGuard::RunTimeoutTask() {
+  while (state_.load() == State::kPending && TimeMicros() < deadline_) { vTaskDelay(pdMS_TO_TICKS(1000)); }
+  State expected = State::kPending;
+  if (!state_.compare_exchange_strong(expected, State::kRollingBack)) { return; }
+  jll_error("OTA rolling back because this firmware wasn't confirmed in time");
+  // This only returns if it failed, such as when there's no other firmware to roll back to. This firmware then carries
+  // on, and can still get confirmed later.
+  const esp_err_t err = esp_ota_mark_app_invalid_rollback_and_reboot();
+  jll_error("OTA failed to roll back with error %s", esp_err_to_name(err));
+  state_.store(State::kPending);
 }
 
 }  // namespace jazzlights

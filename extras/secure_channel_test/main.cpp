@@ -1,10 +1,15 @@
 // The server that extras/scripts/test_secure_channel.py tests, see CMakeLists.txt.
 //
-// Usage: secure-channel-test-server [--no-partition] [--pending-verify] [--image-out <path>] <hex public key>...
+// Usage: secure-channel-test-server [--no-partition] [--pending-verify] [--image-out <path>]
+//                                   [--rollback-guard <mode>] [--rollback-impossible] <hex public key>...
+//
+// --rollback-guard runs OTARollbackGuard with shorter times, where <mode> says what the fake primary runloop reports:
+// working, no-network, no-render, late-network, or hung to not run it at all.
 
 #include <signal.h>
 #include <unistd.h>
 
+#include <atomic>
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -19,6 +24,7 @@
 namespace {
 
 constexpr int kRestartExitCode = 42;
+constexpr int kRollbackExitCode = 43;
 constexpr uint32_t kPartitionSize = 1024 * 1024;
 // Where these are in an actual firmware image.
 constexpr size_t kImageChipIdOffset = 12;
@@ -29,7 +35,8 @@ const char kRunningProject[] = "jazzlights";
 const esp_partition_t gRunningPartition = {kPartitionSize};
 const esp_partition_t gUpdatePartition = {kPartitionSize};
 bool gHasPartition = true;
-bool gPendingVerify = false;
+std::atomic<bool> gPendingVerify{false};
+bool gRollbackImpossible = false;
 std::string gImageOutPath;
 std::vector<uint8_t> gPartitionData;
 bool gWriting = false;
@@ -116,12 +123,20 @@ esp_err_t esp_ota_mark_app_valid_cancel_rollback() {
   return ESP_OK;
 }
 
+esp_err_t esp_ota_mark_app_invalid_rollback_and_reboot() {
+  if (gRollbackImpossible) { return ESP_FAIL; }
+  printf("Rolling back\n");
+  fflush(stdout);
+  _exit(kRollbackExitCode);
+}
+
 int main(int argc, char** argv) {
   using namespace jazzlights;
   // Writing to a socket that the test closed must not kill us.
   signal(SIGPIPE, SIG_IGN);
   setvbuf(stdout, nullptr, _IOLBF, 0);
   std::vector<SecureChannelPublicKey> keys;
+  std::string rollbackGuardMode;
   for (int i = 1; i < argc; i++) {
     const std::string arg = argv[i];
     if (arg == "--no-partition") {
@@ -130,6 +145,10 @@ int main(int argc, char** argv) {
       gPendingVerify = true;
     } else if (arg == "--image-out") {
       gImageOutPath = argv[++i];
+    } else if (arg == "--rollback-guard") {
+      rollbackGuardMode = argv[++i];
+    } else if (arg == "--rollback-impossible") {
+      gRollbackImpossible = true;
     } else {
       if (arg.size() != 2 * kSecureChannelPublicKeySize) {
         fprintf(stderr, "Invalid public key %s\n", arg.c_str());
@@ -148,5 +167,23 @@ int main(int argc, char** argv) {
   server->RegisterHandler(OTAHandler::kFirstType, OTAHandler::kLastType, &otaHandler);
   server->RegisterHandler(SecureChannelEchoHandler::kEchoType, SecureChannelEchoHandler::kEchoType, &echoHandler);
   server->Start(keys.data(), keys.size());
-  while (true) { pause(); }
+  if (rollbackGuardMode.empty()) {
+    while (true) { pause(); }
+  }
+  constexpr Microseconds kConnectedTime = 1 * kMicrosecondsPerSecond;
+  constexpr Microseconds kTimeout = 3 * kMicrosecondsPerSecond;
+  constexpr Microseconds kLateNetworkTime = 4 * kMicrosecondsPerSecond;
+  static OTARollbackGuard guard(kConnectedTime, kTimeout);
+  guard.Start();
+  if (rollbackGuardMode == "hung") {
+    while (true) { pause(); }
+  }
+  const Microseconds start = TimeMicros();
+  while (true) {
+    const bool rendered = rollbackGuardMode != "no-render";
+    const bool connected = rollbackGuardMode == "working" || rollbackGuardMode == "no-render" ||
+                           (rollbackGuardMode == "late-network" && TimeMicros() - start >= kLateNetworkTime);
+    guard.RunLoop(rendered, connected);
+    usleep(10000);
+  }
 }

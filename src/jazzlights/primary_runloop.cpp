@@ -150,6 +150,10 @@ void SetupPrimaryRunLoop() {
 
   SetupLogging();
 
+#if JL_OTA
+  gOtaRollbackGuard.Start();
+#endif  // JL_OTA
+
   GetUi()->SetFastLedRunner(&gRunner);
   GetUi()->InitialSetup();
 
