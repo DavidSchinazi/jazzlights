@@ -1,6 +1,6 @@
-# Proposal: Secure Channel, with OTA as the First Use
+# Secure Channel, with OTA as the First Use
 
-Status: proposal, not implemented.
+Status: implemented and tested natively. The tests on hardware under "Testing" are still to do.
 
 - **The secure channel** authenticates the client, sets up session keys and carries
   encrypted TLVs. It knows nothing about firmware.
@@ -16,7 +16,7 @@ key, such as a laptop running an upload script.
   several uses.
 - Later firmware can add TLVs without breaking older peers.
 - No new Arduino dependency: only lwIP sockets, mbedTLS and ESP-IDF's `app_update`, which are
-  in both `framework = arduino` and `framework = espidf, arduino` builds.
+  in `framework = arduino`, `framework = espidf, arduino` and `framework = espidf` builds alike.
 - Works on the local network, without GitHub or the public Internet.
 - Keep the binary size increase as small as possible.
 
@@ -25,8 +25,13 @@ key, such as a laptop running an upload script.
 - Authenticating the server to the client, now or later.
 - Securing the existing UDP multicast protocol.
 - Hardware Secure Boot or flash encryption, which permanently burn eFuses.
-- Environments without an IP network (NimBLE-only, `JL_WIFI=0`), which keep updating over
-  serial.
+- Environments where the channel can't run, which keep updating over serial:
+  - No IP network (NimBLE-only, `JL_WIFI=0`).
+  - Ethernet only through the Arduino Ethernet library, which doesn't use lwIP. Environments that
+    also have Wi-Fi use the channel over Wi-Fi.
+  - Ethernet with Bluetooth disabled (`gauntlet_esp_ethernet_only`). With no radio running,
+    `esp_fill_random()` isn't truly random, so it can't provide session keys.
+- ESPHome builds, which have ESPHome's own OTA updates.
 
 ## Overview
 
@@ -73,6 +78,9 @@ in order and exactly once. It doesn't know who that peer is. So for every use of
   `JL_CLIENT_KEY` environment variable.
 - The public keys go in `src/jazzlights/network/secure_channel_keys.h`, as an array of
   65-byte uncompressed P-256 points (`0x04 || X || Y`). All keys have the same permissions.
+  `secure_channel.py --key <pem>` prints a public key in the format that file uses.
+- The server doesn't start while that list is empty, so firmware without keys doesn't open the
+  port or run the task. The list ships empty, so each deployment adds its own keys.
 - To rotate or revoke keys, ship firmware with a new list. If every private key is lost, fall
   back to a serial flash.
 
@@ -99,6 +107,8 @@ Parser rules:
 - Unknown types are skipped at every level, without being stored.
 - These are errors, which close the connection: a Length over the maximum or past the end of
   its container, a known field that's repeated or the wrong size, and a missing required field.
+  That includes unknown types, whose Length is checked like any other, and containers with no
+  fields defined yet, which must still be well formed.
 - Fields can come in any order.
 - Compare decoded varints, never raw bytes. Parse them into 64 bits and compare before
   narrowing.
@@ -178,10 +188,10 @@ Until this succeeds, the server sends no encrypted data and handles no TLVs that
 
 #### 6. Server → client: `ServerReady` (20 bytes alone in a `Record`)
 
-Its Value is fields, and none are defined yet. The server sends it before handling any TLVs
-that follow `ClientReady`, and before sending any TLVs of type 3 and up. Before `ServerReady`,
-the client skips TLVs of type 3 and up like unknown ones. A second `ServerReady` closes the
-connection.
+Its Value is fields, and none are defined yet. The server sends it right after checking the
+signature, before handling any TLVs that follow `ClientReady`, and before sending any TLVs of
+type 3 and up. Before `ServerReady`, the client skips TLVs of type 3 and up like unknown ones. A
+second `ServerReady` closes the connection.
 
 ### Records
 
@@ -202,13 +212,17 @@ Record Value = AES-128-GCM(key, nonce, plaintext, aad) || tag (16 bytes)
 |---|---|---|---|
 | 0 | `ClientReady` | client → server | fields, see "Handshake" |
 | 1 | `ServerReady` | server → client | fields, see "Handshake" |
-| 2 | `Close` | both | fields: `status` (type 0, integer); 0 means no error. Nothing can follow it, and the receiver closes the connection. |
+| 2 | `Close` | both | fields: `status` (type 0, integer); 0 means no error, 1 means a use of the channel received a malformed TLV. Nothing can follow it, and the receiver closes the connection. |
 | 3 and up | defined by each use | | see "Part 2: OTA" for the first ones |
 
 A ready message in the wrong direction closes the connection. A TLV is handled only once every
 record holding part of it has passed authentication. If a
 record fails authentication, or the connection ends without a `Close`, the session has failed
 and the connection closes.
+
+The channel itself reports errors only by closing the connection, without sending a `Close`. Each
+use can send a `Close` with a status through `SecureSession`. A session ended cleanly only if a
+`Close` with status 0 was sent or received, with nothing already received after it.
 
 ### Feature negotiation
 
@@ -222,46 +236,57 @@ first release defines no features.
 - Each session has its own connection, keys and state.
 - The server allows 8 connections at once. If it's full, a new connection replaces the oldest one still in its handshake. If all are authenticated, the new
   connection is closed.
-- The server closes a connection if `ClientHello` or `ClientReady` hasn't arrived within 10s,
-  whatever else it receives in that time.
-- The server closes a session after 60s with no records from the client. A use
+- The server closes a connection if the handshake hasn't finished 10s after it accepted it,
+  whatever else it receives in that time. That's one deadline, covering `ClientHello` and
+  `ClientReady` together.
+- The server closes a session after 60s with no authenticated records from the client. A use
   with nothing to send for longer defines its own keepalive TLV.
 
 ### Server implementation
 
-- Add `TLVReader` and `TLVWriter` in `src/jazzlights/network/tlv.h`.
-- Add `SecureChannelServer` in `src/jazzlights/network/`. One FreeRTOS task serves all
-  connections using `select()` and non-blocking reads, as `Esp32SocketManager` does.
-- Each use implements this interface and registers it for its range of types. Types with no
-  handler are skipped. Handlers run on the shared task, so they must not block for long. The
-  channel reassembles a TLV that spans records, so `OnTLV` always gets the whole Value.
+- `TLVReader`, `TLVWriter` and `ParseTLVFields` are in `src/jazzlights/network/tlv.h`.
+- `SecureChannelServer` is in `src/jazzlights/network/`. One FreeRTOS task serves all connections
+  using `poll()` and non-blocking reads, as `Esp32SocketManager` does. It runs at the lowest
+  priority above idle, on core 0, with an 8KB stack, so that handshakes don't get in the way of
+  rendering or of the network stack. It starts once the network stack is up.
+- Each use implements this interface and registers it for its range of types with
+  `RegisterHandler()`. Types with no handler are skipped. Handlers run on the shared task, so they
+  must not block for long. The channel reassembles a TLV that spans records, so `OnTLV` always gets
+  the whole Value.
   ```cpp
   class SecureSession {
    public:
-    bool Send(uint64_t type, const uint8_t* value, size_t length);
-    void Close(uint64_t status);
+    virtual bool Send(uint64_t type, const uint8_t* value, size_t length) = 0;
+    virtual void Close(uint64_t status) = 0;
   };
 
   class SecureChannelHandler {
    public:
     virtual ~SecureChannelHandler() = default;
     virtual void OnTLV(SecureSession& session, uint64_t type, const uint8_t* value, size_t length) = 0;
+    // Called once for each authenticated session, after it ended and outside of any OnTLV.
     // `clean` is false if the session failed or the connection was lost.
     virtual void OnSessionEnd(SecureSession& session, bool clean) = 0;
   };
   ```
 - `Send` puts each TLV in its own record, and splits one that doesn't fit in its 4KB buffer.
-  It waits only briefly for room in the socket's buffer, and closes the session if the client
+  It waits up to 500ms for room in the socket's buffer, and closes the session if the client
   stops reading.
-- Gate new files with a `JL_SECURE_CHANNEL` macro in `util/config.h`, because `extras/` compiles
-  `src/jazzlights/` natively without mbedTLS. The TLV code doesn't need the gate.
-- Use the classic mbedTLS 3.6 API: `mbedtls_ecp_*`, `mbedtls_ecdh_*`, `mbedtls_ecdsa_verify`,
-  `mbedtls_hkdf`, `mbedtls_gcm_*` and `mbedtls_sha256_*`. Get randomness from
-  `esp_fill_random()`.
+- `CloseAllSessionsAndFlush()` sends a `Close` with status 0 on every authenticated session and
+  closes the other connections. It then waits up to 1s for each client to close its side, which
+  shows that what was sent has arrived.
+- New files are gated with a `JL_SECURE_CHANNEL` macro in `util/config.h`, because `extras/`
+  compiles `src/jazzlights/` natively without mbedTLS. The TLV code doesn't need the gate.
+- `src/CMakeLists.txt` requires the `mbedtls` component, because without it our sources would
+  compile against mbedTLS's default configuration instead of ESP-IDF's, which has a different ABI.
+- It uses the classic mbedTLS 3.6 API: `mbedtls_ecp_*`, `mbedtls_ecdh_*`, `mbedtls_ecdsa_verify`,
+  `mbedtls_md_hmac_*`, `mbedtls_gcm_*` and `mbedtls_sha256_*`. HKDF is built on HMAC rather than
+  `mbedtls_hkdf`, which our sdkconfig doesn't enable, and which would need `info` in one piece.
+  Randomness comes from `esp_fill_random()`.
 - Memory, allocated per connection:
-  - A receive buffer, created when the TCP connection is accepted. It starts small and grows
-    as needed to hold a hello, a record and any partial TLV, so up to about 32KB. If it can't
-    grow, the connection closes.
+  - A receive buffer, created when the first bytes arrive. It starts at 256 bytes and grows as
+    needed to hold a hello, a record and any partial TLV, so up to about 32KB. If it can't grow,
+    the connection closes. TLVs that get skipped are never stored, however long they are.
   - Two GCM contexts, once the keys are derived, and a running SHA-256 of `signed_data`, which
     means the hellos needn't be kept after that.
 - The task also has one shared 4KB send buffer, and a few KB of temporary mbedTLS heap during
@@ -273,13 +298,14 @@ first release defines no features.
   and parser, using the Python `cryptography` package. It converts the DER signature to raw
   `r || s`.
 - Each use has its own script on top of that module.
-- A client finds servers by listening for our UDP multicast payloads on `224.0.0.169:6699`, and
-  connects once to each source IP address it hears.
+- A client finds servers by listening for our UDP multicast payloads on `224.0.0.169:6699`, which
+  it recognizes by their version in the high nibble of the first byte, and connects once to each
+  source IP address it hears.
 
 ## Part 2: OTA
 
-OTA is enabled with a `JL_OTA` macro in `util/config.h`, on by default when there's an IP
-network (Wi-Fi or Ethernet).
+OTA is enabled with a `JL_OTA` macro in `util/config.h`, on by default wherever the secure channel
+is. On a device with no OTA partition, `OtaInfo` still works and `OtaBegin` fails.
 
 ### TLVs
 
@@ -305,10 +331,29 @@ Client                                  Server
 | 3 | `OtaQuery` | client → server | fields; none yet |
 | 4 | `OtaInfo` | server → client | fields, below |
 | 5 | `OtaBegin` | client → server | fields, below |
-| 6 | `OtaData` | client → server | bytes: the next 4096 bytes of the image, or fewer at the end |
+| 6 | `OtaData` | client → server | bytes: the next bytes of the image. Clients send 4096 at a time, or fewer at the end, and the server accepts any size up to the maximum Length. |
 | 7 | `OtaAck` | server → client | fields: `bytes_written` (type 0, integer). The first, with 0, answers `OtaBegin`, and there's one after each `OtaData`. |
 | 8 | `OtaEnd` | client → server | fields; none yet |
-| 9 | `OtaResult` | server → client | fields: `status` (type 0, integer); 0 means success. Also answers an `OtaBegin` or `OtaEnd` that can't go ahead. |
+| 9 | `OtaResult` | server → client | fields: `status` (type 0, integer), see below. Also answers an `OtaBegin` or `OtaEnd` that can't go ahead. |
+
+A server skips the types that only go from server to client if it receives them.
+
+`OtaResult` statuses:
+
+| Status | Meaning |
+|---|---|
+| 0 | success |
+| 1 | no OTA partition |
+| 2 | `image_size` isn't acceptable, or didn't match the data received |
+| 3 | `image_chip_id` doesn't match this device |
+| 4 | another client is updating |
+| 5 | `esp_ota_begin()` failed, such as when the running image isn't marked valid yet |
+| 6 | this session isn't updating |
+| 7 | `esp_ota_write()` failed |
+| 8 | `image_sha256` doesn't match |
+| 9 | `esp_ota_end()` failed |
+| 10 | wrong `project_name` |
+| 11 | `esp_ota_set_boot_partition()` failed |
 
 `OtaInfo` fields:
 
@@ -333,18 +378,20 @@ it doesn't if the device is already running that version. If it does, it sends `
 | 2 | image_chip_id | integer | must match the `esp_chip_info()` model |
 | 3 | reboot_when_done | flag | optional |
 
-When `OtaBegin` arrives, the server sends a failed `OtaResult` unless all of these hold:
+A malformed `OtaQuery`, `OtaBegin` or `OtaEnd` makes the server send a `Close` with status 1. When
+`OtaBegin` arrives, the server sends a failed `OtaResult` unless all of these hold:
 
 - `esp_ota_get_next_update_partition(nullptr)` isn't null.
-- `image_size` and `image_chip_id` are acceptable.
-- No client is already updating.
+- `image_size` isn't 0 and fits in that partition, and `image_chip_id` matches.
+- No client is already updating. That includes this session, whose update then carries on.
 
 The server doesn't compare versions, so it accepts upgrades and downgrades alike. Otherwise it calls `esp_ota_begin(partition, OTA_WITH_SEQUENTIAL_WRITES, &handle)`, and writes
 each `OtaData` with `esp_ota_write()`. `OtaData` from a session that isn't updating is
 discarded, and `OtaEnd` from one gets a failed `OtaResult`.
 
 If the session ends before the update finishes, the server calls `esp_ota_abort()`. If a write
-or a check under "Finishing" fails, it also sends a failed `OtaResult`.
+or a check under "Finishing" fails, or the data goes past `image_size`, it also sends a failed
+`OtaResult`, and the session is no longer updating, though it stays open.
 
 ### Finishing
 
@@ -365,31 +412,36 @@ It then calls `esp_ota_set_boot_partition()` and sends a successful `OtaResult`.
 `CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y` is already in both the prebuilt Arduino libraries and
 our `sdkconfig.defaults`.
 
-- Override the core's weak `verifyRollbackLater()` to return `true`, so `initArduino()` leaves
-  a new image in `ESP_OTA_IMG_PENDING_VERIFY`.
-- Once the new firmware has rendered LEDs and connected to the network for 30s, call
-  `esp_ota_mark_app_valid_cancel_rollback()`. Until then `esp_ota_begin()` fails, so `OtaBegin`
-  gets a failed `OtaResult`.
+- Where the Arduino core is used, overriding its weak `verifyRollbackLater()` to return `true`
+  makes `initArduino()` leave a new image in `ESP_OTA_IMG_PENDING_VERIFY`. Without the Arduino
+  core, `main.cpp` leaves it that way itself.
+- Once the new firmware has rendered at least one frame and has stayed connected to the network
+  for 30s without interruption, `OTARollbackGuard` calls
+  `esp_ota_mark_app_valid_cancel_rollback()` from the primary runloop. Until then `esp_ota_begin()`
+  fails, so `OtaBegin` gets a failed `OtaResult`.
+- Only the bootloader rolls back, at boot. So firmware that keeps running without ever marking
+  itself valid stays in place until the device next reboots, and then rolls back.
 
-To check: the prebuilt bootloader (`framework-arduinoespressif32-libs/*/bin/bootloader_*.elf`)
-was built with rollback support. The `espidf, arduino` builds compile their own bootloader from
+The prebuilt bootloaders (`framework-arduinoespressif32-libs/*/bin/bootloader_*.elf`) have rollback
+support on ESP32, ESP32-S3, ESP32-C3 and ESP32-C6. Other builds compile their own bootloader from
 our sdkconfig.
 
 ### Server implementation
 
-- Add `OTAHandler` in `src/jazzlights/network/`, implementing `SecureChannelHandler`. It needs a
+- `OTAHandler` is in `src/jazzlights/network/`, implementing `SecureChannelHandler`. It needs a
   SHA-256 context during an update.
-- Add `extras/scripts/software_version.py` as a `pre:` extra script, which computes
-  `software_version` when building the firmware, and saves it as `software_version.bin` next to
-  `firmware.bin`. The code changes are `git diff HEAD` and any untracked files that aren't
-  ignored. It generates one source file with this and `build_environment`, so that a change
-  doesn't recompile everything.
+- `extras/scripts/software_version.py` is a `pre:` extra script for every environment, which
+  computes `software_version` when building the firmware, and saves it as `software_version.bin`
+  next to `firmware.bin`. The code changes are `git diff HEAD --binary` followed by the name and
+  contents of any untracked files that aren't ignored, sorted by name. Without git, the version is
+  20 zero bytes. It generates one header in the build directory with this and `build_environment`,
+  which only `ota_handler.cpp` includes, so that a change doesn't recompile everything.
 - The update doesn't change what the LEDs show.
 
 ### Client implementation
 
 - `extras/scripts/ota_upload.py` builds on `secure_channel.py`, and runs until interrupted. Usage:
-  `ota_upload.py --key <pem>`.
+  `ota_upload.py --key <pem>`, or `JL_CLIENT_KEY` in place of `--key`.
 - For each server it discovers, it works in this order, with builds running one at a time:
   1. Connect and send `OtaQuery`.
   2. Close the session if `build_environment` isn't an environment in `platformio.ini`. Otherwise
@@ -405,15 +457,37 @@ our sdkconfig.
 
 ## Binary size
 
-Measure on `vest`, `vest_c6` and `vest_espidf`, with the channel and OTA separately. mbedTLS's
-ECP, bignum, ECDH, ECDSA, GCM and SHA-256 are in the link map of `vest`, mostly for Wi-Fi WPA3,
-though some may be dropped as unused today. `app_update` is already linked.
+Flash and static RAM added to each environment:
+
+| Environment | Channel flash | Channel RAM | OTA flash | OTA RAM | Total flash |
+|---|---|---|---|---|---|
+| `vest` | 16,440 | 152 | 5,064 | 216 | 21,504 |
+| `vest_c6` | 17,614 | 160 | 5,862 | 216 | 23,476 |
+| `vest_espidf` | 14,488 | 168 | 4,992 | 216 | 19,480 |
+
+On `vest`, about 10KB of the channel is its own code. The rest is what it newly pulls in, mainly
+AES-GCM, and lwIP's and the VFS's code for `listen()`, `accept()` and `poll()`. mbedTLS's ECP,
+bignum, ECDH, ECDSA and SHA-256 are already linked for Wi-Fi WPA3, and `app_update` already is. At
+run time, the task adds its 8KB stack and 4KB send buffer, which firmware with no keys doesn't
+allocate.
 
 ## Testing
 
+- `extras/secure_channel_test` builds the real `SecureChannelServer` and `OTAHandler` natively,
+  under ASan and UBSan, against the mbedTLS version in ESP-IDF. Headers in its `shim/` directory
+  stand in for ESP-IDF, FreeRTOS and lwIP, and keep the flash in memory.
+- `extras/scripts/test_secure_channel.py` runs against that server, and CI runs it too. Setting
+  `JL_TEST_HOST`, `JL_TEST_KEY` and `JL_TEST_KEY2` runs it against a real device instead, skipping
+  the tests that need the fake flash.
+- `test/test_tlv` is a native test of the TLV code, which `pio test -e native` runs.
 - `secure_channel.py` can act as a fake server, and can send malformed messages to a real one.
-- A small `Echo` TLV, compiled only into test builds, checks the channel without touching flash.
-- Malformed input, in those modes and in a native test of `TLVReader`:
+- An `Echo` TLV of type 1000 sends its Value back, which checks the channel without touching flash.
+  It's only compiled in with `JL_SECURE_CHANNEL_ECHO`, which the `vest_secure_channel_test`
+  environment sets for use on hardware.
+
+### Covered natively
+
+- Malformed input:
   - varints: longer than needed (accepted), cut off
   - Lengths: past their container; exactly 16384 and over it, at every level
   - fields: repeated, wrong size, missing; unknown at every level (skipped)
@@ -424,7 +498,7 @@ though some may be dropped as unused today. `app_update` is already linked.
     wrong direction; after an unknown TLV; after a TLV of type 3 or up, which must be skipped
   - records: several TLVs in one; a TLV split at every possible byte; an unknown TLV of 16384
     bytes spanning records; no plaintext; anything after `Close`
-- The channel, on hardware:
+- The channel:
   - handshake: happy path; wrong private key; a public key not in the firmware; `ClientHello`
     and `ClientReady` replayed; `client_long_term_public` changed after signing
   - TLVs right behind `ClientReady`: handled after `ServerReady`, and not acted on if the
@@ -433,31 +507,45 @@ though some may be dropped as unused today. `app_update` is already linked.
     without a `Close`, including partway through a TLV
   - sessions: a silent client; 8 clients at once; one failing while others carry on; `Echo`
     interleaved with an OTA update; all 8 connections taken, by sessions and by unfinished
-    handshakes; a flood of new connections during a session
+    handshakes; a flood of new connections during a session; the idle timeout
   - limits: a `ClientHello` and a `ClientReady` of exactly 16384 bytes with large skipped fields;
-    many connections growing their buffers until allocation fails, which must only close those
-    connections; endless skipped TLVs instead of `ClientReady`, which must be closed after 10s
+    endless skipped TLVs instead of `ClientReady`, which must be closed after 10s
 - The OTA client:
-  - `software_version.py` on a clean checkout, a changed tracked file and a new untracked file
+  - `software_version.py` on a clean checkout, a changed tracked file, a new untracked file and an
+    ignored file
   - a fake server sending a `build_environment` that isn't in `platformio.ini`, such as `../..`,
     which must make the client close the session
   - a build that fails, which must make the client close the session and carry on with others
   - discovery: one connection per server despite repeated payloads, and no second connection
     after a server reboots
   - a build that outlasts the idle timeout, which must keep the session open
-- OTA, on hardware:
-  - `OtaQuery` on a build with and without code changes, and with no OTA partition
+  - builds running one at a time
+  - an image that's too large or for the wrong chip, or that's already running
+- OTA, with fake flash:
+  - `OtaQuery`, and with no OTA partition
   - a client that skips the update because the versions match
-  - a client that builds and sends the image for the device's `build_environment`
+  - a client that sends a whole image, which must arrive unchanged
   - two clients sending `OtaBegin` at once
   - `OtaData` or `OtaEnd` without an `OtaBegin`, and `OtaBegin` before the running image is
     marked valid
   - a client failing mid-update, after which another client can update
   - a reboot, which must send `Close` to the other clients
-  - a power cut during the transfer
-  - LEDs showing their normal patterns throughout an update
-  - an image for the wrong chip
-  - an image that crashes at boot, or never marks itself valid, which must roll back
+  - too little or too much data, a wrong SHA-256, an image for the wrong chip or project
+
+### Still to do on hardware
+
+No device has run this code yet, so all of these remain:
+
+- `test_secure_channel.py` against a `vest_secure_channel_test` device.
+- Many connections growing their buffers until allocation fails, which must only close those
+  connections.
+- `OtaQuery` on a build with and without code changes.
+- A client that builds and sends the image for the device's `build_environment`, on each of
+  `framework = arduino`, `framework = espidf, arduino` and `framework = espidf`.
+- A power cut during the transfer.
+- LEDs showing their normal patterns throughout an update.
+- An image for the wrong chip, which `esp_ota_end()` must reject.
+- An image that crashes at boot, or never marks itself valid, which must roll back at its next boot.
 - Measure the transfer time for a full 1.7MB image, how long a handshake takes on classic ESP32,
-  how much handshakes and flash writes delay other sessions and LED rendering, and how much memory
-  each connection costs.
+  how much handshakes and flash writes delay other sessions and LED rendering, how much memory
+  each connection costs, and how much of its 8KB stack the task uses.

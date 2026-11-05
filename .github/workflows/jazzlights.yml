@@ -62,11 +62,28 @@ jobs:
       - name: Run jazzlights-bench
         run: extras/build/jazzlights-bench -nk11
 
+  secure-channel-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Python Dependencies
+        run: pip install cryptography
+      - name: Build Test Server
+        run: |
+          cmake -S extras/secure_channel_test -B extras/secure_channel_test/build
+          cmake --build extras/secure_channel_test/build --target secure-channel-test-server
+      - name: Run Tests
+        run: extras/scripts/test_secure_channel.py
+
   pio-build:
     strategy:
       matrix:
         pioenv:
           - vest_dev
+          - vest_secure_channel_test
           - vest_instrumentation
           - vest_espidf
           - vest_nimble
@@ -204,6 +221,7 @@ jobs:
       - check-dependency-graph
       - check-led-table
       - extras
+      - secure-channel-test
       - esphome
       - pio-build
       - pio-native-test

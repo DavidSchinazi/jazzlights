@@ -69,6 +69,12 @@ void loop() {
 #include <chip-debug-report.h>
 #include <esp32-hal-log.h>
 
+#if JL_OTA && CONFIG_APP_ROLLBACK_ENABLE
+// Stops the Arduino core from confirming that a new image works before it has had a chance to run. OTARollbackGuard
+// does that instead. Overrides a weak function from the Arduino core.
+extern "C" bool verifyRollbackLater() { return true; }
+#endif  // JL_OTA && CONFIG_APP_ROLLBACK_ENABLE
+
 #if ARDUHAL_LOG_LEVEL < ARDUHAL_LOG_LEVEL_DEBUG
 // Below the debug log level, the Arduino core only prints its chip debug report if shouldPrintChipDebugReport() is
 // overridden to return true, which we never do. Providing empty implementations here prevents the linker from pulling
@@ -99,14 +105,15 @@ void LoopTaskFunction(void* /*parameters*/) {
 
 // Performs the parts of the Arduino core's app_main() and initArduino() that we rely on.
 void StartLoopTask() {
-#if CONFIG_APP_ROLLBACK_ENABLE
+#if CONFIG_APP_ROLLBACK_ENABLE && !JL_OTA
   // Confirm that this image works, otherwise the bootloader would roll back to the previous one after an OTA update.
+  // With JL_OTA, OTARollbackGuard does this once the image has shown that it works.
   esp_ota_img_states_t otaState;
   if (esp_ota_get_state_partition(esp_ota_get_running_partition(), &otaState) == ESP_OK &&
       otaState == ESP_OTA_IMG_PENDING_VERIFY) {
     ESP_ERROR_CHECK(esp_ota_mark_app_valid_cancel_rollback());
   }
-#endif  // CONFIG_APP_ROLLBACK_ENABLE
+#endif  // CONFIG_APP_ROLLBACK_ENABLE && !JL_OTA
   // NVS is required by the Bluetooth and Wi-Fi stacks to store PHY calibration data.
   esp_err_t err = nvs_flash_init();
   if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {

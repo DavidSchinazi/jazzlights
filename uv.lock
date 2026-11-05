@@ -354,6 +354,7 @@ name = "jazzlights"
 version = "0.0.1"
 source = { virtual = "." }
 dependencies = [
+    { name = "cryptography" },
     { name = "esptool", version = "5.3.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
     { name = "esptool", version = "5.3.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'" },
     { name = "pyserial" },
@@ -372,6 +373,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "cryptography" },
     { name = "esptool" },
     { name = "pyserial" },
     { name = "rich" },

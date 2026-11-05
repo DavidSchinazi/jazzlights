@@ -12,6 +12,10 @@
 #include "jazzlights/network/ble.h"
 #include "jazzlights/network/ethernet.h"
 #include "jazzlights/network/manager.h"
+#include "jazzlights/network/ota_handler.h"
+#include "jazzlights/network/secure_channel_echo.h"
+#include "jazzlights/network/secure_channel_keys.h"
+#include "jazzlights/network/secure_channel_server.h"
 #include "jazzlights/network/wifi.h"
 #include "jazzlights/orrery/max485_bus.h"
 #include "jazzlights/orrery/orrery_common.h"
@@ -78,6 +82,57 @@ static Esp32UiImpl* GetUi() {
 #if JL_WEBSOCKET_SERVER
 WebSocketServer gWebSocketServer(80, gPlayer);
 #endif  // JL_WEBSOCKET_SERVER
+
+#if JL_OTA
+OTAHandler gOtaHandler(SecureChannelServer::Get());
+OTARollbackGuard gOtaRollbackGuard;
+#endif  // JL_OTA
+#if JL_SECURE_CHANNEL_ECHO
+SecureChannelEchoHandler gSecureChannelEchoHandler;
+#endif  // JL_SECURE_CHANNEL_ECHO
+
+#if JL_SECURE_CHANNEL
+// Whether any network that the secure channel can use has been initialized, or is connected, respectively.
+bool IsIpNetworkInitialized() {
+#if JL_WIFI
+  if (WiFiNetwork::Get()->Status() != kInitializing) { return true; }
+#endif  // JL_WIFI
+#if JL_ESP32_ETHERNET
+  if (EthernetNetwork::Get()->Status() != kInitializing) { return true; }
+#endif  // JL_ESP32_ETHERNET
+  return false;
+}
+
+bool IsIpNetworkConnected() {
+#if JL_WIFI
+#if JL_ESP32_WIFI_LINK
+  // Esp32SocketManager always reports that it's connected, so we need to ask it whether it has an address.
+  if (WiFiNetwork::Get()->HasAddress()) { return true; }
+#else   // JL_ESP32_WIFI_LINK
+  if (WiFiNetwork::Get()->Status() == kConnected) { return true; }
+#endif  // JL_ESP32_WIFI_LINK
+#endif  // JL_WIFI
+#if JL_ESP32_ETHERNET
+  if (EthernetNetwork::Get()->Status() == kConnected) { return true; }
+#endif  // JL_ESP32_ETHERNET
+  return false;
+}
+
+void MaybeStartSecureChannel() {
+  static bool sStarted = false;
+  // This can't be called until after the networks have been initialized.
+  if (sStarted || !IsIpNetworkInitialized()) { return; }
+  sStarted = true;
+#if JL_OTA
+  SecureChannelServer::Get()->RegisterHandler(OTAHandler::kFirstType, OTAHandler::kLastType, &gOtaHandler);
+#endif  // JL_OTA
+#if JL_SECURE_CHANNEL_ECHO
+  SecureChannelServer::Get()->RegisterHandler(SecureChannelEchoHandler::kEchoType, SecureChannelEchoHandler::kEchoType,
+                                              &gSecureChannelEchoHandler);
+#endif  // JL_SECURE_CHANNEL_ECHO
+  SecureChannelServer::Get()->Start(kSecureChannelPublicKeys.data(), kSecureChannelPublicKeys.size());
+}
+#endif  // JL_SECURE_CHANNEL
 
 Player* GetPrimaryPlayer() { return &gPlayer; }
 
@@ -203,6 +258,12 @@ void RunPrimaryRunLoop() {
     gWebSocketServer.Start();
   }
 #endif  // JL_WEBSOCKET_SERVER
+#if JL_SECURE_CHANNEL
+  MaybeStartSecureChannel();
+#endif  // JL_SECURE_CHANNEL
+#if JL_OTA
+  gOtaRollbackGuard.RunLoop(shouldRender, IsIpNetworkConnected());
+#endif  // JL_OTA
   SAVE_TIME_POINT(PrimaryRunLoop, LoopEnd);
 #if JL_TEST_MOTOR
   StepperMotorTestRunLoop();

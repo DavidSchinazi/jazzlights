@@ -33,6 +33,9 @@ class Esp32SocketManager : public Network {
   // The first interface's localDeviceId is used as ours. Must only be called from the primary runloop.
   void AddInterface(esp_netif_t* netif, NetworkType type, NetworkDeviceId localDeviceId);
 
+  // Whether any interface currently has an address.
+  bool HasAddress();
+
   NetworkStatus Update(NetworkStatus /*status*/) override { return kConnected; }
   NetworkDeviceId GetLocalDeviceId() const override { return localDeviceId_; }
   NetworkType Type() const override { return NetworkType::kOther; }

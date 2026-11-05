@@ -36,6 +36,12 @@ void Esp32SocketManager::AddInterface(esp_netif_t* netif, NetworkType type, Netw
   PostEvent(event);
 }
 
+bool Esp32SocketManager::HasAddress() {
+  const std::lock_guard<std::mutex> lock(mutex_);
+  return std::any_of(interfaceStatuses_.begin(), interfaceStatuses_.end(),
+                     [](const InterfaceStatus& status) { return IsAddressSet(status.localAddress); });
+}
+
 std::string Esp32SocketManager::GetStatusStr() {
   std::vector<InterfaceStatus> interfaceStatuses;
   {

@@ -195,6 +195,30 @@
 #define JL_ESP32_ETHERNET 0
 #endif  // JL_ESP32_ETHERNET
 
+#ifndef JL_SECURE_CHANNEL
+// The secure channel uses lwIP sockets and mbedTLS, see extras/docs/OTA_PROPOSAL.md. Environments that only have
+// Ethernet through the Arduino Ethernet library don't use lwIP, and ESPHome builds have ESPHome's own OTA updates. The
+// session keys need esp_fill_random(), which is only truly random while Wi-Fi or Bluetooth is running.
+#if defined(ESP32) && (JL_WIFI || (JL_ESP32_ETHERNET && !JL_DISABLE_BLUETOOTH)) && !JL_ESPHOME
+#define JL_SECURE_CHANNEL 1
+#else  // ESP32 && lwIP && radio && !ESPHOME
+#define JL_SECURE_CHANNEL 0
+#endif  // ESP32 && lwIP && radio && !ESPHOME
+#endif  // JL_SECURE_CHANNEL
+
+#ifndef JL_OTA
+#define JL_OTA JL_SECURE_CHANNEL
+#endif  // JL_OTA
+
+#if JL_OTA && !JL_SECURE_CHANNEL
+#error "JL_OTA requires JL_SECURE_CHANNEL"
+#endif  // JL_OTA && !JL_SECURE_CHANNEL
+
+#ifndef JL_SECURE_CHANNEL_ECHO
+// Enables a TLV that echoes its Value, used to test the channel without touching flash. Only for test builds.
+#define JL_SECURE_CHANNEL_ECHO 0
+#endif  // JL_SECURE_CHANNEL_ECHO
+
 #ifndef JL_ORRERY_SUN
 #define JL_ORRERY_SUN 0
 #endif  // JL_ORRERY_SUN
