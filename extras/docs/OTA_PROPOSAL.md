@@ -487,6 +487,8 @@ our sdkconfig.
      0 there and 1 in `esp_chip_info()`.
   4. Send `OtaBegin` with `reboot_when_done`, then the image and `OtaEnd`, and wait for
      `OtaResult`.
+- It logs its progress every 10% of the image, with the rate, and again when it has sent `OtaEnd`,
+  which is when the device checks the image and switches which partition it boots from.
 
 ## Binary size
 

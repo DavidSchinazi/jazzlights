@@ -35,6 +35,7 @@ OTA_RESULT = 9
 # As much as fits in one record, after the OtaData's one-byte Type and two-byte Length.
 DATA_CHUNK_SIZE = secure_channel.DEFAULT_MAX_RECORD_PLAINTEXT - 3
 MAX_UNACKNOWLEDGED = 4
+PROGRESS_STEP_PERCENT = 10
 KEEPALIVE_INTERVAL_SECONDS = 30
 # Flash writes and image verification can take a while, particularly with several devices at once.
 ACK_TIMEOUT_SECONDS = 30
@@ -226,6 +227,7 @@ class Uploader:
         self.check_ack(client, 0)
         sent = 0
         acknowledged = 0
+        reported_percent = 0
         while acknowledged < len(image):
             while sent < len(image) and (sent - acknowledged) / DATA_CHUNK_SIZE < MAX_UNACKNOWLEDGED:
                 chunk = image[sent : sent + DATA_CHUNK_SIZE]
@@ -233,7 +235,18 @@ class Uploader:
                 sent += len(chunk)
             acknowledged = min(sent, acknowledged + DATA_CHUNK_SIZE)
             self.check_ack(client, acknowledged)
+            percent = acknowledged * 100 // len(image)
+            if percent >= reported_percent + PROGRESS_STEP_PERCENT:
+                reported_percent = percent - percent % PROGRESS_STEP_PERCENT
+                elapsed = time.monotonic() - start_time
+                self.log(
+                    address,
+                    "%d%%, %d of %d bytes in %.1fs, %.0fKB/s"
+                    % (reported_percent, acknowledged, len(image), elapsed, acknowledged / 1000 / max(elapsed, 0.001)),
+                )
         client.send_tlv(OTA_END)
+        # The device checks the image and then switches which partition it boots from.
+        self.log(address, "sent everything, waiting for the device to check the image")
         value = self.wait_for_result(client)
         status = result_status(value)
         if status != 0:
