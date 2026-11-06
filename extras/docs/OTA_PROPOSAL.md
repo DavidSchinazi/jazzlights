@@ -583,16 +583,19 @@ These ran over Wi-Fi, against `vest_secure_channel_test` unless stated otherwise
 
 - `test_secure_channel.py`: the 90 tests that can run on hardware pass.
 - A handshake takes about 1s.
-- An OTA update of a 1.8MB image from `ota_upload.py`'s update logic takes 38-53s, about 40KB/s.
-  The device rebooted into it, and marked it valid 30s after connecting to Wi-Fi.
+- An OTA update of a 1.8MB image from `ota_upload.py`'s update logic takes 38-75s, 24-40KB/s,
+  depending on the Wi-Fi. The device rebooted into it, and marked it valid 30s after connecting to
+  Wi-Fi.
 - With the new image running, the client skips the update because the versions match.
 - LEDs keep rendering during an update. On `vest`, the computed frame rate drops from about 88 to
   50-83 FPS, the written one from 71 to 44-68 FPS, and the longest gap between frames goes from
   under 55ms to up to 71ms.
 - An image that never marks itself valid rolls back after 10 minutes, to the previous image.
 - An image that crashes at boot rolls back to the previous image on the next boot.
-- A reset through the EN pin partway through a transfer leaves the running image in place, and
-  the next update succeeds.
+- Cutting the power, by unplugging USB, leaves the running image in place and lets the next update
+  succeed, whether it happens just after the transfer starts, partway through it, or after the last
+  `OtaData` while the device checks the image. So does a reset through the EN pin partway through
+  a transfer.
 - An ESP32-S3 image sent with an `OtaBegin` that claims the ESP32's chip gets rejected by
   `esp_ota_end()`, with status 9.
 - `vest_espidf` (`framework = espidf, arduino`) and `vest_idf` (`framework = espidf`) update
@@ -607,7 +610,3 @@ These ran over Wi-Fi, against `vest_secure_channel_test` unless stated otherwise
 
 On macOS, the first connections from a Python that hasn't been allowed on the local network fail
 with "No route to host". Allowing it in the Local Network privacy settings fixes that.
-
-### Still to do on hardware
-
-- Cut the power partway through a transfer. The EN reset above stops the chip but not the flash.
