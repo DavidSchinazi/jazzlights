@@ -3,7 +3,7 @@
 // Usage: secure-channel-test-server [--no-partition] [--pending-verify] [--image-out <path>]
 //                                   [--rollback-guard <mode>] [--rollback-impossible] <hex public key>...
 //
-// --rollback-guard runs OTARollbackGuard with shorter times, where <mode> says what the fake primary runloop reports:
+// --rollback-guard runs OtaRollbackGuard with shorter times, where <mode> says what the fake primary runloop reports:
 // working, no-network, no-render, late-network, or hung to not run it at all.
 
 #include <signal.h>
@@ -162,11 +162,11 @@ int main(int argc, char** argv) {
     }
   }
   SecureChannelServer* server = SecureChannelServer::Get();
-  static OTAHandler otaHandler(server);
+  static OtaHandler otaHandler(server);
   const uint8_t localDeviceId[NetworkDeviceId::size()] = {0x02, 0x11, 0x22, 0x33, 0x44, 0x55};
   otaHandler.SetLocalDeviceId(NetworkDeviceId(localDeviceId));
   static SecureChannelEchoHandler echoHandler;
-  server->RegisterHandler(OTAHandler::kFirstType, OTAHandler::kLastType, &otaHandler);
+  server->RegisterHandler(OtaHandler::kFirstType, OtaHandler::kLastType, &otaHandler);
   server->RegisterHandler(SecureChannelEchoHandler::kEchoType, SecureChannelEchoHandler::kEchoType, &echoHandler);
   server->Start(keys.data(), keys.size());
   if (rollbackGuardMode.empty()) {
@@ -175,7 +175,7 @@ int main(int argc, char** argv) {
   constexpr Microseconds kConnectedTime = 1 * kMicrosecondsPerSecond;
   constexpr Microseconds kTimeout = 3 * kMicrosecondsPerSecond;
   constexpr Microseconds kLateNetworkTime = 4 * kMicrosecondsPerSecond;
-  static OTARollbackGuard guard(kConnectedTime, kTimeout);
+  static OtaRollbackGuard guard(kConnectedTime, kTimeout);
   guard.Start();
   if (rollbackGuardMode == "hung") {
     while (true) { pause(); }

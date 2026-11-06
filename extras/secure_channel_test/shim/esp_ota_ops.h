@@ -6,7 +6,7 @@
 
 #include "esp_app_desc.h"
 
-// A fake of the parts of ESP-IDF's app_update that OTAHandler uses, which keeps the partition in memory. See main.cpp.
+// A fake of the parts of ESP-IDF's app_update that OtaHandler uses, which keeps the partition in memory. See main.cpp.
 
 using esp_err_t = int;
 inline constexpr esp_err_t ESP_OK = 0;

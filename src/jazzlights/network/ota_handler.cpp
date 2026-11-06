@@ -20,7 +20,7 @@
 namespace jazzlights {
 namespace {
 
-enum OTAType : uint64_t {
+enum OtaType : uint64_t {
   kOtaQuery = 3,
   kOtaInfo = 4,
   kOtaBegin = 5,
@@ -30,7 +30,7 @@ enum OTAType : uint64_t {
   kOtaResult = 9,
 };
 
-enum OTAStatus : uint64_t {
+enum OtaStatus : uint64_t {
   kOtaStatusSuccess = 0,
   kOtaStatusNoPartition = 1,
   kOtaStatusBadImageSize = 2,
@@ -65,7 +65,7 @@ uint64_t ChipModel() {
 
 }  // namespace
 
-void OTAHandler::OnTlv(SecureSession& session, uint64_t type, const uint8_t* value, uint64_t length) {
+void OtaHandler::OnTlv(SecureSession& session, uint64_t type, const uint8_t* value, uint64_t length) {
   switch (type) {
     case kOtaQuery:
     case kOtaEnd:
@@ -84,13 +84,13 @@ void OTAHandler::OnTlv(SecureSession& session, uint64_t type, const uint8_t* val
   }
 }
 
-void OTAHandler::OnSessionEnd(SecureSession& session, bool /*clean*/) {
+void OtaHandler::OnSessionEnd(SecureSession& session, bool /*clean*/) {
   if (updating_ != &session) { return; }
   jll_info("OTA aborting update because its session ended");
   AbortUpdate();
 }
 
-void OTAHandler::HandleQuery(SecureSession& session) {
+void OtaHandler::HandleQuery(SecureSession& session) {
   const esp_partition_t* partition = esp_ota_get_next_update_partition(nullptr);
   uint8_t info[128];
   TlvWriter writer(info, sizeof(info));
@@ -104,7 +104,7 @@ void OTAHandler::HandleQuery(SecureSession& session) {
   session.Send(kOtaInfo, info, writer.size());
 }
 
-void OTAHandler::HandleBegin(SecureSession& session, const uint8_t* value, uint64_t length) {
+void OtaHandler::HandleBegin(SecureSession& session, const uint8_t* value, uint64_t length) {
   TlvField fields[] = {
       {0, TlvField::Kind::kInteger, /*required=*/true},
       {1, TlvField::Kind::kBytes, /*required=*/true, kSha256Size},
@@ -150,7 +150,7 @@ void OTAHandler::HandleBegin(SecureSession& session, const uint8_t* value, uint6
   SendAck(session, 0);
 }
 
-void OTAHandler::HandleData(SecureSession& session, const uint8_t* value, uint64_t length) {
+void OtaHandler::HandleData(SecureSession& session, const uint8_t* value, uint64_t length) {
   if (updating_ != &session) { return; }
   if (length > imageSize_ - bytesWritten_) {
     jll_error("OTA got more data than the image size");
@@ -170,7 +170,7 @@ void OTAHandler::HandleData(SecureSession& session, const uint8_t* value, uint64
   SendAck(session, bytesWritten_);
 }
 
-void OTAHandler::HandleEnd(SecureSession& session) {
+void OtaHandler::HandleEnd(SecureSession& session) {
   if (updating_ != &session) {
     SendResult(session, kOtaStatusNotUpdating);
     return;
@@ -221,38 +221,38 @@ void OTAHandler::HandleEnd(SecureSession& session) {
   }
 }
 
-void OTAHandler::SendAck(SecureSession& session, uint64_t bytesWritten) {
+void OtaHandler::SendAck(SecureSession& session, uint64_t bytesWritten) {
   uint8_t ack[VarintSize(0) + VarintSize(kMaxVarintSize) + kMaxVarintSize];
   TlvWriter writer(ack, sizeof(ack));
   writer.WriteInteger(0, bytesWritten);
   session.Send(kOtaAck, ack, writer.size());
 }
 
-void OTAHandler::SendResult(SecureSession& session, uint64_t status) {
+void OtaHandler::SendResult(SecureSession& session, uint64_t status) {
   uint8_t result[VarintSize(0) + VarintSize(kMaxVarintSize) + kMaxVarintSize];
   TlvWriter writer(result, sizeof(result));
   writer.WriteInteger(0, status);
   session.Send(kOtaResult, result, writer.size());
 }
 
-void OTAHandler::StopUpdate() {
+void OtaHandler::StopUpdate() {
   mbedtls_sha256_free(&sha256_);
   updating_ = nullptr;
   partition_ = nullptr;
 }
 
-void OTAHandler::AbortUpdate() {
+void OtaHandler::AbortUpdate() {
   esp_ota_abort(handle_);
   StopUpdate();
 }
 
-void OTAHandler::FailUpdate(uint64_t status) {
+void OtaHandler::FailUpdate(uint64_t status) {
   SecureSession* session = updating_;
   AbortUpdate();
   SendResult(*session, status);
 }
 
-void OTARollbackGuard::Start() {
+void OtaRollbackGuard::Start() {
   esp_ota_img_states_t state;
   if (esp_ota_get_state_partition(esp_ota_get_running_partition(), &state) != ESP_OK ||
       state != ESP_OTA_IMG_PENDING_VERIFY) {
@@ -261,13 +261,13 @@ void OTARollbackGuard::Start() {
   jll_info("OTA waiting to confirm that this new firmware works");
   deadline_ = TimeMicros() + timeout_;
   state_.store(State::kPending);
-  if (xTaskCreatePinnedToCore(TimeoutTaskFunction, "JL_OTARollback", kRollbackTaskStackSize, /*parameters=*/this,
+  if (xTaskCreatePinnedToCore(TimeoutTaskFunction, "JL_OtaRollback", kRollbackTaskStackSize, /*parameters=*/this,
                               kRollbackTaskPriority, /*taskHandle=*/nullptr, kRollbackTaskCore) != pdPASS) {
     jll_error("OTA failed to create rollback task, so this firmware will only roll back if it gets rebooted");
   }
 }
 
-void OTARollbackGuard::RunLoop(bool rendered, bool networkConnected) {
+void OtaRollbackGuard::RunLoop(bool rendered, bool networkConnected) {
   if (state_.load() != State::kPending) { return; }
   hasRendered_ = hasRendered_ || rendered;
   if (!networkConnected) {
@@ -288,12 +288,12 @@ void OTARollbackGuard::RunLoop(bool rendered, bool networkConnected) {
 }
 
 // static
-void OTARollbackGuard::TimeoutTaskFunction(void* parameters) {
-  reinterpret_cast<OTARollbackGuard*>(parameters)->RunTimeoutTask();
+void OtaRollbackGuard::TimeoutTaskFunction(void* parameters) {
+  reinterpret_cast<OtaRollbackGuard*>(parameters)->RunTimeoutTask();
   vTaskDelete(nullptr);
 }
 
-void OTARollbackGuard::RunTimeoutTask() {
+void OtaRollbackGuard::RunTimeoutTask() {
   while (state_.load() == State::kPending && TimeMicros() < deadline_) { vTaskDelay(pdMS_TO_TICKS(1000)); }
   State expected = State::kPending;
   if (!state_.compare_exchange_strong(expected, State::kRollingBack)) { return; }

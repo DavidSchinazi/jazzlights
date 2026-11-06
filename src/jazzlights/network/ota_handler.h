@@ -17,12 +17,12 @@
 namespace jazzlights {
 
 // Performs firmware updates over the secure channel, see "Part 2: OTA" in extras/docs/OTA_PROPOSAL.md.
-class OTAHandler : public SecureChannelHandler {
+class OtaHandler : public SecureChannelHandler {
  public:
   static constexpr uint64_t kFirstType = 3;
   static constexpr uint64_t kLastType = 9;
 
-  explicit OTAHandler(SecureChannelServer* server) : server_(server) {}
+  explicit OtaHandler(SecureChannelServer* server) : server_(server) {}
 
   // Sets the device ID that OtaInfo reports. Must be called before the server starts.
   void SetLocalDeviceId(const NetworkDeviceId& localDeviceId) { localDeviceId_ = localDeviceId; }
@@ -57,12 +57,12 @@ class OTAHandler : public SecureChannelHandler {
 
 // Decides whether a newly updated firmware is working. If it does, the firmware stays. If it doesn't decide in time,
 // including because the primary runloop is stuck, this rolls back to the previous firmware by rebooting.
-class OTARollbackGuard {
+class OtaRollbackGuard {
  public:
   static constexpr Microseconds kDefaultConnectedTime = 30 * kMicrosecondsPerSecond;
   static constexpr Microseconds kDefaultTimeout = 10 * 60 * kMicrosecondsPerSecond;
 
-  explicit OTARollbackGuard(Microseconds connectedTime = kDefaultConnectedTime, Microseconds timeout = kDefaultTimeout)
+  explicit OtaRollbackGuard(Microseconds connectedTime = kDefaultConnectedTime, Microseconds timeout = kDefaultTimeout)
       : connectedTime_(connectedTime), timeout_(timeout) {}
 
   // Must be called once at startup, before anything that could get stuck.

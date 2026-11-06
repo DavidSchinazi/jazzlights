@@ -422,10 +422,10 @@ our `sdkconfig.defaults`.
   makes `initArduino()` leave a new image in `ESP_OTA_IMG_PENDING_VERIFY`. Without the Arduino
   core, `main.cpp` leaves it that way itself.
 - Once the new firmware has rendered at least one frame and has stayed connected to the network
-  for 30s without interruption, `OTARollbackGuard` calls
+  for 30s without interruption, `OtaRollbackGuard` calls
   `esp_ota_mark_app_valid_cancel_rollback()` from the primary runloop. Until then `esp_ota_begin()`
   fails, so `OtaBegin` gets a failed `OtaResult`.
-- If the new firmware hasn't done that within 10 minutes of booting, `OTARollbackGuard` calls
+- If the new firmware hasn't done that within 10 minutes of booting, `OtaRollbackGuard` calls
   `esp_ota_mark_app_invalid_rollback_and_reboot()`. So firmware that's broken in a way that keeps it
   running can still be replaced, and a device that's simply out of reach of its network for those
   10 minutes also goes back to its previous firmware. Clients see their sessions fail, with no
@@ -443,7 +443,7 @@ our sdkconfig.
 
 ### Server implementation
 
-- `OTAHandler` is in `src/jazzlights/network/`, implementing `SecureChannelHandler`. It needs a
+- `OtaHandler` is in `src/jazzlights/network/`, implementing `SecureChannelHandler`. It needs a
   SHA-256 context during an update.
 - `extras/scripts/software_version.py` is a `pre:` extra script for every environment, which
   computes `software_version` when building the firmware, and saves it as `software_version.bin`
@@ -490,7 +490,7 @@ doesn't allocate. The rollback task adds a 4KB stack, only until new firmware is
 
 ## Testing
 
-- `extras/secure_channel_test` builds the real `SecureChannelServer` and `OTAHandler` natively,
+- `extras/secure_channel_test` builds the real `SecureChannelServer` and `OtaHandler` natively,
   under ASan and UBSan, against the mbedTLS version in ESP-IDF. Headers in its `shim/` directory
   stand in for ESP-IDF, FreeRTOS and lwIP, and keep the flash in memory.
 - `extras/scripts/test_secure_channel.py` runs against that server, and CI runs it too. Setting

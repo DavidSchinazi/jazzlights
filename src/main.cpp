@@ -70,7 +70,7 @@ void loop() {
 #include <esp32-hal-log.h>
 
 #if JL_OTA && CONFIG_APP_ROLLBACK_ENABLE
-// Stops the Arduino core from confirming that a new image works before it has had a chance to run. OTARollbackGuard
+// Stops the Arduino core from confirming that a new image works before it has had a chance to run. OtaRollbackGuard
 // does that instead. Overrides a weak function from the Arduino core.
 extern "C" bool verifyRollbackLater() { return true; }
 #endif  // JL_OTA && CONFIG_APP_ROLLBACK_ENABLE
@@ -107,7 +107,7 @@ void LoopTaskFunction(void* /*parameters*/) {
 void StartLoopTask() {
 #if CONFIG_APP_ROLLBACK_ENABLE && !JL_OTA
   // Confirm that this image works, otherwise the bootloader would roll back to the previous one after an OTA update.
-  // With JL_OTA, OTARollbackGuard does this once the image has shown that it works.
+  // With JL_OTA, OtaRollbackGuard does this once the image has shown that it works.
   esp_ota_img_states_t otaState;
   if (esp_ota_get_state_partition(esp_ota_get_running_partition(), &otaState) == ESP_OK &&
       otaState == ESP_OTA_IMG_PENDING_VERIFY) {

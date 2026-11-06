@@ -971,7 +971,7 @@ class OtaPendingVerifyTest(ServerTestCase):
 
 
 def rollback_guard_test(*args):
-    """Makes a base class whose server reports this to OTARollbackGuard, which confirms after 1s and times out at 3s."""
+    """Makes a base class whose server reports this to OtaRollbackGuard, which confirms after 1s and times out at 3s."""
 
     @unittest.skipUnless(NATIVE, "needs the fake flash")
     class RollbackGuardTestBase(ServerTestCase):

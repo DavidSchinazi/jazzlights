@@ -84,8 +84,8 @@ WebSocketServer gWebSocketServer(80, gPlayer);
 #endif  // JL_WEBSOCKET_SERVER
 
 #if JL_OTA
-OTAHandler gOtaHandler(SecureChannelServer::Get());
-OTARollbackGuard gOtaRollbackGuard;
+OtaHandler gOtaHandler(SecureChannelServer::Get());
+OtaRollbackGuard gOtaRollbackGuard;
 #endif  // JL_OTA
 #if JL_SECURE_CHANNEL_ECHO
 SecureChannelEchoHandler gSecureChannelEchoHandler;
@@ -126,7 +126,7 @@ void MaybeStartSecureChannel() {
 #if JL_OTA
   // The player was started in SetupPrimaryRunLoop(), so it has settled on its device ID.
   gOtaHandler.SetLocalDeviceId(gPlayer.localDeviceId());
-  SecureChannelServer::Get()->RegisterHandler(OTAHandler::kFirstType, OTAHandler::kLastType, &gOtaHandler);
+  SecureChannelServer::Get()->RegisterHandler(OtaHandler::kFirstType, OtaHandler::kLastType, &gOtaHandler);
 #endif  // JL_OTA
 #if JL_SECURE_CHANNEL_ECHO
   SecureChannelServer::Get()->RegisterHandler(SecureChannelEchoHandler::kEchoType, SecureChannelEchoHandler::kEchoType,
