@@ -197,13 +197,15 @@
 
 #ifndef JL_SECURE_CHANNEL
 // The secure channel uses lwIP sockets and mbedTLS, see extras/docs/OTA_PROPOSAL.md. Environments that only have
-// Ethernet through the Arduino Ethernet library don't use lwIP, and ESPHome builds have ESPHome's own OTA updates. The
-// session keys need esp_fill_random(), which is only truly random while Wi-Fi or Bluetooth is running.
-#if defined(ESP32) && (JL_WIFI || (JL_ESP32_ETHERNET && !JL_DISABLE_BLUETOOTH)) && !JL_ESPHOME
+// Ethernet through the Arduino Ethernet library don't use lwIP, and ESPHome builds have ESPHome's own OTA updates.
+// WARNING: the session keys come from esp_fill_random(), which is only truly random while Wi-Fi or Bluetooth is
+// running. So Ethernet-only builds with Bluetooth disabled, such as gauntlet_esp_ethernet_only, get weaker
+// cryptography. That's acceptable only because those builds are just for testing.
+#if defined(ESP32) && (JL_WIFI || JL_ESP32_ETHERNET) && !JL_ESPHOME
 #define JL_SECURE_CHANNEL 1
-#else  // ESP32 && lwIP && radio && !ESPHOME
+#else  // ESP32 && lwIP && !ESPHOME
 #define JL_SECURE_CHANNEL 0
-#endif  // ESP32 && lwIP && radio && !ESPHOME
+#endif  // ESP32 && lwIP && !ESPHOME
 #endif  // JL_SECURE_CHANNEL
 
 #ifndef JL_OTA

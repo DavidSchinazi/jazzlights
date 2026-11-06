@@ -26,11 +26,9 @@ key, such as a laptop running an upload script.
 - Securing the existing UDP multicast protocol.
 - Hardware Secure Boot or flash encryption, which permanently burn eFuses.
 - Environments where the channel can't run, which keep updating over serial:
-  - No IP network (NimBLE-only, `JL_WIFI=0`).
+  - No IP network (`JL_WIFI=0` without ESP32 Ethernet, such as NimBLE-only builds).
   - Ethernet only through the Arduino Ethernet library, which doesn't use lwIP. Environments that
     also have Wi-Fi use the channel over Wi-Fi.
-  - Ethernet with Bluetooth disabled (`gauntlet_esp_ethernet_only`). With no radio running,
-    `esp_fill_random()` isn't truly random, so it can't provide session keys.
 - ESPHome builds, which have ESPHome's own OTA updates.
 
 ## Overview
@@ -281,6 +279,9 @@ first release defines no features.
   compile against mbedTLS's default configuration instead of ESP-IDF's, which has a different ABI.
 - It uses the classic mbedTLS 3.6 API: `mbedtls_ecp_*`, `mbedtls_ecdh_*`, `mbedtls_ecdsa_verify`,
   `mbedtls_hkdf`, `mbedtls_gcm_*` and `mbedtls_sha256_*`. Randomness comes from `esp_fill_random()`.
+  That's only truly random while Wi-Fi or Bluetooth is running, so Ethernet-only builds with
+  Bluetooth disabled, such as `gauntlet_esp_ethernet_only`, get weaker session keys. Those builds
+  are only used for testing.
   `sdkconfig.defaults` enables `CONFIG_MBEDTLS_HKDF_C`, which the prebuilt Arduino libraries already
   have.
 - Memory, allocated per connection:
