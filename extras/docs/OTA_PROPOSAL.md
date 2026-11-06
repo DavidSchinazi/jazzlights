@@ -236,8 +236,9 @@ first release defines no features.
 ### Sessions
 
 - Each session has its own connection, keys and state.
-- The server allows 8 connections at once. If it's full, a new connection replaces the oldest one still in its handshake. If all are authenticated, the new
-  connection is closed.
+- The server allows 4 connections at once, since each can have up to a TCP window of 5744 bytes
+  waiting in lwIP, which takes about 7KB of heap. If it's full, a new connection replaces the
+  oldest one still in its handshake. If all are authenticated, the new connection is closed.
 - The server closes a connection if the handshake hasn't finished 10s after it accepted it,
   whatever else it receives in that time. That's one deadline, covering `ClientHello` and
   `ClientReady` together.
@@ -539,9 +540,9 @@ doesn't allocate. The rollback task adds a 4KB stack, only until new firmware is
     signature is bad
   - records: a flipped bit, including in the last record of a spanning TLV; a stream cut short
     without a `Close`, including partway through a TLV
-  - sessions: a silent client; 8 clients at once; one failing while others carry on; `Echo`
-    interleaved with an OTA update; all 8 connections taken, by sessions and by unfinished
-    handshakes; a flood of new connections during a session; the idle timeout
+  - sessions: a silent client; 4 clients at once; one failing while others carry on; `Echo`
+    interleaved with an OTA update; all 4 connections taken, by sessions and by unfinished
+    handshakes; a flood of new connections during a session; the handshake and idle timeouts
   - limits: a `ClientHello` of exactly 8192 bytes and a `ClientReady` of exactly 4096, with large
     skipped fields;
     endless skipped TLVs instead of `ClientReady`, which must be closed after 10s
@@ -578,7 +579,7 @@ doesn't allocate. The rollback task adds a 4KB stack, only until new firmware is
 
 These ran over Wi-Fi, against `vest_secure_channel_test` unless stated otherwise:
 
-- `test_secure_channel.py`: the 89 tests that can run on hardware pass.
+- `test_secure_channel.py`: the 90 tests that can run on hardware pass.
 - A handshake takes about 1s.
 - An OTA update of a 1.8MB image from `ota_upload.py`'s update logic takes 38-53s, about 40KB/s.
   The device rebooted into it, and marked it valid 30s after connecting to Wi-Fi.
@@ -596,11 +597,11 @@ These ran over Wi-Fi, against `vest_secure_channel_test` unless stated otherwise
   themselves in 32s and 27s, and mark the new image valid 30s after booting.
 - Discovery finds every JazzLights device on the network.
 - Memory on `vest`, which runs Bluedroid and Wi-Fi on a classic ESP32: about 38KB of heap is free
-  with no connections, and `vest_espidf` and `vest_idf` have about 85KB. 8 idle sessions take
-  about 14KB. 8 sessions that each hold a partial 4096-byte TLV don't all fit on `vest`: 4 or 5
-  of them close because the heap floor stops their receive buffers from growing, and the device
-  carries on. Free heap still briefly drops to about 1.8KB, because lwIP holds up to a TCP window
-  of 5744 bytes per connection before the channel reads it, which the floor doesn't cover.
+  with no connections, and `vest_espidf` and `vest_idf` have about 85KB. 4 idle sessions take
+  about 7KB. 4 sessions that each hold a partial 4096-byte TLV don't all fit on `vest`: 2 of them
+  close because the heap floor stops their receive buffers from growing, and the device carries
+  on. Free heap still briefly drops to between 2KB and 8KB, because lwIP holds what arrives
+  before the channel reads it, which the floor doesn't cover.
 
 On macOS, the first connections from a Python that hasn't been allowed on the local network fail
 with "No route to host". Allowing it in the Local Network privacy settings fixes that.

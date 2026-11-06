@@ -517,6 +517,8 @@ class ReadyMessageTest(ServerTestCase):
                 client.send_record(tlv[split:])
                 client.wait_for_server_ready()
                 self.assert_echo_works(client)
+                # Make room, since there are more of these than the server allows connections.
+                client.close()
 
     def test_sharing_a_record_with_other_tlvs(self):
         client = self.handshake_until_client_ready()
@@ -596,9 +598,13 @@ class ReadyMessageTest(ServerTestCase):
         self.assert_session_failed(client)
 
 
+# How many connections the server allows at once.
+MAX_CONNECTIONS = 4
+
+
 class SessionTest(ServerTestCase):
     def test_maximum_clients_at_once(self):
-        clients = [self.connected_client() for _ in range(8)]
+        clients = [self.connected_client() for _ in range(MAX_CONNECTIONS)]
         for round_number in range(3):
             for index, client in enumerate(clients):
                 client.send_tlv(ECHO, b"%d-%d" % (round_number, index))
@@ -615,7 +621,7 @@ class SessionTest(ServerTestCase):
         self.assert_echo_works(clients[2])
 
     def test_full_of_sessions_closes_new_connections(self):
-        clients = [self.connected_client() for _ in range(8)]
+        clients = [self.connected_client() for _ in range(MAX_CONNECTIONS)]
         extra = self.raw_socket()
         self.assert_socket_closed(extra)
         for client in clients:
@@ -626,7 +632,7 @@ class SessionTest(ServerTestCase):
 
     def test_full_of_handshakes_replaces_oldest(self):
         handshakes = []
-        for _ in range(8):
+        for _ in range(MAX_CONNECTIONS):
             handshakes.append(self.raw_socket())
             time.sleep(0.05)
         client = self.connected_client()
@@ -638,7 +644,7 @@ class SessionTest(ServerTestCase):
             handshakes[1].recv(1)
 
     def test_handshakes_never_replace_sessions(self):
-        clients = [self.connected_client() for _ in range(7)]
+        clients = [self.connected_client() for _ in range(MAX_CONNECTIONS - 1)]
         for _ in range(10):
             self.raw_socket()
             time.sleep(0.02)
@@ -652,25 +658,10 @@ class SessionTest(ServerTestCase):
             sock.close()
         self.assert_echo_works(client)
 
-    @unittest.skipIf(os.environ.get("JL_TEST_SKIP_SLOW"), "this takes over a minute")
-    def test_timeouts(self):
-        """All the timeouts in one test, as they take over a minute."""
+    def watch_timeouts(self, started, watched, injected_into, active, expected):
+        """Waits for each watched socket to be closed, while sending injected TLVs into some of them and keeping
+        `active` alive, and checks that each closed `expected` seconds after `started`."""
         injected = sc.encode_tlv(77, b"x")
-        # Each timeout runs from when that connection was accepted or last sent a record. That's when each of these is
-        # set up, which on hardware is about a second apart because of the handshakes.
-        started = {"silent": time.monotonic()}
-        silent = self.raw_socket()
-        started["flooding_before_hello"] = time.monotonic()
-        flooding_before_hello = self.raw_socket()
-        started["before_ready"] = time.monotonic()
-        before_ready = self.new_client()
-        before_ready.send_client_hello()
-        before_ready.receive_server_hello()
-        idle = self.connected_client()
-        started["idle"] = time.monotonic()
-        idle_with_injected = self.connected_client()
-        started["idle_with_injected"] = time.monotonic()
-        active = self.connected_client()
         start = time.monotonic()
         last_active = start
         ended = {}
@@ -684,16 +675,9 @@ class SessionTest(ServerTestCase):
             except ConnectionError:
                 return True
 
-        watched = {
-            "silent": silent,
-            "flooding_before_hello": flooding_before_hello,
-            "before_ready": before_ready.sock,
-            "idle": idle.sock,
-            "idle_with_injected": idle_with_injected.sock,
-        }
-        while len(ended) < len(watched) and time.monotonic() - start < 75:
+        while len(ended) < len(watched) and time.monotonic() - start < expected + 15:
             time.sleep(0.5)
-            for sock in (flooding_before_hello, before_ready.sock, idle_with_injected.sock):
+            for sock in injected_into:
                 try:
                     sock.sendall(injected)
                 except OSError:
@@ -705,11 +689,39 @@ class SessionTest(ServerTestCase):
                 if name not in ended and is_closed(sock):
                     ended[name] = time.monotonic() - started[name]
         self.assertEqual(set(ended), set(watched))
-        for name in ("silent", "flooding_before_hello", "before_ready"):
-            self.assertAlmostEqual(ended[name], 10, delta=2.5, msg=name)
-        for name in ("idle", "idle_with_injected"):
-            self.assertAlmostEqual(ended[name], 60, delta=2.5, msg=name)
+        for name, duration in ended.items():
+            self.assertAlmostEqual(duration, expected, delta=2.5, msg=name)
         self.assert_echo_works(active)
+
+    def test_handshake_timeouts(self):
+        # Each timeout runs from when that connection was accepted. That's when each of these is set up, which on
+        # hardware is about a second apart because of the handshakes. These and `active` take all 4 connections.
+        started = {"silent": time.monotonic()}
+        silent = self.raw_socket()
+        started["flooding_before_hello"] = time.monotonic()
+        flooding_before_hello = self.raw_socket()
+        started["before_ready"] = time.monotonic()
+        before_ready = self.new_client()
+        before_ready.send_client_hello()
+        before_ready.receive_server_hello()
+        active = self.connected_client()
+        watched = {
+            "silent": silent,
+            "flooding_before_hello": flooding_before_hello,
+            "before_ready": before_ready.sock,
+        }
+        self.watch_timeouts(started, watched, (flooding_before_hello, before_ready.sock), active, expected=10)
+
+    @unittest.skipIf(os.environ.get("JL_TEST_SKIP_SLOW"), "this takes over a minute")
+    def test_idle_timeouts(self):
+        # Each timeout runs from when that session last sent a record.
+        idle = self.connected_client()
+        started = {"idle": time.monotonic()}
+        idle_with_injected = self.connected_client()
+        started["idle_with_injected"] = time.monotonic()
+        active = self.connected_client()
+        watched = {"idle": idle.sock, "idle_with_injected": idle_with_injected.sock}
+        self.watch_timeouts(started, watched, (idle_with_injected.sock,), active, expected=60)
 
 
 def begin_update(client, image, reboot_when_done=False):

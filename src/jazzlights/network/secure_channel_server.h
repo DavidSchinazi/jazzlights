@@ -78,7 +78,9 @@ class SecureChannelServer {
  private:
   class Connection;
   static constexpr size_t kMaxHandlers = 4;
-  static constexpr size_t kMaxConnections = 8;
+  // Each connection can have up to a TCP window of 5744 bytes waiting in lwIP, which takes about 7KB of heap that
+  // the channel can't limit, so this keeps that to about 28KB.
+  static constexpr size_t kMaxConnections = 4;
   struct HandlerRange {
     uint64_t firstType;
     uint64_t lastType;
