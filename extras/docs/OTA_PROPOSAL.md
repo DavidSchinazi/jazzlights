@@ -295,14 +295,15 @@ first release defines no features.
     needed to hold either the `ClientHello`, or a record behind any partial TLV, so up to about
     8.2KB. If it can't grow, the connection closes. TLVs that get skipped are never stored. It grows
     to fit each record as soon as its size is known, rather than doubling.
-  - On `vest`, which runs Bluedroid and Wi-Fi on a classic ESP32, only 19-22KB of heap was free
-    during testing, and the largest free block was 10-12KB. Failed allocations are logged with the
-    free heap and the largest free block.
+  - Failed allocations are logged with the free heap and the largest free block.
   - Two GCM contexts, once the keys are derived, and a running SHA-256 of `signed_data`, which
     means the hellos needn't be kept after that.
-- The task also has one shared 4KB send buffer. Each handshake also uses a few KB of temporary
-  mbedTLS heap, and a temporary buffer for the HKDF `info`, which is about the size of both hellos.
-  If that can't be allocated, the connection closes.
+  - An idle authenticated session takes about 1.7KB of heap in all, including lwIP's.
+- The task also has one shared 4KB send buffer. Each handshake also uses up to about 18KB of
+  temporary mbedTLS heap, and a temporary buffer for the HKDF `info`, which is about the size of
+  both hellos. If that can't be allocated, the connection closes.
+- The task uses at most about 3.2KB of its 8KB stack, including during an OTA update, and the
+  rollback task about 1.8KB of its 4KB.
 
 ### Client implementation
 
@@ -565,29 +566,34 @@ doesn't allocate. The rollback task adds a 4KB stack, only until new firmware is
 
 ### Tested on an ATOM Matrix
 
-These ran against `vest_secure_channel_test` over Wi-Fi:
+These ran over Wi-Fi, against `vest_secure_channel_test` unless stated otherwise:
 
-- `test_secure_channel.py`: 82 of the 86 tests that can run on hardware pass. The other 4 send
-  messages of the maximum Length, which don't fit in `vest`'s heap, see "Memory" under "Server
-  implementation". The device closed those connections and carried on.
+- `test_secure_channel.py`: the 89 tests that can run on hardware pass.
 - A handshake takes about 1s.
-- An OTA update of a 1.8MB image from `ota_upload.py`'s update logic takes 38-50s, about 40KB/s.
+- An OTA update of a 1.8MB image from `ota_upload.py`'s update logic takes 38-53s, about 40KB/s.
   The device rebooted into it, and marked it valid 30s after connecting to Wi-Fi.
 - With the new image running, the client skips the update because the versions match.
 - LEDs keep rendering during an update. On `vest`, the computed frame rate drops from about 88 to
   50-83 FPS, the written one from 71 to 44-68 FPS, and the longest gap between frames goes from
   under 55ms to up to 71ms.
 - An image that never marks itself valid rolls back after 10 minutes, to the previous image.
+- An image that crashes at boot rolls back to the previous image on the next boot.
+- A reset through the EN pin partway through a transfer leaves the running image in place, and
+  the next update succeeds.
+- An ESP32-S3 image sent with an `OtaBegin` that claims the ESP32's chip gets rejected by
+  `esp_ota_end()`, with status 9.
+- `vest_espidf` (`framework = espidf, arduino`) and `vest_idf` (`framework = espidf`) update
+  themselves in 32s and 27s, and mark the new image valid 30s after booting.
 - Discovery finds every JazzLights device on the network.
+- Memory on `vest`, which runs Bluedroid and Wi-Fi on a classic ESP32: about 38KB of heap is free
+  with no connections, and `vest_espidf` and `vest_idf` have about 85KB. 8 idle sessions take
+  about 14KB. 8 sessions that each hold a partial 4096-byte TLV don't all fit on `vest`: 5 of
+  them closed because their receive buffers couldn't grow, and free heap went down to 660 bytes,
+  but the device carried on.
 
 On macOS, the first connections from a Python that hasn't been allowed on the local network fail
 with "No route to host". Allowing it in the Local Network privacy settings fixes that.
 
 ### Still to do on hardware
 
-- An update on `framework = espidf, arduino` and `framework = espidf` builds.
-- A power cut during the transfer.
-- An image for the wrong chip, which `esp_ota_end()` must reject.
-- An image that crashes at boot, which must roll back when it reboots.
-- Measure how much memory each connection costs, and how much of their stacks the channel and
-  rollback tasks use.
+- Cut the power partway through a transfer. The EN reset above stops the chip but not the flash.
