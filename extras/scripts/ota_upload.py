@@ -32,7 +32,8 @@ OTA_ACK = 7
 OTA_END = 8
 OTA_RESULT = 9
 
-DATA_CHUNK_SIZE = 4096
+# As much as fits in one record, after the OtaData's one-byte Type and two-byte Length.
+DATA_CHUNK_SIZE = secure_channel.DEFAULT_MAX_RECORD_PLAINTEXT - 3
 MAX_UNACKNOWLEDGED = 4
 KEEPALIVE_INTERVAL_SECONDS = 30
 # Flash writes and image verification can take a while, particularly with several devices at once.

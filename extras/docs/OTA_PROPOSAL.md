@@ -91,7 +91,11 @@ TLV = Type (varint) || Length (varint) || Value (Length bytes)
 ```
 
 Type and Length are QUIC variable-length integers (RFC 9000, section 16). Any varint size is
-valid, and our senders use the shortest form. The maximum Length is 16384.
+valid, and our senders use the shortest form.
+
+The maximum Length is 8192 for a `ClientHello`, and 4096 for every other top-level TLV, including
+records, and for every TLV in the stream that records carry. Fields in a container are only
+limited by it. These keep what the server buffers for each connection small enough for the device.
 
 A Value is one of:
 
@@ -103,7 +107,7 @@ A Value is one of:
 Parser rules:
 
 - Unknown types are skipped at every level, without being stored.
-- These are errors, which close the connection: a Length over the maximum or past the end of
+- These are errors, which close the connection: a Length over its maximum or past the end of
   its container, a known field that's repeated or the wrong size, and a missing required field.
   That includes unknown types, whose Length is checked like any other, and containers with no
   fields defined yet, which must still be well formed.
@@ -288,13 +292,12 @@ first release defines no features.
   have.
 - Memory, allocated per connection:
   - A receive buffer, created when the first bytes arrive. It starts at 256 bytes and grows as
-    needed to hold a hello, a record and any partial TLV, so up to about 32KB. If it can't grow,
-    the connection closes. TLVs that get skipped are never stored, however long they are. It grows
+    needed to hold either the `ClientHello`, or a record behind any partial TLV, so up to about
+    8.2KB. If it can't grow, the connection closes. TLVs that get skipped are never stored. It grows
     to fit each record as soon as its size is known, rather than doubling.
   - On `vest`, which runs Bluedroid and Wi-Fi on a classic ESP32, only 19-22KB of heap was free
-    during testing, and the largest free block was 10-12KB. So messages near the maximum Length
-    don't fit there, and those connections close. Failed allocations are logged with the free heap
-    and the largest free block.
+    during testing, and the largest free block was 10-12KB. Failed allocations are logged with the
+    free heap and the largest free block.
   - Two GCM contexts, once the keys are derived, and a running SHA-256 of `signed_data`, which
     means the hellos needn't be kept after that.
 - The task also has one shared 4KB send buffer. Each handshake also uses a few KB of temporary
@@ -340,7 +343,7 @@ Client                                  Server
 | 3 | `OtaQuery` | client → server | fields; none yet |
 | 4 | `OtaInfo` | server → client | fields, below |
 | 5 | `OtaBegin` | client → server | fields, below |
-| 6 | `OtaData` | client → server | bytes: the next bytes of the image. Clients send 4096 at a time, or fewer at the end, and the server accepts any size up to the maximum Length. |
+| 6 | `OtaData` | client → server | bytes: the next bytes of the image. Clients send as many as fit in one record, which is 4077, or fewer at the end, and the server accepts any size up to the maximum Length. |
 | 7 | `OtaAck` | server → client | fields: `bytes_written` (type 0, integer). The first, with 0, answers `OtaBegin`, and there's one after each `OtaData`. |
 | 8 | `OtaEnd` | client → server | fields; none yet |
 | 9 | `OtaResult` | server → client | fields: `status` (type 0, integer), see below. Also answers an `OtaBegin` or `OtaEnd` that can't go ahead. |
@@ -511,14 +514,15 @@ doesn't allocate. The rollback task adds a 4KB stack, only until new firmware is
 
 - Malformed input:
   - varints: longer than needed (accepted), cut off
-  - Lengths: past their container; exactly 16384 and over it, at every level
+  - Lengths: past their container; exactly the maximum and over it, for a `ClientHello`, other
+    top-level TLVs, records and TLVs in the stream; fields larger than 4096 in a container
   - fields: repeated, wrong size, missing; unknown at every level (skipped)
   - top-level: a known message out of order; injected data, which must not extend a timeout
   - tampering: a hello with a changed skipped field or re-encoded varint; a `Record` with its
     Type or Length re-encoded
   - ready messages: split across records; sharing a record with other TLVs; repeated; in the
     wrong direction; after an unknown TLV; after a TLV of type 3 or up, which must be skipped
-  - records: several TLVs in one; a TLV split at every possible byte; an unknown TLV of 16384
+  - records: several TLVs in one; a TLV split at every possible byte; an unknown TLV of 4096
     bytes spanning records; no plaintext; anything after `Close`
 - The channel:
   - handshake: happy path; wrong private key; a public key not in the firmware; `ClientHello`
@@ -530,7 +534,8 @@ doesn't allocate. The rollback task adds a 4KB stack, only until new firmware is
   - sessions: a silent client; 8 clients at once; one failing while others carry on; `Echo`
     interleaved with an OTA update; all 8 connections taken, by sessions and by unfinished
     handshakes; a flood of new connections during a session; the idle timeout
-  - limits: a `ClientHello` and a `ClientReady` of exactly 16384 bytes with large skipped fields;
+  - limits: a `ClientHello` of exactly 8192 bytes and a `ClientReady` of exactly 4096, with large
+    skipped fields;
     endless skipped TLVs instead of `ClientReady`, which must be closed after 10s
 - The OTA client:
   - `software_version.py` on a clean checkout, a changed tracked file, a new untracked file and an

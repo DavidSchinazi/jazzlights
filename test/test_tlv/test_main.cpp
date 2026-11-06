@@ -72,23 +72,27 @@ void test_varint_rfc_examples() {
 void test_header_status() {
   TlvHeader header;
   const uint8_t complete[] = {0x05, 0x02, 0xaa};
-  TEST_ASSERT_TRUE(ParseTlvHeader(complete, sizeof(complete), &header) == TlvHeaderStatus::kComplete);
+  TEST_ASSERT_TRUE(ParseTlvHeader(complete, sizeof(complete), kMaxVarint, &header) == TlvHeaderStatus::kComplete);
   TEST_ASSERT_TRUE(header.type == 5);
   TEST_ASSERT_EQUAL(2, header.length);
   TEST_ASSERT_EQUAL(2, header.headerSize);
-  TEST_ASSERT_TRUE(ParseTlvHeader(complete, 0, &header) == TlvHeaderStatus::kNeedMoreData);
-  TEST_ASSERT_TRUE(ParseTlvHeader(complete, 1, &header) == TlvHeaderStatus::kNeedMoreData);
+  TEST_ASSERT_TRUE(ParseTlvHeader(complete, 0, kMaxVarint, &header) == TlvHeaderStatus::kNeedMoreData);
+  TEST_ASSERT_TRUE(ParseTlvHeader(complete, 1, kMaxVarint, &header) == TlvHeaderStatus::kNeedMoreData);
   const uint8_t cutOffLength[] = {0x05, 0x40};
-  TEST_ASSERT_TRUE(ParseTlvHeader(cutOffLength, sizeof(cutOffLength), &header) == TlvHeaderStatus::kNeedMoreData);
+  TEST_ASSERT_TRUE(ParseTlvHeader(cutOffLength, sizeof(cutOffLength), 0, &header) == TlvHeaderStatus::kNeedMoreData);
   // Exactly the maximum Length, then one over. Both take a four-byte varint because 16384 doesn't fit in two.
+  constexpr uint64_t kMaxLength = 16384;
   const uint8_t maximum[] = {0x05, 0x80, 0x00, 0x40, 0x00};
-  TEST_ASSERT_TRUE(ParseTlvHeader(maximum, sizeof(maximum), &header) == TlvHeaderStatus::kComplete);
-  TEST_ASSERT_EQUAL(kMaxTlvLength, header.length);
+  TEST_ASSERT_TRUE(ParseTlvHeader(maximum, sizeof(maximum), kMaxLength, &header) == TlvHeaderStatus::kComplete);
+  TEST_ASSERT_EQUAL(kMaxLength, header.length);
   const uint8_t overMaximum[] = {0x05, 0x80, 0x00, 0x40, 0x01};
-  TEST_ASSERT_TRUE(ParseTlvHeader(overMaximum, sizeof(overMaximum), &header) == TlvHeaderStatus::kInvalid);
+  TEST_ASSERT_TRUE(ParseTlvHeader(overMaximum, sizeof(overMaximum), kMaxLength, &header) == TlvHeaderStatus::kInvalid);
   // The largest Length that a varint can hold must not wrap around anything when narrowed.
   const uint8_t huge[] = {0x05, 0xc0, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00};
-  TEST_ASSERT_TRUE(ParseTlvHeader(huge, sizeof(huge), &header) == TlvHeaderStatus::kInvalid);
+  TEST_ASSERT_TRUE(ParseTlvHeader(huge, sizeof(huge), kMaxLength, &header) == TlvHeaderStatus::kInvalid);
+  const uint8_t largest[] = {0x05, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+  TEST_ASSERT_TRUE(ParseTlvHeader(largest, sizeof(largest), kMaxVarint, &header) == TlvHeaderStatus::kComplete);
+  TEST_ASSERT_TRUE(header.length == kMaxVarint);
 }
 
 void test_reader_iterates() {
@@ -139,17 +143,19 @@ void test_reader_errors() {
   TEST_ASSERT_FALSE(goodThenBadReader.Next());
 }
 
-void test_reader_maximum_length() {
-  std::vector<uint8_t> value(kMaxTlvLength, 0x11);
+// Only the container limits the Length of a field.
+void test_reader_large_field() {
+  const std::vector<uint8_t> value(20000, 0x11);
   std::vector<uint8_t> tlv = MakeTlv(7, value);
   TlvReader reader(tlv.data(), tlv.size());
   TEST_ASSERT_TRUE(reader.Next());
-  TEST_ASSERT_EQUAL(kMaxTlvLength, reader.length());
-  value.push_back(0x11);
-  tlv = MakeTlv(7, value);
-  TlvReader overReader(tlv.data(), tlv.size());
-  TEST_ASSERT_FALSE(overReader.Next());
-  TEST_ASSERT_TRUE(overReader.failed());
+  TEST_ASSERT_EQUAL(value.size(), reader.length());
+  TEST_ASSERT_FALSE(reader.Next());
+  TEST_ASSERT_FALSE(reader.failed());
+  tlv.pop_back();
+  TlvReader cutOffReader(tlv.data(), tlv.size());
+  TEST_ASSERT_FALSE(cutOffReader.Next());
+  TEST_ASSERT_TRUE(cutOffReader.failed());
 }
 
 void test_integer() {
@@ -263,8 +269,11 @@ void test_writer_rejects_oversized_type_and_length() {
   typeWriter.WriteFlag(kMaxVarint + 1);
   TEST_ASSERT_TRUE(typeWriter.failed());
   TlvWriter lengthWriter(buffer, sizeof(buffer));
-  lengthWriter.WriteBytes(1, buffer, kMaxTlvLength + 1);
+  lengthWriter.WriteBytes(1, buffer, kMaxVarint + 1);
   TEST_ASSERT_TRUE(lengthWriter.failed());
+  TlvWriter hugeLengthWriter(buffer, sizeof(buffer));
+  hugeLengthWriter.WriteBytes(1, buffer, UINT64_MAX);
+  TEST_ASSERT_TRUE(hugeLengthWriter.failed());
   TlvWriter maxTypeWriter(buffer, sizeof(buffer));
   maxTypeWriter.WriteFlag(kMaxVarint);
   TEST_ASSERT_FALSE(maxTypeWriter.failed());
@@ -285,7 +294,7 @@ int main(int /*argc*/, char** /*argv*/) {
   RUN_TEST(jazzlights::test_reader_iterates);
   RUN_TEST(jazzlights::test_reader_empty_container);
   RUN_TEST(jazzlights::test_reader_errors);
-  RUN_TEST(jazzlights::test_reader_maximum_length);
+  RUN_TEST(jazzlights::test_reader_large_field);
   RUN_TEST(jazzlights::test_integer);
   RUN_TEST(jazzlights::test_fields_success);
   RUN_TEST(jazzlights::test_fields_errors);

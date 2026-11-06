@@ -53,10 +53,12 @@ constexpr size_t kKeyMaterialSize = 2 * (kGcmKeySize + kGcmIvSize);
 constexpr size_t kRecordHeaderMaxSize = 3;
 constexpr size_t kSendBufferSize = 4096;
 constexpr size_t kMaxPlaintextPerSentRecord = kSendBufferSize - kRecordHeaderMaxSize - kGcmTagSize;
+static_assert(kMaxPlaintextPerSentRecord + kGcmTagSize <= kSecureChannelMaxLength);
 constexpr size_t kInitialReceiveBufferSize = 256;
-// The buffer needs to hold one complete record behind one partial TLV. Each has a Value of at most kMaxTlvLength, and
-// their headers can take up to kMaxTlvHeaderSize since varints can take any size.
-constexpr size_t kMaxReceiveBufferSize = 2 * (kMaxTlvHeaderSize + kMaxTlvLength);
+// The buffer needs to hold either the ClientHello, or one complete record behind one partial TLV. Their headers can
+// take up to kMaxTlvHeaderSize since varints can take any size.
+constexpr size_t kMaxReceiveBufferSize =
+    std::max(kMaxTlvHeaderSize + kSecureChannelMaxClientHelloLength, 2 * (kMaxTlvHeaderSize + kSecureChannelMaxLength));
 constexpr Microseconds kHandshakeTimeout = 10 * kMicrosecondsPerSecond;
 constexpr Microseconds kIdleTimeout = 60 * kMicrosecondsPerSecond;
 constexpr Microseconds kFlushTimeout = 1 * kMicrosecondsPerSecond;
@@ -360,13 +362,16 @@ void SecureChannelServer::Connection::ProcessRaw() {
     }
     if (rawStart_ == rawEnd_) { return; }
     TlvHeader header;
-    const TlvHeaderStatus status = ParseTlvHeader(buffer_ + rawStart_, rawEnd_ - rawStart_, &header);
+    // Only a ClientHello can be larger, so this needs to look at the type before checking the Length.
+    const TlvHeaderStatus status =
+        ParseTlvHeader(buffer_ + rawStart_, rawEnd_ - rawStart_, kSecureChannelMaxClientHelloLength, &header);
     if (status == TlvHeaderStatus::kNeedMoreData) { return; }
-    if (status == TlvHeaderStatus::kInvalid) {
+    if (status == TlvHeaderStatus::kInvalid ||
+        (header.type != kTopLevelClientHello && header.length > kSecureChannelMaxLength)) {
       Fail("sent a top-level Length that's too large");
       return;
     }
-    // ParseTlvHeader() limits the Length to kMaxTlvLength, so it fits in a size_t.
+    // That limits the Length, so it fits in a size_t.
     const size_t tlvLength = header.headerSize + static_cast<size_t>(header.length);
     if (header.type > kTopLevelRecord) {
       // Anyone on the network path can inject these, so they must have no effect on the session.
@@ -401,7 +406,7 @@ void SecureChannelServer::Connection::ProcessRecord(const TlvHeader& header) {
     Fail("sent a record with no plaintext");
     return;
   }
-  // ParseTlvHeader() limits the Length to kMaxTlvLength, so it fits in a size_t.
+  // ProcessRaw() limited the Length, so it fits in a size_t.
   const size_t valueLength = static_cast<size_t>(header.length);
   const size_t plaintextLength = valueLength - kGcmTagSize;
   uint8_t aad[kMaxTlvHeaderSize];
@@ -440,13 +445,13 @@ void SecureChannelServer::Connection::ProcessPlaintext() {
     TlvHeader header;
     const uint8_t* tlv = buffer_ + plaintextStart_;
     const size_t available = plaintextEnd_ - plaintextStart_;
-    const TlvHeaderStatus status = ParseTlvHeader(tlv, available, &header);
+    const TlvHeaderStatus status = ParseTlvHeader(tlv, available, kSecureChannelMaxLength, &header);
     if (status == TlvHeaderStatus::kNeedMoreData) { return; }
     if (status == TlvHeaderStatus::kInvalid) {
       Fail("sent a TLV whose Length is too large");
       return;
     }
-    // ParseTlvHeader() limits the Length to kMaxTlvLength, so it fits in a size_t.
+    // ParseTlvHeader() limited the Length, so it fits in a size_t.
     const size_t tlvLength = header.headerSize + static_cast<size_t>(header.length);
     const bool authenticated = state_ == State::kAuthenticated;
     SecureChannelHandler* handler = nullptr;
@@ -517,7 +522,7 @@ bool SecureChannelServer::Connection::HandleClientHello(const uint8_t* tlv, cons
   receiveKeys_ = new (std::nothrow) RecordKeys();
   signedDataHash_ = new (std::nothrow) mbedtls_sha256_context();
   if (signedDataHash_ != nullptr) { mbedtls_sha256_init(signedDataHash_); }
-  // ParseTlvHeader() limits the Length to kMaxTlvLength, so it fits in a size_t.
+  // ProcessRaw() limited the Length, so it fits in a size_t.
   const size_t clientHelloLength = header.headerSize + static_cast<size_t>(header.length);
   const bool success =
       sendKeys_ != nullptr && receiveKeys_ != nullptr && signedDataHash_ != nullptr &&
@@ -617,7 +622,7 @@ bool SecureChannelServer::Connection::SendRecord(size_t plaintextLength) {
 }
 
 bool SecureChannelServer::Connection::SendTlv(uint64_t type, const uint8_t* value, uint64_t length) {
-  // Callers make sure that this is at most kMaxTlvLength, so it fits in a size_t.
+  // Callers make sure that this is at most kSecureChannelMaxLength, so it fits in a size_t.
   const size_t valueSize = static_cast<size_t>(length);
   uint8_t* plaintext = server_->sendBuffer_ + kRecordHeaderMaxSize;
   size_t buffered = WriteVarint(type, plaintext);
@@ -635,7 +640,7 @@ bool SecureChannelServer::Connection::SendTlv(uint64_t type, const uint8_t* valu
 
 bool SecureChannelServer::Connection::Send(uint64_t type, const uint8_t* value, uint64_t length) {
   if (state_ != State::kAuthenticated) { return false; }
-  if (type < kSecureChannelFirstHandlerType || type > kMaxVarint || length > kMaxTlvLength) {
+  if (type < kSecureChannelFirstHandlerType || type > kMaxVarint || length > kSecureChannelMaxLength) {
     jll_fatal("SecureChannel handler sent an invalid TLV of type %llu and length %llu",
               static_cast<unsigned long long>(type), static_cast<unsigned long long>(length));
   }

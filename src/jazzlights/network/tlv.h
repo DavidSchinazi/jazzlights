@@ -11,8 +11,10 @@ namespace jazzlights {
 //
 // Lengths of TLVs and of their Values, and offsets within them, are uint64_t because that's what a varint can hold.
 // Only sizes of buffers in memory are size_t.
+//
+// The maximum Length depends on where a TLV is, so callers of ParseTlvHeader() choose it. Fields in a container are
+// only limited by it.
 
-inline constexpr uint64_t kMaxTlvLength = 16384;
 inline constexpr uint64_t kMaxVarint = (uint64_t{1} << 62) - 1;
 inline constexpr size_t kMaxVarintSize = 8;
 inline constexpr size_t kMaxTlvHeaderSize = 2 * kMaxVarintSize;
@@ -35,7 +37,7 @@ size_t ReadVarint(const uint8_t* data, uint64_t length, uint64_t* value);
 enum class TlvHeaderStatus {
   kComplete,
   kNeedMoreData,
-  kInvalid,  // The Length is over kMaxTlvLength.
+  kInvalid,  // The Length is over the maximum.
 };
 
 struct TlvHeader {
@@ -44,8 +46,9 @@ struct TlvHeader {
   size_t headerSize = 0;
 };
 
-// Parses a Type and Length from the start of `data`. The Value might not have arrived yet.
-TlvHeaderStatus ParseTlvHeader(const uint8_t* data, uint64_t length, TlvHeader* header);
+// Parses a Type and Length from the start of `data`. The Value might not have arrived yet. A Length over `maxLength` is
+// invalid, as long as the Type and Length are complete.
+TlvHeaderStatus ParseTlvHeader(const uint8_t* data, uint64_t length, uint64_t maxLength, TlvHeader* header);
 
 // Iterates over the TLVs of a complete container. Unknown types are up to the caller to skip.
 class TlvReader {

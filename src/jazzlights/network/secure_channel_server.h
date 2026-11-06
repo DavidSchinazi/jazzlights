@@ -20,6 +20,11 @@ inline constexpr size_t kSecureChannelPublicKeySize = 65;
 // The first type that's available to uses of the channel. Lower types are reserved for the channel itself.
 inline constexpr uint64_t kSecureChannelFirstHandlerType = 3;
 
+// The maximum Length of a ClientHello. That of any other top-level TLV, including records, and of any TLV in the stream
+// that records carry, is kSecureChannelMaxLength. These keep what a connection buffers small enough for the device.
+inline constexpr uint64_t kSecureChannelMaxClientHelloLength = 8192;
+inline constexpr uint64_t kSecureChannelMaxLength = 4096;
+
 // The Close status for a handler that received a malformed TLV.
 inline constexpr uint64_t kSecureChannelStatusMalformed = 1;
 
@@ -28,7 +33,8 @@ using SecureChannelPublicKey = std::array<uint8_t, kSecureChannelPublicKeySize>;
 // One authenticated session. Must only be used from the channel's task, which is where handlers run.
 class SecureSession {
  public:
-  // Sends one TLV, whose type must be at least kSecureChannelFirstHandlerType. Returns false if the session has ended,
+  // Sends one TLV, whose type must be at least kSecureChannelFirstHandlerType and whose length must be at most
+  // kSecureChannelMaxLength. Returns false if the session has ended,
   // or if the client stopped reading, which ends the session.
   virtual bool Send(uint64_t type, const uint8_t* value, uint64_t length) = 0;
   // Sends a Close with this status and ends the session. A status of 0 means no error.

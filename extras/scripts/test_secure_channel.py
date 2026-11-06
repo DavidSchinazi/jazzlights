@@ -323,11 +323,16 @@ class TopLevelTest(ServerTestCase):
 
     def test_length_limits(self):
         client = self.new_client()
-        client.send_raw(sc.encode_tlv(77, bytes(sc.MAX_TLV_LENGTH)))
+        client.send_raw(sc.encode_tlv(77, bytes(sc.MAX_LENGTH)))
         client.send_client_hello()
         client.receive_server_hello()
-        client.send_raw(sc.encode_varint(77) + sc.encode_varint(sc.MAX_TLV_LENGTH + 1))
+        client.send_raw(sc.encode_varint(77) + sc.encode_varint(sc.MAX_LENGTH + 1))
         self.assert_session_failed(client)
+
+    def test_unknown_top_level_tlv_cant_be_as_large_as_a_client_hello(self):
+        client = self.new_client()
+        client.send_raw(sc.encode_varint(77) + sc.encode_varint(sc.MAX_CLIENT_HELLO_LENGTH))
+        self.assert_socket_closed(client.sock)
 
     def test_huge_varint_length(self):
         client = self.new_client()
@@ -337,9 +342,9 @@ class TopLevelTest(ServerTestCase):
     def test_client_hello_of_maximum_size(self):
         client = self.new_client()
         point = sc.encode_tlv(0, sc.public_key_bytes(client.ephemeral_private.public_key()))
-        padding = sc.encode_tlv(5, bytes(sc.MAX_TLV_LENGTH - len(point) - 3))
+        padding = sc.encode_tlv(5, bytes(sc.MAX_CLIENT_HELLO_LENGTH - len(point) - 3))
         hello = sc.encode_tlv(sc.TOP_CLIENT_HELLO, point + padding)
-        self.assertEqual(sc.parse_tlv_header(hello)[1], sc.MAX_TLV_LENGTH)
+        self.assertEqual(sc.parse_tlv_header(hello)[1], sc.MAX_CLIENT_HELLO_LENGTH)
         client.send_client_hello(hello)
         client.receive_server_hello()
         client.send_stream(client.client_ready_tlv())
@@ -348,11 +353,25 @@ class TopLevelTest(ServerTestCase):
 
     def test_client_hello_over_maximum_size(self):
         client = self.new_client()
-        client.send_raw(sc.encode_varint(sc.TOP_CLIENT_HELLO) + sc.encode_varint(sc.MAX_TLV_LENGTH + 1))
+        client.send_raw(sc.encode_varint(sc.TOP_CLIENT_HELLO) + sc.encode_varint(sc.MAX_CLIENT_HELLO_LENGTH + 1))
         self.assert_socket_closed(client.sock)
 
 
 class RecordTest(ServerTestCase):
+    def test_record_of_maximum_length(self):
+        client = self.connected_client()
+        # The echo's Type and this Length both take two bytes.
+        value = bytes(sc.MAX_LENGTH - sc.GCM_TAG_SIZE - 4)
+        record = client.seal_record(sc.encode_tlv(ECHO, value))
+        self.assertEqual(sc.parse_tlv_header(record)[1], sc.MAX_LENGTH)
+        client.send_raw(record)
+        self.assertEqual(client.receive(), (ECHO, value))
+
+    def test_record_over_maximum_length(self):
+        client = self.connected_client()
+        client.send_raw(sc.encode_varint(sc.TOP_RECORD) + sc.encode_varint(sc.MAX_LENGTH + 1))
+        self.assert_session_failed(client)
+
     def test_flipped_bit(self):
         client = self.connected_client()
         record = bytearray(client.seal_record(sc.encode_tlv(ECHO, b"hello")))
@@ -431,35 +450,33 @@ class RecordTest(ServerTestCase):
 
     def test_largest_tlvs(self):
         client = self.connected_client()
-        value = os.urandom(sc.MAX_TLV_LENGTH)
-        client.send_tlv(ECHO, value)
-        self.assertEqual(client.receive(), (ECHO, value))
-        # In the largest possible records, with the Value of each TLV split over two of them. Each echo is read before
+        value = os.urandom(sc.MAX_LENGTH)
+        # In the largest possible records, so the Value of each TLV is split over two of them. Each echo is read before
         # sending the next, as a device's TCP buffers are too small to hold a whole echo while we're still sending.
-        client.max_record_plaintext = sc.MAX_TLV_LENGTH - sc.GCM_TAG_SIZE
+        self.assertEqual(client.max_record_plaintext, sc.MAX_LENGTH - sc.GCM_TAG_SIZE)
         for _ in range(3):
             client.send_tlv(ECHO, value)
             self.assertEqual(client.receive(), (ECHO, value))
 
     def test_nonminimal_tlv_of_maximum_size(self):
         client = self.connected_client()
-        value = bytes(sc.MAX_TLV_LENGTH)
+        value = bytes(sc.MAX_LENGTH)
         client.send_stream(sc.encode_tlv(ECHO, value, type_size=8, length_size=8))
         self.assertEqual(client.receive(), (ECHO, value))
 
     def test_tlv_over_maximum_length(self):
         client = self.connected_client()
-        client.send_stream(sc.encode_varint(ECHO) + sc.encode_varint(sc.MAX_TLV_LENGTH + 1))
+        client.send_stream(sc.encode_varint(ECHO) + sc.encode_varint(sc.MAX_LENGTH + 1))
         self.assert_session_failed(client)
 
     def test_unknown_tlv_of_maximum_length_spanning_records(self):
         client = self.connected_client()
-        client.send_stream(sc.encode_tlv(UNKNOWN_TYPE, bytes(sc.MAX_TLV_LENGTH)))
+        client.send_stream(sc.encode_tlv(UNKNOWN_TYPE, bytes(sc.MAX_LENGTH)))
         self.assert_echo_works(client)
 
     def test_unknown_tlv_over_maximum_length(self):
         client = self.connected_client()
-        client.send_stream(sc.encode_varint(UNKNOWN_TYPE) + sc.encode_varint(sc.MAX_TLV_LENGTH + 1))
+        client.send_stream(sc.encode_varint(UNKNOWN_TYPE) + sc.encode_varint(sc.MAX_LENGTH + 1))
         self.assert_session_failed(client)
 
     def test_stream_cut_short(self):
@@ -547,7 +564,7 @@ class ReadyMessageTest(ServerTestCase):
 
     def test_tlv_of_type_3_or_up_before_client_ready_is_skipped(self):
         client = self.handshake_until_client_ready()
-        client.send_tlv(ECHO, bytes(sc.MAX_TLV_LENGTH))
+        client.send_tlv(ECHO, bytes(sc.MAX_LENGTH))
         client.send_tlv(ECHO, b"must not be handled")
         client.send_tlv(ota_upload.OTA_QUERY)
         client.send_stream(client.client_ready_tlv())
@@ -567,8 +584,8 @@ class ReadyMessageTest(ServerTestCase):
     def test_client_ready_of_maximum_size(self):
         client = self.handshake_until_client_ready()
         value = sc.encode_client_ready_value(KEY, client.client_hello, client.server_hello)
-        value += sc.encode_tlv(5, bytes(sc.MAX_TLV_LENGTH - len(value) - 3))
-        self.assertEqual(len(value), sc.MAX_TLV_LENGTH)
+        value += sc.encode_tlv(5, bytes(sc.MAX_LENGTH - len(value) - 3))
+        self.assertEqual(len(value), sc.MAX_LENGTH)
         client.send_tlv(sc.RECORD_CLIENT_READY, value)
         client.wait_for_server_ready()
         self.assert_echo_works(client)
@@ -787,8 +804,10 @@ class OtaTest(ServerTestCase):
         image = make_image(50000)
         self.start_update(client, image)
         written = 0
-        for offset in range(0, len(image), ota_upload.DATA_CHUNK_SIZE):
-            chunk = image[offset : offset + ota_upload.DATA_CHUNK_SIZE]
+        # Leaves room in each record for the echo.
+        chunk_size = 4000
+        for offset in range(0, len(image), chunk_size):
+            chunk = image[offset : offset + chunk_size]
             client.send_record(sc.encode_tlv(ota_upload.OTA_DATA, chunk) + sc.encode_tlv(ECHO, b"%d" % offset))
             written += len(chunk)
             self.expect_ack(client, written)

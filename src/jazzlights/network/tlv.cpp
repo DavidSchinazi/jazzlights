@@ -22,14 +22,14 @@ size_t ReadVarint(const uint8_t* data, uint64_t length, uint64_t* value) {
   return size;
 }
 
-TlvHeaderStatus ParseTlvHeader(const uint8_t* data, uint64_t length, TlvHeader* header) {
+TlvHeaderStatus ParseTlvHeader(const uint8_t* data, uint64_t length, uint64_t maxLength, TlvHeader* header) {
   uint64_t type;
   const size_t typeSize = ReadVarint(data, length, &type);
   if (typeSize == 0) { return TlvHeaderStatus::kNeedMoreData; }
   uint64_t valueLength;
   const size_t lengthSize = ReadVarint(data + typeSize, length - typeSize, &valueLength);
   if (lengthSize == 0) { return TlvHeaderStatus::kNeedMoreData; }
-  if (valueLength > kMaxTlvLength) { return TlvHeaderStatus::kInvalid; }
+  if (valueLength > maxLength) { return TlvHeaderStatus::kInvalid; }
   header->type = type;
   header->length = valueLength;
   header->headerSize = typeSize + lengthSize;
@@ -40,8 +40,9 @@ bool TlvReader::Next() {
   if (failed_) { return false; }
   offset_ = next_;
   if (offset_ == length_) { return false; }
-  // A Type or Length that is cut off is past the end of the container, since nothing more can arrive.
-  if (ParseTlvHeader(data_ + offset_, length_ - offset_, &header_) != TlvHeaderStatus::kComplete ||
+  // A Type or Length that is cut off is past the end of the container, since nothing more can arrive. The container is
+  // all that limits the Length.
+  if (ParseTlvHeader(data_ + offset_, length_ - offset_, kMaxVarint, &header_) != TlvHeaderStatus::kComplete ||
       header_.length > length_ - offset_ - header_.headerSize) {
     failed_ = true;
     return false;
@@ -88,8 +89,9 @@ bool ParseTlvFields(const uint8_t* data, uint64_t length, TlvField* fields, size
 }
 
 void TlvWriter::WriteBytes(uint64_t type, const uint8_t* value, uint64_t length) {
-  if (failed_ || type > kMaxVarint || length > kMaxTlvLength ||
-      VarintSize(type) + VarintSize(length) + length > capacity_ - size_) {
+  const size_t available = capacity_ - size_;
+  if (failed_ || type > kMaxVarint || length > kMaxVarint || length > available ||
+      VarintSize(type) + VarintSize(length) > available - length) {
     failed_ = true;
     return;
   }

@@ -22,11 +22,14 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 DEFAULT_PORT = 6699
-MAX_TLV_LENGTH = 16384
+# The maximum Length of a ClientHello, and that of every other top-level TLV and of every TLV in the stream that records
+# carry. Fields in a container are only limited by it.
+MAX_CLIENT_HELLO_LENGTH = 8192
+MAX_LENGTH = 4096
 PUBLIC_KEY_SIZE = 65
 GCM_TAG_SIZE = 16
-# How much plaintext we put in a record by default.
-DEFAULT_MAX_RECORD_PLAINTEXT = 4096
+# How much plaintext we put in a record by default: as much as fits.
+DEFAULT_MAX_RECORD_PLAINTEXT = MAX_LENGTH - GCM_TAG_SIZE
 
 TOP_CLIENT_HELLO = 0
 TOP_SERVER_HELLO = 1
@@ -87,7 +90,7 @@ def encode_integer_field(tlv_type, value):
     return encode_tlv(tlv_type, encode_varint(value))
 
 
-def parse_tlv_header(data, offset=0):
+def parse_tlv_header(data, offset=0, max_length=None):
     """Returns (type, length, value offset), or None if the header is cut off."""
     parsed_type = decode_varint(data, offset)
     if parsed_type is None:
@@ -95,7 +98,7 @@ def parse_tlv_header(data, offset=0):
     parsed_length = decode_varint(data, parsed_type[1])
     if parsed_length is None:
         return None
-    if parsed_length[0] > MAX_TLV_LENGTH:
+    if max_length is not None and parsed_length[0] > max_length:
         raise ProtocolError("Length %d is over the maximum" % parsed_length[0])
     return parsed_type[0], parsed_length[0], parsed_length[1]
 
@@ -244,9 +247,11 @@ class _Peer:
                 skipped = min(self.top_level_to_skip, len(self.received))
                 del self.received[:skipped]
                 self.top_level_to_skip -= skipped
-            header = parse_tlv_header(self.received)
+            header = parse_tlv_header(self.received, max_length=MAX_CLIENT_HELLO_LENGTH)
             if header is not None:
                 tlv_type, length, value_offset = header
+                if tlv_type != TOP_CLIENT_HELLO and length > MAX_LENGTH:
+                    raise ProtocolError("Length %d is over the maximum" % length)
                 if tlv_type > TOP_RECORD:
                     self.top_level_to_skip = value_offset + length
                     continue
@@ -260,7 +265,7 @@ class _Peer:
         """Returns (type, value) for the next TLV in the stream."""
         deadline = time.monotonic() + timeout
         while True:
-            header = parse_tlv_header(self.plaintext)
+            header = parse_tlv_header(self.plaintext, max_length=MAX_LENGTH)
             if header is not None and len(self.plaintext) >= header[2] + header[1]:
                 tlv_type, length, value_offset = header
                 value = bytes(self.plaintext[value_offset : value_offset + length])
