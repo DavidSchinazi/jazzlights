@@ -299,9 +299,15 @@ first release defines no features.
   - Two GCM contexts, once the keys are derived, and a running SHA-256 of `signed_data`, which
     means the hellos needn't be kept after that.
   - An idle authenticated session takes about 1.7KB of heap in all, including lwIP's.
-- The task also has one shared 4KB send buffer. Each handshake also uses up to about 18KB of
-  temporary mbedTLS heap, and a temporary buffer for the HKDF `info`, which is about the size of
-  both hellos. If that can't be allocated, the connection closes.
+- The task also has one shared 4KB send buffer. Handling a `ClientHello` or a `ClientReady`
+  briefly lowers free heap by up to about 10KB, mostly in mbedTLS, and includes a temporary buffer
+  for the HKDF `info`, which is about the size of both hellos. If something can't be allocated,
+  the connection closes.
+- The channel keeps at least 8KB of heap free for the Wi-Fi and Bluetooth stacks and the rest of
+  the firmware. It refuses a new connection unless 2KB more is free, and closes a connection
+  instead of handling its `ClientHello` or `ClientReady` unless 12KB more is free, or instead of
+  growing its receive buffer unless the whole new size is, since `realloc()` might need that much
+  before it frees the old buffer. These are logged.
 - The task uses at most about 3.2KB of its 8KB stack, including during an OTA update, and the
   rollback task about 1.8KB of its 4KB.
 
@@ -501,10 +507,11 @@ doesn't allocate. The rollback task adds a 4KB stack, only until new firmware is
 
 - `extras/secure_channel_test` builds the real `SecureChannelServer` and `OtaHandler` natively,
   under ASan and UBSan, against the mbedTLS version in ESP-IDF. Headers in its `shim/` directory
-  stand in for ESP-IDF, FreeRTOS and lwIP, and keep the flash in memory.
+  stand in for ESP-IDF, FreeRTOS and lwIP, keep the flash in memory, and report whatever free
+  heap a test picks.
 - `extras/scripts/test_secure_channel.py` runs against that server, and CI runs it too. Setting
   `JL_TEST_HOST`, `JL_TEST_KEY` and `JL_TEST_KEY2` runs it against a real device instead, skipping
-  the tests that need the fake flash.
+  the tests that need the fake flash or the fake heap.
 - `test/test_tlv` is a native test of the TLV code, which `pio test -e native` runs.
 - `secure_channel.py` can act as a fake server, and can send malformed messages to a real one.
 - An `Echo` TLV of type 1000 sends its Value back, which checks the channel without touching flash.
@@ -538,6 +545,9 @@ doesn't allocate. The rollback task adds a 4KB stack, only until new firmware is
   - limits: a `ClientHello` of exactly 8192 bytes and a `ClientReady` of exactly 4096, with large
     skipped fields;
     endless skipped TLVs instead of `ClientReady`, which must be closed after 10s
+  - heap, with fake heap: too little for a new connection, a `ClientHello`, or a receive buffer
+    that fits the largest `ClientHello`, which must each be closed; and just enough for the
+    largest `ClientHello` and `Echo`
 - The OTA client:
   - `software_version.py` on a clean checkout, a changed tracked file, a new untracked file and an
     ignored file
@@ -587,9 +597,10 @@ These ran over Wi-Fi, against `vest_secure_channel_test` unless stated otherwise
 - Discovery finds every JazzLights device on the network.
 - Memory on `vest`, which runs Bluedroid and Wi-Fi on a classic ESP32: about 38KB of heap is free
   with no connections, and `vest_espidf` and `vest_idf` have about 85KB. 8 idle sessions take
-  about 14KB. 8 sessions that each hold a partial 4096-byte TLV don't all fit on `vest`: 5 of
-  them closed because their receive buffers couldn't grow, and free heap went down to 660 bytes,
-  but the device carried on.
+  about 14KB. 8 sessions that each hold a partial 4096-byte TLV don't all fit on `vest`: 4 or 5
+  of them close because the heap floor stops their receive buffers from growing, and the device
+  carries on. Free heap still briefly drops to about 1.8KB, because lwIP holds up to a TCP window
+  of 5744 bytes per connection before the channel reads it, which the floor doesn't cover.
 
 On macOS, the first connections from a Python that hasn't been allowed on the local network fail
 with "No route to host". Allowing it in the Local Network privacy settings fixes that.

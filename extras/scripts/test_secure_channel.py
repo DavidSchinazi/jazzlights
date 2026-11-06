@@ -731,6 +731,71 @@ def send_image(client, image):
         assert tlv_type == ota_upload.OTA_ACK and ota_ack(value) == written
 
 
+# The server keeps 8KB of heap free, and wants 2KB more for a connection and 12KB more for each half of a handshake.
+MIN_FREE_HEAP = 8 * 1024
+
+
+def heap_server_args(free_heap):
+    return ("--free-heap", str(free_heap))
+
+
+class HeapTestBase(ServerTestCase):
+    def assert_logged(self, message):
+        with open(self.log_path, encoding="utf-8") as f:
+            self.assertIn(message, f.read())
+
+    def largest_client_hello(self, client):
+        point = sc.encode_tlv(0, sc.public_key_bytes(client.ephemeral_private.public_key()))
+        return sc.encode_tlv(
+            sc.TOP_CLIENT_HELLO, point + sc.encode_tlv(5, bytes(sc.MAX_CLIENT_HELLO_LENGTH - len(point) - 3))
+        )
+
+
+@unittest.skipUnless(NATIVE, "needs a fake heap")
+class EnoughHeapTest(HeapTestBase):
+    server_args = heap_server_args(MIN_FREE_HEAP + 12 * 1024)
+
+    def test_largest_client_hello_and_echo(self):
+        client = self.new_client()
+        client.send_client_hello(self.largest_client_hello(client))
+        client.receive_server_hello()
+        client.send_stream(client.client_ready_tlv())
+        client.wait_for_server_ready()
+        self.assert_echo_works(client, os.urandom(sc.MAX_LENGTH))
+
+
+@unittest.skipUnless(NATIVE, "needs a fake heap")
+class LowHeapTest(HeapTestBase):
+    server_args = heap_server_args(MIN_FREE_HEAP + 12 * 1024 - 1)
+
+    def test_handshake_refused(self):
+        client = self.new_client()
+        client.send_client_hello()
+        self.assert_closed_without_close(client)
+        self.assert_logged("couldn't handle its ClientHello without leaving too little heap")
+
+
+@unittest.skipUnless(NATIVE, "needs a fake heap")
+class VeryLowHeapTest(HeapTestBase):
+    server_args = heap_server_args(MIN_FREE_HEAP + 4096)
+
+    def test_largest_client_hello_refused(self):
+        """Its receive buffer can't grow enough."""
+        client = self.new_client()
+        client.send_client_hello(self.largest_client_hello(client))
+        self.assert_closed_without_close(client)
+        self.assert_logged("couldn't grow its receive buffer without leaving too little heap")
+
+
+@unittest.skipUnless(NATIVE, "needs a fake heap")
+class NoHeapForConnectionsTest(HeapTestBase):
+    server_args = heap_server_args(MIN_FREE_HEAP + 2 * 1024 - 1)
+
+    def test_connection_refused(self):
+        self.assert_socket_closed(self.raw_socket())
+        self.assert_logged("won't use 2048 bytes of heap for a new connection")
+
+
 class OtaTest(ServerTestCase):
     def expect_result(self, client, status):
         tlv_type, value = client.receive()

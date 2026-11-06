@@ -1,10 +1,13 @@
 // The server that extras/scripts/test_secure_channel.py tests, see CMakeLists.txt.
 //
 // Usage: secure-channel-test-server [--no-partition] [--pending-verify] [--image-out <path>]
-//                                   [--rollback-guard <mode>] [--rollback-impossible] <hex public key>...
+//                                   [--rollback-guard <mode>] [--rollback-impossible] [--free-heap <bytes>]
+//                                   <hex public key>...
 //
 // --rollback-guard runs OtaRollbackGuard with shorter times, where <mode> says what the fake primary runloop reports:
 // working, no-network, no-render, late-network, or hung to not run it at all.
+//
+// --free-heap sets how much free heap the channel sees, which is 1GB otherwise.
 
 #include <signal.h>
 #include <unistd.h>
@@ -15,6 +18,7 @@
 #include <string>
 #include <vector>
 
+#include "esp_heap_caps.h"
 #include "esp_ota_ops.h"
 #include "esp_system.h"
 #include "jazzlights/network/ota_handler.h"
@@ -38,6 +42,7 @@ bool gHasPartition = true;
 std::atomic<bool> gPendingVerify{false};
 bool gRollbackImpossible = false;
 std::string gImageOutPath;
+size_t gFreeHeap = 1024 * 1024 * 1024;
 std::vector<uint8_t> gPartitionData;
 bool gWriting = false;
 
@@ -130,6 +135,9 @@ esp_err_t esp_ota_mark_app_invalid_rollback_and_reboot() {
   _exit(kRollbackExitCode);
 }
 
+size_t heap_caps_get_free_size(uint32_t /*caps*/) { return gFreeHeap; }
+size_t heap_caps_get_largest_free_block(uint32_t /*caps*/) { return gFreeHeap; }
+
 int main(int argc, char** argv) {
   using namespace jazzlights;
   // Writing to a socket that the test closed must not kill us.
@@ -149,6 +157,8 @@ int main(int argc, char** argv) {
       rollbackGuardMode = argv[++i];
     } else if (arg == "--rollback-impossible") {
       gRollbackImpossible = true;
+    } else if (arg == "--free-heap") {
+      gFreeHeap = std::stoul(argv[++i]);
     } else {
       if (arg.size() != 2 * kSecureChannelPublicKeySize) {
         fprintf(stderr, "Invalid public key %s\n", arg.c_str());

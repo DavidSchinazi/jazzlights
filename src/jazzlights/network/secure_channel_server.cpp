@@ -59,6 +59,13 @@ constexpr size_t kInitialReceiveBufferSize = 256;
 // take up to kMaxTlvHeaderSize since varints can take any size.
 constexpr size_t kMaxReceiveBufferSize =
     std::max(kMaxTlvHeaderSize + kSecureChannelMaxClientHelloLength, 2 * (kMaxTlvHeaderSize + kSecureChannelMaxLength));
+// The channel won't accept a connection, grow a receive buffer or run part of a handshake if that could leave less free
+// heap than this, so that the Wi-Fi and Bluetooth stacks and the rest of the firmware can still allocate.
+constexpr size_t kMinFreeHeap = 8 * 1024;
+// How far free heap can drop while handling a ClientHello or a ClientReady. On vest it dropped by up to about 10KB.
+constexpr size_t kHandshakeHeap = 12 * 1024;
+// What a new connection takes before it receives anything, mostly in lwIP.
+constexpr size_t kConnectionHeap = 2 * 1024;
 constexpr Microseconds kHandshakeTimeout = 10 * kMicrosecondsPerSecond;
 constexpr Microseconds kIdleTimeout = 60 * kMicrosecondsPerSecond;
 constexpr Microseconds kFlushTimeout = 1 * kMicrosecondsPerSecond;
@@ -78,6 +85,15 @@ void LogAllocationFailure(const char* purpose, size_t size) {
   jll_error("SecureChannel couldn't allocate %zu bytes for %s, with %zu bytes free and a largest free block of %zu",
             size, purpose, heap_caps_get_free_size(MALLOC_CAP_DEFAULT),
             heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT));
+}
+
+// Returns whether using this much more heap would leave at least kMinFreeHeap free.
+bool HeapAllows(size_t needed, const char* purpose) {
+  const size_t freeHeap = heap_caps_get_free_size(MALLOC_CAP_DEFAULT);
+  if (freeHeap >= kMinFreeHeap && freeHeap - kMinFreeHeap >= needed) { return true; }
+  jll_info("SecureChannel won't use %zu bytes of heap for %s, since only %zu bytes are free", needed, purpose,
+           freeHeap);
+  return false;
 }
 
 int RandomCallback(void* /*context*/, unsigned char* output, size_t length) {
@@ -341,6 +357,11 @@ bool SecureChannelServer::Connection::Compact(size_t neededCapacity) {
   rawStart_ = plaintextLength;
   rawEnd_ = plaintextLength + rawLength;
   if (neededCapacity > capacity_) {
+    // realloc() might need a new block of the whole size before it frees the old one.
+    if (!HeapAllows(neededCapacity, "a receive buffer")) {
+      Fail("couldn't grow its receive buffer without leaving too little heap");
+      return false;
+    }
     uint8_t* newBuffer = static_cast<uint8_t*>(realloc(buffer_, neededCapacity));
     if (newBuffer == nullptr) {
       LogAllocationFailure("a receive buffer", neededCapacity);
@@ -390,6 +411,10 @@ void SecureChannelServer::Connection::ProcessRaw() {
       return;
     }
     if (header.type == kTopLevelClientHello) {
+      if (!HeapAllows(kHandshakeHeap, "a ClientHello")) {
+        Fail("couldn't handle its ClientHello without leaving too little heap");
+        return;
+      }
       if (!HandleClientHello(buffer_ + rawStart_, header)) {
         Fail("sent an invalid ClientHello");
         return;
@@ -474,6 +499,10 @@ void SecureChannelServer::Connection::ProcessPlaintext() {
     const uint8_t* value = tlv + header.headerSize;
     plaintextStart_ += tlvLength;
     if (header.type == kRecordClientReady) {
+      if (!HeapAllows(kHandshakeHeap, "a ClientReady")) {
+        Fail("couldn't handle its ClientReady without leaving too little heap");
+        return;
+      }
       if (!HandleClientReady(value, header.length)) {
         Fail("failed authentication");
         return;
@@ -759,6 +788,10 @@ void SecureChannelServer::AcceptConnection() {
   }
   if (slot == nullptr) {
     jll_info("SecureChannel refusing connection since all %zu are authenticated", kMaxConnections);
+    close(sock);
+    return;
+  }
+  if (!HeapAllows(kConnectionHeap, "a new connection")) {
     close(sock);
     return;
   }
