@@ -180,7 +180,7 @@ class SecureChannelServer::Connection : public SecureSession {
   bool DiscardWhileDraining();
 
   // From SecureSession.
-  bool Send(uint64_t type, const uint8_t* value, size_t length) override;
+  bool Send(uint64_t type, const uint8_t* value, uint64_t length) override;
   void Close(uint64_t status) override;
 
  private:
@@ -193,11 +193,11 @@ class SecureChannelServer::Connection : public SecureSession {
   void ProcessRecord(const TlvHeader& header);
   void ProcessPlaintext();
   bool HandleClientHello(const uint8_t* tlv, const TlvHeader& header);
-  bool HandleClientReady(const uint8_t* value, size_t length);
-  void HandleClose(const uint8_t* value, size_t length);
+  bool HandleClientReady(const uint8_t* value, uint64_t length);
+  void HandleClose(const uint8_t* value, uint64_t length);
   bool WriteAll(const uint8_t* data, size_t length);
   bool SendRecord(size_t plaintextLength);
-  bool SendTlv(uint64_t type, const uint8_t* value, size_t length);
+  bool SendTlv(uint64_t type, const uint8_t* value, uint64_t length);
 
   SecureChannelServer* server_;
   int socket_;
@@ -431,8 +431,7 @@ void SecureChannelServer::Connection::ProcessPlaintext() {
       return;
     }
     // ParseTlvHeader() limits the Length to kMaxTlvLength, so it fits in a size_t.
-    const size_t valueLength = static_cast<size_t>(header.length);
-    const size_t tlvLength = header.headerSize + valueLength;
+    const size_t tlvLength = header.headerSize + static_cast<size_t>(header.length);
     const bool authenticated = state_ == State::kAuthenticated;
     SecureChannelHandler* handler = nullptr;
     if (header.type == kRecordServerReady) {
@@ -454,14 +453,14 @@ void SecureChannelServer::Connection::ProcessPlaintext() {
     const uint8_t* value = tlv + header.headerSize;
     plaintextStart_ += tlvLength;
     if (header.type == kRecordClientReady) {
-      if (!HandleClientReady(value, valueLength)) {
+      if (!HandleClientReady(value, header.length)) {
         Fail("failed authentication");
         return;
       }
     } else if (header.type == kRecordClose) {
-      HandleClose(value, valueLength);
+      HandleClose(value, header.length);
     } else {
-      handler->OnTlv(*this, header.type, value, valueLength);
+      handler->OnTlv(*this, header.type, value, header.length);
     }
   }
 }
@@ -525,7 +524,7 @@ bool SecureChannelServer::Connection::HandleClientHello(const uint8_t* tlv, cons
   return true;
 }
 
-bool SecureChannelServer::Connection::HandleClientReady(const uint8_t* value, size_t length) {
+bool SecureChannelServer::Connection::HandleClientReady(const uint8_t* value, uint64_t length) {
   TlvField fields[] = {
       {0, TlvField::Kind::kBytes, /*required=*/true, kSecureChannelPublicKeySize},
       {1, TlvField::Kind::kBytes, /*required=*/true,              kSignatureSize}
@@ -555,7 +554,7 @@ bool SecureChannelServer::Connection::HandleClientReady(const uint8_t* value, si
   return SendTlv(kRecordServerReady, nullptr, 0);
 }
 
-void SecureChannelServer::Connection::HandleClose(const uint8_t* value, size_t length) {
+void SecureChannelServer::Connection::HandleClose(const uint8_t* value, uint64_t length) {
   TlvField fields[] = {
       {0, TlvField::Kind::kInteger, /*required=*/true}
   };
@@ -601,26 +600,28 @@ bool SecureChannelServer::Connection::SendRecord(size_t plaintextLength) {
   return WriteAll(header, headerSize + valueLength);
 }
 
-bool SecureChannelServer::Connection::SendTlv(uint64_t type, const uint8_t* value, size_t length) {
+bool SecureChannelServer::Connection::SendTlv(uint64_t type, const uint8_t* value, uint64_t length) {
+  // Callers make sure that this is at most kMaxTlvLength, so it fits in a size_t.
+  const size_t valueSize = static_cast<size_t>(length);
   uint8_t* plaintext = server_->sendBuffer_ + kRecordHeaderMaxSize;
   size_t buffered = WriteVarint(type, plaintext);
   buffered += WriteVarint(length, plaintext + buffered);
   size_t offset = 0;
   while (true) {
-    const size_t chunk = std::min(length - offset, kMaxPlaintextPerSentRecord - buffered);
+    const size_t chunk = std::min(valueSize - offset, kMaxPlaintextPerSentRecord - buffered);
     if (chunk > 0) { memcpy(plaintext + buffered, value + offset, chunk); }
     offset += chunk;
     if (!SendRecord(buffered + chunk)) { return false; }
     buffered = 0;
-    if (offset == length) { return true; }
+    if (offset == valueSize) { return true; }
   }
 }
 
-bool SecureChannelServer::Connection::Send(uint64_t type, const uint8_t* value, size_t length) {
+bool SecureChannelServer::Connection::Send(uint64_t type, const uint8_t* value, uint64_t length) {
   if (state_ != State::kAuthenticated) { return false; }
   if (type < kSecureChannelFirstHandlerType || type > kMaxVarint || length > kMaxTlvLength) {
-    jll_fatal("SecureChannel handler sent an invalid TLV of type %llu and length %zu",
-              static_cast<unsigned long long>(type), length);
+    jll_fatal("SecureChannel handler sent an invalid TLV of type %llu and length %llu",
+              static_cast<unsigned long long>(type), static_cast<unsigned long long>(length));
   }
   if (!SendTlv(type, value, length)) {
     Fail("stopped reading what we send");

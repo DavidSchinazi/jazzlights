@@ -65,7 +65,7 @@ uint64_t ChipModel() {
 
 }  // namespace
 
-void OTAHandler::OnTlv(SecureSession& session, uint64_t type, const uint8_t* value, size_t length) {
+void OTAHandler::OnTlv(SecureSession& session, uint64_t type, const uint8_t* value, uint64_t length) {
   switch (type) {
     case kOtaQuery:
     case kOtaEnd:
@@ -104,7 +104,7 @@ void OTAHandler::HandleQuery(SecureSession& session) {
   session.Send(kOtaInfo, info, writer.size());
 }
 
-void OTAHandler::HandleBegin(SecureSession& session, const uint8_t* value, size_t length) {
+void OTAHandler::HandleBegin(SecureSession& session, const uint8_t* value, uint64_t length) {
   TlvField fields[] = {
       {0, TlvField::Kind::kInteger, /*required=*/true},
       {1, TlvField::Kind::kBytes, /*required=*/true, kSha256Size},
@@ -150,20 +150,22 @@ void OTAHandler::HandleBegin(SecureSession& session, const uint8_t* value, size_
   SendAck(session, 0);
 }
 
-void OTAHandler::HandleData(SecureSession& session, const uint8_t* value, size_t length) {
+void OTAHandler::HandleData(SecureSession& session, const uint8_t* value, uint64_t length) {
   if (updating_ != &session) { return; }
   if (length > imageSize_ - bytesWritten_) {
     jll_error("OTA got more data than the image size");
     FailUpdate(kOtaStatusBadImageSize);
     return;
   }
-  const esp_err_t err = esp_ota_write(handle_, value, length);
+  // This fits in the partition, so it fits in a size_t.
+  const size_t size = static_cast<size_t>(length);
+  const esp_err_t err = esp_ota_write(handle_, value, size);
   if (err != ESP_OK) {
     jll_error("OTA esp_ota_write failed with error %s", esp_err_to_name(err));
     FailUpdate(kOtaStatusWriteFailed);
     return;
   }
-  mbedtls_sha256_update(&sha256_, value, length);
+  mbedtls_sha256_update(&sha256_, value, size);
   bytesWritten_ += length;
   SendAck(session, bytesWritten_);
 }

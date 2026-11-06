@@ -242,8 +242,9 @@ first release defines no features.
 
 ### Server implementation
 
-- `TlvReader`, `TlvWriter` and `ParseTlvFields` are in `src/jazzlights/network/tlv.h`. They use
-  `uint64_t` for the lengths of TLVs and Values, since that's what a varint can hold.
+- `TlvReader`, `TlvWriter` and `ParseTlvFields` are in `src/jazzlights/network/tlv.h`. They, and the
+  interface below, use `uint64_t` for the lengths of TLVs and Values, since that's what a varint can
+  hold.
 - `SecureChannelServer` is in `src/jazzlights/network/`. One FreeRTOS task serves all connections
   using `poll()` and non-blocking reads, as `Esp32SocketManager` does. It runs at the lowest
   priority above idle, on core 0, with an 8KB stack, so that handshakes don't get in the way of
@@ -255,14 +256,14 @@ first release defines no features.
   ```cpp
   class SecureSession {
    public:
-    virtual bool Send(uint64_t type, const uint8_t* value, size_t length) = 0;
+    virtual bool Send(uint64_t type, const uint8_t* value, uint64_t length) = 0;
     virtual void Close(uint64_t status) = 0;
   };
 
   class SecureChannelHandler {
    public:
     virtual ~SecureChannelHandler() = default;
-    virtual void OnTlv(SecureSession& session, uint64_t type, const uint8_t* value, size_t length) = 0;
+    virtual void OnTlv(SecureSession& session, uint64_t type, const uint8_t* value, uint64_t length) = 0;
     // Called once for each authenticated session, after it ended and outside of any OnTlv.
     // `clean` is false if the session failed or the connection was lost.
     virtual void OnSessionEnd(SecureSession& session, bool clean) = 0;

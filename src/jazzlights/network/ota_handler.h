@@ -28,13 +28,13 @@ class OTAHandler : public SecureChannelHandler {
   void SetLocalDeviceId(const NetworkDeviceId& localDeviceId) { localDeviceId_ = localDeviceId; }
 
   // From SecureChannelHandler.
-  void OnTlv(SecureSession& session, uint64_t type, const uint8_t* value, size_t length) override;
+  void OnTlv(SecureSession& session, uint64_t type, const uint8_t* value, uint64_t length) override;
   void OnSessionEnd(SecureSession& session, bool clean) override;
 
  private:
   void HandleQuery(SecureSession& session);
-  void HandleBegin(SecureSession& session, const uint8_t* value, size_t length);
-  void HandleData(SecureSession& session, const uint8_t* value, size_t length);
+  void HandleBegin(SecureSession& session, const uint8_t* value, uint64_t length);
+  void HandleData(SecureSession& session, const uint8_t* value, uint64_t length);
   void HandleEnd(SecureSession& session);
   void SendAck(SecureSession& session, uint64_t bytesWritten);
   void SendResult(SecureSession& session, uint64_t status);

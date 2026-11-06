@@ -30,7 +30,7 @@ class SecureSession {
  public:
   // Sends one TLV, whose type must be at least kSecureChannelFirstHandlerType. Returns false if the session has ended,
   // or if the client stopped reading, which ends the session.
-  virtual bool Send(uint64_t type, const uint8_t* value, size_t length) = 0;
+  virtual bool Send(uint64_t type, const uint8_t* value, uint64_t length) = 0;
   // Sends a Close with this status and ends the session. A status of 0 means no error.
   virtual void Close(uint64_t status) = 0;
 
@@ -43,7 +43,7 @@ class SecureChannelHandler {
   virtual ~SecureChannelHandler() = default;
   // Called on the channel's task, shared by all sessions, so this must not block for long. `value` holds the whole
   // Value, however many records it arrived in.
-  virtual void OnTlv(SecureSession& session, uint64_t type, const uint8_t* value, size_t length) = 0;
+  virtual void OnTlv(SecureSession& session, uint64_t type, const uint8_t* value, uint64_t length) = 0;
   // Called for every session that was authenticated, once it has ended. `clean` is false if the session failed or the
   // connection was lost.
   virtual void OnSessionEnd(SecureSession& session, bool clean) = 0;
