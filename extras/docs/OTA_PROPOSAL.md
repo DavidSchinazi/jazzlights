@@ -340,7 +340,7 @@ Client                                  Server
 |<------------ OtaAck (0) -------------|
 |-------------- OtaData -------------->|
 |-------------- OtaData -------------->|  at most 4 unacknowledged
-|<------ OtaAck (bytes written) -------|
+|<------ OtaAck (bytes received) ------|
 |                                      |  ... until the whole image is sent
 |--------------- OtaEnd -------------->|
 |                                      |  check image, set boot partition
@@ -353,7 +353,7 @@ Client                                  Server
 | 4 | `OtaInfo` | server → client | fields, below |
 | 5 | `OtaBegin` | client → server | fields, below |
 | 6 | `OtaData` | client → server | bytes: the next bytes of the image. Clients send as many as fit in one record, which is 4077, or fewer at the end, and the server accepts any size up to the maximum Length. |
-| 7 | `OtaAck` | server → client | fields: `bytes_written` (type 0, integer). The first, with 0, answers `OtaBegin`, and there's one after each `OtaData`. |
+| 7 | `OtaAck` | server → client | fields: `bytes_received` (type 0, integer). The first, with 0, answers `OtaBegin`, and there's one after each `OtaData`, as soon as the server has taken it, which is before it's written. |
 | 8 | `OtaEnd` | client → server | fields; none yet |
 | 9 | `OtaResult` | server → client | fields: `status` (type 0, integer), see below. Also answers an `OtaBegin` or `OtaEnd` that can't go ahead. |
 
@@ -370,7 +370,7 @@ A server skips the types that only go from server to client if it receives them.
 | 4 | another client is updating |
 | 5 | `esp_ota_begin()` failed, such as when the running image isn't marked valid yet |
 | 6 | this session isn't updating |
-| 7 | `esp_ota_write()` failed |
+| 7 | `esp_ota_write()` failed, which answers the `OtaData` or `OtaEnd` after the one it failed on |
 | 8 | `image_sha256` doesn't match |
 | 9 | `esp_ota_end()` failed |
 | 10 | wrong `project_name` |
@@ -408,8 +408,9 @@ A malformed `OtaQuery`, `OtaBegin` or `OtaEnd` makes the server send a `Close` w
 - `image_size` isn't 0 and fits in that partition, and `image_chip_id` matches.
 - No client is already updating. That includes this session, whose update then carries on.
 
-The server doesn't compare versions, so it accepts upgrades and downgrades alike. Otherwise it calls `esp_ota_begin(partition, OTA_WITH_SEQUENTIAL_WRITES, &handle)`, and writes
-each `OtaData` with `esp_ota_write()`. `OtaData` from a session that isn't updating is
+The server doesn't compare versions, so it accepts upgrades and downgrades alike. Otherwise it calls `esp_ota_begin(partition, OTA_WITH_SEQUENTIAL_WRITES, &handle)`, and a
+separate task writes each `OtaData` with `esp_ota_write()` while the channel's task receives the
+next one. `OtaData` from a session that isn't updating is
 discarded, and `OtaEnd` from one gets a failed `OtaResult`.
 
 If the session ends before the update finishes, the server calls `esp_ota_abort()`. If a write
@@ -460,8 +461,12 @@ our sdkconfig.
 
 ### Server implementation
 
-- `OtaHandler` is in `src/jazzlights/network/`, implementing `SecureChannelHandler`. It needs a
-  SHA-256 context during an update.
+- `OtaHandler` is in `src/jazzlights/network/`, implementing `SecureChannelHandler`. During an
+  update it needs a SHA-256 context, and a writer task with a 2.5KB stack, of which it uses about
+  1KB, and a 4KB buffer. Writing 4KB takes 64-75ms, mostly erasing a flash sector, which is about
+  as long as receiving it. With the writer task, the channel's task copies each `OtaData` into the
+  buffer, acknowledges it and goes back to receiving, and only waits for the writer if the previous
+  `OtaData` is still being written.
 - `extras/scripts/software_version.py` is a `pre:` extra script for every environment, which
   computes `software_version` when building the firmware, and saves it as `software_version.bin`
   next to `firmware.bin`. The code changes are `git diff HEAD --binary` followed by the name and
@@ -588,8 +593,9 @@ These ran over Wi-Fi, against `vest_secure_channel_test` unless stated otherwise
 
 - `test_secure_channel.py`: the 90 tests that can run on hardware pass.
 - A handshake takes about 1s.
-- An OTA update of a 1.8MB image from `ota_upload.py`'s update logic takes 42-47s, about
-  40KB/s, with BLE paused, and took 60-75s without that. The device rebooted into it, and marked it valid 30s after connecting to
+- An OTA update of a 1.8MB image from `ota_upload.py`'s update logic takes 38-40s, about
+  46KB/s. That was 42-47s when the channel's task wrote each `OtaData` itself, and 60-75s before
+  BLE was paused during updates. The device rebooted into it, and marked it valid 30s after connecting to
   Wi-Fi.
 - With the new image running, the client skips the update because the versions match.
 - LEDs keep rendering during an update. On `vest`, the computed frame rate drops from about 88 to

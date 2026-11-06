@@ -6,6 +6,9 @@
 #if JL_OTA
 
 #include <esp_ota_ops.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
+#include <freertos/task.h>
 #include <mbedtls/sha256.h>
 
 #include <atomic>
@@ -41,8 +44,13 @@ class OtaHandler : public SecureChannelHandler {
   void HandleBegin(SecureSession& session, const uint8_t* value, uint64_t length);
   void HandleData(SecureSession& session, const uint8_t* value, uint64_t length);
   void HandleEnd(SecureSession& session);
-  void SendAck(SecureSession& session, uint64_t bytesWritten);
+  void SendAck(SecureSession& session, uint64_t bytesReceived);
   void SendResult(SecureSession& session, uint64_t status);
+  bool StartWriter();
+  // Waits for the writer task to finish what it's writing, then ends it. Does nothing if it isn't running.
+  void StopWriter();
+  static void WriterTaskFunction(void* parameters);
+  void RunWriterTask();
   void StopUpdate();
   void AbortUpdate();
   // Sends a failed result to the session that's updating, and stops the update.
@@ -56,7 +64,17 @@ class OtaHandler : public SecureChannelHandler {
   esp_ota_handle_t handle_ = 0;
   mbedtls_sha256_context sha256_;
   uint64_t imageSize_ = 0;
-  uint64_t bytesWritten_ = 0;
+  uint64_t bytesReceived_ = 0;
+  // Writing an OtaData to flash takes about as long as receiving it, so during an update a separate task writes each
+  // one while this receives the next. These semaphores are created once and kept, so the writer task can't outlive
+  // them.
+  SemaphoreHandle_t writeReady_ = nullptr;  // Given when writeBuffer_ holds data to write, or writerShouldExit_ is set.
+  SemaphoreHandle_t writerIdle_ = nullptr;  // Given by the writer task when it's done with writeBuffer_.
+  bool writerRunning_ = false;
+  bool writerShouldExit_ = false;
+  uint8_t* writeBuffer_ = nullptr;  // Holds kSecureChannelMaxLength bytes while the writer task runs.
+  size_t writeSize_ = 0;
+  esp_err_t writeError_ = ESP_OK;  // The first error from esp_ota_write() in this update.
   uint8_t imageSha256_[32] = {};
   bool rebootWhenDone_ = false;
 };

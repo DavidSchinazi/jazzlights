@@ -260,9 +260,9 @@ class Uploader:
 
     def check_ack(self, client, expected):
         fields = secure_channel.parse_fields(self.wait_for(client, OTA_ACK, ACK_TIMEOUT_SECONDS))
-        bytes_written = secure_channel.parse_integer(secure_channel.required_field(fields, 0))
-        if bytes_written != expected:
-            raise ValueError("server acknowledged %d bytes instead of %d" % (bytes_written, expected))
+        bytes_received = secure_channel.parse_integer(secure_channel.required_field(fields, 0))
+        if bytes_received != expected:
+            raise ValueError("server acknowledged %d bytes instead of %d" % (bytes_received, expected))
 
     @staticmethod
     def wait_for_result(client):

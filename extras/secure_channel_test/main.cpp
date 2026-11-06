@@ -2,17 +2,21 @@
 //
 // Usage: secure-channel-test-server [--no-partition] [--pending-verify] [--image-out <path>]
 //                                   [--rollback-guard <mode>] [--rollback-impossible] [--free-heap <bytes>]
-//                                   <hex public key>...
+//                                   [--write-delay-ms <ms>] [--fail-write-at <bytes>] <hex public key>...
 //
 // --rollback-guard runs OtaRollbackGuard with shorter times, where <mode> says what the fake primary runloop reports:
 // working, no-network, no-render, late-network, or hung to not run it at all.
 //
 // --free-heap sets how much free heap the channel sees, which is 1GB otherwise.
+//
+// --write-delay-ms makes each write to the fake flash take that long, like a real one. --fail-write-at makes the write
+// that would go past that many bytes fail.
 
 #include <signal.h>
 #include <unistd.h>
 
 #include <atomic>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -43,6 +47,8 @@ std::atomic<bool> gPendingVerify{false};
 bool gRollbackImpossible = false;
 std::string gImageOutPath;
 size_t gFreeHeap = 1024 * 1024 * 1024;
+unsigned gWriteDelayMs = 0;
+size_t gFailWriteAt = SIZE_MAX;
 std::vector<uint8_t> gPartitionData;
 bool gWriting = false;
 
@@ -83,6 +89,8 @@ esp_err_t esp_ota_begin(const esp_partition_t* /*partition*/, size_t imageSize, 
 
 esp_err_t esp_ota_write(esp_ota_handle_t /*handle*/, const void* data, size_t size) {
   if (!gWriting) { return ESP_FAIL; }
+  if (gWriteDelayMs > 0) { usleep(gWriteDelayMs * 1000); }
+  if (gPartitionData.size() + size > gFailWriteAt) { return ESP_FAIL; }
   const uint8_t* bytes = static_cast<const uint8_t*>(data);
   gPartitionData.insert(gPartitionData.end(), bytes, bytes + size);
   return ESP_OK;
@@ -159,6 +167,10 @@ int main(int argc, char** argv) {
       gRollbackImpossible = true;
     } else if (arg == "--free-heap") {
       gFreeHeap = std::stoul(argv[++i]);
+    } else if (arg == "--write-delay-ms") {
+      gWriteDelayMs = static_cast<unsigned>(std::stoul(argv[++i]));
+    } else if (arg == "--fail-write-at") {
+      gFailWriteAt = std::stoul(argv[++i]);
     } else {
       if (arg.size() != 2 * kSecureChannelPublicKeySize) {
         fprintf(stderr, "Invalid public key %s\n", arg.c_str());

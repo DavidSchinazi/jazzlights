@@ -1057,6 +1057,55 @@ class OtaTest(ServerTestCase):
 
 
 @unittest.skipUnless(NATIVE, "needs the fake flash")
+class OtaSlowFlashTest(OtaTest):
+    """All of OtaTest again, with writes slow enough to still be going on when the next OtaData arrives."""
+
+    server_args = ("--write-delay-ms", "20")
+
+    def test_large_image(self):
+        client = self.connected_client()
+        image = make_image(size=200000)
+        self.start_update(client, image)
+        send_image(client, image)
+        client.send_tlv(ota_upload.OTA_END)
+        self.expect_result(client, 0)
+        self.assertEqual(self.read_image_out(), image)
+
+
+@unittest.skipUnless(NATIVE, "needs the fake flash")
+class OtaWriteFailureTest(ServerTestCase):
+    server_args = ("--fail-write-at", "10000")
+
+    def test_failed_write_is_reported_on_the_next_tlv(self):
+        """Writes happen after the OtaAck, so a failure gets reported on the OtaData or OtaEnd after it."""
+        image = make_image(size=20000)
+        size = ota_upload.DATA_CHUNK_SIZE
+        for following in ("data", "end"):
+            with self.subTest(following=following):
+                client = self.connected_client()
+                begin_update(client, image)
+                tlv_type, value = client.receive()
+                self.assertEqual((tlv_type, ota_ack(value)), (ota_upload.OTA_ACK, 0))
+                for offset in range(0, 3 * size, size):
+                    client.send_tlv(ota_upload.OTA_DATA, image[offset : offset + size])
+                    tlv_type, value = client.receive()
+                    self.assertEqual((tlv_type, ota_ack(value)), (ota_upload.OTA_ACK, offset + size))
+                if following == "data":
+                    client.send_tlv(ota_upload.OTA_DATA, image[3 * size : 4 * size])
+                else:
+                    client.send_tlv(ota_upload.OTA_END)
+                tlv_type, value = client.receive()
+                self.assertEqual(tlv_type, ota_upload.OTA_RESULT)
+                self.assertEqual(ota_upload.result_status(value), 7)
+                # The update has ended, so another can start.
+                begin_update(client, image)
+                tlv_type, value = client.receive()
+                self.assertEqual((tlv_type, ota_ack(value)), (ota_upload.OTA_ACK, 0))
+                client.close()
+                time.sleep(0.3)
+
+
+@unittest.skipUnless(NATIVE, "needs the fake flash")
 class OtaNoPartitionTest(ServerTestCase):
     server_args = ("--no-partition",)
 

@@ -7,6 +7,7 @@
 #include <esp_system.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <algorithm>
@@ -56,6 +57,11 @@ constexpr size_t kSha256Size = 32;
 constexpr uint32_t kRollbackTaskStackSize = 4096;
 constexpr UBaseType_t kRollbackTaskPriority = tskIDLE_PRIORITY + 1;
 constexpr BaseType_t kRollbackTaskCore = 0;
+// The writer task only exists during an update. It has the same priority and core as the channel's task, which hands it
+// work. On vest it used about 1KB of its stack.
+constexpr uint32_t kWriterTaskStackSize = 2560;
+constexpr UBaseType_t kWriterTaskPriority = tskIDLE_PRIORITY + 1;
+constexpr BaseType_t kWriterTaskCore = 0;
 
 uint64_t ChipModel() {
   esp_chip_info_t chipInfo;
@@ -132,9 +138,14 @@ void OtaHandler::HandleBegin(SecureSession& session, const uint8_t* value, uint6
     SendResult(session, kOtaStatusAlreadyUpdating);
     return;
   }
+  if (!StartWriter()) {
+    SendResult(session, kOtaStatusBeginFailed);
+    return;
+  }
   const esp_err_t err = esp_ota_begin(partition, OTA_WITH_SEQUENTIAL_WRITES, &handle_);
   if (err != ESP_OK) {
     jll_error("OTA esp_ota_begin failed with error %s", esp_err_to_name(err));
+    StopWriter();
     SendResult(session, kOtaStatusBeginFailed);
     return;
   }
@@ -143,7 +154,7 @@ void OtaHandler::HandleBegin(SecureSession& session, const uint8_t* value, uint6
   updating_ = &session;
   partition_ = partition;
   imageSize_ = fields[0].integer;
-  bytesWritten_ = 0;
+  bytesReceived_ = 0;
   memcpy(imageSha256_, fields[1].value, kSha256Size);
   rebootWhenDone_ = fields[3].present;
   jll_info("OTA starting update of %" PRIu64 " bytes", imageSize_);
@@ -153,22 +164,27 @@ void OtaHandler::HandleBegin(SecureSession& session, const uint8_t* value, uint6
 
 void OtaHandler::HandleData(SecureSession& session, const uint8_t* value, uint64_t length) {
   if (updating_ != &session) { return; }
-  if (length > imageSize_ - bytesWritten_) {
+  if (length > imageSize_ - bytesReceived_) {
     jll_error("OTA got more data than the image size");
     FailUpdate(kOtaStatusBadImageSize);
     return;
   }
-  // This fits in the partition, so it fits in a size_t.
+  // The channel limits a TLV to kSecureChannelMaxLength, which is the size of writeBuffer_.
   const size_t size = static_cast<size_t>(length);
-  const esp_err_t err = esp_ota_write(handle_, value, size);
-  if (err != ESP_OK) {
-    jll_error("OTA esp_ota_write failed with error %s", esp_err_to_name(err));
+  // This waits for the previous OtaData to be written, which mostly happened while this one was being received.
+  xSemaphoreTake(writerIdle_, portMAX_DELAY);
+  if (writeError_ != ESP_OK) {
+    xSemaphoreGive(writerIdle_);
+    jll_error("OTA esp_ota_write failed with error %s", esp_err_to_name(writeError_));
     FailUpdate(kOtaStatusWriteFailed);
     return;
   }
+  memcpy(writeBuffer_, value, size);
+  writeSize_ = size;
+  xSemaphoreGive(writeReady_);
   mbedtls_sha256_update(&sha256_, value, size);
-  bytesWritten_ += length;
-  SendAck(session, bytesWritten_);
+  bytesReceived_ += length;
+  SendAck(session, bytesReceived_);
 }
 
 void OtaHandler::HandleEnd(SecureSession& session) {
@@ -176,8 +192,15 @@ void OtaHandler::HandleEnd(SecureSession& session) {
     SendResult(session, kOtaStatusNotUpdating);
     return;
   }
-  if (bytesWritten_ != imageSize_) {
-    jll_error("OTA got %" PRIu64 " bytes out of %" PRIu64, bytesWritten_, imageSize_);
+  // This waits for the last OtaData to be written.
+  StopWriter();
+  if (writeError_ != ESP_OK) {
+    jll_error("OTA esp_ota_write failed with error %s", esp_err_to_name(writeError_));
+    FailUpdate(kOtaStatusWriteFailed);
+    return;
+  }
+  if (bytesReceived_ != imageSize_) {
+    jll_error("OTA got %" PRIu64 " bytes out of %" PRIu64, bytesReceived_, imageSize_);
     FailUpdate(kOtaStatusBadImageSize);
     return;
   }
@@ -222,10 +245,10 @@ void OtaHandler::HandleEnd(SecureSession& session) {
   }
 }
 
-void OtaHandler::SendAck(SecureSession& session, uint64_t bytesWritten) {
+void OtaHandler::SendAck(SecureSession& session, uint64_t bytesReceived) {
   uint8_t ack[VarintSize(0) + VarintSize(kMaxVarintSize) + kMaxVarintSize];
   TlvWriter writer(ack, sizeof(ack));
-  writer.WriteInteger(0, bytesWritten);
+  writer.WriteInteger(0, bytesReceived);
   session.Send(kOtaAck, ack, writer.size());
 }
 
@@ -236,7 +259,64 @@ void OtaHandler::SendResult(SecureSession& session, uint64_t status) {
   session.Send(kOtaResult, result, writer.size());
 }
 
+bool OtaHandler::StartWriter() {
+  if (writeReady_ == nullptr) { writeReady_ = xSemaphoreCreateBinary(); }
+  if (writerIdle_ == nullptr) {
+    writerIdle_ = xSemaphoreCreateBinary();
+    if (writerIdle_ != nullptr) { xSemaphoreGive(writerIdle_); }
+  }
+  if (writeReady_ == nullptr || writerIdle_ == nullptr) {
+    jll_error("OTA failed to create the writer's semaphores");
+    return false;
+  }
+  writeBuffer_ = static_cast<uint8_t*>(malloc(kSecureChannelMaxLength));
+  if (writeBuffer_ == nullptr) {
+    jll_error("OTA failed to allocate the write buffer");
+    return false;
+  }
+  writeError_ = ESP_OK;
+  writerShouldExit_ = false;
+  if (xTaskCreatePinnedToCore(WriterTaskFunction, "JL_OTA_Write", kWriterTaskStackSize, this, kWriterTaskPriority,
+                              /*handle=*/nullptr, kWriterTaskCore) != pdPASS) {
+    jll_error("OTA failed to create the writer task");
+    free(writeBuffer_);
+    writeBuffer_ = nullptr;
+    return false;
+  }
+  writerRunning_ = true;
+  return true;
+}
+
+void OtaHandler::StopWriter() {
+  if (!writerRunning_) { return; }
+  writerRunning_ = false;
+  // Wait for it to finish writing, then ask it to exit and wait for it to say it won't touch anything else.
+  xSemaphoreTake(writerIdle_, portMAX_DELAY);
+  writerShouldExit_ = true;
+  xSemaphoreGive(writeReady_);
+  xSemaphoreTake(writerIdle_, portMAX_DELAY);
+  xSemaphoreGive(writerIdle_);
+  free(writeBuffer_);
+  writeBuffer_ = nullptr;
+}
+
+// static
+void OtaHandler::WriterTaskFunction(void* parameters) { static_cast<OtaHandler*>(parameters)->RunWriterTask(); }
+
+void OtaHandler::RunWriterTask() {
+  while (true) {
+    xSemaphoreTake(writeReady_, portMAX_DELAY);
+    if (writerShouldExit_) { break; }
+    const esp_err_t err = esp_ota_write(handle_, writeBuffer_, writeSize_);
+    if (err != ESP_OK && writeError_ == ESP_OK) { writeError_ = err; }
+    xSemaphoreGive(writerIdle_);
+  }
+  xSemaphoreGive(writerIdle_);
+  vTaskDelete(nullptr);
+}
+
 void OtaHandler::StopUpdate() {
+  StopWriter();
   mbedtls_sha256_free(&sha256_);
   updating_ = nullptr;
   partition_ = nullptr;
@@ -244,6 +324,8 @@ void OtaHandler::StopUpdate() {
 }
 
 void OtaHandler::AbortUpdate() {
+  // esp_ota_abort() must wait for any write to finish.
+  StopWriter();
   esp_ota_abort(handle_);
   StopUpdate();
 }
