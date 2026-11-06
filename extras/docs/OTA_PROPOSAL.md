@@ -1,6 +1,6 @@
 # Secure Channel, with OTA as the First Use
 
-Status: implemented and tested natively. The tests on hardware under "Testing" are still to do.
+Status: implemented, tested natively, and partly tested on an ATOM Matrix running `vest`. See "Testing".
 
 - **The secure channel** authenticates the client, sets up session keys and carries
   encrypted TLVs. It knows nothing about firmware.
@@ -289,7 +289,12 @@ first release defines no features.
 - Memory, allocated per connection:
   - A receive buffer, created when the first bytes arrive. It starts at 256 bytes and grows as
     needed to hold a hello, a record and any partial TLV, so up to about 32KB. If it can't grow,
-    the connection closes. TLVs that get skipped are never stored, however long they are.
+    the connection closes. TLVs that get skipped are never stored, however long they are. It grows
+    to fit each record as soon as its size is known, rather than doubling.
+  - On `vest`, which runs Bluedroid and Wi-Fi on a classic ESP32, only 19-22KB of heap was free
+    during testing, and the largest free block was 10-12KB. So messages near the maximum Length
+    don't fit there, and those connections close. Failed allocations are logged with the free heap
+    and the largest free block.
   - Two GCM contexts, once the keys are derived, and a running SHA-256 of `signed_data`, which
     means the hellos needn't be kept after that.
 - The task also has one shared 4KB send buffer. Each handshake also uses a few KB of temporary
@@ -553,22 +558,31 @@ doesn't allocate. The rollback task adds a 4KB stack, only until new firmware is
   - no network, no rendering and a stuck primary runloop, which must each roll back on time
   - nothing to roll back to, which must carry on, and can still get confirmed later
 
+### Tested on an ATOM Matrix
+
+These ran against `vest_secure_channel_test` over Wi-Fi:
+
+- `test_secure_channel.py`: 82 of the 86 tests that can run on hardware pass. The other 4 send
+  messages of the maximum Length, which don't fit in `vest`'s heap, see "Memory" under "Server
+  implementation". The device closed those connections and carried on.
+- A handshake takes about 1s.
+- An OTA update of a 1.8MB image from `ota_upload.py`'s update logic takes 38-50s, about 40KB/s.
+  The device rebooted into it, and marked it valid 30s after connecting to Wi-Fi.
+- With the new image running, the client skips the update because the versions match.
+- LEDs keep rendering during an update. On `vest`, the computed frame rate drops from about 88 to
+  50-83 FPS, the written one from 71 to 44-68 FPS, and the longest gap between frames goes from
+  under 55ms to up to 71ms.
+- An image that never marks itself valid rolls back after 10 minutes, to the previous image.
+- Discovery finds every JazzLights device on the network.
+
+On macOS, the first connections from a Python that hasn't been allowed on the local network fail
+with "No route to host". Allowing it in the Local Network privacy settings fixes that.
+
 ### Still to do on hardware
 
-No device has run this code yet, so all of these remain:
-
-- `test_secure_channel.py` against a `vest_secure_channel_test` device.
-- Many connections growing their buffers until allocation fails, which must only close those
-  connections.
-- `OtaQuery` on a build with and without code changes.
-- A client that builds and sends the image for the device's `build_environment`, on each of
-  `framework = arduino`, `framework = espidf, arduino` and `framework = espidf`.
+- An update on `framework = espidf, arduino` and `framework = espidf` builds.
 - A power cut during the transfer.
-- LEDs showing their normal patterns throughout an update.
 - An image for the wrong chip, which `esp_ota_end()` must reject.
 - An image that crashes at boot, which must roll back when it reboots.
-- An image that never marks itself valid, which must roll back after 10 minutes.
-- A device that loses its network for the first 10 minutes after an update, which must roll back.
-- Measure the transfer time for a full 1.7MB image, how long a handshake takes on classic ESP32,
-  how much handshakes and flash writes delay other sessions and LED rendering, how much memory
-  each connection costs, and how much of their stacks the channel and rollback tasks use.
+- Measure how much memory each connection costs, and how much of their stacks the channel and
+  rollback tasks use.

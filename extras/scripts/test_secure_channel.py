@@ -434,11 +434,11 @@ class RecordTest(ServerTestCase):
         value = os.urandom(sc.MAX_TLV_LENGTH)
         client.send_tlv(ECHO, value)
         self.assertEqual(client.receive(), (ECHO, value))
-        # In the largest possible records, with the Value of each TLV split over two of them.
+        # In the largest possible records, with the Value of each TLV split over two of them. Each echo is read before
+        # sending the next, as a device's TCP buffers are too small to hold a whole echo while we're still sending.
         client.max_record_plaintext = sc.MAX_TLV_LENGTH - sc.GCM_TAG_SIZE
         for _ in range(3):
             client.send_tlv(ECHO, value)
-        for _ in range(3):
             self.assertEqual(client.receive(), (ECHO, value))
 
     def test_nonminimal_tlv_of_maximum_size(self):
@@ -639,13 +639,20 @@ class SessionTest(ServerTestCase):
     def test_timeouts(self):
         """All the timeouts in one test, as they take over a minute."""
         injected = sc.encode_tlv(77, b"x")
+        # Each timeout runs from when that connection was accepted or last sent a record. That's when each of these is
+        # set up, which on hardware is about a second apart because of the handshakes.
+        started = {"silent": time.monotonic()}
         silent = self.raw_socket()
+        started["flooding_before_hello"] = time.monotonic()
         flooding_before_hello = self.raw_socket()
+        started["before_ready"] = time.monotonic()
         before_ready = self.new_client()
         before_ready.send_client_hello()
         before_ready.receive_server_hello()
         idle = self.connected_client()
+        started["idle"] = time.monotonic()
         idle_with_injected = self.connected_client()
+        started["idle_with_injected"] = time.monotonic()
         active = self.connected_client()
         start = time.monotonic()
         last_active = start
@@ -667,7 +674,7 @@ class SessionTest(ServerTestCase):
             "idle": idle.sock,
             "idle_with_injected": idle_with_injected.sock,
         }
-        while len(ended) < len(watched) and time.monotonic() - start < 70:
+        while len(ended) < len(watched) and time.monotonic() - start < 75:
             time.sleep(0.5)
             for sock in (flooding_before_hello, before_ready.sock, idle_with_injected.sock):
                 try:
@@ -679,7 +686,7 @@ class SessionTest(ServerTestCase):
                 last_active = time.monotonic()
             for name, sock in watched.items():
                 if name not in ended and is_closed(sock):
-                    ended[name] = time.monotonic() - start
+                    ended[name] = time.monotonic() - started[name]
         self.assertEqual(set(ended), set(watched))
         for name in ("silent", "flooding_before_hello", "before_ready"):
             self.assertAlmostEqual(ended[name], 10, delta=2.5, msg=name)

@@ -3,6 +3,7 @@
 #if JL_SECURE_CHANNEL
 
 #include <errno.h>
+#include <esp_heap_caps.h>
 #include <esp_random.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -70,6 +71,13 @@ constexpr BaseType_t kTaskCore = 0;
 constexpr char kKeysLabel[] = "JazzLightsSecureChannel v1 keys";
 constexpr char kClientReadyLabel[] = "JazzLightsSecureChannel v1 ClientReady";
 
+// Logs how much memory there was, which tells apart running out of it from fragmentation.
+void LogAllocationFailure(const char* purpose, size_t size) {
+  jll_error("SecureChannel couldn't allocate %zu bytes for %s, with %zu bytes free and a largest free block of %zu",
+            size, purpose, heap_caps_get_free_size(MALLOC_CAP_DEFAULT),
+            heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT));
+}
+
 int RandomCallback(void* /*context*/, unsigned char* output, size_t length) {
   esp_fill_random(output, length);
   return 0;
@@ -106,7 +114,10 @@ bool DeriveKeyMaterial(const uint8_t* sharedSecret, const uint8_t* clientHello, 
                        const uint8_t* serverHello, size_t serverHelloLength, uint8_t* keyMaterial) {
   const size_t infoLength = sizeof(kKeysLabel) + clientHelloLength + serverHelloLength;
   uint8_t* info = static_cast<uint8_t*>(malloc(infoLength));
-  if (info == nullptr) { return false; }
+  if (info == nullptr) {
+    LogAllocationFailure("the HKDF info", infoLength);
+    return false;
+  }
   memcpy(info, kKeysLabel, sizeof(kKeysLabel));
   memcpy(info + sizeof(kKeysLabel), clientHello, clientHelloLength);
   memcpy(info + sizeof(kKeysLabel) + clientHelloLength, serverHello, serverHelloLength);
@@ -295,8 +306,12 @@ void SecureChannelServer::Connection::HandleReadable() {
   if (state_ == State::kClosed) { return; }
   if (rawEnd_ == capacity_) {
     if (!Compact(std::max(capacity_, kInitialReceiveBufferSize))) { return; }
-    // At the maximum size this can't be full, because a complete record would have been handled already.
-    if (rawEnd_ == capacity_ && !Compact(std::min(capacity_ * 2, kMaxReceiveBufferSize))) { return; }
+    // This only grows a little, because ProcessRaw() grows the buffer to fit each record as soon as it knows its size,
+    // and memory on the device is tight. At the maximum size this can't be full, because a complete record would have
+    // been handled already.
+    if (rawEnd_ == capacity_ && !Compact(std::min(capacity_ + kInitialReceiveBufferSize, kMaxReceiveBufferSize))) {
+      return;
+    }
   }
   const ssize_t received = recv(socket_, buffer_ + rawEnd_, capacity_ - rawEnd_, /*flags=*/0);
   if (received == 0) {
@@ -326,6 +341,7 @@ bool SecureChannelServer::Connection::Compact(size_t neededCapacity) {
   if (neededCapacity > capacity_) {
     uint8_t* newBuffer = static_cast<uint8_t*>(realloc(buffer_, neededCapacity));
     if (newBuffer == nullptr) {
+      LogAllocationFailure("a receive buffer", neededCapacity);
       Fail("couldn't grow its receive buffer");
       return false;
     }
