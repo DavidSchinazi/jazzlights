@@ -339,7 +339,7 @@ Client                                  Server
 |                                      |  check image, start the OTA
 |<------------ OtaAck (0) -------------|
 |-------------- OtaData -------------->|
-|-------------- OtaData -------------->|  at most 4 unacknowledged
+|-------------- OtaData -------------->|  without waiting for OtaAck
 |<------ OtaAck (bytes received) ------|
 |                                      |  ... until the whole image is sent
 |--------------- OtaEnd -------------->|
@@ -496,7 +496,13 @@ our sdkconfig.
      at byte 12 of `firmware.bin`. It has the same values as `image_chip_id`, except that ESP32 is
      0 there and 1 in `esp_chip_info()`.
   4. Send `OtaBegin` with `reboot_when_done`, then the image and `OtaEnd`, and wait for
-     `OtaResult`.
+     `OtaResult`. It sends the image without waiting for each `OtaAck`, and leaves TCP's flow
+     control to hold it back: waiting for acknowledgments, with up to 4 outstanding, was no
+     faster, since the device's 5744-byte TCP receive window and its flash writes are what limit
+     the speed. It only sends what the socket takes without blocking, and reads each `OtaAck` as
+     it arrives, which it checks against the bytes sent. So a full buffer on either side can't
+     leave both waiting for the other. It gives up if the device takes no data and acknowledges
+     none for 30s, and stops as soon as an `OtaResult` reports a failure.
 - It logs its progress every 10% of the image, with the rate, and again when it has sent `OtaEnd`,
   which is when the device checks the image and switches which partition it boots from.
 

@@ -1459,6 +1459,61 @@ class OtaClientEndToEndTest(ServerTestCase):
         self.assertFalse(os.path.exists(self.image_out))
 
 
+class FinishedBuild:
+    returncode = 0
+
+    def poll(self):
+        return 0
+
+
+class OtaClientUploadTestBase(ServerTestCase):
+    def upload(self, image):
+        """Runs the client's whole update against the server, and returns what it logged."""
+        project_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, project_dir)
+        with open(os.path.join(project_dir, "platformio.ini"), "w", encoding="utf-8") as f:
+            f.write("[env:secure_channel_test]\n")
+        build_dir = os.path.join(project_dir, ".pio", "build", "secure_channel_test")
+        os.makedirs(build_dir)
+        with open(os.path.join(build_dir, "firmware.bin"), "wb") as f:
+            f.write(image)
+        with open(os.path.join(build_dir, "software_version.bin"), "wb") as f:
+            f.write(b"v" * 52)
+        uploader = ota_upload.Uploader(KEY, project_dir=project_dir, start_build=lambda _d, _e: FinishedBuild())
+        logged = []
+        uploader.log = lambda _address, message: logged.append(message)
+        uploader.update_server(HOST)
+        return logged
+
+
+@unittest.skipUnless(NATIVE, "needs the fake flash")
+class OtaClientSlowFlashTest(OtaClientUploadTestBase):
+    # 900KB at 5ms per 4077 bytes takes over a second to write, and is more than the socket buffers on both sides hold,
+    # so the client has to wait for the socket to take more while it reads acknowledgments.
+    server_args = ("--write-delay-ms", "5")
+
+    def test_upload_fills_the_send_buffer(self):
+        image = make_image(900000)
+        self.expect_restart = True
+        logged = self.upload(image)
+        self.server.wait(timeout=5)
+        self.assertEqual(self.server.returncode, RESTART_EXIT_CODE)
+        with open(self.image_out, "rb") as f:
+            self.assertEqual(f.read(), image)
+        self.assertIn("100%, 900000 of 900000 bytes", "\n".join(logged))
+
+
+@unittest.skipUnless(NATIVE, "needs the fake flash")
+class OtaClientWriteFailureTest(OtaClientUploadTestBase):
+    server_args = ("--fail-write-at", "100000")
+
+    def test_failure_while_still_sending(self):
+        """The client hears about the failure partway through sending, and stops."""
+        logged = self.upload(make_image(900000))
+        self.assertIn("failed: server reported status 7: flash write failed", logged)
+        self.assertFalse(any(message.startswith("100%") for message in logged))
+
+
 class SoftwareVersionTest(unittest.TestCase):
     """Runs software_version.py with a stand-in for PlatformIO's env."""
 

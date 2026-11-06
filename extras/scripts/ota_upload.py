@@ -6,10 +6,12 @@ and uploads it if it differs from what's running. This runs until interrupted.
 """
 
 import argparse
+import collections
 import datetime
 import hashlib
 import os
 import re
+import select
 import socket
 import struct
 import subprocess
@@ -34,10 +36,10 @@ OTA_RESULT = 9
 
 # As much as fits in one record, after the OtaData's one-byte Type and two-byte Length.
 DATA_CHUNK_SIZE = secure_channel.DEFAULT_MAX_RECORD_PLAINTEXT - 3
-MAX_UNACKNOWLEDGED = 4
 PROGRESS_STEP_PERCENT = 10
 KEEPALIVE_INTERVAL_SECONDS = 30
-# Flash writes and image verification can take a while, particularly with several devices at once.
+# Flash writes and image verification can take a while, particularly with several devices at once. The upload fails if
+# it sends nothing and gets no OtaAck for this long.
 ACK_TIMEOUT_SECONDS = 30
 RESULT_TIMEOUT_SECONDS = 60
 IMAGE_CHIP_ID_OFFSET = 12
@@ -225,25 +227,7 @@ class Uploader:
         start_time = time.monotonic()
         client.send_tlv(OTA_BEGIN, encode_ota_begin(image))
         self.check_ack(client, 0)
-        sent = 0
-        acknowledged = 0
-        reported_percent = 0
-        while acknowledged < len(image):
-            while sent < len(image) and (sent - acknowledged) / DATA_CHUNK_SIZE < MAX_UNACKNOWLEDGED:
-                chunk = image[sent : sent + DATA_CHUNK_SIZE]
-                client.send_tlv(OTA_DATA, chunk)
-                sent += len(chunk)
-            acknowledged = min(sent, acknowledged + DATA_CHUNK_SIZE)
-            self.check_ack(client, acknowledged)
-            percent = acknowledged * 100 // len(image)
-            if percent >= reported_percent + PROGRESS_STEP_PERCENT:
-                reported_percent = percent - percent % PROGRESS_STEP_PERCENT
-                elapsed = time.monotonic() - start_time
-                self.log(
-                    address,
-                    "%d%%, %d of %d bytes in %.1fs, %.0fKB/s"
-                    % (reported_percent, acknowledged, len(image), elapsed, acknowledged / 1000 / max(elapsed, 0.001)),
-                )
+        self.send_data(address, client, image, start_time)
         client.send_tlv(OTA_END)
         # The device checks the image and then switches which partition it boots from.
         self.log(address, "sent everything, waiting for the device to check the image")
@@ -257,6 +241,74 @@ class Uploader:
             client.receive(timeout=5)
         except (TimeoutError, secure_channel.SessionClosed, secure_channel.ConnectionEnded):
             pass
+
+    def send_data(self, address, client, image, start_time):
+        """Sends every OtaData without waiting for its OtaAck, which made no difference to the speed, since the device's
+        TCP receive window and its flash writes are what limit it. TCP's flow control holds this back instead. It only
+        sends what the socket takes without blocking, and reads OtaAcks as they arrive, so that neither side gets stuck
+        with a full buffer waiting for the other."""
+        sock = client.sock
+        pending = bytearray()  # Sealed records that the socket hasn't taken yet.
+        sealed = 0  # How many bytes of the image are in records so far.
+        expected_acks = collections.deque()
+        acknowledged = 0
+        reported_percent = 0
+        last_progress = time.monotonic()
+        while acknowledged < len(image):
+            if not pending and sealed < len(image):
+                chunk = image[sealed : sealed + DATA_CHUNK_SIZE]
+                pending += client.seal_record(secure_channel.encode_tlv(OTA_DATA, chunk))
+                sealed += len(chunk)
+                expected_acks.append(sealed)
+            readable, writable, _ = select.select([sock], [sock] if pending else [], [], 1.0)
+            if writable:
+                try:
+                    sent = sock.send(pending)
+                except BlockingIOError:
+                    sent = 0
+                if sent > 0:
+                    del pending[:sent]
+                    last_progress = time.monotonic()
+            if readable:
+                for bytes_received in self.receive_acks(client):
+                    if not expected_acks or bytes_received != expected_acks.popleft():
+                        raise ValueError("server acknowledged %d bytes out of order" % bytes_received)
+                    acknowledged = bytes_received
+                    last_progress = time.monotonic()
+                    percent = acknowledged * 100 // len(image)
+                    if percent >= reported_percent + PROGRESS_STEP_PERCENT:
+                        reported_percent = percent - percent % PROGRESS_STEP_PERCENT
+                        elapsed = time.monotonic() - start_time
+                        self.log(
+                            address,
+                            "%d%%, %d of %d bytes in %.1fs, %.0fKB/s"
+                            % (
+                                reported_percent,
+                                acknowledged,
+                                len(image),
+                                elapsed,
+                                acknowledged / 1000 / max(elapsed, 0.001),
+                            ),
+                        )
+            if time.monotonic() - last_progress > ACK_TIMEOUT_SECONDS:
+                raise TimeoutError("the server took no data and acknowledged none for %ds" % ACK_TIMEOUT_SECONDS)
+
+    @staticmethod
+    def receive_acks(client):
+        """Returns bytes_received from each OtaAck that has arrived, reading what's there without waiting for more."""
+        acks = []
+        while True:
+            try:
+                tlv_type, value = client.receive(timeout=0)
+            except TimeoutError:
+                return acks
+            if tlv_type == OTA_ACK:
+                fields = secure_channel.parse_fields(value)
+                acks.append(secure_channel.parse_integer(secure_channel.required_field(fields, 0)))
+            elif tlv_type == OTA_RESULT:
+                raise ValueError(result_description(value))
+            elif tlv_type != OTA_INFO:
+                raise ValueError("expected TLV %d but got %d" % (OTA_ACK, tlv_type))
 
     def check_ack(self, client, expected):
         fields = secure_channel.parse_fields(self.wait_for(client, OTA_ACK, ACK_TIMEOUT_SECONDS))
