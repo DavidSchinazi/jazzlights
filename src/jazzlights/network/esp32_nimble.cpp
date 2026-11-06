@@ -150,9 +150,12 @@ void Esp32NimBleNetwork::UpdateRadioState() {
     // The host reset cancelled any ongoing scanning or advertising.
     state_ = State::kIdle;
   }
+  const bool paused = IsPaused();
   if (state_ == State::kIdle) {
-    // This happens on startup, after a host reset, or if starting to scan or advertise failed.
-    StartScanning();
+    // This happens on startup, after a host reset, if starting to scan or advertise failed, or after being paused.
+    if (!paused) { StartScanning(); }
+  } else if (state_ == State::kScanning && paused) {
+    StopScanning();
   } else {
     bool shouldStopAdvertising = false;
     bool shouldStopScanning = false;
@@ -173,7 +176,7 @@ void Esp32NimBleNetwork::UpdateRadioState() {
       StopAdvertising();
       if (ExtractShouldTriggerSendAsap()) {
         StartAdvertising();
-      } else {
+      } else if (!paused) {
         StartScanning();
       }
     }
@@ -188,8 +191,9 @@ void Esp32NimBleNetwork::UpdateRadioState() {
 void Esp32NimBleNetwork::ScheduleNextUpdate() {
   OptionalMicroseconds deadline;
   if (state_ == State::kIdle) {
-    // Starting to scan or advertise failed, try again soon.
-    deadline = TimeMicros() + kRetryDelay;
+    // Starting to scan or advertise failed, so try again soon, unless we're paused, which OnPausedChanged() wakes us up
+    // from.
+    if (!IsPaused()) { deadline = TimeMicros() + kRetryDelay; }
   } else {
     const std::lock_guard<std::mutex> lock(mutex_);
     if (state_ == State::kAdvertising) {

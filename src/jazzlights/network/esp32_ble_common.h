@@ -46,6 +46,10 @@ class Esp32BleCommonNetwork : public Network {
   OptionalMicroseconds GetLastReceiveTime() const override { return lastReceiveTime_.load(std::memory_order_relaxed); }
   std::string GetStatusStr() override;
 
+  // While paused, this neither scans nor advertises, which leaves the radio to Wi-Fi, since they share it. Stopping
+  // takes until the current scan or advertisement ends.
+  void SetPaused(bool paused);
+
  protected:
   // Squat on an unused Bluetooth Advertising Data Type.
   // https://bitbucket.org/bluetooth-SIG/public/src/main/assigned_numbers/core/adTypes.yaml
@@ -73,6 +77,9 @@ class Esp32BleCommonNetwork : public Network {
   // Fills advPayload with the next advertisement to send, and returns its length.
   size_t GetNextAdvPayloadToSend(uint8_t advPayload[kMaxAdvPayloadLength]);
   bool ExtractShouldTriggerSendAsap();
+  bool IsPaused() const { return paused_.load(std::memory_order_relaxed); }
+  // Called by SetPaused() when it changes, from whichever thread called it.
+  virtual void OnPausedChanged() {}
 
   static void ConvertToHex(char* target, size_t targetLength, const uint8_t* source, size_t sourceLength);
 
@@ -88,6 +95,7 @@ class Esp32BleCommonNetwork : public Network {
 
   const NetworkDeviceId localDeviceId_;
   std::atomic<OptionalMicroseconds> lastReceiveTime_;
+  std::atomic<bool> paused_{false};
   ProtocolMessage messageToSend_;                // Protected by mutex_.
   std::list<ProtocolMessage> receivedMessages_;  // Protected by mutex_.
 };
@@ -112,6 +120,7 @@ class Esp32BleNoOpNetwork : public Network {
   bool ShouldEcho() const override { return false; }
   OptionalMicroseconds GetLastReceiveTime() const override { return std::nullopt; }
   std::string GetStatusStr() override { return "Compiled Out"; }
+  void SetPaused(bool /*paused*/) {}
 
  protected:
   void RunLoopImpl() override {}

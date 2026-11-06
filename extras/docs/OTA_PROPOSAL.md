@@ -471,6 +471,10 @@ our sdkconfig.
   `build_time` is when this `software_version` was first built for this environment in this build
   directory, so that building again without changes doesn't recompile anything.
 - The update doesn't change what the LEDs show.
+- During an update, `OtaHandler` calls a callback that `primary_runloop.cpp` uses to pause BLE.
+  `Esp32BleNetwork` and `Esp32NimBleNetwork` then stop scanning and advertising until the update
+  ends. They scan continuously, and the radio they share with Wi-Fi made updates take 60-75s on
+  `vest` instead of 42-47s. Devices still synchronize over Wi-Fi meanwhile.
 
 ### Client implementation
 
@@ -584,8 +588,8 @@ These ran over Wi-Fi, against `vest_secure_channel_test` unless stated otherwise
 
 - `test_secure_channel.py`: the 90 tests that can run on hardware pass.
 - A handshake takes about 1s.
-- An OTA update of a 1.8MB image from `ota_upload.py`'s update logic takes 38-75s, 24-40KB/s,
-  depending on the Wi-Fi. The device rebooted into it, and marked it valid 30s after connecting to
+- An OTA update of a 1.8MB image from `ota_upload.py`'s update logic takes 42-47s, about
+  40KB/s, with BLE paused, and took 60-75s without that. The device rebooted into it, and marked it valid 30s after connecting to
   Wi-Fi.
 - With the new image running, the client skips the update because the versions match.
 - LEDs keep rendering during an update. On `vest`, the computed frame rate drops from about 88 to

@@ -126,6 +126,8 @@ void MaybeStartSecureChannel() {
 #if JL_OTA
   // The player was started in SetupPrimaryRunLoop(), so it has settled on its device ID.
   gOtaHandler.SetLocalDeviceId(gPlayer.localDeviceId());
+  // Scanning takes much of the radio's time from Wi-Fi, which made updates about a third slower on vest.
+  gOtaHandler.SetUpdatingCallback([](bool updating) { BleNetwork::Get()->SetPaused(updating); });
   SecureChannelServer::Get()->RegisterHandler(OtaHandler::kFirstType, OtaHandler::kLastType, &gOtaHandler);
 #endif  // JL_OTA
 #if JL_SECURE_CHANNEL_ECHO

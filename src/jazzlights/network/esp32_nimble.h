@@ -57,6 +57,7 @@ class Esp32NimBleNetwork : public Esp32BleCommonNetwork {
   void MaybeUpdateAdvertisingState() override;
   // The radio task schedules its own updates, so it doesn't need the primary runloop.
   void RunLoopImpl() override {}
+  void OnPausedChanged() override { MaybeUpdateAdvertisingState(); }
 
  private:
   // Unlike with Bluedroid, NimBLE calls to start and stop scanning or advertising are synchronous,

@@ -72,15 +72,29 @@ void Esp32BleNetwork::StopAdvertising() {
   ESP_ERROR_CHECK(esp_ble_gap_stop_advertising());
 }
 
+bool Esp32BleNetwork::StayIdleIfPaused() {
+  const std::lock_guard<std::mutex> lock(mutex_);
+  if (!IsPaused()) { return false; }
+  idleWhilePaused_ = true;
+  return true;
+}
+
 void Esp32BleNetwork::MaybeUpdateAdvertisingState() {
   bool shouldStopAdvertising = false;
   bool shouldStopScanning = false;
+  bool shouldStartScanning = false;
   Microseconds currentTime = TimeMicros();
   {
     const std::lock_guard<std::mutex> lock(mutex_);
     if (state_ == State::kAdvertising && timeToStopAdvertising_ && currentTime >= *timeToStopAdvertising_) {
       timeToStopAdvertising_.reset();
       shouldStopAdvertising = true;
+    } else if (state_ == State::kScanning && IsPaused()) {
+      timeToStopScanning_.reset();
+      shouldStopScanning = true;
+    } else if (state_ == State::kIdle && idleWhilePaused_ && !IsPaused()) {
+      idleWhilePaused_ = false;
+      shouldStartScanning = true;
     } else if (state_ == State::kScanning && hasDataToSend_ &&
                (numUrgentSends_ > 0 || (timeToStopScanning_ && currentTime >= *timeToStopScanning_))) {
       if (numUrgentSends_ > 0) { numUrgentSends_--; }
@@ -90,6 +104,7 @@ void Esp32BleNetwork::MaybeUpdateAdvertisingState() {
   }
   if (shouldStopAdvertising) { StopAdvertising(); }
   if (shouldStopScanning) { StopScanning(); }
+  if (shouldStartScanning) { StartScanning(); }
 }
 
 void Esp32BleNetwork::StartConfigureAdvertising() {
@@ -147,7 +162,7 @@ void Esp32BleNetwork::GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap
         case ESP_GAP_SEARCH_INQ_CMPL_EVT: {
           ESP32_BLE_DEBUG("Scanning has now stopped via ESP_GAP_SEARCH_INQ_CMPL_EVT");
           UpdateState(State::kStoppingScan, State::kIdle);
-          StartConfigureAdvertising();
+          if (!StayIdleIfPaused()) { StartConfigureAdvertising(); }
         } break;
         default: {
           ESP32_BLE_DEBUG("GAP scan event %d!", param->scan_rst.search_evt);
@@ -166,7 +181,7 @@ void Esp32BleNetwork::GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap
     case ESP_GAP_BLE_SCAN_STOP_COMPLETE_EVT: {
       ESP32_BLE_DEBUG("Scanning has now stopped");
       UpdateState(State::kStoppingScan, State::kIdle);
-      StartConfigureAdvertising();
+      if (!StayIdleIfPaused()) { StartConfigureAdvertising(); }
     } break;
     case ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT: {
       ESP32_BLE_DEBUG("Advertising params set");
@@ -182,7 +197,7 @@ void Esp32BleNetwork::GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap
       UpdateState(State::kStoppingAdvertising, State::kIdle);
       if (ExtractShouldTriggerSendAsap()) {
         StartConfigureAdvertising();
-      } else {
+      } else if (!StayIdleIfPaused()) {
         StartScanning();
       }
     } break;

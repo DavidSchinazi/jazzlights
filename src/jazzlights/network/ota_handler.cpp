@@ -147,6 +147,7 @@ void OtaHandler::HandleBegin(SecureSession& session, const uint8_t* value, uint6
   memcpy(imageSha256_, fields[1].value, kSha256Size);
   rebootWhenDone_ = fields[3].present;
   jll_info("OTA starting update of %" PRIu64 " bytes", imageSize_);
+  if (updatingCallback_ != nullptr) { updatingCallback_(true); }
   SendAck(session, 0);
 }
 
@@ -239,6 +240,7 @@ void OtaHandler::StopUpdate() {
   mbedtls_sha256_free(&sha256_);
   updating_ = nullptr;
   partition_ = nullptr;
+  if (updatingCallback_ != nullptr) { updatingCallback_(false); }
 }
 
 void OtaHandler::AbortUpdate() {

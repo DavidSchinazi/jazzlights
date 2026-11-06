@@ -47,13 +47,17 @@ class Esp32BleNetwork : public Esp32BleCommonNetwork {
   void StopAdvertising();
   void StartConfigureAdvertising();
   void UpdateState(State expectedCurrentState, State newState);
+  // Called once idle. If paused, stays idle until MaybeUpdateAdvertisingState() sees that it's resumed, and returns
+  // true.
+  bool StayIdleIfPaused();
   void GapCallbackInner(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param, Microseconds callbackTime);
 
   static void GapCallback(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t* param);
 
   static NetworkDeviceId InitBluetoothStackAndQueryLocalDeviceId();
 
-  State state_ = State::kIdle;  // Protected by mutex_.
+  State state_ = State::kIdle;    // Protected by mutex_.
+  bool idleWhilePaused_ = false;  // Protected by mutex_.
 };
 
 }  // namespace jazzlights

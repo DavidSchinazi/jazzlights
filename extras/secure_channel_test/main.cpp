@@ -175,6 +175,7 @@ int main(int argc, char** argv) {
   static OtaHandler otaHandler(server);
   const uint8_t localDeviceId[NetworkDeviceId::size()] = {0x02, 0x11, 0x22, 0x33, 0x44, 0x55};
   otaHandler.SetLocalDeviceId(NetworkDeviceId(localDeviceId));
+  otaHandler.SetUpdatingCallback([](bool updating) { printf("OTA updating: %s\n", updating ? "yes" : "no"); });
   static SecureChannelEchoHandler echoHandler;
   server->RegisterHandler(OtaHandler::kFirstType, OtaHandler::kLastType, &otaHandler);
   server->RegisterHandler(SecureChannelEchoHandler::kEchoType, SecureChannelEchoHandler::kEchoType, &echoHandler);

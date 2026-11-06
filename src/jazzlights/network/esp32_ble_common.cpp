@@ -69,6 +69,12 @@ void Esp32BleCommonNetwork::SetMessageToSend(const ProtocolMessage& messageToSen
   if (startedSending) { MaybeUpdateAdvertisingState(); }
 }
 
+void Esp32BleCommonNetwork::SetPaused(bool paused) {
+  if (paused_.exchange(paused, std::memory_order_relaxed) == paused) { return; }
+  jll_info("BLE %s", paused ? "pausing" : "resuming");
+  OnPausedChanged();
+}
+
 void Esp32BleCommonNetwork::DisableSending() {
   const std::lock_guard<std::mutex> lock(mutex_);
   hasDataToSend_ = false;

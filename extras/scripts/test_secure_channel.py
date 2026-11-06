@@ -918,6 +918,17 @@ class OtaTest(ServerTestCase):
             self.expect_result(first, 0)
             self.assertEqual(self.read_image_out(), image)
 
+    @unittest.skipUnless(NATIVE, "needs the fake flash")
+    def test_updating_callback(self):
+        client = self.connected_client()
+        self.start_update(client, make_image())
+        client.close()
+        time.sleep(0.3)
+        with open(self.log_path, encoding="utf-8") as f:
+            log = f.read()
+        self.assertIn("OTA updating: yes", log)
+        self.assertIn("OTA updating: no", log[log.index("OTA updating: yes") :])
+
     def test_failing_mid_update_lets_another_client_update(self):
         for ending in ("no_close", "clean_close", "flipped_bit"):
             with self.subTest(ending=ending):

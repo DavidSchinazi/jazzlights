@@ -27,6 +27,11 @@ class OtaHandler : public SecureChannelHandler {
   // Sets the device ID that OtaInfo reports. Must be called before the server starts.
   void SetLocalDeviceId(const NetworkDeviceId& localDeviceId) { localDeviceId_ = localDeviceId; }
 
+  // Called on the channel's task with true when an update starts, and with false when it stops, however it stops.
+  using UpdatingCallback = void (*)(bool updating);
+  // Must be called before the server starts.
+  void SetUpdatingCallback(UpdatingCallback callback) { updatingCallback_ = callback; }
+
   // From SecureChannelHandler.
   void OnTlv(SecureSession& session, uint64_t type, const uint8_t* value, uint64_t length) override;
   void OnSessionEnd(SecureSession& session, bool clean) override;
@@ -45,6 +50,7 @@ class OtaHandler : public SecureChannelHandler {
 
   SecureChannelServer* server_;  // Unowned.
   NetworkDeviceId localDeviceId_;
+  UpdatingCallback updatingCallback_ = nullptr;
   SecureSession* updating_ = nullptr;  // The only session that's updating, if any.
   const esp_partition_t* partition_ = nullptr;
   esp_ota_handle_t handle_ = 0;
