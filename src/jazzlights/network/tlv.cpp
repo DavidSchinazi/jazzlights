@@ -12,7 +12,7 @@ size_t WriteVarint(uint64_t value, uint8_t* out) {
   return size;
 }
 
-size_t ReadVarint(const uint8_t* data, size_t length, uint64_t* value) {
+size_t ReadVarint(const uint8_t* data, uint64_t length, uint64_t* value) {
   if (length == 0) { return 0; }
   const size_t size = size_t{1} << (data[0] >> 6);
   if (length < size) { return 0; }
@@ -22,26 +22,26 @@ size_t ReadVarint(const uint8_t* data, size_t length, uint64_t* value) {
   return size;
 }
 
-TLVHeaderStatus ParseTLVHeader(const uint8_t* data, size_t length, TLVHeader* header) {
+TlvHeaderStatus ParseTlvHeader(const uint8_t* data, uint64_t length, TlvHeader* header) {
   uint64_t type;
   const size_t typeSize = ReadVarint(data, length, &type);
-  if (typeSize == 0) { return TLVHeaderStatus::kNeedMoreData; }
+  if (typeSize == 0) { return TlvHeaderStatus::kNeedMoreData; }
   uint64_t valueLength;
   const size_t lengthSize = ReadVarint(data + typeSize, length - typeSize, &valueLength);
-  if (lengthSize == 0) { return TLVHeaderStatus::kNeedMoreData; }
-  if (valueLength > kMaxTLVLength) { return TLVHeaderStatus::kInvalid; }
+  if (lengthSize == 0) { return TlvHeaderStatus::kNeedMoreData; }
+  if (valueLength > kMaxTlvLength) { return TlvHeaderStatus::kInvalid; }
   header->type = type;
-  header->length = static_cast<size_t>(valueLength);
+  header->length = valueLength;
   header->headerSize = typeSize + lengthSize;
-  return TLVHeaderStatus::kComplete;
+  return TlvHeaderStatus::kComplete;
 }
 
-bool TLVReader::Next() {
+bool TlvReader::Next() {
   if (failed_) { return false; }
   offset_ = next_;
   if (offset_ == length_) { return false; }
   // A Type or Length that is cut off is past the end of the container, since nothing more can arrive.
-  if (ParseTLVHeader(data_ + offset_, length_ - offset_, &header_) != TLVHeaderStatus::kComplete ||
+  if (ParseTlvHeader(data_ + offset_, length_ - offset_, &header_) != TlvHeaderStatus::kComplete ||
       header_.length > length_ - offset_ - header_.headerSize) {
     failed_ = true;
     return false;
@@ -50,27 +50,27 @@ bool TLVReader::Next() {
   return true;
 }
 
-bool ParseTLVInteger(const uint8_t* value, size_t length, uint64_t* integer) {
+bool ParseTlvInteger(const uint8_t* value, uint64_t length, uint64_t* integer) {
   return length > 0 && ReadVarint(value, length, integer) == length;
 }
 
-bool ParseTLVFields(const uint8_t* data, size_t length, TLVField* fields, size_t numFields) {
-  TLVReader reader(data, length);
+bool ParseTlvFields(const uint8_t* data, uint64_t length, TlvField* fields, size_t numFields) {
+  TlvReader reader(data, length);
   while (reader.Next()) {
     for (size_t i = 0; i < numFields; i++) {
-      TLVField& field = fields[i];
+      TlvField& field = fields[i];
       if (field.type != reader.type()) { continue; }
       if (field.present) { return false; }
       switch (field.kind) {
-        case TLVField::Kind::kBytes:
-          if (field.exactLength != TLVField::kAnyLength && field.exactLength != reader.length()) { return false; }
+        case TlvField::Kind::kBytes:
+          if (field.exactLength != TlvField::kAnyLength && field.exactLength != reader.length()) { return false; }
           field.value = reader.value();
           field.length = reader.length();
           break;
-        case TLVField::Kind::kInteger:
-          if (!ParseTLVInteger(reader.value(), reader.length(), &field.integer)) { return false; }
+        case TlvField::Kind::kInteger:
+          if (!ParseTlvInteger(reader.value(), reader.length(), &field.integer)) { return false; }
           break;
-        case TLVField::Kind::kFlag:
+        case TlvField::Kind::kFlag:
           if (reader.length() != 0) { return false; }
           break;
       }
@@ -87,19 +87,21 @@ bool ParseTLVFields(const uint8_t* data, size_t length, TLVField* fields, size_t
   return true;
 }
 
-void TLVWriter::WriteBytes(uint64_t type, const uint8_t* value, size_t length) {
-  const size_t headerSize = VarintSize(type) + VarintSize(length);
-  if (failed_ || length > kMaxTLVLength || headerSize + length > capacity_ - size_) {
+void TlvWriter::WriteBytes(uint64_t type, const uint8_t* value, uint64_t length) {
+  if (failed_ || type > kMaxVarint || length > kMaxTlvLength ||
+      VarintSize(type) + VarintSize(length) + length > capacity_ - size_) {
     failed_ = true;
     return;
   }
+  // This fits in the buffer, so it fits in a size_t.
+  const size_t valueSize = static_cast<size_t>(length);
   size_ += WriteVarint(type, buffer_ + size_);
   size_ += WriteVarint(length, buffer_ + size_);
-  if (length > 0) { memcpy(buffer_ + size_, value, length); }
-  size_ += length;
+  if (valueSize > 0) { memcpy(buffer_ + size_, value, valueSize); }
+  size_ += valueSize;
 }
 
-void TLVWriter::WriteInteger(uint64_t type, uint64_t integer) {
+void TlvWriter::WriteInteger(uint64_t type, uint64_t integer) {
   uint8_t value[kMaxVarintSize];
   WriteBytes(type, value, WriteVarint(integer, value));
 }

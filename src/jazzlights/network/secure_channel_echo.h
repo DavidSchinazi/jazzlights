@@ -12,7 +12,7 @@ class SecureChannelEchoHandler : public SecureChannelHandler {
  public:
   static constexpr uint64_t kEchoType = 1000;
 
-  void OnTLV(SecureSession& session, uint64_t type, const uint8_t* value, size_t length) override {
+  void OnTlv(SecureSession& session, uint64_t type, const uint8_t* value, size_t length) override {
     session.Send(type, value, length);
   }
   void OnSessionEnd(SecureSession& /*session*/, bool /*clean*/) override {}

@@ -28,7 +28,7 @@ class OTAHandler : public SecureChannelHandler {
   void SetLocalDeviceId(const NetworkDeviceId& localDeviceId) { localDeviceId_ = localDeviceId; }
 
   // From SecureChannelHandler.
-  void OnTLV(SecureSession& session, uint64_t type, const uint8_t* value, size_t length) override;
+  void OnTlv(SecureSession& session, uint64_t type, const uint8_t* value, size_t length) override;
   void OnSessionEnd(SecureSession& session, bool clean) override;
 
  private:

@@ -65,12 +65,12 @@ uint64_t ChipModel() {
 
 }  // namespace
 
-void OTAHandler::OnTLV(SecureSession& session, uint64_t type, const uint8_t* value, size_t length) {
+void OTAHandler::OnTlv(SecureSession& session, uint64_t type, const uint8_t* value, size_t length) {
   switch (type) {
     case kOtaQuery:
     case kOtaEnd:
       // These have no fields yet, but they're still containers that must be well formed.
-      if (!ParseTLVFields(value, length, nullptr, 0)) {
+      if (!ParseTlvFields(value, length, nullptr, 0)) {
         session.Close(kSecureChannelStatusMalformed);
       } else if (type == kOtaQuery) {
         HandleQuery(session);
@@ -93,7 +93,7 @@ void OTAHandler::OnSessionEnd(SecureSession& session, bool /*clean*/) {
 void OTAHandler::HandleQuery(SecureSession& session) {
   const esp_partition_t* partition = esp_ota_get_next_update_partition(nullptr);
   uint8_t info[128];
-  TLVWriter writer(info, sizeof(info));
+  TlvWriter writer(info, sizeof(info));
   writer.WriteInteger(0, partition != nullptr ? partition->size : 0);
   writer.WriteBytes(1, kSoftwareVersion, sizeof(kSoftwareVersion));
   writer.WriteInteger(2, ChipModel());
@@ -105,13 +105,13 @@ void OTAHandler::HandleQuery(SecureSession& session) {
 }
 
 void OTAHandler::HandleBegin(SecureSession& session, const uint8_t* value, size_t length) {
-  TLVField fields[] = {
-      {0, TLVField::Kind::kInteger, /*required=*/true},
-      {1, TLVField::Kind::kBytes, /*required=*/true, kSha256Size},
-      {2, TLVField::Kind::kInteger, /*required=*/true},
-      {3, TLVField::Kind::kFlag, /*required=*/false},
+  TlvField fields[] = {
+      {0, TlvField::Kind::kInteger, /*required=*/true},
+      {1, TlvField::Kind::kBytes, /*required=*/true, kSha256Size},
+      {2, TlvField::Kind::kInteger, /*required=*/true},
+      {3, TlvField::Kind::kFlag, /*required=*/false},
   };
-  if (!ParseTLVFields(value, length, fields, sizeof(fields) / sizeof(fields[0]))) {
+  if (!ParseTlvFields(value, length, fields, sizeof(fields) / sizeof(fields[0]))) {
     session.Close(kSecureChannelStatusMalformed);
     return;
   }
@@ -221,14 +221,14 @@ void OTAHandler::HandleEnd(SecureSession& session) {
 
 void OTAHandler::SendAck(SecureSession& session, uint64_t bytesWritten) {
   uint8_t ack[VarintSize(0) + VarintSize(kMaxVarintSize) + kMaxVarintSize];
-  TLVWriter writer(ack, sizeof(ack));
+  TlvWriter writer(ack, sizeof(ack));
   writer.WriteInteger(0, bytesWritten);
   session.Send(kOtaAck, ack, writer.size());
 }
 
 void OTAHandler::SendResult(SecureSession& session, uint64_t status) {
   uint8_t result[VarintSize(0) + VarintSize(kMaxVarintSize) + kMaxVarintSize];
-  TLVWriter writer(result, sizeof(result));
+  TlvWriter writer(result, sizeof(result));
   writer.WriteInteger(0, status);
   session.Send(kOtaResult, result, writer.size());
 }

@@ -43,7 +43,7 @@ class SecureChannelHandler {
   virtual ~SecureChannelHandler() = default;
   // Called on the channel's task, shared by all sessions, so this must not block for long. `value` holds the whole
   // Value, however many records it arrived in.
-  virtual void OnTLV(SecureSession& session, uint64_t type, const uint8_t* value, size_t length) = 0;
+  virtual void OnTlv(SecureSession& session, uint64_t type, const uint8_t* value, size_t length) = 0;
   // Called for every session that was authenticated, once it has ended. `clean` is false if the session failed or the
   // connection was lost.
   virtual void OnSessionEnd(SecureSession& session, bool clean) = 0;
