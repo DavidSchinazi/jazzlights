@@ -13,6 +13,7 @@ tests on hardware still need to be done by hand.
 import builtins
 import hashlib
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -20,6 +21,7 @@ import tempfile
 import threading
 import time
 import unittest
+from unittest import mock
 
 from cryptography.hazmat.primitives.asymmetric import ec
 
@@ -737,6 +739,9 @@ class OtaTest(ServerTestCase):
         self.assertEqual(info.software_version, NATIVE_SOFTWARE_VERSION)
         self.assertEqual(info.chip_id, 1)
         self.assertEqual(info.build_environment, b"secure_channel_test")
+        self.assertEqual(info.mac_address, bytes.fromhex("021122334455"))
+        self.assertEqual(info.build_time, 1793836800)
+        self.assertEqual(info.description(), "MAC address 02:11:22:33:44:55, built at 2026-11-05T00:00:00+00:00")
 
     @unittest.skipUnless(NATIVE, "needs the fake flash")
     def test_update_succeeds_without_reboot(self):
@@ -1312,6 +1317,22 @@ class SoftwareVersionTest(unittest.TestCase):
     def write(self, path, contents):
         with open(os.path.join(self.project_dir, path), "w", encoding="utf-8") as f:
             f.write(contents)
+
+    def read_build_time(self):
+        with open(os.path.join(self.build_dir, "generated", "generated_software_version.h"), encoding="utf-8") as f:
+            return int(re.search(r"^#define JL_BUILD_TIME ([0-9]+)$", f.read(), re.MULTILINE).group(1))
+
+    def test_build_time_only_changes_with_version(self):
+        with mock.patch("time.time", return_value=1000.5):
+            self.run_script()
+        self.assertEqual(self.read_build_time(), 1000)
+        with mock.patch("time.time", return_value=2000):
+            self.run_script()
+        self.assertEqual(self.read_build_time(), 1000)
+        self.write("tracked.txt", "changed")
+        with mock.patch("time.time", return_value=3000):
+            self.run_script()
+        self.assertEqual(self.read_build_time(), 3000)
 
     def run_script(self):
         project_dir = self.project_dir

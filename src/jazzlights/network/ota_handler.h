@@ -11,6 +11,7 @@
 #include <atomic>
 
 #include "jazzlights/network/secure_channel_server.h"
+#include "jazzlights/protocol/wire_types.h"
 #include "jazzlights/util/time.h"
 
 namespace jazzlights {
@@ -22,6 +23,9 @@ class OTAHandler : public SecureChannelHandler {
   static constexpr uint64_t kLastType = 9;
 
   explicit OTAHandler(SecureChannelServer* server) : server_(server) {}
+
+  // Sets the device ID that OtaInfo reports. Must be called before the server starts.
+  void SetLocalDeviceId(const NetworkDeviceId& localDeviceId) { localDeviceId_ = localDeviceId; }
 
   // From SecureChannelHandler.
   void OnTLV(SecureSession& session, uint64_t type, const uint8_t* value, size_t length) override;
@@ -39,7 +43,8 @@ class OTAHandler : public SecureChannelHandler {
   // Sends a failed result to the session that's updating, and stops the update.
   void FailUpdate(uint64_t status);
 
-  SecureChannelServer* server_;        // Unowned.
+  SecureChannelServer* server_;  // Unowned.
+  NetworkDeviceId localDeviceId_;
   SecureSession* updating_ = nullptr;  // The only session that's updating, if any.
   const esp_partition_t* partition_ = nullptr;
   esp_ota_handle_t handle_ = 0;

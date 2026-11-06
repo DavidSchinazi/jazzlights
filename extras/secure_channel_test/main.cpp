@@ -163,6 +163,8 @@ int main(int argc, char** argv) {
   }
   SecureChannelServer* server = SecureChannelServer::Get();
   static OTAHandler otaHandler(server);
+  const uint8_t localDeviceId[NetworkDeviceId::size()] = {0x02, 0x11, 0x22, 0x33, 0x44, 0x55};
+  otaHandler.SetLocalDeviceId(NetworkDeviceId(localDeviceId));
   static SecureChannelEchoHandler echoHandler;
   server->RegisterHandler(OTAHandler::kFirstType, OTAHandler::kLastType, &otaHandler);
   server->RegisterHandler(SecureChannelEchoHandler::kEchoType, SecureChannelEchoHandler::kEchoType, &echoHandler);

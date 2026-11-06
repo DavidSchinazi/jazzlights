@@ -365,6 +365,8 @@ A server skips the types that only go from server to client if it receives them.
 | 1 | software_version | 20 or 52 bytes | SHA-1 of the jazzlights git commit this firmware was built from, then a SHA-256 of the code changes since that commit, omitted if there were none |
 | 2 | image_chip_id | integer | `esp_chip_info()` model |
 | 3 | build_environment | bytes | PlatformIO environment name this firmware was built with, such as `vest` |
+| 4 | mac_address | 6 bytes | the device ID that the synchronization protocol uses, which is its MAC address unless it has none |
+| 5 | build_time | integer | when this firmware was built, in seconds since the UNIX epoch, see below |
 
 The client starts by sending `OtaQuery`, and the server answers with `OtaInfo`. The client then
 picks the image for the device's `build_environment` and decides whether to update. For example,
@@ -445,8 +447,10 @@ our sdkconfig.
   computes `software_version` when building the firmware, and saves it as `software_version.bin`
   next to `firmware.bin`. The code changes are `git diff HEAD --binary` followed by the name and
   contents of any untracked files that aren't ignored, sorted by name. Without git, the version is
-  20 zero bytes. It generates one header in the build directory with this and `build_environment`,
-  which only `ota_handler.cpp` includes, so that a change doesn't recompile everything.
+  20 zero bytes. It generates one header in the build directory with this, `build_environment` and
+  `build_time`, which only `ota_handler.cpp` includes, so that a change doesn't recompile everything.
+  `build_time` is when this `software_version` was first built for this environment in this build
+  directory, so that building again without changes doesn't recompile anything.
 - The update doesn't change what the LEDs show.
 
 ### Client implementation

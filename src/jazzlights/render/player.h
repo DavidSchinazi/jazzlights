@@ -122,6 +122,8 @@ class Player : private ProtocolEngine::Delegate {
   void SetPrecedenceGain(Precedence precedenceGain) { engine_.SetPrecedenceGain(precedenceGain); }
   void UpdatePrecedence(Precedence basePrecedence, Precedence precedenceGain);
   void SetRandomizeLocalDeviceId(bool val) { engine_.SetRandomizeLocalDeviceId(val); }
+  // The device ID that the synchronization protocol uses, which is usually a MAC address. Only valid after Begin().
+  NetworkDeviceId localDeviceId() const { return engine_.localDeviceId(); }
 
   PredictableRandom* predictableRandom() { return &predictableRandom_; }
   PatternBits CurrentEffect() const;

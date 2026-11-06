@@ -48,6 +48,8 @@ enum OTAStatus : uint64_t {
 constexpr uint8_t kSoftwareVersion[] = {JL_SOFTWARE_VERSION_BYTES};
 static_assert(sizeof(kSoftwareVersion) == 20 || sizeof(kSoftwareVersion) == 52);
 constexpr char kBuildEnvironment[] = JL_BUILD_ENVIRONMENT;
+constexpr uint64_t kBuildTime = JL_BUILD_TIME;
+static_assert(kBuildTime <= kMaxVarint);
 constexpr size_t kSha256Size = 32;
 // Rolling back writes to flash then reboots, which is all this task does. It only exists until the firmware is
 // confirmed.
@@ -96,6 +98,8 @@ void OTAHandler::HandleQuery(SecureSession& session) {
   writer.WriteBytes(1, kSoftwareVersion, sizeof(kSoftwareVersion));
   writer.WriteInteger(2, ChipModel());
   writer.WriteBytes(3, reinterpret_cast<const uint8_t*>(kBuildEnvironment), sizeof(kBuildEnvironment) - 1);
+  writer.WriteBytes(4, localDeviceId_.data(), NetworkDeviceId::size());
+  writer.WriteInteger(5, kBuildTime);
   if (writer.failed()) { jll_fatal("OTA failed to write OtaInfo"); }
   session.Send(kOtaInfo, info, writer.size());
 }

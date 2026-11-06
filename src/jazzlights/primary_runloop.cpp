@@ -124,6 +124,8 @@ void MaybeStartSecureChannel() {
   if (sStarted || !IsIpNetworkInitialized()) { return; }
   sStarted = true;
 #if JL_OTA
+  // The player was started in SetupPrimaryRunLoop(), so it has settled on its device ID.
+  gOtaHandler.SetLocalDeviceId(gPlayer.localDeviceId());
   SecureChannelServer::Get()->RegisterHandler(OTAHandler::kFirstType, OTAHandler::kLastType, &gOtaHandler);
 #endif  // JL_OTA
 #if JL_SECURE_CHANNEL_ECHO

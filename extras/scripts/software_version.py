@@ -1,10 +1,14 @@
 # Computes the software version of the firmware being built, see "Server implementation" under "Part 2: OTA" in
 # extras/docs/OTA_PROPOSAL.md. It saves it as software_version.bin next to firmware.bin, and generates a header that
-# only one source file includes, so that a new version doesn't recompile everything. This is a pre: script so that the
+# only one source file includes, so that a new version doesn't recompile everything. The header also holds the build
+# time, which is when this version was first built in this build directory, so that a build with no changes doesn't
+# recompile anything. This is a pre: script so that the
 # header exists before the sources get compiled, and it applies to all environments through the [env] section.
 import hashlib
 import os
+import re
 import subprocess
+import time
 
 Import("env")
 
@@ -53,11 +57,21 @@ generated_dir = os.path.join(build_dir, "generated")
 os.makedirs(generated_dir, exist_ok=True)
 software_version = compute_software_version(project_dir)
 write_if_changed(os.path.join(build_dir, "software_version.bin"), software_version)
-write_if_changed(
-    os.path.join(generated_dir, "generated_software_version.h"),
-    (
-        "#define JL_SOFTWARE_VERSION_BYTES %s\n#define JL_BUILD_ENVIRONMENT \"%s\"\n"
-        % (",".join("0x%02x" % b for b in software_version), env.subst("$PIOENV"))
-    ).encode(),
+header_path = os.path.join(generated_dir, "generated_software_version.h")
+header = '#define JL_SOFTWARE_VERSION_BYTES %s\n#define JL_BUILD_ENVIRONMENT "%s"\n' % (
+    ",".join("0x%02x" % b for b in software_version),
+    env.subst("$PIOENV"),
 )
+build_time = None
+try:
+    with open(header_path, encoding="utf-8") as f:
+        previous = f.read()
+    if previous.startswith(header):
+        match = re.search(r"^#define JL_BUILD_TIME ([0-9]+)$", previous, re.MULTILINE)
+        build_time = int(match.group(1)) if match else None
+except OSError:
+    pass
+if build_time is None:
+    build_time = int(time.time())
+write_if_changed(header_path, (header + "#define JL_BUILD_TIME %d\n" % build_time).encode())
 env.Append(SRC_BUILD_FLAGS=["-I" + generated_dir])

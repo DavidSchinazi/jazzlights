@@ -6,6 +6,7 @@ and uploads it if it differs from what's running. This runs until interrupted.
 """
 
 import argparse
+import datetime
 import hashlib
 import os
 import re
@@ -66,6 +67,16 @@ class OtaInfo:
         self.software_version = secure_channel.required_field(fields, 1)
         self.chip_id = secure_channel.parse_integer(secure_channel.required_field(fields, 2))
         self.build_environment = secure_channel.required_field(fields, 3)
+        self.mac_address = fields.get(4)
+        self.build_time = secure_channel.parse_integer(fields[5]) if 5 in fields else None
+
+    def description(self):
+        mac = ":".join("%02x" % b for b in self.mac_address) if self.mac_address else "unknown"
+        if self.build_time is None:
+            built = "unknown"
+        else:
+            built = datetime.datetime.fromtimestamp(self.build_time, datetime.timezone.utc).isoformat()
+        return "MAC address %s, built at %s" % (mac, built)
 
 
 def platformio_environments(project_dir):
@@ -140,7 +151,7 @@ class Uploader:
             self.log(address, "unknown environment %r" % info.build_environment)
             return
         build_environment = info.build_environment.decode()
-        self.log(address, "is running %s, building" % build_environment)
+        self.log(address, "is running %s with %s, building" % (build_environment, info.description()))
         if not self.build_with_keepalive(address, client, build_environment):
             self.log(address, "build of %s failed" % build_environment)
             return
