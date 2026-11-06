@@ -78,7 +78,8 @@ in order and exactly once. It doesn't know who that peer is. So for every use of
   65-byte uncompressed P-256 points (`0x04 || X || Y`). All keys have the same permissions.
   `secure_channel.py --key <pem>` prints a public key in the format that file uses.
 - The server doesn't start while that list is empty, so firmware without keys doesn't open the
-  port or run the task. The list ships empty, so each deployment adds its own keys.
+  port or run the task. The list in the repository has 8 keys, whose private keys are kept off the
+  repository. Anyone running their own devices from it should replace them with their own.
 - To rotate or revoke keys, ship firmware with a new list. If every private key is lost, fall
   back to a serial flash.
 
