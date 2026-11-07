@@ -72,6 +72,7 @@ class Esp32EthernetNetwork : public Network {
   int socket_ = -1;                       // Only used on our task.
   uint8_t* udpPayload_ = nullptr;         // Only used on our task. Used for both sending and receiving.
   OptionalMicroseconds lastSendTime_;     // Only used on our task.
+  Microseconds echoInterval_ = 0;         // Only used on our task.
   PatternBits lastSentPattern_ = 0;       // Only used on our task.
   std::atomic<OptionalMicroseconds> lastReceiveTime_;
   std::mutex mutex_;

@@ -308,9 +308,14 @@ void Esp32WiFiNetwork::RunTask() {
     messageToSend = messageToSend_;
   }
   Microseconds currentTime = TimeMicros();
-  if (hasDataToSend_ && (!lastSendTime_ || currentTime - *lastSendTime_ >= kSendInterval ||
-                         messageToSend.currentPattern != lastSentPattern_)) {
+  const bool echo = IsEcho(messageToSend);
+  if (echo && echoInterval_ == 0) { echoInterval_ = RandomEchoInterval(); }
+  const bool due = !lastSendTime_ || (echo ? currentTime - *lastSendTime_ >= echoInterval_
+                                           : currentTime - *lastSendTime_ >= kSendInterval ||
+                                                 messageToSend.currentPattern != lastSentPattern_);
+  if (hasDataToSend_ && due) {
     lastSendTime_ = currentTime;
+    if (echo) { echoInterval_ = RandomEchoInterval(); }
     lastSentPattern_ = messageToSend.currentPattern;
     size_t payloadLength = WriteUdpPayload(messageToSend, udpPayload_, kReceiveBufferLength);
     if (payloadLength == 0) {

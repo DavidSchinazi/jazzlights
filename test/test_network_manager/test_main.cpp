@@ -1,8 +1,10 @@
 #include <unity.h>
 
+#include <chrono>
 #include <list>
 #include <optional>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "jazzlights/network/manager.h"
@@ -50,6 +52,30 @@ class FakeNetwork : public Network {
   NetworkDeviceId localDeviceId_ = NetworkDeviceId();
   std::list<ProtocolMessage> messagesToReceive_;
 };
+
+// A UdpNetwork that counts what it sends, and never receives anything.
+class CountingUdpNetwork : public UdpNetwork {
+ public:
+  NetworkDeviceId GetLocalDeviceId() const override { return NetworkDeviceId(); }
+  NetworkType Type() const override { return NetworkType::kWiFi; }
+  std::string GetStatusStr() override { return "counting"; }
+
+  int sendCount = 0;
+
+ protected:
+  NetworkStatus Update(NetworkStatus /*status*/) override { return kConnected; }
+  int Recv(void* /*buf*/, size_t /*bufsize*/, std::string* /*details*/) override { return 0; }
+  void Send(void* /*buf*/, size_t /*bufsize*/) override { sendCount++; }
+};
+
+// Runs the network's loop every 10ms for this long.
+void RunFor(Network& network, std::chrono::milliseconds duration) {
+  const auto end = std::chrono::steady_clock::now() + duration;
+  while (std::chrono::steady_clock::now() < end) {
+    network.RunLoop();
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+}
 
 NetworkDeviceId MakeDeviceId(uint8_t lastByte) {
   uint8_t bytes[6] = {0, 0, 0, 0, 0, lastByte};
@@ -118,6 +144,35 @@ void TestEchoSuppression() {
   TEST_ASSERT_TRUE(wifi.sendingDisabled);
   TEST_ASSERT_EQUAL_size_t(1, ethernet.sentMessages.size());
   TEST_ASSERT_FALSE(ethernet.sendingDisabled);
+}
+
+void TestSendEchoesOccasionally() {
+  NetworkManager manager;
+  manager.SetSendEchoesOccasionally(true);
+  FakeNetwork wifi(NetworkType::kWiFi, /*shouldEcho=*/false);
+  manager.Connect(&wifi);
+
+  // The network gets the message, and is in charge of only sending it occasionally.
+  const ProtocolMessage message = MakeMessage(/*receiptNetworkId=*/wifi.id());
+  manager.SetMessageToSend(message);
+  TEST_ASSERT_EQUAL_size_t(1, wifi.sentMessages.size());
+  TEST_ASSERT_TRUE(message == wifi.sentMessages[0]);
+  TEST_ASSERT_FALSE(wifi.sendingDisabled);
+}
+
+void TestUdpNetworkSendsEchoesOccasionally() {
+  CountingUdpNetwork network;
+  // What it received itself goes out right away, then once every 1.5-2.5s.
+  network.SetMessageToSend(MakeMessage(/*receiptNetworkId=*/network.id()));
+  RunFor(network, std::chrono::milliseconds(1400));
+  TEST_ASSERT_EQUAL_INT(1, network.sendCount);
+  RunFor(network, std::chrono::milliseconds(1200));
+  TEST_ASSERT_EQUAL_INT(2, network.sendCount);
+  // What came from elsewhere goes out every 100ms.
+  network.SetMessageToSend(MakeMessage(/*receiptNetworkId=*/0));
+  RunFor(network, std::chrono::milliseconds(550));
+  // That's about 5 sends after the 2 echoes, but leave room for a slow machine.
+  TEST_ASSERT_INT_WITHIN(2, 7, network.sendCount);
 }
 
 void TestEchoingNetworkStillSends() {
@@ -217,6 +272,8 @@ void RunUnityTests() {
   RUN_TEST(TestHasNetworks);
   RUN_TEST(TestSendFanOut);
   RUN_TEST(TestEchoSuppression);
+  RUN_TEST(TestSendEchoesOccasionally);
+  RUN_TEST(TestUdpNetworkSendsEchoesOccasionally);
   RUN_TEST(TestEchoingNetworkStillSends);
   RUN_TEST(TestNothingToSendIsNoOp);
   RUN_TEST(TestReceiveAggregation);

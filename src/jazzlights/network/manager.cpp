@@ -39,7 +39,7 @@ std::list<ProtocolMessage> NetworkManager::GetReceivedMessages() {
 void NetworkManager::SetMessageToSend(const std::optional<ProtocolMessage>& messageToSend, bool sendAsap) {
   if (!messageToSend) { return; }
   for (Network* network : networks_) {
-    if (!network->ShouldEcho() && messageToSend->receiptNetworkId == network->id()) {
+    if (!network->ShouldEcho() && messageToSend->receiptNetworkId == network->id() && !sendEchoesOccasionally_) {
       jll_debug("Not echoing for %s to %s ", NetworkTypeToString(network->Type()),
                 NetworkMessageToString(*messageToSend).c_str());
       network->DisableSending();

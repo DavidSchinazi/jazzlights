@@ -8,6 +8,7 @@
 #include "jazzlights/protocol/wire.h"
 #include "jazzlights/protocol/wire_types.h"
 #include "jazzlights/util/log.h"
+#include "jazzlights/util/pseudorandom.h"
 #include "jazzlights/util/time.h"
 #ifndef ESP32
 #include <arpa/inet.h>
@@ -60,6 +61,11 @@ void Network::Reconnect() {
     jll_info("%s Network Reconnecting", NetworkTypeToString(Type()));
     status_ = Update(kConnecting);
   }
+}
+
+// static
+Microseconds Network::RandomEchoInterval() {
+  return UnpredictableRandom::GetNumberBetween(1500 * kMicrosecondsPerMillisecond, 2500 * kMicrosecondsPerMillisecond);
 }
 
 void UdpNetwork::TriggerSendAsap() {
@@ -156,9 +162,14 @@ void UdpNetwork::RunLoopImpl() {
   // Do we need to send?
   Microseconds currentTime = TimeMicros();
   static constexpr Microseconds kMinTimeBetweenUdpSends = 100 * kMicrosecondsPerMillisecond;
-  if (hasDataToSend_ && (effectLastTxTime_ < 1 || currentTime - effectLastTxTime_ > kMinTimeBetweenUdpSends ||
-                         messageToSend_.currentPattern != lastSentPattern_)) {
+  const bool echo = IsEcho(messageToSend_);
+  if (echo && echoInterval_ == 0) { echoInterval_ = RandomEchoInterval(); }
+  const bool due = effectLastTxTime_ < 1 || (echo ? currentTime - effectLastTxTime_ >= echoInterval_
+                                                  : currentTime - effectLastTxTime_ > kMinTimeBetweenUdpSends ||
+                                                        messageToSend_.currentPattern != lastSentPattern_);
+  if (hasDataToSend_ && due) {
     effectLastTxTime_ = currentTime;
+    if (echo) { echoInterval_ = RandomEchoInterval(); }
     lastSentPattern_ = messageToSend_.currentPattern;
 
     uint8_t udpPayload[kUdpProtocolPayloadLength] = {};

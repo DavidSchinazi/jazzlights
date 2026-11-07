@@ -321,9 +321,12 @@ first release defines no features.
 - Each use has its own script on top of that module.
 - A client finds servers by listening for our UDP multicast payloads on `224.0.0.169:6699`, which
   it recognizes by their version in the high nibble of the first byte, and connects once to each
-  source IP address it hears. A device that follows another one it heard over Wi-Fi doesn't send on
-  Wi-Fi itself, so this only finds the devices that lead, or that follow one heard over BLE.
-  Clients can also be given addresses.
+  source IP address it hears. Clients can also be given addresses.
+- A device normally stops sending on Wi-Fi or Ethernet while it follows another device it heard on
+  that network, since everyone there hears the leader anyway. With `JL_OTA`, it keeps sending there,
+  but only every 1.5-2.5s, at random, so that clients can still find it.
+  `NetworkManager::SetSendEchoesOccasionally()` turns that on, and each UDP network rate-limits the
+  messages it received itself.
 
 ## Part 2: OTA
 
@@ -633,8 +636,9 @@ These ran over Wi-Fi, against `vest_secure_channel_test` unless stated otherwise
   `esp_ota_end()`, with status 9.
 - `vest_espidf` (`framework = espidf, arduino`) and `vest_idf` (`framework = espidf`) update
   themselves in 32s and 27s, and mark the new image valid 30s after booting.
-- Discovery finds the devices that send on Wi-Fi. With one device leading another over Wi-Fi, it
-  only found the leader, and the follower needed `--host`.
+- Discovery finds a device that follows another one over Wi-Fi, which sends every 1.7-2.5s, and the
+  device leading it. The OTA Upload task without an address found both, saw that the follower was
+  up to date, and skipped the leader, whose firmware has no secure channel.
 - The OTA Upload task, run as `pio run -e vest -t ota --upload-port 10.41.41.21`, built `vest` and
   updated the device in 41s.
 - Memory on `vest`, which runs Bluedroid and Wi-Fi on a classic ESP32: about 38KB of heap is free

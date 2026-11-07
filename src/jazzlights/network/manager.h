@@ -38,14 +38,21 @@ class NetworkManager {
   std::list<ProtocolMessage> GetReceivedMessages();
 
   // Hands the message to advertise to every transport. Transports that do not echo are told to stop sending when the
-  // message was received on them. A nullopt message means there is nothing to advertise and is a no-op.
+  // message was received on them, unless SetSendEchoesOccasionally() is on. A nullopt message means there is nothing to
+  // advertise and is a no-op.
   void SetMessageToSend(const std::optional<ProtocolMessage>& messageToSend, bool sendAsap = false);
+
+  // Makes transports that do not echo still send a message received on them, but only every couple of seconds. OTA
+  // clients find devices by listening for what they send, which a device following another one would otherwise never
+  // send on that network.
+  void SetSendEchoesOccasionally(bool sendEchoesOccasionally) { sendEchoesOccasionally_ = sendEchoesOccasionally; }
 
   // Called once per primary runloop, gives every transport an opportunity to send.
   void RunLoop();
 
  private:
   std::vector<Network*> networks_;  // Unowned.
+  bool sendEchoesOccasionally_ = false;
 };
 
 }  // namespace jazzlights

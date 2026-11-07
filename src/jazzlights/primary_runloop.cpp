@@ -202,6 +202,9 @@ void SetupPrimaryRunLoop() {
   gPlayer.SetPrecedenceGain(1000);
 #endif
 
+#if JL_OTA
+  gNetworkManager.SetSendEchoesOccasionally(true);
+#endif  // JL_OTA
   gNetworkManager.Connect(BleNetwork::Get());
 #if JL_WIFI
 #if JL_ESP32_WIFI_LINK && !JL_ESPHOME

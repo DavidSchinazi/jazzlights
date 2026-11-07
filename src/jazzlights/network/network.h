@@ -106,6 +106,12 @@ class Network {
   // Allocates a NetworkId that is unique across all networks.
   static NetworkId NextAvailableId();
 
+  // Whether this message was received on this network. A network that doesn't echo only gets one of these when
+  // NetworkManager::SetSendEchoesOccasionally() is on, and must then only send it every RandomEchoInterval().
+  bool IsEcho(const ProtocolMessage& message) const { return message.receiptNetworkId == id(); }
+  // Between 1.5 and 2.5s, different each time, so that devices that follow the same one don't all send at once.
+  static Microseconds RandomEchoInterval();
+
  private:
   void CheckStatus();
   void Reconnect();
@@ -141,6 +147,7 @@ class UdpNetwork : public Network {
   PatternBits lastSentPattern_ = 0;
 
   Microseconds effectLastTxTime_ = 0;
+  Microseconds echoInterval_ = 0;
   OptionalMicroseconds lastReceiveTime_;
 };
 
