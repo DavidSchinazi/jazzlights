@@ -2,7 +2,8 @@
 """Keeps JazzLights devices on the local network up to date, see "Part 2: OTA" in extras/docs/OTA_PROPOSAL.md.
 
 For every device it discovers, this builds the firmware from this checkout for that device's PlatformIO environment,
-and uploads it if it differs from what's running. This runs until interrupted.
+and uploads it if it differs from what's running. This runs until interrupted, unless given --once or --host, which make
+it update what it finds and exit, with a failure status if any update failed or it found nothing to update.
 """
 
 import argparse
@@ -15,6 +16,7 @@ import select
 import socket
 import struct
 import subprocess
+import sys
 import threading
 import time
 
@@ -38,6 +40,8 @@ OTA_RESULT = 9
 DATA_CHUNK_SIZE = secure_channel.DEFAULT_MAX_RECORD_PLAINTEXT - 3
 PROGRESS_STEP_PERCENT = 10
 KEEPALIVE_INTERVAL_SECONDS = 30
+# How long --once listens for devices. They send a payload every 100ms.
+DEFAULT_DISCOVERY_SECONDS = 5
 # Flash writes and image verification can take a while, particularly with several devices at once. The upload fails if
 # it sends nothing and gets no OtaAck for this long.
 ACK_TIMEOUT_SECONDS = 30
@@ -110,14 +114,29 @@ def run_build(project_dir, build_environment):
 
 
 class Uploader:
-    def __init__(self, private_key, project_dir=REPO_ROOT, port=secure_channel.DEFAULT_PORT, start_build=run_build):
+    """Updates devices. With `environment`, it leaves devices running any other environment alone. With `build` false,
+    it uses what's already in the build directory instead of building."""
+
+    def __init__(
+        self,
+        private_key,
+        project_dir=REPO_ROOT,
+        port=secure_channel.DEFAULT_PORT,
+        start_build=run_build,
+        environment=None,
+        build=True,
+    ):
         self.private_key = private_key
         self.project_dir = project_dir
         self.port = port
         self.start_build = start_build
+        self.environment = environment
+        self.build = build
         self.build_lock = threading.Lock()
         self.seen_addresses = set()
         self.seen_lock = threading.Lock()
+        # What happened to each device: "updated", "up to date", "skipped" or "failed".
+        self.outcomes = {}
 
     def log(self, address, message):
         print("[%s] %s" % (address, message), flush=True)
@@ -134,11 +153,16 @@ class Uploader:
 
     def update_server(self, address):
         client = None
+        outcome = "failed"
         try:
             client = secure_channel.SecureChannelClient(address, self.private_key, port=self.port)
             client.connect()
-            self.update_session(address, client)
+            outcome = self.update_session(address, client)
             client.close()
+        except ConnectionRefusedError:
+            # It's a JazzLights device, but its firmware doesn't have the secure channel, or it has no keys.
+            self.log(address, "doesn't accept secure channel connections, so it can't be updated over OTA")
+            outcome = "skipped"
         except (OSError, secure_channel.ProtocolError, secure_channel.ConnectionEnded, ValueError) as err:
             self.log(address, "failed: %s" % err)
             if client is not None:
@@ -146,19 +170,28 @@ class Uploader:
         except secure_channel.SessionClosed as err:
             self.log(address, "the server closed the session with status %d" % err.status)
             client.close_socket()
+        with self.seen_lock:
+            self.outcomes[address] = outcome
 
     def update_session(self, address, client):
+        """Returns what happened, as in self.outcomes."""
         client.send_tlv(OTA_QUERY)
         info = self.wait_for(client, OTA_INFO, client.timeout, ignore=())
         info = OtaInfo(info)
         if info.build_environment not in platformio_environments(self.project_dir):
             self.log(address, "unknown environment %r" % info.build_environment)
-            return
+            return "skipped"
         build_environment = info.build_environment.decode()
-        self.log(address, "is running %s with %s, building" % (build_environment, info.description()))
-        if not self.build_with_keepalive(address, client, build_environment):
-            self.log(address, "build of %s failed" % build_environment)
-            return
+        if self.environment is not None and build_environment != self.environment:
+            self.log(address, "is running %s, not %s" % (build_environment, self.environment))
+            return "skipped"
+        if self.build:
+            self.log(address, "is running %s with %s, building" % (build_environment, info.description()))
+            if not self.build_with_keepalive(address, client, build_environment):
+                self.log(address, "build of %s failed" % build_environment)
+                return "failed"
+        else:
+            self.log(address, "is running %s with %s" % (build_environment, info.description()))
         build_dir = os.path.join(self.project_dir, ".pio", "build", build_environment)
         with open(os.path.join(build_dir, "software_version.bin"), "rb") as f:
             software_version = f.read()
@@ -166,14 +199,15 @@ class Uploader:
             image = f.read()
         if software_version == info.software_version:
             self.log(address, "is already running this version")
-            return
+            return "up to date"
         if len(image) > info.available_size:
             self.log(address, "has room for %d bytes but the image is %d" % (info.available_size, len(image)))
-            return
+            return "failed"
         if image_chip_model(image) != info.chip_id:
             self.log(address, "has chip %d but the image is for %d" % (info.chip_id, image_chip_model(image)))
-            return
+            return "failed"
         self.upload(address, client, image)
+        return "updated"
 
     def build_with_keepalive(self, address, client, build_environment):
         """Builds one at a time, sending OtaQuery periodically to keep the session open. Returns whether it worked."""
@@ -356,17 +390,84 @@ def discover_forever(uploader, sock):
             uploader.on_server_heard(address)
 
 
+def discover_once(uploader, sock, seconds):
+    """Listens for devices for this long, then waits for every update that started."""
+    threads = []
+    deadline = time.monotonic() + seconds
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        sock.settimeout(remaining)
+        try:
+            payload, (address, _) = sock.recvfrom(1500)
+        except TimeoutError:
+            break
+        if is_our_payload(payload):
+            thread = uploader.on_server_heard(address)
+            if thread is not None:
+                threads.append(thread)
+    for thread in threads:
+        thread.join()
+
+
+def update_hosts(uploader, hosts):
+    threads = [uploader.on_server_heard(host) for host in hosts]
+    for thread in threads:
+        if thread is not None:
+            thread.join()
+
+
+def summarize(uploader, environment):
+    """Prints what happened to each device, and returns the exit status."""
+    for address, outcome in sorted(uploader.outcomes.items()):
+        print("[%s] %s" % (address, outcome), flush=True)
+    outcomes = list(uploader.outcomes.values())
+    if "failed" in outcomes:
+        return 1
+    if not any(outcome in ("updated", "up to date") for outcome in outcomes):
+        print("Found no device%s to update" % (" running " + environment if environment else ""), flush=True)
+        return 1
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--key", help="path to the PEM private key, defaults to the JL_CLIENT_KEY environment variable")
+    parser.add_argument("--environment", help="only update devices running this PlatformIO environment")
+    parser.add_argument(
+        "--no-build", action="store_true", help="use what's already built instead of building each environment"
+    )
+    parser.add_argument(
+        "--once",
+        action="store_true",
+        help="listen for devices for --discovery-seconds, update them, and exit",
+    )
+    parser.add_argument(
+        "--discovery-seconds",
+        type=float,
+        default=DEFAULT_DISCOVERY_SECONDS,
+        help="how long --once listens for devices, %(default)ss by default",
+    )
+    parser.add_argument(
+        "--host", action="append", default=[], help="update the device at this address instead of discovering them"
+    )
     args = parser.parse_args()
     private_key = secure_channel.load_private_key(secure_channel.find_private_key_path(args.key))
+    uploader = Uploader(private_key, environment=args.environment, build=not args.no_build)
+    if args.host:
+        update_hosts(uploader, args.host)
+        return summarize(uploader, args.environment)
     print("Listening for devices on %s:%d" % (MULTICAST_ADDRESS, MULTICAST_PORT), flush=True)
+    if args.once:
+        discover_once(uploader, open_discovery_socket(), args.discovery_seconds)
+        return summarize(uploader, args.environment)
     try:
-        discover_forever(Uploader(private_key), open_discovery_socket())
+        discover_forever(uploader, open_discovery_socket())
     except KeyboardInterrupt:
         pass
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

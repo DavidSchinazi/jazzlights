@@ -1459,6 +1459,12 @@ class OtaClientEndToEndTest(ServerTestCase):
         self.assertFalse(os.path.exists(self.image_out))
 
 
+def unused_port():
+    with socket.socket() as sock:
+        sock.bind((HOST, 0))
+        return sock.getsockname()[1]
+
+
 class FinishedBuild:
     returncode = 0
 
@@ -1467,8 +1473,15 @@ class FinishedBuild:
 
 
 class OtaClientUploadTestBase(ServerTestCase):
-    def upload(self, image):
+    def upload(self, image, **uploader_args):
         """Runs the client's whole update against the server, and returns what it logged."""
+        self.uploader = self.make_uploader(image, **uploader_args)
+        logged = []
+        self.uploader.log = lambda _address, message: logged.append(message)
+        self.uploader.update_server(HOST)
+        return logged
+
+    def make_uploader(self, image, **uploader_args):
         project_dir = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, project_dir)
         with open(os.path.join(project_dir, "platformio.ini"), "w", encoding="utf-8") as f:
@@ -1479,11 +1492,79 @@ class OtaClientUploadTestBase(ServerTestCase):
             f.write(image)
         with open(os.path.join(build_dir, "software_version.bin"), "wb") as f:
             f.write(b"v" * 52)
-        uploader = ota_upload.Uploader(KEY, project_dir=project_dir, start_build=lambda _d, _e: FinishedBuild())
-        logged = []
-        uploader.log = lambda _address, message: logged.append(message)
+        self.builds = []
+
+        def start_build(_project_dir, environment):
+            self.builds.append(environment)
+            return FinishedBuild()
+
+        return ota_upload.Uploader(KEY, project_dir=project_dir, start_build=start_build, **uploader_args)
+
+
+@unittest.skipUnless(NATIVE, "needs the fake flash")
+class OtaClientRunOnceTest(OtaClientUploadTestBase):
+    """What the OTA Upload task in VS Code uses: one environment, no building, and an exit status."""
+
+    def test_environment_and_no_build(self):
+        self.expect_restart = True
+        logged = self.upload(make_image(), environment="secure_channel_test", build=False)
+        self.assertEqual(self.builds, [])
+        self.assertTrue(any(message.startswith("updated in") for message in logged))
+        self.assertEqual(self.uploader.outcomes, {HOST: "updated"})
+        self.assertEqual(ota_upload.summarize(self.uploader, "secure_channel_test"), 0)
+
+    def test_other_environment_is_skipped(self):
+        logged = self.upload(make_image(), environment="vest")
+        self.assertEqual(self.builds, [])
+        self.assertIn("is running secure_channel_test, not vest", logged)
+        self.assertEqual(self.uploader.outcomes, {HOST: "skipped"})
+        # Finding nothing to update is a failure, so the task doesn't look like it worked.
+        self.assertEqual(ota_upload.summarize(self.uploader, "vest"), 1)
+
+    def test_failure_status(self):
+        self.upload(make_image(chip_id=9), build=False)
+        self.assertEqual(self.uploader.outcomes, {HOST: "failed"})
+        self.assertEqual(ota_upload.summarize(self.uploader, None), 1)
+
+    def test_device_without_the_channel_is_skipped(self):
+        uploader = self.make_uploader(make_image())
+        uploader.log = lambda _address, _message: None
+        uploader.port = unused_port()
         uploader.update_server(HOST)
-        return logged
+        self.assertEqual(uploader.outcomes, {HOST: "skipped"})
+
+    def test_nothing_found(self):
+        uploader = self.make_uploader(make_image())
+        self.assertEqual(ota_upload.summarize(uploader, None), 1)
+
+    def test_discover_once_then_waits_for_updates(self):
+        self.expect_restart = True
+        uploader = self.make_uploader(make_image(), build=False)
+        uploader.log = lambda _address, _message: None
+
+        class FakeDiscoverySocket:
+            def __init__(self):
+                self.payloads = [(b"\x20not ours", "10.0.0.9"), (b"\x10ours", HOST), (b"\x10again", HOST)]
+
+            def settimeout(self, _timeout):
+                pass
+
+            def recvfrom(self, _size):
+                if not self.payloads:
+                    raise TimeoutError()
+                payload, address = self.payloads.pop(0)
+                return payload, (address, 6699)
+
+        ota_upload.discover_once(uploader, FakeDiscoverySocket(), seconds=5)
+        # It returns once the update it started has finished.
+        self.assertEqual(uploader.outcomes, {HOST: "updated"})
+
+    def test_update_hosts(self):
+        self.expect_restart = True
+        uploader = self.make_uploader(make_image(), build=False)
+        uploader.log = lambda _address, _message: None
+        ota_upload.update_hosts(uploader, [HOST, HOST])
+        self.assertEqual(uploader.outcomes, {HOST: "updated"})
 
 
 @unittest.skipUnless(NATIVE, "needs the fake flash")

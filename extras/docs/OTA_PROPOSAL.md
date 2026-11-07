@@ -321,7 +321,9 @@ first release defines no features.
 - Each use has its own script on top of that module.
 - A client finds servers by listening for our UDP multicast payloads on `224.0.0.169:6699`, which
   it recognizes by their version in the high nibble of the first byte, and connects once to each
-  source IP address it hears.
+  source IP address it hears. A device that follows another one it heard over Wi-Fi doesn't send on
+  Wi-Fi itself, so this only finds the devices that lead, or that follow one heard over BLE.
+  Clients can also be given addresses.
 
 ## Part 2: OTA
 
@@ -484,7 +486,21 @@ our sdkconfig.
 ### Client implementation
 
 - `extras/scripts/ota_upload.py` builds on `secure_channel.py`, and runs until interrupted. Usage:
-  `ota_upload.py --key <pem>`, or `JL_CLIENT_KEY` in place of `--key`.
+  `ota_upload.py --key <pem>`, or `JL_CLIENT_KEY` in place of `--key`. Options:
+  - `--environment <env>` leaves devices running any other environment alone.
+  - `--no-build` uses what's already in `.pio/build/<env>` instead of building.
+  - `--once` listens for devices for 5s, or `--discovery-seconds`, updates them, and exits.
+  - `--host <address>`, which can be repeated, updates those devices instead of discovering any,
+    and exits.
+  - With `--once` or `--host`, it prints what happened to each device, and exits with a failure
+    status if an update failed or it found nothing to update. A device that refuses the
+    connection, since its firmware has no secure channel or no keys, is skipped.
+- `extras/scripts/ota_target.py` adds an "OTA Upload" task to every ESP32 environment, which the
+  pioarduino extension for VS Code shows under Project Tasks, then the environment, then Custom.
+  It builds the environment, then runs `ota_upload.py --environment <env> --no-build --once`, or
+  `--host` with the address given by `--upload-port` or `JL_OTA_HOST`. From the command line, that's
+  `pio run -e vest -t ota`. It needs `JL_CLIENT_KEY`, and runs `ota_upload.py` with `uv`, since
+  PlatformIO's own Python doesn't have the `cryptography` package.
 - For each server it discovers, it works in this order, with builds running one at a time:
   1. Connect and send `OtaQuery`.
   2. Close the session if `build_environment` isn't an environment in `platformio.ini`. Otherwise
@@ -617,7 +633,10 @@ These ran over Wi-Fi, against `vest_secure_channel_test` unless stated otherwise
   `esp_ota_end()`, with status 9.
 - `vest_espidf` (`framework = espidf, arduino`) and `vest_idf` (`framework = espidf`) update
   themselves in 32s and 27s, and mark the new image valid 30s after booting.
-- Discovery finds every JazzLights device on the network.
+- Discovery finds the devices that send on Wi-Fi. With one device leading another over Wi-Fi, it
+  only found the leader, and the follower needed `--host`.
+- The OTA Upload task, run as `pio run -e vest -t ota --upload-port 10.41.41.21`, built `vest` and
+  updated the device in 41s.
 - Memory on `vest`, which runs Bluedroid and Wi-Fi on a classic ESP32: about 38KB of heap is free
   with no connections, and `vest_espidf` and `vest_idf` have about 85KB. 4 idle sessions take
   about 7KB. 4 sessions that each hold a partial 4096-byte TLV don't all fit on `vest`: 2 of them
