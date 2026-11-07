@@ -61,6 +61,7 @@ constexpr BaseType_t kRollbackTaskCore = 0;
 // work. On vest it used about 1KB of its stack.
 constexpr uint32_t kWriterTaskStackSize = 2560;
 constexpr UBaseType_t kWriterTaskPriority = tskIDLE_PRIORITY + 1;
+// Pinning it to core 1, away from lwIP and Wi-Fi, wasn't faster on vest, since flash writes pause both cores anyway.
 constexpr BaseType_t kWriterTaskCore = 0;
 
 uint64_t ChipModel() {
