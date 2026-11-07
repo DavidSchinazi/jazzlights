@@ -41,10 +41,10 @@ OTA_END = 8
 OTA_RESULT = 9
 PATTERN_OVERRIDE = 10
 
-# What devices show while they're being updated, which is solid blue. Writing to flash disrupts the LED output, and a
+# What devices show while they're being updated, which is solid purple. Writing to flash disrupts the LED output, and a
 # pattern that doesn't change might make that less visible. The device goes back to its usual patterns when the
 # session ends.
-DEFAULT_UPDATE_PATTERN = 0x00000300
+DEFAULT_UPDATE_PATTERN = 0x00000400
 
 # As much as fits in one record, after the OtaData's one-byte Type and two-byte Length.
 DATA_CHUNK_SIZE = secure_channel.DEFAULT_MAX_RECORD_PLAINTEXT - 3
@@ -536,7 +536,7 @@ def main():
         "--update-pattern",
         type=parse_update_pattern,
         default=DEFAULT_UPDATE_PATTERN,
-        help="pattern bits that devices show while they're being updated, such as 0x00000300 for solid blue, or none to "
+        help="pattern bits that devices show while they're being updated, such as 0x00000400 for solid purple, or none to "
         "leave their patterns alone",
     )
     args = parser.parse_args()

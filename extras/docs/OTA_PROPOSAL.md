@@ -532,7 +532,7 @@ our sdkconfig.
      none for 30s, and stops as soon as an `OtaResult` reports a failure.
 - It logs its progress every 10% of the image, with the rate, and again when it has sent `OtaEnd`,
   which is when the device checks the image and switches which partition it boots from.
-- The `PatternOverride` makes the device show solid blue, `0x00000300`, during the update, since
+- The `PatternOverride` makes the device show solid purple, `0x00000400`, during the update, since
   flash writes disrupt the LED output and a pattern that doesn't change might make that less
   visible. `--update-pattern` picks other pattern bits, or `none` sends no `PatternOverride`.
 
@@ -578,7 +578,8 @@ rollback task adds a 4KB stack, only until new firmware is confirmed.
   heap a test picks.
 - `extras/scripts/test_secure_channel.py` runs against that server, and CI runs it too. Setting
   `JL_TEST_HOST`, `JL_TEST_KEY` and `JL_TEST_KEY2` runs it against a real device instead, skipping
-  the tests that need the fake flash or the fake heap.
+  the tests that need the fake flash or the fake heap. The handshake and idle timeout tests take
+  over a minute together, so they only run with `JL_TEST_TIMEOUTS=1`, which CI sets.
 - `test/test_tlv` is a native test of the TLV code, which `pio test -e native` runs.
 - `secure_channel.py` can act as a fake server, and can send malformed messages to a real one.
 - An `Echo` TLV of type 1000 sends its Value back, which checks the channel without touching flash.

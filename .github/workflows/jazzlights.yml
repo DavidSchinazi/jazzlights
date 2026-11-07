@@ -77,6 +77,8 @@ jobs:
           cmake --build extras/secure_channel_test/build --target secure-channel-test-server
       - name: Run Tests
         run: extras/scripts/test_secure_channel.py
+        env:
+          JL_TEST_TIMEOUTS: "1"
 
   pio-build:
     strategy:

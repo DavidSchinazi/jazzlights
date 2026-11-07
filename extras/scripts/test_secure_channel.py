@@ -8,6 +8,8 @@ To test a real device instead, flash it with the vest_secure_channel_test enviro
 private keys added to secure_channel_keys.h, and run this with JL_TEST_HOST set to its address and JL_TEST_KEY and
 JL_TEST_KEY2 set to the paths of the private keys. Tests that need the fake flash get skipped, so the remaining OTA
 tests on hardware still need to be done by hand.
+
+The tests of the channel's timeouts take over a minute, so they only run with JL_TEST_TIMEOUTS=1, which CI sets.
 """
 
 import builtins
@@ -39,6 +41,7 @@ RESTART_EXIT_CODE = 42
 ROLLBACK_EXIT_CODE = 43
 # Faster than the server's timeouts, slow enough for anything to arrive.
 CLOSE_TIMEOUT_SECONDS = 5 if NATIVE else 15
+TEST_TIMEOUTS = os.environ.get("JL_TEST_TIMEOUTS") == "1"
 NATIVE_SOFTWARE_VERSION = bytes(range(20))
 
 if NATIVE:
@@ -693,6 +696,7 @@ class SessionTest(ServerTestCase):
             self.assertAlmostEqual(duration, expected, delta=2.5, msg=name)
         self.assert_echo_works(active)
 
+    @unittest.skipUnless(TEST_TIMEOUTS, "takes 11s, set JL_TEST_TIMEOUTS=1 to run it")
     def test_handshake_timeouts(self):
         # Each timeout runs from when that connection was accepted. That's when each of these is set up, which on
         # hardware is about a second apart because of the handshakes. These and `active` take all 4 connections.
@@ -712,7 +716,7 @@ class SessionTest(ServerTestCase):
         }
         self.watch_timeouts(started, watched, (flooding_before_hello, before_ready.sock), active, expected=10)
 
-    @unittest.skipIf(os.environ.get("JL_TEST_SKIP_SLOW"), "this takes over a minute")
+    @unittest.skipUnless(TEST_TIMEOUTS, "takes over a minute, set JL_TEST_TIMEOUTS=1 to run it")
     def test_idle_timeouts(self):
         # Each timeout runs from when that session last sent a record.
         idle = self.connected_client()
@@ -1680,7 +1684,7 @@ class OtaClientRunOnceTest(OtaClientUploadTestBase):
         self.assertEqual(self.uploader.outcomes, {HOST: "updated"})
         with open(self.log_path, encoding="utf-8") as f:
             log = f.read()
-        self.assertIn("Pattern override: 0x00000300", log[log.index("OTA updating: yes") :])
+        self.assertIn("Pattern override: 0x00000400", log[log.index("OTA updating: yes") :])
 
     def test_no_pattern_override(self):
         self.expect_restart = True
