@@ -85,13 +85,13 @@ class OtaInfo:
     def mac_text(self):
         return format_mac_address(self.mac_address) if self.mac_address else None
 
-    def description(self):
-        mac = self.mac_text() or "unknown"
+    def build_time_text(self):
         if self.build_time is None:
-            built = "unknown"
-        else:
-            built = datetime.datetime.fromtimestamp(self.build_time, datetime.timezone.utc).isoformat()
-        return "MAC address %s, built at %s" % (mac, built)
+            return "unknown"
+        return datetime.datetime.fromtimestamp(self.build_time, datetime.timezone.utc).isoformat()
+
+    def description(self):
+        return "MAC address %s, built at %s" % (self.mac_text() or "unknown", self.build_time_text())
 
 
 def format_mac_address(mac_address):
@@ -202,7 +202,16 @@ class Uploader:
         info = self.wait_for(client, OTA_INFO, client.timeout, ignore=())
         info = OtaInfo(info)
         if self.mac_addresses is not None and info.mac_text() not in self.mac_addresses:
-            self.log(address, "has MAC address %s, not %s" % (info.mac_text(), " or ".join(sorted(self.mac_addresses))))
+            self.log(
+                address,
+                "has MAC address %s, not %s, and is running %s, built at %s"
+                % (
+                    info.mac_text(),
+                    " or ".join(sorted(self.mac_addresses)),
+                    info.build_environment.decode(errors="replace"),
+                    info.build_time_text(),
+                ),
+            )
             return "skipped"
         running = info.build_environment
         if self.mac_addresses is not None and self.environment is not None:
