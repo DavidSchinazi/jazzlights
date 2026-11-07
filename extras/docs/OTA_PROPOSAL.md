@@ -538,15 +538,18 @@ Flash and static RAM added to each environment:
 
 | Environment | Channel flash | Channel RAM | OTA flash | OTA RAM | Total flash |
 |---|---|---|---|---|---|
-| `vest` | 16,580 | 152 | 5,632 | 248 | 22,212 |
-| `vest_c6` | 17,988 | 160 | 6,520 | 248 | 24,508 |
-| `vest_espidf` | 14,640 | 168 | 5,576 | 248 | 20,216 |
+| `vest` | 18,244 | 136 | 6,572 | 280 | 24,816 |
+| `vest_c6` | 19,574 | 144 | 7,778 | 280 | 27,352 |
+| `vest_espidf` | 16,300 | 152 | 6,568 | 280 | 22,868 |
 
-On `vest`, about 10KB of the channel is its own code. The rest is what it newly pulls in, mainly
+With all of it, `vest` uses 91.5% of its app partition, `vest_c6` 95.1%, and `vest_espidf` 59.4%.
+
+On `vest`, about 11KB of the channel is its own code. The rest is what it newly pulls in, mainly
 AES-GCM, and lwIP's and the VFS's code for `listen()`, `accept()` and `poll()`. mbedTLS's ECP,
 bignum, ECDH, ECDSA and SHA-256 are already linked for Wi-Fi WPA3, and `app_update` already is. At
 run time, the channel's task adds its 8KB stack and 4KB send buffer, which firmware with no keys
-doesn't allocate. The rollback task adds a 4KB stack, only until new firmware is confirmed.
+doesn't allocate. During an update, the OTA writer task adds a 2.5KB stack and a 4KB buffer. The
+rollback task adds a 4KB stack, only until new firmware is confirmed.
 
 ## Testing
 
