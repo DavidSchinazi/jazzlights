@@ -39,6 +39,12 @@ OTA_DATA = 6
 OTA_ACK = 7
 OTA_END = 8
 OTA_RESULT = 9
+PATTERN_OVERRIDE = 10
+
+# What devices show while they're being updated, which is solid blue. Writing to flash disrupts the LED output, and a
+# pattern that doesn't change might make that less visible. The device goes back to its usual patterns when the
+# session ends.
+DEFAULT_UPDATE_PATTERN = 0x00000300
 
 # As much as fits in one record, after the OtaData's one-byte Type and two-byte Length.
 DATA_CHUNK_SIZE = secure_channel.DEFAULT_MAX_RECORD_PLAINTEXT - 3
@@ -107,6 +113,15 @@ def parse_mac_address(text):
     return format_mac_address(bytes.fromhex(digits))
 
 
+def parse_update_pattern(text):
+    if text == "none":
+        return None
+    pattern = int(text, 0)
+    if not 0 <= pattern <= 0xFFFFFFFF:
+        raise ValueError("%r doesn't fit in 32 bits" % text)
+    return pattern
+
+
 def platformio_environments(project_dir):
     """Returns the set of environment names in platformio.ini, as bytes since that's how we compare them."""
     with open(os.path.join(project_dir, "platformio.ini"), encoding="utf-8") as f:
@@ -147,6 +162,7 @@ class Uploader:
         environment=None,
         build=True,
         mac_addresses=None,
+        update_pattern=DEFAULT_UPDATE_PATTERN,
     ):
         self.private_key = private_key
         self.project_dir = project_dir
@@ -154,6 +170,7 @@ class Uploader:
         self.start_build = start_build
         self.environment = environment
         self.build = build
+        self.update_pattern = update_pattern
         self.mac_addresses = None if mac_addresses is None else {parse_mac_address(mac) for mac in mac_addresses}
         self.build_lock = threading.Lock()
         self.seen_addresses = set()
@@ -306,6 +323,9 @@ class Uploader:
         start_time = time.monotonic()
         client.send_tlv(OTA_BEGIN, encode_ota_begin(image))
         self.check_ack(client, 0)
+        if self.update_pattern is not None:
+            # Firmware without PatternOverride skips it.
+            client.send_tlv(PATTERN_OVERRIDE, struct.pack(">I", self.update_pattern))
         self.send_data(address, client, image, start_time)
         client.send_tlv(OTA_END)
         # The device checks the image and then switches which partition it boots from.
@@ -512,9 +532,22 @@ def main():
     parser.add_argument(
         "--host", action="append", default=[], help="update the device at this address instead of discovering them"
     )
+    parser.add_argument(
+        "--update-pattern",
+        type=parse_update_pattern,
+        default=DEFAULT_UPDATE_PATTERN,
+        help="pattern bits that devices show while they're being updated, such as 0x00000300 for solid blue, or none to "
+        "leave their patterns alone",
+    )
     args = parser.parse_args()
     private_key = secure_channel.load_private_key(secure_channel.find_private_key_path(args.key))
-    uploader = Uploader(private_key, environment=args.environment, build=not args.no_build, mac_addresses=args.mac)
+    uploader = Uploader(
+        private_key,
+        environment=args.environment,
+        build=not args.no_build,
+        mac_addresses=args.mac,
+        update_pattern=args.update_pattern,
+    )
     if args.host:
         update_hosts(uploader, args.host)
         return summarize(uploader, args.environment)

@@ -1199,6 +1199,91 @@ class RollbackGuardImpossibleThenConfirmedTest(rollback_guard_test("late-network
         self.assertIsNone(self.update_status_after_seconds(6))
 
 
+class PatternOverrideTest(ServerTestCase):
+    PATTERN = b"\x00\x00\x03\x00"
+
+    def read_log(self):
+        with open(self.log_path, encoding="utf-8") as f:
+            return f.read()
+
+    def overrides_logged(self):
+        return [line for line in self.read_log().splitlines() if line.startswith("Pattern override: ")]
+
+    def set_override(self, client, value):
+        client.send_tlv(ota_upload.PATTERN_OVERRIDE, value)
+        # The server handles TLVs in order, so once this is answered, it has handled the override. This uses OtaQuery
+        # rather than Echo, so that it works with any firmware that has OTA.
+        client.send_tlv(ota_upload.OTA_QUERY)
+        self.assertEqual(client.receive()[0], ota_upload.OTA_INFO)
+
+    def test_set_and_clear(self):
+        client = self.connected_client()
+        self.set_override(client, self.PATTERN)
+        self.set_override(client, b"\x12\x34\x56\x78")
+        self.set_override(client, b"")
+        if NATIVE:
+            self.assertEqual(
+                self.overrides_logged(),
+                ["Pattern override: 0x00000300", "Pattern override: 0x12345678", "Pattern override: none"],
+            )
+
+    @unittest.skipUnless(NATIVE, "reads the server's log")
+    def test_clearing_without_an_override_does_nothing(self):
+        client = self.connected_client()
+        self.set_override(client, b"")
+        self.assertEqual(self.overrides_logged(), [])
+
+    @unittest.skipUnless(NATIVE, "reads the server's log")
+    def test_ends_with_its_session(self):
+        for ending in ("clean_close", "no_close"):
+            with self.subTest(ending=ending):
+                client = self.connected_client()
+                self.set_override(client, self.PATTERN)
+                if ending == "clean_close":
+                    client.close()
+                else:
+                    client.close_socket()
+                time.sleep(0.3)
+                self.assertEqual(self.overrides_logged()[-1], "Pattern override: none")
+
+    @unittest.skipUnless(NATIVE, "reads the server's log")
+    def test_another_session_ending_leaves_it(self):
+        first = self.connected_client()
+        self.set_override(first, self.PATTERN)
+        second = self.connected_client()
+        second.send_tlv(ota_upload.OTA_QUERY)
+        self.assertEqual(second.receive()[0], ota_upload.OTA_INFO)
+        second.close()
+        time.sleep(0.3)
+        self.assertEqual(self.overrides_logged(), ["Pattern override: 0x00000300"])
+        # Any session can clear it.
+        third = self.connected_client()
+        self.set_override(third, b"")
+        self.assertEqual(self.overrides_logged()[-1], "Pattern override: none")
+
+    @unittest.skipUnless(NATIVE, "reads the server's log")
+    def test_latest_session_owns_it(self):
+        first = self.connected_client()
+        self.set_override(first, self.PATTERN)
+        second = self.connected_client()
+        self.set_override(second, b"\x12\x34\x56\x78")
+        first.close()
+        time.sleep(0.3)
+        self.assertEqual(self.overrides_logged()[-1], "Pattern override: 0x12345678")
+        second.close()
+        time.sleep(0.3)
+        self.assertEqual(self.overrides_logged()[-1], "Pattern override: none")
+
+    def test_wrong_length_closes_session(self):
+        for value in (b"\x00", b"\x00\x00\x03", b"\x00\x00\x03\x00\x00", bytes(8)):
+            with self.subTest(length=len(value)):
+                client = self.connected_client()
+                client.send_tlv(ota_upload.PATTERN_OVERRIDE, value)
+                with self.assertRaises(sc.SessionClosed) as raised:
+                    client.receive()
+                self.assertEqual(raised.exception.status, 1)
+
+
 class OtaClientTestBase(unittest.TestCase):
     """Runs Uploader against a FakeSecureChannelServer."""
 
@@ -1588,6 +1673,30 @@ class OtaClientRunOnceTest(OtaClientUploadTestBase):
         self.assertEqual(self.uploader.outcomes, {HOST: "skipped"})
         # Finding nothing to update is a failure, so the task doesn't look like it worked.
         self.assertEqual(ota_upload.summarize(self.uploader, "vest"), 1)
+
+    def test_pattern_override_during_upload(self):
+        self.expect_restart = True
+        self.upload(make_image(), build=False)
+        self.assertEqual(self.uploader.outcomes, {HOST: "updated"})
+        with open(self.log_path, encoding="utf-8") as f:
+            log = f.read()
+        self.assertIn("Pattern override: 0x00000300", log[log.index("OTA updating: yes") :])
+
+    def test_no_pattern_override(self):
+        self.expect_restart = True
+        self.upload(make_image(), build=False, update_pattern=None)
+        self.assertEqual(self.uploader.outcomes, {HOST: "updated"})
+        with open(self.log_path, encoding="utf-8") as f:
+            self.assertNotIn("Pattern override", f.read())
+
+    def test_parse_update_pattern(self):
+        self.assertEqual(ota_upload.parse_update_pattern("0x00000300"), 0x300)
+        self.assertEqual(ota_upload.parse_update_pattern("768"), 0x300)
+        self.assertIsNone(ota_upload.parse_update_pattern("none"))
+        for text in ("0x100000000", "-1", "blue"):
+            with self.subTest(text=text):
+                with self.assertRaises(ValueError):
+                    ota_upload.parse_update_pattern(text)
 
     def test_failure_status(self):
         self.upload(make_image(chip_id=9), build=False)

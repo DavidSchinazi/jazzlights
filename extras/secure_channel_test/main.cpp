@@ -26,6 +26,7 @@
 #include "esp_ota_ops.h"
 #include "esp_system.h"
 #include "jazzlights/network/ota_handler.h"
+#include "jazzlights/network/pattern_override_handler.h"
 #include "jazzlights/network/secure_channel_echo.h"
 #include "jazzlights/network/secure_channel_server.h"
 
@@ -189,8 +190,18 @@ int main(int argc, char** argv) {
   otaHandler.SetLocalDeviceId(NetworkDeviceId(localDeviceId));
   otaHandler.SetUpdatingCallback([](bool updating) { printf("OTA updating: %s\n", updating ? "yes" : "no"); });
   static SecureChannelEchoHandler echoHandler;
+  static PatternOverrideHandler patternOverrideHandler;
+  patternOverrideHandler.SetOverrideCallback([](std::optional<PatternBits> pattern) {
+    if (pattern) {
+      printf("Pattern override: 0x%08x\n", static_cast<unsigned>(*pattern));
+    } else {
+      printf("Pattern override: none\n");
+    }
+  });
   server->RegisterHandler(OtaHandler::kFirstType, OtaHandler::kLastType, &otaHandler);
   server->RegisterHandler(SecureChannelEchoHandler::kEchoType, SecureChannelEchoHandler::kEchoType, &echoHandler);
+  server->RegisterHandler(PatternOverrideHandler::kPatternOverrideType, PatternOverrideHandler::kPatternOverrideType,
+                          &patternOverrideHandler);
   server->Start(keys.data(), keys.size());
   if (rollbackGuardMode.empty()) {
     while (true) { pause(); }

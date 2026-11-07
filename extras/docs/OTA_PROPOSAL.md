@@ -521,7 +521,8 @@ our sdkconfig.
      or if its chip doesn't match `image_chip_id`. The chip is the 16-bit little-endian `chip_id`
      at byte 12 of `firmware.bin`. It has the same values as `image_chip_id`, except that ESP32 is
      0 there and 1 in `esp_chip_info()`.
-  4. Send `OtaBegin` with `reboot_when_done`, then the image and `OtaEnd`, and wait for
+  4. Send `OtaBegin` with `reboot_when_done`. Once its `OtaAck` arrives, send a
+     `PatternOverride`, see below, then the image and `OtaEnd`, and wait for
      `OtaResult`. It sends the image without waiting for each `OtaAck`, and leaves TCP's flow
      control to hold it back: waiting for acknowledgments, with up to 4 outstanding, was no
      faster, since the device's 5744-byte TCP receive window and its flash writes are what limit
@@ -531,6 +532,24 @@ our sdkconfig.
      none for 30s, and stops as soon as an `OtaResult` reports a failure.
 - It logs its progress every 10% of the image, with the rate, and again when it has sent `OtaEnd`,
   which is when the device checks the image and switches which partition it boots from.
+- The `PatternOverride` makes the device show solid blue, `0x00000300`, during the update, since
+  flash writes disrupt the LED output and a pattern that doesn't change might make that less
+  visible. `--update-pattern` picks other pattern bits, or `none` sends no `PatternOverride`.
+
+## Pattern override
+
+A `PatternOverride` TLV, of type 10, makes the device show one pattern on its LEDs instead of the
+synchronized ones. It's on wherever the secure channel is, and isn't part of OTA.
+
+- A 4-byte Value holds the pattern bits, in network byte order. The device shows that pattern
+  until the session that sent it ends, or until a `PatternOverride` from any session ends it.
+- An empty Value ends the override, and does nothing if there's none.
+- Any other length is malformed, and closes the session.
+- The latest `PatternOverride` wins, and its session is the one whose end ends the override.
+- It only changes this device's LEDs, not what it sends to other devices, and has no effect while
+  the device's LEDs are turned off. `Player::SetPatternOverride()` implements it, and can be called
+  from any task.
+- There's no answer. Firmware from before `PatternOverride` skips it, since it has no handler.
 
 ## Binary size
 
@@ -596,6 +615,9 @@ rollback task adds a 4KB stack, only until new firmware is confirmed.
   - heap, with fake heap: too little for a new connection, a `ClientHello`, or a receive buffer
     that fits the largest `ClientHello`, which must each be closed; and just enough for the
     largest `ClientHello` and `Echo`
+- `PatternOverride`: setting, changing and ending it; ending it when there's none; its session
+  ending, cleanly or not; another session ending, which must leave it; the latest session owning
+  it; and every wrong length, which must close the session
 - The OTA client:
   - `software_version.py` on a clean checkout, a changed tracked file, a new untracked file and an
     ignored file

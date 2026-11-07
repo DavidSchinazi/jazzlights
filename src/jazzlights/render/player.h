@@ -1,6 +1,7 @@
 #ifndef JL_RENDER_PLAYER_H
 #define JL_RENDER_PLAYER_H
 
+#include <atomic>
 #include <optional>
 #include <vector>
 
@@ -107,6 +108,10 @@ class Player : private ProtocolEngine::Delegate {
 #if JL_IS_CONFIG(FAIRY_WAND)
   void TriggerPatternOverride();
 #endif  // FAIRY_WAND
+
+  // Shows this pattern on this device's LEDs instead of the synchronized one, or with nullopt, goes back to the
+  // synchronized one. This doesn't change what the device sends to others. Can be called from any task.
+  void SetPatternOverride(std::optional<PatternBits> pattern);
 
   bool isPowerLimited() const { return powerLimited_; }
   void SetPowerLimited(bool powerLimited) { powerLimited_ = powerLimited; }
@@ -232,6 +237,10 @@ class Player : private ProtocolEngine::Delegate {
   bool shouldBeginPattern_ = true;
 
   size_t specialMode_ = 0;
+  // Set from other tasks by SetPatternOverride(). patternOverride_ is only meaningful while hasPatternOverride_ is
+  // true.
+  std::atomic<bool> hasPatternOverride_{false};
+  std::atomic<PatternBits> patternOverride_{0};
 #if JL_IS_CONFIG(FAIRY_WAND)
   OptionalMicroseconds overridePatternStartTime_;
 #elif JL_IS_CONFIG(CLOUDS)

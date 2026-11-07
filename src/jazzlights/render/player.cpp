@@ -334,6 +334,15 @@ void Player::TriggerPatternOverride() {
 }
 #endif  // FAIRY_WAND
 
+void Player::SetPatternOverride(std::optional<PatternBits> pattern) {
+  if (pattern) {
+    patternOverride_.store(*pattern);
+    hasPatternOverride_.store(true);
+  } else {
+    hasPatternOverride_.store(false);
+  }
+}
+
 bool Player::Render() {
   if (!ready_) { Begin(); }
   const Microseconds currentTime = TimeMicros();
@@ -418,6 +427,10 @@ bool Player::Render() {
 #elif JL_IS_CONFIG(ORRERY_PLANET)
   if (!engine_.creatureIsFollowingNonCreature()) { effect = PatternFromBits(planetPattern_, *this); }
 #endif  // FAIRY_WAND
+  if (enabled() && hasPatternOverride_.load()) {
+    frame_.pattern = patternOverride_.load();
+    effect = PatternFromBits(frame_.pattern, *this);
+  }
 
   // Ensure effectContext_ is big enough for this effect.
   size_t effectContextSize = effect->ContextSize(frame_);

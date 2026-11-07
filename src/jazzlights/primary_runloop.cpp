@@ -13,6 +13,7 @@
 #include "jazzlights/network/ethernet.h"
 #include "jazzlights/network/manager.h"
 #include "jazzlights/network/ota_handler.h"
+#include "jazzlights/network/pattern_override_handler.h"
 #include "jazzlights/network/secure_channel_echo.h"
 #include "jazzlights/network/secure_channel_keys.h"
 #include "jazzlights/network/secure_channel_server.h"
@@ -90,6 +91,9 @@ OtaRollbackGuard gOtaRollbackGuard;
 #if JL_SECURE_CHANNEL_ECHO
 SecureChannelEchoHandler gSecureChannelEchoHandler;
 #endif  // JL_SECURE_CHANNEL_ECHO
+#if JL_SECURE_CHANNEL
+PatternOverrideHandler gPatternOverrideHandler;
+#endif  // JL_SECURE_CHANNEL
 
 #if JL_SECURE_CHANNEL
 // Whether any network that the secure channel can use has been initialized, or is connected, respectively.
@@ -130,6 +134,10 @@ void MaybeStartSecureChannel() {
   gOtaHandler.SetUpdatingCallback([](bool updating) { BleNetwork::Get()->SetPaused(updating); });
   SecureChannelServer::Get()->RegisterHandler(OtaHandler::kFirstType, OtaHandler::kLastType, &gOtaHandler);
 #endif  // JL_OTA
+  gPatternOverrideHandler.SetOverrideCallback(
+      [](std::optional<PatternBits> pattern) { gPlayer.SetPatternOverride(pattern); });
+  SecureChannelServer::Get()->RegisterHandler(PatternOverrideHandler::kPatternOverrideType,
+                                              PatternOverrideHandler::kPatternOverrideType, &gPatternOverrideHandler);
 #if JL_SECURE_CHANNEL_ECHO
   SecureChannelServer::Get()->RegisterHandler(SecureChannelEchoHandler::kEchoType, SecureChannelEchoHandler::kEchoType,
                                               &gSecureChannelEchoHandler);
