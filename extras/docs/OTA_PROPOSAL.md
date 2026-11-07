@@ -491,6 +491,11 @@ our sdkconfig.
 - `extras/scripts/ota_upload.py` builds on `secure_channel.py`, and runs until interrupted. Usage:
   `ota_upload.py --key <pem>`, or `JL_CLIENT_KEY` in place of `--key`. Options:
   - `--environment <env>` leaves devices running any other environment alone.
+  - `--mac <address>`, which can be repeated, leaves devices with any other MAC address alone, as
+    `OtaInfo` reports it. With `--environment` as well, those devices get that environment even if
+    they're running another one, like a serial upload would do. Since the software version is the
+    same for every environment built from one checkout, a device that runs another environment
+    gets updated even if its software version matches.
   - `--no-build` uses what's already in `.pio/build/<env>` instead of building.
   - `--once` listens for devices for 5s, or `--discovery-seconds`, updates them, and exits.
   - `--host <address>`, which can be repeated, updates those devices instead of discovering any,
@@ -503,7 +508,9 @@ our sdkconfig.
   It builds the environment, then runs `ota_upload.py --environment <env> --no-build --once`, or
   `--host` with the address given by `--upload-port` or `JL_OTA_HOST`. From the command line, that's
   `pio run -e vest -t ota`. It needs `JL_CLIENT_KEY`, and runs `ota_upload.py` with `uv`, since
-  PlatformIO's own Python doesn't have the `cryptography` package.
+  PlatformIO's own Python doesn't have the `cryptography` package. An environment that's for one
+  particular device, like the `ds33_` ones, gives its MAC address with `custom_ota_mac_address` in
+  `platformio.ini`, which the task passes as `--mac`.
 - For each server it discovers, it works in this order, with builds running one at a time:
   1. Connect and send `OtaQuery`.
   2. Close the session if `build_environment` isn't an environment in `platformio.ini`. Otherwise
@@ -641,6 +648,10 @@ These ran over Wi-Fi, against `vest_secure_channel_test` unless stated otherwise
   up to date, and skipped the leader, whose firmware has no secure channel.
 - The OTA Upload task, run as `pio run -e vest -t ota --upload-port 10.41.41.21`, built `vest` and
   updated the device in 41s.
+- `pio run -e ds33_dev_a -t ota`, whose environment has device A's MAC address, updated device A in
+  28s and left the ATOM Matrix running `vest` alone. `ota_upload.py --environment vest --mac` then
+  put `vest` on device A, and the task put `ds33_dev_a` back. Until a new image is marked valid,
+  30s after it has a connection, the next update fails with status 5.
 - Memory on `vest`, which runs Bluedroid and Wi-Fi on a classic ESP32: about 38KB of heap is free
   with no connections, and `vest_espidf` and `vest_idf` have about 85KB. 4 idle sessions take
   about 7KB. 4 sessions that each hold a partial 4096-byte TLV don't all fit on `vest`: 2 of them

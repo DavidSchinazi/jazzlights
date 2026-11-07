@@ -1243,8 +1243,10 @@ class OtaClientTestBase(unittest.TestCase):
 
         return FakeProcess()
 
-    def uploader(self):
-        return ota_upload.Uploader(KEY, project_dir=self.project_dir, port=self.port, start_build=self.start_build)
+    def uploader(self, **uploader_args):
+        return ota_upload.Uploader(
+            KEY, project_dir=self.project_dir, port=self.port, start_build=self.start_build, **uploader_args
+        )
 
     def accept(self):
         self.listener.settimeout(5)
@@ -1254,7 +1256,15 @@ class OtaClientTestBase(unittest.TestCase):
         server.handshake()
         return server
 
-    def send_info(self, server, build_environment=b"vest", software_version=bytes(20), available_size=1 << 20, chip=1):
+    def send_info(
+        self,
+        server,
+        build_environment=b"vest",
+        software_version=bytes(20),
+        available_size=1 << 20,
+        chip=1,
+        mac_address=None,
+    ):
         tlv_type, _ = server.read_tlv(5)
         self.assertEqual(tlv_type, ota_upload.OTA_QUERY)
         server.send_tlv(
@@ -1262,7 +1272,8 @@ class OtaClientTestBase(unittest.TestCase):
             sc.encode_integer_field(0, available_size)
             + sc.encode_tlv(1, software_version)
             + sc.encode_integer_field(2, chip)
-            + sc.encode_tlv(3, build_environment),
+            + sc.encode_tlv(3, build_environment)
+            + (sc.encode_tlv(4, mac_address) if mac_address is not None else b""),
         )
 
     def expect_client_closed(self, server):
@@ -1386,6 +1397,63 @@ class OtaClientTest(OtaClientTestBase):
             thread.join(10)
         self.assertEqual(len(self.builds), 2)
         self.assertEqual(maximum[0], 1)
+
+    def test_parse_mac_address(self):
+        valid = ("94:b9:7e:8d:4a:22", "94:B9:7E:8D:4A:22", "94-b9-7e-8d-4a-22", "94b97e8d4a22", " 94:b9:7e:8d:4a:22\n")
+        for text in valid:
+            with self.subTest(text=text):
+                self.assertEqual(ota_upload.parse_mac_address(text), "94:b9:7e:8d:4a:22")
+        for text in ("", "94:b9:7e:8d:4a", "94:b9:7e:8d:4a:22:00", "94:b9:7e:8d:4a:2g", "10.41.41.78"):
+            with self.subTest(text=text):
+                with self.assertRaises(ValueError):
+                    ota_upload.parse_mac_address(text)
+
+    def run_with_mac_filter(self, mac_address, **uploader_args):
+        """Has a device running vest with MAC address 94:b9:7e:8d:4a:22 and software version v...v answer an uploader
+        with this filter. Returns what the uploader sent after OtaQuery, and the uploader."""
+        uploader = self.uploader(mac_addresses=["94-B9-7E-8D-4A-22", "02:00:00:00:00:01"], **uploader_args)
+        uploader.log = lambda _address, _message: None
+        thread = uploader.on_server_heard("127.0.0.1")
+        server = self.accept()
+        self.send_info(server, software_version=b"v" * 20, mac_address=mac_address)
+        tlv_type, _ = self.read_past_keepalives(server)
+        server.sock.close()
+        thread.join(5)
+        return tlv_type, uploader
+
+    def test_mac_filter_skips_other_devices(self):
+        for mac_address in (None, bytes.fromhex("94b97e8d4a23")):
+            with self.subTest(mac_address=mac_address):
+                tlv_type, uploader = self.run_with_mac_filter(mac_address, environment="vest")
+                self.assertEqual(tlv_type, sc.RECORD_CLOSE)
+                self.assertEqual(uploader.outcomes, {"127.0.0.1": "skipped"})
+                self.assertEqual(self.builds, [])
+
+    def test_mac_filter_updates_matching_device(self):
+        self.write_build("vest", make_image(), b"w" * 20)
+        tlv_type, uploader = self.run_with_mac_filter(bytes.fromhex("94b97e8d4a22"))
+        self.assertEqual(tlv_type, ota_upload.OTA_BEGIN)
+        self.assertEqual(self.builds, ["vest"])
+        self.assertEqual(uploader.mac_addresses, {"94:b9:7e:8d:4a:22", "02:00:00:00:00:01"})
+
+    def test_mac_filter_and_environment_install_that_environment(self):
+        # It's the same software version, but a different environment, so it still needs updating.
+        self.write_build("vest_s3", make_image(), b"v" * 20)
+        tlv_type, _ = self.run_with_mac_filter(bytes.fromhex("94b97e8d4a22"), environment="vest_s3")
+        self.assertEqual(tlv_type, ota_upload.OTA_BEGIN)
+        self.assertEqual(self.builds, ["vest_s3"])
+
+    def test_mac_filter_and_environment_up_to_date(self):
+        self.write_build("vest", make_image(), b"v" * 20)
+        tlv_type, uploader = self.run_with_mac_filter(bytes.fromhex("94b97e8d4a22"), environment="vest")
+        self.assertEqual(tlv_type, sc.RECORD_CLOSE)
+        self.assertEqual(uploader.outcomes, {"127.0.0.1": "up to date"})
+
+    def test_mac_filter_and_unknown_environment(self):
+        tlv_type, uploader = self.run_with_mac_filter(bytes.fromhex("94b97e8d4a22"), environment="vest_s4")
+        self.assertEqual(tlv_type, sc.RECORD_CLOSE)
+        self.assertEqual(uploader.outcomes, {"127.0.0.1": "failed"})
+        self.assertEqual(self.builds, [])
 
     def test_discovery_connects_once_per_address(self):
         uploader = self.uploader()

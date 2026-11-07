@@ -6,6 +6,10 @@
 # From the command line: `pio run -e vest -t ota`. To update only one device, give its IP address with
 # `--upload-port 10.41.41.21` or JL_OTA_HOST.
 #
+# An environment that's for one particular device can say so in platformio.ini with that device's MAC address, as
+# OtaInfo reports it, for example `custom_ota_mac_address = 4c:75:25:ad:bb:8a`. Then this only updates that device, and
+# installs this environment on it even if it's running another one. Several MAC addresses can be separated by spaces.
+#
 # PlatformIO's own Python doesn't have the cryptography package, so this runs ota_upload.py with uv instead.
 import ipaddress
 import os
@@ -58,6 +62,8 @@ def ota_upload(target, source, env):  # pylint: disable=unused-argument
         env.subst("$PIOENV"),
         "--no-build",
     ]
+    for mac_address in env.GetProjectOption("custom_ota_mac_address", "").replace(",", " ").split():
+        command += ["--mac", mac_address]
     host = ota_host(env)
     command += ["--host", host] if host else ["--once"]
     return subprocess.call(command, cwd=project_dir)
@@ -69,5 +75,5 @@ if env.get("PIOPLATFORM") == "espressif32":
         dependencies="$BUILD_DIR/${PROGNAME}.bin",
         actions=ota_upload,
         title="OTA Upload",
-        description="Build, then update every device on the network running this environment",
+        description="Build, then update every device on the network running this environment, or the one it's for",
     )

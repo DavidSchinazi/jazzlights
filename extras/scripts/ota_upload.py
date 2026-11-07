@@ -4,6 +4,10 @@
 For every device it discovers, this builds the firmware from this checkout for that device's PlatformIO environment,
 and uploads it if it differs from what's running. This runs until interrupted, unless given --once or --host, which make
 it update what it finds and exit, with a failure status if any update failed or it found nothing to update.
+
+With --mac, it only updates the devices with those MAC addresses, which are what they report in OtaInfo, and also what
+they use as their ID in JazzLights logs. With --environment as well, those devices get that environment even if they're
+running a different one, like a serial upload would do.
 """
 
 import argparse
@@ -78,13 +82,29 @@ class OtaInfo:
         self.mac_address = fields.get(4)
         self.build_time = secure_channel.parse_integer(fields[5]) if 5 in fields else None
 
+    def mac_text(self):
+        return format_mac_address(self.mac_address) if self.mac_address else None
+
     def description(self):
-        mac = ":".join("%02x" % b for b in self.mac_address) if self.mac_address else "unknown"
+        mac = self.mac_text() or "unknown"
         if self.build_time is None:
             built = "unknown"
         else:
             built = datetime.datetime.fromtimestamp(self.build_time, datetime.timezone.utc).isoformat()
         return "MAC address %s, built at %s" % (mac, built)
+
+
+def format_mac_address(mac_address):
+    return ":".join("%02x" % b for b in mac_address)
+
+
+def parse_mac_address(text):
+    """Accepts six hexadecimal bytes separated by colons or dashes, or not separated, and returns them formatted like
+    format_mac_address() does."""
+    digits = re.sub(r"[:-]", "", text.strip())
+    if not re.fullmatch(r"[0-9a-fA-F]{12}", digits):
+        raise ValueError("%r isn't a MAC address" % text)
+    return format_mac_address(bytes.fromhex(digits))
 
 
 def platformio_environments(project_dir):
@@ -114,8 +134,9 @@ def run_build(project_dir, build_environment):
 
 
 class Uploader:
-    """Updates devices. With `environment`, it leaves devices running any other environment alone. With `build` false,
-    it uses what's already in the build directory instead of building."""
+    """Updates devices. With `environment`, it leaves devices running any other environment alone. With `mac_addresses`,
+    it only updates devices with one of those MAC addresses, and gives them `environment` whatever they're running. With
+    `build` false, it uses what's already in the build directory instead of building."""
 
     def __init__(
         self,
@@ -125,6 +146,7 @@ class Uploader:
         start_build=run_build,
         environment=None,
         build=True,
+        mac_addresses=None,
     ):
         self.private_key = private_key
         self.project_dir = project_dir
@@ -132,6 +154,7 @@ class Uploader:
         self.start_build = start_build
         self.environment = environment
         self.build = build
+        self.mac_addresses = None if mac_addresses is None else {parse_mac_address(mac) for mac in mac_addresses}
         self.build_lock = threading.Lock()
         self.seen_addresses = set()
         self.seen_lock = threading.Lock()
@@ -178,26 +201,39 @@ class Uploader:
         client.send_tlv(OTA_QUERY)
         info = self.wait_for(client, OTA_INFO, client.timeout, ignore=())
         info = OtaInfo(info)
-        if info.build_environment not in platformio_environments(self.project_dir):
-            self.log(address, "unknown environment %r" % info.build_environment)
+        if self.mac_addresses is not None and info.mac_text() not in self.mac_addresses:
+            self.log(address, "has MAC address %s, not %s" % (info.mac_text(), " or ".join(sorted(self.mac_addresses))))
             return "skipped"
-        build_environment = info.build_environment.decode()
-        if self.environment is not None and build_environment != self.environment:
-            self.log(address, "is running %s, not %s" % (build_environment, self.environment))
-            return "skipped"
+        running = info.build_environment
+        if self.mac_addresses is not None and self.environment is not None:
+            # This is the device the environment is for, so it gets it even if it's running another one.
+            running_text = running.decode(errors="replace")
+            build_environment = self.environment
+            if build_environment.encode() not in platformio_environments(self.project_dir):
+                self.log(address, "unknown environment %r" % build_environment)
+                return "failed"
+        else:
+            if running not in platformio_environments(self.project_dir):
+                self.log(address, "unknown environment %r" % running)
+                return "skipped"
+            running_text = build_environment = running.decode()
+            if self.environment is not None and build_environment != self.environment:
+                self.log(address, "is running %s, not %s" % (build_environment, self.environment))
+                return "skipped"
         if self.build:
-            self.log(address, "is running %s with %s, building" % (build_environment, info.description()))
+            building = "building" if build_environment == running_text else "building %s" % build_environment
+            self.log(address, "is running %s with %s, %s" % (running_text, info.description(), building))
             if not self.build_with_keepalive(address, client, build_environment):
                 self.log(address, "build of %s failed" % build_environment)
                 return "failed"
         else:
-            self.log(address, "is running %s with %s" % (build_environment, info.description()))
+            self.log(address, "is running %s with %s" % (running_text, info.description()))
         build_dir = os.path.join(self.project_dir, ".pio", "build", build_environment)
         with open(os.path.join(build_dir, "software_version.bin"), "rb") as f:
             software_version = f.read()
         with open(os.path.join(build_dir, "firmware.bin"), "rb") as f:
             image = f.read()
-        if software_version == info.software_version:
+        if software_version == info.software_version and build_environment == running_text:
             self.log(address, "is already running this version")
             return "up to date"
         if len(image) > info.available_size:
@@ -426,7 +462,13 @@ def summarize(uploader, environment):
     if "failed" in outcomes:
         return 1
     if not any(outcome in ("updated", "up to date") for outcome in outcomes):
-        print("Found no device%s to update" % (" running " + environment if environment else ""), flush=True)
+        if uploader.mac_addresses is not None:
+            which = " with MAC address " + " or ".join(sorted(uploader.mac_addresses))
+        elif environment:
+            which = " running " + environment
+        else:
+            which = ""
+        print("Found no device%s to update" % which, flush=True)
         return 1
     return 0
 
@@ -434,7 +476,16 @@ def summarize(uploader, environment):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--key", help="path to the PEM private key, defaults to the JL_CLIENT_KEY environment variable")
-    parser.add_argument("--environment", help="only update devices running this PlatformIO environment")
+    parser.add_argument(
+        "--environment",
+        help="only update devices running this PlatformIO environment, or with --mac, install it on those devices",
+    )
+    parser.add_argument(
+        "--mac",
+        action="append",
+        type=parse_mac_address,
+        help="only update the device with this MAC address, which can be given more than once",
+    )
     parser.add_argument(
         "--no-build", action="store_true", help="use what's already built instead of building each environment"
     )
@@ -454,7 +505,7 @@ def main():
     )
     args = parser.parse_args()
     private_key = secure_channel.load_private_key(secure_channel.find_private_key_path(args.key))
-    uploader = Uploader(private_key, environment=args.environment, build=not args.no_build)
+    uploader = Uploader(private_key, environment=args.environment, build=not args.no_build, mac_addresses=args.mac)
     if args.host:
         update_hosts(uploader, args.host)
         return summarize(uploader, args.environment)
