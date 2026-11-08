@@ -30,7 +30,6 @@ The division of work:
 
 ## Non-goals
 
-- ESP8266. It has no Bluetooth, and JazzLights doesn't support it.
 - Conveying brightness, speed or effect parameters to other JazzLights devices. The protocol
   has no field for them. Each device keeps its own brightness.
 - Mirroring several WLED segments. The usermod follows one segment (see
@@ -145,8 +144,8 @@ To verify during implementation: PlatformIO can't take a subdirectory of a git r
 as a library, so consuming it straight from GitHub may need a `library.json` at the root
 of this repo, or a small separate repository. `symlink://` works with a local checkout.
 
-CI: a GitHub Actions job that checks out WLED at a pinned commit and builds one ESP32 and
-one ESP32-S3 environment with the usermod.
+CI: a GitHub Actions job that checks out WLED at a pinned commit and builds the usermod
+for one WLED environment per supported chip (see [Supported chips](#supported-chips)).
 
 ## Modes and precedence
 
@@ -154,7 +153,7 @@ The usermod has three modes, chosen in its settings page:
 
 | Mode | Base precedence | Gain | Behavior |
 |---|---|---|---|
-| Off | - | - | No JazzLights traffic at all. |
+| Off | - | - | No JazzLights traffic at all. Same as when WLED is turned off. |
 | Follower | 300 | 100 | Follows any wearable. Leads only when alone, or with orrery planets and creatures. |
 | Leader | 20000 | 1000 | Leads every regular device. |
 
@@ -210,8 +209,19 @@ that this restart is barely visible, for instance the rings period divides 10 se
 
 ### When WLED is turned off
 
-When WLED is off (`bri == 0`), a leader steps down to follower precedence rather than
-making every device around it go black. Turning WLED back on counts as user input.
+When WLED is off (`bri == 0`), the device removes itself from the protocol, in either
+mode: it stops advertising, pauses Bluetooth (`SetPaused()`), and ignores what it
+receives. Other devices behave as if it had walked away.
+
+The protocol has no explicit goodbye, so other devices keep following its last pattern
+until its entry ages out, which takes up to `kOriginationTimeDiscard` (9 seconds). To make
+this faster without changing the protocol, a leader first advertises its current pattern
+at precedence 0 for about a second. Receivers update its entry to precedence 0 and elect
+another device right away, since every other device has a higher precedence. To verify
+with an engine test: a precedence decrease from a known originator takes effect
+immediately.
+
+When WLED is turned back on, the device rejoins. In leader mode, this counts as user input.
 
 ## WLED to JazzLights (leader)
 
@@ -253,34 +263,31 @@ corrected with overrides.
 
 ### Effects
 
-WLED has about 220 effects. Each one is assigned to one of the categories below, with a
-table in the code. A few dozen are worth matching by hand. The rest go to their category's
-default.
+WLED has about 220 effects. The mapping lives in a table in the code, not in this doc, and
+follows three rules:
 
-| WLED effects | JazzLights pattern |
-|---|---|
-| Solid (0), Solid Pattern, Copy Segment | coloring with color 1 (exact) |
-| Breathe (2), Fade, Heartbeat, Candle | glow in the nearest of the 8 glow colors, or coloring if color 1 is far from all of them |
-| Hiphotic (180, 2D) | hiphotic + palette |
-| Metaballs (154, 2D), Blobs, PS Blobs | metaballs + palette |
-| Colored Bursts (167, 2D), Fireworks Starburst, PS Fireworks, Juggle | colored-bursts + palette |
-| Matrix (153, 2D), Rain, Stream, Drip | the-matrix (green on JazzLights) |
-| Plasma (97), Rotozoomer, Plasma Ball, Plasmoid, Noise 1-4, Noise2D, Soap, Distortion Waves | spin plasma + palette |
-| Fire 2012 (66), Fire Flicker, Firenoise, PS Fire, PS Fire 1D, Noisefire | flame + palette (heat when palette is Default) |
-| Palette (65), Rainbow (9), Colorwaves, Pride 2015, Flow, Running, Ripple, Ripple Rainbow, Waverly, Polar Lights, Lake, Pacifica | rings + palette |
-| Glitter (87), Solid Glitter, Sparkle, Sparkle+, Twinkle, Twinklefox, Colortwinkles, Dissolve | glitter |
-| Sine (108), Wavesins, DNA, DNA Spiral, Lissajous | threesine |
-| Colorloop (8), Random Colors, Dynamic | rings + rainbow (see open question 3) |
-| Blink, Strobe, chases, wipes, scanners, Theater and other 1D motion effects | rings + palette |
-| Audio-reactive effects (GEQ, Gravcenter, Freq*, ...) | rings + palette |
-| Everything else (default) | rings + palette |
+1. **Same effect.** WLED effects that JazzLights also has map to that effect, with the
+   palette mapped as above. These are Hiphotic, Metaballs, Colored Bursts, Matrix, Glitter
+   and Fire 2012 (flame).
+2. **Same look.** WLED effects that clearly look like a JazzLights effect map to it, with
+   the palette mapped. For example:
+   - Solid goes to coloring with color 1, which is exact.
+   - Breathe, Fade and Heartbeat go to glow in the nearest of its 8 colors, or to coloring
+     if color 1 is far from all of them.
+   - Plasmas and noise fields go to spin plasma.
+   - Fires go to flame, with heat when the palette is Default.
+   - A palette scrolling across the device, as in Palette, Colorwaves or Pacifica, goes to
+     rings.
+   - Sparkles and twinkles go to glitter.
+   - Sine waves go to threesine.
+3. **Not sure.** Every other effect goes to **rings + rainbow**, ignoring its palette. This
+   includes chases, strobes, wipes, and audio-reactive effects.
 
-Notes:
+Each entry is a judgment call, so the native test prints the full table for review during
+implementation.
 
-- Rings is the default because it's the one JazzLights effect that conveys a palette moving
-  across the device, which is what most WLED effects look like from a distance.
-- Hiphotic, metaballs and colored-bursts are 2D effects in WLED. On a 1D strip, WLED falls
-  back to Solid, so the mapping does the same and sends coloring.
+Hiphotic, Metaballs and Colored Bursts are 2D effects in WLED. On a 1D strip, WLED falls
+back to Solid, so the mapping does the same and sends coloring.
 
 ### Segments
 
@@ -371,14 +378,28 @@ This is the biggest technical risk.
 - WLED disables Wi-Fi modem sleep on ESP32 by default (`noWifiSleep = true`). ESP-IDF
   requires modem sleep when Wi-Fi and Bluetooth run together, so the usermod has to force
   it on while Bluetooth is enabled, and explain that in its settings page.
-- Flash and RAM: NimBLE adds roughly 100-200 KB of flash and tens of KB of RAM. Standard
-  4 MB ESP32 WLED builds are tight, so ESP32-S3 boards with 8 MB or more are the main
-  target. A setting, or a build flag, disables Bluetooth for IP-only setups.
+- Flash and RAM: NimBLE adds roughly 100-200 KB of flash and tens of KB of RAM, and 4 MB
+  WLED builds are tight. See [Supported chips](#supported-chips).
 - LED output: the ESPHome README notes that RMT flickers on the classic ESP32 while Wi-Fi
   and Bluetooth are both active. WLED has its own RMT driver with Bluetooth-aware
   interrupts, plus I2S and parallel outputs, so this might be fine, but it needs testing.
 
-ESP32, ESP32-S3 and ESP32-C3 have BLE. ESP32-S2 doesn't, so it would be IP only.
+### Supported chips
+
+The goal is to support every chip WLED supports, and to drop one only once we know it
+can't work. JazzLights already runs on the ESP32, ESP32-S3, ESP32-C3 and ESP32-C6.
+
+| Chip | Plan |
+|---|---|
+| ESP32, ESP32-S3, ESP32-C3, ESP32-C6 | IP and Bluetooth |
+| ESP32-C5 | IP and Bluetooth, but JazzLights hasn't run on it yet |
+| ESP32-S2 | IP only, since it has no Bluetooth |
+| ESP32-P4 | IP only. It has no radio of its own, and WLED reaches Wi-Fi through a companion chip. Bluetooth through that chip is to be checked. |
+| ESP8266 | IP only, and last, since JazzLights' code has no ESP8266 support yet |
+
+Flash is the likely limit, on 4 MB boards in particular. When a build doesn't fit, the
+first fallback is a build flag that leaves Bluetooth out and keeps IP sync. We'd only drop
+a chip if even that doesn't fit.
 
 ### IP
 
@@ -411,9 +432,12 @@ be switched from the JSON API and Home Assistant.
   The mapping code shouldn't depend on WLED headers, so it builds in `extras/` without WLED.
 - **Engine tests** for `SetLeadingPattern()`: a leader yields to higher precedence, a
   follower that led alone follows again, the held pattern restarts every 10 seconds.
-- **Hardware**: an ATOM S3 Lite running WLED with the usermod, next to a vest, in each
-  mode, over Wi-Fi and over Bluetooth only. Also check LED flicker with Wi-Fi and Bluetooth
-  both on.
+- **Engine test** for turning off: after the precedence 0 goodbye, other devices elect
+  someone else right away.
+- **Hardware**: an ATOM S3 Lite (ESP32-S3) and an ATOM Matrix (classic ESP32, 4 MB)
+  running WLED with the usermod, next to a vest, in each mode, over Wi-Fi and over
+  Bluetooth only. Also check LED flicker with Wi-Fi and Bluetooth both on, and turning
+  WLED off and on.
 
 ## Implementation phases
 
@@ -480,14 +504,13 @@ biggest effect.
 - The usermod lives in `extras/wled/` in this repo.
 - Leader precedence is 20000 + 1000: creatures follow it, and a Core2 in override mode
   still takes over.
+- Follower precedence is 300 + 100.
+- When WLED is turned off, the device removes itself from the protocol.
+- WLED effects without a confident match go to rings + rainbow.
+- Support every chip we can, and drop one only once we know it can't fit.
+- The doc gives the mapping principles. The full effect table lives in the code.
 
 ## Open questions
 
-1. WLED off: should a leader step down as proposed, or make everyone go black?
-2. Follower precedence: is 300 + 100 right, between orrery planets and wands?
-3. Colorloop, Random Colors and Dynamic: send rings + rainbow, or the changing solid color
-   (which restarts every follower's pattern on each change)?
-4. Target hardware: is the ATOM S3 Lite the right test device, and is the classic ESP32
-   worth supporting?
-5. Effect table: should the doc list all ~220 WLED effects, or is the family table above
-   enough, with the full table living in the code?
+1. Turning off: is the precedence 0 goodbye acceptable, or should the device simply go
+   silent and let others time out within 9 seconds?
