@@ -38,6 +38,8 @@ The division of work:
   [Segments](#segments)).
 - Replacing WLED's own sync (UDP notifier, DDP, E1.31, ESP-NOW). Those keep working
   alongside JazzLights, and are still the best way to sync WLED devices with each other.
+- Rendering JazzLights' own effects inside WLED. A follower shows the closest WLED effect
+  instead, see [JazzLights to WLED](#jazzlights-to-wled-follower).
 
 ## Background: what JazzLights can express today
 
@@ -488,16 +490,14 @@ across restarts, they would need to agree on when the hold began, and a device t
 during a hold can't know that. It takes a protocol change, the "hold cycles" field in
 [Candidate fields](#candidate-fields).
 
-A WLED follower (option A) sets `strip.timebase` only when the followed pattern changes,
+A WLED follower sets `strip.timebase` only when the followed pattern changes,
 not when the same pattern restarts, so WLED's own effects don't jump every 10 seconds.
 
 ## JazzLights to WLED (follower)
 
 When the WLED device follows another device, in follower mode or when a higher precedence
 device takes over a WLED leader, it should show something close to that device's pattern.
-There are two ways to do this, which aren't exclusive.
-
-### Option A: translate to a WLED effect
+It does so by translating the pattern to the closest WLED effect.
 
 `JazzLightsToWLED()`, in `src/jazzlights/wled/mapping.cpp`, maps the pattern bits back to
 a WLED effect, palette and colors, and the usermod applies them to the followed segment:
@@ -553,35 +553,6 @@ Details:
 Cost: small. It's the leader's mapping table run backwards, plus state save and restore.
 Result: approximate, as close as the leader direction.
 
-### Option B: render JazzLights effects inside WLED
-
-The usermod registers its own WLED effect, "JazzLights", with `strip.addEffect()`. While
-following, it switches the segment to that effect. The effect's function runs JazzLights'
-own `Effect` classes on the segment's pixels, with the pattern and start time from the
-engine, exactly like `Player::Render()` does on a vest.
-
-Since JazzLights effects are deterministic given the pattern bits, the start time and
-`PredictableRandom`, the WLED device would show **the same pattern as the vest, in sync**,
-not an approximation. The usermod could also register JazzLights' palettes (Heat
-especially) as usermod palettes, which WLED now supports.
-
-Cost: significant.
-
-- JazzLights effects depend on FastLED's types and math, and WLED can't link FastLED since
-  its own `CRGB` and palette symbols would clash. Non-ESP32 builds of JazzLights already
-  replace FastLED with a small reimplementation in
-  [fastled_wrapper.h](../../src/jazzlights/render/fastled_wrapper.h), which could be reused
-  if it moved into the `jazzlights` namespace, or which could be aliased to WLED's
-  `fastled_slim`.
-- The `Layout` would be built from the segment's geometry: `x = index` on a 1D segment,
-  `(x, y)` on a 2D matrix.
-- More flash: the effects, `PredictableRandom`, `XYIndexStore`.
-
-### Decision
-
-Option A first, as it reuses the leader's tables and is enough for "close". Option B is a
-later, optional phase, if pixel-level sync with vests turns out to matter.
-
 ## Platform concerns
 
 ### Bluetooth
@@ -618,11 +589,20 @@ What phase 1 found:
 
   The workaround, in the usermod: when Bluetooth runs on a classic ESP32, it switches
   WLED's digital LED buses from the RMT driver to WLED's parallel I2S driver
-  (`BUSDRV_PARHW`) before WLED creates them, both at boot and when the LED settings are saved. It overrides
-  a driver chosen in WLED's LED settings. The ESP32-S3, C3 and C6 don't use this path. To
-  do: report it to WLED, so that the RMT driver binds its interrupt on the controller's
-  core, or doesn't share it. Not yet checked on hardware: that the I2S driver doesn't
-  flicker with Wi-Fi and Bluetooth on.
+  (`BUSDRV_PARHW`) before WLED creates them, both at boot, in `readFromConfig()`, and when
+  the LED settings are saved, in `loop()`. It overrides a driver chosen in WLED's LED
+  settings. The ESP32-S3, C3 and C6 don't use this path.
+
+  WLED only calls `readFromConfig()` when its configuration has a usermods section, which
+  a fresh install doesn't. So if `setup()` finds an LED bus on the RMT driver and
+  `readFromConfig()` didn't run, the usermod saves WLED's configuration, which adds the
+  section, and reboots once. WLED counts that as a software reset, which doesn't count
+  towards its bootloop detection. If a bus still uses the RMT driver after that, because
+  the parallel driver wasn't available, the usermod doesn't start Bluetooth, and says so in
+  the Info tab.
+
+  With this, the ATOM Matrix no longer crashes. Not yet checked: that the I2S driver
+  doesn't flicker with Wi-Fi and Bluetooth on.
 
 ### Supported chips
 
@@ -784,12 +764,11 @@ configuration (`/json/cfg`).
    when WLED turns off, and pauses Bluetooth and UDP during firmware updates. The mapping
    is in a new `wled` module under `src/jazzlights`, which only depends on `util`. Not yet
    checked on hardware, along with phase 1's list.
-4. Follower mode with option A. **Done.** First hardware test, on an ATOM Matrix: NimBLE
+4. Follower mode. **Done.** First hardware test, on an ATOM Matrix: NimBLE
    starts, and the usermod follows a device over Bluetooth and applies its pattern. It then
    crashed because of the LED driver issue in [Bluetooth](#bluetooth), now worked around.
    The rest is not yet checked on hardware, along with phase 1's list. Not done: the setting
    to let followed patterns propagate to WLED's own sync.
-5. Optionally, option B.
 
 ## Prior work
 
@@ -865,7 +844,8 @@ is.
 
 ## Decisions so far
 
-- Follower rendering: option A first, option B later and optional.
+- A follower translates the followed pattern to the closest WLED effect. Rendering
+  JazzLights' own effects inside WLED is out of scope.
 - The usermod lives in `extras/wled/` in this repo.
 - Leader precedence is 20000 + 1000: creatures follow it, and a Core2 in override mode
   still takes over.
