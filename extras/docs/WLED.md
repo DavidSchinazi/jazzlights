@@ -143,26 +143,30 @@ lives in this repo, under `extras/wled/`:
 - `library.json` declares the usermod as a PlatformIO library. It compiles
   `jazzlights_usermod.cpp` plus the needed subset of `src/jazzlights` (the protocol, the
   network code and `util`, but not the renderer, the effects or FastLED), and sets
-  `JL_CONFIG=WLED` and `JL_CONTROLLER=WLED` (new values), `JL_ESP32_NIMBLE=1` and
-  `JL_SECURE_CHANNEL=0`.
+  `JL_WLED=1` (a new flag) and `JL_ESP32_NIMBLE=1`. `JL_WLED` turns on the log handler
+  and turns off the secure channel, as `JL_ESPHOME` does. `JL_CONFIG` and `JL_CONTROLLER`
+  still describe the device, such as a vest on an ATOM Matrix, and come from the build
+  environment.
 - `src` is a symlink to `../../src`. Listing the sources through a `..` path instead makes
   PlatformIO compile them into WLED's own `src` build folder, which breaks WLED's
   dependency resolution.
 - `jazzlights_wled.py` is the library's build script. It sets the release name, see
   [Firmware updates](#firmware-updates).
 - `jazzlights_usermod.cpp` is the usermod.
-- `platformio_override.ini` has ready-made WLED environments with the usermod, one per
-  supported chip. Each extends an official WLED environment, keeping WLED's default
-  usermods (currently audioreactive):
+- `platformio_override.ini` has ready-made WLED environments with the usermod, for the
+  boards that JazzLights devices use, one per supported chip. Each extends an official WLED
+  environment, sets `JL_CONFIG=VEST` and the board's `JL_CONTROLLER`, and uses the vest's
+  LED pins from [layout_data.h](../../src/jazzlights/layout/layout_data.h):
 
   | Environment | Extends | Board settings |
   |---|---|---|
-  | `jazzlights_atom_matrix` | `esp32dev` | LEDs on GPIO 26 (like the vest) and 27 (the ATOM's 5x5 matrix), button on 39 |
-  | `jazzlights_atom_s3_lite` | `esp32s3dev_8MB_none` | LEDs on GPIO 2 (like the vest), button on 41 |
-  | `jazzlights_esp32c3` | `esp32c3dev` | generic |
-  | `jazzlights_esp32c6` | `esp32c6dev_4MB` | generic, without Bluetooth (see [Supported chips](#supported-chips)) |
+  | `jazzlights_atom_matrix` | `esp32dev` | LEDs on GPIO 26 and 27 (the ATOM's 5x5 matrix), button on 39 |
+  | `jazzlights_atom_s3_lite` | `esp32s3dev_8MB_none` | LEDs on GPIO 2, button on 41 |
+  | `jazzlights_m5stamp_c3u` | `esp32c3dev` | LEDs on GPIO 1 |
+  | `jazzlights_m5_nano_c6` | `esp32c6dev_4MB` | LEDs on GPIO 2, no audioreactive, no Bluetooth |
 
-  WLED's LED settings can still be changed from its web UI.
+  They keep WLED's default usermods (currently audioreactive), except on the NanoC6, which
+  has no microphone. WLED's LED settings can still be changed from its web UI.
 - `build.sh` builds them. The first run clones WLED, at a commit pinned in the script, into
   `extras/.wled`, and every run copies `platformio_override.ini` there:
 
@@ -565,13 +569,18 @@ use of the app partition, for WLED with its default usermods, at the pinned WLED
 |---|---|---|---|---|
 | ESP32, 4 MB | `jazzlights_atom_matrix` | 84.7% | 96.8% (+190 KB) | IP and Bluetooth |
 | ESP32-S3, 8 MB | `jazzlights_atom_s3_lite` | 60.5% | 69.0% (+178 KB) | IP and Bluetooth |
-| ESP32-C3, 4 MB | `jazzlights_esp32c3` | 83.8% | 96.5% (+201 KB) | IP and Bluetooth |
-| ESP32-C6, 4 MB | `jazzlights_esp32c6` | 87.2% | 89.1% (+30 KB) | IP only |
+| ESP32-C3, 4 MB | `jazzlights_m5stamp_c3u` | 83.8% | 96.5% (+201 KB) | IP and Bluetooth |
+| ESP32-C6, 4 MB | `jazzlights_m5_nano_c6` | 87.2% | 86.9% | IP only |
 
-Most of the cost is NimBLE: the protocol and network code alone take about 30 KB. With
-Bluetooth, the 4 MB ESP32-C6 build needs 110% of its app partition, so, as planned, its
-environment leaves Bluetooth out with `-D JL_DISABLE_BLUETOOTH=1` and keeps IP sync. The
-4 MB ESP32 and ESP32-C3 builds fit, with about 50 KB to spare.
+Most of the cost is NimBLE: the protocol and network code alone take about 30 KB. The 4 MB
+ESP32 and ESP32-C3 builds fit, with about 50 KB to spare.
+
+On the ESP32-C6, NimBLE takes about 320 KB. Even without audioreactive, which the NanoC6
+doesn't need, the 4 MB build with Bluetooth needs 107.7% of its app partition, and also
+turning off WLED's infrared, MQTT, Alexa and Hue support only brings it to 104.8%. So, as
+planned, its environment leaves Bluetooth out with `-D JL_DISABLE_BLUETOOTH=1` and keeps
+IP sync. A larger app partition would fit Bluetooth, at the cost of WLED's file system,
+which holds its settings and presets.
 
 The other chips WLED supports (ESP32-S2, ESP32-C5, ESP32-P4 and ESP8266) are out of scope
 until JazzLights supports them.
@@ -772,6 +781,8 @@ is.
   closest palette.
 - Support the chips that both WLED and JazzLights already support: ESP32, ESP32-S3,
   ESP32-C3 and ESP32-C6. Drop one only once we know it can't fit.
+- The usermod is a standalone `JL_WLED` flag, not a `JL_CONFIG`, so it can run on any
+  JazzLights device, such as a vest. The board presets are JazzLights' own boards.
 - The doc gives the mapping principles. The full effect table lives in the code.
 - Builds with the usermod append `_JazzLights` to their release name, so WLED's updates
   don't replace them with stock WLED.
@@ -779,7 +790,8 @@ is.
 - The usermod ships board presets, and sends JazzLights logs to WLED's debug output.
 - WLED changes, playlists included, switch followers immediately, like a button press.
 - Bluetooth uses the NimBLE stack built into WLED's ESP-IDF libraries, not NimBLE-Arduino.
-- The 4 MB ESP32-C6 build leaves Bluetooth out, since it doesn't fit otherwise.
+- The NanoC6 build leaves out audioreactive, since it has no microphone, and Bluetooth,
+  since it doesn't fit otherwise.
 - A person's change pauses following for 10 minutes in follower mode, and only adds the
   gain in leader mode, so override and admin always take over a WLED leader.
 - When a WLED leader is taken over, its LEDs follow the new leader.

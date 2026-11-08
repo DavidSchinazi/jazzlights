@@ -40,8 +40,6 @@
 #define JL_CONFIG_BOW 17
 #define JL_CONFIG_RHINO_HAT 18
 #define JL_CONFIG_RHINO_STAFF 19
-// Runs as a WLED usermod, see extras/wled. WLED owns the LEDs and the board.
-#define JL_CONFIG_WLED 20
 
 #define JL_IS_CONFIG(config_) (JL_MERGE_TOKENS(JL_CONFIG_, JL_CONFIG) == JL_MERGE_TOKENS(JL_CONFIG_, config_))
 
@@ -62,8 +60,6 @@
 #define JL_CONTROLLER_M5_NANO_C6 9
 #define JL_CONTROLLER_CORES3 10
 #define JL_CONTROLLER_M5STICK_C 11
-// Any board that WLED runs on, see extras/wled.
-#define JL_CONTROLLER_WLED 12
 
 #define JL_IS_CONTROLLER(controller_) \
   (JL_MERGE_TOKENS(JL_CONTROLLER_, JL_CONTROLLER) == JL_MERGE_TOKENS(JL_CONTROLLER_, controller_))
@@ -170,14 +166,20 @@
 #define JL_ESPHOME 0
 #endif  // JL_ESPHOME
 
+#ifndef JL_WLED
+// Set when building as a WLED usermod (see extras/wled). WLED then manages Wi-Fi and the LEDs, and the usermod runs the
+// protocol from WLED's loop.
+#define JL_WLED 0
+#endif  // JL_WLED
+
 #ifndef JL_LOG_HANDLER
 // Whether logs go through a handler installed with SetLogHandler(), so that ESPHome or WLED can forward them to their
 // own logging.
-#if JL_ESPHOME || JL_IS_CONFIG(WLED)
+#if JL_ESPHOME || JL_WLED
 #define JL_LOG_HANDLER 1
-#else  // JL_ESPHOME || WLED
+#else  // JL_ESPHOME || JL_WLED
 #define JL_LOG_HANDLER 0
-#endif  // JL_ESPHOME || WLED
+#endif  // JL_ESPHOME || JL_WLED
 #endif  // JL_LOG_HANDLER
 
 #ifndef JL_DISABLE_BLUETOOTH
@@ -211,15 +213,15 @@
 
 #ifndef JL_SECURE_CHANNEL
 // The secure channel uses lwIP sockets and mbedTLS, see extras/docs/OTA.md. Environments that only have
-// Ethernet through the Arduino Ethernet library don't use lwIP, and ESPHome builds have ESPHome's own OTA updates.
+// Ethernet through the Arduino Ethernet library don't use lwIP, and ESPHome and WLED builds have their own OTA updates.
 // WARNING: the session keys come from esp_fill_random(), which is only truly random while Wi-Fi or Bluetooth is
 // running. So Ethernet-only builds with Bluetooth disabled, such as gauntlet_esp_ethernet_only, get weaker
 // cryptography. That's acceptable only because those builds are just for testing.
-#if defined(ESP32) && (JL_WIFI || JL_ESP32_ETHERNET) && !JL_ESPHOME
+#if defined(ESP32) && (JL_WIFI || JL_ESP32_ETHERNET) && !JL_ESPHOME && !JL_WLED
 #define JL_SECURE_CHANNEL 1
-#else  // ESP32 && lwIP && !ESPHOME
+#else  // ESP32 && lwIP && !ESPHOME && !WLED
 #define JL_SECURE_CHANNEL 0
-#endif  // ESP32 && lwIP && !ESPHOME
+#endif  // ESP32 && lwIP && !ESPHOME && !WLED
 #endif  // JL_SECURE_CHANNEL
 
 #ifndef JL_OTA

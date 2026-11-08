@@ -17,11 +17,8 @@
       "+<src/jazzlights/util/*.cpp>"
     ],
     "flags": [
-      "-DJL_CONFIG=WLED",
-      "-DJL_CONTROLLER=WLED",
-      "-DBOOT_NAME=WLED",
-      "-DJL_ESP32_NIMBLE=1",
-      "-DJL_SECURE_CHANNEL=0"
+      "-DJL_WLED=1",
+      "-DJL_ESP32_NIMBLE=1"
     ],
     "extraScript": "jazzlights_wled.py",
     "srcDir": ".",
