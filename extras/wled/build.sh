@@ -4,6 +4,8 @@
 # Usage: extras/wled/build.sh [PlatformIO arguments...]
 # For example: extras/wled/build.sh -e jazzlights_atom_s3_lite -t upload -t monitor
 # Without arguments, this builds every environment in platformio_override.ini.
+# Run `-t erase` on its own: WLED's PlatformIO platform turns off library dependency resolution whenever erase is among
+# the targets, so building in the same command fails to find WiFi.h.
 #
 # The first run clones WLED at WLED_COMMIT into extras/.wled, and every run copies platformio_override.ini there. The
 # checkout must not be inside extras/wled, or PlatformIO would see WLED's own libraries as part of the usermod.

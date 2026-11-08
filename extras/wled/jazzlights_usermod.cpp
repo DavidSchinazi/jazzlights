@@ -206,6 +206,25 @@ struct SegmentSignature {
   bool operator!=(const SegmentSignature& other) const { return !(*this == other); }
 };
 
+#if defined(CONFIG_IDF_TARGET_ESP32) && defined(CONFIG_BTDM_CTRL_HLI) && !JL_DISABLE_BLUETOOTH
+// On the classic ESP32, WLED's RMT LED driver shares the Bluetooth controller's high-level interrupt (number 25)
+// through ESP-IDF's HLI dispatcher, but binds it on the core that creates the LED buses, core 1, while the controller
+// is pinned to core 0. The dispatcher then runs the controller's interrupt handler on both cores at once, which
+// crashes. So when Bluetooth runs, we switch WLED's digital LED buses to its parallel I2S driver before WLED creates
+// them. See "Bluetooth" in extras/docs/WLED.md.
+#define JL_WLED_AVOID_RMT_LED_DRIVER 1
+
+void AvoidRmtLedDriver() {
+  for (BusConfig& bus : busConfigs) {
+    if (!Bus::isDigital(bus.type) || Bus::is2Pin(bus.type) || bus.driverType != BUSDRV_RMT) { continue; }
+    bus.driverType = BUSDRV_PARHW;
+    jll_info("Switching an LED bus from the RMT driver to the parallel I2S driver, see extras/docs/WLED.md");
+  }
+}
+#else
+#define JL_WLED_AVOID_RMT_LED_DRIVER 0
+#endif
+
 SegmentSignature SignatureOf(const Segment& segment) {
   SegmentSignature signature;
   signature.effect = segment.mode;
@@ -297,6 +316,10 @@ class JazzLightsUsermod : public Usermod, private ::jazzlights::ProtocolEngine::
 
   void loop() override {
     if (!started_) { return; }
+#if JL_WLED_AVOID_RMT_LED_DRIVER
+    // Saving WLED's LED settings recreates the buses later in this iteration of WLED's loop.
+    if (bluetoothStarted_ && doInitBusses) { AvoidRmtLedDriver(); }
+#endif  // JL_WLED_AVOID_RMT_LED_DRIVER
     const uint32_t nowMs = millis();
     MaybeAddNetworkInterfaces();
     if (updating_) {
@@ -395,6 +418,10 @@ class JazzLightsUsermod : public Usermod, private ::jazzlights::ProtocolEngine::
       basePrecedence_ = DefaultBasePrecedence(mode_);
       precedenceGain_ = DefaultPrecedenceGain(mode_);
     }
+#if JL_WLED_AVOID_RMT_LED_DRIVER
+    // At boot, WLED reads usermod settings after its LED settings and before it creates the buses.
+    if (!configLoaded_ && mode_ != Mode::kOff && bluetoothEnabled_) { AvoidRmtLedDriver(); }
+#endif  // JL_WLED_AVOID_RMT_LED_DRIVER
     configLoaded_ = true;
     if (started_) { ApplyMode(); }
     return configComplete;

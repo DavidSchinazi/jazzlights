@@ -176,6 +176,10 @@ lives in this repo, under `extras/wled/`:
   extras/wled/build.sh -e jazzlights_atom_s3_lite -t upload -t monitor
   ```
 
+  Run `-t erase` as its own command: WLED's platform turns off PlatformIO's library
+  dependency resolution whenever `erase` is among the targets, so a build in the same
+  command can't find `WiFi.h`.
+
   WLED's build bundles its web UI with Node.js, which needs to be on the `PATH`. WLED asks
   for Node 20. On macOS: `brew install node@20`, then add `/opt/homebrew/opt/node@20/bin`
   to the `PATH`.
@@ -601,9 +605,24 @@ What phase 1 found:
   to false there when Bluetooth is on. The "Disable WiFi sleep" setting then shows as off.
 - **Order.** The usermod initializes Bluetooth in `setup()`, which WLED calls before it
   starts Wi-Fi.
-- **LED output:** the ESPHome README notes that RMT flickers on the classic ESP32 while
-  Wi-Fi and Bluetooth are both active. WLED has its own RMT driver with Bluetooth-aware
-  interrupts, plus I2S and parallel outputs, so this might be fine, but it needs testing.
+- **LED driver crash on the classic ESP32.** WLED's RMT LED driver uses a high-level
+  interrupt. When Bluetooth's high-level interrupt is compiled in (`CONFIG_BTDM_CTRL_HLI`,
+  which WLED's ESP32 libraries enable), the driver shares interrupt 25 with the Bluetooth
+  controller through ESP-IDF's HLI dispatcher (`hli_c_handler()`). The dispatcher calls
+  every registered handler whose status register shows a pending interrupt, and the
+  controller registers core 0's status register. But WLED binds the shared interrupt on the
+  core that creates the LED buses, core 1, while the controller is pinned to core 0. So an
+  LED interrupt on core 1 can run the controller's handler there while core 0 runs it too.
+  On an ATOM Matrix this crashed (double exception in `r_rwbtdm_isr_wrapper`) seconds
+  after boot. WLED doesn't ship Bluetooth, so this path is untested there.
+
+  The workaround, in the usermod: when Bluetooth runs on a classic ESP32, it switches
+  WLED's digital LED buses from the RMT driver to WLED's parallel I2S driver
+  (`BUSDRV_PARHW`) before WLED creates them, both at boot and when the LED settings are saved. It overrides
+  a driver chosen in WLED's LED settings. The ESP32-S3, C3 and C6 don't use this path. To
+  do: report it to WLED, so that the RMT driver binds its interrupt on the controller's
+  core, or doesn't share it. Not yet checked on hardware: that the I2S driver doesn't
+  flicker with Wi-Fi and Bluetooth on.
 
 ### Supported chips
 
@@ -765,8 +784,11 @@ configuration (`/json/cfg`).
    when WLED turns off, and pauses Bluetooth and UDP during firmware updates. The mapping
    is in a new `wled` module under `src/jazzlights`, which only depends on `util`. Not yet
    checked on hardware, along with phase 1's list.
-4. Follower mode with option A. **Done.** Not yet checked on hardware, along with phase 1's
-   list. Not done: the setting to let followed patterns propagate to WLED's own sync.
+4. Follower mode with option A. **Done.** First hardware test, on an ATOM Matrix: NimBLE
+   starts, and the usermod follows a device over Bluetooth and applies its pattern. It then
+   crashed because of the LED driver issue in [Bluetooth](#bluetooth), now worked around.
+   The rest is not yet checked on hardware, along with phase 1's list. Not done: the setting
+   to let followed patterns propagate to WLED's own sync.
 5. Optionally, option B.
 
 ## Prior work
