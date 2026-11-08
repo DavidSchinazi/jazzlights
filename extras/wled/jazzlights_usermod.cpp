@@ -221,6 +221,14 @@ void AvoidRmtLedDriver() {
     jll_info("Switching an LED bus from the RMT driver to the parallel I2S driver, see extras/docs/WLED.md");
   }
 }
+
+bool LedBusesUseRmtDriver() {
+  for (size_t i = 0; i < BusManager::getNumBusses(); i++) {
+    const Bus* bus = BusManager::getBus(i);
+    if (bus != nullptr && bus->isDigital() && !bus->is2Pin() && bus->getDriverType() == BUSDRV_RMT) { return true; }
+  }
+  return false;
+}
 #else
 #define JL_WLED_AVOID_RMT_LED_DRIVER 0
 #endif
@@ -298,8 +306,23 @@ class JazzLightsUsermod : public Usermod, private ::jazzlights::ProtocolEngine::
     // Turning the usermod on needs a reboot, since Bluetooth has to start before Wi-Fi.
     if (mode_ == Mode::kOff) { return; }
     ::jazzlights::SetLogHandler(&LogToWLED);
+#if JL_WLED_AVOID_RMT_LED_DRIVER
+    if (bluetoothEnabled_ && LedBusesUseRmtDriver()) {
+      if (!configLoaded_) {
+        // WLED only calls readFromConfig(), which switches the LED driver, when its configuration has a section for
+        // usermods, which a fresh install doesn't. Saving the configuration adds it, so switch on the next boot.
+        jll_info("Saving WLED's configuration and rebooting to switch the LED driver, see extras/docs/WLED.md");
+        serializeConfigToFS();
+        doReboot = true;
+        return;
+      }
+      // The parallel driver isn't available for some bus, so Bluetooth would crash.
+      jll_error("An LED bus still uses the RMT driver, not starting Bluetooth, see extras/docs/WLED.md");
+      bluetoothBlockedByLedDriver_ = true;
+    }
+#endif  // JL_WLED_AVOID_RMT_LED_DRIVER
 #if !JL_DISABLE_BLUETOOTH
-    if (bluetoothEnabled_) {
+    if (bluetoothEnabled_ && !bluetoothBlockedByLedDriver_) {
       // ESP-IDF requires Wi-Fi modem sleep while Bluetooth is running, and WLED disables it by default. This runs
       // before WLED starts Wi-Fi, which then uses this value.
       noWifiSleep = false;
@@ -382,6 +405,12 @@ class JazzLightsUsermod : public Usermod, private ::jazzlights::ProtocolEngine::
                static_cast<unsigned>(engine_.currentNumHops()));
     }
     status.add(statusStr);
+#if !JL_DISABLE_BLUETOOTH
+    if (bluetoothBlockedByLedDriver_) {
+      JsonArray bluetooth = user.createNestedArray(F("JazzLights Bluetooth"));
+      bluetooth.add(F("off: an LED output uses the RMT driver"));
+    }
+#endif  // !JL_DISABLE_BLUETOOTH
     JsonArray pattern = user.createNestedArray(F("JazzLights pattern"));
     pattern.add(PatternName(engine_.GetCurrentPattern()));
   }
@@ -662,6 +691,8 @@ class JazzLightsUsermod : public Usermod, private ::jazzlights::ProtocolEngine::
 #if !JL_DISABLE_BLUETOOTH
   bool bluetoothEnabled_ = true;
   bool bluetoothStarted_ = false;
+  // Set when Bluetooth didn't start because an LED bus uses WLED's RMT driver, see AvoidRmtLedDriver().
+  bool bluetoothBlockedByLedDriver_ = false;
 #endif  // !JL_DISABLE_BLUETOOTH
   bool configLoaded_ = false;
 
