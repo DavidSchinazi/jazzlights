@@ -576,6 +576,15 @@ What phase 1 found:
   to false there when Bluetooth is on. The "Disable WiFi sleep" setting then shows as off.
 - **Order.** The usermod initializes Bluetooth in `setup()`, which WLED calls before it
   starts Wi-Fi.
+- **WLED's access point.** On an ATOM Matrix, phones could see `WLED-AP` but not join it
+  while Bluetooth ran: they associated, then dropped off without getting an address. With
+  Bluetooth left out of the build, they joined. Wi-Fi and Bluetooth share the radio, and we
+  scan for Bluetooth almost continuously, which apparently leaves the access point too
+  little radio time for DHCP. So while WLED's access point is on (WLED's `apActive`), the
+  usermod pauses Bluetooth half of the time (1 second out of every 2), so that phones can
+  join, and entirely while a client is connected (`WiFi.softAPgetStationNum()`), so that
+  WLED's web UI works. Sync over Bluetooth slows down meanwhile. Bluetooth takes about
+  85 KB of internal memory: free memory went from about 128 KB to about 43 KB.
 - **LED driver crash on the classic ESP32.** WLED's RMT LED driver uses a high-level
   interrupt. When Bluetooth's high-level interrupt is compiled in (`CONFIG_BTDM_CTRL_HLI`,
   which WLED's ESP32 libraries enable), the driver shares interrupt 25 with the Bluetooth
@@ -635,6 +644,14 @@ JazzLights devices sync over UDP multicast on 224.0.0.169 port 6699, on their ow
 network. For IP sync, the WLED device has to join that same network, through WLED's normal
 Wi-Fi settings. When WLED runs as an access point, or is on another network, only Bluetooth
 works. Port 6699 doesn't clash with any WLED port.
+
+When WLED connects or reconnects, it stops Wi-Fi with `WiFi.mode(WIFI_MODE_NULL)`, and the
+Arduino core then destroys the network interfaces and creates new ones
+(`wifiLowLevelDeinit()`). `Esp32SocketManager` keeps a pointer to each interface, so the
+usermod only registers an interface while it has an address, and removes it with the new
+`Esp32SocketManager::RemoveInterface()` when it loses it or WLED replaces it.
+
+The device ID is the Bluetooth MAC address, or without Bluetooth, the Wi-Fi MAC address.
 
 ### Firmware updates
 
@@ -748,11 +765,10 @@ configuration (`/json/cfg`).
    checks done, the release name set, CI job. **Done.** The usermod already runs the
    protocol over Wi-Fi, Ethernet and Bluetooth with the follower precedence, and the Info
    tab shows whether it leads or follows. It doesn't change WLED's LEDs yet, and when it
-   leads it advertises the engine's regular rotation. Not yet checked on hardware:
-   - that WLED's reconnects (`WiFi.mode(WIFI_MODE_NULL)` in `initConnection()`) don't
-     replace the station's `esp_netif`, which `Esp32SocketManager` keeps a pointer to;
-   - that `InitializeNetStack()` calling `esp_netif_init()` again, after the Arduino core
-     did, is harmless;
+   leads it advertises the engine's regular rotation. WLED's reconnects turned out to
+   replace the network interfaces, see [IP](#ip). On an ATOM Matrix, calling
+   `esp_netif_init()` again after the Arduino core did caused no trouble. Not yet checked
+   on hardware:
    - that forwarding logs from other tasks is safe when WLED sends its debug output over
      the network.
 2. Engine changes (`SetLeadingPattern()`, `RecordUserInput()` and

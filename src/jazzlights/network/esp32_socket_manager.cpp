@@ -36,6 +36,14 @@ void Esp32SocketManager::AddInterface(esp_netif_t* netif, NetworkType type, Netw
   PostEvent(event);
 }
 
+void Esp32SocketManager::RemoveInterface(esp_netif_t* netif) {
+  Event event;
+  event.type = Event::Type::kInterfaceRemoved;
+  event.netif = netif;
+  jll_info("Esp32SocketManager removing interface");
+  PostEvent(event);
+}
+
 bool Esp32SocketManager::HasAddress() {
   const std::lock_guard<std::mutex> lock(mutex_);
   return std::any_of(interfaceStatuses_.begin(), interfaceStatuses_.end(),
@@ -154,7 +162,13 @@ void Esp32SocketManager::HandleQueueEvent(const Event& event) {
   }
   for (size_t index = 0; index < interfaces_.size(); index++) {
     if (interfaces_[index].netif != event.netif) { continue; }
-    if (event.type == Event::Type::kGotIp) {
+    if (event.type == Event::Type::kInterfaceRemoved) {
+      jll_info("Esp32SocketManager %s interface removed", NetworkTypeToString(interfaces_[index].type));
+      CloseSocket(index);
+      interfaces_.erase(interfaces_.begin() + index);
+      const std::lock_guard<std::mutex> lock(mutex_);
+      interfaceStatuses_.erase(interfaceStatuses_.begin() + index);
+    } else if (event.type == Event::Type::kGotIp) {
       jll_info("Esp32SocketManager %s queue got IP", NetworkTypeToString(interfaces_[index].type));
       SetLocalAddress(index, event.address);
       CreateSocket(index);

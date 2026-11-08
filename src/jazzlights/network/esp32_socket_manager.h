@@ -33,6 +33,10 @@ class Esp32SocketManager : public Network {
   // The first interface's localDeviceId is used as ours. Must only be called from the primary runloop.
   void AddInterface(esp_netif_t* netif, NetworkType type, NetworkDeviceId localDeviceId);
 
+  // Stops managing this interface and closes its socket. Callers must remove an interface before it's destroyed, since
+  // we keep a pointer to it. Must only be called from the primary runloop.
+  void RemoveInterface(esp_netif_t* netif);
+
   // Whether any interface currently has an address.
   bool HasAddress();
 
@@ -56,6 +60,7 @@ class Esp32SocketManager : public Network {
     enum class Type {
       kReserved = 0,
       kInterfaceAdded,
+      kInterfaceRemoved,
       kGotIp,
       kLostIp,
     };

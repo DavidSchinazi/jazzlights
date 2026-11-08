@@ -9,6 +9,7 @@
 // WLED defines STRINGIFY without expanding macros, and our config.h defines it with expansion.
 #undef STRINGIFY
 
+#include <esp_mac.h>
 #include <esp_wifi.h>
 
 #include <algorithm>
@@ -333,7 +334,13 @@ class JazzLightsUsermod : public Usermod, private ::jazzlights::ProtocolEngine::
 #endif  // !JL_DISABLE_BLUETOOTH
     ApplyMode();
     engine_.SetHasNetworks(networkManager_.HasNetworks());
-    engine_.SetupDeviceId(networkManager_.GetLocalDeviceId());
+    // Without Bluetooth, use the Wi-Fi MAC address, so that the device ID doesn't change at every boot.
+    ::jazzlights::NetworkDeviceId localDeviceId = networkManager_.GetLocalDeviceId();
+    uint8_t wifiMacAddress[6];
+    if (localDeviceId == ::jazzlights::NetworkDeviceId() && esp_read_mac(wifiMacAddress, ESP_MAC_WIFI_STA) == ESP_OK) {
+      localDeviceId = ::jazzlights::NetworkDeviceId(wifiMacAddress);
+    }
+    engine_.SetupDeviceId(localDeviceId);
     started_ = true;
   }
 
@@ -344,7 +351,8 @@ class JazzLightsUsermod : public Usermod, private ::jazzlights::ProtocolEngine::
     if (bluetoothStarted_ && doInitBusses) { AvoidRmtLedDriver(); }
 #endif  // JL_WLED_AVOID_RMT_LED_DRIVER
     const uint32_t nowMs = millis();
-    MaybeAddNetworkInterfaces();
+    UpdateNetworkInterfaces();
+    UpdateBluetoothPause(nowMs);
     if (updating_) {
       DiscardReceivedMessages();
       return;
@@ -382,6 +390,7 @@ class JazzLightsUsermod : public Usermod, private ::jazzlights::ProtocolEngine::
     } else if (presence_ != Presence::kAbsent) {
       ResumeNetworks();
     }
+    UpdateBluetoothPause(millis());
   }
 
   void addToJsonInfo(JsonObject& root) override {
@@ -485,6 +494,11 @@ class JazzLightsUsermod : public Usermod, private ::jazzlights::ProtocolEngine::
   static constexpr uint32_t kMappingDebounceMs = 250;
   // How long after a person's change we may see it in the segment.
   static constexpr uint32_t kUserInputWindowMs = 1000;
+  // While WLED's access point is on without clients, Bluetooth runs kAccessPointBluetoothOnMs out of every
+  // kAccessPointBluetoothCycleMs.
+  static constexpr uint32_t kAccessPointBluetoothCycleMs = 2000;
+  static constexpr uint32_t kAccessPointBluetoothOnMs = 1000;
+  static constexpr uint32_t kAccessPointCheckIntervalMs = 100;
   static constexpr char kConfigKey[] PROGMEM = "JazzLights";
 
   Segment& FollowedSegment() {
@@ -545,18 +559,38 @@ class JazzLightsUsermod : public Usermod, private ::jazzlights::ProtocolEngine::
     sendAsap_ = true;
   }
 
+  // Bluetooth is paused by UpdateBluetoothPause().
   void PauseNetworks() {
-#if !JL_DISABLE_BLUETOOTH
-    if (bluetoothStarted_) { ::jazzlights::Esp32NimBleNetwork::Get()->SetPaused(true); }
-#endif  // !JL_DISABLE_BLUETOOTH
     if (socketManagerConnected_) { ::jazzlights::Esp32SocketManager::Get()->DisableSending(); }
   }
 
   void ResumeNetworks() {
-#if !JL_DISABLE_BLUETOOTH
-    if (bluetoothStarted_) { ::jazzlights::Esp32NimBleNetwork::Get()->SetPaused(false); }
-#endif  // !JL_DISABLE_BLUETOOTH
     // Esp32SocketManager resumes sending at the next SetMessageToSend().
+  }
+
+  // Pauses Bluetooth while we don't take part in the protocol, and gives Wi-Fi radio time while WLED's access point is
+  // on. Wi-Fi and Bluetooth share the radio, and phones failed to join the access point while we scanned for Bluetooth
+  // almost continuously. See "Bluetooth" in extras/docs/WLED.md.
+  void UpdateBluetoothPause(uint32_t nowMs) {
+#if !JL_DISABLE_BLUETOOTH
+    if (!bluetoothStarted_) { return; }
+    if (nowMs - lastAccessPointCheckMs_ >= kAccessPointCheckIntervalMs) {
+      lastAccessPointCheckMs_ = nowMs;
+      accessPointHasClients_ = apActive && WiFi.softAPgetStationNum() > 0;
+    }
+    bool paused = false;
+    if (updating_ || presence_ == Presence::kAbsent) {
+      paused = true;
+    } else if (apActive) {
+      // Pause entirely while someone uses the access point, and half of the time otherwise, so that phones can join it.
+      paused = accessPointHasClients_ || nowMs % kAccessPointBluetoothCycleMs >= kAccessPointBluetoothOnMs;
+    }
+    if (paused == bluetoothPaused_) { return; }
+    bluetoothPaused_ = paused;
+    ::jazzlights::Esp32NimBleNetwork::Get()->SetPaused(paused);
+#else   // !JL_DISABLE_BLUETOOTH
+    (void)nowMs;
+#endif  // !JL_DISABLE_BLUETOOTH
   }
 
   void DiscardReceivedMessages() { (void)networkManager_.GetReceivedMessages(); }
@@ -644,31 +678,29 @@ class JazzLightsUsermod : public Usermod, private ::jazzlights::ProtocolEngine::
     strip.timebase = elapsedMs - millis();
   }
 
-  // Adds WLED's network interfaces to Esp32SocketManager once they exist. WLED only creates them after usermod setup.
-  void MaybeAddNetworkInterfaces() {
-    if (!wifiInterfaceAdded_) {
-      esp_netif_t* netif = WiFi.STA.netif();
-      uint8_t macAddress[6];
-      if (netif != nullptr && esp_wifi_get_mac(WIFI_IF_STA, macAddress) == ESP_OK) {
-        AddNetworkInterface(netif, ::jazzlights::NetworkType::kWiFi, macAddress);
-        wifiInterfaceAdded_ = true;
-      }
-    }
+  // Keeps Esp32SocketManager in sync with WLED's network interfaces. We only register an interface while it has an
+  // address: when WLED reconnects, it stops Wi-Fi with WiFi.mode(WIFI_MODE_NULL), which destroys the interfaces and
+  // creates new ones, and Esp32SocketManager must not keep a pointer to a destroyed interface.
+  void UpdateNetworkInterfaces() {
+    uint8_t macAddress[6];
+    esp_netif_t* wifiNetif = WiFi.STA.hasIP() ? WiFi.STA.netif() : nullptr;
+    if (wifiNetif != nullptr && esp_wifi_get_mac(WIFI_IF_STA, macAddress) != ESP_OK) { wifiNetif = nullptr; }
+    UpdateNetworkInterface(&wifiNetif_, wifiNetif, ::jazzlights::NetworkType::kWiFi, macAddress);
 #ifdef WLED_USE_ETHERNET
-    if (!ethernetInterfaceAdded_) {
-      esp_netif_t* netif = ETH.netif();
-      uint8_t macAddress[6];
-      if (netif != nullptr && ETH.macAddress(macAddress) != nullptr) {
-        AddNetworkInterface(netif, ::jazzlights::NetworkType::kEthernet, macAddress);
-        ethernetInterfaceAdded_ = true;
-      }
-    }
+    esp_netif_t* ethernetNetif = ETH.hasIP() ? ETH.netif() : nullptr;
+    if (ethernetNetif != nullptr && ETH.macAddress(macAddress) == nullptr) { ethernetNetif = nullptr; }
+    UpdateNetworkInterface(&ethernetNetif_, ethernetNetif, ::jazzlights::NetworkType::kEthernet, macAddress);
 #endif  // WLED_USE_ETHERNET
   }
 
-  void AddNetworkInterface(esp_netif_t* netif, ::jazzlights::NetworkType type, const uint8_t* macAddress) {
+  void UpdateNetworkInterface(esp_netif_t** registered, esp_netif_t* current, ::jazzlights::NetworkType type,
+                              const uint8_t* macAddress) {
+    if (current == *registered) { return; }
     ::jazzlights::Esp32SocketManager* socketManager = ::jazzlights::Esp32SocketManager::Get();
-    socketManager->AddInterface(netif, type, ::jazzlights::NetworkDeviceId(macAddress));
+    if (*registered != nullptr) { socketManager->RemoveInterface(*registered); }
+    *registered = current;
+    if (current == nullptr) { return; }
+    socketManager->AddInterface(current, type, ::jazzlights::NetworkDeviceId(macAddress));
     if (!socketManagerConnected_) {
       networkManager_.Connect(socketManager);
       engine_.SetHasNetworks(true);
@@ -693,6 +725,9 @@ class JazzLightsUsermod : public Usermod, private ::jazzlights::ProtocolEngine::
   bool bluetoothStarted_ = false;
   // Set when Bluetooth didn't start because an LED bus uses WLED's RMT driver, see AvoidRmtLedDriver().
   bool bluetoothBlockedByLedDriver_ = false;
+  bool bluetoothPaused_ = false;
+  bool accessPointHasClients_ = false;
+  uint32_t lastAccessPointCheckMs_ = 0;
 #endif  // !JL_DISABLE_BLUETOOTH
   bool configLoaded_ = false;
 
@@ -713,9 +748,10 @@ class JazzLightsUsermod : public Usermod, private ::jazzlights::ProtocolEngine::
   SegmentSignature appliedSignature_;
   std::optional<PatternBits> shownPattern_;
 
-  bool wifiInterfaceAdded_ = false;
+  // The interfaces registered with Esp32SocketManager.
+  esp_netif_t* wifiNetif_ = nullptr;
 #ifdef WLED_USE_ETHERNET
-  bool ethernetInterfaceAdded_ = false;
+  esp_netif_t* ethernetNetif_ = nullptr;
 #endif  // WLED_USE_ETHERNET
   bool socketManagerConnected_ = false;
   ::jazzlights::NetworkManager networkManager_;
