@@ -34,7 +34,7 @@ The division of work:
 
 - Conveying brightness, speed or effect parameters to other JazzLights devices. The protocol
   has no field for them. Each device keeps its own brightness.
-- Mirroring several WLED segments. The usermod follows one segment (see
+- Conveying several WLED segments when leading. The leader maps one segment (see
   [Segments](#segments)).
 - Replacing WLED's own sync (UDP notifier, DDP, E1.31, ESP-NOW). Those keep working
   alongside JazzLights, and are still the best way to sync WLED devices with each other.
@@ -163,7 +163,7 @@ lives in this repo, under `extras/wled/`:
 
   | Environment | Extends | Board settings |
   |---|---|---|
-  | `jazzlights_atom_matrix` | `esp32dev` | LEDs on GPIO 27 (the ATOM's 5x5 matrix) then 26, button on 39 |
+  | `jazzlights_atom_matrix` | `esp32dev` | 25 LEDs on GPIO 27 (the ATOM's 5x5 matrix), then 360 on 26 (the vest), button on 39 |
   | `jazzlights_atom_s3_lite` | `esp32s3dev_8MB_none` | LEDs on GPIO 2, button on 41 |
   | `jazzlights_m5stamp_c3u` | `esp32c3dev` | LEDs on GPIO 1 |
   | `jazzlights_m5_nano_c6` | `esp32c6dev_4MB` | LEDs on GPIO 2, no audioreactive, no Bluetooth |
@@ -171,11 +171,19 @@ lives in this repo, under `extras/wled/`:
   They keep WLED's default usermods (currently audioreactive), except on the NanoC6, which
   has no microphone. WLED's LED settings can still be changed from its web UI.
 
-  On the ATOM Matrix, the 5x5 matrix comes first because WLED's 2D matrix has to start at
-  the first LED, and LEDs after it become separate 1D segments. WLED has no build flag for
-  the 2D settings, so they're set in its web UI: one 5x5 panel, starting top left,
-  horizontal, not serpentine. WLED then makes the matrix segment 0, which the usermod
-  follows by default, and the vest's LEDs segment 1.
+  On the ATOM Matrix, the vest's 360 LEDs don't form a grid that WLED's 2D panel settings
+  can describe, so `generate_vest_ledmap.py` writes a WLED `ledmap.json` instead. It reads
+  the vest's coordinates from `layout_data_vest.cpp`, rounds them to a 20 x 19 grid, where
+  each LED gets its own cell, and places the ATOM's 5x5 screen to the right, in the top 5
+  rows of a 25 x 19 canvas. A ledmap with a width and height also makes WLED 2D at boot,
+  so WLED's 2D panel settings aren't needed. Setup, once:
+  1. `extras/wled/generate_vest_ledmap.py > ledmap.json`, then upload it in WLED's file
+     editor (`http://<device>/edit`) and reboot.
+  2. In WLED's segments, make segment 0 the vest, columns 0 to 20 and rows 0 to 19, and
+     add segment 1 for the screen, columns 20 to 25 and rows 0 to 5 (stop values are
+     exclusive).
+
+  If the vest shows up mirrored or upside down, regenerate with `--flip-x` or `--flip-y`.
 - `build.sh` builds them. The first run clones WLED, at a commit pinned in the script, into
   `extras/.wled`, and every run copies `platformio_override.ini` there:
 
@@ -445,9 +453,18 @@ and chartreuse as glow-green, but sends orange, amber, azure and violet as color
 
 ### Segments
 
-The usermod follows WLED's main segment by default (`strip.getMainSegment()`, the first
-selected segment), with a setting to pick a segment ID instead. If the followed segment is
-turned off while others are on, the device is treated as off.
+A WLED segment is a group of LEDs running one effect, with its own palette, colors and
+sliders: a range of LEDs, or on a 2D setup, a rectangle of the canvas. All the LEDs of a
+JazzLights device show the same pattern and palette, so:
+
+- When following, the usermod shows the followed pattern on every active segment, each at
+  its own size and with its own 1D or 2D equivalent.
+- When leading, the usermod maps one segment, WLED's main segment by default
+  (`strip.getMainSegment()`, the first selected segment), with a setting to pick a segment
+  ID instead. To have all segments match while leading, select them all in WLED's UI
+  before changing the effect, which WLED then applies to every selected segment.
+
+If the mapped segment is turned off while others are on, the device is treated as off.
 
 ### Transitions
 
@@ -530,18 +547,20 @@ palette.
 
 Details:
 
-- When it starts showing a followed pattern, the usermod saves the segment's effect,
+- It shows the followed pattern on every active segment, see [Segments](#segments).
+- When it starts showing a followed pattern, the usermod saves each segment's effect,
   palette and colors, and restores them when it stops following, like WLED does around
   realtime mode. It leaves the sliders alone: `setMode()` keeps them.
-- When a person changes the segment's effect, palette or colors while it shows a followed
-  pattern, their change becomes the state to go back to. In follower mode, that also
+- When a person changes a segment's effect, palette or colors, or adds or removes a
+  segment, while it shows a followed pattern, their change becomes the state to go back
+  to. In follower mode, that also
   pauses following, as described in
   [What a person's change does in each mode](#what-a-persons-change-does-in-each-mode), so
   their change shows right away. In leader mode, following continues, so their change shows
   until the followed pattern changes, and comes back when the override ends.
 - Like JazzLights devices, it switches to the next pattern at the end of the current one,
   without waiting for the leader's next message.
-- While following, the leader direction is paused, since the segment shows what the
+- While following, the leader direction is paused, since the segments show what the
   usermod applied. It resumes from the restored state.
 - It applies changes without notifying WLED's own UDP sync (`CALL_MODE_NO_NOTIFY`), and
   without saving anything to flash. A setting could instead let them propagate to other
@@ -886,6 +905,10 @@ is.
 - When leading, the unused pattern bits are randomized once per change.
 - The usermod ships board presets, and sends JazzLights logs to WLED's debug output.
 - WLED changes, playlists included, switch followers immediately, like a button press.
+- All the LEDs of a device show the same pattern and palette: a follower applies the
+  followed pattern to every segment, each at its own size.
+- On the ATOM Matrix, a generated `ledmap.json` maps the vest's LEDs, and the 5x5 screen is
+  a second segment of the same canvas.
 - The default mode is follower, so that a newly flashed WLED device doesn't take over.
 - Palettes without an exact equivalent go to the closest JazzLights palette by hue.
 - A follower keeps the segment's sliders, and switches at the end of each 10 seconds without
