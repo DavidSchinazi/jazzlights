@@ -163,13 +163,19 @@ lives in this repo, under `extras/wled/`:
 
   | Environment | Extends | Board settings |
   |---|---|---|
-  | `jazzlights_atom_matrix` | `esp32dev` | LEDs on GPIO 26 and 27 (the ATOM's 5x5 matrix), button on 39 |
+  | `jazzlights_atom_matrix` | `esp32dev` | LEDs on GPIO 27 (the ATOM's 5x5 matrix) then 26, button on 39 |
   | `jazzlights_atom_s3_lite` | `esp32s3dev_8MB_none` | LEDs on GPIO 2, button on 41 |
   | `jazzlights_m5stamp_c3u` | `esp32c3dev` | LEDs on GPIO 1 |
   | `jazzlights_m5_nano_c6` | `esp32c6dev_4MB` | LEDs on GPIO 2, no audioreactive, no Bluetooth |
 
   They keep WLED's default usermods (currently audioreactive), except on the NanoC6, which
   has no microphone. WLED's LED settings can still be changed from its web UI.
+
+  On the ATOM Matrix, the 5x5 matrix comes first because WLED's 2D matrix has to start at
+  the first LED, and LEDs after it become separate 1D segments. WLED has no build flag for
+  the 2D settings, so they're set in its web UI: one 5x5 panel, starting top left,
+  horizontal, not serpentine. WLED then makes the matrix segment 0, which the usermod
+  follows by default, and the vest's LEDs segment 1.
 - `build.sh` builds them. The first run clones WLED, at a commit pinned in the script, into
   `extras/.wled`, and every run copies `platformio_override.ini` there:
 
