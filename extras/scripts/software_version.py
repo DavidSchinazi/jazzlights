@@ -1,5 +1,5 @@
 # Computes the software version of the firmware being built, see "Server implementation" under "Part 2: OTA" in
-# extras/docs/OTA_PROPOSAL.md. It saves it as software_version.bin next to firmware.bin, and generates a header that
+# extras/docs/OTA.md. It saves it as software_version.bin next to firmware.bin, and generates a header that
 # only one source file includes, so that a new version doesn't recompile everything. The header also holds the build
 # time, which is when this version was first built in this build directory, so that a build with no changes doesn't
 # recompile anything. This is a pre: script so that the

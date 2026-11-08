@@ -1,6 +1,6 @@
 # Adds an "OTA Upload" task to every ESP32 environment, which the pioarduino extension shows under Project Tasks, then
 # the environment, then Custom. It builds that environment, then updates every device on the network that runs it,
-# using ota_upload.py, see "Client implementation" under "Part 2: OTA" in extras/docs/OTA_PROPOSAL.md. The private key
+# using ota_upload.py, see "Client implementation" under "Part 2: OTA" in extras/docs/OTA.md. The private key
 # comes from the JL_CLIENT_KEY environment variable.
 #
 # From the command line: `pio run -e vest -t ota`. To update only one device, give its IP address with

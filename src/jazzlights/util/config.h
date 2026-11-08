@@ -196,7 +196,7 @@
 #endif  // JL_ESP32_ETHERNET
 
 #ifndef JL_SECURE_CHANNEL
-// The secure channel uses lwIP sockets and mbedTLS, see extras/docs/OTA_PROPOSAL.md. Environments that only have
+// The secure channel uses lwIP sockets and mbedTLS, see extras/docs/OTA.md. Environments that only have
 // Ethernet through the Arduino Ethernet library don't use lwIP, and ESPHome builds have ESPHome's own OTA updates.
 // WARNING: the session keys come from esp_fill_random(), which is only truly random while Wi-Fi or Bluetooth is
 // running. So Ethernet-only builds with Bluetooth disabled, such as gauntlet_esp_ethernet_only, get weaker

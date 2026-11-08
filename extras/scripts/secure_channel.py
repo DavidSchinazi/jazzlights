@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Client side of the secure channel, see extras/docs/OTA_PROPOSAL.md.
+"""Client side of the secure channel, see extras/docs/OTA.md.
 
 Use SecureChannelClient to talk to a server, and FakeSecureChannelServer to test clients. Both give access to the
 lower-level pieces, so that tests can send malformed messages. Each use of the channel has its own script on top of

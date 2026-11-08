@@ -13,7 +13,7 @@
 namespace jazzlights {
 
 // Lets a client show one pattern on this device's LEDs, instead of the synchronized ones, see "PatternOverride" in
-// extras/docs/OTA_PROPOSAL.md. A 4-byte Value holds the pattern bits, in network byte order, and an empty one goes back
+// extras/docs/OTA.md. A 4-byte Value holds the pattern bits, in network byte order, and an empty one goes back
 // to the synchronized patterns. The override also ends when the session that set it ends, so that a client that goes
 // away can't leave a device stuck on its pattern.
 class PatternOverrideHandler : public SecureChannelHandler {

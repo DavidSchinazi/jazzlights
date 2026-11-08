@@ -19,7 +19,7 @@
 
 namespace jazzlights {
 
-// Performs firmware updates over the secure channel, see "Part 2: OTA" in extras/docs/OTA_PROPOSAL.md.
+// Performs firmware updates over the secure channel, see "Part 2: OTA" in extras/docs/OTA.md.
 class OtaHandler : public SecureChannelHandler {
  public:
   static constexpr uint64_t kFirstType = 3;

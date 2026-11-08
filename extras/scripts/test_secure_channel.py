@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests the secure channel and OTA, see "Testing" in extras/docs/OTA_PROPOSAL.md.
+"""Tests the secure channel and OTA, see "Testing" in extras/docs/OTA.md.
 
 By default this runs against the native server from extras/secure_channel_test, which it expects to already be built.
 That fakes the flash but otherwise runs the same code as the firmware, under ASan and UBSan.

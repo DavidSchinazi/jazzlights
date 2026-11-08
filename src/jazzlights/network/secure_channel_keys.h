@@ -10,7 +10,7 @@
 namespace jazzlights {
 
 // The public keys of the clients that may use the secure channel, as 65-byte uncompressed P-256 points. They all have
-// the same permissions. To add a client, see "Keys" in extras/docs/OTA_PROPOSAL.md, and update the count below. The
+// the same permissions. To add a client, see "Keys" in extras/docs/OTA.md, and update the count below. The
 // server doesn't start while this list is empty.
 // In order, the keys in client_private_1.pem to client_private_8.pem.
 inline constexpr std::array<SecureChannelPublicKey, 8> kSecureChannelPublicKeys = {

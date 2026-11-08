@@ -11,7 +11,7 @@
 
 namespace jazzlights {
 
-// Implements the server side of the protocol described in extras/docs/OTA_PROPOSAL.md: it authenticates clients, sets
+// Implements the server side of the protocol described in extras/docs/OTA.md: it authenticates clients, sets
 // up session keys and carries encrypted TLVs, and it knows nothing about what those TLVs are for. Each use of the
 // channel implements SecureChannelHandler and registers it for its range of types.
 

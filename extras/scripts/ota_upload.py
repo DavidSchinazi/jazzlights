@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Keeps JazzLights devices on the local network up to date, see "Part 2: OTA" in extras/docs/OTA_PROPOSAL.md.
+"""Keeps JazzLights devices on the local network up to date, see "Part 2: OTA" in extras/docs/OTA.md.
 
 For every device it discovers, this builds the firmware from this checkout for that device's PlatformIO environment,
 and uploads it if it differs from what's running. This runs until interrupted, unless given --once or --host, which make
