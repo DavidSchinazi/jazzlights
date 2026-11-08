@@ -497,7 +497,11 @@ our sdkconfig.
     same for every environment built from one checkout, a device that runs another environment
     gets updated even if its software version matches.
   - `--no-build` uses what's already in `.pio/build/<env>` instead of building.
-  - `--once` listens for devices for 5s, or `--discovery-seconds`, updates them, and exits.
+  - `--once` updates devices as it hears them, and exits once a device has been updated, found up
+    to date, or failed, and no update is still going. Skipped devices don't count, so with `--mac`
+    it waits for that device. Followers only send every 1.5–2.5s, so it keeps listening while it
+    updates the first devices it hears. If no update has started after 10s, or
+    `--give-up-seconds`, it stops listening.
   - `--host <address>`, which can be repeated, updates those devices instead of discovering any,
     and exits.
   - With `--once` or `--host`, it prints what happened to each device, and exits with a failure

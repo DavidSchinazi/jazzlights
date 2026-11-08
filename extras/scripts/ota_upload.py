@@ -3,7 +3,9 @@
 
 For every device it discovers, this builds the firmware from this checkout for that device's PlatformIO environment,
 and uploads it if it differs from what's running. This runs until interrupted, unless given --once or --host, which make
-it update what it finds and exit, with a failure status if any update failed or it found nothing to update.
+it exit once it's done, with a failure status if any update failed or it found nothing to update. --once keeps listening
+for devices while it updates the ones it has heard, and is done once a device has been updated, or found to be up to
+date, or failed, and no update is still going.
 
 With --mac, it only updates the devices with those MAC addresses, which are what they report in OtaInfo, and also what
 they use as their ID in JazzLights logs. With --environment as well, those devices get that environment even if they're
@@ -50,8 +52,11 @@ DEFAULT_UPDATE_PATTERN = 0x00000400
 DATA_CHUNK_SIZE = secure_channel.DEFAULT_MAX_RECORD_PLAINTEXT - 3
 PROGRESS_STEP_PERCENT = 10
 KEEPALIVE_INTERVAL_SECONDS = 30
-# How long --once listens for devices. They send a payload every 100ms.
-DEFAULT_DISCOVERY_SECONDS = 5
+# --once gives up if it hasn't found a device to update after this long. Leaders send a payload every 100ms, and with
+# JL_OTA, followers send one every 1.5 to 2.5s, so this leaves room for a few lost ones.
+DEFAULT_GIVE_UP_SECONDS = 10
+# How long --once waits for a payload before it checks again whether it's done.
+DISCOVERY_POLL_SECONDS = 0.5
 # Flash writes and image verification can take a while, particularly with several devices at once. The upload fails if
 # it sends nothing and gets no OtaAck for this long.
 ACK_TIMEOUT_SECONDS = 30
@@ -190,6 +195,11 @@ class Uploader:
         thread = threading.Thread(target=self.update_server, args=(address,), daemon=True)
         thread.start()
         return thread
+
+    def finished_any(self):
+        """Returns whether a device has been updated, found up to date, or failed. Skipped devices don't count."""
+        with self.seen_lock:
+            return any(outcome != "skipped" for outcome in self.outcomes.values())
 
     def update_server(self, address):
         client = None
@@ -455,25 +465,27 @@ def discover_forever(uploader, sock):
             uploader.on_server_heard(address)
 
 
-def discover_once(uploader, sock, seconds):
-    """Listens for devices for this long, then waits for every update that started."""
+def discover_once(uploader, sock, give_up_seconds):
+    """Updates devices as it hears them, until one has finished and no update is still going.
+
+    Since skipped devices don't count, it keeps listening for the ones it's looking for, but gives up after
+    give_up_seconds if no update has started by then.
+    """
     threads = []
-    deadline = time.monotonic() + seconds
+    give_up_time = time.monotonic() + give_up_seconds
+    sock.settimeout(DISCOVERY_POLL_SECONDS)
     while True:
-        remaining = deadline - time.monotonic()
-        if remaining <= 0:
+        threads = [thread for thread in threads if thread.is_alive()]
+        if not threads and (uploader.finished_any() or time.monotonic() >= give_up_time):
             break
-        sock.settimeout(remaining)
         try:
             payload, (address, _) = sock.recvfrom(1500)
         except TimeoutError:
-            break
+            continue
         if is_our_payload(payload):
             thread = uploader.on_server_heard(address)
             if thread is not None:
                 threads.append(thread)
-    for thread in threads:
-        thread.join()
 
 
 def update_hosts(uploader, hosts):
@@ -521,13 +533,13 @@ def main():
     parser.add_argument(
         "--once",
         action="store_true",
-        help="listen for devices for --discovery-seconds, update them, and exit",
+        help="update devices as they're heard, and exit once one has finished and no update is still going",
     )
     parser.add_argument(
-        "--discovery-seconds",
+        "--give-up-seconds",
         type=float,
-        default=DEFAULT_DISCOVERY_SECONDS,
-        help="how long --once listens for devices, %(default)ss by default",
+        default=DEFAULT_GIVE_UP_SECONDS,
+        help="how long --once listens for a device to update before giving up, %(default)ss by default",
     )
     parser.add_argument(
         "--host", action="append", default=[], help="update the device at this address instead of discovering them"
@@ -553,7 +565,7 @@ def main():
         return summarize(uploader, args.environment)
     print("Listening for devices on %s:%d" % (MULTICAST_ADDRESS, MULTICAST_PORT), flush=True)
     if args.once:
-        discover_once(uploader, open_discovery_socket(), args.discovery_seconds)
+        discover_once(uploader, open_discovery_socket(), args.give_up_seconds)
         return summarize(uploader, args.environment)
     try:
         discover_forever(uploader, open_discovery_socket())

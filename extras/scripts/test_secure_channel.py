@@ -1720,27 +1720,70 @@ class OtaClientRunOnceTest(OtaClientUploadTestBase):
         uploader = self.make_uploader(make_image())
         self.assertEqual(ota_upload.summarize(uploader, None), 1)
 
+    def discover_once(self, uploader, payloads, give_up_seconds=30):
+        """Runs discover_once with these (payload, address) pairs, where None is a payload that doesn't arrive in time.
+
+        Returns how long it took."""
+
+        class FakeDiscoverySocket:
+            def __init__(self):
+                self.timeout = None
+
+            def settimeout(self, timeout):
+                self.timeout = timeout
+
+            def recvfrom(self, _size):
+                received = payloads.pop(0) if payloads else None
+                if received is None:
+                    time.sleep(self.timeout)
+                    raise TimeoutError()
+                payload, address = received
+                return payload, (address, 6699)
+
+        start = time.monotonic()
+        ota_upload.discover_once(uploader, FakeDiscoverySocket(), give_up_seconds)
+        return time.monotonic() - start
+
+    def skip_address(self, uploader, skipped_address):
+        """Makes the uploader skip this address without connecting to it."""
+        update_server = uploader.update_server
+
+        def update_or_skip(address):
+            if address != skipped_address:
+                update_server(address)
+                return
+            with uploader.seen_lock:
+                uploader.outcomes[address] = "skipped"
+
+        uploader.update_server = update_or_skip
+
     def test_discover_once_then_waits_for_updates(self):
         self.expect_restart = True
         uploader = self.make_uploader(make_image(), build=False)
         uploader.log = lambda _address, _message: None
-
-        class FakeDiscoverySocket:
-            def __init__(self):
-                self.payloads = [(b"\x20not ours", "10.0.0.9"), (b"\x10ours", HOST), (b"\x10again", HOST)]
-
-            def settimeout(self, _timeout):
-                pass
-
-            def recvfrom(self, _size):
-                if not self.payloads:
-                    raise TimeoutError()
-                payload, address = self.payloads.pop(0)
-                return payload, (address, 6699)
-
-        ota_upload.discover_once(uploader, FakeDiscoverySocket(), seconds=5)
+        self.discover_once(uploader, [(b"\x20not ours", "10.0.0.9"), (b"\x10ours", HOST), (b"\x10again", HOST)])
         # It returns once the update it started has finished.
         self.assertEqual(uploader.outcomes, {HOST: "updated"})
+
+    def test_discover_once_keeps_listening_past_skipped_devices(self):
+        self.expect_restart = True
+        uploader = self.make_uploader(make_image(), build=False)
+        uploader.log = lambda _address, _message: None
+        self.skip_address(uploader, "10.0.0.9")
+        # Like a follower, the device it's looking for takes a while to send anything.
+        payloads = [(b"\x10ours", "10.0.0.9"), None, None, None, (b"\x10ours", HOST)]
+        self.discover_once(uploader, payloads)
+        self.assertEqual(uploader.outcomes, {"10.0.0.9": "skipped", HOST: "updated"})
+
+    def test_discover_once_gives_up(self):
+        uploader = self.make_uploader(make_image(), build=False)
+        uploader.log = lambda _address, _message: None
+        self.skip_address(uploader, "10.0.0.9")
+        elapsed = self.discover_once(uploader, [(b"\x10ours", "10.0.0.9")], give_up_seconds=1)
+        self.assertGreaterEqual(elapsed, 1)
+        self.assertLess(elapsed, 3)
+        self.assertEqual(uploader.outcomes, {"10.0.0.9": "skipped"})
+        self.assertEqual(ota_upload.summarize(uploader, None), 1)
 
     def test_update_hosts(self):
         self.expect_restart = True
