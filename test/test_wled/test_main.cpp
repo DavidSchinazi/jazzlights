@@ -127,6 +127,8 @@ void TestWLEDEffectIDs() {
   const std::pair<uint8_t, const char*> expected[] = {
       {             kWLEDSolid,               "Solid"},
       {            kWLEDBreath,             "Breathe"},
+      {      kWLEDRainbowCycle,             "Rainbow"},
+      {           kWLEDPalette,             "Palette"},
       {              kWLEDFade,                "Fade"},
       {           kWLEDTwinkle,             "Twinkle"},
       {          kWLEDDissolve,            "Dissolve"},
@@ -313,6 +315,96 @@ void TestSpecialCases() {
   TEST_ASSERT_EQUAL_STRING("flame-heat", DecodePattern(WLEDToJazzLights(state)).name.c_str());
 }
 
+namespace {
+
+const char* WLEDPaletteNameOf(uint8_t id) {
+  if (id == kWLEDPaletteDefault) { return "Default"; }
+  for (const WLEDBuiltInPalette& palette : kWLEDBuiltInPalettes) {
+    if (palette.id == id) { return palette.name; }
+  }
+  return "unknown";
+}
+
+// What the leader would send if WLED showed `target`.
+DecodedPattern DecodeTargetAsLeader(const WLEDTarget& target, bool segmentIs2D) {
+  WLEDSegmentState state;
+  state.effect = target.effect;
+  state.paletteIsDefault = target.palette == kWLEDPaletteDefault;
+  state.paletteId = state.paletteIsDefault ? kWLEDPaletteColorsOnly : target.palette;
+  for (const WLEDBuiltInPalette& builtIn : kWLEDBuiltInPalettes) {
+    if (builtIn.id == state.paletteId) { state.palette = ColorsFromHex(builtIn.colors); }
+  }
+  state.color = target.color.value_or(WLEDColor{});
+  // WLED shows Solid for these on a 1D segment.
+  state.showsSolidFallback =
+      !segmentIs2D &&
+      (target.effect == kWLED2DHiphotic || target.effect == kWLED2DMatrix || target.effect == kWLED2DMetaballs ||
+       target.effect == kWLED2DColoredBursts || target.effect == kWLED2DPlasmaRotozoom);
+  return DecodePattern(WLEDToJazzLights(state));
+}
+
+}  // namespace
+
+void TestJazzLightsToWLED() {
+  printf("\nJazzLights pattern -> WLED effect on a 2D segment / on a 1D segment:\n");
+  for (PatternEffect effect : kPaletteEffects) {
+    for (PatternPalette palette : kAllPalettes) {
+      const PatternBits pattern = RandomizePatternBits(PalettePattern(effect, palette));
+      const std::optional<WLEDTarget> target2D = JazzLightsToWLED(pattern, /*segmentIs2D=*/true);
+      const std::optional<WLEDTarget> target1D = JazzLightsToWLED(pattern, /*segmentIs2D=*/false);
+      TEST_ASSERT(target2D);
+      TEST_ASSERT(target1D);
+      printf("  %-18s -> %s (%s) / %s (%s)\n", DecodePattern(pattern).name.c_str(), WLEDEffectNameOf(target2D->effect),
+             WLEDPaletteNameOf(target2D->palette), WLEDEffectNameOf(target1D->effect),
+             WLEDPaletteNameOf(target1D->palette));
+      // On 2D, the leader maps what the follower shows back to the same pattern.
+      const DecodedPattern back = DecodeTargetAsLeader(*target2D, /*segmentIs2D=*/true);
+      TEST_ASSERT(back.effect == effect);
+      TEST_ASSERT(back.palette);
+      TEST_ASSERT(*back.palette == palette);
+      // On 1D, the effect may change, but the palette stays.
+      const DecodedPattern back1D = DecodeTargetAsLeader(*target1D, /*segmentIs2D=*/false);
+      TEST_ASSERT(back1D.palette);
+      TEST_ASSERT(*back1D.palette == palette);
+    }
+  }
+  for (PatternEffect effect : {PatternEffect::kGlitter, PatternEffect::kTheMatrix, PatternEffect::kThreesine}) {
+    for (bool segmentIs2D : {true, false}) {
+      const std::optional<WLEDTarget> target = JazzLightsToWLED(PalettelessPattern(effect), segmentIs2D);
+      TEST_ASSERT(target);
+      TEST_ASSERT(DecodeTargetAsLeader(*target, segmentIs2D).effect == effect);
+      printf("  %-18s -> %s (%s) on %s\n", DecodePattern(PalettelessPattern(effect)).name.c_str(),
+             WLEDEffectNameOf(target->effect), WLEDPaletteNameOf(target->palette), segmentIs2D ? "2D" : "1D");
+    }
+  }
+
+  // Colors go through exactly.
+  const WLEDColor color{12, 34, 56};
+  std::optional<WLEDTarget> target = JazzLightsToWLED(ColoringPattern(color), /*segmentIs2D=*/false);
+  TEST_ASSERT(target);
+  TEST_ASSERT_EQUAL_UINT8(kWLEDSolid, target->effect);
+  TEST_ASSERT(target->color == color);
+  TEST_ASSERT_EQUAL_STRING("coloring", DecodeTargetAsLeader(*target, /*segmentIs2D=*/false).name.c_str());
+
+  // Glow becomes Breathe, fading to black.
+  target = JazzLightsToWLED(0x00000800, /*segmentIs2D=*/false);
+  TEST_ASSERT(target);
+  TEST_ASSERT_EQUAL_UINT8(kWLEDBreath, target->effect);
+  TEST_ASSERT(target->blackBackground);
+  TEST_ASSERT_EQUAL_STRING("glow-red", DecodeTargetAsLeader(*target, /*segmentIs2D=*/false).name.c_str());
+
+  // Solid colors become Solid with that color.
+  target = JazzLightsToWLED(0x00000300, /*segmentIs2D=*/false);
+  TEST_ASSERT(target);
+  TEST_ASSERT_EQUAL_UINT8(kWLEDSolid, target->effect);
+  TEST_ASSERT(target->color == (WLEDColor{0, 0, 255}));
+
+  // Test and calibration patterns keep WLED's state.
+  for (PatternBits pattern : {0x00000F00u, 0x00001000u, 0x00001100u, 0x00000010u, 0x00000040u}) {
+    TEST_ASSERT_FALSE(JazzLightsToWLED(pattern, /*segmentIs2D=*/true));
+  }
+}
+
 int RunUnityTests() {
   UNITY_BEGIN();
   RUN_TEST(TestDecodeMatchesRenderer);
@@ -323,6 +415,7 @@ int RunUnityTests() {
   RUN_TEST(TestPaletteMapping);
   RUN_TEST(TestGlowColors);
   RUN_TEST(TestSpecialCases);
+  RUN_TEST(TestJazzLightsToWLED);
   return UNITY_END();
 }
 

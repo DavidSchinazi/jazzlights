@@ -24,6 +24,7 @@
 #include "jazzlights/protocol/engine.h"
 #include "jazzlights/protocol/wire_types.h"
 #include "jazzlights/util/log.h"
+#include "jazzlights/util/time.h"
 #include "jazzlights/util/types.h"
 #include "jazzlights/wled/mapping.h"
 
@@ -33,12 +34,14 @@ using ::jazzlights::PatternBits;
 using ::jazzlights::Precedence;
 using ::jazzlights::WLEDColor;
 using ::jazzlights::WLEDSegmentState;
+using ::jazzlights::WLEDTarget;
 
 // jazzlights/wled/mapping.h can't include WLED's headers, so check its effect IDs against them here.
 #define JL_CHECK_WLED_EFFECT(jlName, wledName) \
   static_assert(::jazzlights::jlName == wledName, #jlName " doesn't match " #wledName)
 JL_CHECK_WLED_EFFECT(kWLEDSolid, FX_MODE_STATIC);
 JL_CHECK_WLED_EFFECT(kWLEDBreath, FX_MODE_BREATH);
+JL_CHECK_WLED_EFFECT(kWLEDRainbowCycle, FX_MODE_RAINBOW_CYCLE);
 JL_CHECK_WLED_EFFECT(kWLEDFade, FX_MODE_FADE);
 JL_CHECK_WLED_EFFECT(kWLEDTwinkle, FX_MODE_TWINKLE);
 JL_CHECK_WLED_EFFECT(kWLEDDissolve, FX_MODE_DISSOLVE);
@@ -51,6 +54,7 @@ JL_CHECK_WLED_EFFECT(kWLEDRain, FX_MODE_RAIN);
 JL_CHECK_WLED_EFFECT(kWLEDFireFlicker, FX_MODE_FIRE_FLICKER);
 JL_CHECK_WLED_EFFECT(kWLEDFairyTwinkle, FX_MODE_FAIRYTWINKLE);
 JL_CHECK_WLED_EFFECT(kWLEDJuggle, FX_MODE_JUGGLE);
+JL_CHECK_WLED_EFFECT(kWLEDPalette, FX_MODE_PALETTE);
 JL_CHECK_WLED_EFFECT(kWLEDFire2012, FX_MODE_FIRE_2012);
 JL_CHECK_WLED_EFFECT(kWLEDFillNoise8, FX_MODE_FILLNOISE8);
 JL_CHECK_WLED_EFFECT(kWLEDNoise1, FX_MODE_NOISE16_1);
@@ -211,6 +215,39 @@ SegmentSignature SignatureOf(const Segment& segment) {
   return signature;
 }
 
+// What a follower changes on the segment, and restores when it stops following.
+struct SavedSegmentState {
+  uint8_t mode = 0;
+  uint8_t palette = 0;
+  uint32_t colors[NUM_COLORS] = {};
+};
+
+SavedSegmentState SaveSegmentState(const Segment& segment) {
+  SavedSegmentState saved;
+  saved.mode = segment.mode;
+  saved.palette = segment.palette;
+  memcpy(saved.colors, segment.colors, sizeof(saved.colors));
+  return saved;
+}
+
+// Changes the segment without notifying WLED's own sync, and without saving anything to flash. stateUpdated() rather
+// than colorUpdated(), which would copy WLED's global effect and palette back onto the selected segments.
+void RestoreSegmentState(Segment& segment, const SavedSegmentState& saved) {
+  segment.setMode(saved.mode);
+  segment.setPalette(saved.palette);
+  for (uint8_t slot = 0; slot < NUM_COLORS; slot++) { segment.setColor(slot, saved.colors[slot]); }
+  stateUpdated(CALL_MODE_NO_NOTIFY);
+}
+
+// Applies a JazzLights pattern converted by JazzLightsToWLED(). setMode() keeps the segment's sliders.
+void ApplyTarget(Segment& segment, const WLEDTarget& target) {
+  segment.setMode(target.effect);
+  segment.setPalette(target.palette);
+  if (target.color) { segment.setColor(0, RGBW32(target.color->r, target.color->g, target.color->b, 0)); }
+  if (target.blackBackground) { segment.setColor(1, BLACK); }
+  stateUpdated(CALL_MODE_NO_NOTIFY);
+}
+
 // See "WLED to JazzLights (leader)" in extras/docs/WLED.md.
 WLEDSegmentState ReadSegmentState(Segment& segment) {
   WLEDSegmentState state;
@@ -276,6 +313,7 @@ class JazzLightsUsermod : public Usermod, private ::jazzlights::ProtocolEngine::
       engine_.HandleReceivedMessage(message);
     }
     engine_.CheckLeaderAndPattern();
+    UpdateFollowing(nowMs);
     networkManager_.SetMessageToSend(engine_.GetMessageToSend(), sendAsap_);
     sendAsap_ = false;
     networkManager_.RunLoop();
@@ -470,6 +508,8 @@ class JazzLightsUsermod : public Usermod, private ::jazzlights::ProtocolEngine::
   // Maps the followed segment's state to the pattern we advertise when we lead. See "WLED to JazzLights (leader)" in
   // extras/docs/WLED.md.
   void UpdateLeadingPattern(uint32_t nowMs) {
+    // While we show the followed pattern, the segment shows what we applied, not what WLED was set to.
+    if (savedState_) { return; }
     Segment& segment = FollowedSegment();
     const SegmentSignature signature = SignatureOf(segment);
     if (!lastSignature_ || signature != *lastSignature_) {
@@ -495,6 +535,57 @@ class JazzLightsUsermod : public Usermod, private ::jazzlights::ProtocolEngine::
       engine_.SetLeadingPattern(::jazzlights::RandomizePatternBits(targetPattern_));
       sendAsap_ = true;
     }
+  }
+
+  // Shows the pattern we follow on the segment, or restores WLED's own state when we stop following. See "JazzLights
+  // to WLED (follower)" in extras/docs/WLED.md.
+  void UpdateFollowing(uint32_t nowMs) {
+    Segment& segment = FollowedSegment();
+    if (savedState_ && userInputTimeMs_) {
+      if (SignatureOf(segment) != appliedSignature_) {
+        // A person changed WLED while it showed the followed pattern. Their change is what we go back to. In follower
+        // mode, the user input also pauses following.
+        savedState_ = SaveSegmentState(segment);
+        appliedSignature_ = SignatureOf(segment);
+        engine_.RecordUserInput();
+        userInputTimeMs_.reset();
+      } else if (nowMs - *userInputTimeMs_ >= kUserInputWindowMs) {
+        userInputTimeMs_.reset();
+      }
+    }
+    const bool following =
+        presence_ == Presence::kPresent && engine_.following() != ::jazzlights::NetworkType::kLeading;
+    if (!following) {
+      if (savedState_) {
+        RestoreSegmentState(segment, *savedState_);
+        savedState_.reset();
+        // Map the restored state again.
+        lastSignature_.reset();
+      }
+      shownPattern_.reset();
+      return;
+    }
+    // Like JazzLights devices, switch to the next pattern at the end of the current one, without waiting for the leader
+    // to tell us.
+    const ::jazzlights::Microseconds currentTime = ::jazzlights::TimeMicros();
+    ::jazzlights::Microseconds patternStartTime = engine_.currentPatternStartTime();
+    PatternBits pattern = engine_.GetCurrentPattern();
+    if (currentTime - patternStartTime > ::jazzlights::kEffectDuration) {
+      pattern = engine_.GetNextPattern();
+      patternStartTime += ::jazzlights::kEffectDuration;
+    }
+    // A pattern restarting every 10 seconds keeps going, so that WLED's effects don't jump.
+    if (shownPattern_ && *shownPattern_ == pattern) { return; }
+    shownPattern_ = pattern;
+    const std::optional<WLEDTarget> target = ::jazzlights::JazzLightsToWLED(pattern, segment.is2D());
+    // Test and calibration patterns keep what the segment shows.
+    if (!target) { return; }
+    if (!savedState_) { savedState_ = SaveSegmentState(segment); }
+    ApplyTarget(segment, *target);
+    appliedSignature_ = SignatureOf(segment);
+    // Make WLED's effect clock count from the pattern's start, so that WLED followers show time-based effects in sync.
+    const uint32_t elapsedMs = static_cast<uint32_t>((currentTime - patternStartTime) / 1000);
+    strip.timebase = elapsedMs - millis();
   }
 
   // Adds WLED's network interfaces to Esp32SocketManager once they exist. WLED only creates them after usermod setup.
@@ -558,6 +649,11 @@ class JazzLightsUsermod : public Usermod, private ::jazzlights::ProtocolEngine::
   uint32_t targetSinceMs_ = 0;
   std::optional<PatternBits> appliedPattern_;
   std::optional<uint32_t> userInputTimeMs_;
+
+  // While we show the followed pattern: WLED's own state to restore, and the segment as we last left it.
+  std::optional<SavedSegmentState> savedState_;
+  SegmentSignature appliedSignature_;
+  std::optional<PatternBits> shownPattern_;
 
   bool wifiInterfaceAdded_ = false;
 #ifdef WLED_USE_ETHERNET

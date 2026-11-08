@@ -1,7 +1,7 @@
 # JazzLights Usermod for WLED
 
-Status: approved, being implemented. Phases 1 (building the usermod in WLED), 2 (engine
-changes) and 3 (leader mode) are done, see
+Status: approved, being implemented. Phases 1 to 4 (building the usermod in WLED, engine
+changes, leader mode and follower mode) are done, see
 [Implementation phases](#implementation-phases).
 
 [WLED](https://github.com/wled/WLED) is popular firmware for addressable LEDs. This doc
@@ -495,30 +495,44 @@ There are two ways to do this, which aren't exclusive.
 
 ### Option A: translate to a WLED effect
 
-`JazzLightsToWLED()` maps the pattern bits back to a WLED effect, palette and colors, and
-applies them to the followed segment:
+`JazzLightsToWLED()`, in `src/jazzlights/wled/mapping.cpp`, maps the pattern bits back to
+a WLED effect, palette and colors, and the usermod applies them to the followed segment:
 
-| JazzLights | WLED |
-|---|---|
-| rings + palette | Palette (65) on 1D, or Rainbow (9) for the rainbow palette; on 2D, Palette with its rotation |
-| hiphotic + palette | Hiphotic on 2D; Noise Pal or Colorwaves on 1D |
-| spin plasma + palette | Rotozoomer on 2D; Plasma on 1D |
-| flame + palette | Fire 2012, Fire palette for heat |
-| metaballs / colored-bursts + palette | Metaballs / Colored Bursts on 2D; Plasma / Juggle on 1D |
-| glitter, the-matrix, threesine | Twinklefox + Rainbow, Matrix (2D) or Rain (1D), Sine |
-| solid, coloring | Solid with that color |
-| glow | Breathe with that color |
-| sync-test, calibration, follow-strand, mapping, unknown | keep the previous WLED state |
+| JazzLights | WLED on a 2D segment | WLED on a 1D segment |
+|---|---|---|
+| rings + palette | Palette, or Rainbow for the rainbow palette | same |
+| spin plasma + palette | Rotozoomer | Plasma |
+| hiphotic + palette | Hiphotic | Noise Pal |
+| flame + palette | Fire 2012 | same |
+| metaballs + palette | Metaballs | Plasma |
+| colored-bursts + palette | Colored Bursts | Juggle |
+| glitter | Twinklefox with the Rainbow palette | same |
+| the-matrix | Matrix | Rain |
+| threesine | Sine with the Rainbow palette | same |
+| solid, coloring | Solid with that color | same |
+| glow | Breathe with that color, fading to black | same |
+| sync-test, calibration, follow-strand, mapping, unknown | keep the current WLED state | same |
 
-Palettes go back through the table above, with heat going to Fire.
+Palettes go back through the exact table in [Palettes](#palettes), with heat going to Fire.
+`TestJazzLightsToWLED` checks that, on a 2D segment, the leader direction maps every one of
+these back to the same JazzLights effect and palette, and on a 1D segment, to the same
+palette.
 
 Details:
 
-- Before following, the usermod saves the segment's mode, palette, colors and sliders, and
-  restores them when it stops following, like WLED does around realtime mode. When a
-  person changes WLED while it's following, that change wins: the saved state is
-  discarded, and following pauses as described in
-  [What a person's change does in each mode](#what-a-persons-change-does-in-each-mode).
+- When it starts showing a followed pattern, the usermod saves the segment's effect,
+  palette and colors, and restores them when it stops following, like WLED does around
+  realtime mode. It leaves the sliders alone: `setMode()` keeps them.
+- When a person changes the segment's effect, palette or colors while it shows a followed
+  pattern, their change becomes the state to go back to. In follower mode, that also
+  pauses following, as described in
+  [What a person's change does in each mode](#what-a-persons-change-does-in-each-mode), so
+  their change shows right away. In leader mode, following continues, so their change shows
+  until the followed pattern changes, and comes back when the override ends.
+- Like JazzLights devices, it switches to the next pattern at the end of the current one,
+  without waiting for the leader's next message.
+- While following, the leader direction is paused, since the segment shows what the
+  usermod applied. It resumes from the restored state.
 - It applies changes without notifying WLED's own UDP sync (`CALL_MODE_NO_NOTIFY`), and
   without saving anything to flash. A setting could instead let them propagate to other
   WLED devices.
@@ -527,8 +541,8 @@ Details:
   calls `applyValuesToSelectedSegs()`, which copies WLED's global effect and palette back
   onto the selected segments, and would undo the change.
 - It sets `strip.timebase` so that WLED's effect clock `strip.now` counts from the
-  followed pattern's start time, but only when the followed pattern changes, not at each
-  10 second restart (see [Transitions](#transitions)). Most WLED effects are a function of
+  followed pattern's start time, but only when the shown pattern changes, not at each 10
+  second restart (see [Transitions](#transitions)). Most WLED effects are a function of
   `strip.now`, so WLED followers would then be in sync with each other, though not with
   JazzLights devices.
 
@@ -703,11 +717,12 @@ configuration (`/json/cfg`).
   - `TestEveryWLEDEffectMaps`, `TestPaletteMapping`, `TestGlowColors`: every WLED effect and
     built-in palette maps to something, with the tables printed for review.
   - `TestSpecialCases`: Solid, the 2D-only fallback, and fires with the Default palette.
+  - `TestJazzLightsToWLED` (phase 4): the follower direction, with its table printed for
+    review.
 
   WLED's effect names and built-in palettes come from `test/test_wled/wled_data.h`, which
   `extras/wled/generate_test_data.py` generates from the pinned WLED checkout. It expands
   WLED's gradient palettes to 16 colors the way WLED does.
-- **Later, native tests for `JazzLightsToWLED()`.**
 - **Engine tests**, in `test/test_protocol` (done in phase 2):
   - `TestLeadingPatternIsHeld`: the held pattern replaces the rotation, restarts every 10
     seconds, restarts right away when it changes, and the rotation resumes when cleared.
@@ -750,7 +765,8 @@ configuration (`/json/cfg`).
    when WLED turns off, and pauses Bluetooth and UDP during firmware updates. The mapping
    is in a new `wled` module under `src/jazzlights`, which only depends on `util`. Not yet
    checked on hardware, along with phase 1's list.
-4. Follower mode with option A.
+4. Follower mode with option A. **Done.** Not yet checked on hardware, along with phase 1's
+   list. Not done: the setting to let followed patterns propagate to WLED's own sync.
 5. Optionally, option B.
 
 ## Prior work
@@ -848,6 +864,8 @@ is.
 - WLED changes, playlists included, switch followers immediately, like a button press.
 - The default mode is follower, so that a newly flashed WLED device doesn't take over.
 - Palettes without an exact equivalent go to the closest JazzLights palette by hue.
+- A follower keeps the segment's sliders, and switches at the end of each 10 seconds without
+  waiting for the leader's message.
 - Bluetooth uses the NimBLE stack built into WLED's ESP-IDF libraries, not NimBLE-Arduino.
 - The NanoC6 build leaves out audioreactive, since it has no microphone, and Bluetooth,
   since it doesn't fit otherwise.

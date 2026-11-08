@@ -101,11 +101,12 @@ enum class WLEDEffectCategory : uint8_t {
 const char* WLEDEffectCategoryName(WLEDEffectCategory category);
 WLEDEffectCategory CategoryOfWLEDEffect(uint8_t wledEffect);
 
-// The WLED effect IDs that CategoryOfWLEDEffect() maps to something other than rings, named after WLED's FX_MODE_*
-// constants. The usermod checks them against WLED's FX.h at compile time.
+// The WLED effect IDs that CategoryOfWLEDEffect() maps to something other than rings, or that JazzLightsToWLED()
+// uses, named after WLED's FX_MODE_* constants. The usermod checks them against WLED's FX.h at compile time.
 enum WLEDEffect : uint8_t {
   kWLEDSolid = 0,
   kWLEDBreath = 2,
+  kWLEDRainbowCycle = 9,
   kWLEDFade = 12,
   kWLEDTwinkle = 17,
   kWLEDDissolve = 18,
@@ -118,6 +119,7 @@ enum WLEDEffect : uint8_t {
   kWLEDFireFlicker = 45,
   kWLEDFairyTwinkle = 51,
   kWLEDJuggle = 64,
+  kWLEDPalette = 65,
   kWLEDFire2012 = 66,
   kWLEDFillNoise8 = 69,
   kWLEDNoise1 = 70,
@@ -196,6 +198,26 @@ struct WLEDSegmentState {
 
 // The pattern a leader advertises for this WLED state, before RandomizePatternBits().
 PatternBits WLEDToJazzLights(const WLEDSegmentState& state);
+
+// What a follower applies to the WLED segment it follows. See "JazzLights to WLED (follower)" in extras/docs/WLED.md.
+struct WLEDTarget {
+  uint8_t effect = kWLEDSolid;
+  uint8_t palette = kWLEDPaletteDefault;
+  // The segment's first color, if the effect uses one.
+  std::optional<WLEDColor> color;
+  // Whether to make the segment's second color black, which Breathe fades to.
+  bool blackBackground = false;
+
+  bool operator==(const WLEDTarget& other) const {
+    return effect == other.effect && palette == other.palette && color == other.color &&
+           blackBackground == other.blackBackground;
+  }
+  bool operator!=(const WLEDTarget& other) const { return !(*this == other); }
+};
+
+// The WLED effect closest to a JazzLights pattern, or nullopt to keep WLED's current state, for test and calibration
+// patterns. `segmentIs2D` picks 1D equivalents of 2D effects.
+std::optional<WLEDTarget> JazzLightsToWLED(PatternBits pattern, bool segmentIs2D);
 
 }  // namespace jazzlights
 

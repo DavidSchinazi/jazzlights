@@ -451,6 +451,63 @@ WLEDEffectCategory CategoryOfWLEDEffect(uint8_t wledEffect) {
   return WLEDEffectCategory::kRings;
 }
 
+namespace {
+
+uint8_t WLEDPaletteFor(PatternPalette palette) {
+  switch (palette) {
+    case PatternPalette::kHeat: return kWLEDPaletteFire;
+    case PatternPalette::kLava: return kWLEDPaletteLava;
+    case PatternPalette::kOcean: return kWLEDPaletteOcean;
+    case PatternPalette::kCloud: return kWLEDPaletteCloud;
+    case PatternPalette::kParty: return kWLEDPaletteParty;
+    case PatternPalette::kForest: return kWLEDPaletteForest;
+    case PatternPalette::kRainbow: return kWLEDPaletteRainbow;
+  }
+  return kWLEDPaletteRainbow;
+}
+
+WLEDTarget Target(uint8_t effect, uint8_t palette) {
+  WLEDTarget target;
+  target.effect = effect;
+  target.palette = palette;
+  return target;
+}
+
+}  // namespace
+
+std::optional<WLEDTarget> JazzLightsToWLED(PatternBits pattern, bool segmentIs2D) {
+  const DecodedPattern decoded = DecodePattern(pattern);
+  const uint8_t palette = decoded.palette ? WLEDPaletteFor(*decoded.palette) : kWLEDPaletteDefault;
+  switch (decoded.effect) {
+    case PatternEffect::kRings:
+      // WLED's Rainbow effect scrolls a rainbow across the segment, and its Palette effect scrolls a palette.
+      if (decoded.palette == PatternPalette::kRainbow) { return Target(kWLEDRainbowCycle, palette); }
+      return Target(kWLEDPalette, palette);
+    case PatternEffect::kSpinPlasma: return Target(segmentIs2D ? kWLED2DPlasmaRotozoom : kWLEDPlasma, palette);
+    case PatternEffect::kHiphotic: return Target(segmentIs2D ? kWLED2DHiphotic : kWLEDNoisePal, palette);
+    case PatternEffect::kFlame: return Target(kWLEDFire2012, palette);
+    case PatternEffect::kMetaballs: return Target(segmentIs2D ? kWLED2DMetaballs : kWLEDPlasma, palette);
+    case PatternEffect::kColoredBursts: return Target(segmentIs2D ? kWLED2DColoredBursts : kWLEDJuggle, palette);
+    case PatternEffect::kGlitter: return Target(kWLEDTwinkleFox, kWLEDPaletteRainbow);
+    case PatternEffect::kTheMatrix: return Target(segmentIs2D ? kWLED2DMatrix : kWLEDRain, kWLEDPaletteDefault);
+    case PatternEffect::kThreesine: return Target(kWLEDSineWave, kWLEDPaletteRainbow);
+    case PatternEffect::kSolid:
+    case PatternEffect::kColoring: {
+      WLEDTarget target = Target(kWLEDSolid, kWLEDPaletteDefault);
+      target.color = decoded.color;
+      return target;
+    }
+    case PatternEffect::kGlow: {
+      WLEDTarget target = Target(kWLEDBreath, kWLEDPaletteDefault);
+      target.color = decoded.color;
+      target.blackBackground = true;
+      return target;
+    }
+    case PatternEffect::kOther: break;
+  }
+  return std::nullopt;
+}
+
 PatternBits WLEDToJazzLights(const WLEDSegmentState& state) {
   if (state.showsSolidFallback) { return ColoringPattern(state.color); }
   const std::optional<PatternPalette> exactPalette = ExactPalette(state.paletteId);
