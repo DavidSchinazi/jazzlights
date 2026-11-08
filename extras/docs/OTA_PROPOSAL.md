@@ -578,8 +578,9 @@ rollback task adds a 4KB stack, only until new firmware is confirmed.
   heap a test picks.
 - `extras/scripts/test_secure_channel.py` runs against that server, and CI runs it too. Setting
   `JL_TEST_HOST`, `JL_TEST_KEY` and `JL_TEST_KEY2` runs it against a real device instead, skipping
-  the tests that need the fake flash or the fake heap. The handshake and idle timeout tests take
-  over a minute together, so they only run with `JL_TEST_TIMEOUTS=1`, which CI sets.
+  the tests that need the fake flash or the fake heap. The handshake timeout, idle timeout and
+  rollback guard tests wait for timers, which takes over a minute and a half, so they only run
+  with `JL_TEST_TIMEOUTS=1`, which CI sets.
 - `test/test_tlv` is a native test of the TLV code, which `pio test -e native` runs.
 - `secure_channel.py` can act as a fake server, and can send malformed messages to a real one.
 - An `Echo` TLV of type 1000 sends its Value back, which checks the channel without touching flash.

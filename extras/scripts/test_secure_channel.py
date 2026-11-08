@@ -9,7 +9,8 @@ private keys added to secure_channel_keys.h, and run this with JL_TEST_HOST set 
 JL_TEST_KEY2 set to the paths of the private keys. Tests that need the fake flash get skipped, so the remaining OTA
 tests on hardware still need to be done by hand.
 
-The tests of the channel's timeouts take over a minute, so they only run with JL_TEST_TIMEOUTS=1, which CI sets.
+The tests of the channel's timeouts and of the rollback guard take over a minute and a half, so they only run with
+JL_TEST_TIMEOUTS=1, which CI sets.
 """
 
 import builtins
@@ -1140,6 +1141,7 @@ class OtaPendingVerifyTest(ServerTestCase):
 def rollback_guard_test(*args):
     """Makes a base class whose server reports this to OtaRollbackGuard, which confirms after 1s and times out at 3s."""
 
+    @unittest.skipUnless(TEST_TIMEOUTS, "waits for timers, set JL_TEST_TIMEOUTS=1 to run it")
     @unittest.skipUnless(NATIVE, "needs the fake flash")
     class RollbackGuardTestBase(ServerTestCase):
         server_args = ("--pending-verify", "--rollback-guard", *args)
