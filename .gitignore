@@ -19,3 +19,6 @@ __pycache__/
 .gemini/
 GEMINI.md
 .esphome/
+
+# WLED checkout made by extras/wled/build.sh.
+extras/.wled/

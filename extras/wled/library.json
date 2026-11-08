@@ -1,0 +1,30 @@
+{
+  "name": "jazzlights",
+  "description": "WLED usermod that syncs with JazzLights devices over IP and Bluetooth, see extras/docs/WLED.md",
+  "build": {
+    "libArchive": false,
+    "srcFilter": [
+      "-<*>",
+      "+<*.cpp>",
+      "+<src/jazzlights/protocol/engine.cpp>",
+      "+<src/jazzlights/protocol/wire.cpp>",
+      "+<src/jazzlights/protocol/wire_types.cpp>",
+      "+<src/jazzlights/network/esp32_ble_common.cpp>",
+      "+<src/jazzlights/network/esp32_nimble.cpp>",
+      "+<src/jazzlights/network/esp32_socket_manager.cpp>",
+      "+<src/jazzlights/network/manager.cpp>",
+      "+<src/jazzlights/network/network.cpp>",
+      "+<src/jazzlights/util/*.cpp>"
+    ],
+    "flags": [
+      "-DJL_CONFIG=WLED",
+      "-DJL_CONTROLLER=WLED",
+      "-DBOOT_NAME=WLED",
+      "-DJL_ESP32_NIMBLE=1",
+      "-DJL_SECURE_CHANNEL=0"
+    ],
+    "extraScript": "jazzlights_wled.py",
+    "srcDir": ".",
+    "includeDir": "src"
+  }
+}

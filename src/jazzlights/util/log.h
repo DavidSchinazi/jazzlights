@@ -42,15 +42,16 @@ void SetupLogging();
 // locales and adds over 150KB to ESP32 binaries.
 void AppendPrintf(std::string* str, const char* format, ...) __attribute__((format(printf, 2, 3)));
 
-#if JL_ESPHOME
+#if JL_LOG_HANDLER
 // ESPHome only sends logs to the API, and therefore to `esphome logs` over Wi-Fi, if they go through its own logger. So
-// the ESPHome component installs a handler that forwards our logs there. level is one of the _JL_LOG_LEVEL_STRING_*
+// the ESPHome component installs a handler that forwards our logs there, and the WLED usermod does the same with WLED's
+// debug output. level is one of the _JL_LOG_LEVEL_STRING_*
 // characters below, and file and line are where the log was written.
 typedef void (*LogHandler)(char level, const char* file, int line, const char* format, va_list args);
 // Must be called before other tasks start logging.
 void SetLogHandler(LogHandler handler);
 void LogAtLevel(char level, const char* file, int line, const char* format, ...) __attribute__((format(printf, 4, 5)));
-#endif  // JL_ESPHOME
+#endif  // JL_LOG_HANDLER
 
 }  // namespace jazzlights
 
@@ -64,13 +65,13 @@ void LogAtLevel(char level, const char* file, int line, const char* format, ...)
 #define _JL_LOG_LEVEL_STRING_ERROR "E"
 #define _JL_LOG_LEVEL_STRING_FATAL "F"
 
-#if JL_ESPHOME
+#if JL_LOG_HANDLER
 #define _LOG_AT_LEVEL(levelStr, format, ...) \
   ::jazzlights::LogAtLevel(levelStr[0], __FILE_NAME__, __LINE__, format, ##__VA_ARGS__)
-#else  // JL_ESPHOME
+#else  // JL_LOG_HANDLER
 #define _LOG_AT_LEVEL(levelStr, format, ...) \
   ::printf("[%6lld][" levelStr "] " format "\n", MsSinceBootForLogs(), ##__VA_ARGS__)
-#endif  // JL_ESPHOME
+#endif  // JL_LOG_HANDLER
 
 #define _LOG_BUFFER_AT_LEVEL(levelStr, buffer, format, ...)                            \
   do {                                                                                 \

@@ -65,7 +65,7 @@ void AppendPrintf(std::string* str, const char* format, ...) {
   va_end(args);
 }
 
-#if JL_ESPHOME
+#if JL_LOG_HANDLER
 namespace {
 std::atomic<LogHandler> gLogHandler(nullptr);
 }  // namespace
@@ -92,7 +92,7 @@ void LogAtLevel(char level, const char* file, int line, const char* format, ...)
   }
   va_end(args);
 }
-#endif  // JL_ESPHOME
+#endif  // JL_LOG_HANDLER
 
 void SetupLogging() {
 #if JL_M5_LOGGING

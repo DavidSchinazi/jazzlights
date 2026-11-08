@@ -19,6 +19,12 @@
 #if JL_ARDUINO
 // This is an Arduino header and in theory we shouldn't need it, but see comment near btStarted() below.
 #include <esp32-hal-bt.h>
+#if __has_include(<esp32-hal-bt-mem.h>)
+// Recent Arduino cores release the Bluetooth controller's memory at boot unless a Bluetooth library includes this
+// header, whose constructor tells the core that Bluetooth is in use. The btStarted() call below doesn't do that
+// anymore. The Arduino core used by WLED needs this.
+#include <esp32-hal-bt-mem.h>
+#endif  // __has_include(<esp32-hal-bt-mem.h>)
 #endif  // JL_ARDUINO
 
 #if !JL_ESP32S3 && !JL_ESP32C3 && !JL_ESP32C6

@@ -40,6 +40,8 @@
 #define JL_CONFIG_BOW 17
 #define JL_CONFIG_RHINO_HAT 18
 #define JL_CONFIG_RHINO_STAFF 19
+// Runs as a WLED usermod, see extras/wled. WLED owns the LEDs and the board.
+#define JL_CONFIG_WLED 20
 
 #define JL_IS_CONFIG(config_) (JL_MERGE_TOKENS(JL_CONFIG_, JL_CONFIG) == JL_MERGE_TOKENS(JL_CONFIG_, config_))
 
@@ -60,6 +62,8 @@
 #define JL_CONTROLLER_M5_NANO_C6 9
 #define JL_CONTROLLER_CORES3 10
 #define JL_CONTROLLER_M5STICK_C 11
+// Any board that WLED runs on, see extras/wled.
+#define JL_CONTROLLER_WLED 12
 
 #define JL_IS_CONTROLLER(controller_) \
   (JL_MERGE_TOKENS(JL_CONTROLLER_, JL_CONTROLLER) == JL_MERGE_TOKENS(JL_CONTROLLER_, controller_))
@@ -165,6 +169,16 @@
 // runs the primary runloop from its own loop.
 #define JL_ESPHOME 0
 #endif  // JL_ESPHOME
+
+#ifndef JL_LOG_HANDLER
+// Whether logs go through a handler installed with SetLogHandler(), so that ESPHome or WLED can forward them to their
+// own logging.
+#if JL_ESPHOME || JL_IS_CONFIG(WLED)
+#define JL_LOG_HANDLER 1
+#else  // JL_ESPHOME || WLED
+#define JL_LOG_HANDLER 0
+#endif  // JL_ESPHOME || WLED
+#endif  // JL_LOG_HANDLER
 
 #ifndef JL_DISABLE_BLUETOOTH
 #define JL_DISABLE_BLUETOOTH 0

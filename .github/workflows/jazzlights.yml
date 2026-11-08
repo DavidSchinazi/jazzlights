@@ -150,6 +150,28 @@ jobs:
           esphome compile clouds_ci.yaml
           esphome compile clouds_s3_ci.yaml
 
+  wled:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            extras/.wled/.platformio/.cache
+          key: ${{ runner.os }}-wled
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # WLED's build bundles its web UI with Node.js. WLED's .nvmrc asks for Node 20.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install PlatformIO Core
+        run: pip install --upgrade platformio
+      - name: Build WLED with the JazzLights usermod
+        run: extras/wled/build.sh
+
   pio-native-test:
     runs-on: ubuntu-latest
     steps:

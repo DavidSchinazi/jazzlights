@@ -1,6 +1,7 @@
 # JazzLights Usermod for WLED
 
-Status: draft design, for review. Nothing here is implemented yet.
+Status: approved, being implemented. Phase 1 (building the usermod in WLED) is done, see
+[Implementation phases](#implementation-phases).
 
 [WLED](https://github.com/wled/WLED) is popular firmware for addressable LEDs. This doc
 plans a WLED **usermod** (WLED's plugin mechanism) that lets a WLED device take part in
@@ -109,17 +110,19 @@ renderer, or FastLED:
   [jazzlights_component.cpp](../esphome/components/jazzlights/jazzlights_component.cpp):
   wait for the `esp_netif` of the station interface, then call `AddInterface()`. When WLED
   uses Ethernet, its interface is added as `NetworkType::kEthernet`.
-- `Esp32NimBleNetwork` for Bluetooth (see [Bluetooth](#bluetooth)).
+- `Esp32NimBleNetwork` for Bluetooth, using the NimBLE stack built into WLED's ESP-IDF
+  libraries (see [Bluetooth](#bluetooth)).
 
 None of `src/jazzlights/protocol`, `network` or `util` include FastLED, which matters
 because WLED has its own `CRGB` and its own copies of the FastLED palettes (in
 `fastled_slim`), which would clash with FastLED's.
 
-JazzLights logs (`jll_info()` and friends) go to WLED's debug output (`DEBUG_PRINTF`,
-which WLED can also send over the network with `WLED_DEBUG_HOST`), through a log handler
-installed with `SetLogHandler()`, like the ESPHome component sends them to ESPHome's
-logger. With `WLED_DEBUG` on, this includes the protocol logs for every message sent and
-received, which is what checking wire compatibility on hardware needs.
+JazzLights logs (`jll_info()` and friends) go to WLED's debug output (`DEBUG_PRINTF`, which
+WLED can also send over the network with `WLED_DEBUG_HOST`), through a log handler installed
+with `SetLogHandler()`, like the ESPHome component sends them to ESPHome's logger.
+`JL_LOG_HANDLER` enables that handler for both. With `WLED_DEBUG` on, this includes the
+protocol logs for every message sent and received, which is what checking wire compatibility
+on hardware needs. Without it, only fatal logs are printed.
 
 The radio timing doesn't depend on WLED's `loop()`, which can take tens of milliseconds:
 `Esp32NimBleNetwork` alternates between scanning and advertising from its own task and
@@ -132,40 +135,60 @@ changes, not every loop.
 
 ### Build and packaging
 
-WLED's main branch now builds on ESP-IDF 5.5 with Arduino core 3.3 (Tasmota's platform),
-and usermods are PlatformIO libraries listed in `custom_usermods`. That setting accepts
-external sources such as git URLs and `symlink://` paths, so the usermod can live outside
-the WLED tree.
+WLED's main branch builds on ESP-IDF 5.5 with Arduino core 3.3 (Tasmota's platform), and
+usermods are PlatformIO libraries listed in `custom_usermods`. That setting accepts external
+sources such as `symlink://` paths, as long as each one is on its own line, so the usermod
+lives in this repo, under `extras/wled/`:
 
-The usermod lives in this repo under `extras/wled/`, like `extras/esphome/`.
-A user builds WLED with, for example:
+- `library.json` declares the usermod as a PlatformIO library. It compiles
+  `jazzlights_usermod.cpp` plus the needed subset of `src/jazzlights` (the protocol, the
+  network code and `util`, but not the renderer, the effects or FastLED), and sets
+  `JL_CONFIG=WLED` and `JL_CONTROLLER=WLED` (new values), `JL_ESP32_NIMBLE=1` and
+  `JL_SECURE_CHANNEL=0`.
+- `src` is a symlink to `../../src`. Listing the sources through a `..` path instead makes
+  PlatformIO compile them into WLED's own `src` build folder, which breaks WLED's
+  dependency resolution.
+- `jazzlights_wled.py` is the library's build script. It sets the release name, see
+  [Firmware updates](#firmware-updates).
+- `jazzlights_usermod.cpp` is the usermod.
+- `platformio_override.ini` has ready-made WLED environments with the usermod, one per
+  supported chip. Each extends an official WLED environment, keeping WLED's default
+  usermods (currently audioreactive):
 
-```ini
-[env:esp32s3_jazzlights]
-extends = env:esp32s3dev_8MB_opi
-custom_usermods = ${env:esp32s3dev_8MB_opi.custom_usermods} jazzlights = symlink://../jazzlights/extras/wled
-```
+  | Environment | Extends | Board settings |
+  |---|---|---|
+  | `jazzlights_atom_matrix` | `esp32dev` | LEDs on GPIO 26 (like the vest) and 27 (the ATOM's 5x5 matrix), button on 39 |
+  | `jazzlights_atom_s3_lite` | `esp32s3dev_8MB_none` | LEDs on GPIO 2 (like the vest), button on 41 |
+  | `jazzlights_esp32c3` | `esp32c3dev` | generic |
+  | `jazzlights_esp32c6` | `esp32c6dev_4MB` | generic, without Bluetooth (see [Supported chips](#supported-chips)) |
 
-The build's release name has to change too, so that WLED's own updates don't silently
-replace it with stock WLED. See [Firmware updates](#firmware-updates).
+  WLED's LED settings can still be changed from its web UI.
+- `build.sh` builds them. The first run clones WLED, at a commit pinned in the script, into
+  `extras/.wled`, and every run copies `platformio_override.ini` there:
 
-`extras/wled/` also ships a `platformio_override.ini` sample with ready-made environments
-for the boards JazzLights devices use, starting with the ATOM Matrix and the ATOM S3 Lite.
-Each one sets the release name, the button pin (39 on the ATOM Matrix, 41 on the ATOM S3),
-and the LED data pins, taken from the JazzLights configs (`LED_PIN` in
-[layout_data.h](../../src/jazzlights/layout/layout_data.h), plus pin 27 for the ATOM
-Matrix's own 5x5 screen). WLED's pin and LED settings can still be changed from its web UI.
+  ```sh
+  extras/wled/build.sh                                       # All environments.
+  extras/wled/build.sh -e jazzlights_atom_s3_lite -t upload -t monitor
+  ```
 
-`extras/wled/library.json` would compile the usermod's own files plus the needed subset of
-`src/jazzlights` (via `srcFilter`), and set `JL_CONFIG=WLED` (a new config, like the other
-`JL_CONFIG_*` values) along with `JL_WIFI`, `JL_ESP32_NIMBLE` and the other build flags.
+  WLED's build bundles its web UI with Node.js, which needs to be on the `PATH`. WLED asks
+  for Node 20. On macOS: `brew install node@20`, then add `/opt/homebrew/opt/node@20/bin`
+  to the `PATH`.
 
-To verify during implementation: PlatformIO can't take a subdirectory of a git repository
-as a library, so consuming it straight from GitHub may need a `library.json` at the root
-of this repo, or a small separate repository. `symlink://` works with a local checkout.
+Two details of `build.sh`:
 
-CI: a GitHub Actions job that checks out WLED at a pinned commit and builds the usermod
-for one WLED environment per supported chip (see [Supported chips](#supported-chips)).
+- The WLED checkout can't be inside `extras/wled`, or PlatformIO would see WLED's own
+  libraries as part of the usermod's library.
+- It sets `PLATFORMIO_CORE_DIR` to `extras/.wled/.platformio`. WLED's platform installs a
+  different Arduino core under the same package name as this repo's `platformio.ini`, so
+  sharing `~/.platformio` would make each build replace the other's Arduino core.
+
+To verify later: PlatformIO can't take a subdirectory of a git repository as a library, so
+consuming the usermod straight from GitHub, without a local checkout of this repo, may need
+a `library.json` at the root of this repo, or a small separate repository.
+
+CI: the `wled` job in `.github/workflows/jazzlights.yml` runs `extras/wled/build.sh`, which
+builds every environment above.
 
 ## Modes and precedence
 
@@ -241,11 +264,11 @@ the engine's `loop_` flag. And while `loop_` is set, the engine ignores every or
 below admin precedence (`kAdminPrecedence`), so a WLED leader would never yield, even to a
 Core2 in override mode, and a WLED follower that once led alone would never follow again.
 
-So the engine needs a way to set the pattern this device advertises while leading, held until it changes, without the "stick
-as leader" behavior of `loop_`. For example, `ProtocolEngine::SetLeadingPattern(
-std::optional<PatternBits>)`. While leading, the engine advertises
-`currentPattern = nextPattern = held pattern` and restarts it every 10 seconds, like a
-loop. As soon as a better originator shows up, the engine follows it as usual.
+So the engine needs a way to set the pattern this device advertises while leading, held
+until it changes, without the "stick as leader" behavior of `loop_`. For example,
+`ProtocolEngine::SetLeadingPattern(std::optional<PatternBits>)`. While leading, the engine
+advertises `currentPattern = nextPattern = held pattern` and restarts it every 10 seconds,
+like a loop. As soon as a better originator shows up, the engine follows it as usual.
 
 A held pattern restarts every 10 seconds, on every device. For several effects that
 restart is visible. See [Transitions](#transitions).
@@ -470,8 +493,9 @@ Details:
   onto the selected segments, and would undo the change.
 - It sets `strip.timebase` so that WLED's effect clock `strip.now` counts from the
   followed pattern's start time, but only when the followed pattern changes, not at each
-  10 second restart (see [Transitions](#transitions)). Most WLED effects are a function of `strip.now`, so WLED
-  followers would then be in sync with each other, though not with JazzLights devices.
+  10 second restart (see [Transitions](#transitions)). Most WLED effects are a function of
+  `strip.now`, so WLED followers would then be in sync with each other, though not with
+  JazzLights devices.
 
 Cost: small. It's the leader's mapping table run backwards, plus state save and restore.
 Result: approximate, as close as the leader direction.
@@ -509,44 +533,48 @@ later, optional phase, if pixel-level sync with vests turns out to matter.
 
 ### Bluetooth
 
-This is the biggest technical risk.
+What phase 1 found:
 
-- WLED's prebuilt Arduino libraries may not enable a Bluetooth stack, or may enable
-  Bluedroid, which this repo already struggles with on newer Arduino cores (see the comment
-  about pioarduino 55 and `esp_gap_ble_api.h` in `platformio.ini`). The plan is to use
-  NimBLE from the NimBLE-Arduino library, like the `[_nimble_arduino]` environments, which
-  only needs the Bluetooth controller from the framework. The friend's prototype (see
-  below) already exchanged advertisements with a real JazzLights device this way, using
-  NimBLE-Arduino 2.5 in WLED on a classic ESP32 ATOM, which makes this likely to work. It
-  used WLED's platform from August 2026, though, so the first implementation step is still
-  to check that the controller is available in WLED's current platform, and that the
-  Arduino core doesn't release its memory at boot.
-- WLED disables Wi-Fi modem sleep on ESP32 by default (`noWifiSleep = true`). ESP-IDF
-  requires modem sleep when Wi-Fi and Bluetooth run together, so the usermod has to force
-  it on while Bluetooth is enabled, and explain that in its settings page.
-- Flash and RAM: NimBLE adds roughly 100-200 KB of flash and tens of KB of RAM, and 4 MB
-  WLED builds are tight. See [Supported chips](#supported-chips).
-- LED output: the ESPHome README notes that RMT flickers on the classic ESP32 while Wi-Fi
-  and Bluetooth are both active. WLED has its own RMT driver with Bluetooth-aware
+- **Stack.** WLED's prebuilt ESP-IDF libraries have Bluetooth and NimBLE enabled
+  (`CONFIG_BT_NIMBLE_ENABLED`), so the usermod uses ESP-IDF's NimBLE, like the
+  `framework = espidf` builds of this repo. It doesn't need the NimBLE-Arduino library,
+  which the friend's prototype (see [Prior work](#prior-work)) used, and which would clash
+  with the built-in stack. The NimBLE configuration is the prebuilt one: for example the
+  central role stays compiled in, though we don't use it.
+- **Controller memory.** At boot, Arduino core 3.3 releases the Bluetooth controller's
+  memory unless a Bluetooth library includes `esp32-hal-bt-mem.h`, whose constructor marks
+  Bluetooth as in use. The `btStarted()` workaround in `esp32_nimble.cpp` no longer does
+  that, so `esp32_nimble.cpp` now includes that header when it exists. Phase 1 checked in
+  the built image that the flag gets set before `app_main()` checks it.
+- **Wi-Fi modem sleep.** ESP-IDF requires modem sleep while Wi-Fi and Bluetooth run
+  together, and WLED disables it by default (`noWifiSleep = true`). The usermod's `setup()`
+  runs after WLED reads its settings and before it starts Wi-Fi, so it sets `noWifiSleep`
+  to false there when Bluetooth is on. The "Disable WiFi sleep" setting then shows as off.
+- **Order.** The usermod initializes Bluetooth in `setup()`, which WLED calls before it
+  starts Wi-Fi.
+- **LED output:** the ESPHome README notes that RMT flickers on the classic ESP32 while
+  Wi-Fi and Bluetooth are both active. WLED has its own RMT driver with Bluetooth-aware
   interrupts, plus I2S and parallel outputs, so this might be fine, but it needs testing.
 
 ### Supported chips
 
-For now, the usermod supports the chips that both WLED and JazzLights already support:
+For now, the usermod supports the chips that both WLED and JazzLights already support. Flash
+use of the app partition, for WLED with its default usermods, at the pinned WLED commit:
 
-| Chip | Transports |
-|---|---|
-| ESP32 | IP and Bluetooth |
-| ESP32-S3 | IP and Bluetooth |
-| ESP32-C3 | IP and Bluetooth |
-| ESP32-C6 | IP and Bluetooth |
+| Chip | Environment | Stock WLED | With the usermod | Transports |
+|---|---|---|---|---|
+| ESP32, 4 MB | `jazzlights_atom_matrix` | 84.7% | 96.8% (+190 KB) | IP and Bluetooth |
+| ESP32-S3, 8 MB | `jazzlights_atom_s3_lite` | 60.5% | 69.0% (+178 KB) | IP and Bluetooth |
+| ESP32-C3, 4 MB | `jazzlights_esp32c3` | 83.8% | 96.5% (+201 KB) | IP and Bluetooth |
+| ESP32-C6, 4 MB | `jazzlights_esp32c6` | 87.2% | 89.1% (+30 KB) | IP only |
+
+Most of the cost is NimBLE: the protocol and network code alone take about 30 KB. With
+Bluetooth, the 4 MB ESP32-C6 build needs 110% of its app partition, so, as planned, its
+environment leaves Bluetooth out with `-D JL_DISABLE_BLUETOOTH=1` and keeps IP sync. The
+4 MB ESP32 and ESP32-C3 builds fit, with about 50 KB to spare.
 
 The other chips WLED supports (ESP32-S2, ESP32-C5, ESP32-P4 and ESP8266) are out of scope
 until JazzLights supports them.
-
-Flash is the likely limit, on 4 MB boards in particular. When a build doesn't fit, the
-first fallback is a build flag that leaves Bluetooth out and keeps IP sync. We'd only drop
-a chip if even that doesn't fit.
 
 ### IP
 
@@ -587,11 +615,12 @@ So **builds with the usermod get their own release name**, the official one with
 - **First install on a device running stock WLED:** goes over USB, or over the air by
   ticking "Ignore firmware validation" once.
 
-Setting the name: ideally the usermod's `library.json` has an `extraScript` that appends
-`_JazzLights` to the project's `WLED_RELEASE_NAME`, so nobody can forget it. To verify
-during implementation: that a library script can change a define used by WLED's own
-`wled_metadata.cpp`. If it can't, the build instructions set the name, replacing the
-inherited flag with `build_unflags` to avoid a redefinition.
+Setting the name: `jazzlights_wled.py`, the usermod library's build script, appends
+`_JazzLights` to `WLED_RELEASE_NAME`, so nobody can forget it. PlatformIO creates the
+project's build environment before running library scripts, and compiles WLED's own sources
+with it afterwards, so the script changes the name there, for `wled_metadata.cpp`. It also
+changes it in the global environment, where WLED's `output_bins.py` reads it to name the
+image, for example `WLED_17.0.0-devV5_ESP32_JazzLights.bin`. Phase 1 checked both.
 
 **Optional, later: keep one-click updates.** Point `WLED_REPO` at a repo where we publish
 WLED + usermod images, with asset names ending in `_<version>_<release name>.bin`. This
@@ -606,10 +635,11 @@ radio time for the download, and resumes on the second.
 
 Settings, saved in WLED's `cfg.json` through `addToConfig()` / `readFromConfig()`:
 
+- enabled: on or off (phase 1, needs a reboot);
+- Bluetooth: on or off (phase 1, needs a reboot, absent from builds without Bluetooth);
 - mode: off, follower or leader;
 - base precedence and gain, prefilled from the mode;
 - segment to follow: main or a segment ID;
-- Bluetooth: on or off;
 - in follower mode: whether to propagate to WLED sync.
 
 The Info tab (`addToJsonInfo()`) shows: leading or following, the leader's device ID and
@@ -642,7 +672,16 @@ be switched from the JSON API and Home Assistant.
 ## Implementation phases
 
 1. Build only: the usermod compiles in WLED with the protocol and network code, Bluetooth
-   checks done, the release name set, CI job.
+   checks done, the release name set, CI job. **Done.** The usermod already runs the
+   protocol over Wi-Fi, Ethernet and Bluetooth with the follower precedence, and the Info
+   tab shows whether it leads or follows. It doesn't change WLED's LEDs yet, and when it
+   leads it advertises the engine's regular rotation. Not yet checked on hardware:
+   - that WLED's reconnects (`WiFi.mode(WIFI_MODE_NULL)` in `initConnection()`) don't
+     replace the station's `esp_netif`, which `Esp32SocketManager` keeps a pointer to;
+   - that `InitializeNetStack()` calling `esp_netif_init()` again, after the Arduino core
+     did, is harmless;
+   - that forwarding logs from other tasks is safe when WLED sends its debug output over
+     the network.
 2. Engine changes (`SetLeadingPattern()` and the user input setting) with their tests.
 3. Leader mode, with the WLED to JazzLights tables and their tests.
 4. Follower mode with option A.
@@ -659,8 +698,8 @@ It was tested following a real JazzLights device on an ATOM, but not leading.
 This plan differs mainly in that it reuses JazzLights' own protocol and network code, adds
 IP sync, and maps WLED to JazzLights when leading (the prototype always advertises pattern
 0, which is solid black). The prototype contributed these ideas, which this doc now
-includes: randomizing the unused pattern bits, evidence that NimBLE-Arduino works inside
-WLED, board presets, debug logging, and using `stateUpdated()` when following.
+includes: randomizing the unused pattern bits, evidence that Bluetooth works inside WLED,
+board presets, debug logging, and using `stateUpdated()` when following.
 
 ## Possible protocol changes
 
@@ -739,6 +778,8 @@ is.
 - When leading, the unused pattern bits are randomized once per change.
 - The usermod ships board presets, and sends JazzLights logs to WLED's debug output.
 - WLED changes, playlists included, switch followers immediately, like a button press.
+- Bluetooth uses the NimBLE stack built into WLED's ESP-IDF libraries, not NimBLE-Arduino.
+- The 4 MB ESP32-C6 build leaves Bluetooth out, since it doesn't fit otherwise.
 - A person's change pauses following for 10 minutes in follower mode, and only adds the
   gain in leader mode, so override and admin always take over a WLED leader.
 - When a WLED leader is taken over, its LEDs follow the new leader.
