@@ -4,8 +4,8 @@
 For every device it discovers, this builds the firmware from this checkout for that device's PlatformIO environment,
 and uploads it if it differs from what's running. This runs until interrupted, unless given --once or --host, which make
 it exit once it's done, with a failure status if any update failed or it found nothing to update. --once keeps listening
-for devices while it updates the ones it has heard, and is done once a device has been updated, or found to be up to
-date, or failed, and no update is still going.
+for devices while it updates the ones it has heard, and is done once a device has been updated or failed, and no update
+is still going.
 
 With --mac, it only updates the devices with those MAC addresses, which are what they report in OtaInfo, and also what
 they use as their ID in JazzLights logs. With --environment as well, those devices get that environment even if they're
@@ -52,7 +52,7 @@ DEFAULT_UPDATE_PATTERN = 0x00000400
 DATA_CHUNK_SIZE = secure_channel.DEFAULT_MAX_RECORD_PLAINTEXT - 3
 PROGRESS_STEP_PERCENT = 10
 KEEPALIVE_INTERVAL_SECONDS = 30
-# --once gives up if it hasn't found a device to update after this long. Leaders send a payload every 100ms, and with
+# --once gives up if it hasn't updated a device after this long. Leaders send a payload every 100ms, and with
 # JL_OTA, followers send one every 1.5 to 2.5s, so this leaves room for a few lost ones.
 DEFAULT_GIVE_UP_SECONDS = 10
 # How long --once waits for a payload before it checks again whether it's done.
@@ -196,10 +196,10 @@ class Uploader:
         thread.start()
         return thread
 
-    def finished_any(self):
-        """Returns whether a device has been updated, found up to date, or failed. Skipped devices don't count."""
+    def updated_any(self):
+        """Returns whether a device has been updated, or failed to be."""
         with self.seen_lock:
-            return any(outcome != "skipped" for outcome in self.outcomes.values())
+            return any(outcome in ("updated", "failed") for outcome in self.outcomes.values())
 
     def update_server(self, address):
         client = None
@@ -466,17 +466,17 @@ def discover_forever(uploader, sock):
 
 
 def discover_once(uploader, sock, give_up_seconds):
-    """Updates devices as it hears them, until one has finished and no update is still going.
+    """Updates devices as it hears them, until one has been updated or failed, and no update is still going.
 
-    Since skipped devices don't count, it keeps listening for the ones it's looking for, but gives up after
-    give_up_seconds if no update has started by then.
+    Devices that are skipped or already up to date don't count, since a device that needs the update may not have been
+    heard yet. If none has been updated by give_up_seconds, it stops once no update is still going.
     """
     threads = []
     give_up_time = time.monotonic() + give_up_seconds
     sock.settimeout(DISCOVERY_POLL_SECONDS)
     while True:
         threads = [thread for thread in threads if thread.is_alive()]
-        if not threads and (uploader.finished_any() or time.monotonic() >= give_up_time):
+        if not threads and (uploader.updated_any() or time.monotonic() >= give_up_time):
             break
         try:
             payload, (address, _) = sock.recvfrom(1500)
@@ -533,13 +533,13 @@ def main():
     parser.add_argument(
         "--once",
         action="store_true",
-        help="update devices as they're heard, and exit once one has finished and no update is still going",
+        help="update devices as they're heard, and exit once one is updated or failed, with no update still going",
     )
     parser.add_argument(
         "--give-up-seconds",
         type=float,
         default=DEFAULT_GIVE_UP_SECONDS,
-        help="how long --once listens for a device to update before giving up, %(default)ss by default",
+        help="how long --once listens if it hasn't updated a device, %(default)ss by default",
     )
     parser.add_argument(
         "--host", action="append", default=[], help="update the device at this address instead of discovering them"

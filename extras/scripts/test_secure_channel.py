@@ -1744,18 +1744,18 @@ class OtaClientRunOnceTest(OtaClientUploadTestBase):
         ota_upload.discover_once(uploader, FakeDiscoverySocket(), give_up_seconds)
         return time.monotonic() - start
 
-    def skip_address(self, uploader, skipped_address):
-        """Makes the uploader skip this address without connecting to it."""
+    def fake_outcome(self, uploader, fake_address, outcome):
+        """Makes the uploader give this address this outcome without connecting to it."""
         update_server = uploader.update_server
 
-        def update_or_skip(address):
-            if address != skipped_address:
+        def update_or_fake(address):
+            if address != fake_address:
                 update_server(address)
                 return
             with uploader.seen_lock:
-                uploader.outcomes[address] = "skipped"
+                uploader.outcomes[address] = outcome
 
-        uploader.update_server = update_or_skip
+        uploader.update_server = update_or_fake
 
     def test_discover_once_then_waits_for_updates(self):
         self.expect_restart = True
@@ -1769,16 +1769,35 @@ class OtaClientRunOnceTest(OtaClientUploadTestBase):
         self.expect_restart = True
         uploader = self.make_uploader(make_image(), build=False)
         uploader.log = lambda _address, _message: None
-        self.skip_address(uploader, "10.0.0.9")
+        self.fake_outcome(uploader, "10.0.0.9", "skipped")
         # Like a follower, the device it's looking for takes a while to send anything.
         payloads = [(b"\x10ours", "10.0.0.9"), None, None, None, (b"\x10ours", HOST)]
         self.discover_once(uploader, payloads)
         self.assertEqual(uploader.outcomes, {"10.0.0.9": "skipped", HOST: "updated"})
 
+    def test_discover_once_keeps_listening_past_up_to_date_devices(self):
+        self.expect_restart = True
+        uploader = self.make_uploader(make_image(), build=False)
+        uploader.log = lambda _address, _message: None
+        self.fake_outcome(uploader, "10.0.0.9", "up to date")
+        payloads = [(b"\x10ours", "10.0.0.9"), None, None, None, (b"\x10ours", HOST)]
+        self.discover_once(uploader, payloads)
+        self.assertEqual(uploader.outcomes, {"10.0.0.9": "up to date", HOST: "updated"})
+
+    def test_discover_once_gives_up_when_all_are_up_to_date(self):
+        uploader = self.make_uploader(make_image(), build=False)
+        uploader.log = lambda _address, _message: None
+        self.fake_outcome(uploader, "10.0.0.9", "up to date")
+        elapsed = self.discover_once(uploader, [(b"\x10ours", "10.0.0.9")], give_up_seconds=1)
+        self.assertGreaterEqual(elapsed, 1)
+        self.assertLess(elapsed, 3)
+        self.assertEqual(uploader.outcomes, {"10.0.0.9": "up to date"})
+        self.assertEqual(ota_upload.summarize(uploader, None), 0)
+
     def test_discover_once_gives_up(self):
         uploader = self.make_uploader(make_image(), build=False)
         uploader.log = lambda _address, _message: None
-        self.skip_address(uploader, "10.0.0.9")
+        self.fake_outcome(uploader, "10.0.0.9", "skipped")
         elapsed = self.discover_once(uploader, [(b"\x10ours", "10.0.0.9")], give_up_seconds=1)
         self.assertGreaterEqual(elapsed, 1)
         self.assertLess(elapsed, 3)
