@@ -174,8 +174,8 @@ The usermod has three modes, chosen in its settings page:
 | Mode | Base precedence | Gain | Behavior |
 |---|---|---|---|
 | Off | - | - | No JazzLights traffic at all, like WLED being off once its 10 seconds at precedence 0 are over. |
-| Follower | 300 | 100 | Follows any wearable. Leads only when alone, or with orrery planets and creatures. |
-| Leader | 20000 | 1000 | Leads every regular device. |
+| Follower | 300 | 100 | Follows any wearable. Leads only when alone, or with orrery planets and creatures, or for 10 minutes after a person changes WLED. |
+| Leader | 20000 | 1000 | Leads every regular device. Follows a Core2 in override mode or an admin device when one is around. |
 
 For reference, the current base + gain values are: creature 1+0, orrery planet 100+100,
 orrery leader 222+0, wands, staffs, hats and shoes 500+100, vest and default 1000+1000,
@@ -191,10 +191,30 @@ Reasons for the defaults:
 - **Follower at 300** is below every wearable. It's above creatures (1) and orrery planets
   (100) so that a WLED follower doesn't end up mirroring a creature's pattern.
 - **Gain** counts WLED changes made by a person as user input (see below), so if two WLED
-  leaders are around, the one most recently changed leads. In follower mode, a local
-  change gives a gain of 100, enough to lead creatures but no wearable.
+  leaders are around, the one most recently changed leads.
 
 Both base and gain are editable in the settings, for unusual setups.
+
+### What a person's change does in each mode
+
+In the engine today, local user input does two things for 10 minutes (`kInputDuration`):
+it adds the precedence gain, decaying over that time, and it makes the device ignore every
+other device below admin precedence, so the device leads with what the person picked. The
+usermod uses these differently per mode:
+
+- **Follower:** both, as on a vest. A person's change pauses following for 10 minutes,
+  during which WLED shows what the person picked and advertises it. Then the device follows
+  again. Only an admin device can interrupt the pause.
+- **Leader:** the gain only. The device doesn't ignore anyone, so a Core2 in override mode
+  or an admin device always takes over, even right after a change.
+
+This needs a second small engine change, next to `SetLeadingPattern()`: a setting for
+whether user input makes the device ignore others, on by default so existing devices
+behave as today. See [Engine changes](#engine-changes).
+
+When a higher precedence device takes over a WLED leader, WLED's LEDs follow it too, with
+the same code as follower mode (see [JazzLights to WLED](#jazzlights-to-wled-follower)),
+and go back to WLED's own state when it leaves.
 
 ### Which WLED changes count as user input
 
@@ -210,15 +230,18 @@ WLED tells usermods why its state changed through `onStateChange(callMode)`:
   the pattern without giving the gain.
 - Changes the usermod makes itself while following are ignored, so they don't loop back.
 
-### Engine change needed: holding a pattern without stopping following
+### Engine changes
+
+Two small changes, both local to the engine. The wire format doesn't change.
+
+**Holding a pattern without sticking as leader.**
 
 The existing way to pin a pattern while leading, `Delegate::ForcedLeadingPattern()`, sets
 the engine's `loop_` flag. And while `loop_` is set, the engine ignores every originator
 below admin precedence (`kAdminPrecedence`), so a WLED leader would never yield, even to a
 Core2 in override mode, and a WLED follower that once led alone would never follow again.
 
-So the engine needs a small, local change (the wire format doesn't change): a way to set
-the pattern this device advertises while leading, held until it changes, without the "stick
+So the engine needs a way to set the pattern this device advertises while leading, held until it changes, without the "stick
 as leader" behavior of `loop_`. For example, `ProtocolEngine::SetLeadingPattern(
 std::optional<PatternBits>)`. While leading, the engine advertises
 `currentPattern = nextPattern = held pattern` and restarts it every 10 seconds, like a
@@ -226,6 +249,11 @@ loop. As soon as a better originator shows up, the engine follows it as usual.
 
 A held pattern restarts every 10 seconds, on every device. For several effects that
 restart is visible. See [Transitions](#transitions).
+
+**Gain without ignoring others.** Today, recent user input both adds the precedence gain
+and makes the device ignore everyone below admin precedence. A WLED leader needs only the
+first (see [What a person's change does in each mode](#what-a-persons-change-does-in-each-mode)),
+so the engine gets a setting to turn off the second, on by default.
 
 ### When WLED is turned off
 
@@ -240,8 +268,12 @@ mode, in two steps:
 2. Then it stops listening and sending: it pauses Bluetooth (`SetPaused()`), stops
    handling UDP, and stops advertising.
 
-The protocol has no explicit goodbye, so this needs no protocol change. To verify with an
-engine test: a precedence decrease from a known originator takes effect immediately.
+The protocol has no explicit goodbye, so this needs no protocol change. Reading the engine,
+this works: an update from an originator's next hop replaces its precedence right away,
+including a decrease. And a device that relayed the WLED device's messages and starts
+following someone else makes the devices behind it retract the WLED device's entry
+("abandonment" in `HandleReceivedMessage()`), so the change spreads over several hops. An
+engine test will confirm it.
 
 When WLED is turned back on, the device rejoins with its normal precedence, including
 during the 10 seconds at precedence 0. In leader mode, this counts as user input.
@@ -399,8 +431,9 @@ not when the same pattern restarts, so WLED's own effects don't jump every 10 se
 
 ## JazzLights to WLED (follower)
 
-When the WLED device follows another device, it should show something close to that
-device's pattern. There are two ways to do this, which aren't exclusive.
+When the WLED device follows another device, in follower mode or when a higher precedence
+device takes over a WLED leader, it should show something close to that device's pattern.
+There are two ways to do this, which aren't exclusive.
 
 ### Option A: translate to a WLED effect
 
@@ -424,7 +457,10 @@ Palettes go back through the table above, with heat going to Fire.
 Details:
 
 - Before following, the usermod saves the segment's mode, palette, colors and sliders, and
-  restores them when it stops following, like WLED does around realtime mode.
+  restores them when it stops following, like WLED does around realtime mode. When a
+  person changes WLED while it's following, that change wins: the saved state is
+  discarded, and following pauses as described in
+  [What a person's change does in each mode](#what-a-persons-change-does-in-each-mode).
 - It applies changes without notifying WLED's own UDP sync (`CALL_MODE_NO_NOTIFY`), and
   without saving anything to flash. A setting could instead let them propagate to other
   WLED devices.
@@ -590,6 +626,9 @@ be switched from the JSON API and Home Assistant.
   pattern the leader mapping can produce.
 - **Engine tests** for `SetLeadingPattern()`: a leader yields to higher precedence, a
   follower that led alone follows again, the held pattern restarts every 10 seconds.
+- **Engine tests** for user input: with the new setting off, a device with recent user
+  input still follows a higher precedence device. With it on (the default), behavior is
+  unchanged.
 - **Engine test** for turning off: once the device switches to precedence 0, the devices
   that followed it elect someone else right away.
 - **Updates**: on hardware, a one-click update and a manual upload of a stock image are
@@ -604,7 +643,7 @@ be switched from the JSON API and Home Assistant.
 
 1. Build only: the usermod compiles in WLED with the protocol and network code, Bluetooth
    checks done, the release name set, CI job.
-2. Engine change (`SetLeadingPattern()`) with its tests.
+2. Engine changes (`SetLeadingPattern()` and the user input setting) with their tests.
 3. Leader mode, with the WLED to JazzLights tables and their tests.
 4. Follower mode with option A.
 5. Optionally, option B.
@@ -700,5 +739,8 @@ is.
 - When leading, the unused pattern bits are randomized once per change.
 - The usermod ships board presets, and sends JazzLights logs to WLED's debug output.
 - WLED changes, playlists included, switch followers immediately, like a button press.
+- A person's change pauses following for 10 minutes in follower mode, and only adds the
+  gain in leader mode, so override and admin always take over a WLED leader.
+- When a WLED leader is taken over, its LEDs follow the new leader.
 
 There are no open questions right now.
