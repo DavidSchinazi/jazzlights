@@ -264,6 +264,19 @@ roughly perceptual space such as CIELAB or OKLab. During implementation, a nativ
 print the resulting mapping for all built-in WLED palettes so it can be reviewed and
 corrected with overrides.
 
+The colors an effect actually shows don't always come from its palette. When the palette
+is "Default" (0), most WLED effects draw with the segment colors instead
+(`Segment::color_from_palette()` returns color 1, 2 or 3 in that case), unless the effect
+declares its own default palette (`pal=` in its metadata). And some effects, such as
+Solid, have no palette setting at all. So the closest palette is computed from:
+
+- the selected palette, when it isn't Default;
+- the effect's default palette, when the palette is Default and the effect declares one;
+- otherwise, a palette built from the segment colors, like `* Colors Only`.
+
+This only relies on the effect's metadata string (`strip.getModeData()`), so it also works
+for effects the table doesn't know about.
+
 ### Effects
 
 WLED has about 220 effects. The mapping lives in a table in the code, not in this doc, and
@@ -283,8 +296,10 @@ follows three rules:
      rings.
    - Sparkles and twinkles go to glitter.
    - Sine waves go to threesine.
-3. **Not sure.** Every other effect goes to **rings + rainbow**, ignoring its palette. This
-   includes chases, strobes, wipes, and audio-reactive effects.
+3. **Not sure.** Every other effect goes to **rings with the closest palette**, using the
+   palette mapping above. This includes chases, strobes, wipes, audio-reactive effects, and
+   effects the table doesn't know about at all, such as effects added by a newer WLED or by
+   other usermods.
 
 Each entry is a judgment call, so the native test prints the full table for review during
 implementation.
@@ -511,7 +526,8 @@ biggest effect.
 - Follower precedence is 300 + 100.
 - When WLED is turned off, the device advertises precedence 0 for 10 seconds, then stops
   listening and sending.
-- WLED effects without a confident match go to rings + rainbow.
+- WLED effects without a confident match, including unknown ones, go to rings with the
+  closest palette.
 - Support the chips that both WLED and JazzLights already support: ESP32, ESP32-S3,
   ESP32-C3 and ESP32-C6. Drop one only once we know it can't fit.
 - The doc gives the mapping principles. The full effect table lives in the code.
