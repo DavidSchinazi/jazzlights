@@ -224,8 +224,8 @@ std::optional<PatternBits>)`. While leading, the engine advertises
 `currentPattern = nextPattern = held pattern` and restarts it every 10 seconds, like a
 loop. As soon as a better originator shows up, the engine follows it as usual.
 
-Rotation patterns also restart every 10 seconds when looping. Existing effects are tuned so
-that this restart is barely visible, for instance the rings period divides 10 seconds.
+A held pattern restarts every 10 seconds, on every device. For several effects that
+restart is visible. See [Transitions](#transitions).
 
 ### When WLED is turned off
 
@@ -347,6 +347,56 @@ The usermod follows WLED's main segment by default (`strip.getMainSegment()`, th
 selected segment), with a setting to pick a segment ID instead. If the followed segment is
 turned off while others are on, the device is treated as off.
 
+### Transitions
+
+JazzLights patterns last 10 seconds, and every message carries the current pattern, its
+start time and the next pattern. So all devices switch together at each 10 second
+boundary, even those that missed recent messages. A WLED leader uses this as follows.
+
+**While WLED stays on one effect,** the leader advertises
+`currentPattern = nextPattern = held pattern`, and moves the start time forward by 10
+seconds at each boundary. Followers know the next pattern is the same one, so they all
+restart it at the same moment.
+
+**When a person changes WLED** (web UI, button, API), the leader switches right away,
+with a new start time. Followers switch as soon as they hear it: within milliseconds over
+Wi-Fi, and around a second per hop over Bluetooth. This isn't seamless, since there was no
+advance notice, but it's how button presses on JazzLights devices already work.
+
+**Playlists** are where advance notice could make changes seamless. A playlist knows its
+next preset and when it starts. A restart is a jump anyway, so at the last 10 second
+boundary before a playlist change, the leader could restart the pattern partway through
+(start time = change time - 10 seconds), and announce the upcoming preset's pattern as
+`nextPattern`. Followers would then switch by themselves, exactly at the change. The
+catch: WLED keeps the playlist's entries, position and timer as `static` variables in
+`playlist.cpp`, out of reach of usermods. The options are:
+
+- Switch immediately, as for a person's change. This is the plan.
+- Infer the playlist from `presets.json` and the `currentPreset` global. This is fragile,
+  and doesn't work with shuffle.
+- Propose a small WLED change exposing the next entry and the time left. This goes against
+  the goal of not changing WLED, so it's a later option at most.
+
+**The cost of holding a pattern:** every 10 second restart calls the effect's `Begin()`
+again, which resets its state, and resets its clock to 0.
+
+| Effect | Restart |
+|---|---|
+| rings, glitter, threesine, glow | Nearly invisible: they repeat every 10 seconds. |
+| flame | Visible: the heat map is cleared, so the flame goes dark and reignites. |
+| the-matrix, colored-bursts | Visible: their trails are cleared. |
+| hiphotic, spin plasma, metaballs | Visible: they're functions of time that don't repeat every 10 seconds, so they jump. |
+| solid colors, coloring | Invisible. |
+
+Devices looping one pattern have this problem today. A WLED leader would hold patterns for
+minutes, so it would show more. Followers can't fix it alone: to keep running one effect
+across restarts, they would need to agree on when the hold began, and a device that joins
+during a hold can't know that. It takes a protocol change, the "hold cycles" field in
+[Candidate fields](#candidate-fields).
+
+A WLED follower (option A) sets `strip.timebase` only when the followed pattern changes,
+not when the same pattern restarts, so WLED's own effects don't jump every 10 seconds.
+
 ## JazzLights to WLED (follower)
 
 When the WLED device follows another device, it should show something close to that
@@ -383,7 +433,8 @@ Details:
   calls `applyValuesToSelectedSegs()`, which copies WLED's global effect and palette back
   onto the selected segments, and would undo the change.
 - It sets `strip.timebase` so that WLED's effect clock `strip.now` counts from the
-  followed pattern's start time. Most WLED effects are a function of `strip.now`, so WLED
+  followed pattern's start time, but only when the followed pattern changes, not at each
+  10 second restart (see [Transitions](#transitions)). Most WLED effects are a function of `strip.now`, so WLED
   followers would then be in sync with each other, though not with JazzLights devices.
 
 Cost: small. It's the leader's mapping table run backwards, plus state save and restore.
@@ -607,20 +658,28 @@ In rough order of value per byte:
 1. **Two colors (6 bytes).** WLED's colors 1 and 2. Followers could build a palette from
    them, which covers color-based palettes and lets glow use any color. BLE has just
    enough room.
-2. **WLED effect and palette IDs (2 bytes).** Lets WLED followers reproduce a WLED leader
+2. **Hold cycles (2 bytes).** How many 10 second cycles the current pattern has been held
+   for, 0 when it just started. Updated followers would skip `Begin()` when the same pattern
+   restarts, and run the effect clock from the start of the hold, so held patterns no
+   longer restart visibly (see [Transitions](#transitions)). 2 bytes cover a week. Deployed
+   devices keep restarting as they do today. Effects would need checking for clocks far
+   past 10 seconds: for example glitter computes `256 * frame.time`, which overflows a
+   32-bit int after about 2 hours.
+3. **WLED effect and palette IDs (2 bytes).** Lets WLED followers reproduce a WLED leader
    exactly, including through vests relaying over Bluetooth. It also lets JazzLights devices
    implement some WLED effects over time, falling back to the base pattern for the rest.
-3. **Speed and intensity (2 bytes).** Only useful together with 2.
-4. **Custom palette (up to 48 bytes, UDP only).** 16 RGB entries. Doesn't fit in BLE.
+4. **Speed and intensity (2 bytes).** Only useful together with 3.
+5. **Custom palette (up to 48 bytes, UDP only).** 16 RGB entries. Doesn't fit in BLE.
 
-Fields 1 and 2 together take 8 bytes, which exceeds the 6 bytes left in BLE. We'd have to
-pick, or add a second advertisement, which is a bigger change.
+The 6 bytes left in BLE fit either the two colors, or up to three of the 2-byte fields.
+More would need a second advertisement, which is a bigger change.
 
 ### Recommendation
 
 Make no protocol change for now. Ship the plan above, and see which gaps people actually
 notice. If colors turn out to matter most, field 1 is the smallest change with the
-biggest effect.
+biggest effect. If held patterns restarting every 10 seconds bothers people more, field 2
+is.
 
 ## Decisions so far
 
@@ -640,5 +699,6 @@ biggest effect.
   don't replace them with stock WLED.
 - When leading, the unused pattern bits are randomized once per change.
 - The usermod ships board presets, and sends JazzLights logs to WLED's debug output.
+- WLED changes, playlists included, switch followers immediately, like a button press.
 
 There are no open questions right now.
