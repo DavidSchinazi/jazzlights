@@ -136,6 +136,9 @@ extends = env:esp32s3dev_8MB_opi
 custom_usermods = ${env:esp32s3dev_8MB_opi.custom_usermods} jazzlights = symlink://../jazzlights/extras/wled
 ```
 
+The build's release name has to change too, so that WLED's own updates don't silently
+replace it with stock WLED. See [Firmware updates](#firmware-updates).
+
 `extras/wled/library.json` would compile the usermod's own files plus the needed subset of
 `src/jazzlights` (via `srcFilter`), and set `JL_CONFIG=WLED` (a new config, like the other
 `JL_CONFIG_*` values) along with `JL_WIFI`, `JL_ESP32_NIMBLE` and the other build flags.
@@ -427,7 +430,52 @@ network. For IP sync, the WLED device has to join that same network, through WLE
 Wi-Fi settings. When WLED runs as an access point, or is on another network, only Bluetooth
 works. Port 6699 doesn't clash with any WLED port.
 
-The JazzLights secure channel (OTA) isn't included: WLED has its own OTA updates.
+### Firmware updates
+
+The usermod uses WLED's own OTA updates. The JazzLights secure channel isn't included.
+
+A usermod is compiled into the WLED firmware, so any update flashes a whole new image. If
+that image wasn't built with the usermod, JazzLights is gone. Its settings stay in
+`cfg.json`, but nothing reads them. WLED's update page has two paths:
+
+1. **Manual upload of a `.bin`.** Before flashing, WLED checks that the new image's release
+   name (`WLED_RELEASE_NAME`, stored in the image's metadata) matches the running one
+   (`shouldAllowOTA()`). If it doesn't, the update is rejected, unless the user ticks
+   "Ignore firmware validation".
+2. **One-click update.** The page fetches the latest GitHub release of the repo baked into
+   the build (`WLED_REPO`), downloads the asset named `*_<version>_<release name>.bin`, and
+   uploads it. On WLED's current branch, `WLED_REPO` falls back to `wled/wled`, since
+   WLED's metadata script doesn't set it on that branch yet.
+
+A build that extends an official WLED environment inherits its release name, for example
+`ESP32-S3_8MB_opi`. One click would then download the official image, which passes the
+release name check, and the usermod would be gone without warning.
+
+So **builds with the usermod get their own release name**, the official one with
+`_JazzLights` appended, such as `ESP32-S3_8MB_opi_JazzLights`. Then:
+
+- **One-click update:** finds no asset with that suffix, and stops with "Firmware not
+  found".
+- **Manual upload of a stock image:** rejected with "Firmware release name mismatch".
+- **Images built with the usermod:** update as usual. The only way to lose the usermod is
+  to tick "Ignore firmware validation".
+- **First install on a device running stock WLED:** goes over USB, or over the air by
+  ticking "Ignore firmware validation" once.
+
+Setting the name: ideally the usermod's `library.json` has an `extraScript` that appends
+`_JazzLights` to the project's `WLED_RELEASE_NAME`, so nobody can forget it. To verify
+during implementation: that a library script can change a define used by WLED's own
+`wled_metadata.cpp`. If it can't, the build instructions set the name, replacing the
+inherited flag with `build_unflags` to avoid a redefinition.
+
+**Optional, later: keep one-click updates.** Point `WLED_REPO` at a repo where we publish
+WLED + usermod images, with asset names ending in `_<version>_<release name>.bin`. This
+repo isn't a good fit, because `<version>` comes from that repo's own release tags. A small
+separate repo would work.
+
+**During an update**, WLED calls `onUpdateBegin(true)`, and `onUpdateBegin(false)` if the
+update fails. The usermod pauses Bluetooth and UDP on the first call, to free memory and
+radio time for the download, and resumes on the second.
 
 ## Configuration and UI
 
@@ -453,6 +501,9 @@ be switched from the JSON API and Home Assistant.
   follower that led alone follows again, the held pattern restarts every 10 seconds.
 - **Engine test** for turning off: once the device switches to precedence 0, the devices
   that followed it elect someone else right away.
+- **Updates**: on hardware, a one-click update and a manual upload of a stock image are
+  both refused, an image built with the usermod updates, and Bluetooth and UDP resume if
+  an update fails.
 - **Hardware**: an ATOM S3 Lite (ESP32-S3) and an ATOM Matrix (classic ESP32, 4 MB)
   running WLED with the usermod, next to a vest, in each mode, over Wi-Fi and over
   Bluetooth only. Also check LED flicker with Wi-Fi and Bluetooth both on, and turning
@@ -461,7 +512,7 @@ be switched from the JSON API and Home Assistant.
 ## Implementation phases
 
 1. Build only: the usermod compiles in WLED with the protocol and network code, Bluetooth
-   checks done, CI job.
+   checks done, the release name set, CI job.
 2. Engine change (`SetLeadingPattern()`) with its tests.
 3. Leader mode, with the WLED to JazzLights tables and their tests.
 4. Follower mode with option A.
@@ -531,5 +582,7 @@ biggest effect.
 - Support the chips that both WLED and JazzLights already support: ESP32, ESP32-S3,
   ESP32-C3 and ESP32-C6. Drop one only once we know it can't fit.
 - The doc gives the mapping principles. The full effect table lives in the code.
+- Builds with the usermod append `_JazzLights` to their release name, so WLED's updates
+  don't replace them with stock WLED.
 
 There are no open questions right now.
