@@ -115,6 +115,16 @@ None of `src/jazzlights/protocol`, `network` or `util` include FastLED, which ma
 because WLED has its own `CRGB` and its own copies of the FastLED palettes (in
 `fastled_slim`), which would clash with FastLED's.
 
+JazzLights logs (`jll_info()` and friends) go to WLED's debug output (`DEBUG_PRINTF`,
+which WLED can also send over the network with `WLED_DEBUG_HOST`), through a log handler
+installed with `SetLogHandler()`, like the ESPHome component sends them to ESPHome's
+logger. With `WLED_DEBUG` on, this includes the protocol logs for every message sent and
+received, which is what checking wire compatibility on hardware needs.
+
+The radio timing doesn't depend on WLED's `loop()`, which can take tens of milliseconds:
+`Esp32NimBleNetwork` alternates between scanning and advertising from its own task and
+timer, and `Esp32SocketManager` has its own task too.
+
 The usermod's `loop()` does what `Player::Render()` does for the protocol: drain received
 messages into the engine, call `CheckLeaderAndPattern()`, and hand the message to send to
 the `NetworkManager`. The mapping code runs only when WLED's state or the followed pattern
@@ -138,6 +148,13 @@ custom_usermods = ${env:esp32s3dev_8MB_opi.custom_usermods} jazzlights = symlink
 
 The build's release name has to change too, so that WLED's own updates don't silently
 replace it with stock WLED. See [Firmware updates](#firmware-updates).
+
+`extras/wled/` also ships a `platformio_override.ini` sample with ready-made environments
+for the boards JazzLights devices use, starting with the ATOM Matrix and the ATOM S3 Lite.
+Each one sets the release name, the button pin (39 on the ATOM Matrix, 41 on the ATOM S3),
+and the LED data pins, taken from the JazzLights configs (`LED_PIN` in
+[layout_data.h](../../src/jazzlights/layout/layout_data.h), plus pin 27 for the ATOM
+Matrix's own 5x5 screen). WLED's pin and LED settings can still be changed from its web UI.
 
 `extras/wled/library.json` would compile the usermod's own files plus the needed subset of
 `src/jazzlights` (via `srcFilter`), and set `JL_CONFIG=WLED` (a new config, like the other
@@ -245,6 +262,20 @@ It ignores speed, intensity, custom sliders and brightness, which the protocol c
 A changed result is applied with `SetLeadingPattern()`, debounced by about 250 ms so that
 dragging the color wheel doesn't restart other devices' effects dozens of times per second.
 
+### Randomizing the unused bits
+
+The mapping only chooses the bits that select the effect and palette. The other bits still
+matter: each effect seeds its randomness from the pattern bits
+(`PredictableRandom::ResetWithFrameStart()`), so they choose, for example, where rings are
+centered or which scales hiphotic uses. Sending the same bits for every "rings-ocean"
+would always show the same rings.
+
+So, like the Core2 UI, the leader passes the result through `RandomizePatternBits()`,
+which randomizes those bits and leaves the effect and palette bits alone. It does this once
+per change of the mapped effect and palette, not on every 10 second restart, so a held
+pattern keeps the same look. `RandomizePatternBits()` leaves most reserved patterns
+unchanged, which is fine since they don't use these bits.
+
 ### Palettes
 
 Exact equivalents are hard-coded:
@@ -347,6 +378,10 @@ Details:
 - It applies changes without notifying WLED's own UDP sync (`CALL_MODE_NO_NOTIFY`), and
   without saving anything to flash. A setting could instead let them propagate to other
   WLED devices.
+- It changes the segment directly (`setMode()`, `setPalette()`, `setColor()`) and then
+  calls `stateUpdated(CALL_MODE_NO_NOTIFY)`, not `colorUpdated()`. `colorUpdated()` first
+  calls `applyValuesToSelectedSegs()`, which copies WLED's global effect and palette back
+  onto the selected segments, and would undo the change.
 - It sets `strip.timebase` so that WLED's effect clock `strip.now` counts from the
   followed pattern's start time. Most WLED effects are a function of `strip.now`, so WLED
   followers would then be in sync with each other, though not with JazzLights devices.
@@ -393,9 +428,12 @@ This is the biggest technical risk.
   Bluedroid, which this repo already struggles with on newer Arduino cores (see the comment
   about pioarduino 55 and `esp_gap_ble_api.h` in `platformio.ini`). The plan is to use
   NimBLE from the NimBLE-Arduino library, like the `[_nimble_arduino]` environments, which
-  only needs the Bluetooth controller from the framework. First implementation step: check
-  that the controller is available in WLED's default platform, and that the Arduino core
-  doesn't release its memory at boot.
+  only needs the Bluetooth controller from the framework. The friend's prototype (see
+  below) already exchanged advertisements with a real JazzLights device this way, using
+  NimBLE-Arduino 2.5 in WLED on a classic ESP32 ATOM, which makes this likely to work. It
+  used WLED's platform from August 2026, though, so the first implementation step is still
+  to check that the controller is available in WLED's current platform, and that the
+  Arduino core doesn't release its memory at boot.
 - WLED disables Wi-Fi modem sleep on ESP32 by default (`noWifiSleep = true`). ESP-IDF
   requires modem sleep when Wi-Fi and Bluetooth run together, so the usermod has to force
   it on while Bluetooth is enabled, and explain that in its settings page.
@@ -497,6 +535,8 @@ be switched from the JSON API and Home Assistant.
 - **Native tests** for `WledToJazzLights()` and `JazzLightsToWled()`: round trips, every
   WLED effect ID maps to something, the palette distance table for every built-in palette.
   The mapping code shouldn't depend on WLED headers, so it builds in `extras/` without WLED.
+- **Native test** that `RandomizePatternBits()` keeps the effect and palette of every
+  pattern the leader mapping can produce.
 - **Engine tests** for `SetLeadingPattern()`: a leader yields to higher precedence, a
   follower that led alone follows again, the held pattern restarts every 10 seconds.
 - **Engine test** for turning off: once the device switches to precedence 0, the devices
@@ -517,6 +557,20 @@ be switched from the JSON API and Home Assistant.
 3. Leader mode, with the WLED to JazzLights tables and their tests.
 4. Follower mode with option A.
 5. Optionally, option B.
+
+## Prior work
+
+A friend wrote a prototype usermod,
+[claudiosv/wled-jazzlights-ble-sync#1](https://github.com/claudiosv/wled-jazzlights-ble-sync/pull/1),
+which reimplements the Bluetooth protocol and the election from scratch with
+NimBLE-Arduino, and maps the leader's pattern to a WLED effect and palette when following.
+It was tested following a real JazzLights device on an ATOM, but not leading.
+
+This plan differs mainly in that it reuses JazzLights' own protocol and network code, adds
+IP sync, and maps WLED to JazzLights when leading (the prototype always advertises pattern
+0, which is solid black). The prototype contributed these ideas, which this doc now
+includes: randomizing the unused pattern bits, evidence that NimBLE-Arduino works inside
+WLED, board presets, debug logging, and using `stateUpdated()` when following.
 
 ## Possible protocol changes
 
@@ -584,5 +638,7 @@ biggest effect.
 - The doc gives the mapping principles. The full effect table lives in the code.
 - Builds with the usermod append `_JazzLights` to their release name, so WLED's updates
   don't replace them with stock WLED.
+- When leading, the unused pattern bits are randomized once per change.
+- The usermod ships board presets, and sends JazzLights logs to WLED's debug output.
 
 There are no open questions right now.
