@@ -11,7 +11,8 @@
 
 set -euo pipefail
 
-# The WLED commit we build against. Update this deliberately, since WLED's usermod API changes over time.
+# The WLED commit we build against. Update this deliberately, since WLED's usermod API changes over time, and then
+# regenerate test/test_wled/wled_data.h with extras/wled/generate_test_data.py.
 WLED_COMMIT=fffa05a765d41d7126b66ab5a3d1ce1f41e7d11e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

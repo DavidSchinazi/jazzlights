@@ -14,7 +14,8 @@
       "+<src/jazzlights/network/esp32_socket_manager.cpp>",
       "+<src/jazzlights/network/manager.cpp>",
       "+<src/jazzlights/network/network.cpp>",
-      "+<src/jazzlights/util/*.cpp>"
+      "+<src/jazzlights/util/*.cpp>",
+      "+<src/jazzlights/wled/*.cpp>"
     ],
     "flags": [
       "-DJL_WLED=1",

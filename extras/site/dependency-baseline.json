@@ -95,6 +95,9 @@
       "render",
       "util"
     ],
-    "util": []
+    "util": [],
+    "wled": [
+      "util"
+    ]
   }
 }

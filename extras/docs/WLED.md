@@ -1,7 +1,7 @@
 # JazzLights Usermod for WLED
 
-Status: approved, being implemented. Phases 1 (building the usermod in WLED) and 2 (engine
-changes) are done, see
+Status: approved, being implemented. Phases 1 (building the usermod in WLED), 2 (engine
+changes) and 3 (leader mode) are done, see
 [Implementation phases](#implementation-phases).
 
 [WLED](https://github.com/wled/WLED) is popular firmware for addressable LEDs. This doc
@@ -94,8 +94,8 @@ Three things make WLED a good fit:
  +----------------------------------+    +-------------------------------------+
  | Wi-Fi / Ethernet (esp_netif)  ---+--->| Esp32SocketManager (UDP multicast)  |
  | web UI, presets, playlists       |    | Esp32NimBleNetwork (BLE adverts)    |
- | segments, effects, palettes   ---+--->| WledToJazzLights() mapping          |
- | LED drivers                   <--+----| JazzLightsToWled() mapping          |
+ | segments, effects, palettes   ---+--->| WLEDToJazzLights() mapping          |
+ | LED drivers                   <--+----| JazzLightsToWLED() mapping          |
  +----------------------------------+    | NetworkManager + ProtocolEngine     |
                                          +-------------------------------------+
 ```
@@ -254,6 +254,8 @@ WLED tells usermods why its state changed through `onStateChange(callMode)`:
 - Playlists also report `CALL_MODE_DIRECT_CHANGE` (`applyPresetFromPlaylist()`), so the
   usermod tells them apart with WLED's `currentPlaylist` global, and gives no gain while a
   playlist runs.
+- A person's change only counts if it changes the segment's effect, palette or colors
+  within a second, so that adjusting brightness or speed doesn't take over other devices.
 - WLED's own sync (`CALL_MODE_NOTIFICATION`), Hue, Alexa and nightlight progress update
   the pattern without giving the gain.
 - Changes the usermod makes itself while following are ignored, so they don't loop back.
@@ -317,18 +319,24 @@ during the 10 seconds at precedence 0. In leader mode, this counts as user input
 ## WLED to JazzLights (leader)
 
 When the WLED device leads, the usermod converts the state of the followed segment into
-pattern bits. `WledToJazzLights()` is a pure function of:
+pattern bits. The conversion lives in `src/jazzlights/wled/mapping.cpp`, which doesn't
+depend on WLED's headers, so it's tested natively. `WLEDToJazzLights()` is a pure function
+of a `WLEDSegmentState`, which the usermod reads from the segment:
 
-- the effect ID (`seg.mode`),
-- the effective palette: the 16 colors WLED actually renders with, after resolving
-  "Default" to the effect's default palette and building color-based palettes
-  (`* Color 1`, `* Colors 1&2`...) from the segment colors,
-- the segment colors (`seg.colors[0..2]`), with any white channel folded into RGB.
+- the effect ID (`seg.mode`), and whether WLED shows Solid instead because it's a 2D-only
+  effect on a 1D segment (from the effect's metadata string);
+- whether the palette is Default;
+- the palette whose colors the effect shows, see [Palettes](#palettes), and its 16 colors
+  from `Segment::loadPalette()`;
+- the first segment color, with any white channel folded into RGB.
 
 It ignores speed, intensity, custom sliders and brightness, which the protocol can't carry.
 
-A changed result is applied with `SetLeadingPattern()`, debounced by about 250 ms so that
-dragging the color wheel doesn't restart other devices' effects dozens of times per second.
+The usermod only recomputes the mapping when the segment's effect, palette, colors or
+dimensions change. A changed result is applied with `SetLeadingPattern()` once it has been
+stable for 250 ms, so that dragging the color wheel doesn't restart other devices' effects
+dozens of times per second. The usermod sets the leading pattern in both modes, since a
+follower also leads when it's alone.
 
 ### Randomizing the unused bits
 
@@ -359,12 +367,21 @@ Exact equivalents are hard-coded:
 | Fire (35) | heat |
 
 Every other palette, including custom palettes, random palettes and palettes built from the
-segment colors, goes to the nearest of the seven JazzLights palettes. The distance compares
-the colors that each palette contains, regardless of their order, since a rotated rainbow is
-still a rainbow. For example, a sum over the 16 entries of the nearest-color distance in a
-roughly perceptual space such as CIELAB or OKLab. During implementation, a native test will
-print the resulting mapping for all built-in WLED palettes so it can be reviewed and
-corrected with overrides.
+segment colors, goes to the closest of the seven JazzLights palettes by hue
+(`ClosestPalette()`): each palette becomes a histogram of its OKLab hues in 12 bins of 30
+degrees, each color weighted by its saturation, plus one bin for black, white and greys.
+The closest palette is the one whose histogram differs the least. This ignores the order of
+the colors, since a rotated rainbow is still a rainbow.
+
+A first version compared the colors themselves in OKLab instead. Lightness dominated there,
+so heat, which spans black to white, came out closest to many unrelated palettes, such as
+Temperature and Fireworks.
+
+`pio test -e native -f test_wled -v` prints the result for every built-in WLED palette.
+Most look right. Some debatable ones, to correct with overrides if they matter: Magenta,
+Light Pink and Pink Candy go to cloud, Traffic Light to forest, and Orange & Teal to heat.
+WLED's palette colors are compared as stored, without the gamma correction WLED applies
+when it shows them.
 
 The colors an effect actually shows don't always come from its palette. When the palette
 is "Default" (0), most WLED effects draw with the segment colors instead
@@ -403,11 +420,16 @@ follows three rules:
    effects the table doesn't know about at all, such as effects added by a newer WLED or by
    other usermods.
 
-Each entry is a judgment call, so the native test prints the full table for review during
-implementation.
+The table is `CategoryOfWLEDEffect()` in `src/jazzlights/wled/mapping.cpp`. Each entry is
+a judgment call, so `pio test -e native -f test_wled -v` prints the result for every WLED
+effect, by name, for review.
 
-Hiphotic, Metaballs and Colored Bursts are 2D effects in WLED. On a 1D strip, WLED falls
-back to Solid, so the mapping does the same and sends coloring.
+Some WLED effects only run on 2D segments, such as Hiphotic, Metaballs and Colored Bursts.
+On a 1D segment WLED shows Solid instead, so the mapping does the same and sends coloring.
+
+For glow, a color is close enough to one of the 8 glow colors when their OKLab distance,
+after scaling both to full brightness, is at most 0.1. That keeps for example pure greens
+and chartreuse as glow-green, but sends orange, amber, azure and violet as coloring.
 
 ### Segments
 
@@ -473,7 +495,7 @@ There are two ways to do this, which aren't exclusive.
 
 ### Option A: translate to a WLED effect
 
-`JazzLightsToWled()` maps the pattern bits back to a WLED effect, palette and colors, and
+`JazzLightsToWLED()` maps the pattern bits back to a WLED effect, palette and colors, and
 applies them to the followed segment:
 
 | JazzLights | WLED |
@@ -653,25 +675,39 @@ radio time for the download, and resumes on the second.
 
 Settings, saved in WLED's `cfg.json` through `addToConfig()` / `readFromConfig()`:
 
-- enabled: on or off (phase 1, needs a reboot);
-- Bluetooth: on or off (phase 1, needs a reboot, absent from builds without Bluetooth);
-- mode: off, follower or leader;
-- base precedence and gain, prefilled from the mode;
-- segment to follow: main or a segment ID;
-- in follower mode: whether to propagate to WLED sync.
+- mode: off, follower (the default) or leader. Switching to off at runtime acts like WLED
+  being turned off. If the device boots with the mode off, turning it on needs a reboot,
+  since Bluetooth has to start before Wi-Fi.
+- base precedence and gain, prefilled from the mode: changing the mode without editing
+  them resets them to the new mode's defaults;
+- segment to follow: 255 for the main segment, or a segment ID;
+- Bluetooth: on or off (needs a reboot, absent from builds without Bluetooth);
+- later, in follower mode: whether to propagate to WLED sync.
 
-The Info tab (`addToJsonInfo()`) shows: leading or following, the leader's device ID and
-hop count, the current JazzLights pattern name (for example `rings-ocean`), and which
-transports are up. `addToJsonState()` and `readFromJsonState()` expose the mode, so it can
-be switched from the JSON API and Home Assistant.
+The Info tab (`addToJsonInfo()`) shows the mode, whether the device leads or follows, the
+leader's device ID, hop count and transport, and the current JazzLights pattern name (for
+example `rings-ocean`). Later: `addToJsonState()` and `readFromJsonState()` to expose the
+mode in WLED's state, for the JSON API and Home Assistant. Until then, the mode is in WLED's
+configuration (`/json/cfg`).
 
 ## Testing
 
-- **Native tests** for `WledToJazzLights()` and `JazzLightsToWled()`: round trips, every
-  WLED effect ID maps to something, the palette distance table for every built-in palette.
-  The mapping code shouldn't depend on WLED headers, so it builds in `extras/` without WLED.
-- **Native test** that `RandomizePatternBits()` keeps the effect and palette of every
-  pattern the leader mapping can produce.
+- **Native tests** in `test/test_wled` (done in phase 3):
+  - `TestDecodeMatchesRenderer`: `DecodePattern()` names about 13,000 patterns (the
+    rotation, every reserved pattern, arbitrary bits) exactly like the JazzLights renderer.
+  - `TestPalettePatterns`, `TestPalettelessPatterns`: every pattern the leader can send
+    decodes back to its effect and palette, also after `RandomizePatternBits()`.
+  - `TestWLEDEffectIDs`: the effect and palette IDs in `mapping.h` have the expected WLED
+    names. The usermod also checks the effect IDs against WLED's `FX.h` with
+    `static_assert`.
+  - `TestEveryWLEDEffectMaps`, `TestPaletteMapping`, `TestGlowColors`: every WLED effect and
+    built-in palette maps to something, with the tables printed for review.
+  - `TestSpecialCases`: Solid, the 2D-only fallback, and fires with the Default palette.
+
+  WLED's effect names and built-in palettes come from `test/test_wled/wled_data.h`, which
+  `extras/wled/generate_test_data.py` generates from the pinned WLED checkout. It expands
+  WLED's gradient palettes to 16 colors the way WLED does.
+- **Later, native tests for `JazzLightsToWLED()`.**
 - **Engine tests**, in `test/test_protocol` (done in phase 2):
   - `TestLeadingPatternIsHeld`: the held pattern replaces the rotation, restarts every 10
     seconds, restarts right away when it changes, and the rotation resumes when cleared.
@@ -708,7 +744,12 @@ be switched from the JSON API and Home Assistant.
 2. Engine changes (`SetLeadingPattern()`, `RecordUserInput()` and
    `SetUserInputKeepsLeading()`) with their tests. **Done.** The usermod doesn't use them
    yet.
-3. Leader mode, with the WLED to JazzLights tables and their tests.
+3. Leader mode, with the WLED to JazzLights tables and their tests. **Done.** The usermod
+   has the mode, precedence and segment settings, maps the followed segment to a leading
+   pattern in both modes, records a person's changes as user input, leaves the protocol
+   when WLED turns off, and pauses Bluetooth and UDP during firmware updates. The mapping
+   is in a new `wled` module under `src/jazzlights`, which only depends on `util`. Not yet
+   checked on hardware, along with phase 1's list.
 4. Follower mode with option A.
 5. Optionally, option B.
 
@@ -805,6 +846,8 @@ is.
 - When leading, the unused pattern bits are randomized once per change.
 - The usermod ships board presets, and sends JazzLights logs to WLED's debug output.
 - WLED changes, playlists included, switch followers immediately, like a button press.
+- The default mode is follower, so that a newly flashed WLED device doesn't take over.
+- Palettes without an exact equivalent go to the closest JazzLights palette by hue.
 - Bluetooth uses the NimBLE stack built into WLED's ESP-IDF libraries, not NimBLE-Arduino.
 - The NanoC6 build leaves out audioreactive, since it has no microphone, and Bluetooth,
   since it doesn't fit otherwise.
