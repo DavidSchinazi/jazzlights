@@ -153,7 +153,7 @@ The usermod has three modes, chosen in its settings page:
 
 | Mode | Base precedence | Gain | Behavior |
 |---|---|---|---|
-| Off | - | - | No JazzLights traffic at all. Same as when WLED is turned off. |
+| Off | - | - | No JazzLights traffic at all, like WLED being off once its 10 seconds at precedence 0 are over. |
 | Follower | 300 | 100 | Follows any wearable. Leads only when alone, or with orrery planets and creatures. |
 | Leader | 20000 | 1000 | Leads every regular device. |
 
@@ -210,18 +210,21 @@ that this restart is barely visible, for instance the rings period divides 10 se
 ### When WLED is turned off
 
 When WLED is off (`bri == 0`), the device removes itself from the protocol, in either
-mode: it stops advertising, pauses Bluetooth (`SetPaused()`), and ignores what it
-receives. Other devices behave as if it had walked away.
+mode, in two steps:
 
-The protocol has no explicit goodbye, so other devices keep following its last pattern
-until its entry ages out, which takes up to `kOriginationTimeDiscard` (9 seconds). To make
-this faster without changing the protocol, a leader first advertises its current pattern
-at precedence 0 for about a second. Receivers update its entry to precedence 0 and elect
-another device right away, since every other device has a higher precedence. To verify
-with an engine test: a precedence decrease from a known originator takes effect
-immediately.
+1. For 10 seconds, it keeps listening and advertising as usual, but with precedence 0.
+   Every other device has a higher precedence, so the devices that were following it elect
+   another leader as soon as they hear this, without waiting for its entry to time out.
+   10 seconds is longer than `kOriginationTimeDiscard` (9 seconds), so devices that miss
+   these messages time out its entry before it goes silent anyway.
+2. Then it stops listening and sending: it pauses Bluetooth (`SetPaused()`), stops
+   handling UDP, and stops advertising.
 
-When WLED is turned back on, the device rejoins. In leader mode, this counts as user input.
+The protocol has no explicit goodbye, so this needs no protocol change. To verify with an
+engine test: a precedence decrease from a known originator takes effect immediately.
+
+When WLED is turned back on, the device rejoins with its normal precedence, including
+during the 10 seconds at precedence 0. In leader mode, this counts as user input.
 
 ## WLED to JazzLights (leader)
 
@@ -386,16 +389,17 @@ This is the biggest technical risk.
 
 ### Supported chips
 
-The goal is to support every chip WLED supports, and to drop one only once we know it
-can't work. JazzLights already runs on the ESP32, ESP32-S3, ESP32-C3 and ESP32-C6.
+For now, the usermod supports the chips that both WLED and JazzLights already support:
 
-| Chip | Plan |
+| Chip | Transports |
 |---|---|
-| ESP32, ESP32-S3, ESP32-C3, ESP32-C6 | IP and Bluetooth |
-| ESP32-C5 | IP and Bluetooth, but JazzLights hasn't run on it yet |
-| ESP32-S2 | IP only, since it has no Bluetooth |
-| ESP32-P4 | IP only. It has no radio of its own, and WLED reaches Wi-Fi through a companion chip. Bluetooth through that chip is to be checked. |
-| ESP8266 | IP only, and last, since JazzLights' code has no ESP8266 support yet |
+| ESP32 | IP and Bluetooth |
+| ESP32-S3 | IP and Bluetooth |
+| ESP32-C3 | IP and Bluetooth |
+| ESP32-C6 | IP and Bluetooth |
+
+The other chips WLED supports (ESP32-S2, ESP32-C5, ESP32-P4 and ESP8266) are out of scope
+until JazzLights supports them.
 
 Flash is the likely limit, on 4 MB boards in particular. When a build doesn't fit, the
 first fallback is a build flag that leaves Bluetooth out and keeps IP sync. We'd only drop
@@ -432,8 +436,8 @@ be switched from the JSON API and Home Assistant.
   The mapping code shouldn't depend on WLED headers, so it builds in `extras/` without WLED.
 - **Engine tests** for `SetLeadingPattern()`: a leader yields to higher precedence, a
   follower that led alone follows again, the held pattern restarts every 10 seconds.
-- **Engine test** for turning off: after the precedence 0 goodbye, other devices elect
-  someone else right away.
+- **Engine test** for turning off: once the device switches to precedence 0, the devices
+  that followed it elect someone else right away.
 - **Hardware**: an ATOM S3 Lite (ESP32-S3) and an ATOM Matrix (classic ESP32, 4 MB)
   running WLED with the usermod, next to a vest, in each mode, over Wi-Fi and over
   Bluetooth only. Also check LED flicker with Wi-Fi and Bluetooth both on, and turning
@@ -505,12 +509,11 @@ biggest effect.
 - Leader precedence is 20000 + 1000: creatures follow it, and a Core2 in override mode
   still takes over.
 - Follower precedence is 300 + 100.
-- When WLED is turned off, the device removes itself from the protocol.
+- When WLED is turned off, the device advertises precedence 0 for 10 seconds, then stops
+  listening and sending.
 - WLED effects without a confident match go to rings + rainbow.
-- Support every chip we can, and drop one only once we know it can't fit.
+- Support the chips that both WLED and JazzLights already support: ESP32, ESP32-S3,
+  ESP32-C3 and ESP32-C6. Drop one only once we know it can't fit.
 - The doc gives the mapping principles. The full effect table lives in the code.
 
-## Open questions
-
-1. Turning off: is the precedence 0 goodbye acceptable, or should the device simply go
-   silent and let others time out within 9 seconds?
+There are no open questions right now.
