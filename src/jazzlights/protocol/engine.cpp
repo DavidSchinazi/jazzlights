@@ -165,6 +165,19 @@ void ProtocolEngine::ResumeRotation() {
   nextPattern_ = EnforceForcedPalette(ComputeNextPattern(currentPattern_));
 }
 
+void ProtocolEngine::SetLeadingPattern(std::optional<PatternBits> leadingPattern) {
+  if (leadingPattern == leadingPattern_) { return; }
+  if (!leadingPattern && nextPattern_ == *leadingPattern_ && !loop_) {
+    // We were holding the leading pattern, so resume the rotation after the current pattern.
+    nextPattern_ = EnforceForcedPalette(ComputeNextPattern(nextPattern_));
+  }
+  leadingPattern_ = leadingPattern;
+}
+
+void ProtocolEngine::RecordUserInput(OptionalMicroseconds currentTimeOpt) {
+  lastUserInputTime_ = currentTimeOpt.value_or(TimeMicros());
+}
+
 void ProtocolEngine::ForcePalette(uint8_t palette) {
   jll_info("Forcing palette %u", palette);
   forcedPalette_ = palette;
@@ -260,8 +273,8 @@ void ProtocolEngine::CheckLeaderAndPattern(OptionalMicroseconds currentTimeOpt) 
   Precedence precedence = GetLocalPrecedence(currentTime);
   NetworkDeviceId originator = localDeviceId_;
   const OriginatorEntry* entry = nullptr;
-  const bool hadRecentUserInput =
-      (lastUserInputTime_ && *lastUserInputTime_ <= currentTime && currentTime - *lastUserInputTime_ < kInputDuration);
+  const bool hadRecentUserInput = userInputKeepsLeading_ && lastUserInputTime_ && *lastUserInputTime_ <= currentTime &&
+                                  currentTime - *lastUserInputTime_ < kInputDuration;
   for (const OriginatorEntry& e : originatorEntries_) {
 #if !JL_IS_CONFIG(CREATURE) && !JL_IS_CONFIG(ORRERY_PLANET)
     // Keep ourselves as leader if there was recent user button input or if we are looping, unless the originator has
@@ -346,6 +359,17 @@ void ProtocolEngine::CheckLeaderAndPattern(OptionalMicroseconds currentTimeOpt) 
       currentPattern_ = *forcedLeadingPattern;
       nextPattern_ = currentPattern_;
       loop_ = true;
+    } else if (leadingPattern_) {
+      if (currentPattern_ != *leadingPattern_) {
+        currentPattern_ = *leadingPattern_;
+        currentPatternStartTime_ = currentTime;
+        jll_protocol_info("We (" DEVICE_ID_FMT ".p%u) are leading, switching to leading pattern %s (%08x)",
+                          DEVICE_ID_HEX(localDeviceId_), precedence, delegate_->PatternName(currentPattern_).c_str(),
+                          currentPattern_);
+        delegate_->LogFpsReport();
+        delegate_->OnPatternRestart();
+      }
+      nextPattern_ = currentPattern_;
     }
     followedNextHopNetworkId_ = 0;
     followedNextHopNetworkType_ = NetworkType::kLeading;
@@ -353,7 +377,7 @@ void ProtocolEngine::CheckLeaderAndPattern(OptionalMicroseconds currentTimeOpt) 
     lastOriginationTime = currentTime;
     while (currentTime - currentPatternStartTime_ > kEffectDuration) {
       currentPatternStartTime_ += kEffectDuration;
-      if (loop_) {
+      if (loop_ || leadingPattern_) {
         nextPattern_ = currentPattern_;
       } else {
         currentPattern_ = nextPattern_;

@@ -466,6 +466,176 @@ void TestRecentUserInputKeepsUsLeading() {
   TEST_ASSERT(engine.currentLeader() == other);
 }
 
+void TestLeadingPatternIsHeld() {
+  FakeDelegate delegate;
+  ProtocolEngine engine(&delegate);
+  const Microseconds t0 = StartEngine(&engine);
+  constexpr PatternBits kHeld = 0x0000a001;
+
+  // The leading pattern replaces the rotation right away, and restarts.
+  engine.SetLeadingPattern(kHeld);
+  const Microseconds t1 = t0 + kEffectDuration / 2;
+  engine.CheckLeaderAndPattern(t1);
+  TEST_ASSERT_EQUAL_UINT32(kHeld, engine.GetCurrentPattern());
+  TEST_ASSERT_EQUAL_UINT32(kHeld, engine.GetNextPattern());
+  TEST_ASSERT_EQUAL_INT64(t1, engine.currentPatternStartTime());
+  TEST_ASSERT_EQUAL_INT(1, delegate.patternRestarts);
+  TEST_ASSERT_FALSE(engine.isLooping());
+
+  // It's held across boundaries, restarting every kEffectDuration.
+  engine.CheckLeaderAndPattern(t1 + 3 * kEffectDuration + 1);
+  TEST_ASSERT_EQUAL_UINT32(kHeld, engine.GetCurrentPattern());
+  TEST_ASSERT_EQUAL_UINT32(kHeld, engine.GetNextPattern());
+  TEST_ASSERT_EQUAL_INT64(t1 + 3 * kEffectDuration, engine.currentPatternStartTime());
+  TEST_ASSERT_EQUAL_INT(4, delegate.patternRestarts);
+  std::optional<ProtocolMessage> message = engine.GetMessageToSend();
+  TEST_ASSERT(message);
+  TEST_ASSERT_EQUAL_UINT32(kHeld, message->currentPattern);
+  TEST_ASSERT_EQUAL_UINT32(kHeld, message->nextPattern);
+
+  // Setting the same pattern again changes nothing.
+  engine.SetLeadingPattern(kHeld);
+  engine.CheckLeaderAndPattern(t1 + 3 * kEffectDuration + 2);
+  TEST_ASSERT_EQUAL_INT64(t1 + 3 * kEffectDuration, engine.currentPatternStartTime());
+  TEST_ASSERT_EQUAL_INT(4, delegate.patternRestarts);
+
+  // A different one restarts right away.
+  constexpr PatternBits kOtherHeld = 0x0000b001;
+  engine.SetLeadingPattern(kOtherHeld);
+  const Microseconds t2 = t1 + 3 * kEffectDuration + 3;
+  engine.CheckLeaderAndPattern(t2);
+  TEST_ASSERT_EQUAL_UINT32(kOtherHeld, engine.GetCurrentPattern());
+  TEST_ASSERT_EQUAL_UINT32(kOtherHeld, engine.GetNextPattern());
+  TEST_ASSERT_EQUAL_INT64(t2, engine.currentPatternStartTime());
+  TEST_ASSERT_EQUAL_INT(5, delegate.patternRestarts);
+
+  // Clearing it resumes the rotation after the current pattern.
+  engine.SetLeadingPattern(std::nullopt);
+  TEST_ASSERT_NOT_EQUAL(kOtherHeld, engine.GetNextPattern());
+  const PatternBits next = engine.GetNextPattern();
+  engine.CheckLeaderAndPattern(t2 + kEffectDuration + 1);
+  TEST_ASSERT_EQUAL_UINT32(next, engine.GetCurrentPattern());
+}
+
+void TestLeadingPatternStillFollows() {
+  FakeDelegate delegate;
+  ProtocolEngine engine(&delegate);
+  const Microseconds t0 = StartEngine(&engine);
+  engine.SetBasePrecedence(20000);
+  constexpr PatternBits kHeld = 0x0000a001;
+  engine.SetLeadingPattern(kHeld);
+  engine.CheckLeaderAndPattern(t0);
+  TEST_ASSERT(engine.currentLeader() == engine.localDeviceId());
+
+  // Unlike a looping device, we follow an originator with better precedence that isn't admin-level.
+  const NetworkDeviceId other = MakeDeviceId(0x20);
+  const Microseconds t1 = t0 + 1000;
+  engine.HandleReceivedMessage(MakeMessage(other, other, kDefaultOverridePrecedence, t1), t1);
+  engine.CheckLeaderAndPattern(t1);
+  TEST_ASSERT(engine.currentLeader() == other);
+  TEST_ASSERT_EQUAL_UINT32(kPatternA, engine.GetCurrentPattern());
+  TEST_ASSERT_EQUAL_UINT32(kPatternB, engine.GetNextPattern());
+
+  // Once it's gone, we lead with our pattern again, restarting it.
+  const Microseconds t2 = t1 + kOriginationTimeDiscard + 1;
+  engine.CheckLeaderAndPattern(t2);
+  TEST_ASSERT(engine.currentLeader() == engine.localDeviceId());
+  TEST_ASSERT_EQUAL_UINT32(kHeld, engine.GetCurrentPattern());
+  TEST_ASSERT_EQUAL_UINT32(kHeld, engine.GetNextPattern());
+  TEST_ASSERT_EQUAL_INT64(t2, engine.currentPatternStartTime());
+}
+
+void TestUserInputCanOnlyAddGain() {
+  FakeDelegate delegate;
+  ProtocolEngine engine(&delegate);
+  const Microseconds t0 = StartEngine(&engine);
+  engine.SetBasePrecedence(20000);
+  engine.SetPrecedenceGain(1000);
+  engine.SetUserInputKeepsLeading(false);
+
+  // User input adds the gain.
+  engine.RecordUserInput(t0);
+  engine.CheckLeaderAndPattern(t0);
+  std::optional<ProtocolMessage> message = engine.GetMessageToSend();
+  TEST_ASSERT(message);
+  TEST_ASSERT_EQUAL_UINT16(21000, message->precedence);
+
+  // But doesn't keep us leading against better precedence.
+  const NetworkDeviceId other = MakeDeviceId(0x20);
+  const Microseconds t1 = t0 + 1000;
+  engine.HandleReceivedMessage(MakeMessage(other, other, kDefaultOverridePrecedence, t1), t1);
+  engine.CheckLeaderAndPattern(t1);
+  TEST_ASSERT(engine.currentLeader() == other);
+}
+
+void TestUserInputKeepsLeadingByDefault() {
+  FakeDelegate delegate;
+  ProtocolEngine engine(&delegate);
+  const Microseconds t0 = StartEngine(&engine);
+  engine.SetBasePrecedence(300);
+  engine.SetPrecedenceGain(100);
+  const NetworkDeviceId other = MakeDeviceId(0x20);
+
+  // We follow a device with better precedence.
+  engine.HandleReceivedMessage(MakeMessage(other, other, 1000, t0), t0);
+  engine.CheckLeaderAndPattern(t0);
+  TEST_ASSERT(engine.currentLeader() == other);
+
+  // User input pauses following.
+  const Microseconds t1 = t0 + 1000;
+  engine.RecordUserInput(t1);
+  engine.HandleReceivedMessage(MakeMessage(other, other, 1000, t1), t1);
+  engine.CheckLeaderAndPattern(t1);
+  TEST_ASSERT(engine.currentLeader() == engine.localDeviceId());
+
+  // We follow again once the input is old enough.
+  const Microseconds t2 = t1 + kInputDuration + 1;
+  engine.HandleReceivedMessage(MakeMessage(other, other, 1000, t2), t2);
+  engine.CheckLeaderAndPattern(t2);
+  TEST_ASSERT(engine.currentLeader() == other);
+}
+
+void TestPrecedenceDropReleasesFollowers() {
+  // A leader at precedence 1000, followed by B directly, and by C through B.
+  const NetworkDeviceId leader = MakeDeviceId(0x30);
+  FakeDelegate delegateB;
+  ProtocolEngine engineB(&delegateB);
+  const Microseconds t0 = StartEngine(&engineB, 0x20);
+  engineB.SetBasePrecedence(500);
+  FakeDelegate delegateC;
+  ProtocolEngine engineC(&delegateC);
+  StartEngine(&engineC, 0x40);
+  engineC.SetBasePrecedence(100);
+
+  engineB.HandleReceivedMessage(MakeMessage(leader, leader, 1000, t0), t0);
+  engineB.CheckLeaderAndPattern(t0);
+  TEST_ASSERT(engineB.currentLeader() == leader);
+  std::optional<ProtocolMessage> relayed = engineB.GetMessageToSend();
+  TEST_ASSERT(relayed);
+  relayed->sender = engineB.localDeviceId();
+  relayed->receiptNetworkId = 1;
+  relayed->receiptNetworkType = NetworkType::kWiFi;
+  engineC.HandleReceivedMessage(*relayed, t0);
+  engineC.CheckLeaderAndPattern(t0);
+  TEST_ASSERT(engineC.currentLeader() == leader);
+
+  // When the leader drops to precedence 0, B elects itself right away, without waiting for the leader to time out.
+  const Microseconds t1 = t0 + 1000;
+  engineB.HandleReceivedMessage(MakeMessage(leader, leader, 0, t1), t1);
+  engineB.CheckLeaderAndPattern(t1);
+  TEST_ASSERT(engineB.currentLeader() == engineB.localDeviceId());
+
+  // Then B advertises itself, so C, which only heard the leader through B, follows B right away too.
+  std::optional<ProtocolMessage> fromB = engineB.GetMessageToSend();
+  TEST_ASSERT(fromB);
+  TEST_ASSERT(fromB->originator == engineB.localDeviceId());
+  fromB->receiptNetworkId = 1;
+  fromB->receiptNetworkType = NetworkType::kWiFi;
+  engineC.HandleReceivedMessage(*fromB, t1);
+  engineC.CheckLeaderAndPattern(t1);
+  TEST_ASSERT(engineC.currentLeader() == engineB.localDeviceId());
+}
+
 void TestOrrerySceneId() {
   FakeDelegate delegate;
   ProtocolEngine engine(&delegate);
@@ -529,6 +699,11 @@ void RunUnityTests() {
   RUN_TEST(TestForcedPaletteSurvivesRotation);
   RUN_TEST(TestForcedLeadingPattern);
   RUN_TEST(TestRecentUserInputKeepsUsLeading);
+  RUN_TEST(TestLeadingPatternIsHeld);
+  RUN_TEST(TestLeadingPatternStillFollows);
+  RUN_TEST(TestUserInputCanOnlyAddGain);
+  RUN_TEST(TestUserInputKeepsLeadingByDefault);
+  RUN_TEST(TestPrecedenceDropReleasesFollowers);
   RUN_TEST(TestOrrerySceneId);
   RUN_TEST(TestOrrerySceneIdWatcher);
   UNITY_END();

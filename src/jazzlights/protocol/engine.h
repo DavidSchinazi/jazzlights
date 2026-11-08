@@ -148,6 +148,19 @@ class ProtocolEngine {
   void SetPatternAndLoop(PatternBits pattern);
   // Leaves a pinned pattern and resumes the regular rotation.
   void ResumeRotation();
+  // Sets the pattern we advertise whenever we lead, instead of the regular rotation, until the next call. The pattern
+  // restarts every kEffectDuration like a loop, but unlike looping this doesn't make us ignore other originators: we
+  // still follow any with better precedence, and go back to this pattern when we lead again. A new pattern takes effect
+  // at the next CheckLeaderAndPattern(), and restarts right away if we're leading. With nullopt, the regular rotation
+  // resumes after the current pattern. Used by the WLED usermod, see extras/docs/WLED.md.
+  void SetLeadingPattern(std::optional<PatternBits> leadingPattern);
+  std::optional<PatternBits> leadingPattern() const { return leadingPattern_; }
+  // Counts as user input without changing the pattern. This adds the precedence gain, and, unless turned off with
+  // SetUserInputKeepsLeading(), keeps us leading for kInputDuration.
+  void RecordUserInput(OptionalMicroseconds currentTimeOpt = std::nullopt);
+  // Whether recent user input makes us ignore every originator below kAdminPrecedence, so that we keep leading. On by
+  // default. When off, user input only adds the precedence gain.
+  void SetUserInputKeepsLeading(bool userInputKeepsLeading) { userInputKeepsLeading_ = userInputKeepsLeading; }
   void ForcePalette(uint8_t palette);
   void StopForcePalette();
 
@@ -205,6 +218,8 @@ class ProtocolEngine {
 
   bool loop_ = false;
   std::optional<uint8_t> forcedPalette_;
+  std::optional<PatternBits> leadingPattern_;
+  bool userInputKeepsLeading_ = true;
 
   Microseconds currentPatternStartTime_ = TimeMicros();
   PatternBits currentPattern_ = EnforceForcedPalette(kStartingPattern);

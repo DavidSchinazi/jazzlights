@@ -1,6 +1,7 @@
 # JazzLights Usermod for WLED
 
-Status: approved, being implemented. Phase 1 (building the usermod in WLED) is done, see
+Status: approved, being implemented. Phases 1 (building the usermod in WLED) and 2 (engine
+changes) are done, see
 [Implementation phases](#implementation-phases).
 
 [WLED](https://github.com/wled/WLED) is popular firmware for addressable LEDs. This doc
@@ -235,9 +236,9 @@ usermod uses these differently per mode:
 - **Leader:** the gain only. The device doesn't ignore anyone, so a Core2 in override mode
   or an admin device always takes over, even right after a change.
 
-This needs a second small engine change, next to `SetLeadingPattern()`: a setting for
-whether user input makes the device ignore others, on by default so existing devices
-behave as today. See [Engine changes](#engine-changes).
+This needs a second small engine change, next to `SetLeadingPattern()`:
+`SetUserInputKeepsLeading()`, on by default so existing devices behave as today. See
+[Engine changes](#engine-changes).
 
 When a higher precedence device takes over a WLED leader, WLED's LEDs follow it too, with
 the same code as follower mode (see [JazzLights to WLED](#jazzlights-to-wled-follower)),
@@ -268,19 +269,27 @@ the engine's `loop_` flag. And while `loop_` is set, the engine ignores every or
 below admin precedence (`kAdminPrecedence`), so a WLED leader would never yield, even to a
 Core2 in override mode, and a WLED follower that once led alone would never follow again.
 
-So the engine needs a way to set the pattern this device advertises while leading, held
-until it changes, without the "stick as leader" behavior of `loop_`. For example,
-`ProtocolEngine::SetLeadingPattern(std::optional<PatternBits>)`. While leading, the engine
-advertises `currentPattern = nextPattern = held pattern` and restarts it every 10 seconds,
-like a loop. As soon as a better originator shows up, the engine follows it as usual.
+So `ProtocolEngine::SetLeadingPattern(std::optional<PatternBits>)` sets the pattern this
+device advertises whenever it leads, held until the next call, without the "stick as leader"
+behavior of `loop_`:
+
+- While leading, the engine advertises `currentPattern = nextPattern = held pattern` and
+  restarts it every 10 seconds, like a loop.
+- A new pattern takes effect at the next `CheckLeaderAndPattern()`, restarting right away.
+  Setting the same one again changes nothing.
+- As soon as a better originator shows up, the engine follows it as usual. When it leaves,
+  the engine leads with the held pattern again, restarting it.
+- `std::nullopt` resumes the regular rotation after the current pattern.
 
 A held pattern restarts every 10 seconds, on every device. For several effects that
 restart is visible. See [Transitions](#transitions).
 
-**Gain without ignoring others.** Today, recent user input both adds the precedence gain
-and makes the device ignore everyone below admin precedence. A WLED leader needs only the
-first (see [What a person's change does in each mode](#what-a-persons-change-does-in-each-mode)),
-so the engine gets a setting to turn off the second, on by default.
+**Gain without ignoring others.** Recent user input both adds the precedence gain and
+makes the device ignore everyone below admin precedence. A WLED leader needs only the first
+(see [What a person's change does in each mode](#what-a-persons-change-does-in-each-mode)),
+so `SetUserInputKeepsLeading(false)` turns off the second. It's on by default. Also, user
+input used to come only with a pattern change (`GoToNextPattern()`, `SetPattern()`), so
+`RecordUserInput()` records it without changing the pattern, for a person's WLED change.
 
 ### When WLED is turned off
 
@@ -299,8 +308,8 @@ The protocol has no explicit goodbye, so this needs no protocol change. Reading 
 this works: an update from an originator's next hop replaces its precedence right away,
 including a decrease. And a device that relayed the WLED device's messages and starts
 following someone else makes the devices behind it retract the WLED device's entry
-("abandonment" in `HandleReceivedMessage()`), so the change spreads over several hops. An
-engine test will confirm it.
+("abandonment" in `HandleReceivedMessage()`), so the change spreads over several hops.
+`TestPrecedenceDropReleasesFollowers` confirms both.
 
 When WLED is turned back on, the device rejoins with its normal precedence, including
 during the 10 seconds at precedence 0. In leader mode, this counts as user input.
@@ -663,13 +672,18 @@ be switched from the JSON API and Home Assistant.
   The mapping code shouldn't depend on WLED headers, so it builds in `extras/` without WLED.
 - **Native test** that `RandomizePatternBits()` keeps the effect and palette of every
   pattern the leader mapping can produce.
-- **Engine tests** for `SetLeadingPattern()`: a leader yields to higher precedence, a
-  follower that led alone follows again, the held pattern restarts every 10 seconds.
-- **Engine tests** for user input: with the new setting off, a device with recent user
-  input still follows a higher precedence device. With it on (the default), behavior is
-  unchanged.
-- **Engine test** for turning off: once the device switches to precedence 0, the devices
-  that followed it elect someone else right away.
+- **Engine tests**, in `test/test_protocol` (done in phase 2):
+  - `TestLeadingPatternIsHeld`: the held pattern replaces the rotation, restarts every 10
+    seconds, restarts right away when it changes, and the rotation resumes when cleared.
+  - `TestLeadingPatternStillFollows`: a device holding a pattern follows a Core2 in
+    override mode, and leads with its pattern again once it's gone.
+  - `TestUserInputCanOnlyAddGain`: with `SetUserInputKeepsLeading(false)`, user input adds
+    the gain but the device still follows better precedence.
+  - `TestUserInputKeepsLeadingByDefault`: by default, user input pauses following for
+    `kInputDuration`.
+  - `TestPrecedenceDropReleasesFollowers`: when a leader drops to precedence 0, a device
+    following it directly, and one following it through that device, elect someone else
+    right away.
 - **Updates**: on hardware, a one-click update and a manual upload of a stock image are
   both refused, an image built with the usermod updates, and Bluetooth and UDP resume if
   an update fails.
@@ -691,7 +705,9 @@ be switched from the JSON API and Home Assistant.
      did, is harmless;
    - that forwarding logs from other tasks is safe when WLED sends its debug output over
      the network.
-2. Engine changes (`SetLeadingPattern()` and the user input setting) with their tests.
+2. Engine changes (`SetLeadingPattern()`, `RecordUserInput()` and
+   `SetUserInputKeepsLeading()`) with their tests. **Done.** The usermod doesn't use them
+   yet.
 3. Leader mode, with the WLED to JazzLights tables and their tests.
 4. Follower mode with option A.
 5. Optionally, option B.
