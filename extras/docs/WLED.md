@@ -1,9 +1,10 @@
 # JazzLights Usermod for WLED
 
-Status: approved, being implemented. Phases 1 to 4 (building the usermod in WLED, engine
-changes, leader mode and follower mode) are done, see
-[Implementation phases](#implementation-phases). On an ATOM Matrix with a vest, sync works
-in both modes.
+Status: implemented, being tested on hardware. Phases 1 to 4 (building the usermod in WLED,
+engine changes, leader mode and follower mode) are done, see
+[Implementation phases](#implementation-phases). On an ATOM Matrix and an ATOMS3R, each
+with a vest's LEDs, sync works in both modes, see [Testing](#testing). To set up a device,
+see [SETUP.md](../wled/SETUP.md).
 
 [WLED](https://github.com/wled/WLED) is popular firmware for addressable LEDs. This doc
 plans a WLED **usermod** (WLED's plugin mechanism) that lets a WLED device take part in
@@ -39,6 +40,8 @@ The division of work:
   [Segments](#segments)).
 - Replacing WLED's own sync (UDP notifier, DDP, E1.31, ESP-NOW). Those keep working
   alongside JazzLights, and are still the best way to sync WLED devices with each other.
+- Bridging JazzLights sync and WLED's own sync. A follower doesn't pass followed patterns
+  on to WLED's sync, and a leader doesn't take patterns from it.
 - Rendering JazzLights' own effects inside WLED. A follower shows the closest WLED effect
   instead, see [JazzLights to WLED](#jazzlights-to-wled-follower).
 
@@ -126,7 +129,9 @@ WLED can also send over the network with `WLED_DEBUG_HOST`), through a log handl
 with `SetLogHandler()`, like the ESPHome component sends them to ESPHome's logger.
 `JL_LOG_HANDLER` enables that handler for both. With `WLED_DEBUG` on, this includes the
 protocol logs for every message sent and received, which is what checking wire compatibility
-on hardware needs. Without it, only fatal logs are printed.
+on hardware needs. Without it, only fatal logs are printed, and WLED's serial output is
+just "Ada", its Adalight greeting. See [Build and packaging](#build-and-packaging) for a
+debug build.
 
 The radio timing doesn't depend on WLED's `loop()`, which can take tens of milliseconds:
 `Esp32NimBleNetwork` alternates between scanning and advertising from its own task and
@@ -166,13 +171,15 @@ the usermod lives in this repo:
   | Environment | Extends | Board settings |
   |---|---|---|
   | `jazzlights_atom_matrix` | `esp32dev` | 25 LEDs on GPIO 27 (the ATOM's 5x5 matrix), then 360 on 26 (the vest), button on 39 |
-  | `jazzlights_atom_s3_lite` | `esp32s3dev_8MB_none` | LEDs on GPIO 2, button on 41 |
-  | `jazzlights_atom_s3r` | `esp32s3dev_8MB_opi` | 8 MB of octal PSRAM, LEDs on GPIO 2, button on 41 |
-  | `jazzlights_m5stamp_c3u` | `esp32c3dev` | LEDs on GPIO 1 |
-  | `jazzlights_m5_nano_c6` | `esp32c6dev_4MB` | LEDs on GPIO 2, no audioreactive, no Bluetooth |
+  | `jazzlights_atom_s3_lite` | `esp32s3dev_8MB_none` | 360 LEDs on GPIO 2, button on 41 |
+  | `jazzlights_atom_s3r` | `esp32s3dev_8MB_opi` | 8 MB of octal PSRAM, 360 LEDs on GPIO 2, button on 41 |
+  | `jazzlights_m5stamp_c3u` | `esp32c3dev` | 360 LEDs on GPIO 1 |
+  | `jazzlights_m5_nano_c6` | `esp32c6dev_4MB` | 360 LEDs on GPIO 2, no audioreactive, no Bluetooth |
 
   They keep WLED's default usermods (currently audioreactive), except on the NanoC6, which
-  has no microphone. WLED's LED settings can still be changed from its web UI.
+  has no microphone. The LED pins and counts are only defaults for a fresh install: WLED's
+  LED settings can still be changed from its web UI, and survive updates.
+  [SETUP.md](../wled/SETUP.md) has the steps to set up each board.
 
   On the ATOM Matrix, the vest's 360 LEDs don't form a grid that WLED's 2D panel settings
   can describe, so `generate_vest_ledmap.py` writes a WLED `ledmap.json` instead. It reads
@@ -210,6 +217,20 @@ the usermod lives in this repo:
   Run `-t erase` as its own command: WLED's platform turns off PlatformIO's library
   dependency resolution whenever `erase` is among the targets, so a build in the same
   command can't find `WiFi.h`.
+
+  For logs, build with WLED's debug output, which also carries JazzLights' logs, see
+  [Architecture](#architecture). PlatformIO adds build flags from the environment:
+
+  ```sh
+  PLATFORMIO_BUILD_FLAGS=-DWLED_DEBUG extras/wled/build.sh -e jazzlights_atom_s3r -t upload -t monitor
+  ```
+
+  The image keeps its release name, so it updates to and from regular images. It's larger:
+  the ATOM Matrix, at 97.6% of its app partition without it, may not fit, in which case
+  add `-DJL_DISABLE_BLUETOOTH=1` too. WLED reserves GPIO 1 for its serial debug output,
+  which is the vest's pin on the M5Stamp C3U. There, or once the device is away from USB,
+  also define `WLED_DEBUG_HOST` as a quoted IP address, and WLED sends the output over UDP
+  to that address, on port 7868 (`nc -l -u 7868`), instead of serial.
 
   WLED's build bundles its web UI with Node.js, which needs to be on the `PATH`. WLED asks
   for Node 20. On macOS: `brew install node@20`, then add `/opt/homebrew/opt/node@20/bin`
@@ -594,8 +615,8 @@ Details:
 - While following, the leader direction is paused, since the segments show what the
   usermod applied. It resumes from the restored state.
 - It applies changes without notifying WLED's own UDP sync (`CALL_MODE_NO_NOTIFY`), and
-  without saving anything to flash. A setting could instead let them propagate to other
-  WLED devices.
+  without saving anything to flash. Passing them on to other WLED devices is a non-goal,
+  see [Non-goals](#non-goals).
 - Each applied pattern, about every 10 seconds, makes WLED push its state to the web UI,
   which redraws its segment list, so a segment being added there disappears before it's
   confirmed. WLED does the same while another WLED device syncs it. To edit segments,
@@ -645,7 +666,8 @@ What phase 1 found:
   little radio time for DHCP. So while WLED's access point is on (WLED's `apActive`), the
   usermod pauses Bluetooth half of the time (1 second out of every 2), so that phones can
   join, and entirely while a client is connected (`WiFi.softAPgetStationNum()`), so that
-  WLED's web UI works. Sync over Bluetooth slows down meanwhile. Bluetooth takes about
+  WLED's web UI works. Sync over Bluetooth slows down meanwhile. With this, phones join
+  `WLED-AP` on an ATOMS3R with Bluetooth on. Bluetooth takes about
   85 KB of internal memory: free memory went from about 128 KB to about 43 KB.
 - **LED driver crash on the classic ESP32.** WLED's RMT LED driver uses a high-level
   interrupt. When Bluetooth's high-level interrupt is compiled in (`CONFIG_BTDM_CTRL_HLI`,
@@ -672,8 +694,8 @@ What phase 1 found:
   the parallel driver wasn't available, the usermod doesn't start Bluetooth, and says so in
   the Info tab.
 
-  With this, the ATOM Matrix no longer crashes. Not yet checked: that the I2S driver
-  doesn't flicker with Wi-Fi and Bluetooth on.
+  With this, the ATOM Matrix no longer crashes, and its LEDs don't flicker with Wi-Fi and
+  Bluetooth on.
 
 ### Supported chips
 
@@ -703,7 +725,8 @@ some, like the particle effects, allocate more, so large 2D canvases run out of 
 the ATOM Matrix: on the vest's 25 x 19 canvas, it had about 27 KB free while serving the
 web UI. The ATOM S3 Lite has about as much internal RAM (512 KB against 520 KB) and no
 PSRAM, so it doesn't help much. The ATOMS3R adds 8 MB of PSRAM, where WLED puts LED,
-segment and effect buffers, and is the board to use for larger setups. JazzLights has no
+segment and effect buffers, and is the board to use for larger setups: effects that ran
+out of memory on the ATOM Matrix run fine on it. JazzLights has no
 controller for it, so its preset uses `ATOM_S3`, which the usermod doesn't depend on.
 
 The other chips WLED supports (ESP32-S2, ESP32-C5, ESP32-P4 and ESP8266) are out of scope
@@ -797,7 +820,6 @@ Settings, saved in WLED's `cfg.json` through `addToConfig()` / `readFromConfig()
   them resets them to the new mode's defaults;
 - segment to follow: 255 for the main segment, or a segment ID;
 - Bluetooth: on or off (needs a reboot, absent from builds without Bluetooth);
-- later, in follower mode: whether to propagate to WLED sync.
 
 The Info tab (`addToJsonInfo()`) shows the mode, whether the device leads or follows, the
 leader's device ID, hop count and transport, and the current JazzLights pattern name (for
@@ -839,15 +861,21 @@ configuration (`/json/cfg`).
 - **Updates**: on hardware, a one-click update and a manual upload of a stock image are
   both refused, an image built with the usermod updates, and Bluetooth and UDP resume if
   an update fails.
-- **Hardware**: on an ATOM Matrix with a vest's LEDs, the generated ledmap and the
-  screen's segment, sync works in both modes: as a leader, JazzLights devices show the
-  closest pattern, and as a follower, WLED shows the followed pattern on the vest and the
-  screen. Still to check: an ATOM S3 Lite
-  (ESP32-S3), Bluetooth only, LED flicker, turning WLED off and on, firmware updates, and
-  joining WLED's access point with Bluetooth on. The full plan: an ATOM S3 Lite (ESP32-S3) and an ATOM Matrix (classic ESP32, 4 MB)
-  running WLED with the usermod, next to a vest, in each mode, over Wi-Fi and over
-  Bluetooth only. Also check LED flicker with Wi-Fi and Bluetooth both on, and turning
-  WLED off and on.
+- **Hardware**: an ATOM Matrix (classic ESP32, 4 MB) and an ATOMS3R (ESP32-S3 with
+  PSRAM), each with a vest's LEDs and its generated ledmap, next to JazzLights devices.
+  Checked so far:
+  - Sync works in both modes: as a leader, JazzLights devices show the closest pattern,
+    and as a follower, WLED shows the followed pattern on the vest and, on the ATOM
+    Matrix, on the screen's segment.
+  - With the parallel (I2S) LED driver, the ATOM Matrix doesn't crash, and its LEDs don't
+    flicker with Wi-Fi and Bluetooth on.
+  - Phones join `WLED-AP` on the ATOMS3R with Bluetooth on.
+  - On the ATOMS3R, effects that ran out of memory on the ATOM Matrix run fine.
+
+  Still to check: sync over Bluetooth only, turning WLED off and on, firmware updates
+  (including a one-click update from the release repo), installing the usermod from
+  GitHub, sending logs over the network, and the ATOM S3 Lite, ESP32-C3 and ESP32-C6
+  presets.
 
 ## Implementation phases
 
@@ -874,8 +902,7 @@ configuration (`/json/cfg`).
    starts, and the usermod follows a device over Bluetooth and applies its pattern. It then
    crashed because of the LED driver issue in [Bluetooth](#bluetooth), now worked around.
    Since then, on the same ATOM Matrix with a vest, sync works in both modes, see
-   [Testing](#testing). Not done: the setting
-   to let followed patterns propagate to WLED's own sync.
+   [Testing](#testing).
 
 ## Prior work
 
@@ -976,6 +1003,7 @@ is.
 - On the ATOM Matrix, a generated `ledmap.json` maps the vest's LEDs, and the 5x5 screen is
   a second segment of the same canvas.
 - The default mode is follower, so that a newly flashed WLED device doesn't take over.
+- No bridging between JazzLights sync and WLED's own sync.
 - The usermod's `library.json` is at the root of this repo, so WLED can install it from
   GitHub, and one-click updates come from a separate release repo,
   `DavidSchinazi/jazzlights-wled`.
