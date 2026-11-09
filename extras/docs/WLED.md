@@ -819,13 +819,32 @@ Settings, saved in WLED's `cfg.json` through `addToConfig()` / `readFromConfig()
 - base precedence and gain, prefilled from the mode: changing the mode without editing
   them resets them to the new mode's defaults;
 - segment to follow: 255 for the main segment, or a segment ID;
-- Bluetooth: on or off (needs a reboot, absent from builds without Bluetooth);
+- Bluetooth: on or off (needs a reboot, absent from builds without Bluetooth).
 
 The Info tab (`addToJsonInfo()`) shows the mode, whether the device leads or follows, the
 leader's device ID, hop count and transport, and the current JazzLights pattern name (for
-example `rings-ocean`). Later: `addToJsonState()` and `readFromJsonState()` to expose the
-mode in WLED's state, for the JSON API and Home Assistant. Until then, the mode is in WLED's
-configuration (`/json/cfg`).
+example `rings-ocean`).
+
+WLED's JSON state (`addToJsonState()` / `readFromJsonState()`) also carries the mode, by
+name, so that it can be switched without the settings page:
+
+```sh
+curl -X POST http://<device>/json/state -H "Content-Type: application/json" \
+  -d '{"JazzLights":{"mode":"leader"}}'
+```
+
+It reads `off`, `follower` or `leader`, or the settings' numbers 0 to 2, and saves the new
+mode to `cfg.json`, as the settings page would. Precedences still at the previous mode's
+defaults switch to the new mode's, and customized ones stay. Turning on from off still
+needs a reboot if the device booted off. This works wherever WLED takes JSON state:
+its JSON API, its MQTT `/api` topic, and presets, so a preset can switch the mode, for
+example at boot. WLED doesn't save the mode into presets it creates, so that only happens
+when someone adds it to a preset's JSON. Home Assistant's WLED integration doesn't show
+usermod state, but its REST commands can send this.
+
+WLED calls these hooks, and `readFromConfig()` when the settings page is saved, from its
+web server's task. They only store the change, and the usermod's `loop()` applies it, so
+that the protocol engine is only used from WLED's loop.
 
 ## Testing
 

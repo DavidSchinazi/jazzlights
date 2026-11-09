@@ -91,6 +91,14 @@ table. The first build clones WLED into `extras/.wled` and takes a few minutes.
    - **Leader**: JazzLights devices around show the closest pattern to WLED's effect.
    - **Off**: no JazzLights at all.
 
+   You can also switch it through WLED's JSON API, for example from a script or home
+   automation:
+
+   ```sh
+   curl -X POST http://<device>/json/state -H "Content-Type: application/json" \
+     -d '{"JazzLights":{"mode":"leader"}}'
+   ```
+
 8. **Check that it works.** WLED's **Info** tab shows whether the usermod leads or
    follows, and which device it follows. In leader mode, **Fire 2012** should rise from
    the vest's hem.

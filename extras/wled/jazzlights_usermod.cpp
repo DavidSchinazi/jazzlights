@@ -13,6 +13,7 @@
 #include <esp_wifi.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
@@ -135,6 +136,24 @@ const char* ModeName(Mode mode) {
     case Mode::kLeader: return "leader";
   }
   return "unknown";
+}
+
+// Parses a mode from WLED's JSON state, by name or by number as in the settings.
+std::optional<Mode> ParseMode(JsonVariant value) {
+  if (value.is<const char*>()) {
+    const char* name = value.as<const char*>();
+    for (Mode mode : {Mode::kOff, Mode::kFollower, Mode::kLeader}) {
+      if (strcmp(name, ModeName(mode)) == 0) { return mode; }
+    }
+    return std::nullopt;
+  }
+  if (value.is<int>()) {
+    const int number = value.as<int>();
+    if (number >= static_cast<int>(Mode::kOff) && number <= static_cast<int>(Mode::kLeader)) {
+      return static_cast<Mode>(number);
+    }
+  }
+  return std::nullopt;
 }
 
 Precedence DefaultBasePrecedence(Mode mode) {
@@ -352,6 +371,7 @@ class JazzLightsUsermod : public Usermod, private ::jazzlights::ProtocolEngine::
   }
 
   void loop() override {
+    ApplyPendingChanges();
     if (!started_) { return; }
 #if JL_WLED_AVOID_RMT_LED_DRIVER
     // Saving WLED's LED settings recreates the buses later in this iteration of WLED's loop.
@@ -431,6 +451,21 @@ class JazzLightsUsermod : public Usermod, private ::jazzlights::ProtocolEngine::
     pattern.add(PatternName(engine_.GetCurrentPattern()));
   }
 
+  // WLED's JSON state carries the mode, so that the JSON API, presets and home automation can switch it, as in
+  // {"JazzLights":{"mode":"leader"}}. See "Configuration and UI" in extras/docs/WLED.md.
+  void addToJsonState(JsonObject& root) override {
+    JsonObject top = root.createNestedObject(FPSTR(kConfigKey));
+    top[F("mode")] = ModeName(mode_);
+  }
+
+  // WLED calls this from its web server's task, so loop() applies the change.
+  void readFromJsonState(JsonObject& root) override {
+    JsonObject top = root[FPSTR(kConfigKey)];
+    if (top.isNull()) { return; }
+    const std::optional<Mode> mode = ParseMode(top[F("mode")]);
+    if (mode) { pendingMode_.store(static_cast<int8_t>(*mode)); }
+  }
+
   void addToConfig(JsonObject& root) override {
     JsonObject top = root.createNestedObject(FPSTR(kConfigKey));
     top[F("mode")] = static_cast<int>(mode_);
@@ -468,7 +503,8 @@ class JazzLightsUsermod : public Usermod, private ::jazzlights::ProtocolEngine::
     if (!configLoaded_ && mode_ != Mode::kOff && bluetoothEnabled_) { AvoidRmtLedDriver(); }
 #endif  // JL_WLED_AVOID_RMT_LED_DRIVER
     configLoaded_ = true;
-    if (started_) { ApplyMode(); }
+    // Saving the settings page calls this from WLED's web server's task, so loop() applies the change.
+    if (started_) { settingsChanged_.store(true); }
     return configComplete;
   }
 
@@ -507,6 +543,7 @@ class JazzLightsUsermod : public Usermod, private ::jazzlights::ProtocolEngine::
   static constexpr uint32_t kAccessPointBluetoothOnMs = 1000;
   static constexpr uint32_t kAccessPointCheckIntervalMs = 100;
   static constexpr char kConfigKey[] PROGMEM = "JazzLights";
+  static constexpr int8_t kNoPendingMode = -1;
 
   Segment& FollowedSegment() {
     if (segmentId_ != kMainSegment && segmentId_ < strip.getSegmentsNum()) { return strip.getSegment(segmentId_); }
@@ -517,6 +554,27 @@ class JazzLightsUsermod : public Usermod, private ::jazzlights::ProtocolEngine::
     if (mode_ == Mode::kOff || bri == 0) { return false; }
     const Segment& segment = FollowedSegment();
     return segment.on && segment.isActive();
+  }
+
+  // Applies changes that arrived from WLED's web server's task.
+  void ApplyPendingChanges() {
+    const int8_t pendingMode = pendingMode_.exchange(kNoPendingMode);
+    if (pendingMode != kNoPendingMode) { SetModeFromState(static_cast<Mode>(pendingMode)); }
+    if (settingsChanged_.exchange(false) && started_) { ApplyMode(); }
+  }
+
+  // Switches the mode from WLED's JSON state, and saves it to WLED's settings. Precedences left at the previous mode's
+  // defaults switch to the new mode's, and customized ones stay. Turning on from off needs a reboot, as in setup().
+  void SetModeFromState(Mode mode) {
+    if (mode == mode_) { return; }
+    jll_info("Switching from %s to %s from WLED's state", ModeName(mode_), ModeName(mode));
+    if (basePrecedence_ == DefaultBasePrecedence(mode_) && precedenceGain_ == DefaultPrecedenceGain(mode_)) {
+      basePrecedence_ = DefaultBasePrecedence(mode);
+      precedenceGain_ = DefaultPrecedenceGain(mode);
+    }
+    mode_ = mode;
+    configNeedsWrite = true;
+    if (started_) { ApplyMode(); }
   }
 
   void ApplyMode() {
@@ -768,6 +826,9 @@ class JazzLightsUsermod : public Usermod, private ::jazzlights::ProtocolEngine::
   uint32_t lastAccessPointCheckMs_ = 0;
 #endif  // !JL_DISABLE_BLUETOOTH
   bool configLoaded_ = false;
+  // Changes from WLED's web server's task, which loop() applies.
+  std::atomic<int8_t> pendingMode_{kNoPendingMode};
+  std::atomic<bool> settingsChanged_{false};
 
   bool started_ = false;
   bool updating_ = false;
