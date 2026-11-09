@@ -7,9 +7,11 @@ ATOM Matrix's 5x5 screen to the right of the vest, in the top rows. The vest's c
 them to whole cells puts every LED on its own cell.
 
 The physical LED order matches the jazzlights_atom_matrix environment in extras/wled/platformio_override.ini: the
-screen's 25 LEDs first, then the vest's 360.
+screen's 25 LEDs first, then the vest's 360. WLED keeps its LED settings across firmware updates, so a device first set
+up with an earlier preset may have the vest first: check WLED's LED Preferences, and pass --vest-first if the output on
+GPIO 26 comes before the one on GPIO 27.
 
-Usage: extras/wled/generate_vest_ledmap.py [--flip-x] [--flip-y] [--no-screen] > ledmap.json
+Usage: extras/wled/generate_vest_ledmap.py [--vest-first] [--flip-x] [--flip-y] [--no-screen] > ledmap.json
 Then upload ledmap.json in WLED's file editor (http://<device>/edit) and reboot.
 """
 
@@ -40,6 +42,7 @@ def main():
     parser.add_argument("--flip-x", action="store_true", help="mirror the vest left to right")
     parser.add_argument("--flip-y", action="store_true", help="mirror the vest top to bottom")
     parser.add_argument("--no-screen", action="store_true", help="leave the ATOM Matrix's 5x5 screen out")
+    parser.add_argument("--vest-first", action="store_true", help="the vest's LEDs come before the screen's in WLED")
     args = parser.parse_args()
 
     screen_leds = 0 if args.no_screen else SCREEN_SIZE * SCREEN_SIZE
@@ -56,18 +59,22 @@ def main():
     if args.flip_y:
         cells = [(x, vest_height - 1 - y) for x, y in cells]
 
+    # The first physical index of the vest's LEDs and of the screen's.
+    vest_start = 0 if args.vest_first else screen_leds
+    screen_start = len(points) if args.vest_first else 0
+
     width = vest_width + (0 if args.no_screen else SCREEN_SIZE)
     height = max(vest_height, 0 if args.no_screen else SCREEN_SIZE)
     grid = [-1] * (width * height)
     for index, (x, y) in enumerate(cells):
         cell = y * width + x
         if grid[cell] != -1:
-            sys.exit("Vest LEDs %d and %d land on the same cell (%d, %d)" % (grid[cell] - screen_leds, index, x, y))
-        grid[cell] = screen_leds + index
+            sys.exit("Vest LEDs %d and %d land on the same cell (%d, %d)" % (grid[cell] - vest_start, index, x, y))
+        grid[cell] = vest_start + index
     if not args.no_screen:
         # The screen's LEDs go left to right, then top to bottom.
         for index in range(screen_leds):
-            grid[(index // SCREEN_SIZE) * width + vest_width + index % SCREEN_SIZE] = index
+            grid[(index // SCREEN_SIZE) * width + vest_width + index % SCREEN_SIZE] = screen_start + index
 
     json.dump({"n": "JazzLights vest", "width": width, "height": height, "map": grid}, sys.stdout, separators=(",", ":"))
     sys.stdout.write("\n")

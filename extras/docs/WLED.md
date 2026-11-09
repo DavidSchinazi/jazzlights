@@ -177,13 +177,24 @@ lives in this repo, under `extras/wled/`:
   each LED gets its own cell, and places the ATOM's 5x5 screen to the right, in the top 5
   rows of a 25 x 19 canvas. A ledmap with a width and height also makes WLED 2D at boot,
   so WLED's 2D panel settings aren't needed. Setup, once:
-  1. `extras/wled/generate_vest_ledmap.py > ledmap.json`, then upload it in WLED's file
+  1. Check the LED order in WLED's LED Preferences. The map expects the preset's order:
+     the screen first (GPIO 27, 25 LEDs, starting at 0), then the vest (GPIO 26, 360 LEDs,
+     starting at 25). WLED keeps its LED settings across firmware updates, so a device
+     first set up with an earlier preset can have the vest first; pass `--vest-first` to
+     the script for those. With the wrong order, every LED is off by 25: the vest looks
+     scrambled, and the screen shows part of the vest.
+  2. `extras/wled/generate_vest_ledmap.py > ledmap.json`, then upload it in WLED's file
      editor (`http://<device>/edit`) and reboot.
-  2. In WLED's segments, make segment 0 the vest, columns 0 to 20 and rows 0 to 19, and
+  3. In WLED's segments, make segment 0 the vest, columns 0 to 20 and rows 0 to 19, and
      add segment 1 for the screen, columns 20 to 25 and rows 0 to 5 (stop values are
      exclusive).
 
-  If the vest shows up mirrored or upside down, regenerate with `--flip-x` or `--flip-y`.
+  The vest's layout matches [VEST.md](VEST.md): its strand starts at the top, so row 0 is
+  the top of the vest, and WLED's effects that rise, like Fire 2012, rise from its hem.
+  The columns go around the wearer as seen from outside: the front left panel from the
+  zipper, the back, then the front right panel back to the zipper. The screen is the
+  right way up when JazzLights' text reads correctly on it. If the vest still shows up
+  mirrored or upside down, regenerate with `--flip-x` or `--flip-y`.
 - `build.sh` builds them. The first run clones WLED, at a commit pinned in the script, into
   `extras/.wled`, and every run copies `platformio_override.ini` there:
 
