@@ -167,6 +167,7 @@ the usermod lives in this repo:
   |---|---|---|
   | `jazzlights_atom_matrix` | `esp32dev` | 25 LEDs on GPIO 27 (the ATOM's 5x5 matrix), then 360 on 26 (the vest), button on 39 |
   | `jazzlights_atom_s3_lite` | `esp32s3dev_8MB_none` | LEDs on GPIO 2, button on 41 |
+  | `jazzlights_atom_s3r` | `esp32s3dev_8MB_opi` | 8 MB of octal PSRAM, LEDs on GPIO 2, button on 41 |
   | `jazzlights_m5stamp_c3u` | `esp32c3dev` | LEDs on GPIO 1 |
   | `jazzlights_m5_nano_c6` | `esp32c6dev_4MB` | LEDs on GPIO 2, no audioreactive, no Bluetooth |
 
@@ -683,6 +684,7 @@ use of the app partition, for WLED with its default usermods, at the pinned WLED
 |---|---|---|---|---|
 | ESP32, 4 MB | `jazzlights_atom_matrix` | 84.7% | 96.8% (+190 KB) | IP and Bluetooth |
 | ESP32-S3, 8 MB | `jazzlights_atom_s3_lite` | 60.5% | 69.0% (+178 KB) | IP and Bluetooth |
+| ESP32-S3, 8 MB, 8 MB PSRAM | `jazzlights_atom_s3r` | 60.8% | 69.8% (+186 KB) | IP and Bluetooth |
 | ESP32-C3, 4 MB | `jazzlights_m5stamp_c3u` | 83.8% | 96.5% (+201 KB) | IP and Bluetooth |
 | ESP32-C6, 4 MB | `jazzlights_m5_nano_c6` | 87.2% | 86.9% | IP only |
 
@@ -695,6 +697,14 @@ turning off WLED's infrared, MQTT, Alexa and Hue support only brings it to 104.8
 planned, its environment leaves Bluetooth out with `-D JL_DISABLE_BLUETOOTH=1` and keeps
 IP sync. A larger app partition would fit Bluetooth, at the cost of WLED's file system,
 which holds its settings and presets.
+
+RAM matters more than flash for WLED's effects. They draw into per-segment buffers, and
+some, like the particle effects, allocate more, so large 2D canvases run out of memory on
+the ATOM Matrix: on the vest's 25 x 19 canvas, it had about 27 KB free while serving the
+web UI. The ATOM S3 Lite has about as much internal RAM (512 KB against 520 KB) and no
+PSRAM, so it doesn't help much. The ATOMS3R adds 8 MB of PSRAM, where WLED puts LED,
+segment and effect buffers, and is the board to use for larger setups. JazzLights has no
+controller for it, so its preset uses `ATOM_S3`, which the usermod doesn't depend on.
 
 The other chips WLED supports (ESP32-S2, ESP32-C5, ESP32-P4 and ESP8266) are out of scope
 until JazzLights supports them.
