@@ -105,10 +105,13 @@ table. The first build clones WLED into `extras/.wled` and takes a few minutes.
 
 ## Updating
 
-Images built with the usermod update from WLED's update page in one click, from
-[DavidSchinazi/jazzlights-wled](https://github.com/DavidSchinazi/jazzlights-wled), and
-refuse stock WLED images, which would remove the usermod. Images built before that repo
-existed need one more update over USB with step 2. Your settings, ledmap and presets stay.
+Download your board's image from the latest release of
+[DavidSchinazi/jazzlights-wled](https://github.com/DavidSchinazi/jazzlights-wled), the one
+whose name ends in your device's release name (shown on WLED's update page, such as
+`ESP32_JazzLights`), and upload it on WLED's update page. Or rebuild and flash with step 2.
+Your settings, ledmap and presets stay. WLED refuses stock WLED images, which would remove
+the usermod. The update page's one-click button doesn't work yet: WLED's download mirror
+doesn't serve this repo.
 
 ## Logs
 

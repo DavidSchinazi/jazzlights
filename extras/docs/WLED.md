@@ -761,7 +761,8 @@ that image wasn't built with the usermod, JazzLights is gone. Its settings stay 
    "Ignore firmware validation".
 2. **One-click update.** The page fetches the latest GitHub release of the repo baked into
    the build (`WLED_REPO`), downloads the asset named `*_<version>_<release name>.bin`, and
-   uploads it. WLED's metadata script sets `WLED_REPO` from its checkout's git remote, so
+   uploads it. GitHub's release files can't be fetched from another site's page, so it
+   downloads them through `download.wled.me`, WLED's mirror. WLED's metadata script sets `WLED_REPO` from its checkout's git remote, so
    it's `wled/WLED` unless something else sets it.
 
 A build that extends an official WLED environment inherits its release name, for example
@@ -771,10 +772,11 @@ release name check, and the usermod would be gone without warning.
 So **builds with the usermod get their own release name**, the official one with
 `_JazzLights` appended, such as `ESP32-S3_8MB_opi_JazzLights`. Then:
 
-- **One-click update:** installs from
+- **One-click update:** looks in
   [DavidSchinazi/jazzlights-wled](https://github.com/DavidSchinazi/jazzlights-wled), see
-  below, so it keeps the usermod. Images built before that repo, whose `WLED_REPO` is
-  `wled/WLED`, find no asset with the suffix there, and stop with "Firmware not found".
+  below, and fails there for now, without flashing anything. Images built before that
+  repo, whose `WLED_REPO` is `wled/WLED`, find no asset with the suffix, and stop with
+  "Firmware not found".
 - **Manual upload of a stock image:** rejected with "Firmware release name mismatch".
 - **Images built with the usermod:** update as usual. The only way to lose the usermod is
   to tick "Ignore firmware validation".
@@ -799,11 +801,18 @@ hand from its Actions tab with a JazzLights branch, tag or commit. The workflow 
 version, so the same WLED version can be released again with newer JazzLights code. It
 renames each image to match, such as `WLED_17.0.0-devV5-jl.3_ESP32_JazzLights.bin`.
 
-One-click update then installs the image whose release name matches the device's, from
-the latest release. Builds that share a release name share an image: a WLED environment
-that adds the usermod to `esp32dev` gets the ATOM Matrix's. That only changes the
-defaults of a fresh install, since WLED keeps its settings across updates. Devices whose
-images predate the release repo need one manual upload of a newer image first.
+One-click update would then install the image whose release name matches the device's,
+from the latest release. **But WLED's mirror only serves an allowlist of repos**: in
+November 2026, it served `wled/WLED`, `MoonModules/WLED-MM` and `Aircoookie/WLED`, and
+returned 404 for this release repo and for every other WLED-related repo tried. So one
+click finds the image and fails to download it ("Auto-update failed: Download failed:
+404"), which flashes nothing. Until WLED's mirror serves the release repo, updates are
+manual: download the device's image from the repo's latest release (the update page links
+to it), and upload it on the same page. The release name check still refuses stock images.
+
+Builds that share a release name share an image: a WLED environment that adds the usermod
+to `esp32dev` gets the ATOM Matrix's. That only changes the defaults of a fresh install,
+since WLED keeps its settings across updates.
 
 **During an update**, WLED calls `onUpdateBegin(true)`, and `onUpdateBegin(false)` if the
 update fails. The usermod pauses Bluetooth and UDP on the first call, to free memory and
@@ -877,8 +886,8 @@ that the protocol engine is only used from WLED's loop.
   - `TestPrecedenceDropReleasesFollowers`: when a leader drops to precedence 0, a device
     following it directly, and one following it through that device, elect someone else
     right away.
-- **Updates**: on hardware, a one-click update and a manual upload of a stock image are
-  both refused, an image built with the usermod updates, and Bluetooth and UDP resume if
+- **Updates**: on hardware, a one-click update fails without flashing, a manual upload of a
+  stock image is refused, an image built with the usermod updates, and Bluetooth and UDP resume if
   an update fails.
 - **Hardware**: an ATOM Matrix (classic ESP32, 4 MB) and an ATOMS3R (ESP32-S3 with
   PSRAM), each with a vest's LEDs and its generated ledmap, next to JazzLights devices.
@@ -892,7 +901,7 @@ that the protocol engine is only used from WLED's loop.
   - On the ATOMS3R, effects that ran out of memory on the ATOM Matrix run fine.
 
   Still to check: sync over Bluetooth only, turning WLED off and on, firmware updates
-  (including a one-click update from the release repo), installing the usermod from
+  (including a manual update from the release repo), installing the usermod from
   GitHub, sending logs over the network, and the ATOM S3 Lite, ESP32-C3 and ESP32-C6
   presets.
 
@@ -1024,8 +1033,9 @@ is.
 - The default mode is follower, so that a newly flashed WLED device doesn't take over.
 - No bridging between JazzLights sync and WLED's own sync.
 - The usermod's `library.json` is at the root of this repo, so WLED can install it from
-  GitHub, and one-click updates come from a separate release repo,
-  `DavidSchinazi/jazzlights-wled`.
+  GitHub, and release images come from a separate release repo,
+  `DavidSchinazi/jazzlights-wled`. One-click updates from it need WLED's download mirror
+  to serve it.
 - Palettes without an exact equivalent go to the closest JazzLights palette by hue.
 - A follower keeps the segment's sliders, and switches at the end of each 10 seconds without
   waiting for the leader's message.

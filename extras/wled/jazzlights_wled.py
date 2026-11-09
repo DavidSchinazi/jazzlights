@@ -9,8 +9,9 @@ Import("projenv")
 # sources, before running library scripts, but only compiles those sources afterwards, so changing it here works.
 RELEASE_NAME_SUFFIX = "_JazzLights"
 
-# The GitHub repository whose releases WLED's one-click update installs from. Its releases hold images built with the
-# usermod, named after their release names, see extras/docs/WLED.md. An environment can set its own WLED_REPO instead.
+# The GitHub repository whose releases WLED's update page offers, and its one-click update installs from once WLED's
+# download mirror serves it. Its releases hold images built with the usermod, named after their release names, see
+# extras/docs/WLED.md. An environment can set its own WLED_REPO instead.
 RELEASE_REPO = "DavidSchinazi/jazzlights-wled"
 
 
