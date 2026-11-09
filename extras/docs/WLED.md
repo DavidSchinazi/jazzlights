@@ -141,23 +141,24 @@ changes, not every loop.
 
 WLED's main branch builds on ESP-IDF 5.5 with Arduino core 3.3 (Tasmota's platform), and
 usermods are PlatformIO libraries listed in `custom_usermods`. That setting accepts external
-sources such as `symlink://` paths, as long as each one is on its own line, so the usermod
-lives in this repo, under `extras/wled/`:
+sources such as git URLs and `symlink://` paths, as long as each one is on its own line, so
+the usermod lives in this repo:
 
-- `library.json` declares the usermod as a PlatformIO library. It compiles
-  `jazzlights_usermod.cpp` plus the needed subset of `src/jazzlights` (the protocol, the
-  network code and `util`, but not the renderer, the effects or FastLED), and sets
-  `JL_WLED=1` (a new flag) and `JL_ESP32_NIMBLE=1`. `JL_WLED` turns on the log handler
-  and turns off the secure channel, as `JL_ESPHOME` does. `JL_CONFIG` and `JL_CONTROLLER`
-  still describe the device, such as a vest on an ATOM Matrix, and come from the build
-  environment.
-- `src` is a symlink to `../../src`. Listing the sources through a `..` path instead makes
-  PlatformIO compile them into WLED's own `src` build folder, which breaks WLED's
-  dependency resolution.
-- `jazzlights_wled.py` is the library's build script. It sets the release name, see
-  [Firmware updates](#firmware-updates).
-- `jazzlights_usermod.cpp` is the usermod.
-- `platformio_override.ini` has ready-made WLED environments with the usermod, for the
+- `library.json`, at the root of this repo, declares the usermod as a PlatformIO library.
+  PlatformIO can't take a subdirectory of a git repository as a library, so it has to be at
+  the root for WLED to install the usermod straight from GitHub. It compiles
+  `extras/wled/jazzlights_usermod.cpp` plus the needed subset of `src/jazzlights` (the
+  protocol, the network code and `util`, but not the renderer, the effects or FastLED),
+  and sets `JL_WLED=1` (a new flag) and `JL_ESP32_NIMBLE=1`. `JL_WLED` turns on the log
+  handler and turns off the secure channel, as `JL_ESPHOME` does. `JL_CONFIG` and
+  `JL_CONTROLLER` still describe the device, such as a vest on an ATOM Matrix, and come
+  from the build environment. A WLED environment that doesn't set them gets `NONE` and
+  `NATIVE`: the code the usermod uses only depends on them for creatures, orrery and
+  clouds, and for GROVE pins.
+- `extras/wled/jazzlights_wled.py` is the library's build script. It sets the release name
+  and the release repository, see [Firmware updates](#firmware-updates).
+- `extras/wled/jazzlights_usermod.cpp` is the usermod.
+- `extras/wled/platformio_override.ini` has ready-made WLED environments with the usermod, for the
   boards that JazzLights devices use, one per supported chip. Each extends an official WLED
   environment, sets `JL_CONFIG=VEST` and the board's `JL_CONTROLLER`, and uses the vest's
   LED pins from [layout_data.h](../../src/jazzlights/layout/layout_data.h):
@@ -215,15 +216,29 @@ lives in this repo, under `extras/wled/`:
 
 Two details of `build.sh`:
 
-- The WLED checkout can't be inside `extras/wled`, or PlatformIO would see WLED's own
-  libraries as part of the usermod's library.
+- WLED's checkout, its build folder and its PlatformIO packages are all inside this repo,
+  and PlatformIO counts everything under a library's root as part of it, so it would see
+  WLED's own libraries as part of the usermod. So `build.sh` points WLED at
+  `extras/.wled/jazzlights`, a folder of links to `library.json`, `src` and `extras/wled`.
 - It sets `PLATFORMIO_CORE_DIR` to `extras/.wled/.platformio`. WLED's platform installs a
   different Arduino core under the same package name as this repo's `platformio.ini`, so
   sharing `~/.platformio` would make each build replace the other's Arduino core.
 
-To verify later: PlatformIO can't take a subdirectory of a git repository as a library, so
-consuming the usermod straight from GitHub, without a local checkout of this repo, may need
-a `library.json` at the root of this repo, or a small separate repository.
+**Without a checkout of this repo**, add the usermod straight from GitHub to any WLED
+environment, on its own line of `custom_usermods`, for example in WLED's own
+`platformio_override.ini`:
+
+```ini
+[env:my_board]
+extends = env:esp32dev
+custom_usermods = ${env:esp32dev.custom_usermods}
+  jazzlights = https://github.com/DavidSchinazi/jazzlights.git#main
+```
+
+The name before `=` has to be `jazzlights`, the library's name, for WLED to treat it as a
+usermod. `#main` can be any branch, tag or commit. On a classic ESP32 with Bluetooth, the
+usermod switches the LED outputs to the parallel driver, see [Bluetooth](#bluetooth).
+Checked with a local clone of this repo (`git+file://`) and `esp32dev`.
 
 CI: the `wled` job in `.github/workflows/jazzlights.yml` runs `extras/wled/build.sh`, which
 builds every environment above.
@@ -713,8 +728,8 @@ that image wasn't built with the usermod, JazzLights is gone. Its settings stay 
    "Ignore firmware validation".
 2. **One-click update.** The page fetches the latest GitHub release of the repo baked into
    the build (`WLED_REPO`), downloads the asset named `*_<version>_<release name>.bin`, and
-   uploads it. On WLED's current branch, `WLED_REPO` falls back to `wled/wled`, since
-   WLED's metadata script doesn't set it on that branch yet.
+   uploads it. WLED's metadata script sets `WLED_REPO` from its checkout's git remote, so
+   it's `wled/WLED` unless something else sets it.
 
 A build that extends an official WLED environment inherits its release name, for example
 `ESP32-S3_8MB_opi`. One click would then download the official image, which passes the
@@ -723,8 +738,10 @@ release name check, and the usermod would be gone without warning.
 So **builds with the usermod get their own release name**, the official one with
 `_JazzLights` appended, such as `ESP32-S3_8MB_opi_JazzLights`. Then:
 
-- **One-click update:** finds no asset with that suffix, and stops with "Firmware not
-  found".
+- **One-click update:** installs from
+  [DavidSchinazi/jazzlights-wled](https://github.com/DavidSchinazi/jazzlights-wled), see
+  below, so it keeps the usermod. Images built before that repo, whose `WLED_REPO` is
+  `wled/WLED`, find no asset with the suffix there, and stop with "Firmware not found".
 - **Manual upload of a stock image:** rejected with "Firmware release name mismatch".
 - **Images built with the usermod:** update as usual. The only way to lose the usermod is
   to tick "Ignore firmware validation".
@@ -738,10 +755,22 @@ with it afterwards, so the script changes the name there, for `wled_metadata.cpp
 changes it in the global environment, where WLED's `output_bins.py` reads it to name the
 image, for example `WLED_17.0.0-devV5_ESP32_JazzLights.bin`. Phase 1 checked both.
 
-**Optional, later: keep one-click updates.** Point `WLED_REPO` at a repo where we publish
-WLED + usermod images, with asset names ending in `_<version>_<release name>.bin`. This
-repo isn't a good fit, because `<version>` comes from that repo's own release tags. A small
-separate repo would work.
+**One-click updates** come from a separate repo,
+[DavidSchinazi/jazzlights-wled](https://github.com/DavidSchinazi/jazzlights-wled). This
+repo isn't a good fit, because `<version>` comes from the repo's release tags, and this
+repo's tags are about JazzLights. `jazzlights_wled.py` sets `WLED_REPO` to it, unless the
+environment sets its own. That repo only holds a README and a **Release** workflow, run by
+hand from its Actions tab with a JazzLights branch, tag or commit. The workflow runs
+`build.sh` at that commit, and publishes a release tagged `v<WLED version>-jl.<n>`, where
+`<n>` is the workflow's run number, such as `v17.0.0-devV5-jl.3`. Each run gets its own
+version, so the same WLED version can be released again with newer JazzLights code. It
+renames each image to match, such as `WLED_17.0.0-devV5-jl.3_ESP32_JazzLights.bin`.
+
+One-click update then installs the image whose release name matches the device's, from
+the latest release. Builds that share a release name share an image: a WLED environment
+that adds the usermod to `esp32dev` gets the ATOM Matrix's. That only changes the
+defaults of a fresh install, since WLED keeps its settings across updates. Devices whose
+images predate the release repo need one manual upload of a newer image first.
 
 **During an update**, WLED calls `onUpdateBegin(true)`, and `onUpdateBegin(false)` if the
 update fails. The usermod pauses Bluetooth and UDP on the first call, to free memory and
@@ -937,6 +966,9 @@ is.
 - On the ATOM Matrix, a generated `ledmap.json` maps the vest's LEDs, and the 5x5 screen is
   a second segment of the same canvas.
 - The default mode is follower, so that a newly flashed WLED device doesn't take over.
+- The usermod's `library.json` is at the root of this repo, so WLED can install it from
+  GitHub, and one-click updates come from a separate release repo,
+  `DavidSchinazi/jazzlights-wled`.
 - Palettes without an exact equivalent go to the closest JazzLights palette by hue.
 - A follower keeps the segment's sliders, and switches at the end of each 10 seconds without
   waiting for the leader's message.

@@ -15,6 +15,12 @@
 #endif  // JL_CUSTOM_CONFIG
 
 // Configurations.
+// The WLED usermod can be added to any WLED build, which doesn't describe the device the JazzLights way. None of the
+// code it uses depends on the device, other than special cases for creatures, orrery and clouds, so default to none
+// there.
+#if !defined(JL_CONFIG) && defined(JL_WLED) && JL_WLED
+#define JL_CONFIG NONE
+#endif  // !JL_CONFIG && JL_WLED
 #ifndef JL_CONFIG
 #error "Preprocessor macro JL_CONFIG must be defined using compiler flags"
 #endif  // JL_CONFIG
@@ -44,6 +50,10 @@
 #define JL_IS_CONFIG(config_) (JL_MERGE_TOKENS(JL_CONFIG_, JL_CONFIG) == JL_MERGE_TOKENS(JL_CONFIG_, config_))
 
 // Controllers.
+// The WLED usermod doesn't use the controller, which only picks GROVE pins here, see JL_CONFIG above.
+#if !defined(JL_CONTROLLER) && defined(JL_WLED) && JL_WLED
+#define JL_CONTROLLER NATIVE
+#endif  // !JL_CONTROLLER && JL_WLED
 #ifndef JL_CONTROLLER
 #error "Preprocessor macro JL_CONTROLLER must be defined using compiler flags"
 #endif  // JL_CONTROLLER

@@ -7,8 +7,7 @@
 # Run `-t erase` on its own: WLED's PlatformIO platform turns off library dependency resolution whenever erase is among
 # the targets, so building in the same command fails to find WiFi.h.
 #
-# The first run clones WLED at WLED_COMMIT into extras/.wled, and every run copies platformio_override.ini there. The
-# checkout must not be inside extras/wled, or PlatformIO would see WLED's own libraries as part of the usermod.
+# The first run clones WLED at WLED_COMMIT into extras/.wled, and every run copies platformio_override.ini there.
 # WLED's build bundles its web UI with Node.js, which must be on the PATH.
 
 set -euo pipefail
@@ -18,7 +17,8 @@ set -euo pipefail
 WLED_COMMIT=fffa05a765d41d7126b66ab5a3d1ce1f41e7d11e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WLED_DIR="${SCRIPT_DIR}/../.wled"
+REPO_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+WLED_DIR="${REPO_DIR}/extras/.wled"
 
 if ! command -v node >/dev/null; then
   echo "Node.js is required to build WLED's web UI, please add it to your PATH." >&2
@@ -35,6 +35,21 @@ if [ "$(git -C "${WLED_DIR}" rev-parse --verify --quiet HEAD || true)" != "${WLE
 fi
 
 cp "${SCRIPT_DIR}/platformio_override.ini" "${WLED_DIR}/platformio_override.ini"
+
+# The usermod is the library declared by library.json at the root of this repository, but the WLED checkout, its build
+# folder and its PlatformIO packages are all inside the repository, and PlatformIO would count them as part of a library
+# rooted there. So point WLED at a folder of links to the files the library uses, inside the WLED checkout.
+USERMOD_DIR="${WLED_DIR}/jazzlights"
+mkdir -p "${USERMOD_DIR}/extras"
+ln -sfn "${REPO_DIR}/library.json" "${USERMOD_DIR}/library.json"
+ln -sfn "${REPO_DIR}/src" "${USERMOD_DIR}/src"
+ln -sfn "${REPO_DIR}/extras/wled" "${USERMOD_DIR}/extras/wled"
+# Checkouts from before this folder have the usermod linked from extras/wled, which PlatformIO wouldn't update.
+for link in "${WLED_DIR}"/.pio/libdeps/*/jazzlights.pio-link; do
+  if [ -f "${link}" ] && ! grep -q '"symlink://jazzlights"' "${link}"; then
+    rm "${link}"
+  fi
+done
 
 # WLED's PlatformIO platform installs a different Arduino core under the same package name as the one this repo's
 # platformio.ini uses, so sharing ~/.platformio would make each build replace the other's. Keep WLED's packages apart.

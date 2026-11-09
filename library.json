@@ -1,11 +1,20 @@
 {
   "name": "jazzlights",
   "description": "WLED usermod that syncs with JazzLights devices over IP and Bluetooth, see extras/docs/WLED.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DavidSchinazi/jazzlights.git"
+  },
+  "license": "Apache-2.0",
+  "frameworks": "arduino",
+  "platforms": "espressif32",
   "build": {
     "libArchive": false,
+    "srcDir": ".",
+    "includeDir": "src",
     "srcFilter": [
       "-<*>",
-      "+<*.cpp>",
+      "+<extras/wled/*.cpp>",
       "+<src/jazzlights/protocol/engine.cpp>",
       "+<src/jazzlights/protocol/wire.cpp>",
       "+<src/jazzlights/protocol/wire_types.cpp>",
@@ -21,8 +30,6 @@
       "-DJL_WLED=1",
       "-DJL_ESP32_NIMBLE=1"
     ],
-    "extraScript": "jazzlights_wled.py",
-    "srcDir": ".",
-    "includeDir": "src"
+    "extraScript": "extras/wled/jazzlights_wled.py"
   }
 }
