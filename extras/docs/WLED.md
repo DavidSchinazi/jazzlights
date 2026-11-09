@@ -2,7 +2,8 @@
 
 Status: approved, being implemented. Phases 1 to 4 (building the usermod in WLED, engine
 changes, leader mode and follower mode) are done, see
-[Implementation phases](#implementation-phases).
+[Implementation phases](#implementation-phases). On an ATOM Matrix with a vest, sync works
+in both modes.
 
 [WLED](https://github.com/wled/WLED) is popular firmware for addressable LEDs. This doc
 plans a WLED **usermod** (WLED's plugin mechanism) that lets a WLED device take part in
@@ -187,7 +188,8 @@ lives in this repo, under `extras/wled/`:
      editor (`http://<device>/edit`) and reboot.
   3. In WLED's segments, make segment 0 the vest, columns 0 to 20 and rows 0 to 19, and
      add segment 1 for the screen, columns 20 to 25 and rows 0 to 5 (stop values are
-     exclusive).
+     exclusive). Switch the usermod's mode to off or leader while doing so, see
+     [JazzLights to WLED](#jazzlights-to-wled-follower).
 
   The vest's layout matches [VEST.md](VEST.md): its strand starts at the top, so row 0 is
   the top of the vest, and WLED's effects that rise, like Fire 2012, rise from its hem.
@@ -578,6 +580,12 @@ Details:
 - It applies changes without notifying WLED's own UDP sync (`CALL_MODE_NO_NOTIFY`), and
   without saving anything to flash. A setting could instead let them propagate to other
   WLED devices.
+- Each applied pattern, about every 10 seconds, makes WLED push its state to the web UI,
+  which redraws its segment list, so a segment being added there disappears before it's
+  confirmed. WLED does the same while another WLED device syncs it. To edit segments,
+  switch the mode to off or leader first, then back. On the ATOM Matrix, that was easy
+  enough that the usermod doesn't suppress the push, which would keep the web UI from
+  showing the followed effect until a reload.
 - It changes the segment directly (`setMode()`, `setPalette()`, `setColor()`) and then
   calls `stateUpdated(CALL_MODE_NO_NOTIFY)`, not `colorUpdated()`. `colorUpdated()` first
   calls `applyValuesToSelectedSegs()`, which copies WLED's global effect and palette back
@@ -792,7 +800,12 @@ configuration (`/json/cfg`).
 - **Updates**: on hardware, a one-click update and a manual upload of a stock image are
   both refused, an image built with the usermod updates, and Bluetooth and UDP resume if
   an update fails.
-- **Hardware**: an ATOM S3 Lite (ESP32-S3) and an ATOM Matrix (classic ESP32, 4 MB)
+- **Hardware**: on an ATOM Matrix with a vest's LEDs, the generated ledmap and the
+  screen's segment, sync works in both modes: as a leader, JazzLights devices show the
+  closest pattern, and as a follower, WLED shows the followed pattern on the vest and the
+  screen. Still to check: an ATOM S3 Lite
+  (ESP32-S3), Bluetooth only, LED flicker, turning WLED off and on, firmware updates, and
+  joining WLED's access point with Bluetooth on. The full plan: an ATOM S3 Lite (ESP32-S3) and an ATOM Matrix (classic ESP32, 4 MB)
   running WLED with the usermod, next to a vest, in each mode, over Wi-Fi and over
   Bluetooth only. Also check LED flicker with Wi-Fi and Bluetooth both on, and turning
   WLED off and on.
@@ -821,7 +834,8 @@ configuration (`/json/cfg`).
 4. Follower mode. **Done.** First hardware test, on an ATOM Matrix: NimBLE
    starts, and the usermod follows a device over Bluetooth and applies its pattern. It then
    crashed because of the LED driver issue in [Bluetooth](#bluetooth), now worked around.
-   The rest is not yet checked on hardware, along with phase 1's list. Not done: the setting
+   Since then, on the same ATOM Matrix with a vest, sync works in both modes, see
+   [Testing](#testing). Not done: the setting
    to let followed patterns propagate to WLED's own sync.
 
 ## Prior work
