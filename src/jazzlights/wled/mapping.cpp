@@ -480,9 +480,11 @@ std::optional<WLEDTarget> JazzLightsToWLED(PatternBits pattern, bool segmentIs2D
   const uint8_t palette = decoded.palette ? WLEDPaletteFor(*decoded.palette) : kWLEDPaletteDefault;
   switch (decoded.effect) {
     case PatternEffect::kRings:
-      // WLED's Rainbow effect scrolls a rainbow across the segment, and its Palette effect scrolls a palette.
-      if (decoded.palette == PatternPalette::kRainbow) { return Target(kWLEDRainbowCycle, palette); }
-      return Target(kWLEDPalette, palette);
+      // Like rings, WLED's Octopus colors each pixel by its distance from a center, and scrolls the palette outward. On
+      // a 1D segment, WLED's Rainbow scrolls the palette along the segment. Both move at any speed slider, unlike
+      // WLED's Palette effect, which stays still unless its "Animate Shift" checkbox is on, and the follower keeps the
+      // segment's sliders and checkboxes.
+      return Target(segmentIs2D ? kWLED2DOctopus : kWLEDRainbowCycle, palette);
     case PatternEffect::kSpinPlasma: return Target(segmentIs2D ? kWLED2DPlasmaRotozoom : kWLEDPlasma, palette);
     case PatternEffect::kHiphotic: return Target(segmentIs2D ? kWLED2DHiphotic : kWLEDNoisePal, palette);
     case PatternEffect::kFlame: return Target(kWLEDFire2012, palette);

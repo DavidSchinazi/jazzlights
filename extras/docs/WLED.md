@@ -538,7 +538,7 @@ a WLED effect, palette and colors, and the usermod applies them to the followed 
 
 | JazzLights | WLED on a 2D segment | WLED on a 1D segment |
 |---|---|---|
-| rings + palette | Palette, or Rainbow for the rainbow palette | same |
+| rings + palette | Octopus | Rainbow |
 | spin plasma + palette | Rotozoomer | Plasma |
 | hiphotic + palette | Hiphotic | Noise Pal |
 | flame + palette | Fire 2012 | same |
@@ -561,7 +561,9 @@ Details:
 - It shows the followed pattern on every active segment, see [Segments](#segments).
 - When it starts showing a followed pattern, the usermod saves each segment's effect,
   palette and colors, and restores them when it stops following, like WLED does around
-  realtime mode. It leaves the sliders alone: `setMode()` keeps them.
+  realtime mode. It leaves the sliders alone: `setMode()` keeps them. So the effects it
+  picks move whatever the sliders and checkboxes are. For example, rings don't go to
+  WLED's Palette effect, which stays still unless its "Animate Shift" checkbox is on.
 - When a person changes a segment's effect, palette or colors, or adds or removes a
   segment, while it shows a followed pattern, their change becomes the state to go back
   to. In follower mode, that also
