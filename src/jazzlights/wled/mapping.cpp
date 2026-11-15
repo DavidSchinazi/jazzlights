@@ -477,7 +477,7 @@ WLEDTarget Target(uint8_t effect, uint8_t palette) {
 
 std::optional<WLEDTarget> JazzLightsToWLED(PatternBits pattern, bool segmentIs2D) {
   const DecodedPattern decoded = DecodePattern(pattern);
-  const uint8_t palette = decoded.palette ? WLEDPaletteFor(*decoded.palette) : kWLEDPaletteDefault;
+  const uint8_t palette = decoded.palette ? WLEDPaletteFor(*decoded.palette) : uint8_t{kWLEDPaletteDefault};
   switch (decoded.effect) {
     case PatternEffect::kRings:
       // Like rings, WLED's Octopus colors each pixel by its distance from a center, and scrolls the palette outward. On
