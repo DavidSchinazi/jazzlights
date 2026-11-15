@@ -16,7 +16,25 @@ with JazzLights devices. For how it works, see [WLED.md](../docs/WLED.md).
 Each environment sets up a vest's 360 LEDs on a fresh install, plus the screen on the ATOM
 Matrix. Only the ATOM Matrix and the ATOMS3R have been tested on hardware so far.
 
-## What you need
+## The quick way: the web flasher
+
+In Chrome or Edge, open the
+[JazzLights Web Installer](https://davidschinazi.github.io/jazzlights/flash/), choose
+**WLED (ATOMS3R)** for an ATOMS3R, or **WLED** for the other boards, and click
+**Install**. It picks the image for the board's chip, built from this repository's `main`
+branch. Then:
+
+- **Erase** when it offers to, to replace JazzLights or older firmware cleanly. If it
+  can't connect, put the board in download mode, see step 1 below.
+- **Set up Wi-Fi** when it offers to after installing: WLED takes your network's name and
+  password over USB. If it doesn't offer, or you skip it, see step 3.
+
+Then continue with step 3 or 4 below. An ATOMS3R installed with the **WLED** choice runs,
+but without using its PSRAM.
+
+## Building it yourself
+
+### What you need
 
 - A checkout of this repository, and PlatformIO (`pip install platformio`).
 - Node.js 20 on your `PATH`, which WLED's build needs for its web UI. On macOS:
@@ -29,7 +47,7 @@ Matrix. Only the ATOM Matrix and the ATOMS3R have been tested on hardware so far
 Run the commands below from the root of this repository, with `<environment>` from the
 table. The first build clones WLED into `extras/.wled` and takes a few minutes.
 
-## Steps
+### Steps
 
 1. **Erase the board**, over USB. This has to be its own command:
 
@@ -108,7 +126,8 @@ table. The first build clones WLED into `extras/.wled` and takes a few minutes.
 Download your board's image from the latest release of
 [DavidSchinazi/jazzlights-wled](https://github.com/DavidSchinazi/jazzlights-wled), the one
 whose name ends in your device's release name (shown on WLED's update page, such as
-`ESP32_JazzLights`), and upload it on WLED's update page. Or rebuild and flash with step 2.
+`ESP32_JazzLights`), and upload it on WLED's update page. Or install again from the web
+flasher, without erasing, or rebuild and flash with step 2.
 Your settings, ledmap and presets stay. WLED refuses stock WLED images, which would remove
 the usermod. The update page's one-click button doesn't work yet: WLED's download mirror
 doesn't serve this repo.

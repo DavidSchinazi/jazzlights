@@ -263,7 +263,15 @@ usermod switches the LED outputs to the parallel driver, see [Bluetooth](#blueto
 Checked with a local clone of this repo (`git+file://`) and `esp32dev`.
 
 CI: the `wled` job in `.github/workflows/jazzlights.yml` runs `extras/wled/build.sh`, which
-builds every environment above.
+builds every environment above. It then merges each image with its bootloader and partition
+table (`build.sh -t mergebin`, with the site's `merge-bin.py`), for the
+[web flasher](https://davidschinazi.github.io/jazzlights/flash/), which installs `main`'s
+builds. The flasher picks an image by chip family alone, so it has two WLED choices: one
+with the ATOM Matrix, ATOM S3 Lite, M5Stamp C3U and NanoC6 images, and one with the
+ATOMS3R's, whose image uses its PSRAM. Unlike the JazzLights ones, they offer to erase
+first, since WLED's flash layout differs, and wait for Improv after installing, so that
+ESP Web Tools can set up WLED's Wi-Fi. Like the JazzLights images, they're merged in DIO
+flash mode, which the flasher needs on ESP32-S3 and ESP32-C6.
 
 ## Modes and precedence
 
@@ -902,8 +910,9 @@ that the protocol engine is only used from WLED's loop.
 
   Still to check: sync over Bluetooth only, turning WLED off and on, firmware updates
   (including a manual update from the release repo), installing the usermod from
-  GitHub, sending logs over the network, and the ATOM S3 Lite, ESP32-C3 and ESP32-C6
-  presets.
+  GitHub, sending logs over the network, installing from the web flasher, including its
+  Wi-Fi setup and the ATOMS3R's image in DIO flash mode, and the ATOM S3 Lite, ESP32-C3
+  and ESP32-C6 presets.
 
 ## Implementation phases
 

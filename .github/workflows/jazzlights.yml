@@ -171,6 +171,23 @@ jobs:
         run: pip install --upgrade platformio
       - name: Build WLED with the JazzLights usermod
         run: extras/wled/build.sh
+      # The web flasher installs these merged images, named after the environment without its jazzlights_ prefix, such
+      # as wled_atom_matrix.bin.
+      - name: Merge WLED images for the web flasher
+        run: |
+          extras/wled/build.sh -t mergebin
+          mkdir -p "${{ runner.temp }}/wled-merged"
+          for merged in extras/.wled/.pio/build/jazzlights_*/firmware-merged.bin; do
+            env_name="$(basename "$(dirname "${merged}")")"
+            cp "${merged}" "${{ runner.temp }}/wled-merged/wled_${env_name#jazzlights_}.bin"
+          done
+          ls -l "${{ runner.temp }}/wled-merged"
+      - name: Upload merged WLED images as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: merged-binary-wled
+          path: "${{ runner.temp }}/wled-merged/*.bin"
+          if-no-files-found: error
 
   pio-native-test:
     runs-on: ubuntu-latest
@@ -250,6 +267,7 @@ jobs:
       - pio-build
       - pio-native-test
       - pio-merge
+      - wled
     permissions:
       contents: read
       pages: read
@@ -321,6 +339,10 @@ jobs:
           extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-orrery-planet.json" --name "Orrery Planet" --version $(git rev-parse --short "$GITHUB_SHA") --firmware-s3 orrery_planet.bin
           extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-orrery-sun.json" --name "Orrery Sun" --version $(git rev-parse --short "$GITHUB_SHA") --firmware orrery_sun.bin
           extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-motor-test.json" --name "Orrery Motor Test" --version $(git rev-parse --short "$GITHUB_SHA") --firmware-s3 orrery_motor_test_m5stamp_s3.bin
+          # WLED with the JazzLights usermod. WLED answers Improv, so ESP Web Tools can set up its Wi-Fi after installing.
+          # It picks the image by chip family alone, so the ATOMS3R, whose image uses its PSRAM, gets its own manifest.
+          extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-wled.json" --name "WLED with JazzLights" --version $(git rev-parse --short "$GITHUB_SHA") --firmware wled_atom_matrix.bin --firmware-s3 wled_atom_s3_lite.bin --firmware-c3 wled_m5stamp_c3u.bin --firmware-c6 wled_m5_nano_c6.bin --prompt-erase --improv-wait-time 15
+          extras/site/flash/manifest.py --output "${upload_dir}/flash/manifest-wled-atom-s3r.json" --name "WLED with JazzLights (ATOMS3R)" --version $(git rev-parse --short "$GITHUB_SHA") --firmware-s3 wled_atom_s3r.bin --prompt-erase --improv-wait-time 15
       - run: ls -l "${upload_dir}/flash/"
       - run: find "${upload_dir}/flash/"
       - name: Upload Site as Artifact
